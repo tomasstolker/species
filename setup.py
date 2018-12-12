@@ -12,7 +12,7 @@ reqs = [str(ir.req) for ir in reqs]
 
 setup(
     name='species',
-    version='0.0.0',
+    version='0.0.1',
     description='Spectral and Photometric Examination Code for Investigating Exoplanet and Substellar atmospheres',
     long_description=open('README.rst').read(),
     author='Tomas Stolker',
