@@ -4,13 +4,13 @@ Database module.
 
 import os
 import sys
-import urllib
 import tarfile
 import warnings
 import configparser
+import urllib
 
-import requests
 import h5py
+import requests
 import numpy as np
 
 from astropy.io import fits
@@ -67,8 +67,7 @@ class Database(object):
                 sys.stdout.write("Downloading DRIFT-PHOENIX atmospheric models, (151 MB)... ")
                 sys.stdout.flush()
 
-                datafile = urllib.URLopener()
-                datafile.retrieve(url, data_file)
+                urllib.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
@@ -165,8 +164,7 @@ class Database(object):
                 sys.stdout.write("Downloading Vega spectrum (270 kB)... ")
                 sys.stdout.flush()
 
-                datafile = urllib.URLopener()
-                datafile.retrieve(url, data_file)
+                urllib.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
@@ -226,8 +224,7 @@ class Database(object):
                     sys.stdout.write("Downloading IRTF Spectral Library - "+data_type[i]+"... ")
                     sys.stdout.flush()
 
-                    datafile = urllib.URLopener()
-                    datafile.retrieve(url[i], item)
+                    urllib.urlretrieve(url[i], item)
 
                     sys.stdout.write("[DONE]\n")
                     sys.stdout.flush()
@@ -305,8 +302,7 @@ class Database(object):
                 sys.stdout.write("Downloading Database of Ultracool Parallaxes (307 kB)... ")
                 sys.stdout.flush()
 
-                datafile = urllib.URLopener()
-                datafile.retrieve(url, data_file)
+                urllib.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
