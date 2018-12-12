@@ -11,4 +11,4 @@ SPECIES is developed by Tomas Stolker (tomas.stolker@phys.ethz.ch). Feel free to
 Attribution
 -----------
 
-If you use results obtained with SPECIES in a publication then please cite Stolker et al. in prep. Please also make sure to give credit the relevant papers regarding the use of the publicly available photometric libraries, spectral libraries, atmospheric models, filter transmission curves, photometry of individual objects, etc. More details will follow.
+Please cite Stolker et al. in prep. whenever results from SPECIES are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that SPECIES is using, such as the photometric libraries, spectral libraries, atmospheric models, filter transmission curves, photometry of individual objects, etc. More details will follow.
