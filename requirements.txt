@@ -1,5 +1,6 @@
+configparser ~= 3.5
 h5py ~= 2.8
 numpy ~= 1.15
 scipy ~= 1.1
 astropy ~= 2.0
-matplotlib ~= 2.2
+matplotlib ~= 2.2 
