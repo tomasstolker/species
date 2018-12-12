@@ -81,7 +81,7 @@ In the last example we add the DRIFT-PHOENIX atmospheric models to the database.
    plot_spectrum(spectrum[0, ], spectrum[1, ], filters, None, "drift-phoenix_filters.pdf")
 
 .. image:: _images/drift-phoenix_filters.png
-   :width: 70%
+   :width: 80%
    :align: center
 
 Or, we can also take a spectrum from the (discrete) grid with the original spectral resolution::
@@ -91,5 +91,5 @@ Or, we can also take a spectrum from the (discrete) grid with the original spect
    plot_spectrum(spectrum[0, ], spectrum[1, ], filters, None, "drift-phoenix_teff_1200_logg4.0_feh_0.0.pdf")
 
 .. image:: _images/drift-phoenix_full.png
-   :width: 70%
+   :width: 80%
    :align: center
