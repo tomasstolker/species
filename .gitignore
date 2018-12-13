@@ -7,3 +7,6 @@ species.egg-info/
 .coverage
 .pytest_cache/
 htmlcov/
+coverage.xml
+.tox/
+junit-py27.xml
