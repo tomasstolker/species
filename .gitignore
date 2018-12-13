@@ -2,6 +2,9 @@ Makefile
 *.pyc
 .DS_Store
 docs/_build
-rm -rf build/
-rm -rf dist/
-rm -rf species.egg-info/
+build/
+dist/
+species.egg-info/
+.coverage
+.pytest_cache/
+htmlcov/

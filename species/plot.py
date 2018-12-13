@@ -2,6 +2,8 @@
 Plot module.
 """
 
+from __future__ import absolute_import
+
 import os
 import sys
 
@@ -13,7 +15,6 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.ticker import FormatStrFormatter
 
 import species.read
-import species.photometry
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -36,7 +37,7 @@ def plot_color_magnitude(color,
     """
 
 
-    plt.figure(1, figsize=(4, 4.8))
+    fig = plt.figure(1, figsize=(4, 4.8))
     gs = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
     gs.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
 
@@ -45,8 +46,13 @@ def plot_color_magnitude(color,
 
     ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
-    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True)
-    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True)
+    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
@@ -56,7 +62,7 @@ def plot_color_magnitude(color,
     ax1.get_xaxis().set_label_coords(0.5, -0.08)
     ax1.get_yaxis().set_label_coords(-0.12, 0.5)
 
-    indices = np.where(sptype != "null")[0]
+    indices = np.where(sptype != np.string_("null"))[0]
 
     sptype = sptype[indices]
     color = color[indices]
@@ -67,30 +73,26 @@ def plot_color_magnitude(color,
     for i, item in enumerate(sptype):
         sp = item[0:2]
 
-        if sp == "M0" or sp == "M1" or sp == "M2" or sp == "M3" or sp == "M4":
+        if sp in (np.string_("M0"), np.string_("M1"), np.string_("M2"), np.string_("M3"), np.string_("M4")):
             spt_disc[i] = 0
 
-        elif sp == "M5" or sp == "M6" or sp == "M7" or sp == "M8" or sp == "M9":
+        elif sp in (np.string_("M5"), np.string_("M6"), np.string_("M7"), np.string_("M8"), np.string_("M9")):
             spt_disc[i] = 1
 
-        elif sp == "L0" or sp == "L1" or sp == "L2" or sp == "L3" or sp == "L4":
+        elif sp in (np.string_("L0"), np.string_("L1"), np.string_("L2"), np.string_("L3"), np.string_("L4")):
             spt_disc[i] = 2
 
-        elif sp == "L5" or sp == "L6" or sp == "L7" or sp == "L8" or sp == "L9":
+        elif sp in (np.string_("L5"), np.string_("L6"), np.string_("L7"), np.string_("L8"), np.string_("L9")):
             spt_disc[i] = 3
 
-        elif sp == "T0" or sp == "T1" or sp == "T2" or sp == "T3" or sp == "T4":
+        elif sp in (np.string_("T0"), np.string_("T1"), np.string_("T2"), np.string_("T3"), np.string_("T4")):
             spt_disc[i] = 4
 
-        elif sp == "T5" or sp == "T6" or sp == "T7" or sp == "T8" or sp == "T9":
+        elif sp in (np.string_("T5"), np.string_("T6"), np.string_("T7"), np.string_("T8"), np.string_("T9")):
             spt_disc[i] = 5
 
-        elif item[0] == "Y":
+        elif np.string_("Y") in item:
             spt_disc[i] = 6
-
-        elif len(item) > 7:
-            if item[6] == "Y":
-                spt_disc[i] = 7
 
         else:
             continue
@@ -99,9 +101,12 @@ def plot_color_magnitude(color,
     bounds = np.arange(0, 8, 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, zorder=3, s=25., alpha=0.6)
+    scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
+                       zorder=3, s=25., alpha=0.6)
 
-    cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
+    cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+                  ticklocation='top', format='%.2f')
+
     cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='white')
     cb.set_ticks(np.arange(0.5, 7., 1.))
     cb.set_ticklabels(["M0-M4", "M5-M9", "L0-L4", "L5-L9", "T0-T4", "T6-T8", "Y1-Y2"])
@@ -113,11 +118,6 @@ def plot_color_magnitude(color,
             mag = read_object.get_magnitude(item[3])
 
             ax1.plot(color, mag, 's', ms=5, color="black")
-
-    # h,l = ax.get_legend_handles_labels()
-    # leg = ax.legend(h, l, loc='upper left', prop={'size':10}, frameon=True, bbox_to_anchor=(0.008, 0.01))
-    # for i, text in enumerate(leg.get_texts()):
-    #     text.set_color(colors[i])
 
     plt.savefig(os.getcwd()+"/"+output, bbox_inches='tight')
     plt.close()
@@ -143,11 +143,21 @@ def plot_spectrum(wavelength,
 
     ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
 
-    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=False)
-    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=False)
+    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=False)
 
-    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=False, right=True)
-    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=False, right=True)
+    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=False)
+
+    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=False, right=True)
+
+    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=False, right=True)
 
     ax1.set_xlabel("Wavelength [micron]", fontsize=16)
     ax1.set_ylabel("Flux [W m$^{-2}$ micron$^{-1}$]", fontsize=16)

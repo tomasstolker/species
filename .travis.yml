@@ -1,0 +1,73 @@
+language: python
+
+matrix:
+    include:
+
+        - os: osx
+          language: generic
+          env:
+            - TOXENV=py27
+            - COVERALLS_PARALLEL=true
+
+        - os: osx
+          language: generic
+          env:
+            - TOXENV=py36
+            - COVERALLS_PARALLEL=true
+
+        - os: osx
+          language: generic
+          env:
+            - TOXENV=py37
+            - COVERALLS_PARALLEL=true
+            - PYTHON=3.7.0
+
+        - os: linux
+          python: 2.7
+          env:
+            - TOXENV=py27
+            - COVERALLS_PARALLEL=true
+
+        - os: linux
+          python: 3.6
+          env:
+            - TOXENV=py36
+            - COVERALLS_PARALLEL=true
+
+        - os: linux
+          python: 3.7
+          dist: xenial
+          sudo: true
+          env:
+            - TOXENV=py37
+            - COVERALLS_PARALLEL=true
+
+before_install:
+  - |
+    if [ $TRAVIS_OS_NAME == "osx" ] && [ $PYTHON == "3.7.0" ]; then
+      brew install pyenv-virtualenv
+      pyenv install $PYTHON
+      export PYENV_VERSION=$PYTHON
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
+      pyenv virtualenv $PYTHON venv
+      pyenv activate venv
+    fi
+
+install:
+  - pip install -r requirements.txt
+  - pip install tox
+  - pip install coveralls
+  - pip install sphinx
+  - pip install sphinx_rtd_theme
+
+script:
+  - make docs
+  - make test
+
+after_success:
+  - coveralls
+
+notifications:
+  # - webhooks: https://coveralls.io/webhook
+  - email: false

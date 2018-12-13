@@ -16,7 +16,7 @@ SPECIES
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
 
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
-    :target: https://github.com/tomasstolker/SPECIES/blob/master/LICENSE
+    :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
 SPECIES is a Python package for analyzing spectral and photometric data of planetary and substellar objects.
 
