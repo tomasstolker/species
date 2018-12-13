@@ -6,11 +6,17 @@ SPECIES
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
 
-.. image:: https://img.shields.io/badge/Python-2.7-yellow.svg?style=flat
-    :target: https://pypi.python.org/pypi/species
+.. image:: https://img.shields.io/badge/Python-2.7%2C%203.6%2C%203.7-yellow.svg?style=flat
+    :target: https://pypi.python.org/pypi/pynpoint
+
+.. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
+    :target: https://travis-ci.org/tomasstolker/species
 
 .. image:: https://readthedocs.org/projects/species/badge/?version=latest
     :target: http://species.readthedocs.io/en/latest/?badge=latest
+
+.. image:: https://coveralls.io/repos/github/tomasstolker/species/badge.svg
+   :target: https://coveralls.io/github/tomasstolker/species
 
 .. image:: https://www.codefactor.io/repository/github/tomasstolker/species/badge
    :target: https://www.codefactor.io/repository/github/tomasstolker/species

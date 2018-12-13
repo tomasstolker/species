@@ -15,13 +15,6 @@ matrix:
             - TOXENV=py36
             - COVERALLS_PARALLEL=true
 
-        - os: osx
-          language: generic
-          env:
-            - TOXENV=py37
-            - COVERALLS_PARALLEL=true
-            - PYTHON=3.7.0
-
         - os: linux
           python: 2.7
           env:
@@ -42,18 +35,6 @@ matrix:
             - TOXENV=py37
             - COVERALLS_PARALLEL=true
 
-before_install:
-  - |
-    if [ $TRAVIS_OS_NAME == "osx" ] && [ $PYTHON == "3.7.0" ]; then
-      brew install pyenv-virtualenv
-      pyenv install $PYTHON
-      export PYENV_VERSION=$PYTHON
-      eval "$(pyenv init -)"
-      eval "$(pyenv virtualenv-init -)"
-      pyenv virtualenv $PYTHON venv
-      pyenv activate venv
-    fi
-
 install:
   - pip install -r requirements.txt
   - pip install tox
@@ -62,8 +43,9 @@ install:
   - pip install sphinx_rtd_theme
 
 script:
-  - make docs
   - make test
+  - make docs
+  - make coverage
 
 after_success:
   - coveralls
