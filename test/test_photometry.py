@@ -33,5 +33,5 @@ class TestPhotometry(object):
         synphot = SyntheticPhotometry("MKO/NSFCam.J")
         app_mag, abs_mag = synphot.flux_to_magnitude(1e-10, 50.)
 
-        assert np.allclose(app_mag, 20.0, rtol=self.limit, atol=0.)
-        assert np.allclose(abs_mag, 16.505149978319906, rtol=self.limit, atol=0.)
+        assert np.allclose(app_mag, 3.72999284049042, rtol=self.limit, atol=0.)
+        assert np.allclose(abs_mag, 0.23514281881032595, rtol=self.limit, atol=0.)
