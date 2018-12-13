@@ -7,7 +7,7 @@ SPECIES
     :target: https://badge.fury.io/py/species
 
 .. image:: https://img.shields.io/badge/Python-2.7%2C%203.6%2C%203.7-yellow.svg?style=flat
-    :target: https://pypi.python.org/pypi/pynpoint
+    :target: https://pypi.python.org/pypi/species
 
 .. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
     :target: https://travis-ci.org/tomasstolker/species
