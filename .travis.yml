@@ -45,7 +45,6 @@ install:
 script:
   - make test
   - make docs
-  - make coverage
 
 after_success:
   - coveralls
