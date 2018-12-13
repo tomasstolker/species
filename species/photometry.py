@@ -2,6 +2,8 @@
 Photometry module.
 """
 
+from __future__ import absolute_import
+
 import os
 import sys
 import configparser
@@ -11,6 +13,7 @@ import numpy as np
 
 from scipy.integrate import simps
 
+import species.database
 import species.read
 
 
@@ -47,7 +50,7 @@ class SyntheticPhotometry(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -72,8 +75,8 @@ class SyntheticPhotometry(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_spectrum("vega")
+            species_db = species.database.Database()
+            species_db.add_spectrum("vega")
             h5_file = h5py.File(self.database, 'r')
 
         spectrum = species.read.ReadSpectrum("calibration", None)

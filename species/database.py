@@ -2,12 +2,14 @@
 Database module.
 """
 
+from __future__ import absolute_import
+
 import os
 import sys
 import tarfile
 import warnings
 import configparser
-import urllib
+import six.moves.urllib.request
 
 import h5py
 import requests
@@ -16,7 +18,6 @@ import numpy as np
 from astropy.io import fits
 
 import species.parallax
-import species.photometry
 
 warnings.simplefilter("ignore", UserWarning)
 
@@ -34,7 +35,7 @@ class Database(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
         self.input_path = config['species']['input']
@@ -67,7 +68,7 @@ class Database(object):
                 sys.stdout.write("Downloading DRIFT-PHOENIX atmospheric models, (151 MB)... ")
                 sys.stdout.flush()
 
-                urllib.urlretrieve(url, data_file)
+                six.moves.urllib.request.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
@@ -130,11 +131,26 @@ class Database(object):
                     grid[index_teff, index_logg, index_feh, :] = flux
 
             h5_file.create_group("models/"+model)
-            h5_file.create_dataset("models/"+model+"/teff", data=np.asarray(teff_sort))
-            h5_file.create_dataset("models/"+model+"/logg", data=np.asarray(logg_sort))
-            h5_file.create_dataset("models/"+model+"/feh", data=np.asarray(feh_sort))
-            h5_file.create_dataset("models/"+model+"/wavelength", data=wavelength)
-            h5_file.create_dataset("models/"+model+"/flux", data=grid)
+
+            h5_file.create_dataset("models/"+model+"/teff",
+                                   data=np.asarray(teff_sort),
+                                   dtype='f')
+
+            h5_file.create_dataset("models/"+model+"/logg",
+                                   data=np.asarray(logg_sort),
+                                   dtype='f')
+
+            h5_file.create_dataset("models/"+model+"/feh",
+                                   data=np.asarray(feh_sort),
+                                   dtype='f')
+
+            h5_file.create_dataset("models/"+model+"/wavelength",
+                                   data=wavelength,
+                                   dtype='f')
+
+            h5_file.create_dataset("models/"+model+"/flux",
+                                   data=grid,
+                                   dtype='f')
 
             sys.stdout.write("[DONE]\n")
             sys.stdout.flush()
@@ -164,7 +180,7 @@ class Database(object):
                 sys.stdout.write("Downloading Vega spectrum (270 kB)... ")
                 sys.stdout.flush()
 
-                urllib.urlretrieve(url, data_file)
+                six.moves.urllib.request.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
@@ -192,7 +208,8 @@ class Database(object):
             sys.stdout.flush()
 
             h5_file.create_dataset("spectra/calibration/vega",
-                                   data=np.vstack((wavelength, flux, error_stat)))
+                                   data=np.vstack((wavelength, flux, error_stat)),
+                                   dtype='f')
 
             sys.stdout.write("[DONE]\n")
             sys.stdout.flush()
@@ -224,7 +241,7 @@ class Database(object):
                     sys.stdout.write("Downloading IRTF Spectral Library - "+data_type[i]+"... ")
                     sys.stdout.flush()
 
-                    urllib.urlretrieve(url[i], item)
+                    six.moves.urllib.request.urlretrieve(url[i], item)
 
                     sys.stdout.write("[DONE]\n")
                     sys.stdout.flush()
@@ -267,10 +284,11 @@ class Database(object):
                             distance = species.parallax.get_distance(name) # [pc]
 
                             dset = h5_file.create_dataset("spectra/"+spectrum+"/"+filename[:-5],
-                                                          data=spdata)
+                                                          data=spdata,
+                                                          dtype='f')
 
-                            dset.attrs['name'] = name
-                            dset.attrs['sptype'] = spec
+                            dset.attrs['name'] = np.string_(name)
+                            dset.attrs['sptype'] = np.string_(spec)
                             dset.attrs['distance'] = distance
 
             sys.stdout.write("[DONE]\n")
@@ -302,7 +320,7 @@ class Database(object):
                 sys.stdout.write("Downloading Database of Ultracool Parallaxes (307 kB)... ")
                 sys.stdout.flush()
 
-                urllib.urlretrieve(url, data_file)
+                six.moves.urllib.request.urlretrieve(url, data_file)
 
                 sys.stdout.write("[DONE]\n")
                 sys.stdout.flush()
@@ -320,8 +338,8 @@ class Database(object):
             hdulist = fits.open(data_file)
             photdata = hdulist[1].data
 
-            parallax = photdata['PLX'] # [mas]
-            distance = 1./(parallax*1e-3) # [pc]
+            plx = photdata['PLX'] # [mas]
+            distance = 1./(plx*1e-3) # [pc]
 
             name = photdata['NAME']
             name = np.core.defchararray.strip(name)
@@ -332,21 +350,21 @@ class Database(object):
             flag = photdata['FLAG']
             flag = np.core.defchararray.strip(flag)
 
-            h5_file.create_dataset(group+"/name", data=name)
-            h5_file.create_dataset(group+"/sptype", data=sptype)
-            h5_file.create_dataset(group+"/flag", data=flag)
-            h5_file.create_dataset(group+"/distance", data=distance)
+            h5_file.create_dataset(group+"/name", data=name, dtype='S100')
+            h5_file.create_dataset(group+"/sptype", data=sptype, dtype='S10')
+            h5_file.create_dataset(group+"/flag", data=flag, dtype='S50')
+            h5_file.create_dataset(group+"/distance", data=distance, dtype='f')
 
-            h5_file.create_dataset(group+"/MKO/NSFCam.Y", data=photdata['YMAG'])
-            h5_file.create_dataset(group+"/MKO/NSFCam.J", data=photdata['JMAG'])
-            h5_file.create_dataset(group+"/MKO/NSFCam.H", data=photdata['HMAG'])
-            h5_file.create_dataset(group+"/MKO/NSFCam.K", data=photdata['KMAG'])
-            h5_file.create_dataset(group+"/MKO/NSFCam.Lp", data=photdata['LMAG'])
-            h5_file.create_dataset(group+"/MKO/NSFCam.Mp", data=photdata['MMAG'])
+            h5_file.create_dataset(group+"/MKO/NSFCam.Y", data=photdata['YMAG'], dtype='f')
+            h5_file.create_dataset(group+"/MKO/NSFCam.J", data=photdata['JMAG'], dtype='f')
+            h5_file.create_dataset(group+"/MKO/NSFCam.H", data=photdata['HMAG'], dtype='f')
+            h5_file.create_dataset(group+"/MKO/NSFCam.K", data=photdata['KMAG'], dtype='f')
+            h5_file.create_dataset(group+"/MKO/NSFCam.Lp", data=photdata['LMAG'], dtype='f')
+            h5_file.create_dataset(group+"/MKO/NSFCam.Mp", data=photdata['MMAG'], dtype='f')
 
-            h5_file.create_dataset(group+"/2MASS/2MASS.J", data=photdata['J2MAG'])
-            h5_file.create_dataset(group+"/2MASS/2MASS.H", data=photdata['H2MAG'])
-            h5_file.create_dataset(group+"/2MASS/2MASS.Ks", data=photdata['K2MAG'])
+            h5_file.create_dataset(group+"/2MASS/2MASS.J", data=photdata['J2MAG'], dtype='f')
+            h5_file.create_dataset(group+"/2MASS/2MASS.H", data=photdata['H2MAG'], dtype='f')
+            h5_file.create_dataset(group+"/2MASS/2MASS.Ks", data=photdata['K2MAG'], dtype='f')
 
             sys.stdout.write("[DONE]\n")
             sys.stdout.flush()
@@ -387,8 +405,8 @@ class Database(object):
         wavelength = []
         transmission = []
         for line in data.splitlines():
-            if not line.startswith("#"):
-                split = line.split(" ")
+            if not line.startswith(b"#"):
+                split = line.split(b" ")
 
                 wavelength.append(float(split[0])*1e-4) # [micron]
                 transmission.append(float(split[1]))
@@ -396,7 +414,9 @@ class Database(object):
         wavelength = np.array(wavelength)
         transmission = np.array(transmission)
 
-        h5_file.create_dataset("filters/"+filter_id, data=np.vstack((wavelength, transmission)))
+        h5_file.create_dataset("filters/"+filter_id,
+                               data=np.vstack((wavelength, transmission)),
+                               dtype='f')
 
         sys.stdout.write("[DONE]\n")
         sys.stdout.flush()
@@ -432,13 +452,17 @@ class Database(object):
         if "objects/"+object_name+"/distance" in h5_file:
             del h5_file["objects/"+object_name+"/distance"]
 
-        h5_file.create_dataset("objects/"+object_name+"/distance", data=distance) # [pc]
+        h5_file.create_dataset("objects/"+object_name+"/distance",
+                               data=distance,
+                               dtype='f') # [pc]
 
         for _, item in enumerate(app_mag):
             if "objects/"+object_name+"/"+item in h5_file:
                 del h5_file["objects/"+object_name+"/"+item]
 
-            h5_file.create_dataset("objects/"+object_name+"/"+item, data=app_mag[item]) # [mag]
+            h5_file.create_dataset("objects/"+object_name+"/"+item,
+                                   data=app_mag[item],
+                                   dtype='f') # [mag]
 
         sys.stdout.write("[DONE]\n")
         sys.stdout.flush()

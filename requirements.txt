@@ -1,8 +1,9 @@
-configparser ~= 3.5
-h5py ~= 2.8
-numpy ~= 1.15
-scipy ~= 1.1
-astropy ~= 2.0
-astroquery ~= 0.3
-matplotlib ~= 2.2
-requests ~= 2.20
+six
+configparser
+h5py
+numpy
+scipy
+astropy
+astroquery
+matplotlib
+requests

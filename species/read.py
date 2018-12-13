@@ -2,6 +2,8 @@
 Read module.
 """
 
+from __future__ import absolute_import
+
 import os
 import sys
 import configparser
@@ -46,7 +48,7 @@ class ReadModel(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -70,8 +72,8 @@ class ReadModel(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_model(self.model)
+            species_db = species.database.Database()
+            species_db.add_model(self.model)
             h5_file = h5py.File(self.database, 'r')
 
         wavelength = np.asarray(h5_file["models/"+self.model+"/wavelength"])
@@ -112,8 +114,8 @@ class ReadModel(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_model(self.model)
+            species_db = species.database.Database()
+            species_db.add_model(self.model)
             h5_file = h5py.File(self.database, 'r')
 
         wavelength = np.asarray(h5_file["models/"+self.model+"/wavelength"])
@@ -281,7 +283,7 @@ class ReadSpectrum(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -298,8 +300,8 @@ class ReadSpectrum(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_spectrum(self.spectrum)
+            species_db = species.database.Database()
+            species_db.add_spectrum(self.spectrum)
             h5_file = h5py.File(self.database, 'r')
 
         list_wavelength = []
@@ -381,7 +383,7 @@ class ReadFilter(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -398,8 +400,8 @@ class ReadFilter(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_filter(self.filter_name)
+            species_db = species.database.Database()
+            species_db.add_filter(self.filter_name)
             h5_file = h5py.File(self.database, 'r')
 
         data = h5_file["filters/"+self.filter_name]
@@ -484,7 +486,7 @@ class ReadColorMagnitude(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -504,8 +506,8 @@ class ReadColorMagnitude(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_photometry("vlm-plx")
+            species_db = species.database.Database()
+            species_db.add_photometry("vlm-plx")
             h5_file = h5py.File(self.database, 'r')
 
         sptype = np.asarray(h5_file["photometry/vlm-plx/sptype"])
@@ -513,7 +515,7 @@ class ReadColorMagnitude(object):
         distance = np.asarray(h5_file["photometry/vlm-plx/distance"]) # [pc]
 
         if object_type == "field":
-            indices = np.where(flag == "null")[0]
+            indices = np.where(flag == np.string_("null"))[0]
 
         mag1 = np.asarray(h5_file["photometry/vlm-plx/"+self.filters_color[0]])
         mag2 = np.asarray(h5_file["photometry/vlm-plx/"+self.filters_color[1]])
@@ -549,7 +551,7 @@ class ReadObject(object):
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read(config_file)
+        config.read_file(open(config_file))
 
         self.database = config['species']['database']
 
@@ -569,8 +571,8 @@ class ReadObject(object):
 
         except KeyError:
             h5_file.close()
-            database = species.database.Database()
-            database.add_filter(self.object_name)
+            species_db = species.database.Database()
+            species_db.add_filter(self.object_name)
             h5_file = h5py.File(self.database, 'r')
 
         return np.asarray(h5_file["objects/"+self.object_name+"/"+filter_name])
