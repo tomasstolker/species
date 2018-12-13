@@ -21,7 +21,7 @@ coverage:
 	coverage report -m
 
 test:
-	pytest
+	pytest --cov=species/
 
 test-all:
 	tox
