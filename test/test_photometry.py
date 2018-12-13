@@ -3,7 +3,8 @@ import shutil
 
 import numpy as np
 
-from species import SpeciesInit, SyntheticPhotometry
+from species.photometry import SyntheticPhotometry
+from species.setup import SpeciesInit
 
 
 class TestPhotometry(object):
