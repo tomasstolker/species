@@ -1,11 +1,10 @@
-.PHONY: help pypi docs coverage test test-all clean
+.PHONY: help pypi docs coverage test tox clean
 
 help:
 	@echo "pypi - submit package to the PyPI server"
 	@echo "docs - generate Sphinx documentation"
 	@echo "coverage - check code coverage"
 	@echo "test - run test cases"
-	@echo "test-all - run tests with tox"
 	@echo "clean - remove all artifacts"
 
 pypi:
@@ -23,16 +22,16 @@ coverage:
 test:
 	pytest --cov=species/
 
-test-all:
-	tox
-
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -rf {} +
-	rm -f coverage
+	rm -f .coverage
+	rm -f coverage.xml
+	rm -f junit-py27.xml
 	rm -rf .pytest_cache/
 	rm -rf docs/_build
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/
 	rm -rf htmlcov/
+	rm -rf .tox/
