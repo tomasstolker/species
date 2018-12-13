@@ -38,6 +38,7 @@ matrix:
 install:
   - pip install -r requirements.txt
   - pip install tox
+  - pip install pytest-cov
   - pip install coveralls
   - pip install sphinx
   - pip install sphinx_rtd_theme
