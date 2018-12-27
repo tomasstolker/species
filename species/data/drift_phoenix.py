@@ -5,7 +5,8 @@ Module for DRIFT-PHOENIX atmospheric models.
 import os
 import sys
 import tarfile
-import urllib.request
+
+from urllib.request import urlretrieve
 
 import numpy as np
 
@@ -35,7 +36,7 @@ def add_drift_phoenix(input_path,
         sys.stdout.write('Downloading DRIFT-PHOENIX model spectra (151 MB)...')
         sys.stdout.flush()
 
-        urllib.request.urlretrieve(url, data_file)
+        urlretrieve(url, data_file)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

@@ -5,7 +5,8 @@ Text
 import os
 import sys
 import warnings
-import urllib.request
+
+from urllib.request import urlretrieve
 
 import numpy as np
 
@@ -45,7 +46,7 @@ def add_spex(input_path, database):
 
     xml_file = os.path.join(data_path, 'spex.xml')
 
-    urllib.request.urlretrieve(url_all, xml_file)
+    urlretrieve(url_all, xml_file)
 
     table = parse_single_table(xml_file)
     name = table.array['name']
@@ -56,7 +57,7 @@ def add_spex(input_path, database):
 
     for i, item in enumerate(url):
         xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
-        urllib.request.urlretrieve(item.decode('utf-8'), xml_file)
+        urlretrieve(item.decode('utf-8'), xml_file)
 
         table = parse_single_table(xml_file)
         name = table.array['ID']
@@ -69,7 +70,7 @@ def add_spex(input_path, database):
         os.remove(xml_file)
 
         xml_file = os.path.join(data_path, name+'.xml')
-        urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file)
+        urlretrieve(url[0].decode('utf-8'), xml_file)
 
     sys.stdout.write('\rDownloading SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
     sys.stdout.flush()

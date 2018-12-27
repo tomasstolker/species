@@ -5,7 +5,8 @@ Text
 import os
 import sys
 
-import six
+from urllib.request import urlretrieve
+
 import numpy as np
 
 from astropy.io import fits
@@ -30,7 +31,7 @@ def add_vega(input_path, database):
         sys.stdout.write("Downloading Vega spectrum (270 kB)... ")
         sys.stdout.flush()
 
-        six.moves.urllib.request.urlretrieve(url, data_file)
+        urlretrieve(url, data_file)
 
         sys.stdout.write("[DONE]\n")
         sys.stdout.flush()

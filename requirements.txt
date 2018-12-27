@@ -1,4 +1,3 @@
-six
 configparser
 h5py
 numpy

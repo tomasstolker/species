@@ -5,7 +5,8 @@ Text
 import os
 import sys
 
-import six
+from urllib.request import urlretrieve
+
 import h5py
 import numpy as np
 
@@ -35,7 +36,7 @@ def add_vlm_plx(input_path, database):
         sys.stdout.write('Downloading Database of Ultracool Parallaxes (307 kB)...')
         sys.stdout.flush()
 
-        six.moves.urllib.request.urlretrieve(url, data_file)
+        urlretrieve(url, data_file)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()
