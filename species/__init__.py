@@ -33,7 +33,7 @@ from . plot.plot_mcmc import plot_posterior, \
 
 __author__ = 'Tomas Stolker'
 __license__ = 'GPLv3'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'tomas.stolker@phys.ethz.ch'
 __status__ = 'Development'
