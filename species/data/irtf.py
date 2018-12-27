@@ -6,7 +6,8 @@ import os
 import sys
 import tarfile
 
-import six
+from urllib.request import urlretrieve
+
 import numpy as np
 
 from astropy.io import fits
@@ -50,7 +51,7 @@ def add_irtf(input_path, database):
             sys.stdout.write('Downloading IRTF Spectral Library - '+data_type[i]+'...')
             sys.stdout.flush()
 
-            six.moves.urllib.request.urlretrieve(url[i], item)
+            urlretrieve(url[i], item)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()
