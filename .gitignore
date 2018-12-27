@@ -9,4 +9,3 @@ species.egg-info/
 htmlcov/
 coverage.xml
 .tox/
-junit-py27.xml

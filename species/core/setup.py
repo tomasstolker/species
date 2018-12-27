@@ -2,16 +2,16 @@
 Setup module.
 """
 
-from __future__ import absolute_import
-
 import os
 import sys
 import configparser
 
 import h5py
 
+import species
 
-class SpeciesInit(object):
+
+class SpeciesInit:
     """
     Text.
     """
@@ -28,35 +28,41 @@ class SpeciesInit(object):
         :return: None
         """
 
+        sys.stdout.write('Initiating SPECIES v'+species.__version__+'...')
+        sys.stdout.flush()
+
         self.database_path = database_path
         self.input_path = os.path.abspath(input_path)
 
-        database_file = os.path.join(self.database_path, "species_database.hdf5")
+        database_file = os.path.join(self.database_path, 'species_database.hdf5')
         database_file = os.path.abspath(database_file)
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()
 
         if not os.path.exists(self.input_path):
-            sys.stdout.write("Creating folder for input data... ")
+            sys.stdout.write('Creating input folder...')
             sys.stdout.flush()
 
             os.makedirs(self.input_path)
 
-            sys.stdout.write("[DONE]\n")
+            sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()
 
         if not os.path.isfile(database_file):
-            sys.stdout.write("Creating species_database.hdf5... ")
+            sys.stdout.write('Creating species_database.hdf5...')
             sys.stdout.flush()
 
             h5_file = h5py.File(database_file, 'w')
             h5_file.close()
 
-            sys.stdout.write("[DONE]\n")
+            sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()
 
         if not os.path.isfile(config_file):
-            sys.stdout.write("Creating species_config.ini... ")
+            sys.stdout.write('Creating species_config.ini...')
             sys.stdout.flush()
 
             config = configparser.ConfigParser()
@@ -68,5 +74,5 @@ class SpeciesInit(object):
             with open(config_file, 'w') as config_ini:
                 config.write(config_ini)
 
-            sys.stdout.write("[DONE]\n")
+            sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

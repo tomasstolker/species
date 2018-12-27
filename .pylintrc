@@ -1,0 +1,2 @@
+[TYPECHECK]
+ignored-classes=HDUList,VizierClass,astropy.units,matplotlib.cm

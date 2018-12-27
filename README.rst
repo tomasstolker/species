@@ -6,7 +6,7 @@ SPECIES
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
 
-.. image:: https://img.shields.io/badge/Python-2.7%2C%203.6%2C%203.7-yellow.svg?style=flat
+.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7-yellow.svg?style=flat
     :target: https://pypi.python.org/pypi/species
 
 .. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
@@ -24,7 +24,7 @@ SPECIES
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-SPECIES is a Python package for analyzing spectral and photometric data of planetary and substellar objects.
+SPECIES is a toolkit for analyzing spectral and photometric data of planetary and substellar objects.
 
 Documentation
 -------------
@@ -34,7 +34,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite Stolker et al. in prep. whenever results from SPECIES are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that SPECIES is using, such as the photometric libraries, spectral libraries, atmospheric models, filter transmission curves, photometry of individual objects, etc. More details will follow.
+Please cite Stolker et al. in prep. whenever results from SPECIES are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that SPECIES is using, such as the photometric and spectral libraries, atmospheric models, filter transmission curves, and photometry of individual objects. More details will follow.
 
 License
 -------

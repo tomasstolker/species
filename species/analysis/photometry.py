@@ -2,10 +2,7 @@
 Photometry module.
 """
 
-from __future__ import absolute_import
-
 import os
-import sys
 import configparser
 
 import h5py
@@ -13,8 +10,8 @@ import numpy as np
 
 from scipy.integrate import simps
 
-import species.database
-import species.read
+from .. data import database
+from .. read import read_filter, read_spectrum
 
 
 def apparent_to_absolute(app_mag, distance):
@@ -31,7 +28,7 @@ def apparent_to_absolute(app_mag, distance):
     return app_mag - 5.*np.log10(distance) + 5.
 
 
-class SyntheticPhotometry(object):
+class SyntheticPhotometry:
     """
     Text
     """
@@ -47,7 +44,7 @@ class SyntheticPhotometry(object):
         self.filter_name = filter_name
         self.filter_interp = None
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
         config = configparser.ConfigParser()
         config.read_file(open(config_file))
@@ -65,22 +62,25 @@ class SyntheticPhotometry(object):
         """
 
         if wl_range is None:
-            transmission = species.read.ReadFilter(self.filter_name)
+            transmission = read_filter.ReadFilter(self.filter_name)
             wl_range = transmission.wavelength_range()
 
         h5_file = h5py.File(self.database, 'r')
 
         try:
-            h5_file["spectra/calibration/vega"]
+            h5_file['spectra/calibration/vega']
 
         except KeyError:
             h5_file.close()
-            species_db = species.database.Database()
-            species_db.add_spectrum("vega")
+            species_db = database.Database()
+            species_db.add_spectrum('vega')
             h5_file = h5py.File(self.database, 'r')
 
-        spectrum = species.read.ReadSpectrum("calibration", None)
-        wavelength, flux = spectrum.get_spectrum(ignore_nan=True)
+        specdata = read_spectrum.ReadSpectrum('calibration', None)
+        specbox = specdata.get_spectrum()
+
+        wavelength = specbox.wavelength[0]
+        flux = specbox.flux[0]
 
         wavelength_crop = wavelength[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
         flux_crop = flux[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
@@ -99,7 +99,7 @@ class SyntheticPhotometry(object):
         """
 
         if self.filter_interp is None:
-            transmission = species.read.ReadFilter(self.filter_name)
+            transmission = read_filter.ReadFilter(self.filter_name)
             self.filter_interp = transmission.interpolate()
 
         if isinstance(wavelength[0], (np.float32, np.float64)):

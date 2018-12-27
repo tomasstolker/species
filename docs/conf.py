@@ -15,21 +15,23 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('..'))
-from species import __author__, __copyright__, __version__
+# sys.path.insert(0, os.path.abspath('..'))
+# from species import __author__, __copyright__, __version__
 
 
 # -- Project information -----------------------------------------------------
 
 project = u'SPECIES'
-copyright = __copyright__
-author = __author__
+copyright = '2019, Tomas Stolker'
+author = 'Tomas Stolker'
 
 # The short X.Y version
-version = __version__
+with open('../species/__init__.py') as initfile:
+    for line in initfile:
+        if '__version__' in line:
+            version = line.split("'")[1]
 # The full version, including alpha/beta/rc tags
-release = __version__
-
+release = version
 
 
 # -- General configuration ---------------------------------------------------
