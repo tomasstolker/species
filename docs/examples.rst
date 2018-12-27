@@ -43,7 +43,7 @@ The following code will download the IRTF spectral library and added to the data
 Color-magnitude diagram
 -----------------------
 
-In the following example we will first add photometric data of 51 Eri b (Rajan et al. 2017) to the database. Then we create a color-magnitude diagram (J-H vs. J) from the IRTF spectral library and add the data point of 51 Eri b (black square)::
+Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. Then a color-magnitude diagram (J-H vs. J) is created from the IRTF spectral library and the data point of 51 Eri b is added to the plot (black square)::
 
    import species
 
@@ -67,7 +67,7 @@ In the following example we will first add photometric data of 51 Eri b (Rajan e
 Atmospheric models
 ------------------
 
-In the last example we add the DRIFT-PHOENIX atmospheric models to the database. The grid is interpolated and we will obtain spectrum for a given set of parameter values and spectral resolution. The spectrum is then plotted together with several filter curves::
+In the last example, the DRIFT-PHOENIX atmospheric models are added to the database. The grid is then interpolated and a spectrum for a given set of parameter values and spectral resolution is computed. The spectrum is then plotted together with several filter curves::
 
    import species
 
@@ -83,7 +83,7 @@ In the last example we add the DRIFT-PHOENIX atmospheric models to the database.
    :width: 80%
    :align: center
 
-Or, we can also take a spectrum from the (discrete) grid with the original spectral resolution::
+Or, a spectrum with the original spectral resolution can be obtained from the (discrete) model grid::
 
    model = species.ReadModel("drift-phoenix", (1., 5.))
    spectrum = model.get_data({'teff':1200., 'logg':4.0, 'feh':0., 'radius':1., 'distance':10.})

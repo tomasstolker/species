@@ -12,7 +12,9 @@ pypi:
 	twine upload dist/*
 
 docs:
+	rm -f docs/species.*rst
 	sphinx-apidoc -o docs/ species
+	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 
 coverage:
@@ -27,7 +29,6 @@ clean:
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm -f .coverage
 	rm -f coverage.xml
-	rm -f junit-py27.xml
 	rm -rf .pytest_cache/
 	rm -rf docs/_build
 	rm -rf build/

@@ -1,49 +1,16 @@
 species package
 ===============
 
-Submodules
-----------
+Subpackages
+-----------
 
-species.database module
------------------------
+.. toctree::
 
-.. automodule:: species.database
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-species.parallax module
------------------------
-
-.. automodule:: species.parallax
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-species.photometry module
--------------------------
-
-.. automodule:: species.photometry
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-species.plot module
--------------------
-
-.. automodule:: species.plot
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-species.read module
--------------------
-
-.. automodule:: species.read
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+    species.analysis
+    species.core
+    species.data
+    species.plot
+    species.read
 
 Module contents
 ---------------

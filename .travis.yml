@@ -6,21 +6,9 @@ matrix:
         - os: osx
           language: generic
           env:
-            - TOXENV=py27
-            - COVERALLS_PARALLEL=true
-
-        - os: osx
-          language: generic
-          env:
             - TOXENV=py36
             - COVERALLS_PARALLEL=true
 
-        # - os: linux
-        #   python: 2.7
-        #   env:
-        #     - TOXENV=py27
-        #     - COVERALLS_PARALLEL=true
-        #
         # - os: linux
         #   python: 3.6
         #   env:

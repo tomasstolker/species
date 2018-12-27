@@ -6,4 +6,6 @@ scipy
 astropy
 astroquery
 matplotlib
-requests
+emcee
+corner
+progress
