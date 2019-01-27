@@ -198,7 +198,7 @@ class SyntheticPhotometry:
             error_upper = flux * (10.**(0.4*error) - 1.)
             error_lower = flux * (1. - 10.**(-0.4*error))
 
-        return flux, (error_lower, error_upper)
+        return flux, (error_lower+error_upper)/2.
 
     def flux_to_magnitude(self, flux, distance):
         """

@@ -33,31 +33,21 @@ class ReadObject:
 
         self.database = config['species']['database']
 
-    def get_magnitude(self, filter_name):
+    def get_photometry(self, filter_name):
         """
         :param filter_name: Filter name.
         :type filter_name: str
 
-        :return: Apparent magnitude (mag).
-        :rtype: float
+        :return: Wavelength (micron), apparent magnitude (mag), magnitude error (error),
+                 apparent flux (W m-2 micron-1), flux error (W m-2 micron-1).
+        :rtype: numpy.ndarray
         """
 
         h5_file = h5py.File(self.database, 'r')
-
-        try:
-            h5_file['objects/'+self.object_name]
-
-        except KeyError:
-            h5_file.close()
-            species_db = database.Database()
-            species_db.add_filter(self.object_name)
-            h5_file = h5py.File(self.database, 'r')
-
-        mag = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
-
+        photometry = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
         h5_file.close()
 
-        return mag
+        return photometry
 
     def get_distance(self):
         """

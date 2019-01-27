@@ -4,6 +4,14 @@ species.plot package
 Submodules
 ----------
 
+species.plot.plot\_chisquare module
+-----------------------------------
+
+.. automodule:: species.plot.plot_chisquare
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.plot.plot\_mcmc module
 ------------------------------
 

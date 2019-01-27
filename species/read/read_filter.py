@@ -8,8 +8,7 @@ import configparser
 import h5py
 import numpy as np
 
-from scipy.optimize import fsolve
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 
 from .. data import database
 
@@ -96,19 +95,15 @@ class ReadFilter:
 
         return filter_interp
 
-    def filter_width(self):
+    def filter_fwhm(self):
         """
-        :return: Filter width (micron).
+        :return: Filter full width at half maximum (micron).
         :rtype: float
         """
 
         data = self.get_filter()
 
-        wl_min, _ = self.wavelength_range()
-        wl_mean = self.mean_wavelength()
+        spline = InterpolatedUnivariateSpline(data[0, :], data[1, :]-np.max(data[1, :])/2.)
+        root1, root2 = spline.roots()
 
-        filter_interp = self.interpolate()
-
-        interp_shift = lambda x: filter_interp(x) - np.amax(data[1, ])/2.
-
-        return 2.*abs(wl_mean - fsolve(interp_shift, (wl_mean+wl_min)/2.)[0])
+        return root2-root1

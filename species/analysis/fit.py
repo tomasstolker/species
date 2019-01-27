@@ -12,10 +12,12 @@ import emcee
 import progress.bar
 import numpy as np
 
-from scipy.optimize import minimize
-
 from . import photometry
 from .. read import read_model, read_object
+
+
+min_chisq = np.inf
+min_param = None
 
 
 def lnprior(param,
@@ -72,6 +74,9 @@ def lnlike(param,
     :rtype: float
     """
 
+    global min_chisq
+    global min_param
+
     paramdict = {}
     for i, item in enumerate(modelpar):
         paramdict[item] = param[i]
@@ -83,6 +88,10 @@ def lnlike(param,
     for i, item in enumerate(objphot):
         flux = modelphot[i].get_photometry(paramdict, coverage, synphot[i])
         chisq += (item[0]-flux)**2 / item[1]**2
+
+    if chisq < min_chisq:
+        min_chisq = chisq
+        min_param = paramdict
 
     return -0.5*chisq
 
@@ -134,6 +143,65 @@ def lnprob(param,
     return ln_prob
 
 
+# def chisq_minimization(param_name,
+#                        modelphot,
+#                        synphot,
+#                        objphot,
+#                        coverage,
+#                        tolerance,
+#                        distance,
+#                        param_value):
+#     """
+#     :param param:
+#     :type param:
+#     :param modelpar:
+#     :type modelpar:
+#     :param modelphot:
+#     :type modelphot:
+#     :param synphot:
+#     :type synphot:
+#     :param objphot:
+#     :type objphot:
+#     :param coverage:
+#     :type coverage:
+#     :param distance:
+#     :type distance:
+#
+#     :return:
+#     :rtype:
+#     """
+#
+#     radius_init = 1.5 # [Rjup]
+#
+#     def _objective(arg):
+#         radius = arg[0]
+#
+#         parsec = 3.08567758147e16 # [m]
+#         r_jup = 71492000. # [m]
+#
+#         chisquare = 0.
+#
+#         for i, obj_item in enumerate(objphot):
+#             paramdict = {param_name[0]:param_value[0],
+#                          param_name[1]:param_value[1],
+#                          param_name[2]:param_value[2]}
+#
+#             flux = modelphot[i].get_photometry(paramdict, coverage, synphot[i])
+#
+#             scaling = (radius*r_jup)**2 / (distance*parsec)**2
+#             chisquare += (obj_item[0]-scaling*flux)**2 / obj_item[1]**2
+#
+#         return chisquare
+#
+#     result = minimize(fun=_objective,
+#                       x0=[radius_init],
+#                       method="Nelder-Mead",
+#                       tol=None,
+#                       options={'xatol':tolerance, 'fatol':float("inf")})
+#
+#     return result.x, result.fun
+
+
 class FitSpectrum:
     """
     Text
@@ -162,9 +230,6 @@ class FitSpectrum:
         self.coverage = coverage
         self.bounds = bounds
 
-        if self.model == 'drift-phoenix':
-            self.modelpar = ('teff', 'logg', 'feh', 'radius')
-
         self.objphot = []
         self.modelphot = []
         self.synphot = []
@@ -172,30 +237,34 @@ class FitSpectrum:
         for item in filters:
             readmodel = read_model.ReadModel(self.model, item)
             readmodel.interpolate()
-
             self.modelphot.append(readmodel)
 
-            mag = self.object.get_magnitude(item)
-
             sphot = photometry.SyntheticPhotometry(item)
-            flux_obj, error_obj = sphot.magnitude_to_flux(mag[0], mag[1])
-
             self.synphot.append(sphot)
-            self.objphot.append((flux_obj, (error_obj[0]+error_obj[1])/2.))
+
+            obj_phot = self.object.get_photometry(item)
+            self.objphot.append((obj_phot[2], obj_phot[3]))
+
+        self.modelpar = readmodel.get_parameters()
+        self.modelpar.append('radius')
 
         if not self.bounds:
             self.bounds = readmodel.get_bounds()
             self.bounds['radius'] = (0., 3.)
 
     def store_samples(self,
-                      samples,
+                      sampler,
                       model,
-                      tag):
+                      tag,
+                      chisquare):
         """
-        :param samples: MCMC samples.
-        :type samples: numpy.ndarray
+        :param sampler: Ensemble sampler.
+        :type sampler: emcee.ensemble.EnsembleSampler
         :param model: Atmospheric model.
         :type model: str
+        :param chisquare: Maximum likelihood solution. Tuple with the chi-square value and related
+                          parameter values.
+        :type chisquare: tuple(float, float)
 
         :return: None
         """
@@ -218,14 +287,37 @@ class FitSpectrum:
         if 'results/mcmc/'+tag in h5_file:
             del h5_file['results/mcmc/'+tag]
 
+        samples = sampler.chain
+
         dset = h5_file.create_dataset('results/mcmc/'+tag,
                                       data=samples,
                                       dtype='f')
 
         dset.attrs['model'] = str(model)
+        dset.attrs['distance'] = float(self.distance)
+        dset.attrs['nparam'] = int(len(self.modelpar))
 
         for i, item in enumerate(self.modelpar):
-            dset.attrs['parameter'+str(i+1)] = str(item)
+            dset.attrs['parameter'+str(i)] = str(item)
+
+        dset.attrs['min_chi'] = float(chisquare[0])
+        for i, item in enumerate(self.modelpar):
+            dset.attrs['chisquare'+str(i)] = float(chisquare[1][item])
+
+        mean_accep = np.mean(sampler.acceptance_fraction)
+        dset.attrs['acceptance'] = float(mean_accep)
+        print('Mean acceptance fraction: {0:.3f}'.format(mean_accep))
+
+        try:
+            int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
+            print('Integrated autocorrelation time =', int_auto)
+
+        except emcee.autocorr.AutocorrError:
+            int_auto = None
+
+        if int_auto is not None:
+            for i, item in enumerate(int_auto):
+                dset.attrs['autocorrelation'+str(i)] = float(item)
 
         h5_file.close()
 
@@ -239,16 +331,25 @@ class FitSpectrum:
         :return: None
         """
 
-        sigma = (5., 0.01, 0.01, 0.01)
+        global min_chisq
+        global min_param
+
+        sigma = {'teff':5., 'logg':0.01, 'feh':0.01, 'radius':0.01}
 
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()
 
-        ndim = len(guess)
+        ndim = len(self.bounds)
 
         initial = np.zeros((nwalkers, ndim))
         for i, item in enumerate(self.modelpar):
-            initial[:, i] = guess[item] + np.random.normal(0, sigma[i], nwalkers)
+            if guess[item] is not None:
+                initial[:, i] = guess[item] + np.random.normal(0, sigma[item], nwalkers)
+
+            else:
+                initial[:, i] = np.random.uniform(low=self.bounds[item][0],
+                                                  high=self.bounds[item][1],
+                                                  size=nwalkers)
 
         sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
                                         dim=ndim,
@@ -272,21 +373,21 @@ class FitSpectrum:
 
         progbar.finish()
 
-        self.store_samples(sampler.chain, self.model, tag)
-
-        mean_accep = np.mean(sampler.acceptance_fraction)
-        print('Mean acceptance fraction: {0:.3f}'.format(mean_accep))
-
-        int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
-        print('Integrated autocorrelation time = ', int_auto)
+        self.store_samples(sampler, self.model, tag, (min_chisq, min_param))
 
     def store_chisquare(self,
                         chisquare,
+                        points,
+                        param_name,
                         model,
                         tag):
         """
         :param chisquare: Chi-square values.
         :type chisquare: numpy.ndarray
+        :param points:
+        :type points: dict
+        :param param_name: Parameter names.
+        :type param_name: list
         :param model: Atmospheric model.
         :type model: str
         :param tag: Atmospheric model.
@@ -302,6 +403,17 @@ class FitSpectrum:
 
         database = config['species']['database']
 
+        dof = len(self.objphot)
+        chisquare /= float(dof)
+
+        index_min = np.argwhere(chisquare == np.min(chisquare))[0]
+
+        min_chisquare = np.min(chisquare)
+        min_teff = points[param_name[0]][index_min[0]]
+        min_logg = points[param_name[1]][index_min[1]]
+        min_feh = points[param_name[2]][index_min[2]]
+        min_radius = points[param_name[3]][index_min[3]]
+
         h5_file = h5py.File(database, 'a')
 
         if 'results' not in h5_file:
@@ -313,107 +425,99 @@ class FitSpectrum:
         if 'results/chisquare/'+tag in h5_file:
             del h5_file['results/chisquare/'+tag]
 
-        dset = h5_file.create_dataset('results/chisquare/'+tag,
-                                      data=chisquare,
-                                      dtype='f')
+        h5_file.create_dataset('results/chisquare/'+tag+'/chisquare',
+                               data=chisquare,
+                               dtype='f')
+
+        dset = h5_file['results/chisquare/'+tag+'']
 
         dset.attrs['model'] = str(model)
+        dset.attrs['nparam'] = int(len(self.modelpar))
+        dset.attrs['dof'] = int(dof)
+        dset.attrs['chi2'] = float(min_chisquare)
+        dset.attrs['teff'] = float(min_teff)
+        dset.attrs['logg'] = float(min_logg)
+        dset.attrs['feh'] = float(min_feh)
+        dset.attrs['radius'] = float(min_radius)
 
         for i, item in enumerate(self.modelpar):
-            dset.attrs['parameter'+str(i+1)] = str(item)
+            dset.attrs['parameter'+str(i)] = str(item)
+
+            h5_file.create_dataset('results/chisquare/'+tag+'/'+item,
+                                   data=points[item],
+                                   dtype='f')
+
+        # print('Degrees of freedom =', dof)
+        # print('Reduced chi-square =', min_chisquare)
+        # print('Teff [K] =', min_teff)
+        # print('log g =', min_logg)
+        # print('[Fe/H] =', min_feh)
+        # print('Radius [Rjup] =', min_radius)
 
         h5_file.close()
 
     def run_chisquare(self,
-                      tolerance,
-                      step,
+                      steps,
+                      radius,
                       tag):
         """
-        :param tolerance:
-        :type tolerance: float
+        :param steps:
+        :type steps: dict
+        :param radius:
+        :type radius: tuple(float, float, int)
         :param tag:
         :type tag: str
 
         :return:
         """
 
-        def _objective(arg,
-                       params,
-                       param_item1,
-                       param_item2,
-                       param_item3):
-            radius = arg[0]
-            chisquare = 0.
-
-            for i, obj_item in enumerate(self.objphot):
-                paramdict = {params[0]:param_item1,
-                             params[1]:param_item2,
-                             params[2]:param_item3}
-
-                flux = self.modelphot[i].get_photometry(paramdict, self.coverage, self.synphot[i])
-
-                scaling = (radius*self.r_jup)**2 / (self.distance*self.parsec)**2
-                chisquare += (obj_item[0]-scaling*flux)**2 / obj_item[1]**2
-
-            return chisquare
-
         sys.stdout.write('Running chi-square minimization...')
         sys.stdout.flush()
 
-        radius_init = 1.5 # [Rjup]
-
         readmodel = read_model.ReadModel(self.model, None)
 
-        if not step:
-            points = readmodel.get_points()
-
-        else:
+        if steps:
             bounds = readmodel.get_bounds()
 
             points = {}
             for i, item in enumerate(bounds):
-                points[item] = np.arange(bounds[item][0], bounds[item][1], step[item])
+                points[item] = np.linspace(bounds[item][0], bounds[item][1], steps[item])
+
+        else:
+            points = readmodel.get_points()
+
+        points['radius'] = np.linspace(radius[0], radius[1], radius[2])
 
         nparam = len(points)
-        params = list(points)
+        param_name = list(points)
 
-        shape = (len(points[params[0]]), len(points[params[1]]), len(points[params[2]]))
-        chisquare = r_planet = np.zeros(shape)
+        shape = (len(points[param_name[0]]),
+                 len(points[param_name[1]]),
+                 len(points[param_name[2]]),
+                 len(points[param_name[3]]))
 
-        if nparam == 3:
+        chisquare = np.zeros(shape)
 
-            progbar = progress.bar.Bar('\rRunning chi-square minimization...',
-                                       max=len(points[params[0]]),
-                                       suffix='%(percent)d%%')
+        if nparam == 4:
+            for i, param_item0 in enumerate(points[param_name[0]]):
+                for j, param_item1 in enumerate(points[param_name[1]]):
+                    for k, param_item2 in enumerate(points[param_name[2]]):
+                        for m, param_item3 in enumerate(points[param_name[3]]):
 
-            for i, param_item1 in enumerate(points[params[0]]):
-                for j, param_item2 in enumerate(points[params[1]]):
-                    for k, param_item3 in enumerate(points[params[2]]):
+                            paramdict = {param_name[0]:param_item0,
+                                         param_name[1]:param_item1,
+                                         param_name[2]:param_item2,
+                                         param_name[3]:param_item3,
+                                         'distance':self.distance}
 
-                        result = minimize(fun=_objective,
-                                          x0=[radius_init],
-                                          args=(params, param_item1, param_item2, param_item3),
-                                          method="Nelder-Mead",
-                                          tol=None,
-                                          options={'xatol':tolerance, 'fatol':float("inf")})
+                            for n, obj_item in enumerate(self.objphot):
+                                flux = self.modelphot[n].get_photometry(paramdict,
+                                                                        self.coverage,
+                                                                        self.synphot[n])
 
-                        if result.success:
-                            chisquare[i, j, k] = result.x
-                            r_planet[i, j, k] = result.fun
+                                chisquare[i, j, k, m] += (obj_item[0]-flux)**2 / obj_item[1]**2
 
-                progbar.next()
-            progbar.finish()
+        self.store_chisquare(chisquare, points, param_name, self.model, tag)
 
-        index_min = np.argwhere(chisquare == np.min(chisquare))[0]
-
-        dof = float(len(self.objphot))
-        chisquare /= dof
-
-        self.store_chisquare(chisquare, self.model, tag)
-
-        print('Degrees of freedom =', str(int(dof)))
-        print('Reduced chi-square =', str(np.min(chisquare)))
-        print('Teff [K] =', str(points[params[0]][index_min[0]]))
-        print('log g =', str(points[params[1]][index_min[1]]))
-        print('[Fe/H] =', str(points[params[2]][index_min[2]]))
-        print('Radius [Rjup] =', str(r_planet[index_min[0], index_min[1], index_min[2]]))
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()

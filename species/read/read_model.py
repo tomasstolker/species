@@ -9,11 +9,27 @@ import h5py
 import numpy as np
 
 from scipy.interpolate import RegularGridInterpolator
+from PyAstronomy.pyasl import instrBroadGaussFast
 
+from . import read_filter
 from .. analysis import photometry
 from .. core import box
 from .. data import database
-from . import read_filter
+
+
+def multi_photometry(model,
+                     filters,
+                     parameters):
+    """
+    Text
+    """
+
+    flux = {}
+    for item in filters:
+        readmodel = ReadModel(model, item)
+        flux[item] = readmodel.get_photometry(parameters, ('specres', 100.))
+
+    return box.create_box('synphot', name='synphot', flux=flux)
 
 
 class ReadModel:
@@ -125,7 +141,7 @@ class ReadModel:
         self.spectrum_interp = RegularGridInterpolator(points=points,
                                                        values=flux,
                                                        method='linear',
-                                                       bounds_error=True,
+                                                       bounds_error=False,
                                                        fill_value=np.nan)
 
     def get_data(self,
@@ -212,6 +228,10 @@ class ReadModel:
         :rtype: species.core.box.ModelBox
         """
 
+        if not self.wavelength:
+            wl_points = self.get_wavelength()
+            self.wavelength = (wl_points[0], wl_points[-1])
+
         if self.spectrum_interp is None:
             self.interpolate()
 
@@ -229,6 +249,9 @@ class ReadModel:
 
         elif coverage[0] == 'wavelength':
             wavelength = coverage[1]
+
+        elif coverage[0] == 'gaussian':
+            wavelength = np.linspace(self.wavelength[0], self.wavelength[1], coverage[1][0])
 
         flux = np.zeros(wavelength.shape)
 
@@ -274,16 +297,20 @@ class ReadModel:
             scaling = (model_par['radius']*self.r_jup)**2 / (model_par['distance']*self.parsec)**2
             flux *= scaling
 
-        modelbox = box.ModelBox()
+        if coverage[0] == 'gaussian':
+            index = np.where(np.isnan(flux))[0]
 
-        modelbox.model = 'drift-phoenix'
-        modelbox.wavelength = wavelength
-        modelbox.flux = flux
-        modelbox.teff = model_par['teff']
-        modelbox.logg = model_par['logg']
-        modelbox.feh = model_par['feh']
+            wavelength = np.delete(wavelength, index)
+            flux = np.delete(flux, index)
 
-        return modelbox
+            flux = instrBroadGaussFast(wavelength, flux, coverage[1][1])
+
+        return box.create_box(boxtype='model',
+                              model='drift-phoenix',
+                              wavelength=wavelength,
+                              flux=flux,
+                              par_key=tuple(model_par.keys()),
+                              par_val=tuple(model_par.values()))
 
     def get_photometry(self,
                        model_par,
@@ -368,6 +395,18 @@ class ReadModel:
 
         return bounds
 
+    def get_wavelength(self):
+        """
+        :return:
+        :rtype:
+        """
+
+        h5_file = self.open_database()
+        wavelength = np.asarray(h5_file['models/'+self.model+'/wavelength'])
+        h5_file.close()
+
+        return wavelength
+
     def get_points(self):
         """
         :return:
@@ -391,3 +430,20 @@ class ReadModel:
         h5_file.close()
 
         return points
+
+    def get_parameters(self):
+        """
+        :return: Model parameters.
+        :rtype: list(str, )
+        """
+
+        h5_file = self.open_database()
+
+        dset = h5_file['models/'+self.model]
+        nparam = dset.attrs['nparam']
+
+        param = []
+        for i in range(nparam):
+            param.append(dset.attrs['parameter'+str(i)])
+
+        return param

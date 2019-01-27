@@ -16,7 +16,6 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath('..'))
-# from species import __author__, __copyright__, __version__
 
 
 # -- Project information -----------------------------------------------------
@@ -30,6 +29,7 @@ with open('../species/__init__.py') as initfile:
     for line in initfile:
         if '__version__' in line:
             version = line.split("'")[1]
+
 # The full version, including alpha/beta/rc tags
 release = version
 
@@ -107,6 +107,14 @@ html_static_path = ['_images']
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
+
+# html_logo = '_images/logo.png'
+# html_search_language = 'en'
+
+html_context = {'display_github': True,
+                'github_user': 'tomasstolker',
+                'github_repo': 'species',
+                'github_version': 'master/docs/'}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
