@@ -144,7 +144,12 @@ def write_data(database,
     if 'models/drift-phoenix' in database:
         del database['models/drift-phoenix']
 
-    database.create_group('models/drift-phoenix')
+    dset = database.create_group('models/drift-phoenix')
+
+    dset.attrs['nparam'] = int(3)
+    dset.attrs['parameter0'] = str('teff')
+    dset.attrs['parameter1'] = str('logg')
+    dset.attrs['parameter2'] = str('feh')
 
     database.create_dataset('models/drift-phoenix/teff',
                             data=data_sorted[0],

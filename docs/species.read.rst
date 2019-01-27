@@ -36,6 +36,14 @@ species.read.read\_object module
     :undoc-members:
     :show-inheritance:
 
+species.read.read\_result module
+--------------------------------
+
+.. automodule:: species.read.read_result
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.read.read\_spectrum module
 ----------------------------------
 

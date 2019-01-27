@@ -10,6 +10,9 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from . util import update_labels
+from .. data import database
+
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
@@ -17,35 +20,7 @@ mpl.rcParams['font.family'] = 'serif'
 plt.rc('axes', edgecolor='black', linewidth=2)
 
 
-def update_labels(param):
-    """
-    :param param:
-    :type param: list
-
-    :return:
-    :rtype: list
-    """
-
-    if 'teff' in param:
-        index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ [K]'
-
-    if 'logg' in param:
-        index = param.index('logg')
-        param[index] = r'$\log\,g$'
-
-    if 'feh' in param:
-        index = param.index('feh')
-        param[index] = r'[Fe/H]'
-
-    if 'radius' in param:
-        index = param.index('radius')
-        param[index] = r'$R$ [$\mathregular{R_{Jup}}$]'
-
-    return param
-
-
-def plot_walkers(box,
+def plot_walkers(tag,
                  output,
                  nsteps=None):
     """
@@ -58,10 +33,11 @@ def plot_walkers(box,
     sys.stdout.write('Plotting walkers: '+output+'...')
     sys.stdout.flush()
 
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+
     samples = box.samples
     labels = update_labels(box.parameters)
-
-    # ndim = samples.shape[2]
 
     plt.figure(1, figsize=(6, 5))
     gridsp = mpl.gridspec.GridSpec(4, 1)
@@ -119,7 +95,7 @@ def plot_walkers(box,
     sys.stdout.flush()
 
 
-def plot_posterior(box,
+def plot_posterior(tag,
                    burnin,
                    title,
                    output):
@@ -132,6 +108,9 @@ def plot_posterior(box,
 
     sys.stdout.write('Plotting posteriors: '+output+'...')
     sys.stdout.flush()
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
 
     samples = box.samples
     labels = update_labels(box.parameters)
@@ -155,24 +134,17 @@ def plot_posterior(box,
             ax.get_xaxis().set_label_coords(0.5, -0.26)
             ax.get_yaxis().set_label_coords(-0.27, 0.5)
 
-    # for i in range(ndim):
-    #     ax = axes[i, i]
-    #     ax.axvline(simplex[i], color="tomato")
-    #
-    # ax = axes[1, 0]
-    # ax.axvline(simplex[0], color="tomato")
-    # ax.axhline(simplex[1], color="tomato")
-    # ax.plot(simplex[0], simplex[1], "s", color="tomato")
-    #
-    # ax = axes[2, 0]
-    # ax.axvline(simplex[0], color="tomato")
-    # ax.axhline(simplex[2], color="tomato")
-    # ax.plot(simplex[0], simplex[2], "s", color="tomato")
-    #
-    # ax = axes[2, 1]
-    # ax.axvline(simplex[1], color="tomato")
-    # ax.axhline(simplex[2], color="tomato")
-    # ax.plot(simplex[1], simplex[2], "s", color="tomato")
+    par_val = box.chisquare
+
+    for i in range(ndim):
+        ax = axes[i, i]
+        ax.axvline(par_val[i], color="tomato")
+
+        for j in range(i+1, ndim):
+            ax = axes[j, i]
+            ax.axvline(par_val[i], color="tomato")
+            ax.axhline(par_val[j], color="tomato")
+            ax.plot(par_val[i], par_val[j], "s", color="tomato")
 
     fig.suptitle(title, y=1.02, fontsize=16)
 

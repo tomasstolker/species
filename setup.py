@@ -12,8 +12,8 @@ reqs = [str(ir.req) for ir in reqs]
 
 setup(
     name='species',
-    version='0.0.2',
-    description='Toolkit for analyzing spectral and photometric data of planetary and substellar objects',
+    version='0.0.3',
+    description='Toolkit for analyzing spectral and photometric data of planetary and substellar atmospheres',
     long_description=open('README.rst').read(),
     author='Tomas Stolker',
     author_email='tomas.stolker@phys.ethz.ch',
