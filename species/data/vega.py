@@ -25,7 +25,7 @@ def add_vega(input_path, database):
     """
 
     data_file = os.path.join(input_path, "alpha_lyr_stis_008.fits")
-    url = "ftp://ftp.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits"
+    url = "http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits"
 
     if not os.path.isfile(data_file):
         sys.stdout.write("Downloading Vega spectrum (270 kB)... ")

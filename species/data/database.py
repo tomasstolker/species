@@ -8,17 +8,23 @@ import warnings
 import configparser
 
 import h5py
-import requests
 import numpy as np
+
+from astropy.io import votable
 
 from .. analysis import photometry
 from .. core import box
 from .. read import read_model
 from . import drift_phoenix
+from . import btnextgen
 from . import vega
 from . import irtf
 from . import spex
 from . import vlm_plx
+from . import leggett
+from . import companions
+from . import filters
+from . import util
 
 
 warnings.simplefilter('ignore', UserWarning)
@@ -72,6 +78,42 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         descend(h5_file)
 
+    def list_companions(self):
+        """
+        :return: None
+        """
+
+        print('Database: '+self.database)
+
+        sys.stdout.write('Directly imaged companions: ')
+        sys.stdout.flush()
+
+        comp_phot = companions.get_data()
+
+        print(list(comp_phot.keys()))
+
+    def add_companion(self,
+                      name=None):
+        """
+        :param name: Companion name. All companions are added if set to None.
+        :type name: tuple(str, )
+
+        :return: None
+        """
+
+        if isinstance(name, str):
+            name = tuple((name, ))
+
+        data = companions.get_data()
+
+        if name is None:
+            name = data.keys()
+
+        for item in name:
+            self.add_object(object_name=item,
+                            distance=data[item]['distance'],
+                            app_mag=data[item]['app_mag'])
+
     def add_filter(self,
                    filter_id,
                    filename=None):
@@ -103,29 +145,13 @@ class Database:
         sys.stdout.write('Adding filter: '+filter_id+'...')
         sys.stdout.flush()
 
-        url = 'http://svo2.cab.inta-csic.es/svo/theory/fps/getdata.php?format=ascii&id='+filter_id
-
         if filename:
             data = np.loadtxt(filename)
             wavelength = data[:, 0]
             transmission = data[:, 1]
 
         else:
-            session = requests.Session()
-            response = session.get(url)
-            data = response.content
-
-            wavelength = []
-            transmission = []
-            for line in data.splitlines():
-                if not line.startswith(b'#'):
-                    split = line.split(b' ')
-
-                    wavelength.append(float(split[0])*1e-4) # [micron]
-                    transmission.append(float(split[1]))
-
-            wavelength = np.array(wavelength)
-            transmission = np.array(transmission)
+            wavelength, transmission = filters.download_filter(filter_id)
 
         h5_file.create_dataset('filters/'+filter_id,
                                data=np.vstack((wavelength, transmission)),
@@ -137,10 +163,16 @@ class Database:
         h5_file.close()
 
     def add_model(self,
-                  model):
+                  model,
+                  wavelength=None,
+                  teff=None):
         """
         :param model: Model name.
         :type model: str
+        :param wavelength: Wavelength (micron) range.
+        :type wavelength: tuple(float, float)
+        :param teff: Effective temperature (K) range.
+        :type teff: tuple(float, float)
 
         :return: None
         """
@@ -152,10 +184,11 @@ class Database:
 
         if model[0:13] == 'drift-phoenix':
             drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
-            drift_phoenix.add_missing(h5_file)
 
-        # elif model[0:9] == 'petitcode':
-        #     petitcode.add_petitcode(self.input_path, h5_file)
+        elif model[0:10] == 'bt-nextgen':
+            btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff)
+
+        util.add_missing(model, h5_file)
 
         h5_file.close()
 
@@ -240,6 +273,9 @@ class Database:
         if library[0:7] == 'vlm-plx':
             vlm_plx.add_vlm_plx(self.input_path, h5_file)
 
+        elif library[0:7] == 'leggett':
+            leggett.add_leggett(self.input_path, h5_file)
+
         h5_file.close()
 
     def add_spectrum(self,
@@ -267,6 +303,88 @@ class Database:
 
         elif spectrum[0:5] == 'spex':
             spex.add_spex(self.input_path, h5_file)
+
+        h5_file.close()
+
+    def add_votable(self,
+                    object_name,
+                    distance,
+                    filename):
+        """
+        :param object_name: Object name.
+        :type object_name: str
+        :param distance: Distance (pc).
+        :type distance: float
+        :param filename: Filename.
+        :type filename: str
+
+        :return: None
+        """
+
+        cc = 299792458. # [m s-1]
+
+        # flux = {}
+        # error = {}
+        #
+        # for item in app_mag:
+        #     mag = app_mag[item]
+        #
+        #     synphot = photometry.SyntheticPhotometry(item)
+        #     flux[item], error[item] = synphot.magnitude_to_flux(mag[0], mag[1])
+
+        sys.stdout.write('Adding object from VOTable: '+object_name+'...')
+        sys.stdout.flush()
+
+        table = votable.parse_single_table(filename)
+
+        frequency = table.array['sed_freq'] # Mean frequency [GHz]
+        flux = table.array['_sed_flux'] # Flux density [Jy]
+        error = table.array['_sed_eflux'] # [Jy]
+        filter_name = table.array['_sed_filter']
+
+        wavelength = 1e6*cc/(frequency*1e9) # [micron]
+
+        conversion = 1e-6*1e-26*cc/(wavelength*1e-6)**2
+
+        flux *= conversion # [W m-2 micron-1]
+        error *= conversion # [W m-2 micron-1]
+
+        h5_file = h5py.File(self.database, 'a')
+
+        if 'objects' not in h5_file:
+            h5_file.create_group('objects')
+
+        if 'objects/'+object_name not in h5_file:
+            h5_file.create_group('objects/'+object_name)
+
+        if 'objects/'+object_name+'/distance' in h5_file:
+            del h5_file['objects/'+object_name+'/distance']
+
+        h5_file.create_dataset('objects/'+object_name+'/distance',
+                               data=distance,
+                               dtype='f') # [pc]
+
+        for i, item in enumerate(filter_name):
+            filter_id = util.update_filter(item)
+
+            if filter_id is None:
+                continue
+
+            if 'objects/'+object_name+'/'+filter_id in h5_file:
+                del h5_file['objects/'+object_name+'/'+filter_id]
+
+            data = np.asarray([np.nan,
+                               np.nan,
+                               flux[i],
+                               error[i]])
+
+            # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
+            h5_file.create_dataset('objects/'+object_name+'/'+filter_id,
+                                   data=data,
+                                   dtype='f')
+
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()
 
         h5_file.close()
 
@@ -302,21 +420,21 @@ class Database:
                          burnin,
                          random,
                          wavelength,
-                         coverage):
+                         sampling):
 
         """
-        :param tag:
+        :param tag: Database tag with the MCMC samples.
         :type tag: str
-        :param burnin:
+        :param burnin: Number of burnin steps.
         :type burnin: int
-        :param random:
+        :param random: Number of random samples.
         :type random: int
-        :param coverage:
-        :type coverage: tuple
-        :param coverage:
-        :type coverage: tuple
+        :param wavelength: Wavelength range (micron) or filter name. Full spectrum if set to None.
+        :type wavelength: tuple(float, float) or str
+        :param sampling: Spectral sampling.
+        :type sampling: tuple
 
-        :return:
+        :return: Boxes with the randomly sampled spectra.
         :rtype: tuple(species.core.box.ModelBox, )
         """
 
@@ -348,7 +466,7 @@ class Database:
 
             model_par['distance'] = distance
 
-            modelbox = readmodel.get_model(model_par, coverage)
+            modelbox = readmodel.get_model(model_par, sampling)
             modelbox.type = 'mcmc'
 
             boxes.append(modelbox)
@@ -359,14 +477,15 @@ class Database:
 
     def get_object(self,
                    object_name,
-                   filters):
+                   filter_id):
         """
-        :param object_name:
+        :param object_name: Object name in the database.
         :type object_name: str
-        :param filters:
-        :type filters: tuple(str, )
+        :param filter_id: Filter IDs for which the photometry is selected. All available photometry
+                          of the object is selected if set to None.
+        :type filter_id: tuple(str, )
 
-        :return:
+        :return: Box with the object.
         :rtype: species.core.box.ObjectBox
         """
 
@@ -378,16 +497,27 @@ class Database:
         magnitude = {}
         flux = {}
 
-        for item in filters:
-            data = dset[item]
+        if filter_id:
+            for item in filter_id:
+                data = dset[item]
 
-            magnitude[item] = np.asarray(data[0:2])
-            flux[item] = np.asarray(data[2:4])
+                magnitude[item] = np.asarray(data[0:2])
+                flux[item] = np.asarray(data[2:4])
+
+        else:
+            for key in dset.keys():
+                if key != 'distance':
+                    for item in dset[key]:
+                        name = key+'/'+item
+
+                        magnitude[name] = np.asarray(dset[name][0:2])
+                        flux[name] = np.asarray(dset[name][2:4])
 
         h5_file.close()
 
         return box.create_box('object',
                               name=object_name,
+                              filter=tuple(magnitude.keys()),
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance)

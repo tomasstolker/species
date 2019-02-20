@@ -8,8 +8,6 @@ import configparser
 import h5py
 import numpy as np
 
-from .. data import database
-
 
 class ReadObject:
     """

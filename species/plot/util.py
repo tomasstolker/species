@@ -43,6 +43,9 @@ def model_name(key):
     if key == 'drift-phoenix':
         name = 'DRIFT-PHOENIX'
 
+    elif key == 'bt-nextgen':
+        name = 'BT-NextGen'
+
     return name
 
 
@@ -72,6 +75,18 @@ def quantity_unit(param):
 
     if 'radius' in param:
         quantity.append(r'$R$')
-        unit.append(r'$\mathregular{R_{Jup}}$')
+        unit.append(r'$R_\mathregular{Jup}}$')
+
+    if 'distance' in param:
+        quantity.append(r'$d$')
+        unit.append('pc')
+
+    if 'mass' in param:
+        quantity.append(r'$M$')
+        unit.append(r'$M_\mathregular{Jup}$')
+
+    if 'luminosity' in param:
+        quantity.append(r'$L$')
+        unit.append(r'$L_\odot$')
 
     return quantity, unit
