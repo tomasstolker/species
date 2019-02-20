@@ -25,8 +25,6 @@ from species.data.database import Database
 
 from species.data.queries import get_distance
 
-from species.plot.plot_chisquare import plot_chisquare
-
 from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers
 

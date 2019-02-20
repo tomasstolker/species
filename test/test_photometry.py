@@ -3,11 +3,11 @@ import shutil
 
 import numpy as np
 
-import species.analysis.photometry
-import species.core.setup
+import species
+from . import tools
 
 
-class TestPhotometry(object):
+class TestPhotometry:
 
     def setup_class(self):
         self.limit = 1e-10
@@ -18,20 +18,21 @@ class TestPhotometry(object):
         shutil.rmtree("data/")
 
     def test_species_init(self):
-        species.core.setup.SpeciesInit("./", "./data")
+        tools.create_config()
+        species.SpeciesInit("./")
 
     def test_synthetic_photometry(self):
-        species.analysis.photometry.SyntheticPhotometry("MKO/NSFCam.J")
+        species.SyntheticPhotometry("MKO/NSFCam.J")
 
     def test_magnitude_to_flux(self):
-        synphot = species.analysis.photometry.SyntheticPhotometry("MKO/NSFCam.J")
+        synphot = species.SyntheticPhotometry("MKO/NSFCam.J")
         flux, error = synphot.magnitude_to_flux(20., 0.5)
 
         assert np.allclose(flux, 3.104539116258e-17, rtol=self.limit, atol=0.)
-        assert np.allclose(error, (1.1457073596289663e-17, 1.815823794828546e-17), rtol=self.limit, atol=0.)
+        assert np.allclose(error, 1.4807655772287564e-17, rtol=self.limit, atol=0.)
 
     def test_flux_to_magnitude(self):
-        synphot = species.analysis.photometry.SyntheticPhotometry("MKO/NSFCam.J")
+        synphot = species.SyntheticPhotometry("MKO/NSFCam.J")
         app_mag, abs_mag = synphot.flux_to_magnitude(1e-10, 50.)
 
         assert np.allclose(app_mag, 3.72999284049042, rtol=self.limit, atol=0.)

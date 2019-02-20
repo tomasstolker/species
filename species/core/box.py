@@ -24,8 +24,7 @@ def create_box(boxtype, **kwargs):
         box.model = kwargs['model']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
-        box.par_key = kwargs['par_key']
-        box.par_val = kwargs['par_val']
+        box.parameters = kwargs['parameters']
 
     elif boxtype == 'photometry':
         box = PhotometryBox()
@@ -36,6 +35,7 @@ def create_box(boxtype, **kwargs):
     elif boxtype == 'object':
         box = ObjectBox()
         box.name = kwargs['name']
+        box.filter = kwargs['filter']
         box.magnitude = kwargs['magnitude']
         box.flux = kwargs['flux']
         box.distance = kwargs['distance']
@@ -94,8 +94,7 @@ class ModelBox:
         self.type = None
         self.wavelength = None
         self.flux = None
-        self.par_key = None
-        self.par_val = None
+        self.parameters = None
 
 
 class PhotometryBox:
@@ -139,6 +138,7 @@ class ObjectBox:
         """
 
         self.name = None
+        self.filter = None
         self.magnitude = None
         self.flux = None
         self.distance = None

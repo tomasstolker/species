@@ -17,13 +17,10 @@ class SpeciesInit:
     """
 
     def __init__(self,
-                 database_path,
-                 input_path):
+                 config_path):
         """
-        :param database_path: Database location.
-        :type database_path: str
-        :param input_path: Input data location.
-        :type input_path: str
+        :param config_path: Location of the configuration file (species_config.ini).
+        :type config_path: str
 
         :return: None
         """
@@ -31,22 +28,24 @@ class SpeciesInit:
         sys.stdout.write('Initiating SPECIES v'+species.__version__+'...')
         sys.stdout.flush()
 
-        self.database_path = database_path
-        self.input_path = os.path.abspath(input_path)
+        self.config_path = config_path
 
-        database_file = os.path.join(self.database_path, 'species_database.hdf5')
-        database_file = os.path.abspath(database_file)
+        config_file = os.path.join(self.config_path, 'species_config.ini')
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        config = configparser.ConfigParser()
+        config.read_file(open(config_file))
+
+        database_file = config['species']['database']
+        input_path = config['species']['input']
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()
 
-        if not os.path.exists(self.input_path):
+        if not os.path.exists(input_path):
             sys.stdout.write('Creating input folder...')
             sys.stdout.flush()
 
-            os.makedirs(self.input_path)
+            os.makedirs(input_path)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()
@@ -69,7 +68,7 @@ class SpeciesInit:
 
             config['species'] = {'database': database_file,
                                  'config':config_file,
-                                 'input':self.input_path}
+                                 'input':input_path}
 
             with open(config_file, 'w') as config_ini:
                 config.write(config_ini)

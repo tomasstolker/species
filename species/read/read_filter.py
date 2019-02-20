@@ -104,6 +104,11 @@ class ReadFilter:
         data = self.get_filter()
 
         spline = InterpolatedUnivariateSpline(data[0, :], data[1, :]-np.max(data[1, :])/2.)
-        root1, root2 = spline.roots()
+        root = spline.roots()
+
+        diff = root-self.mean_wavelength()
+
+        root1 = np.amax(diff[diff < 0.])
+        root2 = np.amin(diff[diff > 0.])
 
         return root2-root1

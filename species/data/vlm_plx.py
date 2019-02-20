@@ -16,7 +16,8 @@ from . import queries
 from . import util
 
 
-def add_vlm_plx(input_path, database):
+def add_vlm_plx(input_path,
+                database):
     """
     Function for adding the Database of Ultracool Parallaxes to the database.
 
@@ -29,6 +30,7 @@ def add_vlm_plx(input_path, database):
     """
 
     data_file = os.path.join(input_path, 'vlm-plx-all.fits')
+
     url = 'http://www.as.utexas.edu/~tdupuy/plx/' \
           'Database_of_Ultracool_Parallaxes_files/vlm-plx-all.fits'
 

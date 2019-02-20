@@ -8,10 +8,6 @@ import configparser
 import h5py
 import numpy as np
 
-from .. core import box
-from .. data import database
-from . import read_filter
-
 
 class ReadResult:
     """
@@ -77,7 +73,6 @@ class ReadResult:
 
                 indices[param_index] = value_index[0]
 
-            for item in fix:
                 del points[item]
 
             chisquare = chisquare[tuple(indices)]

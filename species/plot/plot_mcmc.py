@@ -53,14 +53,37 @@ def plot_walkers(tag,
     ax3.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
     ax4.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
 
-    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax3.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=False)
-    ax4.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=True)
-    ax4.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True, labelbottom=True)
+    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax3.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax4.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=True)
+
+    ax4.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=True)
 
     ax4.set_xlabel('Step number', fontsize=10)
 
@@ -119,8 +142,9 @@ def plot_posterior(tag,
 
     samples = samples[:, int(burnin):, :].reshape((-1, ndim))
 
-    fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84], label_kwargs={"fontsize": 13},
-                        show_titles=True, title_kwargs={"fontsize": 13}, title_fmt='.2f')
+    fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],
+                        label_kwargs={"fontsize": 13}, show_titles=True,
+                        title_kwargs={"fontsize": 12}, title_fmt='.2f')
 
     axes = np.array(fig.axes).reshape((ndim, ndim))
 
@@ -128,8 +152,13 @@ def plot_posterior(tag,
         for j in range(ndim):
             ax = axes[i, j]
 
-            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black', direction='in', width=0.8, length=5, labelsize=12, top=True, bottom=True, left=True, right=True)
-            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black', direction='in', width=0.8, length=3, labelsize=12, top=True, bottom=True, left=True, right=True)
+            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=5, labelsize=12, top=True,
+                           bottom=True, left=True, right=True)
+
+            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=3, labelsize=12, top=True,
+                           bottom=True, left=True, right=True)
 
             ax.get_xaxis().set_label_coords(0.5, -0.26)
             ax.get_yaxis().set_label_coords(-0.27, 0.5)

@@ -8,9 +8,9 @@ import configparser
 import h5py
 import numpy as np
 
+from . import read_filter
 from .. core import box
 from .. data import database
-from . import read_filter
 
 
 class ReadSpectrum:
