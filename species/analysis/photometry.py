@@ -10,8 +10,8 @@ import numpy as np
 
 from scipy.integrate import simps
 
-from .. data import database
-from .. read import read_filter, read_spectrum
+from species.data import database
+from species.read import read_filter, read_spectrum
 
 
 def apparent_to_absolute(app_mag, distance):

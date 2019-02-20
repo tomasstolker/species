@@ -11,9 +11,9 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from . util import quantity_unit
-from .. core import box
-from .. read import read_filter
+from species.core import box
+from species.plot import util
+from species.read import read_filter
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -219,9 +219,8 @@ def plot_spectrum(boxes,
                 if isinstance(boxitem, box.ModelBox):
                     param = boxitem.parameters
                     #TODO fix luminosity
-                    print(param)
 
-                    par_key, par_unit = quantity_unit(list(param.keys()))
+                    par_key, par_unit = util.quantity_unit(list(param.keys()))
                     par_val = list(param.values())
 
                     label = ''

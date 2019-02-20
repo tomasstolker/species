@@ -13,7 +13,7 @@ import pandas as pd
 
 from scipy.interpolate import interp1d
 
-from . import util
+from species.data import util
 
 
 def add_btnextgen(input_path,

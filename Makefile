@@ -2,6 +2,7 @@
 
 help:
 	@echo "pypi - submit package to the PyPI server"
+	@echo "pypi-test - submit package to the TestPyPI server"
 	@echo "docs - generate Sphinx documentation"
 	@echo "coverage - check code coverage"
 	@echo "test - run test cases"
@@ -10,6 +11,10 @@ help:
 pypi:
 	python setup.py sdist bdist_wheel
 	twine upload dist/*
+
+pypi-test:
+	python setup.py sdist bdist_wheel
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 docs:
 	rm -f docs/species.*rst

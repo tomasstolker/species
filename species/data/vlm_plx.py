@@ -12,8 +12,7 @@ import numpy as np
 
 from astropy.io import fits
 
-from . import queries
-from . import util
+from species.data import queries, util
 
 
 def add_vlm_plx(input_path,
