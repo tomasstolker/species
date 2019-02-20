@@ -10,7 +10,7 @@ from urllib.request import urlretrieve
 
 import numpy as np
 
-from . import util
+from species.data import util
 
 
 def add_drift_phoenix(input_path,

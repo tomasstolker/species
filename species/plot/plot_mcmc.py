@@ -10,8 +10,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from . util import update_labels
-from .. data import database
+from species.data import database
+from species.plot import util
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -37,7 +37,7 @@ def plot_walkers(tag,
     box = species_db.get_samples(tag)
 
     samples = box.samples
-    labels = update_labels(box.parameters)
+    labels = util.update_labels(box.parameters)
 
     plt.figure(1, figsize=(6, 5))
     gridsp = mpl.gridspec.GridSpec(4, 1)
@@ -136,7 +136,7 @@ def plot_posterior(tag,
     box = species_db.get_samples(tag)
 
     samples = box.samples
-    labels = update_labels(box.parameters)
+    labels = util.update_labels(box.parameters)
 
     ndim = samples.shape[2]
 

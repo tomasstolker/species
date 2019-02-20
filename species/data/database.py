@@ -12,19 +12,11 @@ import numpy as np
 
 from astropy.io import votable
 
-from .. analysis import photometry
-from .. core import box
-from .. read import read_model
-from . import drift_phoenix
-from . import btnextgen
-from . import vega
-from . import irtf
-from . import spex
-from . import vlm_plx
-from . import leggett
-from . import companions
-from . import filters
-from . import util
+from species.analysis import photometry
+from species.core import box
+from species.read import read_model
+from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
+                         companions, filters, util
 
 
 warnings.simplefilter('ignore', UserWarning)

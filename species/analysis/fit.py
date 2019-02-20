@@ -12,9 +12,9 @@ import emcee
 import progress.bar
 import numpy as np
 
-from . import photometry
-from .. data import database
-from .. read import read_model, read_object
+from species.analysis import photometry
+from species.data import database
+from species.read import read_model, read_object
 
 
 MIN_CHISQ = np.inf

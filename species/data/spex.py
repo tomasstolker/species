@@ -13,10 +13,9 @@ import numpy as np
 from astropy.io.votable import parse_single_table
 from astropy.utils.exceptions import AstropyWarning
 
-from . import queries
-from . import util
-from .. analysis import photometry
-from .. read import read_filter
+from species.analysis import photometry
+from species.data import queries, util
+from species.read import read_filter
 
 
 warnings.simplefilter('ignore', category=AstropyWarning)

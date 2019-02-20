@@ -13,10 +13,10 @@ from scipy.integrate import simps
 from scipy.interpolate import RegularGridInterpolator
 from PyAstronomy.pyasl import instrBroadGaussFast
 
-from . import read_filter
-from .. analysis import photometry
-from .. core import box
-from .. data import database
+from species.analysis import photometry
+from species.core import box
+from species.data import database
+from species.read import read_filter
 
 
 def multi_photometry(model,

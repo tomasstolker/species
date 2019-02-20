@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.colorbar import Colorbar
 
-from .. read import read_object
+from species.read import read_object
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']

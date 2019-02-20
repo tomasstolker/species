@@ -8,8 +8,8 @@ import configparser
 import h5py
 import numpy as np
 
-from .. data import database
-from .. analysis import photometry
+from species.analysis import photometry
+from species.data import database
 
 
 class ReadColorMagnitude:

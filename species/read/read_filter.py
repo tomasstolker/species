@@ -10,7 +10,7 @@ import numpy as np
 
 from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 
-from .. data import database
+from species.data import database
 
 
 class ReadFilter:

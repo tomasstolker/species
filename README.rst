@@ -41,4 +41,4 @@ License
 
 Copyright 2018 Tomas Stolker
 
-SPECIES is free software and distributed under the GNU General Public License v3.
+SPECIES is distributed under the GNU General Public License v3. See the LICENSE file for the terms and conditions.
