@@ -133,29 +133,29 @@ class ReadModel:
             flux = flux[:, :, :, wl_index]
             points = (teff, logg, feh, wavelength[wl_index])
 
-        elif self.model == 'petitcode_warm_clear':
-            feh = np.asarray(h5_file['models/petitcode_warm_clear/feh'])
-            flux = flux[:, :, :, wl_index]
-            points = np.asarray((teff, logg, feh, wavelength[wl_index]))
-
-        elif self.model == 'petitcode_warm_cloudy':
-            feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
-            fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
-            flux = flux[:, :, :, :, wl_index]
-            points = np.asarray((teff, logg, feh, fsed, wavelength[wl_index]))
-
-        elif self.model == 'petitcode_hot_clear':
-            feh = np.asarray(h5_file['models/petitcode_hot_clear/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode_hot_clear/co'])
-            flux = flux[:, :, :, :, wl_index]
-            points = np.asarray((teff, logg, feh, co_ratio, wavelength[wl_index]))
-
-        elif self.model == 'petitcode_hot_cloudy':
-            feh = np.asarray(h5_file['models/petitcode_hot_cloudy/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode_hot_cloudy/co'])
-            fsed = np.asarray(h5_file['models/petitcode_hot_cloudy/fsed'])
-            flux = flux[:, :, :, :, :, wl_index]
-            points = np.asarray((teff, logg, feh, co_ratio, fsed, wavelength[wl_index]))
+        # elif self.model == 'petitcode_warm_clear':
+        #     feh = np.asarray(h5_file['models/petitcode_warm_clear/feh'])
+        #     flux = flux[:, :, :, wl_index]
+        #     points = np.asarray((teff, logg, feh, wavelength[wl_index]))
+        #
+        # elif self.model == 'petitcode_warm_cloudy':
+        #     feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
+        #     fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
+        #     flux = flux[:, :, :, :, wl_index]
+        #     points = np.asarray((teff, logg, feh, fsed, wavelength[wl_index]))
+        #
+        # elif self.model == 'petitcode_hot_clear':
+        #     feh = np.asarray(h5_file['models/petitcode_hot_clear/feh'])
+        #     co_ratio = np.asarray(h5_file['models/petitcode_hot_clear/co'])
+        #     flux = flux[:, :, :, :, wl_index]
+        #     points = np.asarray((teff, logg, feh, co_ratio, wavelength[wl_index]))
+        #
+        # elif self.model == 'petitcode_hot_cloudy':
+        #     feh = np.asarray(h5_file['models/petitcode_hot_cloudy/feh'])
+        #     co_ratio = np.asarray(h5_file['models/petitcode_hot_cloudy/co'])
+        #     fsed = np.asarray(h5_file['models/petitcode_hot_cloudy/fsed'])
+        #     flux = flux[:, :, :, :, :, wl_index]
+        #     points = np.asarray((teff, logg, feh, co_ratio, fsed, wavelength[wl_index]))
 
         h5_file.close()
 
@@ -340,8 +340,8 @@ class ReadModel:
         :param synphot: Synthetic photometry object.
         :type synphot: species.analysis.photometry.SyntheticPhotometry
 
-        :return: Apparent magnitude (mag), absolute magnitude (mag).
-        :rtype: float, float
+        :return: Average flux density (W m-2 micron-1).
+        :rtype: float
         """
 
         if sampling is None:

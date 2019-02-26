@@ -290,6 +290,8 @@ class FitSpectrum:
         :type sampler: emcee.ensemble.EnsembleSampler
         :param model: Atmospheric model.
         :type model: str
+        :param tag: Database tag.
+        :type tag: str
         :param chisquare: Maximum likelihood solution. Tuple with the chi-square value and related
                           parameter values.
         :type chisquare: tuple(float, float)

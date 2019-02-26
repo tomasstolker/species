@@ -4,6 +4,22 @@ species.data package
 Submodules
 ----------
 
+species.data.btnextgen module
+-----------------------------
+
+.. automodule:: species.data.btnextgen
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.data.companions module
+------------------------------
+
+.. automodule:: species.data.companions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.database module
 ----------------------------
 
@@ -20,10 +36,26 @@ species.data.drift\_phoenix module
     :undoc-members:
     :show-inheritance:
 
+species.data.filters module
+---------------------------
+
+.. automodule:: species.data.filters
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.irtf module
 ------------------------
 
 .. automodule:: species.data.irtf
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.data.leggett module
+---------------------------
+
+.. automodule:: species.data.leggett
     :members:
     :undoc-members:
     :show-inheritance:

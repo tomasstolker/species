@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 
 from species.analysis import photometry
+from species.core import box
 from species.data import database
 
 
@@ -43,14 +44,17 @@ class ReadColorMagnitude:
 
         self.database = config['species']['database']
 
+        if isinstance(self.library, str):
+            self.library = (self.library, )
+
     def get_color_magnitude(self,
                             object_type):
         """
         :param object_type:
         :type object_type: str
 
-        :return:
-        :rtype: numpy.ndarray, numpy.ndarray, numpy.ndarray
+        :return: Colors and magnitudes (mag).
+        :rtype:
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -109,4 +113,11 @@ class ReadColorMagnitude:
 
         h5_file.close()
 
-        return color[indices], mag[indices], sptype[indices]
+        return box.create_box(boxtype='colormag',
+                              library=self.library,
+                              object_type=object_type,
+                              filters_color=self.filters_color,
+                              filter_mag=self.filter_mag,
+                              color=color[indices],
+                              magnitude=mag[indices],
+                              sptype=sptype[indices])

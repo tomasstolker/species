@@ -2,8 +2,6 @@
 Box module.
 """
 
-import numpy as np
-
 
 def open_box(box):
     """
@@ -19,18 +17,23 @@ def create_box(boxtype, **kwargs):
     :return:
     """
 
-    if boxtype == 'model':
+    if boxtype == 'colormag':
+        box = ColorMagBox()
+        box.library = kwargs['library']
+        box.object_type = kwargs['object_type']
+        box.filters_color = kwargs['filters_color']
+        box.filter_mag = kwargs['filter_mag']
+        box.color = kwargs['color']
+        box.magnitude = kwargs['magnitude']
+        box.sptype = kwargs['sptype']
+
+    elif boxtype == 'model':
         box = ModelBox()
         box.model = kwargs['model']
+        box.type = kwargs['type']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
         box.parameters = kwargs['parameters']
-
-    elif boxtype == 'photometry':
-        box = PhotometryBox()
-        box.name = kwargs['name']
-        box.wavelength = kwargs['wavelength']
-        box.flux = kwargs['flux']
 
     elif boxtype == 'object':
         box = ObjectBox()
@@ -39,6 +42,12 @@ def create_box(boxtype, **kwargs):
         box.magnitude = kwargs['magnitude']
         box.flux = kwargs['flux']
         box.distance = kwargs['distance']
+
+    elif boxtype == 'photometry':
+        box = PhotometryBox()
+        box.name = kwargs['name']
+        box.wavelength = kwargs['wavelength']
+        box.flux = kwargs['flux']
 
     elif boxtype == 'samples':
         box = SamplesBox()
@@ -49,9 +58,10 @@ def create_box(boxtype, **kwargs):
 
     elif boxtype == 'spectrum':
         box = SpectrumBox()
+        box.spectrum = kwargs['spectrum']
+        box.wavelength = kwargs['wavelength']
+        box.flux = kwargs['flux']
         box.name = kwargs['name']
-        box.wavelength = np.asarray([kwargs['wavelength']])
-        box.flux = np.asarray([kwargs['flux']])
 
     elif boxtype == 'synphot':
         box = SynphotBox()
@@ -61,7 +71,7 @@ def create_box(boxtype, **kwargs):
     return box
 
 
-class SpectrumBox:
+class ColorMagBox:
     """
     Text
     """
@@ -71,13 +81,13 @@ class SpectrumBox:
         :return:
         """
 
-        self.spectrum = None
-        self.wavelength = None
-        self.flux = None
-        self.name = None
-        self.simbad = None
+        self.library = None
+        self.object_type = None
+        self.filters_color = None
+        self.filter_mag = None
+        self.color = None
+        self.magnitude = None
         self.sptype = None
-        self.distance = None
 
 
 class ModelBox:
@@ -95,6 +105,23 @@ class ModelBox:
         self.wavelength = None
         self.flux = None
         self.parameters = None
+
+
+class ObjectBox:
+    """
+    Text
+    """
+
+    def __init__(self):
+        """
+        :return:
+        """
+
+        self.name = None
+        self.filter = None
+        self.magnitude = None
+        self.flux = None
+        self.distance = None
 
 
 class PhotometryBox:
@@ -127,7 +154,8 @@ class SamplesBox:
         self.samples = None
         self.chisquare = None
 
-class ObjectBox:
+
+class SpectrumBox:
     """
     Text
     """
@@ -137,11 +165,14 @@ class ObjectBox:
         :return:
         """
 
-        self.name = None
-        self.filter = None
-        self.magnitude = None
+        self.spectrum = None
+        self.wavelength = None
         self.flux = None
+        self.name = None
+        self.simbad = None
+        self.sptype = None
         self.distance = None
+
 
 class SynphotBox:
     """
