@@ -64,7 +64,7 @@ def get_data():
                                     'Paranal/SPHERE.IRDIS_D_H23_2':(18.41, 0.26), # Samland et al. 2017
                                     'Paranal/SPHERE.IRDIS_D_K12_1':(17.55, 0.14), # Samland et al. 2017
                                     'Keck/NIRC2.Lp':(16.20, 0.11), # Rajan et al. 2017
-                                    'Keck/NIRC2.Mp':(16.1, 0.5)}}, # Rajan et al. 2017
+                                    'Keck/NIRC2.Ms':(16.1, 0.5)}}, # Rajan et al. 2017
 
              'GSC 06214 B':{'distance':108.84,
                             'app_mag':{'MKO/NSFCam.J':(16.24, 0.04), # Ireland et al. 2011

@@ -3,7 +3,7 @@
 Installation
 ============
 
-SPECIES can be installed from the |pypi| with the |pip|::
+*species* can be installed from the |pypi| with the |pip|::
 
     $ pip install species
 
@@ -11,11 +11,11 @@ Alternatively, the repository can be cloned from |github|::
 
     $ git clone git@github.com:tomasstolker/species.git
 
-In that case, the dependencies can be installed from the SPECIES folder::
+In that case, the dependencies can be installed from the *species* folder::
 
     $ pip install -r requirements.txt
 
-The installation can be tested by starting Python in interactive mode and printing the SPECIES version::
+The installation can be tested by starting Python in interactive mode and printing the *species* version::
 
     >>> import species
     >>> print species.__version__

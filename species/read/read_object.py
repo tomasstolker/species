@@ -8,13 +8,16 @@ import configparser
 import h5py
 import numpy as np
 
+from species.analysis import photometry
+
 
 class ReadObject:
     """
     Text
     """
 
-    def __init__(self, object_name):
+    def __init__(self,
+                 object_name):
         """
         :param object_name: Object name.
         :type object_name: str
@@ -31,21 +34,22 @@ class ReadObject:
 
         self.database = config['species']['database']
 
-    def get_photometry(self, filter_name):
+    def get_photometry(self,
+                       filter_name):
         """
         :param filter_name: Filter name.
         :type filter_name: str
 
-        :return: Wavelength (micron), apparent magnitude (mag), magnitude error (error),
+        :return: Apparent magnitude (mag), magnitude error (error),
                  apparent flux (W m-2 micron-1), flux error (W m-2 micron-1).
         :rtype: numpy.ndarray
         """
 
         h5_file = h5py.File(self.database, 'r')
-        photometry = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
+        obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
         h5_file.close()
 
-        return photometry
+        return obj_phot
 
     def get_distance(self):
         """
@@ -54,7 +58,26 @@ class ReadObject:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
+        obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
         h5_file.close()
 
-        return float(distance)
+        return float(obj_distance)
+
+    def get_absmag(self,
+                   filter_name):
+        """
+        :param filter_name: Filter name.
+        :type filter_name: str
+
+        :return: Absolute magnitude (mag), magnitude error (error).
+        :rtype: float, float
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
+        obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
+        h5_file.close()
+
+        abs_mag = photometry.apparent_to_absolute(obj_phot[0], obj_distance)
+
+        return abs_mag, obj_phot[1]

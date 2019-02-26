@@ -28,7 +28,7 @@ from species.data.queries import get_distance
 from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers
 
-from species.plot.plot_photometry import plot_color_magnitude
+from species.plot.plot_color import plot_color_magnitude, plot_color_color
 
 from species.plot.plot_spectrum import plot_spectrum
 

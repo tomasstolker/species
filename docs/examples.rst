@@ -47,7 +47,7 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
 
    import species
 
-   species.SpeciesInit("./", "./data")
+   species.SpeciesInit("./")
 
    magnitudes = {"MKO/NSFCam.J":19.04, "MKO/NSFCam.H":18.99, "MKO/NSFCam.K":18.67, "Keck/NIRC2.Lp":16.20, "Keck/NIRC2.Mp":16.1}
 

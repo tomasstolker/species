@@ -2,6 +2,53 @@
 Text.
 """
 
+import numpy as np
+
+
+def sptype_discrete(sptype,
+                    shape):
+    """
+    :param sptype:
+    :type sptype:
+    :param shape:
+    :type shape:
+
+    :return::
+    :rtype: numpy.ndarray
+    """
+
+    spt_disc = np.zeros(shape)
+
+    for i, item in enumerate(sptype):
+        sp = item[0:2]
+
+        if sp in (np.string_('M0'), np.string_('M1'), np.string_('M2'), np.string_('M3'), np.string_('M4')):
+            spt_disc[i] = 0
+
+        elif sp in (np.string_('M5'), np.string_('M6'), np.string_('M7'), np.string_('M8'), np.string_('M9')):
+            spt_disc[i] = 1
+
+        elif sp in (np.string_('L0'), np.string_('L1'), np.string_('L2'), np.string_('L3'), np.string_('L4')):
+            spt_disc[i] = 2
+
+        elif sp in (np.string_('L5'), np.string_('L6'), np.string_('L7'), np.string_('L8'), np.string_('L9')):
+            spt_disc[i] = 3
+
+        elif sp in (np.string_('T0'), np.string_('T1'), np.string_('T2'), np.string_('T3'), np.string_('T4')):
+            spt_disc[i] = 4
+
+        elif sp in (np.string_('T5'), np.string_('T6'), np.string_('T7'), np.string_('T8'), np.string_('T9')):
+            spt_disc[i] = 5
+
+        elif np.string_('Y') in item:
+            spt_disc[i] = 6
+
+        else:
+            spt_disc[i] = np.nan
+            continue
+
+    return spt_disc
+
 
 def update_labels(param):
     """

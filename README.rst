@@ -1,7 +1,7 @@
-SPECIES
+species
 =======
 
-**Spectral and Photometric Examination Code for Investigating Exoplanet and Substellar atmospheres**
+**spectral and photometric examination code for investigating exoplanet and substellar atmospheres**
 
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
@@ -24,7 +24,7 @@ SPECIES
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-SPECIES is a toolkit for analyzing spectral and photometric data of planetary and substellar objects.
+*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework to characterize the atmospheres of directly imaged companions by combining data from various resources. A central database is used to store various data sets such as spectral and photometric libraries, atmospheric models, photometry of individual targets, filter transmission curves, and analysis results. There are tools available for creating color-magnitude diagrams, fitting atmospheric models and retrieving the posterior distributions, creating synthetic photometry, plotting spectra, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ but is still under active development.
 
 Documentation
 -------------
@@ -34,11 +34,16 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite Stolker et al. in prep. whenever results from SPECIES are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that SPECIES is using, such as the photometric and spectral libraries, atmospheric models, filter transmission curves, and photometry of individual objects. More details will follow.
+Please cite Stolker et al. in prep. whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* is profiting from. More details will follow.
+
+Contributing
+------------
+
+Contributions are very welcome, please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
 
 License
 -------
 
-Copyright 2018 Tomas Stolker
+Copyright 2019 Tomas Stolker
 
-SPECIES is distributed under the GNU General Public License v3. See the LICENSE file for the terms and conditions.
+*species* is distributed under the GNU General Public License v3. See the LICENSE file for the terms and conditions.
