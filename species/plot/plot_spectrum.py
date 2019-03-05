@@ -148,6 +148,21 @@ def plot_spectrum(boxes,
     if ylim:
         ax1.set_ylim(ylim[0], ylim[1])
 
+        ylim = ax1.get_ylim()
+
+        exponent = math.floor(math.log10(ylim[1]))
+        scaling = 10.**exponent
+
+        ax1.set_ylabel('Flux [10$^{'+str(exponent)+'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+        ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
+
+        if ylim[0] < 0.:
+            ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
+
+    else:
+        ax1.set_ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+        scaling = 1.
+
     if filters:
         ax2.set_ylim(0., 1.)
 
@@ -158,17 +173,6 @@ def plot_spectrum(boxes,
 
     if residuals:
         ax3.set_xlim(xlim[0], xlim[1])
-
-    ylim = ax1.get_ylim()
-
-    exponent = math.floor(math.log10(ylim[1]))
-    scaling = 10.**exponent
-
-    ax1.set_ylabel('Flux [10$^{'+str(exponent)+'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
-    ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
-
-    if ylim[0] < 0.:
-        ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
 
     if offset and residuals and filters:
         ax3.get_xaxis().set_label_coords(0.5, offset[0])
@@ -218,7 +222,6 @@ def plot_spectrum(boxes,
 
                 if isinstance(boxitem, box.ModelBox):
                     param = boxitem.parameters
-                    #TODO fix luminosity
 
                     par_key, par_unit = util.quantity_unit(list(param.keys()))
                     par_val = list(param.values())
@@ -244,8 +247,10 @@ def plot_spectrum(boxes,
                 else:
                     label = None
 
-                # print(label)
-                ax1.plot(wavelength, masked/scaling, color=colors[j], lw=1.0, label=label, zorder=4)
+                if colors:
+                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=1.0, label=label, zorder=4)
+                else:
+                    ax1.plot(wavelength, masked/scaling, lw=1.0, label=label, zorder=4)
 
             elif isinstance(wavelength[0], (np.ndarray)):
                 for i, item in enumerate(wavelength):
@@ -266,7 +271,7 @@ def plot_spectrum(boxes,
 
         elif isinstance(boxitem, box.PhotometryBox):
             ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
-                     color=colors[j], label=boxitem.name)
+                     color=colors[j], label=boxitem.name, zorder=5)
 
         elif isinstance(boxitem, box.ObjectBox):
             for item in boxitem.flux:

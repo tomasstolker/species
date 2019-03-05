@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = u'SPECIES'
+project = u'species'
 copyright = '2019, Tomas Stolker'
 author = 'Tomas Stolker'
 
@@ -120,7 +120,7 @@ html_context = {'display_github': True,
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SPECIESdoc'
+htmlhelp_basename = 'speciesdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -147,7 +147,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'SPECIES.tex', u'SPECIES Documentation',
+    (master_doc, 'species.tex', u'species Documentation',
      u'Tomas Stolker', 'manual'),
 ]
 
@@ -157,7 +157,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'species', u'SPECIES Documentation',
+    (master_doc, 'species', u'species Documentation',
      [author], 1)
 ]
 
@@ -168,8 +168,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'SPECIES', u'SPECIES Documentation',
-     author, 'SPECIES', 'Spectral and Photometric Examination Code for Investigating Exoplanet and Substellar atmospheres',
+    (master_doc, 'species', u'species Documentation',
+     author, 'species', 'Spectral and Photometric Examination Code for Investigating Exoplanet and Substellar atmospheres',
      'Miscellaneous'),
 ]
 

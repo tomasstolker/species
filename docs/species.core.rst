@@ -12,6 +12,14 @@ species.core.box module
     :undoc-members:
     :show-inheritance:
 
+species.core.constants module
+-----------------------------
+
+.. automodule:: species.core.constants
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.core.setup module
 -------------------------
 

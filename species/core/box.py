@@ -30,7 +30,6 @@ def create_box(boxtype, **kwargs):
     elif boxtype == 'model':
         box = ModelBox()
         box.model = kwargs['model']
-        box.type = kwargs['type']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
         box.parameters = kwargs['parameters']

@@ -24,7 +24,7 @@ species
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework to characterize the atmospheres of directly imaged companions by combining data from various resources. A central database is used to store various data sets such as spectral and photometric libraries, atmospheric models, photometry of individual targets, filter transmission curves, and analysis results. There are tools available for creating color-magnitude diagrams, fitting atmospheric models and retrieving the posterior distributions, creating synthetic photometry, plotting spectra, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ but is still under active development.
+*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, photometry of individual targets, and filter transmission curves. All data are stored in a central database and there are tools available for creating color-magnitude diagrams, fitting atmospheric models and retrieving the posterior distributions, creating synthetic photometry, plotting spectra, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ but is still under active development.
 
 Documentation
 -------------

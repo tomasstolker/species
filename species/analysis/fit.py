@@ -23,23 +23,40 @@ MIN_PARAM = None
 
 def lnprior(param,
             bounds,
-            modelpar):
+            modelpar,
+            prior):
     """
-    :param param:
-    :type param:
-    :param bounds:
-    :type bounds:
-    :param modelpar:
-    :type modelpar:
+    :param param: Parameter values.
+    :type param: numpy.ndarray
+    :param bounds: Parameter boundaries.
+    :type bounds: dict
+    :param modelpar: Parameter names.
+    :type modelpar: tuple(str, )
+    :param prior: Gaussian prior on one of the parameters. Currently only possible for the mass,
+                  e.g. ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of
+                  3 Mjup. Not used if set to None.
+    :type prior: tuple(str, float, float)
 
     :return: Log prior probability.
     :rtype: float
     """
 
+    if prior:
+
+        modeldict = {}
+        for i, item in enumerate(modelpar):
+            modeldict[item] = param[i]
+
     for i, item in enumerate(modelpar):
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
-            ln_prior = 0.
+
+            if prior[0] == 'mass':
+                mass = read_model.get_mass(modeldict)
+                ln_prior = -0.5*(mass-prior[1])**2/prior[2]**2
+
+            else:
+                ln_prior = 0.
 
         else:
             ln_prior = -np.inf
@@ -104,7 +121,8 @@ def lnprob(param,
            objphot,
            synphot,
            sampling,
-           distance):
+           distance,
+           prior):
     """
     :param param:
     :type param:
@@ -122,12 +140,14 @@ def lnprob(param,
     :type sampling:
     :param distance:
     :type distance:
+    :param prior: Gaussian prior. Not used if set to None.
+    :type prior: tuple(str, float, float)
 
     :return:
     :rtype:
     """
 
-    ln_prior = lnprior(param, bounds, modelpar)
+    ln_prior = lnprior(param, bounds, modelpar, prior)
 
     if math.isinf(ln_prior):
         ln_prob = -np.inf
@@ -231,7 +251,8 @@ class FitSpectrum:
                  nsteps,
                  guess,
                  tag,
-                 ncpu=1):
+                 prior=None,
+                 ncpu=1,):
         """
         :return: None
         """
@@ -266,7 +287,8 @@ class FitSpectrum:
                                                self.objphot,
                                                self.synphot,
                                                self.sampling,
-                                               self.distance]),
+                                               self.distance,
+                                               prior]),
                                         threads=ncpu)
 
         progbar = progress.bar.Bar('\rRunning MCMC...',

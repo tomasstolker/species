@@ -33,7 +33,7 @@ def plot_color_magnitude(colorbox,
                          legend='top left'):
     """
     :param colorbox: Box with the colors and magnitudes.
-    :type colorbox: tuple(species.core.box.ColorMagBox, )
+    :type colorbox: species.core.box.ColorMagBox
     :param objects: Tuple with individual objects. The objects require a tuple with their database
                     tag, the two filter IDs for the color, and the filter ID for the absolute
                     magnitude.
@@ -57,7 +57,7 @@ def plot_color_magnitude(colorbox,
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
 
-    marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
+    marker = itertools.cycle(('o', 's', 'p', '<', '>', 'P', 'v', '^', '*'))
 
     plt.figure(1, figsize=(4, 4.8))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
@@ -94,21 +94,20 @@ def plot_color_magnitude(colorbox,
     bounds = np.arange(0, 8, 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    for item in colorbox:
-        sptype = item.sptype
-        color = item.color
-        magnitude = item.magnitude
+    sptype = colorbox.sptype
+    color = colorbox.color
+    magnitude = colorbox.magnitude
 
-        indices = np.where(sptype != 'None')[0]
+    indices = np.where(sptype != 'None')[0]
 
-        sptype = sptype[indices]
-        color = color[indices]
-        magnitude = magnitude[indices]
+    sptype = sptype[indices]
+    color = color[indices]
+    magnitude = magnitude[indices]
 
-        spt_disc = util.sptype_discrete(sptype, color.shape)
+    spt_disc = util.sptype_discrete(sptype, color.shape)
 
-        scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
-                           zorder=1, s=25., alpha=0.6)
+    scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
+                       zorder=1, s=25., alpha=0.6)
 
     cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
                   ticklocation='top', format='%.2f')
