@@ -14,7 +14,7 @@ from scipy.interpolate import RegularGridInterpolator
 from PyAstronomy.pyasl import instrBroadGaussFast
 
 from species.analysis import photometry
-from species.core import box
+from species.core import box, constants
 from species.data import database
 from species.read import read_filter
 
@@ -42,6 +42,57 @@ def multi_photometry(model,
     return box.create_box('synphot', name='synphot', flux=flux)
 
 
+def get_mass(model_par):
+    """
+    :param model_par: Model parameter values. Should contain the surface gravity and radius.
+    :type model_par: dict
+
+    :return: Mass (Mjup).
+    :rtype: float
+    """
+
+    logg = 1e-2 * 10.**model_par['logg'] # [m s-1]
+
+    radius = model_par['radius'] # [Rjup]
+    radius *= constants.R_JUP # [m]
+
+    mass = logg*radius**2/constants.GRAVITY # [kg]
+    mass /= constants.M_JUP # [Mjup]
+
+    return mass
+
+
+def add_luminosity(modelbox,
+                   specres=1000):
+    """
+    Function to add the luminosity of a model spectrum to the parameter dictionary of the box. The
+    luminosity is by default calculated at a spectral resolution of 1000.
+
+    :param modelbox: Box with the model spectrum. Should also contain the dictionary with the model
+                     parameters, the radius in particular.
+    :type modelbox: species.core.box.ModelBox
+    :param specres: Spectral resolution of the interpolated spectrum.
+    :type specres: float
+
+    :return: The input box with the luminosity added in the parameter dictionary.
+    :rtype: species.core.box.ModelBox
+    """
+
+    readmodel = ReadModel(model=modelbox.model, wavelength=None, teff=None)
+    fullspec = readmodel.get_model(model_par=modelbox.parameters, sampling=('specres', specres))
+
+    flux = simps(fullspec.flux, fullspec.wavelength)
+
+    if 'distance' in modelbox.parameters:
+        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux # [W]
+    else:
+        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux # [W]
+
+    modelbox.parameters['luminosity'] = luminosity/constants.L_SUN # [Lsun]
+
+    return modelbox
+
+
 class ReadModel:
     """
     Text
@@ -63,12 +114,6 @@ class ReadModel:
         :return: None
         """
 
-        self.gravity = 6.67408e-11 # [m3 kg−1 s−2]
-        self.parsec = 3.08567758147e16 # [m]
-
-        self.r_jup = 71492000. # [m]
-        self.m_jup = 1.89813e27 # [kg]
-        self.l_sun = 3.828e26 # [W]
 
         self.model = model
         self.teff = teff
@@ -183,8 +228,6 @@ class ReadModel:
         teff = np.asarray(h5_file['models/'+self.model+'/teff'])
         logg = np.asarray(h5_file['models/'+self.model+'/logg'])
 
-        modelbox = box.ModelBox()
-
         if self.wavelength is None:
             wl_index = np.ones(wavelength.shape[0], dtype=bool)
 
@@ -222,19 +265,16 @@ class ReadModel:
             wavelength = wavelength[wl_index]
             flux = flux[teff_index, logg_index, feh_index, wl_index]
 
-            modelbox.model = self.model
-            modelbox.feh = model_par['feh']
-
         if 'radius' in model_par and 'distance' in model_par:
-            scaling = (model_par['radius']*self.r_jup)**2 / (model_par['distance']*self.parsec)**2
+            scaling = (model_par['radius']*constants.R_JUP)**2 / \
+                      (model_par['distance']*constants.PARSEC)**2
             flux *= scaling
 
-        modelbox.wavelength = wavelength
-        modelbox.flux = flux
-        modelbox.teff = model_par['teff']
-        modelbox.logg = model_par['logg']
-
-        return modelbox
+        return box.create_box(boxtype='model',
+                              model=self.model,
+                              wavelength=wavelength,
+                              flux=flux,
+                              parameters=model_par)
 
     def get_model(self,
                   model_par,
@@ -306,12 +346,13 @@ class ReadModel:
 
             flux[i] = self.spectrum_interp(np.asarray(parameters))
 
-        if 'radius' in model_par and 'distance' in model_par:
-            scaling = (model_par['radius']*self.r_jup)**2 / (model_par['distance']*self.parsec)**2
-            flux *= scaling
+        if 'radius' in model_par:
+            model_par['mass'] = get_mass(model_par)
 
-            model_par['mass'], model_par['luminosity'] = \
-                self.mass_luminosity(wavelength, flux, model_par)
+            if 'distance' in model_par:
+                scaling = (model_par['radius']*constants.R_JUP)**2 / \
+                          (model_par['distance']*constants.PARSEC)**2
+                flux *= scaling
 
         if sampling[0] == 'gaussian':
             index = np.where(np.isnan(flux))[0]
@@ -462,36 +503,3 @@ class ReadModel:
             param.append(dset.attrs['parameter'+str(i)])
 
         return param
-
-    def mass_luminosity(self,
-                        wavelength,
-                        flux,
-                        model_par):
-        """
-        :param wavelength: Wavelength points (micro).
-        :type wavelength: numpy.ndarray
-        :param flux: Flux density (W m-2 micron-1).
-        :type flux: numpy.ndarray
-        :param model_par: Model parameter values. Should contain the surface gravity, radius,
-                          and distance.
-        :type model_par: dict
-
-        :return: Mass (Mjup) and Luminosity (Lsun).
-        :rtype: float, float
-        """
-
-        logg = 1e-2 * 10.**model_par['logg'] # [m s-1]
-
-        radius = model_par['radius'] # [Rjup]
-        radius *= self.r_jup # [m]
-
-        distance = model_par['distance'] # [pc]
-        distance *= self.parsec # [m]
-
-        mass = logg*radius**2/self.gravity # [kg]
-        mass /= self.m_jup # [Mjup]
-
-        luminosity = 4.*math.pi*distance**2*simps(flux, wavelength) # [W]
-        luminosity /= self.l_sun # [Lsun]
-
-        return mass, luminosity

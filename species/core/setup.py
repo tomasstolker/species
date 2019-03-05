@@ -25,7 +25,7 @@ class SpeciesInit:
         :return: None
         """
 
-        sys.stdout.write('Initiating SPECIES v'+species.__version__+'...')
+        sys.stdout.write('Initiating species v'+species.__version__+'...')
         sys.stdout.flush()
 
         self.config_path = config_path

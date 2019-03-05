@@ -6,11 +6,15 @@ from species.analysis.photometry import SyntheticPhotometry, \
 from species.read.read_filter import ReadFilter
 
 from species.read.read_model import ReadModel, \
-                                    multi_photometry
+                                    multi_photometry, \
+                                    get_mass, \
+                                    add_luminosity
 
-from species.read.read_spectrum import ReadSpectrum
+from species.read.read_spectrum import ReadSpectrum, \
+                                       get_planck
 
-from species.read.read_colormag import ReadColorMagnitude
+from species.read.read_colormag import ReadColorMagnitude, \
+                                       ReadColorColor
 
 from species.read.read_object import ReadObject
 

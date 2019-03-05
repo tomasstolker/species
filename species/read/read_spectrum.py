@@ -3,14 +3,59 @@ Read module.
 """
 
 import os
+import math
 import configparser
 
 import h5py
 import numpy as np
 
-from species.core import box
+from species.core import box, constants
 from species.data import database
 from species.read import read_filter
+
+
+def get_planck(temperature,
+               radius,
+               distance,
+               wavelength,
+               specres):
+    """
+    :param temperature: Temperature (K)
+    :type temperature: float
+    :param radius: Radius (Rjup).
+    :type radius: float
+    :param distance: Distance (pc).
+    :type distance: float
+    :param wavelength: Wavelength range (micron).
+    :type wavelength: tuple(float, float)
+    :param specres: Spectral resolution
+    :type specres: float
+
+    :return: Box with the Planck spectrum.
+    :rtype: species.core.box.SpectrumBox
+    """
+
+    wl_points = [wavelength[0]]
+
+    while wl_points[-1] <= wavelength[1]:
+        wl_points.append(wl_points[-1] + wl_points[-1]/specres)
+
+    wl_points = np.asarray(wl_points[:-1]) # [micron]
+    wl_points *= 1e-6 # [m]
+
+    planck1 = 2.*constants.PLANCK*constants.LIGHT**2/wl_points**5
+    planck2 = np.exp(constants.PLANCK*constants.LIGHT/(wl_points*constants.BOLTZMANN*temperature)) - 1.
+
+    flux = 4.*math.pi * (radius*constants.R_JUP/(distance*constants.PARSEC))**2 * planck1/planck2 # [W m-2 m-1]
+    flux *= 1e-6 # [W m-2 micron-1]
+
+    wl_points *= 1e6 # [micron]
+
+    return box.create_box(boxtype='spectrum',
+                          spectrum='planck',
+                          wavelength=wl_points,
+                          flux=flux,
+                          name=None)
 
 
 class ReadSpectrum:
@@ -18,11 +63,13 @@ class ReadSpectrum:
     Text
     """
 
-    def __init__(self, spectrum, filter_name):
+    def __init__(self,
+                 spectrum,
+                 filter_name):
         """
         :param spectrum: Spectral library.
         :type spectrum: str
-        :param filter_name: Filter name. Full spectrum is read if filter_name is set to None.
+        :param filter_name: Filter name. Full spectrum is read if set to None.
         :type filter_name: str
 
         :return: None
@@ -45,9 +92,16 @@ class ReadSpectrum:
 
         self.database = config['species']['database']
 
-    def get_spectrum(self, ignore_nan=True, sptype=None):
+    def get_spectrum(self,
+                     ignore_nan=True,
+                     sptype=None):
         """
-        :return:
+        :param ignore_nan: Ignore wavelength points for which the flux is NaN.
+        :type ignore_nan: bool
+        :param sptype: Spectral types to select. All spectra are retrieved if set to None.
+        :type sptype: str
+
+        :return: Box with the spectra.
         :rtype: species.core.box.SpectrumBox
         """
 

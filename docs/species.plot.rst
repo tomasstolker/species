@@ -4,18 +4,18 @@ species.plot package
 Submodules
 ----------
 
-species.plot.plot\_mcmc module
-------------------------------
+species.plot.plot\_color module
+-------------------------------
 
-.. automodule:: species.plot.plot_mcmc
+.. automodule:: species.plot.plot_color
     :members:
     :undoc-members:
     :show-inheritance:
 
-species.plot.plot\_photometry module
-------------------------------------
+species.plot.plot\_mcmc module
+------------------------------
 
-.. automodule:: species.plot.plot_photometry
+.. automodule:: species.plot.plot_mcmc
     :members:
     :undoc-members:
     :show-inheritance:

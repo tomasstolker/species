@@ -174,7 +174,7 @@ class SyntheticPhotometry:
         """
         :param magnitude: Magnitude (mag).
         :type magnitude: float
-        :param error: Error (mag).
+        :param error: Error (mag). Not used if set to None.
         :type error: float
         :param zp_flux: Zero point flux (W m-2 micron-1). Calculated if set to None.
         :type zp_flux: float
@@ -191,14 +191,14 @@ class SyntheticPhotometry:
         flux = 10.**(-0.4*(magnitude-vega_mag))*zp_flux
 
         if error is None:
-            error_upper = None
-            error_lower = None
+            error_flux = None
 
         else:
             error_upper = flux * (10.**(0.4*error) - 1.)
             error_lower = flux * (1. - 10.**(-0.4*error))
+            error_flux = (error_lower+error_upper)/2.
 
-        return flux, (error_lower+error_upper)/2.
+        return flux, error_flux
 
     def flux_to_magnitude(self, flux, distance):
         """
