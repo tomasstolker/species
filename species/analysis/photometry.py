@@ -136,7 +136,7 @@ class SyntheticPhotometry:
 
         return photometry
 
-    def spectrum_to_magnitude(self, wavelength, flux_density, distance):
+    def spectrum_to_magnitude(self, wavelength, flux_density, distance=None):
         """
         :param wavelength: Wavelength (micron).
         :type wavelength: numpy.ndarray

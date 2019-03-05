@@ -142,8 +142,7 @@ def plot_color_magnitude(colorbox,
     sys.stdout.flush()
 
 
-def plot_color_color(colors,
-                     sptype,
+def plot_color_color(colorbox,
                      objects,
                      label_x,
                      label_y,
