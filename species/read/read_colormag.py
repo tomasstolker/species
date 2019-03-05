@@ -130,18 +130,18 @@ class ReadColorColor:
 
     def __init__(self,
                  library,
-                 filters_colors):
+                 filters):
         """
         :param library: Photometric libraries.
         :type library: tuple(str, )
-        :param filters_colors:
-        :type filters_colors: tuple(tuple(str, str), tuple(str, str))
+        :param filters:
+        :type filters: tuple(tuple(str, str), tuple(str, str))
 
         :return: None
         """
 
         self.library = library
-        self.filters_colors = filters_colors
+        self.filters = filters
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -190,10 +190,10 @@ class ReadColorColor:
                 flag = flag_tmp
                 indices = indices_tmp
 
-                mag1 = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[0][0]])
-                mag2 = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[0][1]])
-                mag3 = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[1][0]])
-                mag4 = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[1][1]])
+                mag1 = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][0]])
+                mag2 = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][1]])
+                mag3 = np.asarray(h5_file['photometry/'+item+'/'+self.filters[1][0]])
+                mag4 = np.asarray(h5_file['photometry/'+item+'/'+self.filters[1][1]])
 
             else:
                 distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance']) # [pc]
@@ -205,10 +205,10 @@ class ReadColorColor:
                 flag = np.concatenate((flag, flag_tmp), axis=0)
                 indices = np.concatenate((indices, indices_tmp), axis=0)
 
-                mag1_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[0][0]])
-                mag2_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[0][1]])
-                mag3_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[1][0]])
-                mag4_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_colors[1][1]])
+                mag1_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][0]])
+                mag2_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][1]])
+                mag3_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[1][0]])
+                mag4_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[1][1]])
 
                 mag1 = np.concatenate((mag1, mag1_tmp), axis=0)
                 mag2 = np.concatenate((mag2, mag2_tmp), axis=0)
@@ -223,7 +223,7 @@ class ReadColorColor:
         return box.create_box(boxtype='colorcolor',
                               library=self.library,
                               object_type=object_type,
-                              filters_colors=self.filters_colors,
-                              color1=color[indices],
-                              color2=mag[indices],
+                              filters=self.filters,
+                              color1=color1[indices],
+                              color2=color2[indices],
                               sptype=sptype[indices])

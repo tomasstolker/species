@@ -9,7 +9,8 @@ import configparser
 import h5py
 import numpy as np
 
-from species.core import box, constants
+from species.core import box
+from species.core import constants as con
 from species.data import database
 from species.read import read_filter
 
@@ -43,10 +44,10 @@ def get_planck(temperature,
     wl_points = np.asarray(wl_points[:-1]) # [micron]
     wl_points *= 1e-6 # [m]
 
-    planck1 = 2.*constants.PLANCK*constants.LIGHT**2/wl_points**5
-    planck2 = np.exp(constants.PLANCK*constants.LIGHT/(wl_points*constants.BOLTZMANN*temperature)) - 1.
+    planck1 = 2.*con.PLANCK*con.LIGHT**2/wl_points**5
+    planck2 = np.exp(con.PLANCK*con.LIGHT/(wl_points*con.BOLTZMANN*temperature)) - 1.
 
-    flux = 4.*math.pi * (radius*constants.R_JUP/(distance*constants.PARSEC))**2 * planck1/planck2 # [W m-2 m-1]
+    flux = 4.*math.pi * (radius*con.R_JUP/(distance*con.PARSEC))**2 * planck1/planck2 # [W m-2 m-1]
     flux *= 1e-6 # [W m-2 micron-1]
 
     wl_points *= 1e6 # [micron]

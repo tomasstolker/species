@@ -25,7 +25,7 @@ plt.rc('axes', edgecolor='black', linewidth=2)
 def plot_spectrum(boxes,
                   filters,
                   output,
-                  colors,
+                  colors=None,
                   residuals=None,
                   xlim=None,
                   ylim=None,
@@ -267,11 +267,18 @@ def plot_spectrum(boxes,
                 data = np.array(flux, dtype=np.float64)
                 masked = np.ma.array(data, mask=np.isnan(data))
 
-                ax1.plot(wavelength, masked/scaling, lw=0.4, color=colors[j], alpha=0.5, zorder=3)
+                if colors:
+                    ax1.plot(wavelength, masked/scaling, lw=0.4, color=colors[j], alpha=0.5, zorder=3)
+                else:
+                    ax1.plot(wavelength, masked/scaling, lw=0.4, alpha=0.5, zorder=3)
 
         elif isinstance(boxitem, box.PhotometryBox):
-            ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
-                     color=colors[j], label=boxitem.name, zorder=5)
+            if colors:
+                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
+                         color=colors[j], label=boxitem.name, zorder=5)
+            else:
+                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
+                         label=boxitem.name, zorder=5)
 
         elif isinstance(boxitem, box.ObjectBox):
             for item in boxitem.flux:

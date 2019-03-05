@@ -27,6 +27,15 @@ def create_box(boxtype, **kwargs):
         box.magnitude = kwargs['magnitude']
         box.sptype = kwargs['sptype']
 
+    if boxtype == 'colorcolor':
+        box = ColorColorBox()
+        box.library = kwargs['library']
+        box.object_type = kwargs['object_type']
+        box.filters = kwargs['filters']
+        box.color1 = kwargs['color1']
+        box.color2 = kwargs['color2']
+        box.sptype = kwargs['sptype']
+
     elif boxtype == 'model':
         box = ModelBox()
         box.model = kwargs['model']
@@ -86,6 +95,24 @@ class ColorMagBox:
         self.filter_mag = None
         self.color = None
         self.magnitude = None
+        self.sptype = None
+
+
+class ColorColorBox:
+    """
+    Text
+    """
+
+    def __init__(self):
+        """
+        :return:
+        """
+
+        self.library = None
+        self.object_type = None
+        self.filters = None
+        self.color1 = None
+        self.color2 = None
         self.sptype = None
 
 
