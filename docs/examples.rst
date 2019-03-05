@@ -13,8 +13,8 @@ A configuration file is required in the working folder, for example::
    config = species_config.ini
    input = data/
 
-Photometric calibration
------------------------
+Conversion of photometry units
+------------------------------
 
 Calculating the flux density for a given magnitude (and the other way around) is done in the following way::
 
