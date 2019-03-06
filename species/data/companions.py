@@ -44,7 +44,7 @@ def get_data():
             #                         '':(),
             #                         '':(),
             #                         '':()}},
-            #
+
             # 'HR 8799 c':{'distance':41.29,
             #              'app_mag':{'':(),
             #                         '':(),
@@ -53,7 +53,7 @@ def get_data():
             #                         '':(),
             #                         '':(),
             #                         '':()}},
-            #
+
             # 'HR 8799 d':{'distance':41.29,
             #              'app_mag':{'':(),
             #                         '':(),
@@ -62,7 +62,7 @@ def get_data():
             #                         '':(),
             #                         '':(),
             #                         '':()}},
-            #
+
             # 'HR 8799 e':{'distance':41.29,
             #              'app_mag':{'':(),
             #                         '':(),
@@ -71,7 +71,7 @@ def get_data():
             #                         '':(),
             #                         '':(),
             #                         '':()}},
-            #
+
             # 'HD 95086 b':{'distance':86.44,
             #               'app_mag':{'':(),
             #                          '':(),
@@ -80,7 +80,7 @@ def get_data():
             #                          '':(),
             #                          '':(),
             #                          '':()}},
-            #
+
             # '2M1207 B':{'distance':64.42,
             #             'app_mag':{'':(),
             #                        '':(),
@@ -99,7 +99,7 @@ def get_data():
                            'app_mag':{'Paranal/SPHERE.IRDIS_B_H':(16.79, 0.06), # Milli et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_K12_1':(15.2, 0.10), # Chauvin et al. 2017
                                       'Paranal/SPHERE.IRDIS_D_K12_2':(14.88, 0.09), # Chauvin et al. 2017
-                                      'Paranal/NACO.Lp':(13.43, 0.16)}}, # Milli et al. 2016, TODO update error to +0.17, -0.15?
+                                      'Paranal/NACO.Lp':(13.43, 0.16)}}, # Milli et al. 2016, error is +0.17, -0.15?
                                       # 'Paranal/NACO.Mp':(), # Stolker et al. in prep.
 
             # 'GQ Lup B':{'distance':151.82,
@@ -112,7 +112,7 @@ def get_data():
             #                        '':()}},
 
             'PZ Tel B':{'distance':47.13,
-                        'app_mag':{'Paranal/SPHERE.ZIMPOL_R_PRIM':(17.84, 0.3), # Maire et al. 2015, TODO update error to +0.22, −0.31?
+                        'app_mag':{'Paranal/SPHERE.ZIMPOL_R_PRIM':(17.84, 0.3), # Maire et al. 2015, error is +0.22, −0.31?
                                    'Paranal/SPHERE.ZIMPOL_I_PRIM':(15.16, 0.12), # Maire et al. 2015
                                    'Paranal/SPHERE.IRDIS_D_H23_2':(11.78, 0.19), # Maire et al. 2015
                                    'Paranal/SPHERE.IRDIS_D_H23_3':(11.65, 0.19), # Maire et al. 2015
@@ -135,16 +135,26 @@ def get_data():
             #                           '':(),
             #                           '':(),
             #                           '':()}},
-            #
-            # 'GJ 504 B':{'distance':17.54,
-            #             'app_mag':{'':(),
-            #                        '':(),
-            #                        '':(),
-            #                        '':(),
-            #                        '':(),
-            #                        '':(),
-            #                        '':()}},
-            #
+
+            'GJ 504 b':{'distance':17.54,
+                        'app_mag':{'Paranal/SPHERE.IRDIS_D_Y23_2':(20.98, 0.20),
+                                   'Paranal/SPHERE.IRDIS_D_Y23_3':(20.14, 0.09),
+                                   # 'Paranal/SPHERE.IRDIS_D_J23_2':(>21.28, ),
+                                   'Paranal/SPHERE.IRDIS_D_J23_3':(19.01, 0.17),
+                                   'Paranal/SPHERE.IRDIS_D_H23_2':(18.95, 0.30),
+                                   'Paranal/SPHERE.IRDIS_D_H23_3':(21.81, 0.35),
+                                   'Paranal/SPHERE.IRDIS_D_K12_1':(18.77, 0.20),
+                                   # 'Paranal/SPHERE.IRDIS_D_K12_2':(>19.96, ),
+                                   'Subaru/CIAO.J':(19.78, 0.10),
+                                   'Subaru/CIAO.H':(20.01, 0.14),
+                                   'Subaru/CIAO.Ks':(19.38, 0.11),
+                                   'Subaru/CIAO.CH4s':(19.58, 0.13),
+                                   # 'Subaru/CIAO.CH4l':(>20.63, ),
+                                   # 'LBTI/LMIRcam.L_NB6':(17.59, 0.17),
+                                   # 'LBTI/LMIRcam.L_NB7':(16.47, 0.19),
+                                   # 'LBTI/LMIRcam.L_NB8':(15.85, 0.17),
+                                   'Subaru/IRCS.Lp':(16.70, 0.17)}},
+
             # 'GU Psc B':{'distance':47.61,
             #             'app_mag':{'':(),
             #                        '':(),
@@ -153,7 +163,7 @@ def get_data():
             #                        '':(),
             #                        '':(),
             #                        '':()}},
-            #
+
             # '1RXS 1609 B':{'distance':139.67,
             #                'app_mag':{'':(),
             #                           '':(),

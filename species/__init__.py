@@ -13,8 +13,8 @@ from species.read.read_model import ReadModel, \
 from species.read.read_spectrum import ReadSpectrum, \
                                        get_planck
 
-from species.read.read_colormag import ReadColorMagnitude, \
-                                       ReadColorColor
+from species.read.read_color import ReadColorMagnitude, \
+                                    ReadColorColor
 
 from species.read.read_object import ReadObject
 

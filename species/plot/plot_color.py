@@ -30,6 +30,7 @@ def plot_color_magnitude(colorbox,
                          output,
                          xlim=None,
                          ylim=None,
+                         offset=None,
                          legend='top left'):
     """
     :param colorbox: Box with the colors and magnitudes.
@@ -81,8 +82,12 @@ def plot_color_magnitude(colorbox,
 
     ax1.invert_yaxis()
 
-    ax1.get_xaxis().set_label_coords(0.5, -0.08)
-    ax1.get_yaxis().set_label_coords(-0.12, 0.5)
+    if offset:
+        ax1.get_xaxis().set_label_coords(0.5, offset[0])
+        ax1.get_yaxis().set_label_coords(offset[1], 0.5)
+    else:
+        ax1.get_xaxis().set_label_coords(0.5, -0.08)
+        ax1.get_yaxis().set_label_coords(-0.12, 0.5)
 
     if xlim:
         ax1.set_xlim(xlim[0], xlim[1])
@@ -106,6 +111,13 @@ def plot_color_magnitude(colorbox,
 
     spt_disc = util.sptype_discrete(sptype, color.shape)
 
+    _, unique = np.unique(color, return_index=True)
+
+    sptype = sptype[unique]
+    color = color[unique]
+    magnitude = magnitude[unique]
+    spt_disc = spt_disc[unique]
+
     scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
                        zorder=1, s=25., alpha=0.6)
 
@@ -119,6 +131,7 @@ def plot_color_magnitude(colorbox,
     if objects is not None:
         for item in objects:
             objdata = read_object.ReadObject(item[0])
+
             objcolor1 = objdata.get_photometry(item[1])
             objcolor2 = objdata.get_photometry(item[2])
             abs_mag = objdata.get_absmag(item[3])
@@ -146,10 +159,32 @@ def plot_color_color(colorbox,
                      objects,
                      label_x,
                      label_y,
-                     output):
+                     output,
+                     xlim=None,
+                     ylim=None,
+                     offset=None,
+                     legend='top left'):
     """
-    :param colors:
-    :type colors: tuple(tuple(str, str), tuple(str, str))
+    :param colorbox: Box with the colors and magnitudes.
+    :type colorbox: species.core.box.ColorMagBox
+    :param objects: Tuple with individual objects. The objects require a tuple with their database
+                    tag, the two filter IDs for the color, and the filter ID for the absolute
+                    magnitude.
+    :type objects: tuple(tuple(str, str, str, str), )
+    :param label_x: Label for the x-axis.
+    :type label_x: str
+    :param label_y: Label for the y-axis.
+    :type label_y: str
+    :param output: Output filename.
+    :type output: str
+    :param xlim: Limits for the x-axis.
+    :type xlim: tuple(float, float)
+    :param ylim: Limits for the y-axis.
+    :type ylim: tuple(float, float)
+    :param offset: Offset of the x- and y-axis label.
+    :type offset: tuple(float, float)
+    :param legend: Legend position.
+    :type legend: str
 
     :return: None
     """
@@ -157,8 +192,10 @@ def plot_color_color(colorbox,
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()
 
-    plt.figure(1, figsize=(4, 4.8))
-    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
+    marker = itertools.cycle(('o', 's', 'p', '<', '>', 'P', 'v', '^', '*'))
+
+    plt.figure(1, figsize=(4, 4.3))
+    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.])
     gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
 
     ax1 = plt.subplot(gridsp[2, 0])
@@ -179,23 +216,44 @@ def plot_color_color(colorbox,
 
     ax1.invert_yaxis()
 
-    ax1.get_xaxis().set_label_coords(0.5, -0.08)
-    ax1.get_yaxis().set_label_coords(-0.12, 0.5)
+    if offset:
+        ax1.get_xaxis().set_label_coords(0.5, offset[0])
+        ax1.get_yaxis().set_label_coords(offset[1], 0.5)
+    else:
+        ax1.get_xaxis().set_label_coords(0.5, -0.08)
+        ax1.get_yaxis().set_label_coords(-0.12, 0.5)
 
-    indices = np.where(sptype != 'None')[0]
+    if xlim:
+        ax1.set_xlim(xlim[0], xlim[1])
 
-    sptype = sptype[indices]
-    color = color[indices]
-    magnitude = magnitude[indices]
-
-    spt_disc = util.sptype_discrete(sptype, color.shape)
+    if ylim:
+        ax1.set_ylim(ylim[0], ylim[1])
 
     cmap = plt.cm.viridis
     bounds = np.arange(0, 8, 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    scat = ax1.scatter(colors[0], colors[1], c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=3, s=25., alpha=0.6)
+    sptype = colorbox.sptype
+    color1 = colorbox.color1
+    color2 = colorbox.color2
+
+    indices = np.where(sptype != 'None')[0]
+
+    sptype = sptype[indices]
+    color1 = color1[indices]
+    color2 = color2[indices]
+
+    spt_disc = util.sptype_discrete(sptype, color1.shape)
+
+    _, unique = np.unique(color1, return_index=True)
+
+    sptype = sptype[unique]
+    color1 = color1[unique]
+    color2 = color2[unique]
+    spt_disc = spt_disc[unique]
+
+    scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
+                       zorder=1, s=25., alpha=0.6)
 
     cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
                   ticklocation='top', format='%.2f')
@@ -207,10 +265,32 @@ def plot_color_color(colorbox,
     if objects is not None:
         for item in objects:
             objdata = read_object.ReadObject(item[0])
-            color = objdata.get_magnitude(item[1]) - objdata.get_magnitude(item[2])
-            mag = objdata.get_magnitude(item[3])
 
-            ax1.plot(color, mag, 's', ms=5, color='black')
+            mag1 = objdata.get_photometry(item[1][0])[0]
+            mag2 = objdata.get_photometry(item[1][1])[0]
+            mag3 = objdata.get_photometry(item[2][0])[0]
+            mag4 = objdata.get_photometry(item[2][1])[0]
+
+            err1 = objdata.get_photometry(item[1][0])[1]
+            err2 = objdata.get_photometry(item[1][1])[1]
+            err3 = objdata.get_photometry(item[2][0])[1]
+            err4 = objdata.get_photometry(item[2][1])[1]
+
+            color1 = mag1 - mag2
+            color2 = mag3 - mag4
+
+            error1 = math.sqrt(err1**2+err2**2)
+            error2 = math.sqrt(err3**2+err4**2)
+
+            ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
+                         marker=next(marker), ms=6, color='black', label=objdata.object_name,
+                         markerfacecolor='white', markeredgecolor='black', zorder=2)
+
+    handles, labels = ax1.get_legend_handles_labels()
+
+    if handles:
+        handles = [h[0] for h in handles]
+        ax1.legend(handles, labels, loc=legend, prop={'size':9}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()

@@ -95,7 +95,7 @@ class ReadColorMagnitude:
                 sptype = np.concatenate((sptype, sptype_tmp), axis=0)
 
                 flag = np.concatenate((flag, flag_tmp), axis=0)
-                indices = np.concatenate((indices, indices_tmp), axis=0)
+                indices = np.concatenate((indices, indices.shape+indices_tmp), axis=0)
 
                 mag1_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_color[0]])
                 mag2_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters_color[1]])
@@ -134,7 +134,7 @@ class ReadColorColor:
         """
         :param library: Photometric libraries.
         :type library: tuple(str, )
-        :param filters:
+        :param filters: Filter IDs for the two colors.
         :type filters: tuple(tuple(str, str), tuple(str, str))
 
         :return: None
@@ -156,7 +156,8 @@ class ReadColorColor:
     def get_color_color(self,
                         object_type):
         """
-        :param object_type:
+        :param object_type: Object type (currently only 'field' possible). All objects are
+                            selected if set to None.
         :type object_type: str
 
         :return: Box with the colors.
@@ -203,7 +204,7 @@ class ReadColorColor:
                 sptype = np.concatenate((sptype, sptype_tmp), axis=0)
 
                 flag = np.concatenate((flag, flag_tmp), axis=0)
-                indices = np.concatenate((indices, indices_tmp), axis=0)
+                indices = np.concatenate((indices, indices.shape+indices_tmp), axis=0)
 
                 mag1_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][0]])
                 mag2_tmp = np.asarray(h5_file['photometry/'+item+'/'+self.filters[0][1]])
