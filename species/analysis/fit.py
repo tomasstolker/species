@@ -51,12 +51,12 @@ def lnprior(param,
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
 
-            if prior[0] == 'mass':
+            if prior is None:
+                ln_prior = 0.
+
+            elif prior[0] == 'mass':
                 mass = read_model.get_mass(modeldict)
                 ln_prior = -0.5*(mass-prior[1])**2/prior[2]**2
-
-            else:
-                ln_prior = 0.
 
         else:
             ln_prior = -np.inf

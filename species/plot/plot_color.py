@@ -22,6 +22,7 @@ mpl.rcParams['font.family'] = 'serif'
 
 plt.rc('axes', edgecolor='black', linewidth=2)
 
+marker = itertools.cycle(('o', 's', 'p', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
 
 def plot_color_magnitude(colorbox,
                          objects,
@@ -57,8 +58,6 @@ def plot_color_magnitude(colorbox,
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
-
-    marker = itertools.cycle(('o', 's', 'p', '<', '>', 'P', 'v', '^', '*'))
 
     plt.figure(1, figsize=(4, 4.8))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
@@ -191,8 +190,6 @@ def plot_color_color(colorbox,
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()
-
-    marker = itertools.cycle(('o', 's', 'p', '<', '>', 'P', 'v', '^', '*'))
 
     plt.figure(1, figsize=(4, 4.3))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.])

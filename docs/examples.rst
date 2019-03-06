@@ -100,7 +100,8 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
    database = species.Database()
    database.add_companion(name=None)
 
-   object_cmd = ('51 Eri b', 'MKO/NSFCam.J', 'MKO/NSFCam.H', 'MKO/NSFCam.J')
+   object1 = ('beta Pic b', 'Paranal/NACO.J', 'Paranal/NACO.H', 'Paranal/NACO.J')
+   object2 = ('51 Eri b', 'MKO/NSFCam.J', 'MKO/NSFCam.H', 'MKO/NSFCam.J')
 
    colormag = species.ReadColorMagnitude(library=('vlm-plx', ),
                                          filters_color=('MKO/NSFCam.J', 'MKO/NSFCam.H'),
@@ -109,11 +110,11 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
    colorbox = colormag.get_color_magnitude(object_type='field')
 
    species.plot_color_magnitude(colorbox=colorbox,
-                                objects=(object_cmd, ),
+                                objects=(object1, object2),
                                 label_x='J - H [mag]',
                                 label_y='M$_\mathregular{J}$ [mag]',
-                                output='color_mag.pdf')
-
+                                output='color_mag.pdf',
+                                legend='upper left')
 
 .. image:: _images/color_mag.png
    :width: 70%

@@ -4,10 +4,10 @@ species.read package
 Submodules
 ----------
 
-species.read.read\_colormag module
-----------------------------------
+species.read.read\_color module
+-------------------------------
 
-.. automodule:: species.read.read_colormag
+.. automodule:: species.read.read_color
     :members:
     :undoc-members:
     :show-inheritance:
