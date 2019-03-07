@@ -1,6 +1,6 @@
-"""
+'''
 Module for BT-NextGen atmospheric models.
-"""
+'''
 
 import os
 import sys
@@ -20,7 +20,7 @@ def add_btnextgen(input_path,
                   database,
                   wl_bound,
                   teff_bound):
-    """
+    '''
     Function for adding the BT-NextGen atmospheric models to the database.
 
     :param input_path:
@@ -33,7 +33,7 @@ def add_btnextgen(input_path,
     :type teff_bound: tuple(float, float)
 
     :return: None
-    """
+    '''
 
     spec_res = 1e5
 

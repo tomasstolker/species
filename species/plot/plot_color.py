@@ -1,6 +1,6 @@
-"""
+'''
 Module with functions for making plots.
-"""
+'''
 
 import os
 import sys
@@ -33,7 +33,7 @@ def plot_color_magnitude(colorbox,
                          ylim=None,
                          offset=None,
                          legend='top left'):
-    """
+    '''
     :param colorbox: Box with the colors and magnitudes.
     :type colorbox: species.core.box.ColorMagBox
     :param objects: Tuple with individual objects. The objects require a tuple with their database
@@ -54,7 +54,7 @@ def plot_color_magnitude(colorbox,
     :type legend: str
 
     :return: None
-    """
+    '''
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
@@ -163,7 +163,7 @@ def plot_color_color(colorbox,
                      ylim=None,
                      offset=None,
                      legend='top left'):
-    """
+    '''
     :param colorbox: Box with the colors and magnitudes.
     :type colorbox: species.core.box.ColorMagBox
     :param objects: Tuple with individual objects. The objects require a tuple with their database
@@ -186,7 +186,7 @@ def plot_color_color(colorbox,
     :type legend: str
 
     :return: None
-    """
+    '''
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()

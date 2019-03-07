@@ -1,6 +1,6 @@
-"""
+'''
 Module with functions for making plots.
-"""
+'''
 
 import os
 import sys
@@ -22,13 +22,11 @@ plt.rc('axes', edgecolor='black', linewidth=2)
 
 def plot_walkers(tag,
                  output,
-                 nsteps=None):
-    """
-    :param box:
-    :type box: species.core.box.SamplesBox
-
+                 nsteps=None,
+                 offset=None):
+    '''
     :return: None
-    """
+    '''
 
     sys.stdout.write('Plotting walkers: '+output+'...')
     sys.stdout.flush()
@@ -39,77 +37,54 @@ def plot_walkers(tag,
     samples = box.samples
     labels = util.update_labels(box.parameters)
 
+    ndim = samples.shape[-1]
+
     plt.figure(1, figsize=(6, 5))
     gridsp = mpl.gridspec.GridSpec(4, 1)
     gridsp.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
-    ax1 = plt.subplot(gridsp[0, 0])
-    ax2 = plt.subplot(gridsp[1, 0])
-    ax3 = plt.subplot(gridsp[2, 0])
-    ax4 = plt.subplot(gridsp[3, 0])
+    for i in range(ndim):
+        ax = plt.subplot(gridsp[i, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
-    ax2.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
-    ax3.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
-    ax4.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
+        ax.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
 
-    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+        if i == ndim-1:
+            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=5, labelsize=12, top=True,
+                           bottom=True, left=True, right=True, labelbottom=True)
 
-    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=3, labelsize=12, top=True,
+                           bottom=True, left=True, right=True, labelbottom=True)
 
-    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+        else:
+            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=5, labelsize=12, top=True,
+                           bottom=True, left=True, right=True, labelbottom=False)
 
-    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                           direction='in', width=0.8, length=3, labelsize=12, top=True,
+                           bottom=True, left=True, right=True, labelbottom=False)
 
-    ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+        if i == ndim-1:
+            ax.set_xlabel('Step number', fontsize=10)
+        else:
+            ax.set_xlabel('', fontsize=10)
 
-    ax3.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=False)
+        ax.set_ylabel(labels[i], fontsize=10)
 
-    ax4.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=True)
+        if offset:
+            ax.get_xaxis().set_label_coords(0.5, offset[0])
+            ax.get_yaxis().set_label_coords(offset[1], 0.5)
+        else:
+            ax.get_xaxis().set_label_coords(0.5, -0.22)
+            ax.get_yaxis().set_label_coords(-0.09, 0.5)
 
-    ax4.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
-                    bottom=True, left=True, right=True, labelbottom=True)
+        if nsteps:
+            ax.set_xlim(0, nsteps)
 
-    ax4.set_xlabel('Step number', fontsize=10)
-
-    ax1.set_ylabel(labels[0], fontsize=10)
-    ax2.set_ylabel(labels[1], fontsize=10)
-    ax3.set_ylabel(labels[2], fontsize=10)
-    ax4.set_ylabel(labels[3], fontsize=10)
-
-    if nsteps:
-        ax1.set_xlim(0, nsteps)
-        ax2.set_xlim(0, nsteps)
-        ax3.set_xlim(0, nsteps)
-        ax4.set_xlim(0, nsteps)
-
-    ax4.get_xaxis().set_label_coords(0.5, -0.22)
-
-    ax1.get_yaxis().set_label_coords(-0.09, 0.5)
-    ax2.get_yaxis().set_label_coords(-0.09, 0.5)
-    ax3.get_yaxis().set_label_coords(-0.09, 0.5)
-    ax4.get_yaxis().set_label_coords(-0.09, 0.5)
-
-    for i in range(samples.shape[0]):
-        ax1.plot(samples[i, :, 0], ls='-', lw=0.5, color="black", alpha=0.5)
-        ax2.plot(samples[i, :, 1], ls='-', lw=0.5, color="black", alpha=0.5)
-        ax3.plot(samples[i, :, 2], ls='-', lw=0.5, color="black", alpha=0.5)
-        ax4.plot(samples[i, :, 3], ls='-', lw=0.5, color="black", alpha=0.5)
+        for j in range(samples.shape[0]):
+            ax.plot(samples[j, :, i], ls='-', lw=0.5, color='black', alpha=0.5)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()
@@ -120,14 +95,13 @@ def plot_walkers(tag,
 
 def plot_posterior(tag,
                    burnin,
-                   title,
-                   output):
-    """
-    :param box:
-    :type box: species.core.box.SamplesBox
-
+                   output,
+                   title=None,
+                   offset=None,
+                   title_fmt='.2f'):
+    '''
     :return: None
-    """
+    '''
 
     sys.stdout.write('Plotting posteriors: '+output+'...')
     sys.stdout.flush()
@@ -138,13 +112,13 @@ def plot_posterior(tag,
     samples = box.samples
     labels = util.update_labels(box.parameters)
 
-    ndim = samples.shape[2]
+    ndim = samples.shape[-1]
 
     samples = samples[:, int(burnin):, :].reshape((-1, ndim))
 
     fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],
-                        label_kwargs={"fontsize": 13}, show_titles=True,
-                        title_kwargs={"fontsize": 12}, title_fmt='.2f')
+                        label_kwargs={'fontsize': 13}, show_titles=True,
+                        title_kwargs={'fontsize': 12}, title_fmt=title_fmt)
 
     axes = np.array(fig.axes).reshape((ndim, ndim))
 
@@ -160,22 +134,28 @@ def plot_posterior(tag,
                            direction='in', width=0.8, length=3, labelsize=12, top=True,
                            bottom=True, left=True, right=True)
 
+        if offset:
+            ax.get_xaxis().set_label_coords(0.5, offset[0])
+            ax.get_yaxis().set_label_coords(offset[1], 0.5)
+        else:
             ax.get_xaxis().set_label_coords(0.5, -0.26)
             ax.get_yaxis().set_label_coords(-0.27, 0.5)
+
 
     par_val = box.chisquare
 
     for i in range(ndim):
         ax = axes[i, i]
-        ax.axvline(par_val[i], color="tomato")
+        ax.axvline(par_val[i], color='tomato')
 
         for j in range(i+1, ndim):
             ax = axes[j, i]
-            ax.axvline(par_val[i], color="tomato")
-            ax.axhline(par_val[j], color="tomato")
-            ax.plot(par_val[i], par_val[j], "s", color="tomato")
+            ax.axvline(par_val[i], color='tomato')
+            ax.axhline(par_val[j], color='tomato')
+            ax.plot(par_val[i], par_val[j], 's', color='tomato')
 
-    fig.suptitle(title, y=1.02, fontsize=16)
+    if title:
+        fig.suptitle(title, y=1.02, fontsize=16)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()

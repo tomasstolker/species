@@ -1,13 +1,13 @@
-"""
+'''
 Text.
-"""
+'''
 
 import numpy as np
 
 
 def sptype_discrete(sptype,
                     shape):
-    """
+    '''
     :param sptype:
     :type sptype:
     :param shape:
@@ -15,7 +15,7 @@ def sptype_discrete(sptype,
 
     :return::
     :rtype: numpy.ndarray
-    """
+    '''
 
     spt_disc = np.zeros(shape)
 
@@ -51,13 +51,13 @@ def sptype_discrete(sptype,
 
 
 def update_labels(param):
-    """
+    '''
     :param param:
     :type param: list
 
     :return:
     :rtype: list
-    """
+    '''
 
     if 'teff' in param:
         index = param.index('teff')
@@ -75,17 +75,21 @@ def update_labels(param):
         index = param.index('radius')
         param[index] = r'$R$ [$\mathregular{R_{Jup}}$]'
 
+    if 'scaling' in param:
+        index = param.index('scaling')
+        param[index] = 'Scaling'
+
     return param
 
 
 def model_name(key):
-    """
+    '''
     :param key:
     :type key: str
 
     :return:
     :rtype: str
-    """
+    '''
 
     if key == 'drift-phoenix':
         name = 'DRIFT-PHOENIX'
@@ -97,13 +101,13 @@ def model_name(key):
 
 
 def quantity_unit(param):
-    """
+    '''
     :param param:
     :type param: list
 
     :return:
     :rtype: list, list
-    """
+    '''
 
     quantity = []
     unit = []

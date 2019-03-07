@@ -1,6 +1,6 @@
-"""
+'''
 Read module.
-"""
+'''
 
 import os
 import configparser
@@ -12,18 +12,18 @@ from species.analysis import photometry
 
 
 class ReadObject:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self,
                  object_name):
-        """
+        '''
         :param object_name: Object name.
         :type object_name: str
 
         :return: None
-        """
+        '''
 
         self.object_name = object_name
 
@@ -36,14 +36,14 @@ class ReadObject:
 
     def get_photometry(self,
                        filter_name):
-        """
+        '''
         :param filter_name: Filter name.
         :type filter_name: str
 
         :return: Apparent magnitude (mag), magnitude error (error),
                  apparent flux (W m-2 micron-1), flux error (W m-2 micron-1).
         :rtype: numpy.ndarray
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
@@ -52,10 +52,10 @@ class ReadObject:
         return obj_phot
 
     def get_distance(self):
-        """
+        '''
         :return: Distance (pc).
         :rtype: float
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
@@ -65,13 +65,13 @@ class ReadObject:
 
     def get_absmag(self,
                    filter_name):
-        """
+        '''
         :param filter_name: Filter name.
         :type filter_name: str
 
         :return: Absolute magnitude (mag), magnitude error (error).
         :rtype: float, float
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])

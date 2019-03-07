@@ -1,13 +1,10 @@
-"""
+'''
 Text
-"""
+'''
 
-import os
 import sys
 import math
-import configparser
 
-import h5py
 import emcee
 import progress.bar
 import numpy as np
@@ -25,7 +22,7 @@ def lnprior(param,
             bounds,
             modelpar,
             prior):
-    """
+    '''
     :param param: Parameter values.
     :type param: numpy.ndarray
     :param bounds: Parameter boundaries.
@@ -39,7 +36,7 @@ def lnprior(param,
 
     :return: Log prior probability.
     :rtype: float
-    """
+    '''
 
     if prior:
 
@@ -72,7 +69,7 @@ def lnlike(param,
            synphot,
            sampling,
            distance):
-    """
+    '''
     :param param:
     :type param:
     :param modelpar:
@@ -90,7 +87,7 @@ def lnlike(param,
 
     :return: Log likelihood probability.
     :rtype: float
-    """
+    '''
 
     global MIN_CHISQ
     global MIN_PARAM
@@ -123,7 +120,7 @@ def lnprob(param,
            sampling,
            distance,
            prior):
-    """
+    '''
     :param param:
     :type param:
     :param bounds:
@@ -145,7 +142,7 @@ def lnprob(param,
 
     :return:
     :rtype:
-    """
+    '''
 
     ln_prior = lnprior(param, bounds, modelpar, prior)
 
@@ -164,10 +161,10 @@ def lnprob(param,
     return ln_prob
 
 
-class FitSpectrum:
-    """
+class FitModel:
+    '''
     Text
-    """
+    '''
 
     def __init__(self,
                  objname,
@@ -175,7 +172,7 @@ class FitSpectrum:
                  model,
                  sampling,
                  bounds):
-        """
+        '''
         :param objname: Object name in the database.
         :type objname: str
         :param filters: Filter IDs for which the photometry is selected. All available
@@ -184,17 +181,14 @@ class FitSpectrum:
         :name model: Atmospheric model.
         :type model: str
         :name sampling: Wavelength sampling for the computation of synthetic photometry
-                        ("specres" or "gaussian").
+                        ('specres' or 'gaussian').
         :type sampling: tuple
         :name bounds: Parameter boundaries. Full parameter range is used if None or not specified.
                       The radius parameter range is set to 0-5 Rjup if not specified.
         :type bounds: dict
 
         :return: None
-        """
-
-        self.parsec = 3.08567758147e16 # [m]
-        self.r_jup = 71492000. # [m]
+        '''
 
         self.object = read_object.ReadObject(objname)
         self.distance = self.object.get_distance()
@@ -252,10 +246,10 @@ class FitSpectrum:
                  guess,
                  tag,
                  prior=None,
-                 ncpu=1,):
-        """
+                 ncpu=1):
+        '''
         :return: None
-        """
+        '''
 
         global MIN_CHISQ
         global MIN_PARAM
@@ -300,75 +294,11 @@ class FitSpectrum:
 
         progbar.finish()
 
-        self.store_samples(sampler, self.model, tag, (MIN_CHISQ, MIN_PARAM))
+        species_db = database.Database()
 
-    def store_samples(self,
-                      sampler,
-                      model,
-                      tag,
-                      chisquare):
-        """
-        :param sampler: Ensemble sampler.
-        :type sampler: emcee.ensemble.EnsembleSampler
-        :param model: Atmospheric model.
-        :type model: str
-        :param tag: Database tag.
-        :type tag: str
-        :param chisquare: Maximum likelihood solution. Tuple with the chi-square value and related
-                          parameter values.
-        :type chisquare: tuple(float, float)
-
-        :return: None
-        """
-
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
-
-        config = configparser.ConfigParser()
-        config.read_file(open(config_file))
-
-        species_db = config['species']['database']
-
-        h5_file = h5py.File(species_db, 'a')
-
-        if 'results' not in h5_file:
-            h5_file.create_group('results')
-
-        if 'results/mcmc' not in h5_file:
-            h5_file.create_group('results/mcmc')
-
-        if 'results/mcmc/'+tag in h5_file:
-            del h5_file['results/mcmc/'+tag]
-
-        samples = sampler.chain
-
-        dset = h5_file.create_dataset('results/mcmc/'+tag,
-                                      data=samples,
-                                      dtype='f')
-
-        dset.attrs['model'] = str(model)
-        dset.attrs['distance'] = float(self.distance)
-        dset.attrs['nparam'] = int(len(self.modelpar))
-
-        for i, item in enumerate(self.modelpar):
-            dset.attrs['parameter'+str(i)] = str(item)
-
-        dset.attrs['min_chi'] = float(chisquare[0])
-        for i, item in enumerate(self.modelpar):
-            dset.attrs['chisquare'+str(i)] = float(chisquare[1][item])
-
-        mean_accep = np.mean(sampler.acceptance_fraction)
-        dset.attrs['acceptance'] = float(mean_accep)
-        print('Mean acceptance fraction: {0:.3f}'.format(mean_accep))
-
-        try:
-            int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
-            print('Integrated autocorrelation time =', int_auto)
-
-        except emcee.autocorr.AutocorrError:
-            int_auto = None
-
-        if int_auto is not None:
-            for i, item in enumerate(int_auto):
-                dset.attrs['autocorrelation'+str(i)] = float(item)
-
-        h5_file.close()
+        species_db.add_samples(sampler=sampler,
+                               spectrum=('model', self.model),
+                               tag=tag,
+                               chisquare=(MIN_CHISQ, MIN_PARAM),
+                               modelpar=self.modelpar,
+                               distance=self.distance)

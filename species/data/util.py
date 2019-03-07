@@ -1,12 +1,12 @@
-"""
+'''
 Utility functions.
-"""
+'''
 
 import numpy as np
 
 
 def update_sptype(sptypes):
-    """
+    '''
     Function to update a list with spectral types to two characters (e.g., M8, L3, or T1).
 
     :param sptypes: Spectral types.
@@ -14,7 +14,7 @@ def update_sptype(sptypes):
 
     :return: Updated spectral types.
     :rtype: numpy.ndarray
-    """
+    '''
 
     mlty = ('M', 'L', 'T', 'Y')
 
@@ -38,7 +38,7 @@ def update_sptype(sptypes):
 
 
 def update_filter(filter_in):
-    """
+    '''
     Function to update filter ID from the Vizier Photometry viewer VOTable to the filter ID from
     the SVO Filter Profile Service.
 
@@ -47,7 +47,7 @@ def update_filter(filter_in):
 
     :return: Filter ID in the format of the SVO Filter Profile Service.
     :rtype: str
-    """
+    '''
 
     if filter_in[0:5] == b'2MASS':
         filter_out = str(b'2MASS/2MASS.'+filter_in[6:])
@@ -69,7 +69,7 @@ def sort_data(teff,
               feh,
               wavelength,
               flux):
-    """
+    '''
     :param teff:
     :type teff: numpy.ndarray
     :param logg:
@@ -83,7 +83,7 @@ def sort_data(teff,
 
     :return:
     :rtype: tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray)
-    """
+    '''
 
     teff_unique = np.unique(teff)
     logg_unique = np.unique(logg)
@@ -107,14 +107,14 @@ def sort_data(teff,
 def write_data(model,
                database,
                data_sorted):
-    """
+    '''
     :param model: Atmosphere model.
     :type model: str
     :param database:
     :type database: h5py._hl.files.File
 
     :return: None
-    """
+    '''
 
     if 'models/'+model in database:
         del database['models/'+model]
@@ -149,14 +149,14 @@ def write_data(model,
 
 def add_missing(model,
                 database):
-    """
+    '''
     :param model: Atmosphere model.
     :type model: str
     :param database:
     :type database: h5py._hl.files.File
 
     :return: None
-    """
+    '''
 
     teff = np.asarray(database['models/'+model+'/teff'])
     logg = np.asarray(database['models/'+model+'/logg'])

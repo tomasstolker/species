@@ -1,6 +1,6 @@
-"""
+'''
 Text
-"""
+'''
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -12,13 +12,13 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def download_filter(filter_id):
-    """
+    '''
     :param filter_id: Filter ID.
     :type filter_id: str
 
     :return:
     :rtype: numpy.ndarray, numpy.ndarray
-    """
+    '''
 
     if filter_id == 'LCO/VisAO.Ys':
         url = 'https://visao.as.arizona.edu/software_files/visao/html/VisAO_Ys_filter_curve.dat'

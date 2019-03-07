@@ -1,6 +1,6 @@
-"""
+'''
 Read module.
-"""
+'''
 
 import os
 import math
@@ -20,7 +20,7 @@ def get_planck(temperature,
                distance,
                wavelength,
                specres):
-    """
+    '''
     :param temperature: Temperature (K)
     :type temperature: float
     :param radius: Radius (Rjup).
@@ -34,7 +34,7 @@ def get_planck(temperature,
 
     :return: Box with the Planck spectrum.
     :rtype: species.core.box.SpectrumBox
-    """
+    '''
 
     wl_points = [wavelength[0]]
 
@@ -60,21 +60,21 @@ def get_planck(temperature,
 
 
 class ReadSpectrum:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self,
                  spectrum,
                  filter_name):
-        """
+        '''
         :param spectrum: Spectral library.
         :type spectrum: str
         :param filter_name: Filter name. Full spectrum is read if set to None.
         :type filter_name: str
 
         :return: None
-        """
+        '''
 
         self.spectrum = spectrum
         self.filter_name = filter_name
@@ -96,7 +96,7 @@ class ReadSpectrum:
     def get_spectrum(self,
                      ignore_nan=True,
                      sptype=None):
-        """
+        '''
         :param ignore_nan: Ignore wavelength points for which the flux is NaN.
         :type ignore_nan: bool
         :param sptype: Spectral types to select. All spectra are retrieved if set to None.
@@ -104,7 +104,7 @@ class ReadSpectrum:
 
         :return: Box with the spectra.
         :rtype: species.core.box.SpectrumBox
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
 

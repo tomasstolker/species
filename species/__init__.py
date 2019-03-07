@@ -1,7 +1,11 @@
-from species.analysis.fit import FitSpectrum
+from species.analysis.fit_model import FitModel
+
+from species.analysis.fit_spectrum import FitSpectrum
 
 from species.analysis.photometry import SyntheticPhotometry, \
                                         apparent_to_absolute
+
+from species.read.read_calibration import ReadCalibration
 
 from species.read.read_filter import ReadFilter
 
