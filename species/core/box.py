@@ -1,21 +1,21 @@
-"""
+'''
 Box module.
-"""
+'''
 
 
 def open_box(box):
-    """
+    '''
     return:
-    """
+    '''
 
     for item in box.__dict__.keys():
         print(item, '=', box.__dict__[item], '\n')
 
 
 def create_box(boxtype, **kwargs):
-    """
+    '''
     :return:
-    """
+    '''
 
     if boxtype == 'colormag':
         box = ColorMagBox()
@@ -59,7 +59,7 @@ def create_box(boxtype, **kwargs):
 
     elif boxtype == 'samples':
         box = SamplesBox()
-        box.model = kwargs['model']
+        box.spectrum = kwargs['spectrum']
         box.parameters = kwargs['parameters']
         box.samples = kwargs['samples']
         box.chisquare = kwargs['chisquare']
@@ -70,6 +70,9 @@ def create_box(boxtype, **kwargs):
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
         box.name = kwargs['name']
+        box.simbad = kwargs['simbad']
+        box.sptype = kwargs['sptype']
+        box.distance = kwargs['distance']
 
     elif boxtype == 'synphot':
         box = SynphotBox()
@@ -80,14 +83,14 @@ def create_box(boxtype, **kwargs):
 
 
 class ColorMagBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.library = None
         self.object_type = None
@@ -99,14 +102,14 @@ class ColorMagBox:
 
 
 class ColorColorBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.library = None
         self.object_type = None
@@ -117,14 +120,14 @@ class ColorColorBox:
 
 
 class ModelBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.model = None
         self.type = None
@@ -134,14 +137,14 @@ class ModelBox:
 
 
 class ObjectBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.name = None
         self.filter = None
@@ -151,14 +154,14 @@ class ObjectBox:
 
 
 class PhotometryBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.name = None
         self.wavelength = None
@@ -166,30 +169,30 @@ class PhotometryBox:
 
 
 class SamplesBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
-        self.model = None
+        self.spectrum = None
         self.parameters = None
         self.samples = None
         self.chisquare = None
 
 
 class SpectrumBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.spectrum = None
         self.wavelength = None
@@ -201,14 +204,14 @@ class SpectrumBox:
 
 
 class SynphotBox:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return:
-        """
+        '''
 
         self.name = None
         self.flux = None

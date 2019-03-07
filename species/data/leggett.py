@@ -1,6 +1,6 @@
-"""
+'''
 Text
-"""
+'''
 
 import os
 import sys
@@ -16,7 +16,7 @@ from species.data import util
 
 def add_leggett(input_path,
                 database):
-    """
+    '''
     Function for adding the Database of Ultracool Parallaxes to the database.
 
     :param input_path:
@@ -25,7 +25,7 @@ def add_leggett(input_path,
     :type database: h5py._hl.files.File
 
     :return: None
-    """
+    '''
 
     data_file1 = os.path.join(input_path, '2010_phot.xls')
     url1 = 'http://staff.gemini.edu/~sleggett/2010_phot.xls'

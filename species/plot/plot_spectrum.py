@@ -1,6 +1,6 @@
-"""
+'''
 Module with functions for making plots.
-"""
+'''
 
 import os
 import sys
@@ -32,7 +32,7 @@ def plot_spectrum(boxes,
                   scale=('linear', 'linear'),
                   title=None,
                   offset=None):
-    """
+    '''
     :param boxes:
     :type boxes: tuple(species.analysis.box.SpectrumBox and/or
                  species.analysis.box.PhotometryBox and/or
@@ -43,7 +43,7 @@ def plot_spectrum(boxes,
     :type output: str
 
     :return: None
-    """
+    '''
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
@@ -230,12 +230,12 @@ def plot_spectrum(boxes,
                     for i, item in enumerate(par_key):
 
                         if item == '$T_\mathregular{eff}$':
-                            value = "{:.1f}".format(par_val[i])
+                            value = '{:.1f}'.format(par_val[i])
                         elif item in ('$\log\,g$', '$R$', '$M$', '[Fe/H]'):
-                            value = "{:.2f}".format(par_val[i])
+                            value = '{:.2f}'.format(par_val[i])
                         elif item == '$L$':
                             # print(item, par_val[i], par_key[i])
-                            value = "{0:.1e}".format(par_val[i])
+                            value = '{0:.1e}'.format(par_val[i])
                         else:
                             continue
 

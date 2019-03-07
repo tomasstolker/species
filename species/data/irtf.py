@@ -1,6 +1,6 @@
-"""
+'''
 Text
-"""
+'''
 
 import os
 import sys
@@ -16,7 +16,7 @@ from species.data import queries, util
 
 
 def add_irtf(input_path, database):
-    """
+    '''
     Function to add the IRTF Spectral Library to the database.
 
     :param input_path:
@@ -25,7 +25,7 @@ def add_irtf(input_path, database):
     :type database: h5py._hl.files.File
 
     :return: None
-    """
+    '''
 
     data_file = [os.path.join(input_path, 'M_fits_091201.tar'),
                  os.path.join(input_path, 'L_fits_091201.tar'),

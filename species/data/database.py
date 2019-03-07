@@ -1,6 +1,6 @@
-"""
+'''
 Database module.
-"""
+'''
 
 import os
 import sys
@@ -8,13 +8,14 @@ import warnings
 import configparser
 
 import h5py
+import emcee
 import numpy as np
 
 from astropy.io import votable
 
 from species.analysis import photometry
-from species.core import box
-from species.read import read_model
+from species.core import box, constants
+from species.read import read_model, read_calibration
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, util
 
@@ -23,14 +24,14 @@ warnings.simplefilter('ignore', UserWarning)
 
 
 class Database:
-    """
+    '''
     Text.
-    """
+    '''
 
     def __init__(self):
-        """
+        '''
         :return: None
-        """
+        '''
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -41,57 +42,58 @@ class Database:
         self.input_path = config['species']['input']
 
     def list_items(self):
-        """
+        '''
         return: None
-        """
+        '''
 
-        print("Database content:")
+        sys.stdout.write('Database content:\n')
 
         def descend(h5_object,
                     seperator=''):
-            """
+            '''
             :param h5_object:
             :type h5_object: h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
             :param separator:
             :type separator: str
 
             :return: None
-            """
+            '''
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
                 for key in h5_object.keys():
-                    print(seperator, '-', key, ':', h5_object[key])
+                    sys.stdout.write(seperator+'- '+key+': '+str(h5_object[key])+'\n')
                     descend(h5_object[key], seperator=seperator+'\t')
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
                 for key in h5_object.attrs.keys():
-                    print(seperator, '-', key, ':', h5_object.attrs[key])
+                    sys.stdout.write(seperator+'- '+key+': '+str(h5_object.attrs[key])+'\n')
 
         h5_file = h5py.File(self.database, 'r')
         descend(h5_file)
+        h5_file.close()
+
+        sys.stdout.flush()
 
     def list_companions(self):
-        """
+        '''
         :return: None
-        """
-
-        print('Database: '+self.database)
-
-        sys.stdout.write('Directly imaged companions: ')
-        sys.stdout.flush()
+        '''
 
         comp_phot = companions.get_data()
 
-        print(list(comp_phot.keys()))
+        sys.stdout.write('Database: '+self.database+'\n')
+        sys.stdout.write('Directly imaged companions: ')
+        sys.stdout.write(str(list(comp_phot.keys()))+'\n')
+        sys.stdout.flush()
 
     def add_companion(self,
                       name=None):
-        """
+        '''
         :param name: Companion name. All companions are added if set to None.
         :type name: tuple(str, )
 
         :return: None
-        """
+        '''
 
         if isinstance(name, str):
             name = tuple((name, ))
@@ -109,7 +111,7 @@ class Database:
     def add_filter(self,
                    filter_id,
                    filename=None):
-        """
+        '''
         :param filter_id: Filter ID from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
         :type filter_id: str
         :param filename: Filename with the filter profile. The first column should contain the
@@ -119,7 +121,7 @@ class Database:
         :type filename: str
 
         :return: None
-        """
+        '''
 
         filter_split = filter_id.split('/')
 
@@ -158,7 +160,7 @@ class Database:
                   model,
                   wavelength=None,
                   teff=None):
-        """
+        '''
         :param model: Model name.
         :type model: str
         :param wavelength: Wavelength (micron) range.
@@ -167,7 +169,7 @@ class Database:
         :type teff: tuple(float, float)
 
         :return: None
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -188,7 +190,7 @@ class Database:
                    object_name,
                    distance,
                    app_mag):
-        """
+        '''
         :param object_name: Object name.
         :type object_name: str
         :param distance: Distance (pc).
@@ -197,16 +199,14 @@ class Database:
         :type app_mag: dict
 
         :return: None
-        """
+        '''
 
         flux = {}
         error = {}
 
         for item in app_mag:
-            mag = app_mag[item]
-
             synphot = photometry.SyntheticPhotometry(item)
-            flux[item], error[item] = synphot.magnitude_to_flux(mag[0], mag[1])
+            flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0], app_mag[item][1])
 
         sys.stdout.write('Adding object: '+object_name+'...')
         sys.stdout.flush()
@@ -247,12 +247,12 @@ class Database:
 
     def add_photometry(self,
                        library):
-        """
+        '''
         :param library: Photometry library.
         :type library: str
 
         :return: None
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -270,14 +270,56 @@ class Database:
 
         h5_file.close()
 
+    def add_calibration(self,
+                        filename,
+                        tag):
+        '''
+        Function for adding a calibration spectrum to the database.
+
+        :param filename: Filename with the calibration spectrum. The first column should contain
+                         the wavelength (micron), the second column the flux density (W m-2
+                         micron-1), and the third column the error (W m-2 micron-1).
+        :type filename: str
+        :param tag: Tag name in the database.
+        :type tag: str
+
+        :return: None
+        '''
+
+        h5_file = h5py.File(self.database, 'a')
+
+        if 'spectra/calibration' not in h5_file:
+            h5_file.create_group('spectra/calibration')
+
+        if 'spectra/calibration/'+tag in h5_file:
+            del h5_file['spectra/calibration/'+tag]
+
+        data = np.loadtxt(filename)
+
+        wavelength = data[:, 0] # [micron]
+        flux = data[:, 1] # [W m-2 micron-1]
+        error = data[:, 2] # [W m-2 micron-1]
+
+        sys.stdout.write('Adding calibration spectrum: '+tag+'...')
+        sys.stdout.flush()
+
+        h5_file.create_dataset('spectra/calibration/'+tag,
+                               data=np.vstack((wavelength, flux, error)),
+                               dtype='f')
+
+        h5_file.close()
+
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()
+
     def add_spectrum(self,
                      spectrum):
-        """
+        '''
         :param spectrum: Spectral library.
         :type spectrum: str
 
         :return: None
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -302,7 +344,7 @@ class Database:
                     object_name,
                     distance,
                     filename):
-        """
+        '''
         :param object_name: Object name.
         :type object_name: str
         :param distance: Distance (pc).
@@ -311,9 +353,7 @@ class Database:
         :type filename: str
 
         :return: None
-        """
-
-        cc = 299792458. # [m s-1]
+        '''
 
         # flux = {}
         # error = {}
@@ -334,9 +374,9 @@ class Database:
         error = table.array['_sed_eflux'] # [Jy]
         filter_name = table.array['_sed_filter']
 
-        wavelength = 1e6*cc/(frequency*1e9) # [micron]
+        wavelength = 1e6*constants.LIGHT/(frequency*1e9) # [micron]
 
-        conversion = 1e-6*1e-26*cc/(wavelength*1e-6)**2
+        conversion = 1e-6*1e-26*constants.LIGHT/(wavelength*1e-6)**2
 
         flux *= conversion # [W m-2 micron-1]
         error *= conversion # [W m-2 micron-1]
@@ -380,21 +420,98 @@ class Database:
 
         h5_file.close()
 
+    def add_samples(self,
+                    sampler,
+                    spectrum,
+                    tag,
+                    chisquare,
+                    modelpar,
+                    distance=None):
+        '''
+        :param sampler: Ensemble sampler.
+        :type sampler: emcee.ensemble.EnsembleSampler
+        :param spectrum: Tuple with the spectrum type ('model' or 'calibration') and spectrum name
+                         (e.g. 'drift-phoenix').
+        :type spectrum: tuple(str, str)
+        :param tag: Database tag.
+        :type tag: str
+        :param chisquare: Maximum likelihood solution. Tuple with the chi-square value and related
+                          parameter values.
+        :type chisquare: tuple(float, float)
+        :param modelpar: List with the model parameter names.
+        :type modelpar: list(str, )
+        :param distance: Distance to the object (pc). Not used if set to None.
+        :type distance: float
+
+        :return: None
+        '''
+
+        h5_file = h5py.File(self.database, 'a')
+
+        if 'results' not in h5_file:
+            h5_file.create_group('results')
+
+        if 'results/mcmc' not in h5_file:
+            h5_file.create_group('results/mcmc')
+
+        if 'results/mcmc/'+tag in h5_file:
+            del h5_file['results/mcmc/'+tag]
+
+        dset = h5_file.create_dataset('results/mcmc/'+tag,
+                                      data=sampler.chain,
+                                      dtype='f')
+
+        dset.attrs['type'] = str(spectrum[0])
+        dset.attrs['spectrum'] = str(spectrum[1])
+        dset.attrs['nparam'] = int(len(modelpar))
+
+        if distance:
+            dset.attrs['distance'] = float(distance)
+
+        for i, item in enumerate(modelpar):
+            dset.attrs['parameter'+str(i)] = str(item)
+
+        dset.attrs['min_chi'] = float(chisquare[0])
+
+        for i, item in enumerate(modelpar):
+            dset.attrs['chisquare'+str(i)] = float(chisquare[1][item])
+
+        mean_accep = np.mean(sampler.acceptance_fraction)
+        dset.attrs['acceptance'] = float(mean_accep)
+
+        sys.stdout.write('Mean acceptance fraction: {0:.3f}'.format(mean_accep)+'\n')
+        sys.stdout.flush()
+
+        try:
+            int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
+
+            sys.stdout.write('Integrated autocorrelation time ='+str(int_auto)+'\n')
+            sys.stdout.flush()
+
+        except emcee.autocorr.AutocorrError:
+            int_auto = None
+
+        if int_auto is not None:
+            for i, item in enumerate(int_auto):
+                dset.attrs['autocorrelation'+str(i)] = float(item)
+
+        h5_file.close()
+
     def get_chisquare(self,
                       tag):
-        """
+        '''
         :param tag:
         :type tag: str
 
         :return:
         :rtype: species.core.box.SamplesBox
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['results/chisquare/'+tag]
 
         nparam = dset.attrs['nparam']
-        model = dset.attrs['model']
+        spectrum = dset.attrs['spectrum']
 
         param = {}
         for i in range(nparam):
@@ -405,16 +522,15 @@ class Database:
 
         h5_file.close()
 
-        return model, param
+        return spectrum, param
 
     def get_mcmc_spectra(self,
                          tag,
                          burnin,
                          random,
                          wavelength,
-                         sampling):
-
-        """
+                         sampling=None):
+        '''
         :param tag: Database tag with the MCMC samples.
         :type tag: str
         :param burnin: Number of burnin steps.
@@ -428,14 +544,19 @@ class Database:
 
         :return: Boxes with the randomly sampled spectra.
         :rtype: tuple(species.core.box.ModelBox, )
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['results/mcmc/'+tag]
 
-        model = dset.attrs['model']
-        distance = dset.attrs['distance']
         nparam = dset.attrs['nparam']
+        spectrum_type = dset.attrs['type']
+        spectrum_name = dset.attrs['spectrum']
+
+        if dset.attrs.__contains__('distance'):
+            distance = dset.attrs['distance']
+        else:
+            distance = None
 
         samples = np.asarray(dset)
         samples = samples[:, burnin:, :]
@@ -448,7 +569,11 @@ class Database:
         for i in range(nparam):
             param.append(str(dset.attrs['parameter'+str(i)]))
 
-        readmodel = read_model.ReadModel(model, wavelength)
+        if spectrum_type == 'model':
+            readmodel = read_model.ReadModel(spectrum_name, wavelength)
+        elif spectrum_type == 'calibration':
+            readcalib = read_calibration.ReadCalibration(spectrum_name, None)
+
         boxes = []
 
         for i in range(samples.shape[0]):
@@ -456,12 +581,18 @@ class Database:
             for j in range(samples.shape[1]):
                 model_par[param[j]] = samples[i, j]
 
-            model_par['distance'] = distance
+            if distance:
+                model_par['distance'] = distance
 
-            modelbox = readmodel.get_model(model_par, sampling)
-            modelbox.type = 'mcmc'
+            if spectrum_type == 'model':
+                box = readmodel.get_model(model_par, sampling)
+            elif spectrum_type == 'calibration':
+                box = readcalib.get_spectrum()
+                box.flux *= model_par['scaling']
 
-            boxes.append(modelbox)
+            box.type = 'mcmc'
+
+            boxes.append(box)
 
         h5_file.close()
 
@@ -470,7 +601,7 @@ class Database:
     def get_object(self,
                    object_name,
                    filter_id):
-        """
+        '''
         :param object_name: Object name in the database.
         :type object_name: str
         :param filter_id: Filter IDs for which the photometry is selected. All available photometry
@@ -479,7 +610,7 @@ class Database:
 
         :return: Box with the object.
         :rtype: species.core.box.ObjectBox
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['objects/'+object_name]
@@ -518,7 +649,7 @@ class Database:
                     tag,
                     burnin=None,
                     random=None):
-        """
+        '''
         :param tag:
         :type tag: str
         :param burnin:
@@ -528,12 +659,12 @@ class Database:
 
         :return:
         :rtype: species.core.box.SamplesBox
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['results/mcmc/'+tag]
 
-        model = dset.attrs['model']
+        spectrum = dset.attrs['spectrum']
         nparam = dset.attrs['nparam']
 
         samples = np.asarray(dset)
@@ -555,7 +686,7 @@ class Database:
         h5_file.close()
 
         return box.create_box('samples',
-                              model=model,
+                              spectrum=spectrum,
                               parameters=param,
                               samples=samples,
                               chisquare=chisquare)

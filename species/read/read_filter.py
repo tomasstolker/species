@@ -1,6 +1,6 @@
-"""
+'''
 Read module.
-"""
+'''
 
 import os
 import configparser
@@ -14,17 +14,17 @@ from species.data import database
 
 
 class ReadFilter:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self, filter_name):
-        """
+        '''
         :param filter_name: Filter name.
         :type filter_name: str
 
         :return: None
-        """
+        '''
 
         self.filter_name = filter_name
 
@@ -36,10 +36,10 @@ class ReadFilter:
         self.database = config['species']['database']
 
     def get_filter(self):
-        """
+        '''
         :return: Filter data.
         :rtype: numpy.ndarray
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -60,46 +60,44 @@ class ReadFilter:
         return data
 
     def wavelength_range(self):
-        """
+        '''
         :return: Minimum and maximum wavelength (micron).
         :rtype: float, float
-        """
+        '''
 
         data = self.get_filter()
 
         return np.amin(data[0, ]), np.amax(data[0, ])
 
     def mean_wavelength(self):
-        """
+        '''
         :return: Mean wavelength (micron).
         :rtype: float
-        """
+        '''
 
         data = self.get_filter()
 
         return np.trapz(data[0, ]*data[1, ], data[0, ]) / np.trapz(data[1, ], data[0, ])
 
     def interpolate(self):
-        """
+        '''
         :return: Interpolated filter.
         :rtype: scipy.interpolate.interpolate.interp1d
-        """
+        '''
 
         data = self.get_filter()
 
-        filter_interp = interp1d(data[0, ],
-                                 data[1, ],
-                                 kind='cubic',
-                                 bounds_error=False,
-                                 fill_value=float('nan'))
-
-        return filter_interp
+        return interp1d(data[0, ],
+                        data[1, ],
+                        kind='cubic',
+                        bounds_error=False,
+                        fill_value=float('nan'))
 
     def filter_fwhm(self):
-        """
+        '''
         :return: Filter full width at half maximum (micron).
         :rtype: float
-        """
+        '''
 
         data = self.get_filter()
 

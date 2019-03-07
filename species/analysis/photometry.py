@@ -1,6 +1,6 @@
-"""
+'''
 Photometry module.
-"""
+'''
 
 import os
 import configparser
@@ -11,11 +11,12 @@ import numpy as np
 from scipy.integrate import simps
 
 from species.data import database
-from species.read import read_filter, read_spectrum
+from species.read import read_filter, read_calibration
 
 
-def apparent_to_absolute(app_mag, distance):
-    """
+def apparent_to_absolute(app_mag,
+                         distance):
+    '''
     :param app_mag: Apparent magnitude (mag).
     :type app_mag: float or numpy.ndarray
     :param distance: Distance (pc).
@@ -23,23 +24,24 @@ def apparent_to_absolute(app_mag, distance):
 
     :return: Absolute magnitude (mag).
     :rtype: float or numpy.ndarray
-    """
+    '''
 
     return app_mag - 5.*np.log10(distance) + 5.
 
 
 class SyntheticPhotometry:
-    """
+    '''
     Text
-    """
+    '''
 
-    def __init__(self, filter_name):
-        """
+    def __init__(self,
+                 filter_name):
+        '''
         :param filter_name: Filter name.
         :type filter_name: str
 
         :return: None
-        """
+        '''
 
         self.filter_name = filter_name
         self.filter_interp = None
@@ -51,15 +53,16 @@ class SyntheticPhotometry:
 
         self.database = config['species']['database']
 
-    def zero_point(self, wl_range):
-        """
+    def zero_point(self,
+                   wl_range):
+        '''
         :param wl_range: Wavelength range (micron). The range from the filter transmission
                          curve is used if set to None.
         :type wl_range: float
 
         :return: tuple(float, float)
         :rtype:
-        """
+        '''
 
         if wl_range is None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -76,19 +79,23 @@ class SyntheticPhotometry:
             species_db.add_spectrum('vega')
             h5_file = h5py.File(self.database, 'r')
 
-        specdata = read_spectrum.ReadSpectrum('calibration', None)
-        specbox = specdata.get_spectrum()
+        readcalib = read_calibration.ReadCalibration('vega', None)
+        calibbox = readcalib.get_spectrum()
 
-        wavelength = specbox.wavelength[0]
-        flux = specbox.flux[0]
+        wavelength = calibbox.wavelength
+        flux = calibbox.flux
 
         wavelength_crop = wavelength[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
         flux_crop = flux[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
 
+        h5_file.close()
+
         return self.spectrum_to_photometry(wavelength_crop, flux_crop)
 
-    def spectrum_to_photometry(self, wavelength, flux_density):
-        """
+    def spectrum_to_photometry(self,
+                               wavelength,
+                               flux_density):
+        '''
         :param wavelength: Wavelength (micron).
         :type wavelength: numpy.ndarray
         :param flux_density: Flux density (W m-2 micron-1).
@@ -96,7 +103,7 @@ class SyntheticPhotometry:
 
         :return: Average flux density (W m-2 micron-1).
         :rtype: float or numpy.ndarray
-        """
+        '''
 
         if self.filter_interp is None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -136,8 +143,11 @@ class SyntheticPhotometry:
 
         return photometry
 
-    def spectrum_to_magnitude(self, wavelength, flux_density, distance=None):
-        """
+    def spectrum_to_magnitude(self,
+                              wavelength,
+                              flux_density,
+                              distance=None):
+        '''
         :param wavelength: Wavelength (micron).
         :type wavelength: numpy.ndarray
         :param flux_density: Flux density (W m-2 micron-1).
@@ -147,7 +157,7 @@ class SyntheticPhotometry:
 
         :return: Flux (W m-2).
         :rtype: float or numpy.ndarray
-        """
+        '''
 
         vega_mag = 0.03 # [mag]
 
@@ -170,8 +180,11 @@ class SyntheticPhotometry:
 
         return app_mag, abs_mag
 
-    def magnitude_to_flux(self, magnitude, error, zp_flux=None):
-        """
+    def magnitude_to_flux(self,
+                          magnitude,
+                          error,
+                          zp_flux=None):
+        '''
         :param magnitude: Magnitude (mag).
         :type magnitude: float
         :param error: Error (mag). Not used if set to None.
@@ -181,7 +194,7 @@ class SyntheticPhotometry:
 
         :return: Flux (W m-2 micron-1), lower error, upper error
         :rtype: float, tuple(float, float)
-        """
+        '''
 
         vega_mag = 0.03 # [mag]
 
@@ -200,8 +213,10 @@ class SyntheticPhotometry:
 
         return flux, error_flux
 
-    def flux_to_magnitude(self, flux, distance):
-        """
+    def flux_to_magnitude(self,
+                          flux,
+                          distance):
+        '''
         :param flux: Flux density (W m-2 micron-1).
         :type flux: float
         :param error: Distance (pc).
@@ -209,7 +224,7 @@ class SyntheticPhotometry:
 
         :return: Apparent magnitude (mag), absolute magnitude (mag).
         :rtype: float, float
-        """
+        '''
 
         vega_mag = 0.03 # [mag]
 

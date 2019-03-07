@@ -1,6 +1,6 @@
-"""
+'''
 Text
-"""
+'''
 
 import os
 import math
@@ -22,7 +22,7 @@ from species.read import read_filter
 def multi_photometry(model,
                      filters,
                      parameters):
-    """
+    '''
     :param model: Model name.
     :type model: str
     :param filters: Filter IDs.
@@ -32,7 +32,7 @@ def multi_photometry(model,
 
     :return: Box with synthetic photometry.
     :rtype: species.core.box.SynphotBox
-    """
+    '''
 
     flux = {}
     for item in filters:
@@ -43,13 +43,13 @@ def multi_photometry(model,
 
 
 def get_mass(model_par):
-    """
+    '''
     :param model_par: Model parameter values. Should contain the surface gravity and radius.
     :type model_par: dict
 
     :return: Mass (Mjup).
     :rtype: float
-    """
+    '''
 
     logg = 1e-2 * 10.**model_par['logg'] # [m s-1]
 
@@ -64,7 +64,7 @@ def get_mass(model_par):
 
 def add_luminosity(modelbox,
                    specres=1000):
-    """
+    '''
     Function to add the luminosity of a model spectrum to the parameter dictionary of the box. The
     luminosity is by default calculated at a spectral resolution of 1000.
 
@@ -76,7 +76,7 @@ def add_luminosity(modelbox,
 
     :return: The input box with the luminosity added in the parameter dictionary.
     :rtype: species.core.box.ModelBox
-    """
+    '''
 
     readmodel = ReadModel(model=modelbox.model, wavelength=None, teff=None)
     fullspec = readmodel.get_model(model_par=modelbox.parameters, sampling=('specres', specres))
@@ -94,15 +94,15 @@ def add_luminosity(modelbox,
 
 
 class ReadModel:
-    """
+    '''
     Text
-    """
+    '''
 
     def __init__(self,
                  model,
                  wavelength,
                  teff=None):
-        """
+        '''
         :param model: Model name.
         :type model: str
         :param wavelength: Wavelength range (micron) or filter name. Full spectrum if set to None.
@@ -112,7 +112,7 @@ class ReadModel:
         :type teff: tuple(float, float)
 
         :return: None
-        """
+        '''
 
 
         self.model = model
@@ -136,10 +136,10 @@ class ReadModel:
         self.database = config['species']['database']
 
     def open_database(self):
-        """
+        '''
         :return: Database.
         :rtype: h5py._hl.files.File
-        """
+        '''
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -155,9 +155,9 @@ class ReadModel:
         return h5_file
 
     def interpolate(self):
-        """
+        '''
         :return: None
-        """
+        '''
 
         h5_file = self.open_database()
 
@@ -212,14 +212,14 @@ class ReadModel:
 
     def get_data(self,
                  model_par):
-        """
+        '''
         :param model_par: Model parameter values. Only discrete values from the original grid
                           are possible. Else, the nearest grid values are selected.
         :type model_par: dict
 
         :return: Spectrum (micron, W m-2 micron-1).
         :rtype: species.core.box.ModelBox
-        """
+        '''
 
         h5_file = self.open_database()
 
@@ -279,7 +279,7 @@ class ReadModel:
     def get_model(self,
                   model_par,
                   sampling):
-        """
+        '''
         :param model_par: Model parameter values.
         :type model_par: dict
         :param sampling: Type of wavelength sampling.
@@ -287,7 +287,7 @@ class ReadModel:
 
         :return: Spectrum (micron, W m-2 micron-1).
         :rtype: species.core.box.ModelBox
-        """
+        '''
 
         if not self.wavelength:
             wl_points = self.get_wavelength()
@@ -372,7 +372,7 @@ class ReadModel:
                        model_par,
                        sampling,
                        synphot=None):
-        """
+        '''
         :param model_par: Model parameter values.
         :type model_par: dict
         :param sampling: Spectral sampling. The original grid is used (nearest model parameter
@@ -383,7 +383,7 @@ class ReadModel:
 
         :return: Average flux density (W m-2 micron-1).
         :rtype: float
-        """
+        '''
 
         if sampling is None:
             spectrum = self.get_data(model_par)
@@ -400,7 +400,7 @@ class ReadModel:
         return synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)
 
     # def get_magnitude(self, model_par, sampling):
-    #     """
+    #     '''
     #     :param model_par: Model parameter values.
     #     :type model_par: dict
     #     :param sampling: Spectral sampling. The original grid is used (nearest model parameter
@@ -409,7 +409,7 @@ class ReadModel:
     #
     #     :return: Apparent magnitude (mag), absolute magnitude (mag).
     #     :rtype: float, float
-    #     """
+    #     '''
     #
     #     if sampling is None:
     #         spectrum = self.get_data(model_par)
@@ -431,10 +431,10 @@ class ReadModel:
     #     return mag[0], mag[1]
 
     def get_bounds(self):
-        """
+        '''
         :return: Parameter boundaries of the model grid.
         :rtype: dict
-        """
+        '''
 
         h5_file = self.open_database()
 
@@ -452,10 +452,10 @@ class ReadModel:
         return bounds
 
     def get_wavelength(self):
-        """
+        '''
         :return: Wavelength points (micron).
         :rtype: numpy.ndarray
-        """
+        '''
 
         h5_file = self.open_database()
         wavelength = np.asarray(h5_file['models/'+self.model+'/wavelength'])
@@ -464,10 +464,10 @@ class ReadModel:
         return wavelength
 
     def get_points(self):
-        """
+        '''
         :return: Parameter points of the model grid.
         :rtype: dict
-        """
+        '''
 
         points = {}
 
@@ -488,10 +488,10 @@ class ReadModel:
         return points
 
     def get_parameters(self):
-        """
+        '''
         :return: Model parameters.
         :rtype: list(str, )
-        """
+        '''
 
         h5_file = self.open_database()
 
