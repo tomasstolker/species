@@ -485,7 +485,7 @@ class Database:
         try:
             int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
 
-            sys.stdout.write('Integrated autocorrelation time ='+str(int_auto)+'\n')
+            sys.stdout.write('Integrated autocorrelation time = '+str(int_auto)+'\n')
             sys.stdout.flush()
 
         except emcee.autocorr.AutocorrError:
@@ -585,14 +585,13 @@ class Database:
                 model_par['distance'] = distance
 
             if spectrum_type == 'model':
-                box = readmodel.get_model(model_par, sampling)
+                specbox = readmodel.get_model(model_par, sampling)
             elif spectrum_type == 'calibration':
-                box = readcalib.get_spectrum()
-                box.flux *= model_par['scaling']
+                specbox = readcalib.get_spectrum(model_par)
 
             box.type = 'mcmc'
 
-            boxes.append(box)
+            boxes.append(specbox)
 
         h5_file.close()
 

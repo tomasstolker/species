@@ -9,8 +9,8 @@ def open_box(box):
     '''
 
     for item in box.__dict__.keys():
-        print(item, '=', box.__dict__[item], '\n')
-
+        sys.stdout.write(str(item)+' = '+str(box.__dict__[item])+'\n')
+        sys.stdout.flush()
 
 def create_box(boxtype, **kwargs):
     '''

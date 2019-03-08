@@ -19,29 +19,6 @@ from species.data import database
 from species.read import read_filter
 
 
-def multi_photometry(model,
-                     filters,
-                     parameters):
-    '''
-    :param model: Model name.
-    :type model: str
-    :param filters: Filter IDs.
-    :type filters: tuple(str, )
-    :param parameters: Model parameter values.
-    :type parameters: dict
-
-    :return: Box with synthetic photometry.
-    :rtype: species.core.box.SynphotBox
-    '''
-
-    flux = {}
-    for item in filters:
-        readmodel = ReadModel(model, item)
-        flux[item] = readmodel.get_photometry(parameters, ('specres', 100.))
-
-    return box.create_box('synphot', name='synphot', flux=flux)
-
-
 def get_mass(model_par):
     '''
     :param model_par: Model parameter values. Should contain the surface gravity and radius.
