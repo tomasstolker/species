@@ -30,8 +30,8 @@ To calculated the flux density from a magnitude (and the other way around)::
    print("Apparent flux density [W m-2 micron-1] =", flux)
    print("Apparent magnitude [mag] =", app_mag)
 
-Synthetic photometry of a Planck function
------------------------------------------
+Synthetic photometry
+--------------------
 
 To calculate synthetic photometry from a Planck function for given filter::
 
