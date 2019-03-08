@@ -234,7 +234,6 @@ def plot_spectrum(boxes,
                         elif item in ('$\log\,g$', '$R$', '$M$', '[Fe/H]'):
                             value = '{:.2f}'.format(par_val[i])
                         elif item == '$L$':
-                            # print(item, par_val[i], par_key[i])
                             value = '{0:.1e}'.format(par_val[i])
                         else:
                             continue

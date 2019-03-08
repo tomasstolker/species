@@ -10,6 +10,7 @@ import numpy as np
 
 from scipy.interpolate import interp1d
 
+from species.analysis import photometry
 from species.core import box
 from species.read import read_filter
 
@@ -48,9 +49,26 @@ class ReadCalibration:
 
         self.database = config['species']['database']
 
+    def interpolate(self):
+        '''
+        :return: Interpolated spectrum.
+        :rtype: scipy.interpolate.interpolate.interp1d
+        '''
+
+        calibbox = self.get_spectrum()
+
+        return interp1d(calibbox.wavelength,
+                        calibbox.flux,
+                        kind='cubic',
+                        bounds_error=False,
+                        fill_value=float('nan'))
+
     def get_spectrum(self,
+                     model_par=None,
                      negative=False):
         '''
+        :param model_par: Model parameter values. Not used if set to None.
+        :type model_par: dict
         :param negative: Include negative values.
         :type negative: bool
 
@@ -69,6 +87,9 @@ class ReadCalibration:
 
         h5_file.close()
 
+        if model_par:
+            data[1, ] = model_par['offset'] + model_par['scaling']*data[1, ]
+
         return box.create_box(boxtype='spectrum',
                               spectrum='calibration',
                               wavelength=data[0, ],
@@ -78,16 +99,18 @@ class ReadCalibration:
                               sptype=None,
                               distance=None)
 
-    def interpolate(self):
+    def get_photometry(self,
+                       model_par,
+                       synphot=None):
         '''
-        :return: Interpolated spectrum.
-        :rtype: scipy.interpolate.interpolate.interp1d
+        :param model_par: Model parameter values.
+        :type model_par: dict
+
+        :return: Average flux density (W m-2 micron-1).
+        :rtype: float
         '''
 
-        calibbox = self.get_spectrum()
+        specbox = self.get_spectrum(model_par)
+        synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return interp1d(calibbox.wavelength,
-                        calibbox.flux,
-                        kind='cubic',
-                        bounds_error=False,
-                        fill_value=float('nan'))
+        return synphot.spectrum_to_photometry(specbox.wavelength, specbox.flux)

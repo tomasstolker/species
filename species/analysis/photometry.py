@@ -11,7 +11,41 @@ import numpy as np
 from scipy.integrate import simps
 
 from species.data import database
-from species.read import read_filter, read_calibration
+from species.core import box
+from species.read import read_filter, read_calibration, read_model
+
+
+def multi_photometry(datatype,
+                     spectrum,
+                     filters,
+                     parameters):
+    '''
+    :param datatype: Data type ('model' or 'calibration').
+    :type datatype: str
+    :param spectrum: Spectrum name (e.g., 'drift-phoenix').
+    :type spectrum: str
+    :param filters: Filter IDs.
+    :type filters: tuple(str, )
+    :param parameters: Model parameter values.
+    :type parameters: dict
+
+    :return: Box with synthetic photometry.
+    :rtype: species.core.box.SynphotBox
+    '''
+
+    flux = {}
+
+    if datatype == 'model':
+        for item in filters:
+            readmodel = read_model.ReadModel(spectrum, item)
+            flux[item] = readmodel.get_photometry(parameters, ('specres', 100.))
+
+    elif datatype == 'calibration':
+        for item in filters:
+            readcalib = read_calibration.ReadCalibration(spectrum, item)
+            flux[item] = readcalib.get_photometry(parameters)
+
+    return box.create_box('synphot', name='synphot', flux=flux)
 
 
 def apparent_to_absolute(app_mag,

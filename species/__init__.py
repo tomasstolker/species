@@ -3,14 +3,15 @@ from species.analysis.fit_model import FitModel
 from species.analysis.fit_spectrum import FitSpectrum
 
 from species.analysis.photometry import SyntheticPhotometry, \
-                                        apparent_to_absolute
+                                        apparent_to_absolute, \
+                                        multi_photometry
+
 
 from species.read.read_calibration import ReadCalibration
 
 from species.read.read_filter import ReadFilter
 
 from species.read.read_model import ReadModel, \
-                                    multi_photometry, \
                                     get_mass, \
                                     add_luminosity
 
