@@ -6,7 +6,7 @@ Examples
 Configuration file
 ------------------
 
-A configuration file is required in the working folder, for example::
+A configuration file is required in the working folder. In this case the configuration file is names *species_config.ini* and its content is::
 
    [species]
    database = species_database.hdf5
@@ -16,7 +16,7 @@ A configuration file is required in the working folder, for example::
 Conversion of photometry units
 ------------------------------
 
-Calculating the flux density for a given magnitude (and the other way around) is done in the following way::
+To calculated the flux density from a magnitude (and the other way around)::
 
    import species
 
@@ -33,7 +33,7 @@ Calculating the flux density for a given magnitude (and the other way around) is
 Synthetic photometry of a Planck function
 -----------------------------------------
 
-To calculate synthetic photometry from a Planck function for a filter of JWST::
+To calculate synthetic photometry from a Planck function for given filter::
 
    import species
 
@@ -56,7 +56,7 @@ To calculate synthetic photometry from a Planck function for a filter of JWST::
 Spectral library
 ----------------
 
-The following code will download the IRTF spectral library and added to the database. Synthetic photometry is then calculated for the first (L0 type) spectrum from the library at the MKO H filter. The spectrum slice is then plotted together with the filter profile and the photometry::
+The following code will download the IRTF spectral library and add the spectra to the database. An L0 type spectrum is then read from the database and synthetic photometry is computed for the MKO H filter. The spectrum slice is plotted together with the filter profile and the synthetic photometry::
 
    import species
 
@@ -160,5 +160,86 @@ Or, a spectrum with the original spectral resolution can be obtained from the (d
                          ylim=(0., 2.15e-15))
 
 .. image:: _images/model2.png
+   :width: 80%
+   :align: center
+
+Stellar spectrum fit
+--------------------
+
+In this example, the 2MASS magnitudes of PZ Tel A are fitted with a IRTF spectrum of a G6.5V type star (which can be downloaded from the IRTF website). The plots show the posterior distributions of the offset and scaling factor that are fitted, as well as randomly selected spectra from the posterior distributions with the best-fit synthetic photometry and the (overlapping) observed photometry::
+
+   import species
+
+   species.SpeciesInit('./')
+
+   magnitudes = {'2MASS/2MASS.J':(6.856, 0.021),
+                 '2MASS/2MASS.H':(6.486, 0.049),
+                 '2MASS/2MASS.Ks':(6.366, 0.024)}
+
+   filters = tuple(magnitudes.keys())
+
+   database = species.Database()
+
+   database.add_object(object_name='PZ Tel A',
+                       distance=47.13,
+                       app_mag=magnitudes)
+
+   database.add_calibration(filename='input/G6.5V_HD115617.txt',
+                            tag='G6.5V_HD115617')
+
+
+   fit = species.FitSpectrum(objname='PZ Tel A',
+                             filters=None,
+                             spectrum='G6.5V_HD115617',
+                             bounds={'offset':(-1e-10, 1e-10), 'scaling':(0., 1e-1)})
+
+   fit.run_mcmc(nwalkers=200,
+                nsteps=1000,
+                guess={'offset':1e-13, 'scaling':5e-2},
+                tag='pztel')
+
+   species.plot_walkers(tag='pztel',
+                        output='plot/walkers.pdf',
+                        nsteps=None,
+                        offset=(-0.25, -0.08))
+
+   species.plot_posterior(tag='pztel',
+                          burnin=500,
+                          title=None,
+                          output='plot/posterior.pdf',
+                          offset=(-0.3, -0.10),
+                          title_fmt='.4f')
+
+   samples = database.get_mcmc_spectra(tag='pztel',
+                                       burnin=500,
+                                       random=30,
+                                       wavelength=(0.1, 50.0))
+
+   best = {'offset':2.25e-13, 'scaling':0.0371}
+
+   synphot = species.multi_photometry(datatype='calibration',
+                                      spectrum='G6.5V_HD115617',
+                                      filters=filters,
+                                      parameters=best)
+
+   star = database.get_object(object_name='PZ Tel A',
+                              filter_id=None)
+
+   species.plot_spectrum(boxes=(samples, star, synphot),
+                         filters=filters,
+                         output='plot/spectrum.pdf',
+                         colors=('gray', 'black', 'black'),
+                         residuals=(star, synphot),
+                         xlim=(0.7, 3.),
+                         ylim=(-1.5e-12, 1.5e-11),
+                         scale=('linear', 'linear'),
+                         title=r'G6.5V HD 115617 - PZ Tel A',
+                         offset=(-0.25, -0.06))
+
+.. image:: _images/posterior.png
+   :width: 60%
+   :align: center
+
+.. image:: _images/spectrum.png
    :width: 80%
    :align: center

@@ -4,6 +4,14 @@ species.read package
 Submodules
 ----------
 
+species.read.read\_calibration module
+-------------------------------------
+
+.. automodule:: species.read.read_calibration
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.read.read\_color module
 -------------------------------
 
