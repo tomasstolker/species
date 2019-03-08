@@ -79,6 +79,10 @@ def update_labels(param):
         index = param.index('scaling')
         param[index] = 'Scaling'
 
+    if 'offset' in param:
+        index = param.index('offset')
+        param[index] = 'Offset'
+
     return param
 
 
