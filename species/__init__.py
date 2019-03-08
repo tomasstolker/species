@@ -43,7 +43,7 @@ from species.plot.plot_spectrum import plot_spectrum
 
 __author__ = 'Tomas Stolker'
 __license__ = 'GPLv3'
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'tomas.stolker@phys.ethz.ch'
 __status__ = 'Development'
