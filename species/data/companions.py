@@ -134,9 +134,9 @@ def get_data():
                                    'Paranal/NACO.J':(12.47, 0.20), # Biller et al. 2010
                                    'Paranal/NACO.H':(11.93, 0.14), # Biller et al. 2010
                                    'Paranal/NACO.Ks':(11.53, 0.07), # Biller et al. 2010
-                                   'Paranal/NACO.Lp':(11.05, 0.18), # Beust et al. 2015
-                                   # 'Paranal/NACO.NB405':(), # Stolker et al. in prep.
-                                   # 'Paranal/NACO.Mp':(), # Stolker et al. in prep.
+                                   # 'Paranal/NACO.Lp':(11.05, 0.18), # Beust et al. 2015
+                                   'Paranal/NACO.NB405':(9.81, 0.01), # Stolker et al. in prep.
+                                   'Paranal/NACO.Mp':(9.42, 0.02), # Stolker et al. in prep.
                                    'Gemini/NICI.ED286':(11.68, 0.14), # Biller et al. 2010
                                    'Gemini/NIRI.H2S1v2-1-G0220':(11.39, 0.14)}}, # Biller et al. 2010
 

@@ -3,60 +3,14 @@ Read module.
 '''
 
 import os
-import math
 import configparser
 
 import h5py
 import numpy as np
 
 from species.core import box
-from species.core import constants as con
 from species.data import database
 from species.read import read_filter
-
-
-def get_planck(temperature,
-               radius,
-               distance,
-               wavelength,
-               specres):
-    '''
-    :param temperature: Temperature (K)
-    :type temperature: float
-    :param radius: Radius (Rjup).
-    :type radius: float
-    :param distance: Distance (pc).
-    :type distance: float
-    :param wavelength: Wavelength range (micron).
-    :type wavelength: tuple(float, float)
-    :param specres: Spectral resolution
-    :type specres: float
-
-    :return: Box with the Planck spectrum.
-    :rtype: species.core.box.SpectrumBox
-    '''
-
-    wl_points = [wavelength[0]]
-
-    while wl_points[-1] <= wavelength[1]:
-        wl_points.append(wl_points[-1] + wl_points[-1]/specres)
-
-    wl_points = np.asarray(wl_points[:-1]) # [micron]
-    wl_points *= 1e-6 # [m]
-
-    planck1 = 2.*con.PLANCK*con.LIGHT**2/wl_points**5
-    planck2 = np.exp(con.PLANCK*con.LIGHT/(wl_points*con.BOLTZMANN*temperature)) - 1.
-
-    flux = 4.*math.pi * (radius*con.R_JUP/(distance*con.PARSEC))**2 * planck1/planck2 # [W m-2 m-1]
-    flux *= 1e-6 # [W m-2 micron-1]
-
-    wl_points *= 1e6 # [micron]
-
-    return box.create_box(boxtype='spectrum',
-                          spectrum='planck',
-                          wavelength=wl_points,
-                          flux=flux,
-                          name=None)
 
 
 class ReadSpectrum:
