@@ -69,6 +69,7 @@ def create_box(boxtype, **kwargs):
         box.spectrum = kwargs['spectrum']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
+        box.error = kwargs['error']
         box.name = kwargs['name']
         box.simbad = kwargs['simbad']
         box.sptype = kwargs['sptype']

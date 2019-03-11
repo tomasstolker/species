@@ -15,7 +15,7 @@ In that case, the dependencies can be installed from the *species* folder::
 
     $ pip install -r requirements.txt
 
-The installation can be tested by starting Python in interactive mode and printing the *species* version::
+The installation can be tested by starting Python in interactive mode and printing the version number::
 
     >>> import species
     >>> print species.__version__

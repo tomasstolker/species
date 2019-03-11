@@ -15,8 +15,9 @@ from species.read.read_model import ReadModel, \
                                     get_mass, \
                                     add_luminosity
 
-from species.read.read_spectrum import ReadSpectrum, \
-                                       get_planck
+from species.read.read_planck import get_planck
+
+from species.read.read_spectrum import ReadSpectrum
 
 from species.read.read_color import ReadColorMagnitude, \
                                     ReadColorColor

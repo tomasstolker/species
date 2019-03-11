@@ -211,7 +211,6 @@ def plot_spectrum(boxes,
         ax3.set_xscale(scale[0])
 
     for j, boxitem in enumerate(boxes):
-
         if isinstance(boxitem, (box.SpectrumBox, box.ModelBox)):
             wavelength = boxitem.wavelength
             flux = boxitem.flux
@@ -247,16 +246,16 @@ def plot_spectrum(boxes,
                     label = None
 
                 if colors:
-                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=1.0, label=label, zorder=4)
+                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=0.5, label=label, zorder=4)
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=1.0, label=label, zorder=4)
+                    ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=4)
 
             elif isinstance(wavelength[0], (np.ndarray)):
                 for i, item in enumerate(wavelength):
                     data = np.array(flux[i], dtype=np.float64)
                     masked = np.ma.array(data, mask=np.isnan(data))
 
-                    ax1.plot(item, masked/scaling, lw=1)
+                    ax1.plot(item, masked/scaling, lw=0.5)
 
         elif isinstance(boxitem, tuple):
             for i, item in enumerate(boxitem):
@@ -267,9 +266,9 @@ def plot_spectrum(boxes,
                 masked = np.ma.array(data, mask=np.isnan(data))
 
                 if colors:
-                    ax1.plot(wavelength, masked/scaling, lw=0.4, color=colors[j], alpha=0.5, zorder=3)
+                    ax1.plot(wavelength, masked/scaling, lw=0.2, color=colors[j], alpha=0.5, zorder=3)
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=0.4, alpha=0.5, zorder=3)
+                    ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=3)
 
         elif isinstance(boxitem, box.PhotometryBox):
             if colors:

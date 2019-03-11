@@ -147,8 +147,11 @@ class ReadModel:
 
         index = np.where(wl_index)[0]
 
-        wl_index[index[0] - 1] = True
-        wl_index[index[-1] + 1] = True
+        if index[0]-1 >= 0:
+            wl_index[index[0] - 1] = True
+
+        if index[-1]+1 < wl_index.size:
+            wl_index[index[-1] + 1] = True
 
         if self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
