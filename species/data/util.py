@@ -16,7 +16,7 @@ def update_sptype(sptypes):
     :rtype: numpy.ndarray
     '''
 
-    mlty = ('M', 'L', 'T', 'Y')
+    mlty = ('O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y')
 
     for i, spt in enumerate(sptypes):
         if spt == 'None':

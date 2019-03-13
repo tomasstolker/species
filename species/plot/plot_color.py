@@ -94,8 +94,12 @@ def plot_color_magnitude(colorbox,
     if ylim:
         ax1.set_ylim(ylim[0], ylim[1])
 
+    if colorbox.object_type == 'star':
+        bounds = np.arange(0, 11, 1)
+    else:
+        bounds = np.arange(0, 8, 1)
+
     cmap = plt.cm.viridis
-    bounds = np.arange(0, 8, 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
     sptype = colorbox.sptype
@@ -108,9 +112,13 @@ def plot_color_magnitude(colorbox,
     color = color[indices]
     magnitude = magnitude[indices]
 
-    spt_disc = util.sptype_discrete(sptype, color.shape)
+    if colorbox.object_type == 'star':
+        spt_disc = util.sptype_stellar(sptype, color.shape)
+        unique = np.arange(0, color.size, 1)
 
-    _, unique = np.unique(color, return_index=True)
+    else:
+        spt_disc = util.sptype_substellar(sptype, color.shape)
+        _, unique = np.unique(color, return_index=True)
 
     sptype = sptype[unique]
     color = color[unique]
@@ -124,8 +132,14 @@ def plot_color_magnitude(colorbox,
                   ticklocation='top', format='%.2f')
 
     cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='white')
-    cb.set_ticks(np.arange(0.5, 7., 1.))
-    cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+
+    if colorbox.object_type == 'star':
+        cb.set_ticks(np.arange(0.5, 10., 1.))
+        cb.set_ticklabels(['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y'])
+
+    else:
+        cb.set_ticks(np.arange(0.5, 7., 1.))
+        cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
 
     if objects is not None:
         for item in objects:

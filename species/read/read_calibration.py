@@ -104,7 +104,7 @@ class ReadCalibration:
         h5_file.close()
 
         if parameters:
-            flux = parameters['offset'] + parameters['scaling']*flux
+            flux = parameters['scaling']*flux
 
         if extrapolate:
             def _power_law(wavelength, offset, scaling, power_index):

@@ -17,7 +17,7 @@ from species.analysis import photometry
 from species.core import box, constants
 from species.read import read_model, read_calibration
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, util
+                         companions, filters, util, mamajek
 
 
 warnings.simplefilter('ignore', UserWarning)
@@ -267,6 +267,9 @@ class Database:
 
         elif library[0:7] == 'leggett':
             leggett.add_leggett(self.input_path, h5_file)
+
+        elif library[0:7] == 'mamajek':
+            mamajek.add_mamajek(self.input_path, h5_file)
 
         h5_file.close()
 
