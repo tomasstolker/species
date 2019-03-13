@@ -23,9 +23,9 @@ def lnprob(param,
            objphot,
            specphot):
     '''
-    :param param: Values of the offset and scaling parameter.
+    :param param: Value of the scaling parameter.
     :type param: numpy.ndarray
-    :param bounds: Boundaries of the offset and scaling parameter
+    :param bounds: Boundary of the scaling parameter
     :type bounds: dict
     :param objphot:
     :type objphot:
@@ -39,8 +39,7 @@ def lnprob(param,
     global MIN_CHISQ
     global MIN_PARAM
 
-    if bounds['offset'][0] <= param[0] <= bounds['offset'][1] and \
-       bounds['scaling'][0] <= param[1] <= bounds['scaling'][1]:
+    if bounds['scaling'][0] <= param <= bounds['scaling'][1]:
         ln_prior = 0.
 
     else:
@@ -52,11 +51,11 @@ def lnprob(param,
     else:
         chisq = 0.
         for i, _ in enumerate(objphot):
-            chisq += (objphot[i][0]-(param[0]+param[1]*specphot[i]))**2 / objphot[i][1]**2
+            chisq += (objphot[i][0]-(param*specphot[i]))**2 / objphot[i][1]**2
 
         if chisq < MIN_CHISQ:
             MIN_CHISQ = chisq
-            MIN_PARAM = {'offset':param[0], 'scaling':param[1]}
+            MIN_PARAM = {'scaling':param}
 
         ln_prob = ln_prior - 0.5*chisq
 
@@ -112,7 +111,7 @@ class FitSpectrum:
             obj_phot = self.object.get_photometry(item)
             self.objphot.append((obj_phot[2], obj_phot[3]))
 
-        self.modelpar = ['offset', 'scaling']
+        self.modelpar = ['scaling']
 
     def run_mcmc(self,
                  nwalkers,
@@ -124,9 +123,8 @@ class FitSpectrum:
         :type nwalkers: int
         :param nsteps: Number of steps for each walker.
         :type nsteps: int
-        :param guess: Guess of the offset and scaling parameter, as
-                      {'offset':(guess), 'scaling':(guess)}. Non-zero values work best.
-        :type guess: dict
+        :param guess: Guess of the scaling parameter.
+        :type guess: float
         :param tag: Database tag for the results.
         :type tag: int
 
@@ -139,12 +137,10 @@ class FitSpectrum:
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()
 
-        ndim = 2
+        ndim = 1
 
         initial = np.zeros((nwalkers, ndim))
-
-        initial[:, 0] = guess['offset'] + np.random.normal(0, 1e-1*guess['offset'], nwalkers)
-        initial[:, 1] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)
+        initial[:, 0] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)
 
         sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
                                         dim=ndim,
