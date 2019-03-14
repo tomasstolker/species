@@ -20,7 +20,7 @@ import sys
 # relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 sys.path.append(os.path.join(os.path.abspath(os.pardir)))
-autodoc_mock_imports = ['species']
+# autodoc_mock_imports = ['species']
 
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
@@ -30,6 +30,8 @@ project_root = os.path.dirname(cwd)
 # This lets us ensure that the source package is imported, and that its
 # version is used.
 sys.path.insert(0, project_root)
+
+import species
 
 # -- Project information -----------------------------------------------------
 
