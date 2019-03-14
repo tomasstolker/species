@@ -11,27 +11,23 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-
+#
 import os
 import sys
-
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
-autodoc_mock_imports = ['species', 'species.analysis', 'species.core']
+
 
 # -- Project information -----------------------------------------------------
 
-project = u'species'
+project = 'species'
 copyright = '2019, Tomas Stolker'
 author = 'Tomas Stolker'
 
 # The short X.Y version
-with open('../species/__init__.py') as initfile:
-    for line in initfile:
-        if '__version__' in line:
-            version = line.split("'")[1]
-
+version = ''
 # The full version, including alpha/beta/rc tags
-release = version
+release = ''
 
 
 # -- General configuration ---------------------------------------------------
@@ -48,7 +44,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-# templates_path = ['_templates']
+templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -69,7 +65,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
@@ -86,12 +82,7 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-html_theme_options = {"collapse_navigation": False,
-                      "display_version": False,
-                      "sticky_navigation": True,
-                      "prev_next_buttons_location": "bottom",
-                      "navigation_depth": 5,
-                      "logo_only": False}
+# html_theme_options = {}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -107,14 +98,6 @@ html_static_path = ['_images']
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
-
-# html_logo = '_images/logo.png'
-# html_search_language = 'en'
-
-html_context = {'display_github': True,
-                'github_user': 'tomasstolker',
-                'github_repo': 'species',
-                'github_version': 'master/docs/'}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
@@ -147,8 +130,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'species.tex', u'species Documentation',
-     u'Tomas Stolker', 'manual'),
+    (master_doc, 'species.tex', 'species Documentation',
+     'Tomas Stolker', 'manual'),
 ]
 
 
@@ -157,7 +140,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'species', u'species Documentation',
+    (master_doc, 'species', 'species Documentation',
      [author], 1)
 ]
 
@@ -168,8 +151,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'species', u'species documentation',
-     author, 'species', 'Toolkit for analyzing spectral and photometric data of planetary and substellar objects',
+    (master_doc, 'species', 'species Documentation',
+     author, 'species', 'One line description of project.',
      'Miscellaneous'),
 ]
 

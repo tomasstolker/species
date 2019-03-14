@@ -18,7 +18,7 @@ pypi-test:
 
 docs:
 	rm -f docs/species.*rst
-	sphinx-apidoc -o docs/ species
+	sphinx-apidoc -o docs/ species/
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 
