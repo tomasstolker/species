@@ -15,7 +15,8 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../species/'))
+sys.path.insert(0, os.path.abspath('../'))
+autodoc_mock_imports = ['species', 'species.analysis', 'species.core']
 
 # -- Project information -----------------------------------------------------
 
