@@ -19,8 +19,9 @@ pypi-test:
 docs:
 	rm -f docs/species.*rst
 	sphinx-apidoc -o docs/ species/
-	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
+	cd docs/
+	$(MAKE) -C docs/ clean
+	$(MAKE) -C docs/ html
 
 coverage:
 	coverage run -m pytest
