@@ -60,6 +60,14 @@ species.data.leggett module
     :undoc-members:
     :show-inheritance:
 
+species.data.mamajek module
+---------------------------
+
+.. automodule:: species.data.mamajek
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.queries module
 ---------------------------
 

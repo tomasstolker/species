@@ -44,6 +44,14 @@ species.read.read\_object module
     :undoc-members:
     :show-inheritance:
 
+species.read.read\_planck module
+--------------------------------
+
+.. automodule:: species.read.read_planck
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.read.read\_result module
 --------------------------------
 
