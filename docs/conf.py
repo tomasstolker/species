@@ -15,7 +15,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('./../../'))
+sys.path.insert(0, os.path.abspath('../'))
 
 
 # -- Project information -----------------------------------------------------
@@ -25,7 +25,7 @@ copyright = '2019, Tomas Stolker'
 author = 'Tomas Stolker'
 
 # The short X.Y version
-with open('../../species/__init__.py') as initfile:
+with open('../species/__init__.py') as initfile:
     for line in initfile:
         if '__version__' in line:
             version = line.split("'")[1]
@@ -91,7 +91,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['_images']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
