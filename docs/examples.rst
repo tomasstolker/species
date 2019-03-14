@@ -84,7 +84,7 @@ The following code will download the IRTF spectral library and add the spectra t
                          xlim=(1., 2.5),
                          offset=(-0.08, -0.06))
 
-.. image:: _static/photometry.png
+.. image:: _images/photometry.png
    :width: 80%
    :align: center
 
@@ -116,7 +116,7 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
                                 output='color_mag.pdf',
                                 legend='upper left')
 
-.. image:: _static/color_mag.png
+.. image:: _images/color_mag.png
    :width: 70%
    :align: center
 
@@ -144,7 +144,7 @@ In the last example, the DRIFT-PHOENIX atmospheric models are added to the datab
                          xlim=(1., 5.),
                          ylim=(0., 1.1e5))
 
-.. image:: _static/model1.png
+.. image:: _images/model1.png
    :width: 80%
    :align: center
 
@@ -159,7 +159,7 @@ Or, a spectrum with the original spectral resolution can be obtained from the (d
                          xlim=(1., 5.),
                          ylim=(0., 2.15e-15))
 
-.. image:: _static/model2.png
+.. image:: _images/model2.png
    :width: 80%
    :align: center
 
@@ -236,10 +236,10 @@ In this example, the 2MASS magnitudes of PZ Tel A are fitted with a IRTF spectru
                          title=r'G6.5V HD 115617 - PZ Tel A',
                          offset=(-0.25, -0.06))
 
-.. image:: _static/posterior.png
+.. image:: _images/posterior.png
    :width: 60%
    :align: center
 
-.. image:: _static/spectrum.png
+.. image:: _images/spectrum.png
    :width: 80%
    :align: center
