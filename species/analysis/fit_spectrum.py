@@ -80,8 +80,7 @@ class FitSpectrum:
         :type filters: tuple(str, )
         :param spectrum: Calibration spectrum.
         :type spectrum: str
-        :param bounds: Boundaries of the offset and scaling parameter, as
-                       {'offset':(min, max), 'scaling':(min, max)}.
+        :param bounds: Boundaries of the scaling parameter, as {'scaling':(min, max)}.
         :type bounds: dict
 
         :return: None

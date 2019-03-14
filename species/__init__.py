@@ -29,6 +29,8 @@ from species.core.box import open_box, \
                              SpectrumBox, \
                              PhotometryBox
 
+from species.core.constants import *
+
 from species.core.setup import SpeciesInit
 
 from species.data.database import Database

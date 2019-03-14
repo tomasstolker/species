@@ -275,7 +275,8 @@ class Database:
 
     def add_calibration(self,
                         filename,
-                        tag):
+                        tag,
+                        scaling=None):
         '''
         Function for adding a calibration spectrum to the database.
 
@@ -285,9 +286,15 @@ class Database:
         :type filename: str
         :param tag: Tag name in the database.
         :type tag: str
+        :param scaling: Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux).
+                        Not used if set to None.
+        :type scaling: tuple(float, float)
 
         :return: None
         '''
+
+        if not scaling:
+            scaling = (1., 1.)
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -299,9 +306,13 @@ class Database:
 
         data = np.loadtxt(filename)
 
-        wavelength = data[:, 0] # [micron]
-        flux = data[:, 1] # [W m-2 micron-1]
-        error = data[:, 2] # [W m-2 micron-1]
+        wavelength = scaling[0]*data[:, 0] # [micron]
+        flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+
+        if data.shape[1] == 3:
+            error = scaling[1]*data[:, 2] # [W m-2 micron-1]
+        else:
+            error = np.repeat(0., wavelength.size)
 
         sys.stdout.write('Adding calibration spectrum: '+tag+'...')
         sys.stdout.flush()

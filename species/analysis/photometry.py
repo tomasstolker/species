@@ -8,8 +8,6 @@ import configparser
 import h5py
 import numpy as np
 
-from scipy.integrate import simps
-
 from species.data import database
 from species.core import box
 from species.read import read_filter, read_calibration, read_model
@@ -79,6 +77,7 @@ class SyntheticPhotometry:
 
         self.filter_name = filter_name
         self.filter_interp = None
+        self.wl_range = None
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -139,11 +138,18 @@ class SyntheticPhotometry:
         :rtype: float or numpy.ndarray
         '''
 
-        if self.filter_interp is None:
+        if not self.filter_interp:
             transmission = read_filter.ReadFilter(self.filter_name)
             self.filter_interp = transmission.interpolate()
+            self.wl_range = transmission.wavelength_range()
 
         if isinstance(wavelength[0], (np.float32, np.float64)):
+            indices = np.where((self.wl_range[0] < wavelength) &
+                               (wavelength < self.wl_range[1]))[0]
+
+            wavelength = wavelength[indices]
+            flux_density = flux_density[indices]
+
             transmission = self.filter_interp(wavelength)
 
             indices = np.isnan(transmission)
@@ -152,14 +158,20 @@ class SyntheticPhotometry:
             integrand1 = transmission[indices]*flux_density[indices]
             integrand2 = transmission[indices]
 
-            integral1 = simps(integrand1, wavelength[indices])
-            integral2 = simps(integrand2, wavelength[indices])
+            integral1 = np.trapz(integrand1, wavelength[indices])
+            integral2 = np.trapz(integrand2, wavelength[indices])
 
             photometry = integral1/integral2
 
         else:
             photometry = []
             for i, _ in enumerate(wavelength):
+                indices = np.where((self.wl_range[0] <= wavelength) &
+                                   (wavelength <= self.wl_range[1]))[0]
+
+                wavelength = wavelength[indices]
+                flux_density = flux_density[indices]
+
                 transmission = self.filter_interp(wavelength[i])
 
                 indices = np.isnan(transmission)
@@ -168,8 +180,8 @@ class SyntheticPhotometry:
                 integrand1 = transmission[indices]*flux_density[i][indices]
                 integrand2 = transmission[indices]
 
-                integral1 = simps(integrand1, wavelength[i][indices])
-                integral2 = simps(integrand2, wavelength[i][indices])
+                integral1 = np.trapz(integrand1, wavelength[i][indices])
+                integral2 = np.trapz(integrand2, wavelength[i][indices])
 
                 photometry.append(integral1/integral2)
 

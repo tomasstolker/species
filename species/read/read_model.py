@@ -332,6 +332,7 @@ class ReadModel:
             if 'distance' in model_par:
                 scaling = (model_par['radius']*constants.R_JUP)**2 / \
                           (model_par['distance']*constants.PARSEC)**2
+
                 flux *= scaling
 
         if sampling[0] == 'gaussian':

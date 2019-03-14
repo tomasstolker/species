@@ -15,7 +15,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../'))
 
 
 # -- Project information -----------------------------------------------------
@@ -168,8 +168,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'species', u'species Documentation',
-     author, 'species', 'Spectral and Photometric Examination Code for Investigating Exoplanet and Substellar atmospheres',
+    (master_doc, 'species', u'species documentation',
+     author, 'species', 'Toolkit for analyzing spectral and photometric data of planetary and substellar objects',
      'Miscellaneous'),
 ]
 

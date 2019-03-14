@@ -1,5 +1,5 @@
 '''
-Read module.
+Module for reading filter data.
 '''
 
 import os
@@ -15,12 +15,13 @@ from species.data import database
 
 class ReadFilter:
     '''
-    Text
+    Reading filter data and information from the database.
     '''
 
-    def __init__(self, filter_name):
+    def __init__(self,
+                 filter_name):
         '''
-        :param filter_name: Filter name.
+        :param filter_name: Filter ID.
         :type filter_name: str
 
         :return: None
@@ -59,6 +60,20 @@ class ReadFilter:
 
         return data
 
+    def interpolate(self):
+        '''
+        :return: Linearly interpolated filter.
+        :rtype: scipy.interpolate.interpolate.interp1d
+        '''
+
+        data = self.get_filter()
+
+        return interp1d(data[0, ],
+                        data[1, ],
+                        kind='linear',
+                        bounds_error=False,
+                        fill_value=float('nan'))
+
     def wavelength_range(self):
         '''
         :return: Minimum and maximum wavelength (micron).
@@ -78,20 +93,6 @@ class ReadFilter:
         data = self.get_filter()
 
         return np.trapz(data[0, ]*data[1, ], data[0, ]) / np.trapz(data[1, ], data[0, ])
-
-    def interpolate(self):
-        '''
-        :return: Interpolated filter.
-        :rtype: scipy.interpolate.interpolate.interp1d
-        '''
-
-        data = self.get_filter()
-
-        return interp1d(data[0, ],
-                        data[1, ],
-                        kind='cubic',
-                        bounds_error=False,
-                        fill_value=float('nan'))
 
     def filter_fwhm(self):
         '''
