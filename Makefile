@@ -18,7 +18,7 @@ pypi-test:
 
 docs:
 	rm -f docs/species.*rst
-	sphinx-apidoc -o docs species
+	sphinx-apidoc -o docs/source species
 	cd docs/
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
@@ -36,7 +36,7 @@ clean:
 	rm -f .coverage
 	rm -f coverage.xml
 	rm -rf .pytest_cache/
-	rm -rf docs/_build
+	rm -rf docs/build
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/
