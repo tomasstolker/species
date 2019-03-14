@@ -31,7 +31,8 @@ def plot_spectrum(boxes,
                   ylim=None,
                   scale=('linear', 'linear'),
                   title=None,
-                  offset=None):
+                  offset=None,
+                  legend='upper left'):
     '''
     :param boxes:
     :type boxes: tuple(species.analysis.box.SpectrumBox and/or
@@ -339,7 +340,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc='upper left', prop={'size':9}, frameon=False)
+        ax1.legend(loc=legend, prop={'size':9}, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()
