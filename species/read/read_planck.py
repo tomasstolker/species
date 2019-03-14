@@ -14,7 +14,7 @@ def planck(wl_points,
            temperature,
            scaling):
     '''
-    :param temperature: Temperature (K)
+    :param temperature: Temperature (K).
     :type temperature: float
     :param scaling: Scaling parameter.
     :type scaling: float
@@ -40,7 +40,7 @@ def get_planck(temperature,
                wavelength,
                specres):
     '''
-    :param temperature: Temperature (K)
+    :param temperature: Temperature (K).
     :type temperature: float
     :param radius: Radius (Rjup).
     :type radius: float

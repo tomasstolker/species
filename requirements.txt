@@ -12,3 +12,4 @@ urllib3
 PyAstronomy
 pandas
 xlrd
+spectres
