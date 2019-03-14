@@ -42,7 +42,7 @@ class TestPhotometry:
         phot = synphot.spectrum_to_photometry(wavelength=wavelength,
                                               flux_density=flux)
 
-        assert np.allclose(phot, 4.567475834590298e-14, rtol=self.limit, atol=0.)
+        assert np.allclose(phot, 4.5884422e-14, rtol=1e-8, atol=0.)
 
         transmission = species.ReadFilter(filter_name='MKO/NSFCam.H')
         wl_mean = transmission.mean_wavelength()
@@ -56,7 +56,7 @@ class TestPhotometry:
 
         assert photbox.name == 'L0 dwarf'
         assert np.allclose(photbox.wavelength, 1.6298258, rtol=1e-7, atol=0.)
-        assert np.allclose(photbox.flux, 4.567475834590298e-14, rtol=self.limit, atol=0.)
+        assert np.allclose(photbox.flux, 4.5884422e-14, rtol=1e-8, atol=0.)
 
         species.plot_spectrum(boxes=(specbox, photbox),
                               filters=('MKO/NSFCam.H', ),
