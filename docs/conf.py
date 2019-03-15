@@ -48,7 +48,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -86,7 +86,12 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {"collapse_navigation": False,
+                      "display_version": False,
+                      "sticky_navigation": True,
+                      "prev_next_buttons_location": "bottom",
+                      "navigation_depth": 5,
+                      "logo_only": False}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -103,6 +108,13 @@ html_static_path = ['_images']
 #
 # html_sidebars = {}
 
+# html_logo = '_images/logo.png'
+# html_search_language = 'en'
+
+html_context = {'display_github': True,
+                'github_user': 'tomasstolker',
+                'github_repo': 'species',
+                'github_version': 'master/docs/'}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -156,7 +168,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'species', 'species Documentation',
-     author, 'species', 'One line description of project.',
+     author, 'species', 'Toolkit for analyzing spectral and photometric data of planetary and substellar atmospheres',
      'Miscellaneous'),
 ]
 
