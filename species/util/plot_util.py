@@ -8,13 +8,12 @@ import numpy as np
 def sptype_substellar(sptype,
                       shape):
     """
-    :param sptype:
-    :type sptype:
-    :param shape:
-    :type shape:
+    Args:
+        sptype
+        shape
 
-    :return::
-    :rtype: numpy.ndarray
+    Returns:
+        numpy.ndarray:
     """
 
     spt_disc = np.zeros(shape)
@@ -53,13 +52,12 @@ def sptype_substellar(sptype,
 def sptype_stellar(sptype,
                    shape):
     """
-    :param sptype:
-    :type sptype:
-    :param shape:
-    :type shape:
+    Args:
+        sptype
+        shape
 
-    :return::
-    :rtype: numpy.ndarray
+    Returns:
+        numpy.ndarray
     """
 
     spt_disc = np.zeros(shape)
@@ -104,11 +102,11 @@ def sptype_stellar(sptype,
 
 def update_labels(param):
     """
-    :param param:
-    :type param: list
+    Args:
+        param(list): 
 
-    :return:
-    :rtype: list
+    Returns:
+        list:
     """
 
     if 'teff' in param:
@@ -140,11 +138,11 @@ def update_labels(param):
 
 def model_name(key):
     """
-    :param key:
-    :type key: str
+    Args:
+        key(str):
 
-    :return:
-    :rtype: str
+    Returns:
+        str:
     """
 
     if key == 'drift-phoenix':
@@ -158,11 +156,12 @@ def model_name(key):
 
 def quantity_unit(param):
     """
-    :param param:
-    :type param: list
+    Args:
+        param(list):
 
-    :return:
-    :rtype: list, list
+    Returns:
+        list:
+        list:
     """
 
     quantity = []

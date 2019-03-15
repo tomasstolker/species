@@ -17,7 +17,12 @@ pypi-test:
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 docs:
-	rm -f docs/species.*rst
+	rm -f docs/species.analysis.rst
+	rm -f docs/species.core.rst
+	rm -f docs/species.data.rst
+	rm -f docs/species.plot.rst
+	rm -f docs/species.read.rst
+	rm -f docs/species.util.rst
 	sphinx-apidoc -o docs species
 	cd docs/
 	$(MAKE) -C docs clean

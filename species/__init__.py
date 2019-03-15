@@ -11,9 +11,7 @@ from species.read.read_calibration import ReadCalibration
 
 from species.read.read_filter import ReadFilter
 
-from species.read.read_model import ReadModel, \
-                                    get_mass, \
-                                    add_luminosity
+from species.read.read_model import ReadModel
 
 from species.read.read_planck import get_planck
 
@@ -43,6 +41,9 @@ from species.plot.plot_mcmc import plot_posterior, \
 from species.plot.plot_color import plot_color_magnitude, plot_color_color
 
 from species.plot.plot_spectrum import plot_spectrum
+
+from species.util.read_util import get_mass, \
+                                   add_luminosity
 
 __author__ = 'Tomas Stolker'
 __license__ = 'GPLv3'

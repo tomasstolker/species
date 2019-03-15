@@ -12,8 +12,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from species.core import box
-from species.plot import util
 from species.read import read_filter
+from species.util import plot_util
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -223,7 +223,7 @@ def plot_spectrum(boxes,
                 if isinstance(boxitem, box.ModelBox):
                     param = boxitem.parameters
 
-                    par_key, par_unit = util.quantity_unit(list(param.keys()))
+                    par_key, par_unit = plot_util.quantity_unit(list(param.keys()))
                     par_val = list(param.values())
 
                     label = ''

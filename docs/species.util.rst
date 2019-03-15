@@ -1,29 +1,29 @@
-species.plot package
+species.util package
 ====================
 
 Submodules
 ----------
 
-species.plot.plot\_color module
--------------------------------
-
-.. automodule:: species.plot.plot_color
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-species.plot.plot\_mcmc module
+species.util.data\_util module
 ------------------------------
 
-.. automodule:: species.plot.plot_mcmc
+.. automodule:: species.util.data_util
     :members:
     :undoc-members:
     :show-inheritance:
 
-species.plot.plot\_spectrum module
-----------------------------------
+species.util.plot\_util module
+------------------------------
 
-.. automodule:: species.plot.plot_spectrum
+.. automodule:: species.util.plot_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.util.read\_util module
+------------------------------
+
+.. automodule:: species.util.read_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -32,7 +32,7 @@ species.plot.plot\_spectrum module
 Module contents
 ---------------
 
-.. automodule:: species.plot
+.. automodule:: species.util
     :members:
     :undoc-members:
     :show-inheritance:

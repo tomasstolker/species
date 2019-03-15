@@ -11,6 +11,7 @@ Subpackages
     species.data
     species.plot
     species.read
+    species.util
 
 Module contents
 ---------------

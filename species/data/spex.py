@@ -14,8 +14,9 @@ from astropy.io.votable import parse_single_table
 from astropy.utils.exceptions import AstropyWarning
 
 from species.analysis import photometry
-from species.data import queries, util
+from species.data import queries
 from species.read import read_filter
+from species.util import data_util
 
 
 warnings.simplefilter('ignore', category=AstropyWarning)
@@ -133,7 +134,7 @@ def add_spex(input_path, database):
                 except KeyError:
                     sptype = 'None'
 
-            sptype = util.update_sptype(np.array([sptype]))[0]
+            sptype = data_util.update_sptype(np.array([sptype]))[0]
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, None, h_zp)
             phot = h_twomass.spectrum_to_photometry(wavelength, flux) # Normalized units

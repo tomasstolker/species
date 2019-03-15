@@ -15,9 +15,10 @@ from astropy.io import votable
 
 from species.analysis import photometry
 from species.core import box, constants
-from species.read import read_model, read_calibration
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, util, mamajek
+                         companions, filters, mamajek
+from species.read import read_model, read_calibration
+from species.util import data_util
 
 
 warnings.simplefilter('ignore', UserWarning)
@@ -182,7 +183,7 @@ class Database:
         elif model[0:10] == 'bt-nextgen':
             btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff)
 
-        util.add_missing(model, h5_file)
+        data_util.add_missing(model, h5_file)
 
         h5_file.close()
 
@@ -411,7 +412,7 @@ class Database:
                                dtype='f') # [pc]
 
         for i, item in enumerate(filter_name):
-            filter_id = util.update_filter(item)
+            filter_id = data_util.update_filter(item)
 
             if filter_id is None:
                 continue

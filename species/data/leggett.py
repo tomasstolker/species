@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 
-from species.data import util
+from species.util import data_util
 
 
 def add_leggett(input_path,
@@ -67,7 +67,7 @@ def add_leggett(input_path,
     name = np.asarray(dataframe['Name'])
 
     sptype = np.asarray(dataframe['Type'])
-    sptype = util.update_sptype(sptype)
+    sptype = data_util.update_sptype(sptype)
 
     mag_y = np.asarray(dataframe['Y'])
     mag_j = np.asarray(dataframe['J'])

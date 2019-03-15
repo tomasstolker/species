@@ -12,7 +12,8 @@ import numpy as np
 
 from astropy.io import fits
 
-from species.data import queries, util
+from species.data import queries
+from species.util import data_util
 
 
 def add_irtf(input_path, database):
@@ -89,7 +90,7 @@ def add_irtf(input_path, database):
 
                     simbad_id, distance = queries.get_distance(name) # [pc]
 
-                    sptype = util.update_sptype(np.array([sptype]))[0]
+                    sptype = data_util.update_sptype(np.array([sptype]))[0]
 
                     dset = database.create_dataset('spectra/irtf/'+name,
                                                    data=spdata,
