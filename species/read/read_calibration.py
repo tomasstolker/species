@@ -1,6 +1,6 @@
-'''
+"""
 Read module.
-'''
+"""
 
 import os
 import sys
@@ -19,21 +19,21 @@ from species.read import read_filter
 
 
 class ReadCalibration:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  spectrum,
                  filter_name):
-        '''
+        """
         :param spectrum: Database tag of the calibration spectrum.
         :type spectrum: str
         :param filter_name: Filter ID. Full spectrum is used if set to None.
         :type filter_name: str
 
         :return: None
-        '''
+        """
 
         self.spectrum = spectrum
         self.filter_name = filter_name
@@ -53,10 +53,10 @@ class ReadCalibration:
         self.database = config['species']['database']
 
     def interpolate(self):
-        '''
+        """
         :return: Linearly interpolated spectrum.
         :rtype: scipy.interpolate.interpolate.interp1d
-        '''
+        """
 
         calibbox = self.get_spectrum()
 
@@ -72,7 +72,7 @@ class ReadCalibration:
                      specres=None,
                      extrapolate=False,
                      min_wavelength=None):
-        '''
+        """
         :param parameters: Model parameter values. Not used if set to None.
         :type parameters: dict
         :param negative: Include negative values.
@@ -87,7 +87,7 @@ class ReadCalibration:
 
         :return: Spectrum data.
         :rtype: numpy.ndarray
-        '''
+        """
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -199,13 +199,13 @@ class ReadCalibration:
     def get_photometry(self,
                        parameters,
                        synphot=None):
-        '''
+        """
         :param parameters: Model parameter values.
         :type parameters: dict
 
         :return: Average flux density (W m-2 micron-1).
         :rtype: float
-        '''
+        """
 
         specbox = self.get_spectrum(parameters,)
 

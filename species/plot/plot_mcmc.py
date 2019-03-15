@@ -1,6 +1,6 @@
-'''
+"""
 Module with functions for making plots.
-'''
+"""
 
 import os
 import sys
@@ -24,9 +24,9 @@ def plot_walkers(tag,
                  output,
                  nsteps=None,
                  offset=None):
-    '''
+    """
     :return: None
-    '''
+    """
 
     sys.stdout.write('Plotting walkers: '+output+'...')
     sys.stdout.flush()
@@ -99,9 +99,9 @@ def plot_posterior(tag,
                    title=None,
                    offset=None,
                    title_fmt='.2f'):
-    '''
+    """
     :return: None
-    '''
+    """
 
     sys.stdout.write('Plotting posteriors: '+output+'...')
     sys.stdout.flush()

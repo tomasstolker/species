@@ -1,12 +1,12 @@
-'''
+"""
 Text
-'''
+"""
 
 def get_data():
-    '''
+    """
     :return: Dictionary with the distances and apparent magnitudes of directly imaged companions.
     :rtype: dict
-    '''
+    """
 
     data = {'beta Pic b':{'distance':19.75,
                           'app_mag':{'LCO/VisAO.Ys':(15.53, 0.34), # Males et al. (2014)

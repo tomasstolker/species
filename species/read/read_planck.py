@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import math
 
@@ -13,7 +13,7 @@ from species.core import constants as con
 def planck(wl_points,
            temperature,
            scaling):
-    '''
+    """
     :param temperature: Temperature (K).
     :type temperature: float
     :param scaling: Scaling parameter.
@@ -23,7 +23,7 @@ def planck(wl_points,
 
     :return: Flux density (W m-2 micron-1).
     :rtype: numpy.ndarray
-    '''
+    """
 
     planck1 = 2.*con.PLANCK*con.LIGHT**2/(1e-6*wl_points)**5
     planck2 = np.exp(con.PLANCK*con.LIGHT/(1e-6*wl_points*con.BOLTZMANN*temperature)) - 1.
@@ -39,7 +39,7 @@ def get_planck(temperature,
                distance,
                wavelength,
                specres):
-    '''
+    """
     :param temperature: Temperature (K).
     :type temperature: float
     :param radius: Radius (Rjup).
@@ -53,7 +53,7 @@ def get_planck(temperature,
 
     :return: Box with the Planck spectrum.
     :rtype: species.core.box.SpectrumBox
-    '''
+    """
 
     wl_points = [wavelength[0]]
     while wl_points[-1] <= wavelength[1]:

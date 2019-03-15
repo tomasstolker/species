@@ -1,6 +1,6 @@
-'''
+"""
 Module with functions for making plots.
-'''
+"""
 
 import os
 import sys
@@ -33,7 +33,7 @@ def plot_spectrum(boxes,
                   title=None,
                   offset=None,
                   legend='upper left'):
-    '''
+    """
     :param boxes:
     :type boxes: tuple(species.analysis.box.SpectrumBox and/or
                  species.analysis.box.PhotometryBox and/or
@@ -44,7 +44,7 @@ def plot_spectrum(boxes,
     :type output: str
 
     :return: None
-    '''
+    """
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
@@ -139,7 +139,7 @@ def plot_spectrum(boxes,
         ax2.set_ylabel('Transmission', fontsize=13)
 
     if residuals:
-        ax3.set_ylabel('Residual [$\sigma$]', fontsize=13)
+        ax3.set_ylabel(r'Residual [$\sigma$]', fontsize=13)
 
     if xlim:
         ax1.set_xlim(xlim[0], xlim[1])
@@ -154,14 +154,14 @@ def plot_spectrum(boxes,
         exponent = math.floor(math.log10(ylim[1]))
         scaling = 10.**exponent
 
-        ax1.set_ylabel('Flux [10$^{'+str(exponent)+'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+        ax1.set_ylabel(r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
         ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
         if ylim[0] < 0.:
             ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
 
     else:
-        ax1.set_ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+        ax1.set_ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
         scaling = 1.
 
     if filters:
@@ -229,11 +229,11 @@ def plot_spectrum(boxes,
                     label = ''
                     for i, item in enumerate(par_key):
 
-                        if item == '$T_\mathregular{eff}$':
+                        if item == r'$T_\mathregular{eff}$':
                             value = '{:.1f}'.format(par_val[i])
-                        elif item in ('$\log\,g$', '$R$', '$M$', '[Fe/H]'):
+                        elif item in (r'$\log\,g$', r'$R$', r'$M$', '[Fe/H]'):
                             value = '{:.2f}'.format(par_val[i])
-                        elif item == '$L$':
+                        elif item == r'$L$':
                             value = '{0:.1e}'.format(par_val[i])
                         else:
                             continue

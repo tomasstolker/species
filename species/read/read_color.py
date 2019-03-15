@@ -1,6 +1,6 @@
-'''
+"""
 Read module.
-'''
+"""
 
 import os
 import configparser
@@ -14,15 +14,15 @@ from species.data import database
 
 
 class ReadColorMagnitude:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  library,
                  filters_color,
                  filter_mag):
-        '''
+        """
         :param library: Photometric libraries.
         :type library: tuple(str, )
         :param filters_color:
@@ -31,7 +31,7 @@ class ReadColorMagnitude:
         :type filter_mag: str
 
         :return: None
-        '''
+        """
 
         self.library = library
         self.filters_color = filters_color
@@ -49,13 +49,13 @@ class ReadColorMagnitude:
 
     def get_color_magnitude(self,
                             object_type):
-        '''
+        """
         :param object_type:
         :type object_type: str
 
         :return: Box with the colors and magnitudes.
         :rtype: species.core.box.ColorMagBox
-        '''
+        """
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -124,21 +124,21 @@ class ReadColorMagnitude:
 
 
 class ReadColorColor:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  library,
                  filters):
-        '''
+        """
         :param library: Photometric libraries.
         :type library: tuple(str, )
         :param filters: Filter IDs for the two colors.
         :type filters: tuple(tuple(str, str), tuple(str, str))
 
         :return: None
-        '''
+        """
 
         self.library = library
         self.filters = filters
@@ -155,14 +155,14 @@ class ReadColorColor:
 
     def get_color_color(self,
                         object_type):
-        '''
+        """
         :param object_type: Object type (currently only 'field' possible). All objects are
                             selected if set to None.
         :type object_type: str
 
         :return: Box with the colors.
         :rtype: species.core.box.ColorColorBox
-        '''
+        """
 
         h5_file = h5py.File(self.database, 'r')
 

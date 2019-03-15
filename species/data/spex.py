@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import os
 import sys
@@ -22,7 +22,7 @@ warnings.simplefilter('ignore', category=AstropyWarning)
 
 
 def add_spex(input_path, database):
-    '''
+    """
     Function for adding the SpeX Prism Spectral Library to the database.
 
     :param input_path:
@@ -31,7 +31,7 @@ def add_spex(input_path, database):
     :type database: h5py._hl.files.File
 
     :return: None
-    '''
+    """
 
     database.create_group('spectra/spex')
 

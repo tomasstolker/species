@@ -1,6 +1,6 @@
-'''
+"""
 Module for reading filter data.
-'''
+"""
 
 import os
 import configparser
@@ -14,18 +14,19 @@ from species.data import database
 
 
 class ReadFilter:
-    '''
+    """
     Reading filter data and information from the database.
-    '''
+    """
 
     def __init__(self,
                  filter_name):
-        '''
-        :param filter_name: Filter ID.
-        :type filter_name: str
+        """
+        Args:
+            filter_name(str): Filter ID.
 
-        :return: None
-        '''
+        Returns:
+            None
+        """
 
         self.filter_name = filter_name
 
@@ -37,10 +38,10 @@ class ReadFilter:
         self.database = config['species']['database']
 
     def get_filter(self):
-        '''
-        :return: Filter data.
-        :rtype: numpy.ndarray
-        '''
+        """
+        Returns:
+            numpy.ndarray: Filter data.
+        """
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -61,10 +62,10 @@ class ReadFilter:
         return data
 
     def interpolate(self):
-        '''
-        :return: Linearly interpolated filter.
-        :rtype: scipy.interpolate.interpolate.interp1d
-        '''
+        """
+        Returns:
+            scipy.interpolate.interpolate.interp1d: Linearly interpolated filter.
+        """
 
         data = self.get_filter()
 
@@ -75,30 +76,31 @@ class ReadFilter:
                         fill_value=float('nan'))
 
     def wavelength_range(self):
-        '''
-        :return: Minimum and maximum wavelength (micron).
-        :rtype: float, float
-        '''
+        """
+        Returns:
+            float: Minimum wavelength (micron).
+            float: Maximum wavelength (micron).
+        """
 
         data = self.get_filter()
 
         return np.amin(data[0, ]), np.amax(data[0, ])
 
     def mean_wavelength(self):
-        '''
-        :return: Mean wavelength (micron).
-        :rtype: float
-        '''
+        """
+        Returns:
+            float: Mean wavelength (micron).
+        """
 
         data = self.get_filter()
 
         return np.trapz(data[0, ]*data[1, ], data[0, ]) / np.trapz(data[1, ], data[0, ])
 
     def filter_fwhm(self):
-        '''
-        :return: Filter full width at half maximum (micron).
-        :rtype: float
-        '''
+        """
+        Returns:
+            float: Filter full width at half maximum (micron).
+        """
 
         data = self.get_filter()
 

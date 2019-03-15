@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import sys
 import math
@@ -22,7 +22,7 @@ def lnprior(param,
             bounds,
             modelpar,
             prior):
-    '''
+    """
     :param param: Parameter values.
     :type param: numpy.ndarray
     :param bounds: Parameter boundaries.
@@ -36,7 +36,7 @@ def lnprior(param,
 
     :return: Log prior probability.
     :rtype: float
-    '''
+    """
 
     if prior:
 
@@ -69,7 +69,7 @@ def lnlike(param,
            synphot,
            sampling,
            distance):
-    '''
+    """
     :param param:
     :type param:
     :param modelpar:
@@ -87,7 +87,7 @@ def lnlike(param,
 
     :return: Log likelihood probability.
     :rtype: float
-    '''
+    """
 
     global MIN_CHISQ
     global MIN_PARAM
@@ -120,7 +120,7 @@ def lnprob(param,
            sampling,
            distance,
            prior):
-    '''
+    """
     :param param:
     :type param:
     :param bounds:
@@ -142,7 +142,7 @@ def lnprob(param,
 
     :return:
     :rtype:
-    '''
+    """
 
     ln_prior = lnprior(param, bounds, modelpar, prior)
 
@@ -162,9 +162,9 @@ def lnprob(param,
 
 
 class FitModel:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  objname,
@@ -172,7 +172,7 @@ class FitModel:
                  model,
                  sampling,
                  bounds):
-        '''
+        """
         :param objname: Object name in the database.
         :type objname: str
         :param filters: Filter IDs for which the photometry is selected. All available
@@ -188,7 +188,7 @@ class FitModel:
         :type bounds: dict
 
         :return: None
-        '''
+        """
 
         self.object = read_object.ReadObject(objname)
         self.distance = self.object.get_distance()
@@ -247,9 +247,9 @@ class FitModel:
                  tag,
                  prior=None,
                  ncpu=1):
-        '''
+        """
         :return: None
-        '''
+        """
 
         global MIN_CHISQ
         global MIN_PARAM
