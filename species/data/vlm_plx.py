@@ -12,7 +12,8 @@ import numpy as np
 
 from astropy.io import fits
 
-from species.data import queries, util
+from species.data import queries
+from species.util import data_util
 
 
 def add_vlm_plx(input_path,
@@ -71,7 +72,7 @@ def add_vlm_plx(input_path,
     flag = photdata['FLAG']
     flag = np.core.defchararray.strip(flag)
 
-    sptype = util.update_sptype(sptype)
+    sptype = data_util.update_sptype(sptype)
 
     dtype = h5py.special_dtype(vlen=bytes)
 

@@ -9,7 +9,6 @@ emcee
 corner
 progress
 urllib3
-PyAstronomy
 pandas
 xlrd
 spectres

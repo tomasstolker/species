@@ -13,7 +13,7 @@ import pandas as pd
 
 from scipy.interpolate import interp1d
 
-from species.data import util
+from species.util import data_util
 
 
 def add_btnextgen(input_path,
@@ -144,13 +144,13 @@ def add_btnextgen(input_path,
 
                 flux.append(flux_interp(wavelength))
 
-    data_sorted = util.sort_data(np.asarray(teff),
-                                 np.asarray(logg),
-                                 np.asarray(feh),
-                                 wavelength,
-                                 np.asarray(flux))
+    data_sorted = data_util.sort_data(np.asarray(teff),
+                                      np.asarray(logg),
+                                      np.asarray(feh),
+                                      wavelength,
+                                      np.asarray(flux))
 
-    util.write_data('bt-nextgen', database, data_sorted)
+    data_util.write_data('bt-nextgen', database, data_sorted)
 
     sys.stdout.write('\rAdding BT-NextGen model spectra... [DONE]                              \n')
     sys.stdout.flush()

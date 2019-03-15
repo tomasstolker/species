@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 
-from species.data import util
+from species.util import data_util
 
 
 def add_mamajek(input_path,
@@ -61,7 +61,7 @@ def add_mamajek(input_path,
     dataframe.columns = dataframe.columns.str.replace('#', '')
 
     sptype = np.asarray(dataframe['SpT'])
-    sptype = util.update_sptype(sptype)
+    sptype = data_util.update_sptype(sptype)
 
     flag = np.repeat('star', sptype.size)
     distance = np.repeat(10., sptype.size) # [pc]

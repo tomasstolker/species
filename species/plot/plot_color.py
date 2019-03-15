@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 
 from matplotlib.colorbar import Colorbar
 
-from species.plot import util
 from species.read import read_object
+from species.util import plot_util
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -113,11 +113,11 @@ def plot_color_magnitude(colorbox,
     magnitude = magnitude[indices]
 
     if colorbox.object_type == 'star':
-        spt_disc = util.sptype_stellar(sptype, color.shape)
+        spt_disc = plot_util.sptype_stellar(sptype, color.shape)
         unique = np.arange(0, color.size, 1)
 
     else:
-        spt_disc = util.sptype_substellar(sptype, color.shape)
+        spt_disc = plot_util.sptype_substellar(sptype, color.shape)
         _, unique = np.unique(color, return_index=True)
 
     sptype = sptype[unique]
@@ -254,7 +254,7 @@ def plot_color_color(colorbox,
     color1 = color1[indices]
     color2 = color2[indices]
 
-    spt_disc = util.sptype_discrete(sptype, color1.shape)
+    spt_disc = plot_util.sptype_discrete(sptype, color1.shape)
 
     _, unique = np.unique(color1, return_index=True)
 

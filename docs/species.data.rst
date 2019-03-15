@@ -84,14 +84,6 @@ species.data.spex module
     :undoc-members:
     :show-inheritance:
 
-species.data.util module
-------------------------
-
-.. automodule:: species.data.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 species.data.vega module
 ------------------------
 

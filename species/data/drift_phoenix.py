@@ -10,7 +10,7 @@ from urllib.request import urlretrieve
 
 import numpy as np
 
-from species.data import util
+from species.util import data_util
 
 
 def add_drift_phoenix(input_path,
@@ -79,13 +79,13 @@ def add_drift_phoenix(input_path,
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 flux.append(data[:, 1]*1e-7*1e4*1e4)
 
-    data_sorted = util.sort_data(np.asarray(teff),
-                                 np.asarray(logg),
-                                 np.asarray(feh),
-                                 wavelength,
-                                 np.asarray(flux))
+    data_sorted = data_util.sort_data(np.asarray(teff),
+                                      np.asarray(logg),
+                                      np.asarray(feh),
+                                      wavelength,
+                                      np.asarray(flux))
 
-    util.write_data('drift-phoenix', database, data_sorted)
+    data_util.write_data('drift-phoenix', database, data_sorted)
 
     sys.stdout.write('\rAdding DRIFT-PHOENIX model spectra... [DONE]                    \n')
     sys.stdout.flush()
