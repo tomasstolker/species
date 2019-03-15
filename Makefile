@@ -36,7 +36,7 @@ clean:
 	rm -f .coverage
 	rm -f coverage.xml
 	rm -rf .pytest_cache/
-	rm -rf docs/build
+	rm -rf docs/_build
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/
