@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import os
 import sys
@@ -17,9 +17,9 @@ from astroquery.vizier import Vizier
 
 
 class NoStdStreams:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self, stdout=None, stderr=None):
         self.devnull = open(os.devnull, 'w')
@@ -46,7 +46,7 @@ with NoStdStreams():
 
 
 def get_simbad(name):
-    '''
+    """
     Function for getting the Simbad identifier of an object.
 
     :param name:
@@ -54,7 +54,7 @@ def get_simbad(name):
 
     :return: Simbad name.
     :rtype: numpy.ndarray
-    '''
+    """
 
     simbad_id = []
 
@@ -75,13 +75,13 @@ def get_simbad(name):
     return np.asarray(simbad_id, dtype=np.str_)
 
 def get_distance(target):
-    '''
+    """
     :param target: Target name.
     :type target: str
 
     :return: SIMBAD name and distance (pc).
     :rtype: str, float
-    '''
+    """
 
     # Liu et al. (2016)
     # http://cdsarc.u-strasbg.fr/viz-bin/cat/J/ApJ/833/96

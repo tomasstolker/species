@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import sys
 import math
@@ -22,7 +22,7 @@ def lnprob(param,
            bounds,
            objphot,
            specphot):
-    '''
+    """
     :param param: Value of the scaling parameter.
     :type param: numpy.ndarray
     :param bounds: Boundary of the scaling parameter
@@ -34,7 +34,7 @@ def lnprob(param,
 
     :return:
     :rtype:
-    '''
+    """
 
     global MIN_CHISQ
     global MIN_PARAM
@@ -63,16 +63,16 @@ def lnprob(param,
 
 
 class FitSpectrum:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  objname,
                  filters,
                  spectrum,
                  bounds):
-        '''
+        """
         :param objname: Object name in the database.
         :type objname: str
         :param filters: Filter IDs for which the photometry is selected. All available
@@ -84,7 +84,7 @@ class FitSpectrum:
         :type bounds: dict
 
         :return: None
-        '''
+        """
 
         self.object = read_object.ReadObject(objname)
 
@@ -117,7 +117,7 @@ class FitSpectrum:
                  nsteps,
                  guess,
                  tag):
-        '''
+        """
         :param nwalkers: Number of walkers.
         :type nwalkers: int
         :param nsteps: Number of steps for each walker.
@@ -128,7 +128,7 @@ class FitSpectrum:
         :type tag: int
 
         :return: None
-        '''
+        """
 
         global MIN_CHISQ
         global MIN_PARAM

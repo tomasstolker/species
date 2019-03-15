@@ -1,6 +1,6 @@
-'''
+"""
 Read module.
-'''
+"""
 
 import os
 import configparser
@@ -10,21 +10,21 @@ import numpy as np
 
 
 class ReadResult:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  res_type,
                  tag):
-        '''
+        """
         :param res_type: Result type.
         :type res_type: str
         :param tag: Database tag.
         :type tag: str
 
         :return: None
-        '''
+        """
 
         self.res_type = res_type
         self.tag = tag
@@ -37,13 +37,13 @@ class ReadResult:
         self.database = config['species']['database']
 
     def get_chisquare(self, fix=None):
-        '''
+        """
         :param fix:
         :type fix: dict
 
         :return: Grid points and reduced chi-square values.
         :rtype: numpy.ndarray, numpy.ndarray
-        '''
+        """
 
         h5_file = h5py.File(self.database, 'r')
 

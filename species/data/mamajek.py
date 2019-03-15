@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import os
 import sys
@@ -16,7 +16,7 @@ from species.data import util
 
 def add_mamajek(input_path,
                 database):
-    '''
+    """
     Function for adding "A Modern Mean Dwarf Stellar Color and Effective Temperature Sequence".
     http://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt
 
@@ -26,7 +26,7 @@ def add_mamajek(input_path,
     :type database: h5py._hl.files.File
 
     :return: None
-    '''
+    """
 
     data_file = os.path.join(input_path, 'EEM_dwarf_UBVIJHK_colors_Teff.txt')
 

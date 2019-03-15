@@ -1,6 +1,6 @@
-'''
+"""
 Setup module.
-'''
+"""
 
 import os
 import sys
@@ -12,18 +12,18 @@ import species
 
 
 class SpeciesInit:
-    '''
+    """
     Text.
-    '''
+    """
 
     def __init__(self,
                  config_path):
-        '''
+        """
         :param config_path: Location of the configuration file (species_config.ini).
         :type config_path: str
 
         :return: None
-        '''
+        """
 
         sys.stdout.write('Initiating species v'+species.__version__+'...')
         sys.stdout.flush()

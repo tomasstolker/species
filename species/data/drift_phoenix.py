@@ -1,6 +1,6 @@
-'''
+"""
 Module for DRIFT-PHOENIX atmospheric models.
-'''
+"""
 
 import os
 import sys
@@ -15,7 +15,7 @@ from species.data import util
 
 def add_drift_phoenix(input_path,
                       database):
-    '''
+    """
     Function for adding the DRIFT-PHOENIX atmospheric models to the database.
 
     :param input_path:
@@ -24,7 +24,7 @@ def add_drift_phoenix(input_path,
     :type database: h5py._hl.files.File
 
     :return: None
-    '''
+    """
 
     if not os.path.exists(input_path):
         os.makedirs(input_path)

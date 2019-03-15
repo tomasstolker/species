@@ -1,6 +1,6 @@
-'''
+"""
 Photometry module.
-'''
+"""
 
 import os
 import configparser
@@ -17,7 +17,7 @@ def multi_photometry(datatype,
                      spectrum,
                      filters,
                      parameters):
-    '''
+    """
     :param datatype: Data type ('model' or 'calibration').
     :type datatype: str
     :param spectrum: Spectrum name (e.g., 'drift-phoenix').
@@ -29,7 +29,7 @@ def multi_photometry(datatype,
 
     :return: Box with synthetic photometry.
     :rtype: species.core.box.SynphotBox
-    '''
+    """
 
     flux = {}
 
@@ -48,7 +48,7 @@ def multi_photometry(datatype,
 
 def apparent_to_absolute(app_mag,
                          distance):
-    '''
+    """
     :param app_mag: Apparent magnitude (mag).
     :type app_mag: float or numpy.ndarray
     :param distance: Distance (pc).
@@ -56,24 +56,24 @@ def apparent_to_absolute(app_mag,
 
     :return: Absolute magnitude (mag).
     :rtype: float or numpy.ndarray
-    '''
+    """
 
     return app_mag - 5.*np.log10(distance) + 5.
 
 
 class SyntheticPhotometry:
-    '''
+    """
     Text
-    '''
+    """
 
     def __init__(self,
                  filter_name):
-        '''
+        """
         :param filter_name: Filter name.
         :type filter_name: str
 
         :return: None
-        '''
+        """
 
         self.filter_name = filter_name
         self.filter_interp = None
@@ -88,14 +88,14 @@ class SyntheticPhotometry:
 
     def zero_point(self,
                    wl_range):
-        '''
+        """
         :param wl_range: Wavelength range (micron). The range from the filter transmission
                          curve is used if set to None.
         :type wl_range: float
 
         :return: tuple(float, float)
         :rtype:
-        '''
+        """
 
         if wl_range is None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -128,7 +128,7 @@ class SyntheticPhotometry:
     def spectrum_to_photometry(self,
                                wavelength,
                                flux_density):
-        '''
+        """
         :param wavelength: Wavelength (micron).
         :type wavelength: numpy.ndarray
         :param flux_density: Flux density (W m-2 micron-1).
@@ -136,7 +136,7 @@ class SyntheticPhotometry:
 
         :return: Average flux density (W m-2 micron-1).
         :rtype: float or numpy.ndarray
-        '''
+        """
 
         if not self.filter_interp:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -193,7 +193,7 @@ class SyntheticPhotometry:
                               wavelength,
                               flux_density,
                               distance=None):
-        '''
+        """
         :param wavelength: Wavelength (micron).
         :type wavelength: numpy.ndarray
         :param flux_density: Flux density (W m-2 micron-1).
@@ -203,7 +203,7 @@ class SyntheticPhotometry:
 
         :return: Flux (W m-2).
         :rtype: float or numpy.ndarray
-        '''
+        """
 
         vega_mag = 0.03 # [mag]
 
@@ -230,7 +230,7 @@ class SyntheticPhotometry:
                           magnitude,
                           error,
                           zp_flux=None):
-        '''
+        """
         :param magnitude: Magnitude (mag).
         :type magnitude: float
         :param error: Error (mag). Not used if set to None.
@@ -240,7 +240,7 @@ class SyntheticPhotometry:
 
         :return: Flux (W m-2 micron-1), lower error, upper error
         :rtype: float, tuple(float, float)
-        '''
+        """
 
         vega_mag = 0.03 # [mag]
 
@@ -262,7 +262,7 @@ class SyntheticPhotometry:
     def flux_to_magnitude(self,
                           flux,
                           distance):
-        '''
+        """
         :param flux: Flux density (W m-2 micron-1).
         :type flux: float
         :param error: Distance (pc).
@@ -270,7 +270,7 @@ class SyntheticPhotometry:
 
         :return: Apparent magnitude (mag), absolute magnitude (mag).
         :rtype: float, float
-        '''
+        """
 
         vega_mag = 0.03 # [mag]
 

@@ -1,13 +1,13 @@
-'''
+"""
 Text.
-'''
+"""
 
 import numpy as np
 
 
 def sptype_substellar(sptype,
                       shape):
-    '''
+    """
     :param sptype:
     :type sptype:
     :param shape:
@@ -15,7 +15,7 @@ def sptype_substellar(sptype,
 
     :return::
     :rtype: numpy.ndarray
-    '''
+    """
 
     spt_disc = np.zeros(shape)
 
@@ -52,7 +52,7 @@ def sptype_substellar(sptype,
 
 def sptype_stellar(sptype,
                    shape):
-    '''
+    """
     :param sptype:
     :type sptype:
     :param shape:
@@ -60,7 +60,7 @@ def sptype_stellar(sptype,
 
     :return::
     :rtype: numpy.ndarray
-    '''
+    """
 
     spt_disc = np.zeros(shape)
 
@@ -103,13 +103,13 @@ def sptype_stellar(sptype,
 
 
 def update_labels(param):
-    '''
+    """
     :param param:
     :type param: list
 
     :return:
     :rtype: list
-    '''
+    """
 
     if 'teff' in param:
         index = param.index('teff')
@@ -139,13 +139,13 @@ def update_labels(param):
 
 
 def model_name(key):
-    '''
+    """
     :param key:
     :type key: str
 
     :return:
     :rtype: str
-    '''
+    """
 
     if key == 'drift-phoenix':
         name = 'DRIFT-PHOENIX'
@@ -157,13 +157,13 @@ def model_name(key):
 
 
 def quantity_unit(param):
-    '''
+    """
     :param param:
     :type param: list
 
     :return:
     :rtype: list, list
-    '''
+    """
 
     quantity = []
     unit = []

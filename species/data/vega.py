@@ -1,6 +1,6 @@
-'''
+"""
 Text
-'''
+"""
 
 import os
 import sys
@@ -13,7 +13,7 @@ from astropy.io import fits
 
 
 def add_vega(input_path, database):
-    '''
+    """
     Function for adding a Vega spectrum to the database.
 
     :param input_path:
@@ -22,7 +22,7 @@ def add_vega(input_path, database):
     :type database: h5py._hl.files.File
 
     :return: None
-    '''
+    """
 
     data_file = os.path.join(input_path, 'alpha_lyr_stis_008.fits')
     url = 'http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits'
