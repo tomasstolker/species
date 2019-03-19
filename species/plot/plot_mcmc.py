@@ -1,5 +1,5 @@
 """
-Module with functions for making plots.
+Module for plotting MCMC results.
 """
 
 import os
@@ -25,7 +25,22 @@ def plot_walkers(tag,
                  nsteps=None,
                  offset=None):
     """
-    :return: None
+    Function to plot the step history of the walkers.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the MCMC samples.
+    output : str
+        Output filename.
+    nsteps : int
+        Number of steps.
+    offset : tuple(float, float)
+        Offset of the x- and y-axis label.
+
+    Returns
+    -------
+    None
     """
 
     sys.stdout.write('Plotting walkers: '+output+'...')
@@ -100,7 +115,26 @@ def plot_posterior(tag,
                    offset=None,
                    title_fmt='.2f'):
     """
-    :return: None
+    Function to plot the posterior distributions.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the MCMC samples.
+    burnin : int
+        Number of burnin steps to exclude.
+    output : str
+        Output filename.
+    title : str
+        Plot title.
+    offset : tuple(float, float)
+        Offset of the x- and y-axis label.
+    title_fmt : str
+        Format of the median and error values.
+
+    Returns
+    -------
+    None
     """
 
     sys.stdout.write('Plotting posteriors: '+output+'...')

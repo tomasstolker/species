@@ -1,5 +1,5 @@
 """
-Utility functions.
+Utility functions for data processing.
 """
 
 import numpy as np
@@ -9,11 +9,15 @@ def update_sptype(sptypes):
     """
     Function to update a list with spectral types to two characters (e.g., M8, L3, or T1).
 
-    Args:
-        sptypes(numpy.ndarray): Spectral types.
+    Parameters
+    ----------
+    sptypes : numpy.ndarray
+        Spectral types.
 
-    Returns:
-        numpy.ndarray: Updated spectral types.
+    Returns
+    -------
+    numpy.ndarray
+        Updated spectral types.
     """
 
     mlty = ('O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y')
@@ -42,11 +46,15 @@ def update_filter(filter_in):
     Function to update filter ID from the Vizier Photometry viewer VOTable to the filter ID from
     the SVO Filter Profile Service.
 
-    Args:
-        filter_in(str): Filter ID in the format of the Vizier Photometry viewer
+    Parameters
+    ----------
+    filter_in : str
+        Filter ID in the format of the Vizier Photometry viewer.
 
-    Returns:
-        str: Filter ID in the format of the SVO Filter Profile Service.
+    Returns
+    -------
+    str
+        Filter ID in the format of the SVO Filter Profile Service.
     """
 
     if filter_in[0:5] == b'2MASS':
@@ -70,15 +78,21 @@ def sort_data(teff,
               wavelength,
               flux):
     """
-    Args:
-        teff(numpy.ndarray)
-        logg(numpy.ndarray)
-        feh(numpy.ndarray)
-        wavelength(numpy.ndarray)
-        flux(numpy.ndarray)
+    Parameters
+    ----------
+    teff : numpy.ndarray
+    logg : numpy.ndarray
+    feh : numpy.ndarray
+    wavelength : numpy.ndarray
+    flux : numpy.ndarray
 
-    Returns:
-        tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray)
+    Returns
+    -------
+    numpy.ndarray
+    numpy.ndarray
+    numpy.ndarray
+    numpy.ndarray
+    numpy.ndarray
     """
 
     teff_unique = np.unique(teff)
@@ -104,12 +118,17 @@ def write_data(model,
                database,
                data_sorted):
     """
-    Args:
-        model(str): Atmosphere model.
-        database(h5py._hl.files.File)
+    Parameters
+    ----------
+    model : str
+        Atmosphere model.
+    database: h5py._hl.files.File
+        Database.
+    data_sorted :
 
-    Returns:
-        None
+    Returns
+    -------
+    None
     """
 
     if 'models/'+model in database:
@@ -146,12 +165,16 @@ def write_data(model,
 def add_missing(model,
                 database):
     """
-    Args:
-        model(str): Atmosphere model.
-        database(h5py._hl.files.File)
+    Parameters
+    ----------
+    model : str
+        Atmosphere model.
+    database : h5py._hl.files.File
+        Database.
 
-    Returns:
-        None
+    Returns
+    -------
+    None
     """
 
     teff = np.asarray(database['models/'+model+'/teff'])

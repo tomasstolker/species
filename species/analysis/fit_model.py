@@ -1,17 +1,19 @@
 """
-Text
+Module for fitting atmospheric models.
 """
 
 import sys
 import math
 
 import emcee
+import spectres
 import progress.bar
 import numpy as np
 
 from species.analysis import photometry
 from species.data import database
 from species.read import read_model, read_object
+from species.util import read_util
 
 
 MIN_CHISQ = np.inf
@@ -23,19 +25,25 @@ def lnprior(param,
             modelpar,
             prior):
     """
-    :param param: Parameter values.
-    :type param: numpy.ndarray
-    :param bounds: Parameter boundaries.
-    :type bounds: dict
-    :param modelpar: Parameter names.
-    :type modelpar: tuple(str, )
-    :param prior: Gaussian prior on one of the parameters. Currently only possible for the mass,
-                  e.g. ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of
-                  3 Mjup. Not used if set to None.
-    :type prior: tuple(str, float, float)
+    Function for the prior probability.
 
-    :return: Log prior probability.
-    :rtype: float
+    Parameters
+    ----------
+    param : numpy.ndarray
+        Parameter values.
+    bounds : dict
+        Parameter boundaries.
+    modelpar : list(str, )
+        Parameter names.
+    prior : tuple(str, float, float)
+        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
+        ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
+        used if set to None.
+
+    Returns
+    -------
+    float
+        Log prior probability.
     """
 
     if prior:
@@ -52,7 +60,7 @@ def lnprior(param,
                 ln_prior = 0.
 
             elif prior[0] == 'mass':
-                mass = read_model.get_mass(modeldict)
+                mass = read_util.get_mass(modeldict)
                 ln_prior = -0.5*(mass-prior[1])**2/prior[2]**2
 
         else:
@@ -67,26 +75,34 @@ def lnlike(param,
            modelphot,
            objphot,
            synphot,
-           sampling,
-           distance):
+           distance,
+           spectrum,
+           instrument,
+           modelspec):
     """
-    :param param:
-    :type param:
-    :param modelpar:
-    :type modelpar:
-    :param modelphot:
-    :type modelphot:
-    :param objphot:
-    :type objphot:
-    :param synphot:
-    :type synphot:
-    :param sampling:
-    :type sampling:
-    :param distance:
-    :type distance:
+    Function for the likelihood probability.
 
-    :return: Log likelihood probability.
-    :rtype: float
+    Parameters
+    ----------
+    param : numpy.ndarray
+        Parameter values.
+    modelpar : list(str, )
+        Parameter names.
+    modelphot : list('species.read.read_model.ReadModel, )
+    objphot : list(tuple(float, float), )
+    synphot : list(species.analysis.photometry.SyntheticPhotometry, )
+    distance : float
+        Distance (pc).
+    spectrum : numpy.ndarray
+        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+    instrument : str
+        Instrument that was used for the spectrum (currently only 'gpi' possible).
+    modelspec : species.read.read_model.ReadModel
+
+    Returns
+    -------
+    float
+        Log likelihood probability.
     """
 
     global MIN_CHISQ
@@ -100,9 +116,20 @@ def lnlike(param,
 
     chisq = 0.
 
-    for i, item in enumerate(objphot):
-        flux = modelphot[i].get_photometry(paramdict, sampling, synphot[i])
-        chisq += (item[0]-flux)**2 / item[1]**2
+    if objphot is not None:
+        for i, item in enumerate(objphot):
+            flux = modelphot[i].get_photometry(paramdict, synphot[i])
+            chisq += (item[0]-flux)**2 / item[1]**2
+
+    if spectrum is not None:
+        model = modelspec.get_model(paramdict, ('original', (0.9, 2.5)))
+
+        flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
+                                     old_spec_wavs=model.wavelength,
+                                     spec_fluxes=model.flux,
+                                     spec_errs=None)
+
+        chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
 
     if chisq < MIN_CHISQ:
         MIN_CHISQ = chisq
@@ -117,31 +144,41 @@ def lnprob(param,
            modelphot,
            objphot,
            synphot,
-           sampling,
            distance,
-           prior):
+           prior,
+           spectrum,
+           instrument,
+           modelspec):
     """
-    :param param:
-    :type param:
-    :param bounds:
-    :type bounds:
-    :param modelpar:
-    :type modelpar:
-    :param modelphot:
-    :type modelphot:
-    :param objphot:
-    :type objphot:
-    :param synphot:
-    :type synphot:
-    :param sampling:
-    :type sampling:
-    :param distance:
-    :type distance:
-    :param prior: Gaussian prior. Not used if set to None.
-    :type prior: tuple(str, float, float)
+    Function for the posterior probability.
 
-    :return:
-    :rtype:
+    Parameters
+    ----------
+    param : numpy.ndarray
+        Parameter values.
+    bounds : dict
+        Parameter boundaries.
+    modelpar : list(str, )
+        Parameter names.
+    modelphot : list('species.read.read_model.ReadModel, )
+    objphot : list(tuple(float, float), )
+    synphot : list(species.analysis.photometry.SyntheticPhotometry, )
+    distance : float
+        Distance (pc).
+    prior : tuple(str, float, float)
+        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
+        ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
+        used if set to None.
+    spectrum : numpy.ndarray
+        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+    instrument : str
+        Instrument that was used for the spectrum (currently only 'gpi' possible).
+    modelspec : species.read.read_model.ReadModel
+
+    Returns
+    -------
+    float
+        Log posterior probability.
     """
 
     ln_prior = lnprior(param, bounds, modelpar, prior)
@@ -155,53 +192,57 @@ def lnprob(param,
                                     modelphot,
                                     objphot,
                                     synphot,
-                                    sampling,
-                                    distance)
+                                    distance,
+                                    spectrum,
+                                    instrument,
+                                    modelspec)
 
     return ln_prob
 
 
 class FitModel:
     """
-    Text
+    Fit atmospheric model spectra to photometric data.
     """
 
     def __init__(self,
                  objname,
                  filters,
                  model,
-                 sampling,
-                 bounds):
+                 bounds,
+                 data):
         """
-        :param objname: Object name in the database.
-        :type objname: str
-        :param filters: Filter IDs for which the photometry is selected. All available
-                        photometry of the object is selected if set to None.
-        :type filters: tuple(str, )
-        :name model: Atmospheric model.
-        :type model: str
-        :name sampling: Wavelength sampling for the computation of synthetic photometry
-                        ('specres' or 'gaussian').
-        :type sampling: tuple
-        :name bounds: Parameter boundaries. Full parameter range is used if None or not specified.
-                      The radius parameter range is set to 0-5 Rjup if not specified.
-        :type bounds: dict
+        Parameters
+        ----------
+        objname : str
+            Object name in the database.
+        filters : tuple(str, )
+            Filter IDs for which the photometry is selected. All available photometry of the
+            object is selected if set to None.
+        model : str
+            Atmospheric model.
+        bounds : dict
+            Parameter boundaries. Full parameter range is used if None or not specified. The
+            radius parameter range is set to 0-5 Rjup if not specified.
+        data : tuple(bool, bool)
+            Data to use for the fit ('photometry' and/or 'spectrum'). The first boolean sets
+            the inclusion of photometry and the second boolean the inclusion of a spectrum.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         self.object = read_object.ReadObject(objname)
         self.distance = self.object.get_distance()
 
         self.model = model
-        self.sampling = sampling
         self.bounds = bounds
 
-        self.objphot = []
-        self.modelphot = []
-        self.synphot = []
+        if not data[0] and not data[1]:
+            raise ValueError('No photometric or spectral data has been selected.')
 
-        if self.bounds and 'teff' in self.bounds:
+        if self.bounds is not None and 'teff' in self.bounds:
             teff_bound = self.bounds['teff']
         else:
             teff_bound = None
@@ -221,21 +262,40 @@ class FitModel:
         if 'radius' not in self.bounds:
             self.bounds['radius'] = (0., 5.)
 
-        if filters is None:
-            species_db = database.Database()
-            objectbox = species_db.get_object(objname, None)
-            filters = objectbox.filter
+        if data[0]:
+            self.objphot = []
+            self.modelphot = []
+            self.synphot = []
 
-        for item in filters:
-            readmodel = read_model.ReadModel(self.model, item, teff_bound)
-            readmodel.interpolate()
-            self.modelphot.append(readmodel)
+            if not filters:
+                species_db = database.Database()
+                objectbox = species_db.get_object(objname, None)
+                filters = objectbox.filter
 
-            sphot = photometry.SyntheticPhotometry(item)
-            self.synphot.append(sphot)
+            for item in filters:
+                readmodel = read_model.ReadModel(self.model, item, teff_bound)
+                readmodel.interpolate()
+                self.modelphot.append(readmodel)
 
-            obj_phot = self.object.get_photometry(item)
-            self.objphot.append((obj_phot[2], obj_phot[3]))
+                sphot = photometry.SyntheticPhotometry(item)
+                self.synphot.append(sphot)
+
+                obj_phot = self.object.get_photometry(item)
+                self.objphot.append((obj_phot[2], obj_phot[3]))
+
+        else:
+            self.objphot = None
+            self.modelphot = None
+            self.synphot = None
+
+        if data[1]:
+            self.spectrum = self.object.get_spectrum()
+            self.instrument = self.object.get_instrument()
+            self.modelspec = read_model.ReadModel(self.model, (0.9, 2.5), teff_bound)
+        else:
+            self.spectrum = None
+            self.instrument = None
+            self.modelspec = None
 
         self.modelpar = readmodel.get_parameters()
         self.modelpar.append('radius')
@@ -248,7 +308,30 @@ class FitModel:
                  prior=None,
                  ncpu=1):
         """
-        :return: None
+        Function to run the MCMC sampler.
+
+        Parameters
+        ----------
+        nwalkers : int
+            Number of walkers.
+        nsteps : int
+            Number of steps per walker.
+        guess : dict
+            Guess for the parameter values. Random values between the boundary values are used
+            if set to None.
+        tag : str
+            Database tag where the MCMC samples are stored.
+        prior : tuple(str, float, float)
+            Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
+            ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
+            used if set to None.
+        ncpu : int
+            Number of parallel processes. Due to the additional overhead, a value larger than 1
+            will not necessarily result in a decrease in computation time.
+
+        Returns
+        -------
+        None
         """
 
         global MIN_CHISQ
@@ -280,9 +363,11 @@ class FitModel:
                                                self.modelphot,
                                                self.objphot,
                                                self.synphot,
-                                               self.sampling,
                                                self.distance,
-                                               prior]),
+                                               prior,
+                                               self.spectrum,
+                                               self.instrument,
+                                               self.modelspec]),
                                         threads=ncpu)
 
         progbar = progress.bar.Bar('\rRunning MCMC...',

@@ -1,5 +1,5 @@
 """
-Photometry module.
+Module for creating synthetic photometry.
 """
 
 import os
@@ -9,70 +9,25 @@ import h5py
 import numpy as np
 
 from species.data import database
-from species.core import box
-from species.read import read_filter, read_calibration, read_model
-
-
-def multi_photometry(datatype,
-                     spectrum,
-                     filters,
-                     parameters):
-    """
-    :param datatype: Data type ('model' or 'calibration').
-    :type datatype: str
-    :param spectrum: Spectrum name (e.g., 'drift-phoenix').
-    :type spectrum: str
-    :param filters: Filter IDs.
-    :type filters: tuple(str, )
-    :param parameters: Model parameter values.
-    :type parameters: dict
-
-    :return: Box with synthetic photometry.
-    :rtype: species.core.box.SynphotBox
-    """
-
-    flux = {}
-
-    if datatype == 'model':
-        for item in filters:
-            readmodel = read_model.ReadModel(spectrum, item)
-            flux[item] = readmodel.get_photometry(parameters, ('specres', 100.))
-
-    elif datatype == 'calibration':
-        for item in filters:
-            readcalib = read_calibration.ReadCalibration(spectrum, item)
-            flux[item] = readcalib.get_photometry(parameters)
-
-    return box.create_box('synphot', name='synphot', flux=flux)
-
-
-def apparent_to_absolute(app_mag,
-                         distance):
-    """
-    :param app_mag: Apparent magnitude (mag).
-    :type app_mag: float or numpy.ndarray
-    :param distance: Distance (pc).
-    :type distance: float or numpy.ndarray
-
-    :return: Absolute magnitude (mag).
-    :rtype: float or numpy.ndarray
-    """
-
-    return app_mag - 5.*np.log10(distance) + 5.
+from species.read import read_filter, read_calibration
 
 
 class SyntheticPhotometry:
     """
-    Text
+    Create synthetic photometry from a spectrum.
     """
 
     def __init__(self,
                  filter_name):
         """
-        :param filter_name: Filter name.
-        :type filter_name: str
+        Parameters
+        ----------
+        filter_name : str
+            Filter ID.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         self.filter_name = filter_name
@@ -89,12 +44,15 @@ class SyntheticPhotometry:
     def zero_point(self,
                    wl_range):
         """
-        :param wl_range: Wavelength range (micron). The range from the filter transmission
-                         curve is used if set to None.
-        :type wl_range: float
+        Parameters
+        ----------
+        wl_range : float
+            Wavelength range (micron). The range from the filter transmission curve is used if
+            set to None.
 
-        :return: tuple(float, float)
-        :rtype:
+        Returns
+        -------
+        tuple(float, float)
         """
 
         if wl_range is None:
@@ -129,13 +87,17 @@ class SyntheticPhotometry:
                                wavelength,
                                flux_density):
         """
-        :param wavelength: Wavelength (micron).
-        :type wavelength: numpy.ndarray
-        :param flux_density: Flux density (W m-2 micron-1).
-        :type flux_density: numpy.ndarray
+        Parameters
+        ----------
+        wavelength : numpy.ndarray
+            Wavelength (micron).
+        flux_density : numpy.ndarray
+            Flux density (W m-2 micron-1).
 
-        :return: Average flux density (W m-2 micron-1).
-        :rtype: float or numpy.ndarray
+        Returns
+        -------
+        float or numpy.ndarray
+            Average flux density (W m-2 micron-1).
         """
 
         if not self.filter_interp:
@@ -146,6 +108,10 @@ class SyntheticPhotometry:
         if isinstance(wavelength[0], (np.float32, np.float64)):
             indices = np.where((self.wl_range[0] < wavelength) &
                                (wavelength < self.wl_range[1]))[0]
+
+            if indices.size == 1:
+                raise ValueError("Calculating synthetic photometry requires more than one "
+                                 "wavelength point.")
 
             wavelength = wavelength[indices]
             flux_density = flux_density[indices]
@@ -168,6 +134,10 @@ class SyntheticPhotometry:
             for i, _ in enumerate(wavelength):
                 indices = np.where((self.wl_range[0] <= wavelength) &
                                    (wavelength <= self.wl_range[1]))[0]
+
+                if indices.size == 1:
+                    raise ValueError("Calculating synthetic photometry requires more than one "
+                                     "wavelength point.")
 
                 wavelength = wavelength[indices]
                 flux_density = flux_density[indices]
@@ -194,15 +164,21 @@ class SyntheticPhotometry:
                               flux_density,
                               distance=None):
         """
-        :param wavelength: Wavelength (micron).
-        :type wavelength: numpy.ndarray
-        :param flux_density: Flux density (W m-2 micron-1).
-        :type flux_density: numpy.ndarray
-        :param distance: Distance (pc). No absolute magnitude is calculated if set to None.
-        :type distance: float
+        Parameters
+        ----------
+        wavelength : numpy.ndarray
+            Wavelength (micron).
+        flux_density : numpy.ndarray
+            Flux density (W m-2 micron-1).
+        distance : float
+            Distance (pc). No absolute magnitude is calculated if set to None.
 
-        :return: Flux (W m-2).
-        :rtype: float or numpy.ndarray
+        Returns
+        -------
+        float or numpy.ndarray
+            Apparent magnitude (mag).
+        float or numpy.ndarray
+            Absolute magnitude (mag).
         """
 
         vega_mag = 0.03 # [mag]
@@ -231,15 +207,21 @@ class SyntheticPhotometry:
                           error,
                           zp_flux=None):
         """
-        :param magnitude: Magnitude (mag).
-        :type magnitude: float
-        :param error: Error (mag). Not used if set to None.
-        :type error: float
-        :param zp_flux: Zero point flux (W m-2 micron-1). Calculated if set to None.
-        :type zp_flux: float
+        Parameters
+        ----------
+        magnitude : float
+            Magnitude (mag).
+        error : float
+            Error (mag). Not used if set to None.
+        zp_flux : float
+            Zero point flux (W m-2 micron-1). Calculated if set to None.
 
-        :return: Flux (W m-2 micron-1), lower error, upper error
-        :rtype: float, tuple(float, float)
+        Returns
+        -------
+        float
+            Flux density (W m-2 micron-1).
+        float
+            Error (W m-2 micron-1).
         """
 
         vega_mag = 0.03 # [mag]
@@ -263,13 +245,19 @@ class SyntheticPhotometry:
                           flux,
                           distance):
         """
-        :param flux: Flux density (W m-2 micron-1).
-        :type flux: float
-        :param error: Distance (pc).
-        :type error: float
+        Parameters
+        ----------
+        flux : float
+            Flux density (W m-2 micron-1).
+        error : float
+            Distance (pc).
 
-        :return: Apparent magnitude (mag), absolute magnitude (mag).
-        :rtype: float, float
+        Returns
+        -------
+        float
+            Apparent magnitude (mag).
+        float
+            Absolute magnitude (mag).
         """
 
         vega_mag = 0.03 # [mag]

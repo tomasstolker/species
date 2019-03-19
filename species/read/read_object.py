@@ -1,5 +1,5 @@
 """
-Read module.
+Module for reading object data.
 """
 
 import os
@@ -13,16 +13,20 @@ from species.analysis import photometry
 
 class ReadObject:
     """
-    Text
+    Reading object data from the database.
     """
 
     def __init__(self,
                  object_name):
         """
-        :param object_name: Object name.
-        :type object_name: str
+        Parameters
+        ----------
+        object_name : str
+            Object name.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         self.object_name = object_name
@@ -37,12 +41,16 @@ class ReadObject:
     def get_photometry(self,
                        filter_name):
         """
-        :param filter_name: Filter name.
-        :type filter_name: str
+        Parameters
+        ----------
+        filter_name : str
+            Filter name.
 
-        :return: Apparent magnitude (mag), magnitude error (error),
-                 apparent flux (W m-2 micron-1), flux error (W m-2 micron-1).
-        :rtype: numpy.ndarray
+        Returns
+        -------
+        numpy.ndarray
+            Apparent magnitude (mag), magnitude error (error), apparent flux (W m-2 micron-1),
+            flux error (W m-2 micron-1).
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -51,10 +59,41 @@ class ReadObject:
 
         return obj_phot
 
+    def get_spectrum(self):
+        """
+        Returns
+        -------
+        numpy.ndarray
+            Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        spectrum = np.asarray(h5_file['objects/'+self.object_name+'/spectrum'])
+        h5_file.close()
+
+        return spectrum
+
+    def get_instrument(self):
+        """
+        Returns
+        -------
+        str
+            Instrument that was used for the spectrum.
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        dset = h5_file['objects/'+self.object_name+'/spectrum']
+        instrument = dset.attrs['instrument']
+        h5_file.close()
+
+        return instrument
+
     def get_distance(self):
         """
-        :return: Distance (pc).
-        :rtype: float
+        Returns
+        -------
+        float
+            Distance (pc).
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -66,11 +105,15 @@ class ReadObject:
     def get_absmag(self,
                    filter_name):
         """
-        :param filter_name: Filter name.
-        :type filter_name: str
+        Parameters
+        ----------
+        filter_name : str
+            Filter name.
 
-        :return: Absolute magnitude (mag), magnitude error (error).
-        :rtype: float, float
+        Returns
+        -------
+        float, float
+            Absolute magnitude (mag), magnitude error (error).
         """
 
         h5_file = h5py.File(self.database, 'r')

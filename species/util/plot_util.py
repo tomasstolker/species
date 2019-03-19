@@ -1,5 +1,5 @@
 """
-Text.
+Utility functions for plotting data.
 """
 
 import numpy as np

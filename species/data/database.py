@@ -9,6 +9,7 @@ import configparser
 
 import h5py
 import emcee
+import progress.bar
 import numpy as np
 
 from astropy.io import votable
@@ -31,7 +32,9 @@ class Database:
 
     def __init__(self):
         """
-        :return: None
+        Returns
+        -------
+        None
         """
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
@@ -44,7 +47,9 @@ class Database:
 
     def list_items(self):
         """
-        return: None
+        Returns
+        -------
+        None
         """
 
         sys.stdout.write('Database content:\n')
@@ -52,12 +57,14 @@ class Database:
         def descend(h5_object,
                     seperator=''):
             """
-            :param h5_object:
-            :type h5_object: h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
-            :param separator:
-            :type separator: str
+            Parameters
+            ----------
+            h5_object : h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
+            separator : str
 
-            :return: None
+            Returns
+            -------
+            None
             """
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
@@ -77,7 +84,9 @@ class Database:
 
     def list_companions(self):
         """
-        :return: None
+        Returns
+        -------
+        None
         """
 
         comp_phot = companions.get_data()
@@ -90,10 +99,14 @@ class Database:
     def add_companion(self,
                       name=None):
         """
-        :param name: Companion name. All companions are added if set to None.
-        :type name: tuple(str, )
+        Parameters
+        ----------
+        tuple(str, )
+            Companion name. All companions are added if set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         if isinstance(name, str):
@@ -113,15 +126,18 @@ class Database:
                    filter_id,
                    filename=None):
         """
-        :param filter_id: Filter ID from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
-        :type filter_id: str
-        :param filename: Filename with the filter profile. The first column should contain the
-                         wavelength (micron) and the second column the transmission (no units).
-                         The profile is downloaded from the SVO Filter Profile Service if set to
-                         None.
-        :type filename: str
+        Parameters
+        ----------
+        filter_id : str
+            Filter ID from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
+        filename : str
+            Filename with the filter profile. The first column should contain the wavelength
+            (micron) and the second column the transmission (no units). The profile is downloaded
+            from the SVO Filter Profile Service if set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         filter_split = filter_id.split('/')
@@ -162,14 +178,18 @@ class Database:
                   wavelength=None,
                   teff=None):
         """
-        :param model: Model name.
-        :type model: str
-        :param wavelength: Wavelength (micron) range.
-        :type wavelength: tuple(float, float)
-        :param teff: Effective temperature (K) range.
-        :type teff: tuple(float, float)
+        Parameters
+        ----------
+        model : str
+            Model name.
+        wavelength : tuple(float, float)
+            Wavelength (micron) range.
+        teff : tuple(float, float)
+            Effective temperature (K) range.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -189,28 +209,31 @@ class Database:
 
     def add_object(self,
                    object_name,
-                   distance,
-                   app_mag):
+                   distance=None,
+                   app_mag=None,
+                   spectrum=None,
+                   instrument=None):
         """
-        :param object_name: Object name.
-        :type object_name: str
-        :param distance: Distance (pc).
-        :type distance: float
-        :param app_mag: Apparent magnitudes.
-        :type app_mag: dict
+        Parameters
+        ----------
+        object_name: str
+            Object name.
+        distance : float
+            Distance (pc). Not written if set to None.
+        app_mag : dict
+            Apparent magnitudes. Not written if set to None.
+        spectrum : str
+            Spectrum filename. The first three columns should contain the wavelength (micron),
+            flux density (W m-2 micron-1), and the error (W m-2 micron-1). Not written if set
+            to None.
+        instrument : str
+            Instrument that was used for the spectrum (currently only 'gpi' possible). Not
+            used if set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
-
-        flux = {}
-        error = {}
-
-        for item in app_mag:
-            synphot = photometry.SyntheticPhotometry(item)
-            flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0], app_mag[item][1])
-
-        sys.stdout.write('Adding object: '+object_name+'...')
-        sys.stdout.flush()
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -220,26 +243,54 @@ class Database:
         if 'objects/'+object_name not in h5_file:
             h5_file.create_group('objects/'+object_name)
 
-        if 'objects/'+object_name+'/distance' in h5_file:
-            del h5_file['objects/'+object_name+'/distance']
+        if distance:
 
-        h5_file.create_dataset('objects/'+object_name+'/distance',
-                               data=distance,
-                               dtype='f') # [pc]
+            if 'objects/'+object_name+'/distance' in h5_file:
+                del h5_file['objects/'+object_name+'/distance']
 
-        for item in app_mag:
-            if 'objects/'+object_name+'/'+item in h5_file:
-                del h5_file['objects/'+object_name+'/'+item]
+            h5_file.create_dataset('objects/'+object_name+'/distance',
+                                   data=distance,
+                                   dtype='f') # [pc]
 
-            data = np.asarray([app_mag[item][0],
-                               app_mag[item][1],
-                               flux[item],
-                               error[item]])
+        if app_mag:
 
-            # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
-            h5_file.create_dataset('objects/'+object_name+'/'+item,
-                                   data=data,
-                                   dtype='f')
+            flux = {}
+            error = {}
+
+            for item in app_mag:
+                synphot = photometry.SyntheticPhotometry(item)
+                flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0],
+                                                                    app_mag[item][1])
+
+            for item in app_mag:
+                if 'objects/'+object_name+'/'+item in h5_file:
+                    del h5_file['objects/'+object_name+'/'+item]
+
+                data = np.asarray([app_mag[item][0],
+                                   app_mag[item][1],
+                                   flux[item],
+                                   error[item]])
+
+                # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
+                h5_file.create_dataset('objects/'+object_name+'/'+item,
+                                       data=data,
+                                       dtype='f')
+
+        sys.stdout.write('Adding object: '+object_name+'...')
+        sys.stdout.flush()
+
+        if spectrum:
+
+            if 'objects/'+object_name+'/spectrum' in h5_file:
+                del h5_file['objects/'+object_name+'/spectrum']
+
+            data = np.loadtxt(spectrum)
+
+            dset = h5_file.create_dataset('objects/'+object_name+'/spectrum',
+                                          data=data[:, 0:3],
+                                          dtype='f')
+
+            dset.attrs['instrument'] = str(instrument)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()
@@ -249,10 +300,14 @@ class Database:
     def add_photometry(self,
                        library):
         """
-        :param library: Photometry library.
-        :type library: str
+        Parameters
+        ----------
+        library : str
+            Photometry library.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -281,17 +336,21 @@ class Database:
         """
         Function for adding a calibration spectrum to the database.
 
-        :param filename: Filename with the calibration spectrum. The first column should contain
-                         the wavelength (micron), the second column the flux density (W m-2
-                         micron-1), and the third column the error (W m-2 micron-1).
-        :type filename: str
-        :param tag: Tag name in the database.
-        :type tag: str
-        :param scaling: Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux).
-                        Not used if set to None.
-        :type scaling: tuple(float, float)
+        Parameters
+        ----------
+        filename : str
+            Filename with the calibration spectrum. The first column should contain the wavelength
+            (micron), the second column the flux density (W m-2 micron-1), and the third column
+            the error (W m-2 micron-1).
+        tag : str
+            Tag name in the database.
+        scaling : tuple(float, float)
+            Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux). Not used if
+            set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         if not scaling:
@@ -330,10 +389,14 @@ class Database:
     def add_spectrum(self,
                      spectrum):
         """
-        :param spectrum: Spectral library.
-        :type spectrum: str
+        Parameters
+        ----------
+        spectrum : str
+            Spectral library.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -360,14 +423,18 @@ class Database:
                     distance,
                     filename):
         """
-        :param object_name: Object name.
-        :type object_name: str
-        :param distance: Distance (pc).
-        :type distance: float
-        :param filename: Filename.
-        :type filename: str
+        Parameters
+        ----------
+        object_name : str
+            Object name.
+        distance : float
+            Distance (pc).
+        filename : str
+            Filename.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         # flux = {}
@@ -443,22 +510,26 @@ class Database:
                     modelpar,
                     distance=None):
         """
-        :param sampler: Ensemble sampler.
-        :type sampler: emcee.ensemble.EnsembleSampler
-        :param spectrum: Tuple with the spectrum type ('model' or 'calibration') and spectrum name
-                         (e.g. 'drift-phoenix').
-        :type spectrum: tuple(str, str)
-        :param tag: Database tag.
-        :type tag: str
-        :param chisquare: Maximum likelihood solution. Tuple with the chi-square value and related
-                          parameter values.
-        :type chisquare: tuple(float, float)
-        :param modelpar: List with the model parameter names.
-        :type modelpar: list(str, )
-        :param distance: Distance to the object (pc). Not used if set to None.
-        :type distance: float
+        Parameters
+        ----------
+        sampler : emcee.ensemble.EnsembleSampler
+            Ensemble sampler.
+        spectrum : tuple(str, str)
+            Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
+            'drift-phoenix').
+        tag : str
+            Database tag.
+        chisquare : tuple(float, float)
+            Maximum likelihood solution. Tuple with the chi-square value and related parameter
+            values.
+        modelpar : list(str, )
+            List with the model parameter names.
+        distance : float
+            Distance to the object (pc). Not used if set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -515,11 +586,12 @@ class Database:
     def get_chisquare(self,
                       tag):
         """
-        :param tag:
-        :type tag: str
+        Parameters
+        ----------
+        tag : str
 
-        :return:
-        :rtype: species.core.box.SamplesBox
+        Returns
+        -------
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -544,22 +616,30 @@ class Database:
                          burnin,
                          random,
                          wavelength,
-                         sampling=None):
+                         specres=None):
         """
-        :param tag: Database tag with the MCMC samples.
-        :type tag: str
-        :param burnin: Number of burnin steps.
-        :type burnin: int
-        :param random: Number of random samples.
-        :type random: int
-        :param wavelength: Wavelength range (micron) or filter name. Full spectrum if set to None.
-        :type wavelength: tuple(float, float) or str
-        :param sampling: Spectral sampling.
-        :type sampling: tuple
+        Parameters
+        ----------
+        tag : str
+            Database tag with the MCMC samples.
+        burnin : int
+            Number of burnin steps.
+        random : int
+            Number of random samples.
+        wavelength : tuple(float, float) or str
+            Wavelength range (micron) or filter name. Full spectrum if set to None.
+        specres : float
+            Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
+            wavelength points are used if set to None.
 
-        :return: Boxes with the randomly sampled spectra.
-        :rtype: tuple(species.core.box.ModelBox, )
+        Returns
+        -------
+        tuple(species.core.box.ModelBox, )
+            Boxes with the randomly sampled spectra.
         """
+
+        sys.stdout.write('Getting MCMC spectra...')
+        sys.stdout.flush()
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['results/mcmc/'+tag]
@@ -591,6 +671,10 @@ class Database:
 
         boxes = []
 
+        progbar = progress.bar.Bar('\rGetting MCMC spectra...',
+                                   max=samples.shape[0],
+                                   suffix='%(percent)d%%')
+
         for i in range(samples.shape[0]):
             model_par = {}
             for j in range(samples.shape[1]):
@@ -600,7 +684,7 @@ class Database:
                 model_par['distance'] = distance
 
             if spectrum_type == 'model':
-                specbox = readmodel.get_model(model_par, sampling)
+                specbox = readmodel.get_model(model_par, specres)
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_par)
 
@@ -608,22 +692,30 @@ class Database:
 
             boxes.append(specbox)
 
+            progbar.next()
+
+        progbar.finish()
+
         h5_file.close()
 
         return tuple(boxes)
 
     def get_object(self,
                    object_name,
-                   filter_id):
+                   filter_id=None):
         """
-        :param object_name: Object name in the database.
-        :type object_name: str
-        :param filter_id: Filter IDs for which the photometry is selected. All available photometry
-                          of the object is selected if set to None.
-        :type filter_id: tuple(str, )
+        Parameters
+        ----------
+        object_name : str
+            Object name in the database.
+        filter_id : tuple(str, )
+            Filter IDs for which the photometry is selected. All available photometry of the object
+            is selected if set to None.
 
-        :return: Box with the object.
-        :rtype: species.core.box.ObjectBox
+        Returns
+        -------
+        species.core.box.ObjectBox
+            Box with the object.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -643,12 +735,17 @@ class Database:
 
         else:
             for key in dset.keys():
-                if key != 'distance':
+                if key not in ('distance', 'spectrum'):
                     for item in dset[key]:
                         name = key+'/'+item
 
                         magnitude[name] = np.asarray(dset[name][0:2])
                         flux[name] = np.asarray(dset[name][2:4])
+
+        if 'objects/'+object_name+'/spectrum' in h5_file:
+            spectrum = np.asarray(h5_file['objects/'+object_name+'/spectrum'])
+        else:
+            spectrum = None
 
         h5_file.close()
 
@@ -657,22 +754,24 @@ class Database:
                               filter=tuple(magnitude.keys()),
                               magnitude=magnitude,
                               flux=flux,
-                              distance=distance)
+                              distance=distance,
+                              spectrum=spectrum)
 
     def get_samples(self,
                     tag,
                     burnin=None,
                     random=None):
         """
-        :param tag:
-        :type tag: str
-        :param burnin:
-        :type burnin: int
-        :param random:
-        :type random: int
+        Parameters
+        ----------
+        tag: str
+        burnin : int
+        random : int
 
-        :return:
-        :rtype: species.core.box.SamplesBox
+        Returns
+        -------
+        species.core.box.SamplesBox
+            Box with the MCMC samples.
         """
 
         h5_file = h5py.File(self.database, 'r')
