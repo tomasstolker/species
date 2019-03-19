@@ -355,13 +355,13 @@ def plot_spectrum(boxes,
 
         if residuals.photometry is not None:
             ax3.plot(residuals.photometry[0, ], residuals.photometry[1, ], marker='s',
-                     ms=5, linestyle='none', color=color_obj_phot, zorder=2)
+                     ms=5, linestyle='none', color=color_obj_phot, zorder=3)
 
             res_max = np.nanmax(np.abs(residuals.photometry[1, ]))
 
         if residuals.spectrum is not None:
             ax3.plot(residuals.spectrum[0, ], residuals.spectrum[1, ], marker='o',
-                     ms=2, linestyle='none', color=color_obj_spec, zorder=1)
+                     ms=2, linestyle='none', color=color_obj_spec, zorder=2)
 
             max_tmp = np.nanmax(np.abs(residuals.spectrum[1, ]))
 
