@@ -57,7 +57,7 @@ def add_luminosity(modelbox,
     """
 
     readmodel = read_model.ReadModel(model=modelbox.model, wavelength=None, teff=None)
-    fullspec = readmodel.get_model(model_par=modelbox.parameters, sampling=('specres', specres))
+    fullspec = readmodel.get_model(model_par=modelbox.parameters)
 
     flux = simps(fullspec.flux, fullspec.wavelength)
 

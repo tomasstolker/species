@@ -2,10 +2,14 @@
 Box module.
 """
 
+import sys
+
 
 def open_box(box):
     """
-    return:
+    Returns
+    -------
+    None
     """
 
     for item in box.__dict__.keys():
@@ -14,7 +18,9 @@ def open_box(box):
 
 def create_box(boxtype, **kwargs):
     """
-    :return:
+    Returns
+    -------
+    species.core.box
     """
 
     if boxtype == 'colormag':
@@ -50,12 +56,19 @@ def create_box(boxtype, **kwargs):
         box.magnitude = kwargs['magnitude']
         box.flux = kwargs['flux']
         box.distance = kwargs['distance']
+        box.spectrum = kwargs['spectrum']
 
     elif boxtype == 'photometry':
         box = PhotometryBox()
         box.name = kwargs['name']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
+
+    elif boxtype == 'residuals':
+        box = ResidualsBox()
+        box.name = kwargs['name']
+        box.photometry = kwargs['photometry']
+        box.spectrum = kwargs['spectrum']
 
     elif boxtype == 'samples':
         box = SamplesBox()
@@ -90,7 +103,9 @@ class ColorMagBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.library = None
@@ -109,7 +124,9 @@ class ColorColorBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.library = None
@@ -127,7 +144,9 @@ class ModelBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.model = None
@@ -144,7 +163,9 @@ class ObjectBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.name = None
@@ -152,6 +173,7 @@ class ObjectBox:
         self.magnitude = None
         self.flux = None
         self.distance = None
+        self.spectrum = None
 
 
 class PhotometryBox:
@@ -161,12 +183,31 @@ class PhotometryBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.name = None
         self.wavelength = None
         self.flux = None
+
+
+class ResidualsBox:
+    """
+    Text
+    """
+
+    def __init__(self):
+        """
+        Returns
+        -------
+        None
+        """
+
+        self.name = None
+        self.photometry = None
+        self.spectrum = None
 
 
 class SamplesBox:
@@ -176,7 +217,9 @@ class SamplesBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.spectrum = None
@@ -192,12 +235,15 @@ class SpectrumBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.spectrum = None
         self.wavelength = None
         self.flux = None
+        self.error = None
         self.name = None
         self.simbad = None
         self.sptype = None
@@ -211,7 +257,9 @@ class SynphotBox:
 
     def __init__(self):
         """
-        :return:
+        Returns
+        -------
+        None
         """
 
         self.name = None

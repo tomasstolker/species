@@ -2,10 +2,7 @@ from species.analysis.fit_model import FitModel
 
 from species.analysis.fit_spectrum import FitSpectrum
 
-from species.analysis.photometry import SyntheticPhotometry, \
-                                        apparent_to_absolute, \
-                                        multi_photometry
-
+from species.analysis.photometry import SyntheticPhotometry
 
 from species.read.read_calibration import ReadCalibration
 
@@ -41,6 +38,10 @@ from species.plot.plot_mcmc import plot_posterior, \
 from species.plot.plot_color import plot_color_magnitude, plot_color_color
 
 from species.plot.plot_spectrum import plot_spectrum
+
+from species.util.phot_util import apparent_to_absolute, \
+                                   multi_photometry, \
+                                   get_residuals
 
 from species.util.read_util import get_mass, \
                                    add_luminosity

@@ -1,5 +1,5 @@
 """
-Text
+Module for reading atmospheric models.
 """
 
 import os
@@ -19,7 +19,7 @@ from species.util import read_util
 
 class ReadModel:
     """
-    Text
+    Read atmospheric model spectra.
     """
 
     def __init__(self,
@@ -32,7 +32,7 @@ class ReadModel:
         model : str
             Model name.
         wavelength : tuple(float, float) or str
-            Wavelength range (micron) or filter name. Full spectrum if set to None.
+            Wavelength range (micron) or filter name. Full spectrum is used if set to None.
         teff : tuple(float, float)
             Effective temperature (K) range. Restricting the temperature range will speed up the
             computation.
@@ -42,10 +42,12 @@ class ReadModel:
         None
         """
 
-
         self.model = model
         self.teff = teff
+
         self.spectrum_interp = None
+        self.wl_points = None
+        self.wl_index = None
 
         if isinstance(wavelength, str):
             self.filter_name = wavelength
@@ -56,13 +58,6 @@ class ReadModel:
             self.filter_name = None
             self.wavelength = wavelength
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
-
-        config = configparser.ConfigParser()
-        config.read_file(open(config_file))
-
-        self.database = config['species']['database']
-
     def open_database(self):
         """
         Returns
@@ -71,7 +66,14 @@ class ReadModel:
             Database.
         """
 
-        h5_file = h5py.File(self.database, 'r')
+        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+
+        config = configparser.ConfigParser()
+        config.read_file(open(config_file))
+
+        database_path = config['species']['database']
+
+        h5_file = h5py.File(database_path, 'r')
 
         try:
             h5_file['models/'+self.model]
@@ -80,9 +82,43 @@ class ReadModel:
             h5_file.close()
             species_db = database.Database()
             species_db.add_model(self.model, self.wavelength, self.teff)
-            h5_file = h5py.File(self.database, 'r')
+            h5_file = h5py.File(database_path, 'r')
 
         return h5_file
+
+    def wavelength_points(self,
+                          hdf5_file):
+        """
+        Parameters
+        ----------
+        hdf5_file : h5py._hl.files.File
+            hdf5_file.
+
+        Returns
+        -------
+        numpy.ndarray
+            Wavelength points (micron).
+        numpy.ndarray
+            Array with the size of the original wavelength grid. The booleans indicate if a
+            wavelength point was used.
+        """
+
+        wl_points = np.asarray(hdf5_file['models/'+self.model+'/wavelength'])
+
+        if self.wavelength is None:
+            wl_index = np.ones(wl_points.shape[0], dtype=bool)
+
+        else:
+            wl_index = (wl_points > self.wavelength[0]) & (wl_points < self.wavelength[1])
+            index = np.where(wl_index)[0]
+
+            if index[0]-1 >= 0:
+                wl_index[index[0] - 1] = True
+
+            if index[-1]+1 < wl_index.size:
+                wl_index[index[-1] + 1] = True
+
+        return wl_points[wl_index], wl_index
 
     def interpolate(self):
         """
@@ -93,49 +129,40 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        wavelength = np.asarray(h5_file['models/'+self.model+'/wavelength'])
         flux = np.asarray(h5_file['models/'+self.model+'/flux'])
         teff = np.asarray(h5_file['models/'+self.model+'/teff'])
         logg = np.asarray(h5_file['models/'+self.model+'/logg'])
 
-        wl_index = (wavelength > self.wavelength[0]) & (wavelength < self.wavelength[1])
+        if self.wl_points is None:
+            self.wl_points, self.wl_index = self.wavelength_points(h5_file)
 
-        index = np.where(wl_index)[0]
-
-        if index[0]-1 >= 0:
-            wl_index[index[0] - 1] = True
-
-        if index[-1]+1 < wl_index.size:
-            wl_index[index[-1] + 1] = True
-
-        if self.model in ('drift-phoenix', 'bt-nextgen'):
+        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode_warm_clear'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-            flux = flux[:, :, :, wl_index]
-            points = (teff, logg, feh, wavelength[wl_index])
 
-        # elif self.model == 'petitcode_warm_clear':
-        #     feh = np.asarray(h5_file['models/petitcode_warm_clear/feh'])
-        #     flux = flux[:, :, :, wl_index]
-        #     points = np.asarray((teff, logg, feh, wavelength[wl_index]))
-        #
-        # elif self.model == 'petitcode_warm_cloudy':
-        #     feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
-        #     fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
-        #     flux = flux[:, :, :, :, wl_index]
-        #     points = np.asarray((teff, logg, feh, fsed, wavelength[wl_index]))
-        #
-        # elif self.model == 'petitcode_hot_clear':
-        #     feh = np.asarray(h5_file['models/petitcode_hot_clear/feh'])
-        #     co_ratio = np.asarray(h5_file['models/petitcode_hot_clear/co'])
-        #     flux = flux[:, :, :, :, wl_index]
-        #     points = np.asarray((teff, logg, feh, co_ratio, wavelength[wl_index]))
-        #
-        # elif self.model == 'petitcode_hot_cloudy':
-        #     feh = np.asarray(h5_file['models/petitcode_hot_cloudy/feh'])
-        #     co_ratio = np.asarray(h5_file['models/petitcode_hot_cloudy/co'])
-        #     fsed = np.asarray(h5_file['models/petitcode_hot_cloudy/fsed'])
-        #     flux = flux[:, :, :, :, :, wl_index]
-        #     points = np.asarray((teff, logg, feh, co_ratio, fsed, wavelength[wl_index]))
+            points = (teff, logg, feh)
+            flux = flux[:, :, :, self.wl_index]
+
+        elif self.model == 'petitcode_warm_cloudy':
+            feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
+            fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
+
+            points = (teff, logg, feh, fsed)
+            flux = flux[:, :, :, :, self.wl_index]
+
+        elif self.model == 'petitcode_hot_clear':
+            feh = np.asarray(h5_file['models/petitcode_hot_clear/feh'])
+            co_ratio = np.asarray(h5_file['models/petitcode_hot_clear/co'])
+
+            points = (teff, logg, feh, co_ratio)
+            flux = flux[:, :, :, :, self.wl_index]
+
+        elif self.model == 'petitcode_hot_cloudy':
+            feh = np.asarray(h5_file['models/petitcode_hot_cloudy/feh'])
+            co_ratio = np.asarray(h5_file['models/petitcode_hot_cloudy/co'])
+            fsed = np.asarray(h5_file['models/petitcode_hot_cloudy/fsed'])
+
+            flux = flux[:, :, :, :, :, self.wl_index]
+            points = (teff, logg, feh, co_ratio, fsed)
 
         h5_file.close()
 
@@ -144,6 +171,83 @@ class ReadModel:
                                                        method='linear',
                                                        bounds_error=False,
                                                        fill_value=np.nan)
+
+    def get_model(self,
+                  model_par,
+                  specres=None):
+        """
+        Parameters
+        ----------
+        model_par : dict
+            Model parameter values.
+        specres : float
+            Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
+            wavelength points are used if set to None.
+
+        Returns
+        -------
+        species.core.box.ModelBox
+            Box with the model spectrum.
+        """
+
+        if self.spectrum_interp is None:
+            self.interpolate()
+
+        if self.wavelength is None:
+            wl_points = self.get_wavelength()
+            self.wavelength = (wl_points[0], wl_points[-1])
+
+        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode_warm_clear'):
+            parameters = [model_par['teff'],
+                          model_par['logg'],
+                          model_par['feh']]
+
+        elif self.model == 'petitcode_warm_cloudy':
+            parameters = [model_par['teff'],
+                          model_par['logg'],
+                          model_par['feh'],
+                          model_par['fsed']]
+
+        elif self.model == 'petitcode_hot_clear':
+            parameters = [model_par['teff'],
+                          model_par['logg'],
+                          model_par['feh'],
+                          model_par['co']]
+
+        elif self.model == 'petitcode_hot_cloudy':
+            parameters = [model_par['teff'],
+                          model_par['logg'],
+                          model_par['feh'],
+                          model_par['co'],
+                          model_par['fsed']]
+
+        flux = self.spectrum_interp(parameters)[0]
+
+        if 'radius' in model_par:
+            model_par['mass'] = read_util.get_mass(model_par)
+
+            if 'distance' in model_par:
+                scaling = (model_par['radius']*constants.R_JUP)**2 / \
+                          (model_par['distance']*constants.PARSEC)**2
+
+                flux *= scaling
+
+        if specres is not None:
+            index = np.where(np.isnan(flux))[0]
+
+            if index.size > 0:
+                raise ValueError('Flux values should not contains NaNs.')
+
+            flux = read_util.smooth_spectrum(wavelength=self.wl_points,
+                                             flux=flux,
+                                             specres=specres,
+                                             size=11)
+
+        return box.create_box(boxtype='model',
+                              model=self.model,
+                              wavelength=self.wl_points,
+                              flux=flux,
+                              parameters=model_par)
 
     def get_data(self,
                  model_par):
@@ -157,25 +261,16 @@ class ReadModel:
         Returns
         -------
         species.core.box.ModelBox
-            Spectrum (micron, W m-2 micron-1).
+            Box with the model spectrum.
         """
 
         h5_file = self.open_database()
 
-        wavelength = np.asarray(h5_file['models/'+self.model+'/wavelength'])
+        wl_points, wl_index = self.wavelength_points(h5_file)
+
         flux = np.asarray(h5_file['models/'+self.model+'/flux'])
         teff = np.asarray(h5_file['models/'+self.model+'/teff'])
         logg = np.asarray(h5_file['models/'+self.model+'/logg'])
-
-        if self.wavelength is None:
-            wl_index = np.ones(wavelength.shape[0], dtype=bool)
-
-        else:
-            wl_index = (wavelength > self.wavelength[0]) & (wavelength < self.wavelength[1])
-            index = np.where(wl_index)[0]
-
-            wl_index[index[0] - 1] = True
-            wl_index[index[-1] + 1] = True
 
         if self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
@@ -201,129 +296,30 @@ class ReadModel:
             else:
                 feh_index = feh_index[0]
 
-            wavelength = wavelength[wl_index]
             flux = flux[teff_index, logg_index, feh_index, wl_index]
 
         if 'radius' in model_par and 'distance' in model_par:
             scaling = (model_par['radius']*constants.R_JUP)**2 / \
                       (model_par['distance']*constants.PARSEC)**2
+
             flux *= scaling
 
-        return box.create_box(boxtype='model',
-                              model=self.model,
-                              wavelength=wavelength,
-                              flux=flux,
-                              parameters=model_par)
-
-    def get_model(self,
-                  model_par,
-                  sampling):
-        """
-        Parameters
-        ----------
-        model_par : dict
-            Model parameter values.
-        sampling : tuple
-            Type of wavelength sampling.
-
-        Returns
-        -------
-        species.core.box.ModelBox
-            Spectrum (micron, W m-2 micron-1).
-        """
-
-        if not self.wavelength:
-            wl_points = self.get_wavelength()
-            self.wavelength = (wl_points[0], wl_points[-1])
-
-        if self.spectrum_interp is None:
-            self.interpolate()
-
-        wavelength = [self.wavelength[0]]
-
-        if sampling[0] == 'specres':
-            while wavelength[-1] <= self.wavelength[1]:
-                wavelength.append(wavelength[-1] + wavelength[-1]/sampling[1])
-            wavelength = np.asarray(wavelength[:-1])
-
-        elif sampling[0] == 'gaussian':
-            wavelength = np.linspace(self.wavelength[0], self.wavelength[1], sampling[1][0])
-
-        flux = np.zeros(wavelength.shape)
-
-        for i, item in enumerate(wavelength):
-
-            if self.model in ('drift-phoenix', 'bt-nextgen'):
-                parameters = [model_par['teff'],
-                              model_par['logg'],
-                              model_par['feh'],
-                              item]
-
-            # elif self.model == 'petitcode_warm_clear':
-            #     parameters = [model_par['teff'],
-            #                   model_par['logg'],
-            #                   model_par['feh'],
-            #                   item]
-            #
-            # elif self.model == 'petitcode_warm_cloudy':
-            #     parameters = [model_par['teff'],
-            #                   model_par['logg'],
-            #                   model_par['feh'],
-            #                   model_par['fsed'],
-            #                   item]
-            #
-            # elif self.model == 'petitcode_hot_clear':
-            #     parameters = [model_par['teff'],
-            #                   model_par['logg'],
-            #                   model_par['feh'],
-            #                   model_par['co'],
-            #                   item]
-            #
-            # elif self.model == 'petitcode_hot_cloudy':
-            #     parameters = [model_par['teff'],
-            #                   model_par['logg'],
-            #                   model_par['feh'],
-            #                   model_par['co'],
-            #                   model_par['fsed'],
-            #                   item]
-
-            flux[i] = self.spectrum_interp(np.asarray(parameters))
-
-        if 'radius' in model_par:
-            model_par['mass'] = read_util.get_mass(model_par)
-
-            if 'distance' in model_par:
-                scaling = (model_par['radius']*constants.R_JUP)**2 / \
-                          (model_par['distance']*constants.PARSEC)**2
-
-                flux *= scaling
-
-        if sampling[0] == 'gaussian':
-            index = np.where(np.isnan(flux))[0]
-
-            wavelength = np.delete(wavelength, index)
-            flux = np.delete(flux, index)
-
-            flux = read_util.smooth_spectrum(wavelength, flux, sampling[1][1], 11)
+        h5_file.close()
 
         return box.create_box(boxtype='model',
                               model=self.model,
-                              wavelength=wavelength,
+                              wavelength=wl_points,
                               flux=flux,
                               parameters=model_par)
 
     def get_photometry(self,
                        model_par,
-                       sampling,
                        synphot=None):
         """
         Parameters
         ----------
         model_par : dict
             Model parameter values.
-        sampling : float
-            Spectral sampling. The original grid is used (nearest model parameter values) if set
-            to none.
         synphot : species.analysis.photometry.SyntheticPhotometry
             Synthetic photometry object.
 
@@ -333,50 +329,50 @@ class ReadModel:
             Average flux density (W m-2 micron-1).
         """
 
-        if sampling is None:
-            spectrum = self.get_data(model_par)
+        if self.spectrum_interp is None:
+            self.interpolate()
 
-        else:
-            if self.spectrum_interp is None:
-                self.interpolate()
-
-            spectrum = self.get_model(model_par, sampling)
+        spectrum = self.get_model(model_par, None)
 
         if not synphot:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)
 
-    # def get_magnitude(self, model_par, sampling):
-    #     """
-    #     :param model_par: Model parameter values.
-    #     :type model_par: dict
-    #     :param sampling: Spectral sampling. The original grid is used (nearest model parameter
-    #                     values) if set to none.
-    #     :type sampling: float
-    #
-    #     :return: Apparent magnitude (mag), absolute magnitude (mag).
-    #     :rtype: float, float
-    #     """
-    #
-    #     if sampling is None:
-    #         spectrum = self.get_data(model_par)
-    #
-    #     else:
-    #         if self.spectrum_interp is None:
-    #             self.interpolate()
-    #
-    #         spectrum = self.get_model(model_par, sampling)
-    #
-    #     transmission = read_filter.ReadFilter(self.filter_name)
-    #     filter_interp = transmission.interpolate()
-    #
-    #     synphot = photometry.SyntheticPhotometry(filter_interp)
-    #     mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
-    #                                         spectrum.flux,
-    #                                         model_par['distance'])
-    #
-    #     return mag[0], mag[1]
+    def get_magnitude(self,
+                      model_par):
+        """
+        Parameters
+        ----------
+        model_par : dict
+            Model parameter values.
+
+        Returns
+        -------
+        float
+            Apparent magnitude (mag).
+        float
+            Absolute magnitude (mag).
+        """
+
+        if self.spectrum_interp is None:
+            self.interpolate()
+
+        spectrum = self.get_model(model_par, None)
+
+        synphot = photometry.SyntheticPhotometry(self.filter_name)
+
+        if 'distance' in model_par:
+            app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
+                                                             spectrum.flux,
+                                                             model_par['distance'])
+
+        else:
+            app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
+                                                             spectrum.flux,
+                                                             None)
+
+        return app_mag, abs_mag
 
     def get_bounds(self):
         """
@@ -457,5 +453,7 @@ class ReadModel:
         param = []
         for i in range(nparam):
             param.append(dset.attrs['parameter'+str(i)])
+
+        h5_file.close()
 
         return param

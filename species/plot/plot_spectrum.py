@@ -1,5 +1,5 @@
 """
-Module with functions for making plots.
+Module with a function for plotting spectra.
 """
 
 import os
@@ -32,24 +32,47 @@ def plot_spectrum(boxes,
                   scale=('linear', 'linear'),
                   title=None,
                   offset=None,
-                  legend='upper left'):
+                  legend='upper left',
+                  figsize=(7., 5.)):
     """
-    :param boxes:
-    :type boxes: tuple(species.analysis.box.SpectrumBox and/or
-                 species.analysis.box.PhotometryBox and/or
-                 species.analysis.box.ModelBox)
-    :param filters:
-    :type filters: tuple(str, )
-    :param output:
-    :type output: str
+    Parameters
+    ----------
+    boxes : tuple(species.core.box, )
+        Boxes with data.
+    filters : tuple(str, )
+        Filter IDs for which the transmission profile is plotted.
+    output : str
+        Output filename.
+    colors : tuple(str, )
+        Colors to be used for the different boxes. Note that a box with residuals requires a tuple
+        with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
+        to None.
+    residuals : species.core.box.ResidualsBox
+        Box with residuals of a fit.
+    xlim : tuple(float, float)
+        Limits of the x-axis.
+    ylim : tuple(float, float)
+        Limits of the y-axis.
+    scale : tuple(str, str)
+        Scale of the axes ('linear' or 'log').
+    title : str
+        Title.
+    offset : tuple(float, float)
+        Offset for the label of the x- and y-axis.
+    legend : str
+        Location of the legend.
+    figsize : tuple(float, float)
+        Figure size.
 
-    :return: None
+    Returns
+    -------
+    None
     """
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
     if residuals and filters:
-        plt.figure(1, figsize=(7, 5))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -58,7 +81,7 @@ def plot_spectrum(boxes,
         ax3 = plt.subplot(gridsp[2, 0])
 
     elif residuals:
-        plt.figure(1, figsize=(7, 5))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -66,7 +89,7 @@ def plot_spectrum(boxes,
         ax3 = plt.subplot(gridsp[1, 0])
 
     elif filters:
-        plt.figure(1, figsize=(7, 5))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -74,7 +97,7 @@ def plot_spectrum(boxes,
         ax2 = plt.subplot(gridsp[0, 0])
 
     else:
-        plt.figure(1, figsize=(7, 4))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(1, 1)
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -211,6 +234,9 @@ def plot_spectrum(boxes,
     if residuals:
         ax3.set_xscale(scale[0])
 
+    color_obj_phot = None
+    color_obj_spec = None
+
     for j, boxitem in enumerate(boxes):
         if isinstance(boxitem, (box.SpectrumBox, box.ModelBox)):
             wavelength = boxitem.wavelength
@@ -247,7 +273,8 @@ def plot_spectrum(boxes,
                     label = None
 
                 if colors:
-                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=0.5, label=label, zorder=4)
+                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=0.5,
+                             label=label, zorder=4)
                 else:
                     ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=4)
 
@@ -267,7 +294,8 @@ def plot_spectrum(boxes,
                 masked = np.ma.array(data, mask=np.isnan(data))
 
                 if colors:
-                    ax1.plot(wavelength, masked/scaling, lw=0.2, color=colors[j], alpha=0.5, zorder=3)
+                    ax1.plot(wavelength, masked/scaling, lw=0.2, color=colors[j],
+                             alpha=0.5, zorder=3)
                 else:
                     ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=3)
 
@@ -285,9 +313,25 @@ def plot_spectrum(boxes,
                 wavelength = transmission.mean_wavelength()
                 fwhm = transmission.filter_fwhm()
 
+                color_obj_phot = colors[j][0]
+
                 ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                             yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=5,
-                             color=colors[j], markerfacecolor=colors[j])
+                             yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=6,
+                             color=color_obj_phot, markerfacecolor=color_obj_phot)
+
+            if boxitem.spectrum is not None:
+                masked = np.ma.array(boxitem.spectrum, mask=np.isnan(boxitem.spectrum))
+
+                color_obj_spec = colors[j][1]
+
+                if colors is None:
+                    ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
+                                 ms=2, marker='s', zorder=5)
+
+                else:
+                    ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
+                                 marker='o', ms=2, zorder=5, color=color_obj_spec,
+                                 markerfacecolor=color_obj_spec)
 
         elif isinstance(boxitem, box.SynphotBox):
             for item in boxitem.flux:
@@ -296,7 +340,7 @@ def plot_spectrum(boxes,
                 fwhm = transmission.filter_fwhm()
 
                 ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                             alpha=0.7, marker='s', ms=5, zorder=6, color=colors[j],
+                             alpha=0.7, marker='s', ms=5, zorder=7, color=color_obj_spec,
                              markerfacecolor='white')
 
     if filters:
@@ -307,17 +351,24 @@ def plot_spectrum(boxes,
             ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black')
 
     if residuals:
-        diff = np.zeros((2, len(residuals[0].flux)))
+        res_max = 0.
 
-        for i, item in enumerate(residuals[0].flux):
-            transmission = read_filter.ReadFilter(item)
-            diff[0, i] = transmission.mean_wavelength()
-            diff[1, i] = (residuals[0].flux[item][0]-residuals[1].flux[item]) / \
-                residuals[0].flux[item][1]
+        if residuals.photometry is not None:
+            ax3.plot(residuals.photometry[0, ], residuals.photometry[1, ], marker='s',
+                     ms=5, linestyle='none', color=color_obj_phot, zorder=2)
 
-        ax3.plot(diff[0, ], diff[1, ], marker='s', ms=5, linestyle='none', color='black')
+            res_max = np.nanmax(np.abs(residuals.photometry[1, ]))
 
-        res_lim = math.ceil(np.amax(np.abs(diff[1, ])))
+        if residuals.spectrum is not None:
+            ax3.plot(residuals.spectrum[0, ], residuals.spectrum[1, ], marker='o',
+                     ms=2, linestyle='none', color=color_obj_spec, zorder=1)
+
+            max_tmp = np.nanmax(np.abs(residuals.spectrum[1, ]))
+
+            if max_tmp > res_max:
+                res_max = max_tmp
+
+        res_lim = math.ceil(max_tmp)
 
         ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
         ax3.set_ylim(-res_lim, res_lim)
@@ -327,9 +378,6 @@ def plot_spectrum(boxes,
 
     sys.stdout.write('Plotting spectrum: '+output+'...')
     sys.stdout.flush()
-
-    # ax1.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    # ax1.xaxis.set_minor_formatter(FormatStrFormatter('%.1f'))
 
     if title:
         if filters:

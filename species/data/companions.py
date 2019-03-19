@@ -1,11 +1,13 @@
 """
-Text
+Module with a function for data of directly imaged companions.
 """
 
 def get_data():
     """
-    :return: Dictionary with the distances and apparent magnitudes of directly imaged companions.
-    :rtype: dict
+    Returns
+    -------
+    dict
+        Dictionary with the distances and apparent magnitudes of directly imaged companions.
     """
 
     data = {'beta Pic b':{'distance':19.75,
