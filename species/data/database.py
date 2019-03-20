@@ -101,7 +101,7 @@ class Database:
         """
         Parameters
         ----------
-        tuple(str, )
+        name : tuple(str, )
             Companion name. All companions are added if set to None.
 
         Returns
@@ -702,7 +702,9 @@ class Database:
 
     def get_object(self,
                    object_name,
-                   filter_id=None):
+                   filter_id=None,
+                   inc_phot=True,
+                   inc_spec=True):
         """
         Parameters
         ----------
@@ -711,47 +713,67 @@ class Database:
         filter_id : tuple(str, )
             Filter IDs for which the photometry is selected. All available photometry of the object
             is selected if set to None.
+        inc_phot : bool
+            Include photometry in the box.
+        inc_spec : bool
+            Include spectrum in the box.
 
         Returns
         -------
         species.core.box.ObjectBox
-            Box with the object.
+            Box with the object's data.
         """
+
+        sys.stdout.write('Getting object: '+object_name+'...')
+        sys.stdout.flush()
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['objects/'+object_name]
 
         distance = np.asarray(dset['distance'])
 
-        magnitude = {}
-        flux = {}
+        if inc_phot:
 
-        if filter_id:
-            for item in filter_id:
-                data = dset[item]
+            magnitude = {}
+            flux = {}
 
-                magnitude[item] = np.asarray(data[0:2])
-                flux[item] = np.asarray(data[2:4])
+            if filter_id:
+                for item in filter_id:
+                    data = dset[item]
+
+                    magnitude[item] = np.asarray(data[0:2])
+                    flux[item] = np.asarray(data[2:4])
+
+            else:
+                for key in dset.keys():
+                    if key not in ('distance', 'spectrum'):
+                        for item in dset[key]:
+                            name = key+'/'+item
+
+                            magnitude[name] = np.asarray(dset[name][0:2])
+                            flux[name] = np.asarray(dset[name][2:4])
+
+            filters = tuple(magnitude.keys())
 
         else:
-            for key in dset.keys():
-                if key not in ('distance', 'spectrum'):
-                    for item in dset[key]:
-                        name = key+'/'+item
 
-                        magnitude[name] = np.asarray(dset[name][0:2])
-                        flux[name] = np.asarray(dset[name][2:4])
+            magnitude = None
+            flux = None
+            filters = None
 
-        if 'objects/'+object_name+'/spectrum' in h5_file:
+        if inc_spec and 'objects/'+object_name+'/spectrum' in h5_file:
             spectrum = np.asarray(h5_file['objects/'+object_name+'/spectrum'])
         else:
             spectrum = None
 
         h5_file.close()
 
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()
+
         return box.create_box('object',
                               name=object_name,
-                              filter=tuple(magnitude.keys()),
+                              filter=filters,
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance,

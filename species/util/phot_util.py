@@ -2,6 +2,8 @@
 Utility functions for photometry.
 """
 
+import sys
+
 import spectres
 import numpy as np
 
@@ -31,6 +33,9 @@ def multi_photometry(datatype,
         Box with synthetic photometry.
     """
 
+    sys.stdout.write('Calculating synthetic photometry...')
+    sys.stdout.flush()
+
     flux = {}
 
     if datatype == 'model':
@@ -42,6 +47,9 @@ def multi_photometry(datatype,
         for item in filters:
             readcalib = read_calibration.ReadCalibration(spectrum, item)
             flux[item] = readcalib.get_photometry(model_par)
+
+    sys.stdout.write(' [DONE]\n')
+    sys.stdout.flush()
 
     return box.create_box('synphot', name='synphot', flux=flux)
 
@@ -67,7 +75,9 @@ def apparent_to_absolute(app_mag,
 def get_residuals(model,
                   model_par,
                   filters,
-                  objectbox):
+                  objectbox,
+                  inc_phot=True,
+                  inc_spec=False):
     """
     Parameters
     ----------
@@ -79,6 +89,10 @@ def get_residuals(model,
         Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
         Box with the photometry and/or spectrum of an object.
+    inc_phot : bool
+        Include photometry.
+    inc_spec : bool
+        Include spectrum.
 
     Returns
     -------
@@ -89,12 +103,12 @@ def get_residuals(model,
     if filters is None:
         filters = objectbox.filter
 
-    model_phot = multi_photometry(datatype='model',
-                                  spectrum=model,
-                                  filters=filters,
-                                  model_par=model_par)
+    if inc_phot:
+        model_phot = multi_photometry(datatype='model',
+                                      spectrum=model,
+                                      filters=filters,
+                                      model_par=model_par)
 
-    if objectbox.flux is not None:
         res_phot = np.zeros((2, len(objectbox.flux)))
 
         for i, item in enumerate(objectbox.flux):
@@ -106,7 +120,10 @@ def get_residuals(model,
     else:
         res_phot = None
 
-    if objectbox.spectrum is not None:
+    sys.stdout.write('Calculating residuals...')
+    sys.stdout.flush()
+
+    if inc_spec:
         wl_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
 
         readmodel = read_model.ReadModel(model, wl_range)
@@ -126,6 +143,9 @@ def get_residuals(model,
 
     else:
         res_spec = None
+
+    sys.stdout.write(' [DONE]\n')
+    sys.stdout.flush()
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,
