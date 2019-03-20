@@ -308,16 +308,17 @@ def plot_spectrum(boxes,
                          label=boxitem.name, zorder=5)
 
         elif isinstance(boxitem, box.ObjectBox):
-            for item in boxitem.flux:
-                transmission = read_filter.ReadFilter(item)
-                wavelength = transmission.mean_wavelength()
-                fwhm = transmission.filter_fwhm()
+            if boxitem.flux is not None:
+                for item in boxitem.flux:
+                    transmission = read_filter.ReadFilter(item)
+                    wavelength = transmission.mean_wavelength()
+                    fwhm = transmission.filter_fwhm()
 
-                color_obj_phot = colors[j][0]
+                    color_obj_phot = colors[j][0]
 
-                ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                             yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=6,
-                             color=color_obj_phot, markerfacecolor=color_obj_phot)
+                    ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
+                                 yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=6,
+                                 color=color_obj_phot, markerfacecolor=color_obj_phot)
 
             if boxitem.spectrum is not None:
                 masked = np.ma.array(boxitem.spectrum, mask=np.isnan(boxitem.spectrum))
@@ -368,7 +369,7 @@ def plot_spectrum(boxes,
             if max_tmp > res_max:
                 res_max = max_tmp
 
-        res_lim = math.ceil(max_tmp)
+        res_lim = math.ceil(res_max)
 
         ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
         ax3.set_ylim(-res_lim, res_lim)

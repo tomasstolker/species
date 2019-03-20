@@ -122,7 +122,7 @@ def lnlike(param,
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
-        model = modelspec.get_model(paramdict, ('original', (0.9, 2.5)))
+        model = modelspec.get_model(paramdict, None)
 
         flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
                                      old_spec_wavs=model.wavelength,
@@ -210,7 +210,8 @@ class FitModel:
                  filters,
                  model,
                  bounds,
-                 data):
+                 inc_phot=True,
+                 inc_spec=True):
         """
         Parameters
         ----------
@@ -224,9 +225,10 @@ class FitModel:
         bounds : dict
             Parameter boundaries. Full parameter range is used if None or not specified. The
             radius parameter range is set to 0-5 Rjup if not specified.
-        data : tuple(bool, bool)
-            Data to use for the fit ('photometry' and/or 'spectrum'). The first boolean sets
-            the inclusion of photometry and the second boolean the inclusion of a spectrum.
+        inc_phot : bool
+            Include photometry data with the fit.
+        inc_spec : bool
+            Include spectral data with the fit.
 
         Returns
         -------
@@ -239,7 +241,7 @@ class FitModel:
         self.model = model
         self.bounds = bounds
 
-        if not data[0] and not data[1]:
+        if not inc_phot and not inc_spec:
             raise ValueError('No photometric or spectral data has been selected.')
 
         if self.bounds is not None and 'teff' in self.bounds:
@@ -262,7 +264,7 @@ class FitModel:
         if 'radius' not in self.bounds:
             self.bounds['radius'] = (0., 5.)
 
-        if data[0]:
+        if inc_phot:
             self.objphot = []
             self.modelphot = []
             self.synphot = []
@@ -288,10 +290,11 @@ class FitModel:
             self.modelphot = None
             self.synphot = None
 
-        if data[1]:
+        if inc_spec:
             self.spectrum = self.object.get_spectrum()
             self.instrument = self.object.get_instrument()
             self.modelspec = read_model.ReadModel(self.model, (0.9, 2.5), teff_bound)
+
         else:
             self.spectrum = None
             self.instrument = None
@@ -305,8 +308,7 @@ class FitModel:
                  nsteps,
                  guess,
                  tag,
-                 prior=None,
-                 ncpu=1):
+                 prior=None):
         """
         Function to run the MCMC sampler.
 
@@ -325,9 +327,6 @@ class FitModel:
             Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
             ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
             used if set to None.
-        ncpu : int
-            Number of parallel processes. Due to the additional overhead, a value larger than 1
-            will not necessarily result in a decrease in computation time.
 
         Returns
         -------
@@ -367,8 +366,7 @@ class FitModel:
                                                prior,
                                                self.spectrum,
                                                self.instrument,
-                                               self.modelspec]),
-                                        threads=ncpu)
+                                               self.modelspec]))
 
         progbar = progress.bar.Bar('\rRunning MCMC...',
                                    max=nsteps,
