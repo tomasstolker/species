@@ -341,7 +341,7 @@ def plot_spectrum(boxes,
                 fwhm = transmission.filter_fwhm()
 
                 ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                             alpha=0.7, marker='s', ms=5, zorder=7, color=color_obj_spec,
+                             alpha=0.7, marker='s', ms=5, zorder=7, color=colors[j],
                              markerfacecolor='white')
 
     if filters:

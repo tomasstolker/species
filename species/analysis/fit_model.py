@@ -129,7 +129,7 @@ def lnlike(param,
                                      spec_fluxes=model.flux,
                                      spec_errs=None)
 
-        chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+        chisq += (4./float(spectrum[:, 0].size))*np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
 
     if chisq < MIN_CHISQ:
         MIN_CHISQ = chisq
@@ -202,7 +202,7 @@ def lnprob(param,
 
 class FitModel:
     """
-    Fit atmospheric model spectra to photometric data.
+    Fit atmospheric model spectra to photometric and spectral data.
     """
 
     def __init__(self,

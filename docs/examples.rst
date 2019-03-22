@@ -163,14 +163,16 @@ Or, a spectrum with the original spectral resolution can be obtained from the (d
    :width: 80%
    :align: center
 
-Stellar spectrum fit
---------------------
+Photometric calibration
+-----------------------
 
-In this example, the 2MASS magnitudes of PZ Tel A are fitted with a IRTF spectrum of a G6.5V type star (which can be downloaded from the IRTF website). The plots show the posterior distributions of the offset and scaling factor that are fitted, as well as randomly selected spectra from the posterior distributions with the best-fit synthetic photometry and the (overlapping) observed photometry::
+In this example, the 2MASS photometry of PZ Tel A is fitted with a IRTF spectrum of a G8V type star (which can be downloaded from the IRTF website). The plots show the posterior distribution scaling parameter that was fitted and randomly selected spectra from the posterior distribution with the best-fit synthetic photometry and the observed photometry (which are overlapping). The residuals are shown in terms of the uncertainty of the 2MASS photometry. The following code will run the MCMC, extrapolate the spectrum a bit  and create the plots::
 
    import species
 
    species.SpeciesInit('./')
+
+   distance = 47.13 # [pc]
 
    magnitudes = {'2MASS/2MASS.J':(6.856, 0.021),
                  '2MASS/2MASS.H':(6.486, 0.049),
@@ -181,21 +183,20 @@ In this example, the 2MASS magnitudes of PZ Tel A are fitted with a IRTF spectru
    database = species.Database()
 
    database.add_object(object_name='PZ Tel A',
-                       distance=47.13,
+                       distance=distance,
                        app_mag=magnitudes)
 
-   database.add_calibration(filename='input/G6.5V_HD115617.txt',
-                            tag='G6.5V_HD115617')
-
+   database.add_calibration(filename='input/G8V_HD75732.txt',
+                            tag='G8V_HD75732')
 
    fit = species.FitSpectrum(objname='PZ Tel A',
                              filters=None,
-                             spectrum='G6.5V_HD115617',
-                             bounds={'offset':(-1e-10, 1e-10), 'scaling':(0., 1e-1)})
+                             spectrum='G8V_HD75732',
+                             bounds={'scaling':(0., 1e0)})
 
    fit.run_mcmc(nwalkers=200,
                 nsteps=1000,
-                guess={'offset':1e-13, 'scaling':5e-2},
+                guess={'scaling':5e-1},
                 tag='pztel')
 
    species.plot_walkers(tag='pztel',
@@ -210,36 +211,65 @@ In this example, the 2MASS magnitudes of PZ Tel A are fitted with a IRTF spectru
                           offset=(-0.3, -0.10),
                           title_fmt='.4f')
 
+   objectbox = database.get_object(object_name='PZ Tel A',
+                                   filter_id=None)
+
    samples = database.get_mcmc_spectra(tag='pztel',
                                        burnin=500,
                                        random=30,
                                        wavelength=(0.1, 50.0))
 
-   best = {'offset':2.25e-13, 'scaling':0.0371}
+   best = {'scaling':0.1199}
 
    synphot = species.multi_photometry(datatype='calibration',
-                                      spectrum='G6.5V_HD115617',
+                                      spectrum='G8V_HD75732',
                                       filters=filters,
                                       parameters=best)
 
-   star = database.get_object(object_name='PZ Tel A',
-                              filter_id=None)
+   residuals = species.get_residuals(datatype='calibration',
+                                     spectrum='G8V_HD75732',
+                                     parameters=best,
+                                     filters=filters,
+                                     objectbox=objectbox,
+                                     inc_phot=True,
+                                     inc_spec=False)
 
-   species.plot_spectrum(boxes=(samples, star, synphot),
+   readcalib = species.ReadCalibration(spectrum='G8V_HD75732',
+                                       filter_name=None)
+
+   spectrum = readcalib.get_spectrum(parameters=best,
+                                     extrapolate=False,
+                                     min_wavelength=2.5)
+
+   species.plot_spectrum(boxes=(samples, spectrum, objectbox, synphot),
                          filters=filters,
                          output='plot/spectrum.pdf',
-                         colors=('gray', 'black', 'black'),
-                         residuals=(star, synphot),
-                         xlim=(0.7, 3.),
-                         ylim=(-1.5e-12, 1.5e-11),
+                         colors=('gray', 'black', ('black', ), 'black', 'tomato', 'teal'),
+                         residuals=residuals,
+                         xlim=(0.8, 2.5),
+                         ylim=(-1.5e-12, 2.1e-11),
                          scale=('linear', 'linear'),
-                         title=r'G6.5V HD 115617 - PZ Tel A',
-                         offset=(-0.25, -0.06))
+                         title=r'G8V HD75732 - PZ Tel A',
+                         offset=(-0.3, -0.08))
+
+If we need to know the magnitude of PZ Tel A in a specific filter (e.g. VLT/NACO Mp), we can create synthetic photometry in the following way::
+
+   synphot = species.SyntheticPhotometry('Paranal/NACO.Mp')
+   mag = synphot.spectrum_to_magnitude(spectrum.wavelength, spectrum.flux)
+   phot = synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)
+
+   print('NACO Mp [mag] =', mag[0])
+   print('NACO Mp [W m-2 micron-1] =', phot)
+
+Which gives::
+
+   NACO Mp [mag] = 6.407877593040467
+   NACO Mp [W m-2 micron-1] = 5.9164296e-14
 
 .. image:: _images/posterior.png
-   :width: 60%
+   :width: 40%
    :align: center
 
 .. image:: _images/spectrum.png
-   :width: 80%
+   :width: 90%
    :align: center

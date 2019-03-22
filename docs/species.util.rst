@@ -12,6 +12,14 @@ species.util.data\_util module
     :undoc-members:
     :show-inheritance:
 
+species.util.phot\_util module
+------------------------------
+
+.. automodule:: species.util.phot_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.util.plot\_util module
 ------------------------------
 

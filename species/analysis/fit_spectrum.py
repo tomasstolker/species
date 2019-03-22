@@ -1,5 +1,5 @@
 """
-Text
+Module for fitting a calibration spectrum.
 """
 
 import sys
@@ -20,30 +20,46 @@ MIN_PARAM = None
 
 def lnprob(param,
            bounds,
+           modelpar,
            objphot,
-           specphot):
+           specphot,
+           bands):
     """
-    :param param: Value of the scaling parameter.
-    :type param: numpy.ndarray
-    :param bounds: Boundary of the scaling parameter
-    :type bounds: dict
-    :param objphot:
-    :type objphot:
-    :param specphot:
-    :type specphot:
+    Parameters
+    ----------
+    param : numpy.ndarray
+        Values of the main scaling parameter and optionally additional band-dependent scaling
+        parameters.
+    bounds : dict
+        Boundaries of the main scaling parameter.
+    modelpar : list(str, )
+        Parameter names.
+    objphot : list(tuple(float, float), )
+        Photometry of the object.
+    specphot : list(float, )
+        Synthetic photometry of the calibration spectrum for the same filters as the photometry
+        of the object.
+    bands : bool
+        Use band-dependent scaling parameters in addition to the main scaling parameter which
+        is used for the full spectrum.
 
-    :return:
-    :rtype:
+    Returns
+    -------
+    float
+        Log posterior probability.
     """
 
     global MIN_CHISQ
     global MIN_PARAM
 
-    if bounds['scaling'][0] <= param <= bounds['scaling'][1]:
-        ln_prior = 0.
+    for i, item in enumerate(modelpar):
 
-    else:
-        ln_prior = -np.inf
+        if bounds[item][0] <= param[i] <= bounds[item][1]:
+            ln_prior = 0.
+
+        else:
+            ln_prior = -np.inf
+            break
 
     if math.isinf(ln_prior):
         ln_prob = -np.inf
@@ -51,11 +67,19 @@ def lnprob(param,
     else:
         chisq = 0.
         for i, _ in enumerate(objphot):
-            chisq += (objphot[i][0]-(param*specphot[i]))**2 / objphot[i][1]**2
+            if bands:
+                chisq += (objphot[i][0] - param[0]*param[i+1]*specphot[i])**2 / objphot[i][1]**2
+
+            else:
+                chisq += (objphot[i][0] - param[0]*specphot[i])**2 / objphot[i][1]**2
 
         if chisq < MIN_CHISQ:
+            paramdict = {}
+            for i, item in enumerate(modelpar):
+                paramdict[item] = param[i]
+
             MIN_CHISQ = chisq
-            MIN_PARAM = {'scaling':param}
+            MIN_PARAM = paramdict
 
         ln_prob = ln_prior - 0.5*chisq
 
@@ -64,7 +88,7 @@ def lnprob(param,
 
 class FitSpectrum:
     """
-    Text
+    Fit a calibration spectrum to photometric data.
     """
 
     def __init__(self,
@@ -73,17 +97,21 @@ class FitSpectrum:
                  spectrum,
                  bounds):
         """
-        :param objname: Object name in the database.
-        :type objname: str
-        :param filters: Filter IDs for which the photometry is selected. All available
-                        photometry of the object is selected if set to None.
-        :type filters: tuple(str, )
-        :param spectrum: Calibration spectrum.
-        :type spectrum: str
-        :param bounds: Boundaries of the scaling parameter, as {'scaling':(min, max)}.
-        :type bounds: dict
+        Parameters
+        ----------
+        objname : str
+            Object name in the database.
+        filters : tuple(str, )
+            Filter IDs for which the photometry is selected. All available photometry of the
+            object is selected if set to None.
+        spectrum : str
+            Calibration spectrum.
+        bounds : dict
+            Boundaries of the scaling parameter, as {'scaling':(min, max)}.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         self.object = read_object.ReadObject(objname)
@@ -116,18 +144,28 @@ class FitSpectrum:
                  nwalkers,
                  nsteps,
                  guess,
-                 tag):
+                 tag,
+                 bands=False):
         """
-        :param nwalkers: Number of walkers.
-        :type nwalkers: int
-        :param nsteps: Number of steps for each walker.
-        :type nsteps: int
-        :param guess: Guess of the scaling parameter.
-        :type guess: float
-        :param tag: Database tag for the results.
-        :type tag: int
+        Function to run the MCMC sampler.
 
-        :return: None
+        Parameters
+        ----------
+        nwalkers : int
+            Number of walkers.
+        nsteps : int
+            Number of steps per walker.
+        guess : dict
+            Guess of the scaling parameter.
+        tag : str
+            Database tag where the MCMC samples are stored.
+        bands : bool
+            Use band-dependent scaling parameters in addition to the main scaling parameter which
+            is used for the full spectrum.
+
+        Returns
+        -------
+        None
         """
 
         global MIN_CHISQ
@@ -136,18 +174,30 @@ class FitSpectrum:
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()
 
-        ndim = 1
+        if bands:
+            ndim = 1 + len(self.objphot)
+
+        else:
+            ndim = 1
 
         initial = np.zeros((nwalkers, ndim))
         initial[:, 0] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)
+
+        if ndim > 1:
+            for i in range(1, ndim):
+                initial[:, i] = 1. + np.random.normal(0, 0.1, nwalkers)
+                self.modelpar.append('scaling'+str(i))
+                self.bounds['scaling'+str(i)] = (0., 1e2)
 
         sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
                                         dim=ndim,
                                         lnpostfn=lnprob,
                                         a=2.,
                                         args=([self.bounds,
+                                               self.modelpar,
                                                self.objphot,
-                                               self.specphot]))
+                                               self.specphot,
+                                               bands]))
 
         progbar = progress.bar.Bar('\rRunning MCMC...',
                                    max=nsteps,
