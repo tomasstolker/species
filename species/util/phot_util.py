@@ -14,7 +14,7 @@ from species.read import read_model, read_calibration, read_filter
 def multi_photometry(datatype,
                      spectrum,
                      filters,
-                     model_par):
+                     parameters):
     """
     Parameters
     ----------
@@ -24,8 +24,8 @@ def multi_photometry(datatype,
         Spectrum name (e.g., 'drift-phoenix').
     filters : tuple(str, )
         Filter IDs.
-    model_par : dict
-        Model parameter values.
+    parameters : dict
+        Parameters and values for the spectrum
 
     Returns
     -------
@@ -41,12 +41,12 @@ def multi_photometry(datatype,
     if datatype == 'model':
         for item in filters:
             readmodel = read_model.ReadModel(spectrum, item)
-            flux[item] = readmodel.get_photometry(model_par)
+            flux[item] = readmodel.get_photometry(parameters)
 
     elif datatype == 'calibration':
         for item in filters:
             readcalib = read_calibration.ReadCalibration(spectrum, item)
-            flux[item] = readcalib.get_photometry(model_par)
+            flux[item] = readcalib.get_photometry(parameters)
 
     sys.stdout.write(' [DONE]\n')
     sys.stdout.flush()
@@ -72,8 +72,9 @@ def apparent_to_absolute(app_mag,
 
     return app_mag - 5.*np.log10(distance) + 5.
 
-def get_residuals(model,
-                  model_par,
+def get_residuals(datatype,
+                  spectrum,
+                  parameters,
                   filters,
                   objectbox,
                   inc_phot=True,
@@ -81,10 +82,12 @@ def get_residuals(model,
     """
     Parameters
     ----------
-    model : str
-        Atmospheric model.
-    model_par : dict
-        Model parameters and values.
+    datatype : str
+        Data type ('model' or 'calibration').
+    spectrum : str
+        Name of the atmospheric model or calibration spectrum.
+    parameters : dict
+        Parameters and values for the spectrum
     filters : tuple(str, )
         Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
@@ -104,10 +107,10 @@ def get_residuals(model,
         filters = objectbox.filter
 
     if inc_phot:
-        model_phot = multi_photometry(datatype='model',
-                                      spectrum=model,
+        model_phot = multi_photometry(datatype=datatype,
+                                      spectrum=spectrum,
                                       filters=filters,
-                                      model_par=model_par)
+                                      parameters=parameters)
 
         res_phot = np.zeros((2, len(objectbox.flux)))
 
@@ -127,7 +130,7 @@ def get_residuals(model,
         wl_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
 
         readmodel = read_model.ReadModel(model, wl_range)
-        model = readmodel.get_model(model_par)
+        model = readmodel.get_model(parameters)
 
         wl_new = objectbox.spectrum[:, 0]
 

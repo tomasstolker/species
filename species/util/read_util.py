@@ -36,8 +36,7 @@ def get_mass(model_par):
     return mass
 
 
-def add_luminosity(modelbox,
-                   specres=1000):
+def add_luminosity(modelbox):
     """
     Function to add the luminosity of a model spectrum to the parameter dictionary of the box. The
     luminosity is by default calculated at a spectral resolution of 1000.
@@ -47,8 +46,6 @@ def add_luminosity(modelbox,
     modelbox : species.core.box.ModelBox
         Box with the model spectrum. Should also contain the dictionary with the model parameters,
         the radius in particular.
-    specres : float
-        Spectral resolution of the interpolated spectrum.
 
     Returns
     -------
@@ -114,7 +111,7 @@ def smooth_spectrum(wavelength,
 
         size = int(5.*sigma/spacing) # Kernel size 5 times the FWHM
         if size%2 == 0:
-            size +=1
+            size += 1
 
         gaussian = _gaussian(size, sigma/spacing)
 
