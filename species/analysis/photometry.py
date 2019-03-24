@@ -3,6 +3,7 @@ Module for creating synthetic photometry.
 """
 
 import os
+import warnings
 import configparser
 
 import h5py
@@ -41,23 +42,16 @@ class SyntheticPhotometry:
 
         self.database = config['species']['database']
 
-    def zero_point(self,
-                   wl_range):
+    def zero_point(self):
         """
-        Parameters
-        ----------
-        wl_range : float
-            Wavelength range (micron). The range from the filter transmission curve is used if
-            set to None.
-
         Returns
         -------
         tuple(float, float)
         """
 
-        if wl_range is None:
+        if self.wl_range is None:
             transmission = read_filter.ReadFilter(self.filter_name)
-            wl_range = transmission.wavelength_range()
+            self.wl_range = transmission.wavelength_range()
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -76,8 +70,11 @@ class SyntheticPhotometry:
         wavelength = calibbox.wavelength
         flux = calibbox.flux
 
-        wavelength_crop = wavelength[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
-        flux_crop = flux[(wavelength > wl_range[0]) & (wavelength < wl_range[1])]
+        wavelength_crop = wavelength[(wavelength > self.wl_range[0]) &
+                                     (wavelength < self.wl_range[1])]
+
+        flux_crop = flux[(wavelength > self.wl_range[0]) &
+                         (wavelength < self.wl_range[1])]
 
         h5_file.close()
 
@@ -85,13 +82,13 @@ class SyntheticPhotometry:
 
     def spectrum_to_photometry(self,
                                wavelength,
-                               flux_density):
+                               flux):
         """
         Parameters
         ----------
         wavelength : numpy.ndarray
             Wavelength (micron).
-        flux_density : numpy.ndarray
+        flux : numpy.ndarray
             Flux density (W m-2 micron-1).
 
         Returns
@@ -103,7 +100,9 @@ class SyntheticPhotometry:
         if not self.filter_interp:
             transmission = read_filter.ReadFilter(self.filter_name)
             self.filter_interp = transmission.interpolate()
-            self.wl_range = transmission.wavelength_range()
+
+            if self.wl_range is None:
+                self.wl_range = transmission.wavelength_range()
 
         if isinstance(wavelength[0], (np.float32, np.float64)):
             indices = np.where((self.wl_range[0] < wavelength) &
@@ -114,14 +113,14 @@ class SyntheticPhotometry:
                                  "wavelength point.")
 
             wavelength = wavelength[indices]
-            flux_density = flux_density[indices]
+            flux = flux[indices]
 
             transmission = self.filter_interp(wavelength)
 
             indices = np.isnan(transmission)
             indices = np.logical_not(indices)
 
-            integrand1 = transmission[indices]*flux_density[indices]
+            integrand1 = transmission[indices]*flux[indices]
             integrand2 = transmission[indices]
 
             integral1 = np.trapz(integrand1, wavelength[indices])
@@ -131,29 +130,40 @@ class SyntheticPhotometry:
 
         else:
             photometry = []
-            for i, _ in enumerate(wavelength):
-                indices = np.where((self.wl_range[0] <= wavelength) &
-                                   (wavelength <= self.wl_range[1]))[0]
 
-                if indices.size == 1:
-                    raise ValueError("Calculating synthetic photometry requires more than one "
-                                     "wavelength point.")
+            for i, wl_item in enumerate(wavelength):
+                indices = np.where((self.wl_range[0] <= wl_item) & (wl_item <= self.wl_range[1]))[0]
 
-                wavelength = wavelength[indices]
-                flux_density = flux_density[indices]
+                if indices.size < 2:
+                    photometry.append(np.nan)
 
-                transmission = self.filter_interp(wavelength[i])
+                    warnings.warn('Calculating synthetic photometry requires more than one '
+                                  'wavelength point. Photometry is set to NaN.', RuntimeWarning)
 
-                indices = np.isnan(transmission)
-                indices = np.logical_not(indices)
+                else:
+                    if wl_item[-1] < self.wl_range[1]:
+                        warnings.warn('Filter profile of '+self.filter_name+' extends beyond the '
+                                      'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). '
+                                      'Photometry is set to NaN.', RuntimeWarning)
 
-                integrand1 = transmission[indices]*flux_density[i][indices]
-                integrand2 = transmission[indices]
+                        photometry.append(np.nan)
 
-                integral1 = np.trapz(integrand1, wavelength[i][indices])
-                integral2 = np.trapz(integrand2, wavelength[i][indices])
+                    else:
+                        wl_item = wl_item[indices]
+                        flux_item = flux[i][indices]
 
-                photometry.append(integral1/integral2)
+                        transmission = self.filter_interp(wl_item)
+
+                        indices = np.isnan(transmission)
+                        indices = np.logical_not(indices)
+
+                        integrand1 = transmission[indices]*flux_item[indices]
+                        integrand2 = transmission[indices]
+
+                        integral1 = np.trapz(integrand1, wl_item[indices])
+                        integral2 = np.trapz(integrand2, wl_item[indices])
+
+                        photometry.append(integral1/integral2)
 
             photometry = np.asarray(photometry)
 
@@ -161,14 +171,14 @@ class SyntheticPhotometry:
 
     def spectrum_to_magnitude(self,
                               wavelength,
-                              flux_density,
+                              flux,
                               distance=None):
         """
         Parameters
         ----------
         wavelength : numpy.ndarray
             Wavelength (micron).
-        flux_density : numpy.ndarray
+        flux : numpy.ndarray
             Flux density (W m-2 micron-1).
         distance : float
             Distance (pc). No absolute magnitude is calculated if set to None.
@@ -183,17 +193,10 @@ class SyntheticPhotometry:
 
         vega_mag = 0.03 # [mag]
 
-        flux = self.spectrum_to_photometry(wavelength, flux_density)
-        zp_flux = self.zero_point((wavelength[0], wavelength[-1]))
+        zp_flux = self.zero_point()
+        syn_flux = self.spectrum_to_photometry(wavelength, flux)
 
-        # indices = np.isnan(distance)
-        # indices = np.logical_not(indices)
-        # indices = np.where(indices)[0]
-        #
-        # flux = flux[indices]
-        # distance = distance[indices]
-
-        app_mag = vega_mag - 2.5*np.log10(flux/zp_flux)
+        app_mag = vega_mag - 2.5*np.log10(syn_flux/zp_flux)
 
         if distance is None:
             abs_mag = None
@@ -227,7 +230,7 @@ class SyntheticPhotometry:
         vega_mag = 0.03 # [mag]
 
         if zp_flux is None:
-            zp_flux = self.zero_point(None)
+            zp_flux = self.zero_point()
 
         flux = 10.**(-0.4*(magnitude-vega_mag))*zp_flux
 
@@ -262,7 +265,7 @@ class SyntheticPhotometry:
 
         vega_mag = 0.03 # [mag]
 
-        zp_flux = self.zero_point(None)
+        zp_flux = self.zero_point()
 
         app_mag = vega_mag - 2.5*np.log10(flux/zp_flux)
 

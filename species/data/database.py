@@ -244,7 +244,6 @@ class Database:
             h5_file.create_group('objects/'+object_name)
 
         if distance:
-
             if 'objects/'+object_name+'/distance' in h5_file:
                 del h5_file['objects/'+object_name+'/distance']
 
@@ -253,7 +252,6 @@ class Database:
                                    dtype='f') # [pc]
 
         if app_mag:
-
             flux = {}
             error = {}
 
@@ -387,12 +385,15 @@ class Database:
         sys.stdout.flush()
 
     def add_spectrum(self,
-                     spectrum):
+                     spectrum,
+                     sptypes=None):
         """
         Parameters
         ----------
         spectrum : str
             Spectral library.
+        sptypes : tuple(str, )
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for IRTF.
 
         Returns
         -------
@@ -411,7 +412,7 @@ class Database:
             vega.add_vega(self.input_path, h5_file)
 
         elif spectrum[0:5] == 'irtf':
-            irtf.add_irtf(self.input_path, h5_file)
+            irtf.add_irtf(self.input_path, h5_file, sptypes)
 
         elif spectrum[0:5] == 'spex':
             spex.add_spex(self.input_path, h5_file)
@@ -753,13 +754,13 @@ class Database:
                             magnitude[name] = np.asarray(dset[name][0:2])
                             flux[name] = np.asarray(dset[name][2:4])
 
-            filters = tuple(magnitude.keys())
+            filterids = tuple(magnitude.keys())
 
         else:
 
             magnitude = None
             flux = None
-            filters = None
+            filterids = None
 
         if inc_spec and 'objects/'+object_name+'/spectrum' in h5_file:
             spectrum = np.asarray(h5_file['objects/'+object_name+'/spectrum'])
@@ -773,7 +774,7 @@ class Database:
 
         return box.create_box('object',
                               name=object_name,
-                              filter=filters,
+                              filter=filterids,
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance,

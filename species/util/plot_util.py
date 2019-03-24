@@ -77,34 +77,34 @@ def sptype_stellar(sptype,
     spt_disc = np.zeros(shape)
 
     for i, item in enumerate(sptype):
-        if str(item)[2] == 'O':
+        if str(item)[0] == 'O':
             spt_disc[i] = 0.5
 
-        elif str(item)[2] == 'B':
+        elif str(item)[0] == 'B':
             spt_disc[i] = 1.5
 
-        elif str(item)[2] == 'A':
+        elif str(item)[0] == 'A':
             spt_disc[i] = 2.5
 
-        elif str(item)[2] == 'F':
+        elif str(item)[0] == 'F':
             spt_disc[i] = 3.5
 
-        elif str(item)[2] == 'G':
+        elif str(item)[0] == 'G':
             spt_disc[i] = 4.5
 
-        elif str(item)[2] == 'K':
+        elif str(item)[0] == 'K':
             spt_disc[i] = 5.5
 
-        elif str(item)[2] == 'M':
+        elif str(item)[0] == 'M':
             spt_disc[i] = 6.5
 
-        elif str(item)[2] == 'L':
+        elif str(item)[0] == 'L':
             spt_disc[i] = 7.5
 
-        elif str(item)[2] == 'T':
+        elif str(item)[0] == 'T':
             spt_disc[i] = 8.5
 
-        elif str(item)[2] == 'Y':
+        elif str(item)[0] == 'Y':
             spt_disc[i] = 9.5
 
         else:

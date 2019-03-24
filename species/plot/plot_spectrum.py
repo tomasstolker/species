@@ -327,12 +327,12 @@ def plot_spectrum(boxes,
 
                 if colors is None:
                     ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                 ms=2, marker='s', zorder=5)
+                                 ms=2, marker='s', zorder=5, ls='none')
 
                 else:
                     ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
                                  marker='o', ms=2, zorder=5, color=color_obj_spec,
-                                 markerfacecolor=color_obj_spec)
+                                 markerfacecolor=color_obj_spec, ls='none')
 
         elif isinstance(boxitem, box.SynphotBox):
             for item in boxitem.flux:

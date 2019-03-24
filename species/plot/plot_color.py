@@ -1,5 +1,5 @@
 """
-Module with functions for making plots.
+Module with functions for creating color-magnitude and color-color plots.
 """
 
 import os
@@ -34,26 +34,29 @@ def plot_color_magnitude(colorbox,
                          offset=None,
                          legend='top left'):
     """
-    :param colorbox: Box with the colors and magnitudes.
-    :type colorbox: species.core.box.ColorMagBox
-    :param objects: Tuple with individual objects. The objects require a tuple with their database
-                    tag, the two filter IDs for the color, and the filter ID for the absolute
-                    magnitude.
-    :type objects: tuple(tuple(str, str, str, str), )
-    :param label_x: Label for the x-axis.
-    :type label_x: str
-    :param label_y: Label for the y-axis.
-    :type label_y: str
-    :param output: Output filename.
-    :type output: str
-    :param xlim: Limits for the x-axis.
-    :type xlim: tuple(float, float)
-    :param ylim: Limits for the y-axis.
-    :type ylim: tuple(float, float)
-    :param legend: Legend position.
-    :type legend: str
+    Parameters
+    ----------
+    colorbox : species.core.box.ColorMagBox
+        Box with the colors and magnitudes.
+    objects : tuple(tuple(str, str, str, str), )
+        Tuple with individual objects. The objects require a tuple with their database tag, the two
+        filter IDs for the color, and the filter ID for the absolute magnitude.
+    label_x : str
+        Label for the x-axis.
+    label_y : str
+        Label for the y-axis.
+    output : str
+        Output filename.
+    xlim : tuple(float, float)
+        Limits for the x-axis.
+    ylim : tuple(float, float)
+        Limits for the y-axis.
+    legend : str
+        Legend position.
 
-    :return: None
+    Returns
+    -------
+    None
     """
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
@@ -66,7 +69,7 @@ def plot_color_magnitude(colorbox,
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
+    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=1)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -126,7 +129,7 @@ def plot_color_magnitude(colorbox,
     spt_disc = spt_disc[unique]
 
     scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=1, s=25., alpha=0.6)
+                       zorder=2, s=25., alpha=0.6)
 
     cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
                   ticklocation='top', format='%.2f')
@@ -153,7 +156,7 @@ def plot_color_magnitude(colorbox,
 
             ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
                          marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=2)
+                         markerfacecolor='white', markeredgecolor='black', zorder=4)
 
     handles, labels = ax1.get_legend_handles_labels()
 
@@ -178,28 +181,31 @@ def plot_color_color(colorbox,
                      offset=None,
                      legend='top left'):
     """
-    :param colorbox: Box with the colors and magnitudes.
-    :type colorbox: species.core.box.ColorMagBox
-    :param objects: Tuple with individual objects. The objects require a tuple with their database
-                    tag, the two filter IDs for the color, and the filter ID for the absolute
-                    magnitude.
-    :type objects: tuple(tuple(str, str, str, str), )
-    :param label_x: Label for the x-axis.
-    :type label_x: str
-    :param label_y: Label for the y-axis.
-    :type label_y: str
-    :param output: Output filename.
-    :type output: str
-    :param xlim: Limits for the x-axis.
-    :type xlim: tuple(float, float)
-    :param ylim: Limits for the y-axis.
-    :type ylim: tuple(float, float)
-    :param offset: Offset of the x- and y-axis label.
-    :type offset: tuple(float, float)
-    :param legend: Legend position.
-    :type legend: str
+    Parameters
+    ----------
+    colorbox : species.core.box.ColorMagBox
+        Box with the colors and magnitudes.
+    objects : tuple(tuple(str, str, str, str), )
+        Tuple with individual objects. The objects require a tuple with their database tag, the
+        two filter IDs for the color, and the filter ID for the absolute magnitude.
+    label_x : str
+        Label for the x-axis.
+    label_y : str
+        Label for the y-axis.
+    output : str
+        Output filename.
+    xlim : tuple(float, float)
+        Limits for the x-axis.
+    ylim : tuple(float, float)
+        Limits for the y-axis.
+    offset : tuple(float, float)
+        Offset of the x- and y-axis label.
+    legend : str
+        Legend position.
 
-    :return: None
+    Returns
+    -------
+    None
     """
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
@@ -212,7 +218,7 @@ def plot_color_color(colorbox,
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
+    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=1)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -264,7 +270,7 @@ def plot_color_color(colorbox,
     spt_disc = spt_disc[unique]
 
     scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=1, s=25., alpha=0.6)
+                       zorder=2, s=25., alpha=0.6)
 
     cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
                   ticklocation='top', format='%.2f')
@@ -295,7 +301,7 @@ def plot_color_color(colorbox,
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
                          marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=2)
+                         markerfacecolor='white', markeredgecolor='black', zorder=3)
 
     handles, labels = ax1.get_legend_handles_labels()
 

@@ -1,5 +1,5 @@
 """
-Module for reading filter data.
+Module for reading filter data from the database.
 """
 
 import os
@@ -21,11 +21,14 @@ class ReadFilter:
     def __init__(self,
                  filter_name):
         """
-        Args:
-            filter_name(str): Filter ID.
+        Parameters
+        ----------
+        filter_name : str
+            Filter ID.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
 
         self.filter_name = filter_name
@@ -39,8 +42,10 @@ class ReadFilter:
 
     def get_filter(self):
         """
-        Returns:
-            numpy.ndarray: Filter data.
+        Returns
+        -------
+        numpy.ndarray
+            Filter data.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -63,8 +68,10 @@ class ReadFilter:
 
     def interpolate(self):
         """
-        Returns:
-            scipy.interpolate.interpolate.interp1d: Linearly interpolated filter.
+        Returns
+        -------
+        scipy.interpolate.interpolate.interp1d
+            Linearly interpolated filter.
         """
 
         data = self.get_filter()
@@ -77,9 +84,12 @@ class ReadFilter:
 
     def wavelength_range(self):
         """
-        Returns:
-            float: Minimum wavelength (micron).
-            float: Maximum wavelength (micron).
+        Returns
+        -------
+        float
+            Minimum wavelength (micron).
+        float
+            Maximum wavelength (micron).
         """
 
         data = self.get_filter()
@@ -88,8 +98,10 @@ class ReadFilter:
 
     def mean_wavelength(self):
         """
-        Returns:
-            float: Mean wavelength (micron).
+        Returns
+        -------
+        float
+            Mean wavelength (micron).
         """
 
         data = self.get_filter()
@@ -98,8 +110,10 @@ class ReadFilter:
 
     def filter_fwhm(self):
         """
-        Returns:
-            float: Filter full width at half maximum (micron).
+        Returns
+        -------
+        float
+            Filter full width at half maximum (micron).
         """
 
         data = self.get_filter()

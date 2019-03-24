@@ -114,7 +114,7 @@ def get_residuals(datatype,
 
         res_phot = np.zeros((2, len(objectbox.flux)))
 
-        for i, item in enumerate(objectbox.flux):
+        for i, item in enumerate(filters):
             transmission = read_filter.ReadFilter(item)
 
             res_phot[0, i] = transmission.mean_wavelength()
@@ -129,7 +129,7 @@ def get_residuals(datatype,
     if inc_spec:
         wl_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
 
-        readmodel = read_model.ReadModel(model, wl_range)
+        readmodel = read_model.ReadModel(spectrum, wl_range)
         model = readmodel.get_model(parameters)
 
         wl_new = objectbox.spectrum[:, 0]
