@@ -1,5 +1,5 @@
 """
-Read module.
+Module for reading spectral library data from the database.
 """
 
 import os
@@ -15,19 +15,23 @@ from species.read import read_filter
 
 class ReadSpectrum:
     """
-    Text
+    Reading a spectral library.
     """
 
     def __init__(self,
                  spectrum,
                  filter_name):
         """
-        :param spectrum: Spectral library.
-        :type spectrum: str
-        :param filter_name: Filter name. Full spectrum is read if set to None.
-        :type filter_name: str
+        Parameters
+        ----------
+        spectrum : str
+            Spectral library.
+        filter_name : str
+            Filter name. Full spectrum is read if set to None.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         self.spectrum = spectrum
@@ -49,15 +53,19 @@ class ReadSpectrum:
 
     def get_spectrum(self,
                      ignore_nan=True,
-                     sptype=None):
+                     sptypes=None):
         """
-        :param ignore_nan: Ignore wavelength points for which the flux is NaN.
-        :type ignore_nan: bool
-        :param sptype: Spectral types to select. All spectra are retrieved if set to None.
-        :type sptype: str
+        Parameters
+        ----------
+        ignore_nan : bool
+            Ignore wavelength points for which the flux is NaN.
+        sptypes : tuple('str', )
+            Spectral types to select. All spectra are retrieved if set to None.
 
-        :return: Box with the spectra.
-        :rtype: species.core.box.SpectrumBox
+        Returns
+        -------
+        species.core.box.SpectrumBox
+            Box with the spectra.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -68,7 +76,7 @@ class ReadSpectrum:
         except KeyError:
             h5_file.close()
             species_db = database.Database()
-            species_db.add_spectrum(self.spectrum)
+            species_db.add_spectrum(self.spectrum, sptypes)
             h5_file = h5py.File(self.database, 'r')
 
         list_wavelength = []
@@ -150,8 +158,15 @@ class ReadSpectrum:
         if list_distance:
             specbox.distance = np.asarray(list_distance)
 
-        if sptype is not None:
-            indices = np.where(np.chararray.startswith(specbox.sptype, sptype))[0]
+        if sptypes is not None:
+            indices = None
+
+            for item in sptypes:
+                if indices is None:
+                    indices = np.where(np.chararray.startswith(specbox.sptype, item))[0]
+                else:
+                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item))[0]
+                    indices = np.append(indices, ind_tmp)
 
             specbox.wavelength = specbox.wavelength[indices]
             specbox.flux = specbox.flux[indices]

@@ -1,5 +1,5 @@
 """
-Text
+Module for downloading filter data from the SVO website.
 """
 
 import requests
@@ -13,11 +13,17 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def download_filter(filter_id):
     """
-    :param filter_id: Filter ID.
-    :type filter_id: str
+    Parameters
+    ----------
+    filter_id : str
+        Filter ID.
 
-    :return:
-    :rtype: numpy.ndarray, numpy.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Wavelength (micron).
+    numpy.ndarray
+        Transmission.
     """
 
     if filter_id == 'LCO/VisAO.Ys':
@@ -60,5 +66,20 @@ def download_filter(filter_id):
 
         wavelength = np.asarray(wavelength)
         transmission = np.asarray(transmission)
+
+    indices = []
+
+    for i in range(transmission.size):
+        if i == 0 and transmission[i] == 0. and transmission[i+1] == 0.:
+            indices.append(i)
+
+        elif i == transmission.size-1 and transmission[i-1] == 0. and transmission[i] == 0.:
+            indices.append(i)
+
+        elif transmission[i-1] == 0. and transmission[i] == 0. and transmission[i+1] == 0.:
+            indices.append(i)
+
+    wavelength = np.delete(wavelength, indices)
+    transmission = np.delete(transmission, indices)
 
     return wavelength, transmission
