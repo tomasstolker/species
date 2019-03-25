@@ -24,25 +24,24 @@ class TestPhotometry:
 
     def test_spectral_library(self):
         spectrum = species.ReadSpectrum(spectrum='irtf', filter_name='MKO/NSFCam.H')
-        specbox = spectrum.get_spectrum(sptype='L0')
+        specbox = spectrum.get_spectrum(sptypes=('L', ))
 
         wavelength = specbox.wavelength[0]
         flux = specbox.flux[0]
 
-        assert wavelength.shape == (1063, )
-        assert flux.shape == (1063, )
+        assert wavelength.shape == (1000, )
+        assert flux.shape == (1000, )
 
-        assert np.allclose(np.sum(wavelength), 1692.8604, rtol=1e-7, atol=0.)
-        assert np.allclose(np.sum(flux), 4.5681937e-11, rtol=1e-8, atol=0.)
+        assert np.allclose(np.sum(wavelength), 1611.2432, rtol=1e-7, atol=0.)
+        assert np.allclose(np.sum(flux), 2.3606193e-11, rtol=1e-7, atol=0.)
 
         spectrum = species.ReadSpectrum(spectrum='irtf', filter_name='MKO/NSFCam.H')
-        specbox = spectrum.get_spectrum(sptype='L0')
+        specbox = spectrum.get_spectrum(sptypes=('L', ))
 
         synphot = species.SyntheticPhotometry(filter_name='MKO/NSFCam.H')
-        phot = synphot.spectrum_to_photometry(wavelength=wavelength,
-                                              flux_density=flux)
+        phot = synphot.spectrum_to_photometry(wavelength=wavelength, flux=flux)
 
-        assert np.allclose(phot, 4.5884422e-14, rtol=1e-8, atol=0.)
+        assert np.allclose(phot, 2.595779e-14, rtol=1e-7, atol=0.)
 
         transmission = species.ReadFilter(filter_name='MKO/NSFCam.H')
         wl_mean = transmission.mean_wavelength()
@@ -56,7 +55,7 @@ class TestPhotometry:
 
         assert photbox.name == 'L0 dwarf'
         assert np.allclose(photbox.wavelength, 1.6298258, rtol=1e-7, atol=0.)
-        assert np.allclose(photbox.flux, 4.5884422e-14, rtol=1e-8, atol=0.)
+        assert np.allclose(photbox.flux, 2.595779e-14, rtol=1e-7, atol=0.)
 
         species.plot_spectrum(boxes=(specbox, photbox),
                               filters=('MKO/NSFCam.H', ),

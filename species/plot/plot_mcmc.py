@@ -113,7 +113,8 @@ def plot_posterior(tag,
                    output,
                    title=None,
                    offset=None,
-                   title_fmt='.2f'):
+                   title_fmt='.2f',
+                   limits=None):
     """
     Function to plot the posterior distributions.
 
@@ -131,6 +132,8 @@ def plot_posterior(tag,
         Offset of the x- and y-axis label.
     title_fmt : str
         Format of the median and error values.
+    limits : tuple(tuple(float, float), )
+        Axis limits of all parameters. Automatically set if set to None.
 
     Returns
     -------
@@ -144,6 +147,8 @@ def plot_posterior(tag,
     box = species_db.get_samples(tag)
 
     samples = box.samples
+    par_val = box.chisquare
+
     labels = plot_util.update_labels(box.parameters)
 
     ndim = samples.shape[-1]
@@ -158,35 +163,36 @@ def plot_posterior(tag,
 
     for i in range(ndim):
         for j in range(ndim):
-            ax = axes[i, j]
+            if i >= j:
+                ax = axes[i, j]
 
-            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=5, labelsize=12, top=True,
-                           bottom=True, left=True, right=True)
+                ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                               direction='in', width=0.8, length=5, labelsize=12, top=True,
+                               bottom=True, left=True, right=True)
 
-            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=3, labelsize=12, top=True,
-                           bottom=True, left=True, right=True)
+                ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                               direction='in', width=0.8, length=3, labelsize=12, top=True,
+                               bottom=True, left=True, right=True)
 
-        if offset:
-            ax.get_xaxis().set_label_coords(0.5, offset[0])
-            ax.get_yaxis().set_label_coords(offset[1], 0.5)
-        else:
-            ax.get_xaxis().set_label_coords(0.5, -0.26)
-            ax.get_yaxis().set_label_coords(-0.27, 0.5)
+                if limits is not None:
+                    ax.set_xlim(limits[j])
 
+                ax.axvline(par_val[j], color='tomato')
 
-    par_val = box.chisquare
+                if i > j:
+                    ax.axhline(par_val[i], color='tomato')
+                    ax.plot(par_val[j], par_val[i], 's', color='tomato')
 
-    for i in range(ndim):
-        ax = axes[i, i]
-        ax.axvline(par_val[i], color='tomato')
+                    if limits is not None:
+                        ax.set_ylim(limits[i])
 
-        for j in range(i+1, ndim):
-            ax = axes[j, i]
-            ax.axvline(par_val[i], color='tomato')
-            ax.axhline(par_val[j], color='tomato')
-            ax.plot(par_val[i], par_val[j], 's', color='tomato')
+        if i >= j:
+            if offset:
+                ax.get_xaxis().set_label_coords(0.5, offset[0])
+                ax.get_yaxis().set_label_coords(offset[1], 0.5)
+            else:
+                ax.get_xaxis().set_label_coords(0.5, -0.26)
+                ax.get_yaxis().set_label_coords(-0.27, 0.5)
 
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
