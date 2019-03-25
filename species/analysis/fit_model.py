@@ -129,7 +129,8 @@ def lnlike(param,
                                      spec_fluxes=model.flux,
                                      spec_errs=None)
 
-        chisq += (4./float(spectrum[:, 0].size))*np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+        # (4./float(spectrum[:, 0].size))
+        chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
 
     if chisq < MIN_CHISQ:
         MIN_CHISQ = chisq

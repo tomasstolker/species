@@ -20,6 +20,7 @@ mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
 plt.rc('axes', edgecolor='black', linewidth=2)
+plt.rcParams['axes.axisbelow'] = False
 
 
 def plot_spectrum(boxes,
@@ -181,7 +182,7 @@ def plot_spectrum(boxes,
         ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
         if ylim[0] < 0.:
-            ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
+            ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
 
     else:
         ax1.set_ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
@@ -274,9 +275,9 @@ def plot_spectrum(boxes,
 
                 if colors:
                     ax1.plot(wavelength, masked/scaling, color=colors[j], lw=0.5,
-                             label=label, zorder=4)
+                             label=label, zorder=2)
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=4)
+                    ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=2)
 
             elif isinstance(wavelength[0], (np.ndarray)):
                 for i, item in enumerate(wavelength):
@@ -295,17 +296,17 @@ def plot_spectrum(boxes,
 
                 if colors:
                     ax1.plot(wavelength, masked/scaling, lw=0.2, color=colors[j],
-                             alpha=0.5, zorder=3)
+                             alpha=0.5, zorder=1)
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=3)
+                    ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=1)
 
         elif isinstance(boxitem, box.PhotometryBox):
             if colors:
                 ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
-                         color=colors[j], label=boxitem.name, zorder=5)
+                         color=colors[j], label=boxitem.name, zorder=3)
             else:
                 ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
-                         label=boxitem.name, zorder=5)
+                         label=boxitem.name, zorder=3)
 
         elif isinstance(boxitem, box.ObjectBox):
             if boxitem.flux is not None:
@@ -317,7 +318,7 @@ def plot_spectrum(boxes,
                     color_obj_phot = colors[j][0]
 
                     ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                 yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=6,
+                                 yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
                                  color=color_obj_phot, markerfacecolor=color_obj_phot)
 
             if boxitem.spectrum is not None:
@@ -327,11 +328,11 @@ def plot_spectrum(boxes,
 
                 if colors is None:
                     ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                 ms=2, marker='s', zorder=5, ls='none')
+                                 ms=2, marker='s', zorder=3, ls='none')
 
                 else:
                     ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                 marker='o', ms=2, zorder=5, color=color_obj_spec,
+                                 marker='o', ms=2, zorder=3, color=color_obj_spec,
                                  markerfacecolor=color_obj_spec, ls='none')
 
         elif isinstance(boxitem, box.SynphotBox):
@@ -341,7 +342,7 @@ def plot_spectrum(boxes,
                 fwhm = transmission.filter_fwhm()
 
                 ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                             alpha=0.7, marker='s', ms=5, zorder=7, color=colors[j],
+                             alpha=0.7, marker='s', ms=5, zorder=4, color=colors[j],
                              markerfacecolor='white')
 
     if filters:
@@ -349,20 +350,20 @@ def plot_spectrum(boxes,
             transmission = read_filter.ReadFilter(item)
             data = transmission.get_filter()
 
-            ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black')
+            ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black', zorder=1)
 
     if residuals:
         res_max = 0.
 
         if residuals.photometry is not None:
             ax3.plot(residuals.photometry[0, ], residuals.photometry[1, ], marker='s',
-                     ms=5, linestyle='none', color=color_obj_phot, zorder=3)
+                     ms=5, linestyle='none', color=color_obj_phot, zorder=2)
 
             res_max = np.nanmax(np.abs(residuals.photometry[1, ]))
 
         if residuals.spectrum is not None:
             ax3.plot(residuals.spectrum[0, ], residuals.spectrum[1, ], marker='o',
-                     ms=2, linestyle='none', color=color_obj_spec, zorder=2)
+                     ms=2, linestyle='none', color=color_obj_spec, zorder=1)
 
             max_tmp = np.nanmax(np.abs(residuals.spectrum[1, ]))
 
@@ -371,7 +372,7 @@ def plot_spectrum(boxes,
 
         res_lim = math.ceil(res_max)
 
-        ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=1)
+        ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
         ax3.set_ylim(-res_lim, res_lim)
 
     if filters:
