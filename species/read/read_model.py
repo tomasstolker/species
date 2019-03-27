@@ -182,7 +182,8 @@ class ReadModel:
             Model parameter values.
         specres : float
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None.
+            wavelength points are used if set to None. Using a high spectral resolution is
+            computationally faster if the original wavelength grid has a fine sampling.
 
         Returns
         -------

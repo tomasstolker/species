@@ -224,8 +224,8 @@ class FitModel:
         model : str
             Atmospheric model.
         bounds : dict
-            Parameter boundaries. Full parameter range is used if None or not specified. The
-            radius parameter range is set to 0-5 Rjup if not specified.
+            Parameter boundaries. Full parameter range is used if set to None or not specified.
+            The radius parameter range is set to 0-5 Rjup if not specified.
         inc_phot : bool
             Include photometry data with the fit.
         inc_spec : bool
@@ -250,7 +250,7 @@ class FitModel:
         else:
             teff_bound = None
 
-        if self.bounds:
+        if self.bounds is not None:
             readmodel = read_model.ReadModel(self.model, None, teff_bound)
             bounds_grid = readmodel.get_bounds()
 

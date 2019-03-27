@@ -22,9 +22,6 @@ from species.read import read_model, read_calibration
 from species.util import data_util
 
 
-warnings.simplefilter('ignore', UserWarning)
-
-
 class Database:
     """
     Text.
@@ -648,6 +645,10 @@ class Database:
         nparam = dset.attrs['nparam']
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
+
+        if specres is not None and spectrum_type == 'calibration':
+            warnings.warn("Smoothing of the spectral resolution is not implemented for calibration "
+                          "spectra.")
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
