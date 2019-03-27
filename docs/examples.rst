@@ -135,7 +135,7 @@ In the last example, the DRIFT-PHOENIX atmospheric models are added to the datab
                              wavelength=(1.0, 5.0))
 
    modelbox = model.get_model(model_par={'teff':1510., 'logg':4.1, 'feh':0.1},
-                              sampling=('gaussian', (1000, 200.)))
+                              specres=200.)
 
    species.plot_spectrum(boxes=(modelbox, ),
                          filters=filters,
