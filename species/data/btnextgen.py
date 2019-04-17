@@ -23,16 +23,19 @@ def add_btnextgen(input_path,
     """
     Function for adding the BT-NextGen atmospheric models to the database.
 
-    :param input_path:
-    :type input_path: str
-    :param database:
-    :type database: h5py._hl.files.File
-    :param wl_bound: Wavelength (micron) range.
-    :type wl_bound: tuple(float, float)
-    :param teff_bound: Effective temperature (K) range.
-    :type teff_bound: tuple(float, float)
+    Parameters
+    ----------
+    input_path : str
+    database : h5py._hl.files.File
+    wl_bound : tuple(float, float)
+        Wavelength range (micron).
+    teff_bound : tuple(float, float)
+        Effective temperature range (K).
 
-    :return: None
+    Returns
+    -------
+    NoneType
+        None
     """
 
     spec_res = 1e5

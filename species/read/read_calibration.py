@@ -200,11 +200,16 @@ class ReadCalibration:
                        parameters,
                        synphot=None):
         """
-        :param parameters: Model parameter values.
-        :type parameters: dict
+        Parameters
+        ----------
+        parameters : dict
+            Model parameter values.
+        synphot
 
-        :return: Average flux density (W m-2 micron-1).
-        :rtype: float
+        Returns
+        -------
+        float
+            Average flux density (W m-2 micron-1).
         """
 
         specbox = self.get_spectrum(parameters,)

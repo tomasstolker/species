@@ -202,3 +202,64 @@ def plot_posterior(tag,
 
     sys.stdout.write(' [DONE]\n')
     sys.stdout.flush()
+
+
+def plot_photometry(tag,
+                    filter_id,
+                    burnin,
+                    output,
+                    xlim=None):
+    """
+    Function to plot the posterior distribution of the synthetic photometry.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the MCMC samples.
+    filter_id : str
+        Filter ID.
+    burnin : int
+        Number of burnin steps to exclude.
+    output : str
+        Output filename.
+    xlim : tuple(float, float)
+        Axis limits. Automatically set if set to None.
+
+    Returns
+    -------
+    None
+    """
+
+    species_db = database.Database()
+
+    samples = species_db.get_mcmc_photometry(tag, burnin, filter_id)
+
+    sys.stdout.write('Plotting photometry samples: '+output+'...')
+    sys.stdout.flush()
+
+    fig = corner.corner(samples, labels=['Magnitude'], quantiles=[0.16, 0.5, 0.84],
+                        label_kwargs={'fontsize': 13}, show_titles=True,
+                        title_kwargs={'fontsize': 12}, title_fmt='.2f')
+
+    axes = np.array(fig.axes).reshape((1, 1))
+
+    ax = axes[0, 0]
+
+    ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                   direction='in', width=0.8, length=5, labelsize=12, top=True,
+                   bottom=True, left=True, right=True)
+
+    ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                   direction='in', width=0.8, length=3, labelsize=12, top=True,
+                   bottom=True, left=True, right=True)
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+
+    ax.get_xaxis().set_label_coords(0.5, -0.26)
+
+    plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.close()
+
+    sys.stdout.write(' [DONE]\n')
+    sys.stdout.flush()

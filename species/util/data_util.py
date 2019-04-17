@@ -2,6 +2,8 @@
 Utility functions for data processing.
 """
 
+import warnings
+
 import numpy as np
 
 
@@ -186,8 +188,13 @@ def add_missing(model,
         for j in range(logg.shape[0]):
             for k in range(feh.shape[0]):
                 if np.count_nonzero(flux[i, j, k]) == 0:
-                    scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                    flux[i, j, k] = scaling*flux[i+1, j, k] + (1.-scaling)*flux[i-1, j, k]
+                    try:
+                        scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
+                        flux[i, j, k] = scaling*flux[i+1, j, k] + (1.-scaling)*flux[i-1, j, k]
+
+                    except IndexError:
+                        flux[i, j, k] = np.nan
+                        warnings.warn('Interpolation not possible, using NaN instead.')
 
     del database['models/'+model+'/flux']
 

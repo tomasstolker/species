@@ -39,7 +39,8 @@ class ReadModel:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.model = model
@@ -124,7 +125,8 @@ class ReadModel:
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = self.open_database()
