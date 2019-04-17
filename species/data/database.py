@@ -31,7 +31,8 @@ class Database:
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
@@ -46,7 +47,8 @@ class Database:
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         sys.stdout.write('Database content:\n')
@@ -61,7 +63,8 @@ class Database:
 
             Returns
             -------
-            None
+            NoneType
+                None
             """
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
@@ -83,7 +86,8 @@ class Database:
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         comp_phot = companions.get_data()
@@ -103,7 +107,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         if isinstance(name, str):
@@ -134,7 +139,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         filter_split = filter_id.split('/')
@@ -186,7 +192,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -229,7 +236,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -302,7 +310,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -345,7 +354,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         if not scaling:
@@ -394,7 +404,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -413,90 +424,6 @@ class Database:
 
         elif spectrum[0:5] == 'spex':
             spex.add_spex(self.input_path, h5_file)
-
-        h5_file.close()
-
-    def add_votable(self,
-                    object_name,
-                    distance,
-                    filename):
-        """
-        Parameters
-        ----------
-        object_name : str
-            Object name.
-        distance : float
-            Distance (pc).
-        filename : str
-            Filename.
-
-        Returns
-        -------
-        None
-        """
-
-        # flux = {}
-        # error = {}
-        #
-        # for item in app_mag:
-        #     mag = app_mag[item]
-        #
-        #     synphot = photometry.SyntheticPhotometry(item)
-        #     flux[item], error[item] = synphot.magnitude_to_flux(mag[0], mag[1])
-
-        sys.stdout.write('Adding object from VOTable: '+object_name+'...')
-        sys.stdout.flush()
-
-        table = votable.parse_single_table(filename)
-
-        frequency = table.array['sed_freq'] # Mean frequency [GHz]
-        flux = table.array['_sed_flux'] # Flux density [Jy]
-        error = table.array['_sed_eflux'] # [Jy]
-        filter_name = table.array['_sed_filter']
-
-        wavelength = 1e6*constants.LIGHT/(frequency*1e9) # [micron]
-
-        conversion = 1e-6*1e-26*constants.LIGHT/(wavelength*1e-6)**2
-
-        flux *= conversion # [W m-2 micron-1]
-        error *= conversion # [W m-2 micron-1]
-
-        h5_file = h5py.File(self.database, 'a')
-
-        if 'objects' not in h5_file:
-            h5_file.create_group('objects')
-
-        if 'objects/'+object_name not in h5_file:
-            h5_file.create_group('objects/'+object_name)
-
-        if 'objects/'+object_name+'/distance' in h5_file:
-            del h5_file['objects/'+object_name+'/distance']
-
-        h5_file.create_dataset('objects/'+object_name+'/distance',
-                               data=distance,
-                               dtype='f') # [pc]
-
-        for i, item in enumerate(filter_name):
-            filter_id = data_util.update_filter(item)
-
-            if filter_id is None:
-                continue
-
-            if 'objects/'+object_name+'/'+filter_id in h5_file:
-                del h5_file['objects/'+object_name+'/'+filter_id]
-
-            data = np.asarray([np.nan,
-                               np.nan,
-                               flux[i],
-                               error[i]])
-
-            # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
-            h5_file.create_dataset('objects/'+object_name+'/'+filter_id,
-                                   data=data,
-                                   dtype='f')
-
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
 
         h5_file.close()
 
@@ -527,7 +454,8 @@ class Database:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         h5_file = h5py.File(self.database, 'a')
@@ -587,27 +515,33 @@ class Database:
         Parameters
         ----------
         tag : str
+            Database tag with the MCMC results.
 
         Returns
         -------
+        dict
+            Parameters and values with the minimum chi-square.
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/chisquare/'+tag]
+        dset = h5_file['results/mcmc/'+tag]
 
         nparam = dset.attrs['nparam']
-        spectrum = dset.attrs['spectrum']
 
-        param = {}
+        chisquare = {}
+
         for i in range(nparam):
             par_key = dset.attrs['parameter'+str(i)]
-            par_value = dset.attrs[par_key]
+            par_value = dset.attrs['chisquare'+str(i)]
 
-            param[par_key] = par_value
+            chisquare[par_key] = par_value
+
+        if dset.attrs.__contains__('distance'):
+            chisquare['distance'] = dset.attrs['distance']
 
         h5_file.close()
 
-        return spectrum, param
+        return chisquare
 
     def get_mcmc_spectra(self,
                          tag,
@@ -702,6 +636,78 @@ class Database:
 
         return tuple(boxes)
 
+    def get_mcmc_photometry(self,
+                            tag,
+                            burnin,
+                            filter_id):
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag with the MCMC samples.
+        burnin : int
+            Number of burnin steps.
+        filter_id : str
+            Filter ID for which the photometry is calculated.
+
+        Returns
+        -------
+        numpy.ndarray
+            Synthetic photometry (mag).
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        dset = h5_file['results/mcmc/'+tag]
+
+        nparam = dset.attrs['nparam']
+        spectrum_type = dset.attrs['type']
+        spectrum_name = dset.attrs['spectrum']
+
+        if dset.attrs.__contains__('distance'):
+            distance = dset.attrs['distance']
+        else:
+            distance = None
+
+        samples = np.asarray(dset)
+        samples = samples[:, burnin:, :]
+        samples = samples.reshape((samples.shape[0]*samples.shape[1], nparam))
+
+        param = []
+        for i in range(nparam):
+            param.append(str(dset.attrs['parameter'+str(i)]))
+
+        h5_file.close()
+
+        if spectrum_type == 'model':
+            readmodel = read_model.ReadModel(spectrum_name, filter_id)
+        elif spectrum_type == 'calibration':
+            readcalib = read_calibration.ReadCalibration(spectrum_name, None)
+
+        mcmc_phot = np.zeros((samples.shape[0], 1))
+
+        progbar = progress.bar.Bar('Getting MCMC photometry...',
+                                   max=samples.shape[0],
+                                   suffix='%(percent)d%%')
+
+        for i in range(samples.shape[0]):
+            model_par = {}
+            for j in range(nparam):
+                model_par[param[j]] = samples[i, j]
+
+            if distance:
+                model_par['distance'] = distance
+
+            if spectrum_type == 'model':
+                mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_par)
+            # elif spectrum_type == 'calibration':
+            #     specbox = readcalib.get_spectrum(model_par)
+
+            progbar.next()
+
+        progbar.finish()
+
+        return mcmc_phot
+
     def get_object(self,
                    object_name,
                    filter_id=None,
@@ -789,8 +795,12 @@ class Database:
         Parameters
         ----------
         tag: str
+            Database tag with the samples.
         burnin : int
+            Number of burnin samples to exclude. All samples are selected if set to None.
         random : int
+            Number of random samples to select. All samples (with the burnin excluded) are
+            selected if set to None.
 
         Returns
         -------

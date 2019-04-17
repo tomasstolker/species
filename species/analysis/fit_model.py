@@ -233,7 +233,8 @@ class FitModel:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.object = read_object.ReadObject(objname)
@@ -331,7 +332,8 @@ class FitModel:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         global MIN_CHISQ

@@ -62,14 +62,27 @@ def plot_color_magnitude(colorbox,
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
 
-    plt.figure(1, figsize=(4, 4.8))
-    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
-    gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+    sptype = colorbox.sptype
+    color = colorbox.color
+    magnitude = colorbox.magnitude
 
-    ax1 = plt.subplot(gridsp[2, 0])
-    ax2 = plt.subplot(gridsp[0, 0])
+    if colorbox.object_type == 'temperature':
+        plt.figure(1, figsize=(4., 4.5))
+        gridsp = mpl.gridspec.GridSpec(1, 3, width_ratios=[3.7, 0.1, 0.25])
+        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=1)
+        ax1 = plt.subplot(gridsp[0, 0])
+        ax2 = plt.subplot(gridsp[0, 2])
+
+    else:
+        plt.figure(1, figsize=(4, 4.8))
+        gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
+        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+
+        ax1 = plt.subplot(gridsp[2, 0])
+        ax2 = plt.subplot(gridsp[0, 0])
+
+    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -103,46 +116,58 @@ def plot_color_magnitude(colorbox,
         bounds = np.arange(0, 8, 1)
 
     cmap = plt.cm.viridis
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    sptype = colorbox.sptype
-    color = colorbox.color
-    magnitude = colorbox.magnitude
+    if colorbox.object_type != 'temperature':
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    indices = np.where(sptype != 'None')[0]
+        indices = np.where(sptype != 'None')[0]
 
-    sptype = sptype[indices]
-    color = color[indices]
-    magnitude = magnitude[indices]
+        sptype = sptype[indices]
+        color = color[indices]
+        magnitude = magnitude[indices]
 
     if colorbox.object_type == 'star':
         spt_disc = plot_util.sptype_stellar(sptype, color.shape)
         unique = np.arange(0, color.size, 1)
 
-    else:
+    elif colorbox.object_type != 'temperature':
         spt_disc = plot_util.sptype_substellar(sptype, color.shape)
         _, unique = np.unique(color, return_index=True)
 
-    sptype = sptype[unique]
-    color = color[unique]
-    magnitude = magnitude[unique]
-    spt_disc = spt_disc[unique]
-
-    scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=2, s=25., alpha=0.6)
-
-    cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
-                  ticklocation='top', format='%.2f')
-
-    cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='white')
-
-    if colorbox.object_type == 'star':
-        cb.set_ticks(np.arange(0.5, 10., 1.))
-        cb.set_ticklabels(['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y'])
+    if colorbox.object_type == 'temperature':
+        scat = ax1.scatter(color, magnitude, c=sptype, cmap=cmap,
+                           zorder=5, s=25., alpha=0.6)
 
     else:
-        cb.set_ticks(np.arange(0.5, 7., 1.))
-        cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+        sptype = sptype[unique]
+        color = color[unique]
+        magnitude = magnitude[unique]
+        spt_disc = spt_disc[unique]
+
+        scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
+                           zorder=5, s=25., alpha=0.6)
+
+    if colorbox.object_type == 'temperature':
+        cb = Colorbar(ax=ax2, mappable=scat, orientation='vertical',
+                      ticklocation='right', format='%i')
+
+        cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='white')
+        cb.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
+        cb.solids.set_edgecolor("face")
+
+    else:
+        cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+                      ticklocation='top', format='%.2f')
+
+        cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='white')
+
+        if colorbox.object_type == 'star':
+            cb.set_ticks(np.arange(0.5, 10., 1.))
+            cb.set_ticklabels(['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y'])
+
+        else:
+            cb.set_ticks(np.arange(0.5, 7., 1.))
+            cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
 
     if objects is not None:
         for item in objects:
@@ -156,7 +181,7 @@ def plot_color_magnitude(colorbox,
 
             ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
                          marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=4)
+                         markerfacecolor='white', markeredgecolor='black', zorder=10)
 
     handles, labels = ax1.get_legend_handles_labels()
 
@@ -218,7 +243,7 @@ def plot_color_color(colorbox,
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=1)
+    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -270,7 +295,7 @@ def plot_color_color(colorbox,
     spt_disc = spt_disc[unique]
 
     scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=2, s=25., alpha=0.6)
+                       zorder=5, s=25., alpha=0.6)
 
     cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
                   ticklocation='top', format='%.2f')
@@ -301,7 +326,7 @@ def plot_color_color(colorbox,
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
                          marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=3)
+                         markerfacecolor='white', markeredgecolor='black', zorder=10)
 
     handles, labels = ax1.get_legend_handles_labels()
 

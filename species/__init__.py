@@ -33,7 +33,8 @@ from species.data.database import Database
 from species.data.queries import get_distance
 
 from species.plot.plot_mcmc import plot_posterior, \
-                                   plot_walkers
+                                   plot_walkers, \
+                                   plot_photometry
 
 from species.plot.plot_color import plot_color_magnitude, plot_color_color
 
@@ -48,7 +49,7 @@ from species.util.read_util import get_mass, \
 
 __author__ = 'Tomas Stolker'
 __license__ = 'GPLv3'
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'tomas.stolker@phys.ethz.ch'
 __status__ = 'Development'
