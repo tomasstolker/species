@@ -27,12 +27,17 @@ class ReadCalibration:
                  spectrum,
                  filter_name):
         """
-        :param spectrum: Database tag of the calibration spectrum.
-        :type spectrum: str
-        :param filter_name: Filter ID. Full spectrum is used if set to None.
-        :type filter_name: str
+        Parameters
+        ----------
+        spectrum : str
+            Database tag of the calibration spectrum.
+        filter_name : str
+            Filter ID. Full spectrum is used if set to None.
 
-        :return: None
+        Returns
+        -------
+        NoneType
+            None
         """
 
         self.spectrum = spectrum
@@ -73,20 +78,25 @@ class ReadCalibration:
                      extrapolate=False,
                      min_wavelength=None):
         """
-        :param parameters: Model parameter values. Not used if set to None.
-        :type parameters: dict
-        :param negative: Include negative values.
-        :type negative: bool
-        :param specres: Spectral resolution. Original wavelength points are used if set to None.
-        :type specres: float
-        :param extrapolate: Extrapolate to 6 micron by fitting a power law function.
-        :type extrapolate: bool
-        :param min_wavelength: Minimum wavelength used for fitting the power law function. All data
-                               is used if set to None.
-        :type min_wavelength: float
+        Parameters
+        ----------
 
-        :return: Spectrum data.
-        :rtype: numpy.ndarray
+        parameters : dict
+            Model parameter values. Not used if set to None.
+        negative : bool
+            Include negative values.
+        specres : float
+            Spectral resolution. Original wavelength points are used if set to None.
+        extrapolate : bool
+            Extrapolate to 6 micron by fitting a power law function.
+        min_wavelength : float
+            Minimum wavelength used for fitting the power law function. All data is used if set
+            to None.
+
+        Returns
+        -------
+        numpy.ndarray
+            Spectrum data.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -197,13 +207,13 @@ class ReadCalibration:
                               distance=None)
 
     def get_photometry(self,
-                       parameters,
+                       parameters=None,
                        synphot=None):
         """
         Parameters
         ----------
-        parameters : dict
-            Model parameter values.
+        parameters : dict, None
+            Model parameter values. Not used if set to None.
         synphot
 
         Returns
@@ -212,8 +222,30 @@ class ReadCalibration:
             Average flux density (W m-2 micron-1).
         """
 
-        specbox = self.get_spectrum(parameters,)
+        specbox = self.get_spectrum(parameters, )
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_photometry(specbox.wavelength, specbox.flux)
+
+    def get_magnitude(self,
+                      parameters=None,
+                      synphot=None):
+        """
+        Parameters
+        ----------
+        parameters : dict, None
+            Model parameter values. Not used if set to None.
+        synphot
+
+        Returns
+        -------
+        float
+            Apparent magnitude (mag).
+        """
+
+        specbox = self.get_spectrum(parameters, )
+
+        synphot = photometry.SyntheticPhotometry(self.filter_name)
+
+        return synphot.spectrum_to_magnitude(specbox.wavelength, specbox.flux, distance=None)

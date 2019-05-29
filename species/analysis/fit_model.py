@@ -198,6 +198,10 @@ def lnprob(param,
                                     instrument,
                                     modelspec)
 
+    if np.isnan(ln_prob):
+        print(param)
+        ln_prob = -np.inf
+
     return ln_prob
 
 

@@ -336,6 +336,7 @@ class Database:
     def add_calibration(self,
                         filename,
                         tag,
+                        units=None,
                         scaling=None):
         """
         Function for adding a calibration spectrum to the database.
@@ -348,6 +349,9 @@ class Database:
             the error (W m-2 micron-1).
         tag : str
             Tag name in the database.
+        units : dict, None
+            Dictionary with the wavelength and flux units. Default (micron and W m-2 micron-1) is
+            used if set to None
         scaling : tuple(float, float)
             Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux). Not used if
             set to None.
@@ -371,11 +375,27 @@ class Database:
 
         data = np.loadtxt(filename)
 
-        wavelength = scaling[0]*data[:, 0] # [micron]
-        flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+        if units is None:
+            wavelength = scaling[0]*data[:, 0] # [micron]
+            flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+
+        else:
+            if units['wavelength'] == 'micron':
+                wavelength = scaling[0]*data[:, 0] # [micron]
+
+            if units['flux'] == 'w m-2 micron-1':
+                flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+            elif units['flux'] == 'w m-2':
+                if units['wavelength'] == 'micron':
+                    flux = scaling[1]*data[:, 1]/wavelength # [W m-2 micron-1]
 
         if data.shape[1] == 3:
-            error = scaling[1]*data[:, 2] # [W m-2 micron-1]
+            if units['flux'] == 'w m-2 micron-1':
+                error = scaling[1]*data[:, 2] # [W m-2 micron-1]
+            elif units['flux'] == 'w m-2':
+                if units['wavelength'] == 'micron':
+                    error = scaling[1]*data[:, 2]/wavelength # [W m-2 micron-1]
+
         else:
             error = np.repeat(0., wavelength.size)
 

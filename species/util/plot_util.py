@@ -21,37 +21,37 @@ def sptype_substellar(sptype,
     spt_disc = np.zeros(shape)
 
     for i, item in enumerate(sptype):
-        if item[0:2] in (np.string_('M0'), np.string_('M1'), np.string_('M2'),
-                         np.string_('M3'), np.string_('M4')):
+        if item[0:2] in ('M0', 'M1', 'M2',
+                         'M3', 'M4'):
 
             spt_disc[i] = 0.5
 
-        elif item[0:2] in (np.string_('M5'), np.string_('M6'), np.string_('M7'),
-                           np.string_('M8'), np.string_('M9')):
+        elif item[0:2] in ('M5', 'M6', 'M7',
+                           'M8', 'M9'):
 
             spt_disc[i] = 1.5
 
-        elif item[0:2] in (np.string_('L0'), np.string_('L1'), np.string_('L2'),
-                           np.string_('L3'), np.string_('L4')):
+        elif item[0:2] in ('L0', 'L1', 'L2',
+                           'L3', 'L4'):
 
             spt_disc[i] = 2.5
 
-        elif item[0:2] in (np.string_('L5'), np.string_('L6'), np.string_('L7'),
-                           np.string_('L8'), np.string_('L9')):
+        elif item[0:2] in ('L5', 'L6', 'L7',
+                           'L8', 'L9'):
 
             spt_disc[i] = 3.5
 
-        elif item[0:2] in (np.string_('T0'), np.string_('T1'), np.string_('T2'),
-                           np.string_('T3'), np.string_('T4')):
+        elif item[0:2] in ('T0', 'T1', 'T2',
+                           'T3', 'T4'):
 
             spt_disc[i] = 4.5
 
-        elif item[0:2] in (np.string_('T5'), np.string_('T6'), np.string_('T7'),
-                           np.string_('T8'), np.string_('T9')):
+        elif item[0:2] in ('T5', 'T6', 'T7',
+                           'T8', 'T9'):
 
             spt_disc[i] = 5.5
 
-        elif np.string_('Y') in item:
+        elif 'Y' in item:
             spt_disc[i] = 6.5
 
         else:

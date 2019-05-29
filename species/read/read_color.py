@@ -8,9 +8,9 @@ import configparser
 import h5py
 import numpy as np
 
-from species.analysis import photometry
 from species.core import box
 from species.data import database
+from species.util import phot_util
 
 
 class ReadColorMagnitude:
@@ -106,10 +106,10 @@ class ReadColorMagnitude:
         color = mag1 - mag2
 
         if self.filter_mag == self.filters_color[0]:
-            mag = photometry.apparent_to_absolute(mag1, distance)
+            mag = phot_util.apparent_to_absolute(mag1, distance)
 
         elif self.filter_mag == self.filters_color[1]:
-            mag = photometry.apparent_to_absolute(mag2, distance)
+            mag = phot_util.apparent_to_absolute(mag2, distance)
 
         h5_file.close()
 

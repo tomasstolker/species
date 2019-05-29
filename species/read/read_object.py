@@ -8,7 +8,7 @@ import configparser
 import h5py
 import numpy as np
 
-from species.analysis import photometry
+from species.util import phot_util
 
 
 class ReadObject:
@@ -121,6 +121,6 @@ class ReadObject:
         obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
         h5_file.close()
 
-        abs_mag = photometry.apparent_to_absolute(obj_phot[0], obj_distance)
+        abs_mag = phot_util.apparent_to_absolute(obj_phot[0], obj_distance)
 
         return abs_mag, obj_phot[1]
