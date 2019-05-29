@@ -46,6 +46,7 @@ release = version
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode'
 ]
 
 autoclass_content = 'both'

@@ -32,7 +32,7 @@ def plot_color_magnitude(colorbox,
                          xlim=None,
                          ylim=None,
                          offset=None,
-                         legend='top left'):
+                         legend='upper left'):
     """
     Parameters
     ----------
@@ -204,7 +204,7 @@ def plot_color_color(colorbox,
                      xlim=None,
                      ylim=None,
                      offset=None,
-                     legend='top left'):
+                     legend='upper left'):
     """
     Parameters
     ----------

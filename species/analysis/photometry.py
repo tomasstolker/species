@@ -252,7 +252,7 @@ class SyntheticPhotometry:
         ----------
         flux : float
             Flux density (W m-2 micron-1).
-        error : float
+        distance : float
             Distance (pc).
 
         Returns
