@@ -11,28 +11,23 @@ def get_data():
     """
 
     data = {'beta Pic b':{'distance':19.75,
-                          'app_mag':{'LCO/VisAO.Ys':(15.53, 0.34), # Males et al. (2014)
-                                     'Paranal/NACO.J':(14.0, 0.3), # Bonnefoy et al. (2013)
+                          'app_mag':{'Paranal/NACO.J':(14.0, 0.3), # Bonnefoy et al. (2013)
                                      'Gemini/NICI.ED286':(13.18, 0.15), # Males et al. (2014)
                                      'Paranal/NACO.H':(13.5, 0.2), # Bonnefoy et al. (2013)
                                      'Paranal/NACO.Ks':(12.64, 0.11), # Bonnefoy et al. (2011)
-                                     # 'Paranal/NACO.Lp':(11.24, 0.08), # Currie et al. (2013)
+                                     'Paranal/NACO.NB374':(11.24, 0.15), # Stolker et al. in prep.
                                      'Paranal/NACO.Lp':(11.30, 0.06), # Stolker et al. (2019)
-                                     # 'Paranal/NACO.NB374':(11.44, 0.12), # TODO Stolker et al. in prep.
-                                     'Paranal/NACO.NB374':(11.36, 0.12), # TODO Stolker et al. in prep.
-                                     # 'Paranal/NACO.NB405':(10.99, 0.04), # TODO Stolker et al. in prep.
-                                     'Paranal/NACO.NB405':(11.04, 0.04), # Currie et al. (2013)
-                                     # 'Paranal/NACO.Mp':(11.10, 0.12)}}, # Stolker et al. (2019)
-                                     'Paranal/NACO.Mp':(11.10, 0.12)}}, # Currie et al. (2013)
+                                     'Paranal/NACO.NB405':(11.03, 0.06), # Stolker et al. in prep.
+                                     'Paranal/NACO.Mp':(11.10, 0.12)}}, # Stolker et al. (2019)
 
             'HIP 65426 b':{'distance':109.21,
                            'app_mag':{'Paranal/SPHERE.IRDIS_D_H23_2':(17.94, 0.05), # Chauvin et al. 2017
                                       'Paranal/SPHERE.IRDIS_D_H23_3':(17.58, 0.06), # Chauvin et al. 2017
                                       'Paranal/SPHERE.IRDIS_D_K12_1':(17.01, 0.09), # Chauvin et al. 2017
                                       'Paranal/SPHERE.IRDIS_D_K12_2':(16.79, 0.09), # Chauvin et al. 2017
-                                      'Paranal/NACO.Lp':(15.26, 0.15), # Cheetham et al. 2018
-                                      'Paranal/NACO.NB405':(14.74, 0.31), # TODO Stolker et al. in prep.
-                                      'Paranal/NACO.Mp':(15.1, 0.5)}}, # TODO Stolker et al. in prep.
+                                      'Paranal/NACO.NB405':(15.41, 0.30), # Stolker et al. in prep.
+                                      'Paranal/NACO.Lp':(15.34, 0.16), # Stolker et al. in prep.
+                                      'Paranal/NACO.Mp':(14.82, 0.35)}}, # Stolker et al. in prep.
 
             '51 Eri b':{'distance':29.78,
                         'app_mag':{'MKO/NSFCam.J':(19.04, 0.40), # Rajan et al. 2017
@@ -53,6 +48,7 @@ def get_data():
                                     'Paranal/SPHERE.IRDIS_D_K12_1':(17.15, 0.06), # Zurlo et al. 2016
                                     'Paranal/SPHERE.IRDIS_D_K12_2':(16.97, 0.09), # Zurlo et al. 2016
                                     'Keck/NIRC2.Lp':(15.58, 0.10), # Currie et al. 2014
+                                    'Paranal/NACO.NB405':(14.92, 0.18), # Currie et al. 2014
                                     'Keck/NIRC2.Ms':(16.05, 0.30)}}, # Galicher et al. 2011
 
             'HR 8799 c':{'distance':41.29,
@@ -64,6 +60,7 @@ def get_data():
                                     'Paranal/SPHERE.IRDIS_D_K12_1':(16.19, 0.05), # Zurlo et al. 2016
                                     'Paranal/SPHERE.IRDIS_D_K12_2':(15.86, 0.07), # Zurlo et al. 2016
                                     'Keck/NIRC2.Lp':(15.72, 0.08), # Currie et al. 2014
+                                    'Paranal/NACO.NB405':(14.07, 0.08), # Currie et al. 2014
                                     'Keck/NIRC2.Ms':(15.03, 0.14)}}, # Galicher et al. 2011
 
             'HR 8799 d':{'distance':41.29,
@@ -75,6 +72,7 @@ def get_data():
                                     'Paranal/SPHERE.IRDIS_D_K12_1':(16.20, 0.07), # Zurlo et al. 2016
                                     'Paranal/SPHERE.IRDIS_D_K12_2':(15.84, 0.10), # Zurlo et al. 2016
                                     'Keck/NIRC2.Lp':(14.56, 0.09), # Currie et al. 2014
+                                    'Paranal/NACO.NB405':(13.97, 0.14), # Currie et al. 2014
                                     'Keck/NIRC2.Ms':(14.65, 0.35)}}, # Galicher et al. 2011
 
             'HR 8799 e':{'distance':41.29,
@@ -84,7 +82,8 @@ def get_data():
                                     'Keck/NIRC2.Ks':(15.91, 0.22), # Marois et al. 2010
                                     'Paranal/SPHERE.IRDIS_D_K12_1':(16.12, 0.10), # Zurlo et al. 2016
                                     'Paranal/SPHERE.IRDIS_D_K12_2':(15.82, 0.11), # Zurlo et al. 2016
-                                    'Keck/NIRC2.Lp':(14.55, 0.12)}}, # Currie et al. 2014
+                                    'Keck/NIRC2.Lp':(14.55, 0.12), # Currie et al. 2014
+                                    'Paranal/NACO.NB405':(13.82, 0.20)}}, # Currie et al. 2014
 
             'HD 95086 b':{'distance':86.44,
                           'app_mag':{'Gemini/GPI.H':(20.51, 0.25), # De Rosa et al. 2016
@@ -115,11 +114,11 @@ def get_data():
 
             'HD 206893 B':{'distance':40.81,
                            'app_mag':{'Paranal/SPHERE.IRDIS_B_H':(16.79, 0.06), # Milli et al. 2016
-                                      'Paranal/SPHERE.IRDIS_D_K12_1':(15.2, 0.10), # Chauvin et al. 2017
-                                      'Paranal/SPHERE.IRDIS_D_K12_2':(14.88, 0.09), # Chauvin et al. 2017
-                                      'Paranal/NACO.Lp':(13.43, 0.16), # Milli et al. 2016, error is +0.17, -0.15
-                                      'Paranal/NACO.NB405':(12.88, 0.20), # TODO Stolker et al. in prep.
-                                      'Paranal/NACO.Mp':(13.47, 0.31)}}, # TODO Stolker et al. in prep.
+                                      'Paranal/SPHERE.IRDIS_D_K12_1':(15.2, 0.10), # Delorme et al. 2017
+                                      'Paranal/SPHERE.IRDIS_D_K12_2':(14.88, 0.09), # Delorme et al. 2017
+                                      'Paranal/NACO.NB405':(12.79, 0.59), # Stolker et al. in prep.
+                                      'Paranal/NACO.Lp':(14.01, 0.30), # Stolker et al. in prep.
+                                      'Paranal/NACO.Mp':(13.60, 0.54)}}, # Stolker et al. in prep.
 
             'GQ Lup B':{'distance':151.82,
                         'app_mag':{'HST/WFPC2.f606w':(19.19, 0.07), # Marois et al. 2006
@@ -132,7 +131,7 @@ def get_data():
                                    'Subaru/CIAO.Lp':(12.44, 0.22)}}, # Marois et al. 2006
 
             'PZ Tel B':{'distance':47.13,
-                        'app_mag':{'Paranal/SPHERE.ZIMPOL_R_PRIM':(17.84, 0.3), # Maire et al. 2015, error is +0.22, −0.31
+                        'app_mag':{'Paranal/SPHERE.ZIMPOL_R_PRIM':(17.84, 0.31), # Maire et al. 2015
                                    'Paranal/SPHERE.ZIMPOL_I_PRIM':(15.16, 0.12), # Maire et al. 2015
                                    'Paranal/SPHERE.IRDIS_D_H23_2':(11.78, 0.19), # Maire et al. 2015
                                    'Paranal/SPHERE.IRDIS_D_H23_3':(11.65, 0.19), # Maire et al. 2015
@@ -141,10 +140,9 @@ def get_data():
                                    'Paranal/NACO.J':(12.47, 0.20), # Biller et al. 2010
                                    'Paranal/NACO.H':(11.93, 0.14), # Biller et al. 2010
                                    'Paranal/NACO.Ks':(11.53, 0.07), # Biller et al. 2010
-                                   # 'Paranal/NACO.Lp':(11.05, 0.18), # Beust et al. 2015
-                                   'Paranal/NACO.Lp':(10.95, 0.05), # Beust et al. 2015
-                                   'Paranal/NACO.NB405':(10.90, 0.01), # TODO Stolker et al. in prep.
-                                   'Paranal/NACO.Mp':(11.07, 0.02), # TODO Stolker et al. in prep.
+                                   'Paranal/NACO.NB405':(10.94, 0.07), # Stolker et al. in prep.
+                                   'Paranal/NACO.Lp':(11.27, 0.13), # Stolker et al. in prep
+                                   'Paranal/NACO.Mp':(11.08, 0.03), # Stolker et al. in prep.
                                    'Gemini/NICI.ED286':(11.68, 0.14), # Biller et al. 2010
                                    'Gemini/NIRI.H2S1v2-1-G0220':(11.39, 0.14)}}, # Biller et al. 2010
 
@@ -206,6 +204,5 @@ def get_data():
                                       'MKO/NSFCam.Kp':(14.95, 0.05), # Ireland et al. 2011
                                       'MKO/NSFCam.Lp':(13.75, 0.07), # Ireland et al. 2011
                                       'LBT/LMIRCam.M_77K':(13.75, 0.3)}}} # Bailey et al. 2013
-                                      # 'Paranal/NACO.Mp':(), # Stolker et al. in prep.
 
     return data

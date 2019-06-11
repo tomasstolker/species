@@ -124,9 +124,9 @@ def add_irtf(input_path,
                                                        data=spdata,
                                                        dtype='f')
 
-                        dset.attrs['name'] = str(name)
-                        dset.attrs['sptype'] = str(sptype)
-                        dset.attrs['simbad'] = str(simbad_id)
+                        dset.attrs['name'] = str(name).encode()
+                        dset.attrs['sptype'] = str(sptype).encode()
+                        dset.attrs['simbad'] = str(simbad_id).encode()
                         dset.attrs['distance'] = distance
 
     sys.stdout.write('\rAdding IRTF Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')

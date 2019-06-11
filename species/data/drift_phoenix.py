@@ -18,12 +18,15 @@ def add_drift_phoenix(input_path,
     """
     Function for adding the DRIFT-PHOENIX atmospheric models to the database.
 
-    :param input_path:
-    :type input_path: str
-    :param database:
-    :type database: h5py._hl.files.File
+    Parameters
+    ----------
+    input_path : str
+    database : h5py._hl.files.File
 
-    :return: None
+    Returns
+    -------
+    NoneType
+        None
     """
 
     if not os.path.exists(input_path):

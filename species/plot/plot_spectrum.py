@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from species.core import box
+from species.core import box, constants
 from species.read import read_filter
 from species.util import plot_util
 
@@ -34,7 +34,8 @@ def plot_spectrum(boxes,
                   title=None,
                   offset=None,
                   legend='upper left',
-                  figsize=(7., 5.)):
+                  figsize=(7., 5.),
+                  object_type='planet'):
     """
     Parameters
     ----------
@@ -64,10 +65,14 @@ def plot_spectrum(boxes,
         Location of the legend.
     figsize : tuple(float, float)
         Figure size.
+    object_type : str
+        Object type ('planet' or 'star'). With 'planet', the radius and mass are expressed in
+        Jupiter units. With 'star', the radius and mass are expressed in solar units.
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
@@ -250,18 +255,30 @@ def plot_spectrum(boxes,
                 if isinstance(boxitem, box.ModelBox):
                     param = boxitem.parameters
 
-                    par_key, par_unit = plot_util.quantity_unit(list(param.keys()))
+                    par_key, par_unit = plot_util.quantity_unit(param=list(param.keys()),
+                                                                object_type=object_type)
+
                     par_val = list(param.values())
 
                     label = ''
                     for i, item in enumerate(par_key):
 
                         if item == r'$T_\mathregular{eff}$':
-                            value = '{:.1f}'.format(par_val[i])
-                        elif item in (r'$\log\,g$', r'$R$', r'$M$', '[Fe/H]'):
-                            value = '{:.2f}'.format(par_val[i])
+                            value = f'{par_val[i]:.1f}'
+                        elif item in (r'$\log\,g$', '[Fe/H]'):
+                            value = f'{par_val[i]:.2f}'
+                        elif item == r'$R$':
+                            if object_type == 'planet':
+                                value = f'{par_val[i]:.2f}'
+                            elif object_type == 'star':
+                                value = f'{par_val[i]*constants.R_JUP/constants.R_SUN:.2f}'
+                        elif item == r'$M$':
+                            if object_type == 'planet':
+                                value = f'{par_val[i]:.2f}'
+                            elif object_type == 'star':
+                                value = f'{par_val[i]*constants.M_JUP/constants.M_SUN:.2f}'
                         elif item == r'$L$':
-                            value = '{0:.1e}'.format(par_val[i])
+                            value = f'{par_val[i]:.1e}'
                         else:
                             continue
 

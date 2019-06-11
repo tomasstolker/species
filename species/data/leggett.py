@@ -19,12 +19,15 @@ def add_leggett(input_path,
     """
     Function for adding the Database of Ultracool Parallaxes to the database.
 
-    :param input_path:
-    :type input_path: str
-    :param database:
-    :type database: h5py._hl.files.File
+    Parameters
+    ----------
+    input_path : str
+    database : h5py._hl.files.File
 
-    :return: None
+    Returns
+    -------
+    NoneType
+        None
     """
 
     data_file1 = os.path.join(input_path, '2010_phot.xls')

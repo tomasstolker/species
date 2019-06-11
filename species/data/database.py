@@ -12,8 +12,6 @@ import emcee
 import progress.bar
 import numpy as np
 
-from astropy.io import votable
-
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
@@ -176,10 +174,80 @@ class Database:
 
         h5_file.close()
 
+    def add_isochrones(self,
+                       filename,
+                       tag):
+        """
+        Function for adding isochrones data to the database.
+
+        Parameters
+        ----------
+        filename : str
+            Filename with the isochrones data. The data can be downloaded from
+            https://phoenix.ens-lyon.fr/Grids/.
+        tag : str
+            Tag name in the database.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        h5_file = h5py.File(self.database, 'a')
+
+        if 'isochrones' not in h5_file:
+            h5_file.create_group('isochrones')
+
+        if 'isochrones/'+tag in h5_file:
+            del h5_file['isochrones/'+tag]
+
+        # read in all the data, ignoring empty lines or lines with '---'
+        data = []
+        with open(filename) as data_file:
+            for line in data_file:
+                if '---' in line or line == '\n':
+                    continue
+                else:
+                    data.append(list(filter(None, line.rstrip().split(' '))))
+
+        isochrones = []
+
+        for line in data:
+            if '(Gyr)' in line:
+                age = line[-1]
+
+            elif 'lg(g)' in line:
+                header = ['M/Ms', 'Teff(K)'] + line[1:]
+
+            else:
+                line.insert(0, age)
+                isochrones.append(line)
+
+        header = np.asarray(header, dtype=bytes)
+        isochrones = np.asarray(isochrones, dtype=float)
+
+        isochrones[:, 0] *= 1e3 # [Myr]
+        isochrones[:, 1] *= constants.M_SUN/constants.M_JUP # [Mjup]
+
+        sys.stdout.write('Adding isochrones: '+tag+'...')
+        sys.stdout.flush()
+
+        bytes_type = h5py.special_dtype(vlen=bytes)
+
+        h5_file.create_dataset('isochrones/'+tag+'/filters', data=header[7:], dtype=bytes_type)
+        h5_file.create_dataset('isochrones/'+tag+'/magnitudes', data=isochrones, dtype='f')
+
+        h5_file.close()
+
+        sys.stdout.write(' [DONE]\n')
+        sys.stdout.flush()
+
     def add_model(self,
                   model,
                   wavelength=None,
-                  teff=None):
+                  teff=None,
+                  specres=None):
         """
         Parameters
         ----------
@@ -189,6 +257,8 @@ class Database:
             Wavelength (micron) range.
         teff : tuple(float, float)
             Effective temperature (K) range.
+        specres : float
+            Spectral resolution.
 
         Returns
         -------
@@ -205,7 +275,7 @@ class Database:
             drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
 
         elif model[0:10] == 'bt-nextgen':
-            btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff)
+            btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff, specres)
 
         data_util.add_missing(model, h5_file)
 
@@ -700,8 +770,8 @@ class Database:
 
         if spectrum_type == 'model':
             readmodel = read_model.ReadModel(spectrum_name, filter_id)
-        elif spectrum_type == 'calibration':
-            readcalib = read_calibration.ReadCalibration(spectrum_name, None)
+        # elif spectrum_type == 'calibration':
+        #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
 
         mcmc_phot = np.zeros((samples.shape[0], 1))
 

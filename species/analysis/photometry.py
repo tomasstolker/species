@@ -82,7 +82,8 @@ class SyntheticPhotometry:
 
     def spectrum_to_photometry(self,
                                wavelength,
-                               flux):
+                               flux,
+                               threshold=None):
         """
         Parameters
         ----------
@@ -90,6 +91,11 @@ class SyntheticPhotometry:
             Wavelength (micron).
         flux : numpy.ndarray
             Flux density (W m-2 micron-1).
+        threshold : float
+            Transmission threshold (value between 0 and 1). If the minimum transmission value is
+            larger than the threshold, a NaN is returned. This will happen if the input spectrum
+            does not cover the full wavelength range of the filter profile. Not used if set to
+            None.
 
         Returns
         -------
@@ -141,10 +147,11 @@ class SyntheticPhotometry:
                                   'wavelength point. Photometry is set to NaN.', RuntimeWarning)
 
                 else:
-                    if wl_item[-1] < self.wl_range[1]:
+                    if threshold is None and (wl_item[0] > self.wl_range[0] or \
+                        wl_item[-1] < self.wl_range[1]):
                         warnings.warn('Filter profile of '+self.filter_name+' extends beyond the '
-                                      'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). '
-                                      'Photometry is set to NaN.', RuntimeWarning)
+                                      'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). The '
+                                      'magnitude is set to NaN.', RuntimeWarning)
 
                         photometry.append(np.nan)
 
@@ -154,16 +161,26 @@ class SyntheticPhotometry:
 
                         transmission = self.filter_interp(wl_item)
 
-                        indices = np.isnan(transmission)
-                        indices = np.logical_not(indices)
+                        if threshold is not None and (transmission[0] > threshold or \
+                            transmission[-1] > threshold):
 
-                        integrand1 = transmission[indices]*flux_item[indices]
-                        integrand2 = transmission[indices]
+                            warnings.warn(f'Filter profile of {self.filter_name} extends beyond '
+                                          f'the spectrum ({wl_item[0]} - {wl_item[-1]}). The '
+                                          f'magnitude is set to NaN.', RuntimeWarning)
 
-                        integral1 = np.trapz(integrand1, wl_item[indices])
-                        integral2 = np.trapz(integrand2, wl_item[indices])
+                            photometry.append(np.nan)
 
-                        photometry.append(integral1/integral2)
+                        else:
+                            indices = np.isnan(transmission)
+                            indices = np.logical_not(indices)
+
+                            integrand1 = transmission[indices]*flux_item[indices]
+                            integrand2 = transmission[indices]
+
+                            integral1 = np.trapz(integrand1, wl_item[indices])
+                            integral2 = np.trapz(integrand2, wl_item[indices])
+
+                            photometry.append(integral1/integral2)
 
             photometry = np.asarray(photometry)
 
@@ -172,7 +189,8 @@ class SyntheticPhotometry:
     def spectrum_to_magnitude(self,
                               wavelength,
                               flux,
-                              distance=None):
+                              distance=None,
+                              threshold=None):
         """
         Parameters
         ----------
@@ -182,6 +200,11 @@ class SyntheticPhotometry:
             Flux density (W m-2 micron-1).
         distance : float
             Distance (pc). No absolute magnitude is calculated if set to None.
+        threshold : float
+            Transmission threshold (value between 0 and 1). If the minimum transmission value is
+            larger than the threshold, a NaN is returned. This will happen if the input spectrum
+            does not cover the full wavelength range of the filter profile. Not used if set to
+            None.
 
         Returns
         -------
@@ -194,7 +217,7 @@ class SyntheticPhotometry:
         vega_mag = 0.03 # [mag]
 
         zp_flux = self.zero_point()
-        syn_flux = self.spectrum_to_photometry(wavelength, flux)
+        syn_flux = self.spectrum_to_photometry(wavelength, flux, threshold)
 
         app_mag = vega_mag - 2.5*np.log10(syn_flux/zp_flux)
 

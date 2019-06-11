@@ -19,26 +19,29 @@ from species.util import data_util
 def add_btnextgen(input_path,
                   database,
                   wl_bound,
-                  teff_bound):
+                  teff_bound,
+                  specres):
     """
     Function for adding the BT-NextGen atmospheric models to the database.
 
     Parameters
     ----------
     input_path : str
+        Folder where the data is located.
     database : h5py._hl.files.File
+        Database.
     wl_bound : tuple(float, float)
         Wavelength range (micron).
     teff_bound : tuple(float, float)
         Effective temperature range (K).
+    specres : float
+        Spectral resolution.
 
     Returns
     -------
     NoneType
         None
     """
-
-    spec_res = 1e5
 
     if not wl_bound:
         wl_bound = (1e-2, 1e2)
@@ -90,7 +93,7 @@ def add_btnextgen(input_path,
     wavelength = [wl_bound[0]]
 
     while wavelength[-1] <= wl_bound[1]:
-        wavelength.append(wavelength[-1] + wavelength[-1]/spec_res)
+        wavelength.append(wavelength[-1] + wavelength[-1]/specres)
 
     wavelength = np.asarray(wavelength[:-1])
 

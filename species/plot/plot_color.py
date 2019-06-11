@@ -22,10 +22,9 @@ mpl.rcParams['font.family'] = 'serif'
 
 plt.rc('axes', edgecolor='black', linewidth=2)
 
-marker = itertools.cycle(('o', 's', 'p', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
-
 def plot_color_magnitude(colorbox,
                          objects,
+                         isochrones,
                          label_x,
                          label_y,
                          output,
@@ -41,6 +40,8 @@ def plot_color_magnitude(colorbox,
     objects : tuple(tuple(str, str, str, str), )
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude.
+    isochrones : tuple(species.core.box.IsochroneBox, )
+        Tuple with boxes of isochrone data. Not used if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -58,6 +59,8 @@ def plot_color_magnitude(colorbox,
     -------
     None
     """
+
+    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
@@ -120,7 +123,7 @@ def plot_color_magnitude(colorbox,
     if colorbox.object_type != 'temperature':
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-        indices = np.where(sptype != 'None')[0]
+        indices = np.where(sptype != b'None')[0]
 
         sptype = sptype[indices]
         color = color[indices]
@@ -146,6 +149,10 @@ def plot_color_magnitude(colorbox,
 
         scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
                            zorder=5, s=25., alpha=0.6)
+
+    if isochrones is not None:
+        for item in isochrones:
+            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1., color='black')
 
     if colorbox.object_type == 'temperature':
         cb = Colorbar(ax=ax2, mappable=scat, orientation='vertical',
@@ -232,6 +239,8 @@ def plot_color_color(colorbox,
     -------
     None
     """
+
+    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()

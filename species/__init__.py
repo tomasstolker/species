@@ -8,6 +8,8 @@ from species.read.read_calibration import ReadCalibration
 
 from species.read.read_filter import ReadFilter
 
+from species.read.read_isochrone import ReadIsochrone
+
 from species.read.read_model import ReadModel
 
 from species.read.read_planck import get_planck
