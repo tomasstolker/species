@@ -163,9 +163,9 @@ class ReadSpectrum:
 
             for item in sptypes:
                 if indices is None:
-                    indices = np.where(np.chararray.startswith(specbox.sptype, item))[0]
+                    indices = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
                 else:
-                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item))[0]
+                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
                     indices = np.append(indices, ind_tmp)
 
             specbox.wavelength = specbox.wavelength[indices]

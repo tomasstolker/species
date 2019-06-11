@@ -23,14 +23,17 @@ class ReadColorMagnitude:
                  filters_color,
                  filter_mag):
         """
-        :param library: Photometric libraries.
-        :type library: tuple(str, )
-        :param filters_color:
-        :type filters_color: tuple(str, str)
-        :param filter_mag:
-        :type filter_mag: str
+        Parameters
+        ----------
+        library : tuple(str, )
+            Photometric libraries.
+        filters_color : tuple(str, str)
+        filter_mag : str
 
-        :return: None
+        Returns
+        -------
+        NoneType
+            None
         """
 
         self.library = library
@@ -50,11 +53,14 @@ class ReadColorMagnitude:
     def get_color_magnitude(self,
                             object_type):
         """
-        :param object_type:
-        :type object_type: str
+        Parameters
+        ----------
+        object_type : str
 
-        :return: Box with the colors and magnitudes.
-        :rtype: species.core.box.ColorMagBox
+        Returns
+        -------
+        species.core.box.ColorMagBox
+            Box with the colors and magnitudes.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -132,12 +138,17 @@ class ReadColorColor:
                  library,
                  filters):
         """
-        :param library: Photometric libraries.
-        :type library: tuple(str, )
-        :param filters: Filter IDs for the two colors.
-        :type filters: tuple(tuple(str, str), tuple(str, str))
+        Parameters
+        ----------
+        library : tuple(str, )
+            Photometric libraries.
+        filters : tuple(tuple(str, str), tuple(str, str))
+            Filter IDs for the two colors.
 
-        :return: None
+        Returns
+        -------
+        NoneType
+            None
         """
 
         self.library = library
@@ -156,12 +167,15 @@ class ReadColorColor:
     def get_color_color(self,
                         object_type):
         """
-        :param object_type: Object type (currently only 'field' possible). All objects are
-                            selected if set to None.
-        :type object_type: str
+        Parameters
+        ----------
+        object_type : str
+            Object type (currently only 'field' possible). All objects are selected if set to None.
 
-        :return: Box with the colors.
-        :rtype: species.core.box.ColorColorBox
+        Returns
+        -------
+        species.core.box.ColorColorBox
+            Box with the colors.
         """
 
         h5_file = h5py.File(self.database, 'r')
