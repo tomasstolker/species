@@ -39,7 +39,7 @@ def download_filter(filter_id):
             if not line.startswith(b'#'):
                 split = line.split()
 
-                wavelength.append(float(split[0])) # [micron]
+                wavelength.append(float(split[0]))  # [micron]
                 transmission.append(float(split[1]))
 
         wavelength = np.asarray(wavelength)
@@ -61,7 +61,7 @@ def download_filter(filter_id):
             if not line.startswith(b'#'):
                 split = line.split(b' ')
 
-                wavelength.append(float(split[0])*1e-4) # [micron]
+                wavelength.append(float(split[0])*1e-4)  # [micron]
                 transmission.append(float(split[1]))
 
         wavelength = np.asarray(wavelength)

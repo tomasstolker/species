@@ -26,12 +26,17 @@ def add_spex(input_path, database):
     """
     Function for adding the SpeX Prism Spectral Library to the database.
 
-    :param input_path:
-    :type input_path: str
-    :param database:
-    :type database: h5py._hl.files.File
+    Parameters
+    ----------
+    input_path : str
+        Path of the data folder.
+    database : h5py._hl.files.File
+        Database.
 
-    :return: None
+    Returns
+    -------
+    NoneType
+        None
     """
 
     database.create_group('spectra/spex')
@@ -81,7 +86,7 @@ def add_spex(input_path, database):
     transmission.get_filter()
 
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
-    h_zp = 1.133e-9 # [W m-2 micron-1]
+    h_zp = 1.133e-9  # [W m-2 micron-1]
 
     for votable in os.listdir(data_path):
         if votable.endswith('.xml'):
@@ -89,10 +94,10 @@ def add_spex(input_path, database):
 
             table = parse_single_table(xml_file)
 
-            wavelength = table.array['wavelength'] # [Angstrom]
-            flux = table.array['flux'] # Normalized units
+            wavelength = table.array['wavelength']  # [Angstrom]
+            flux = table.array['flux']  # Normalized units
 
-            wavelength = np.array(wavelength*1e-4) # [micron]
+            wavelength = np.array(wavelength*1e-4)  # [micron]
             flux = np.array(flux)
 
             # 2MASS magnitudes
@@ -137,13 +142,13 @@ def add_spex(input_path, database):
             sptype = data_util.update_sptype(np.array([sptype]))[0]
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, None, h_zp)
-            phot = h_twomass.spectrum_to_photometry(wavelength, flux) # Normalized units
+            phot = h_twomass.spectrum_to_photometry(wavelength, flux)  # Normalized units
 
-            flux *= h_flux/phot # [W m-2 micron-1]
+            flux *= h_flux/phot  # [W m-2 micron-1]
 
             spdata = np.vstack((wavelength, flux))
 
-            simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8')) # [pc]
+            simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8'))  # [pc]
 
             dset = database.create_dataset('spectra/spex/'+name, data=spdata)
 
@@ -153,7 +158,7 @@ def add_spex(input_path, database):
             dset.attrs['2MASS/2MASS.J'] = j_mag
             dset.attrs['2MASS/2MASS.H'] = h_mag
             dset.attrs['2MASS/2MASS.Ks'] = ks_mag
-            dset.attrs['distance'] = distance # [pc]
+            dset.attrs['distance'] = distance  # [pc]
 
     sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
     sys.stdout.flush()

@@ -131,12 +131,12 @@ def add_btnextgen(input_path,
                 data_wavel = data[:, 0]*1e-4
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_flux = 10.**(data[:, 1]-8.) # [erg s-1 cm-2 Angstrom-1]
+                data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
 
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                indices = np.where((data_wavel >= wl_bound[0]) & \
+                indices = np.where((data_wavel >= wl_bound[0]) &
                                    (data_wavel <= wl_bound[1]))[0]
 
                 data_wavel = data_wavel[indices]
@@ -144,7 +144,7 @@ def add_btnextgen(input_path,
 
                 flux_interp = interp1d(data_wavel,
                                        data_flux,
-                                       kind='cubic',
+                                       kind='linear',
                                        bounds_error=False,
                                        fill_value=float('nan'))
 

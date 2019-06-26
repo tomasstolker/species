@@ -392,9 +392,9 @@ class ReadModel:
 
         if self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = h5_file['models/'+self.model+'/feh']
-            bounds = {'teff':(teff[0], teff[-1]),
-                      'logg':(logg[0], logg[-1]),
-                      'feh':(feh[0], feh[-1])}
+            bounds = {'teff': (teff[0], teff[-1]),
+                      'logg': (logg[0], logg[-1]),
+                      'feh': (feh[0], feh[-1])}
 
         h5_file.close()
 

@@ -24,10 +24,11 @@ plt.rc('axes', edgecolor='black', linewidth=2)
 
 def plot_color_magnitude(colorbox,
                          objects,
-                         isochrones,
                          label_x,
                          label_y,
                          output,
+                         isochrones=None,
+                         models=None,
                          xlim=None,
                          ylim=None,
                          offset=None,
@@ -40,14 +41,16 @@ def plot_color_magnitude(colorbox,
     objects : tuple(tuple(str, str, str, str), )
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude.
-    isochrones : tuple(species.core.box.IsochroneBox, )
-        Tuple with boxes of isochrone data. Not used if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
         Label for the y-axis.
     output : str
         Output filename.
+    isochrones : tuple(species.core.box.IsochroneBox, ), None
+        Tuple with boxes of isochrone data. Not used if set to None.
+    models : species.core.box.ColorMagBox, None
+
     xlim : tuple(float, float)
         Limits for the x-axis.
     ylim : tuple(float, float)
@@ -149,6 +152,11 @@ def plot_color_magnitude(colorbox,
 
         scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm,
                            zorder=5, s=25., alpha=0.6)
+
+    if models is not None:
+        ax1.plot(models.color, models.magnitude)
+        # scat = ax1.scatter(m, magnitude, c=sptype, cmap=cmap,
+        #                    zorder=5, s=25., alpha=0.6)
 
     if isochrones is not None:
         for item in isochrones:

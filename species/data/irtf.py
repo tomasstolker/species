@@ -33,7 +33,8 @@ def add_irtf(input_path,
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     datadir = os.path.join(input_path, 'irtf')
@@ -41,35 +42,35 @@ def add_irtf(input_path,
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
-    data_file = {'F':os.path.join(input_path, 'irtf/F_fits_091201.tar'),
-                 'G':os.path.join(input_path, 'irtf/G_fits_091201.tar'),
-                 'K':os.path.join(input_path, 'irtf/K_fits_091201.tar'),
-                 'M':os.path.join(input_path, 'irtf/M_fits_091201.tar'),
-                 'L':os.path.join(input_path, 'irtf/L_fits_091201.tar'),
-                 'T':os.path.join(input_path, 'irtf/T_fits_091201.tar')}
+    data_file = {'F': os.path.join(input_path, 'irtf/F_fits_091201.tar'),
+                 'G': os.path.join(input_path, 'irtf/G_fits_091201.tar'),
+                 'K': os.path.join(input_path, 'irtf/K_fits_091201.tar'),
+                 'M': os.path.join(input_path, 'irtf/M_fits_091201.tar'),
+                 'L': os.path.join(input_path, 'irtf/L_fits_091201.tar'),
+                 'T': os.path.join(input_path, 'irtf/T_fits_091201.tar')}
 
-    data_folder = {'F':os.path.join(input_path, 'irtf/F_fits_091201'),
-                   'G':os.path.join(input_path, 'irtf/G_fits_091201'),
-                   'K':os.path.join(input_path, 'irtf/K_fits_091201'),
-                   'M':os.path.join(input_path, 'irtf/M_fits_091201'),
-                   'L':os.path.join(input_path, 'irtf/L_fits_091201'),
-                   'T':os.path.join(input_path, 'irtf/T_fits_091201')}
+    data_folder = {'F': os.path.join(input_path, 'irtf/F_fits_091201'),
+                   'G': os.path.join(input_path, 'irtf/G_fits_091201'),
+                   'K': os.path.join(input_path, 'irtf/K_fits_091201'),
+                   'M': os.path.join(input_path, 'irtf/M_fits_091201'),
+                   'L': os.path.join(input_path, 'irtf/L_fits_091201'),
+                   'T': os.path.join(input_path, 'irtf/T_fits_091201')}
 
-    data_type = {'F':'F stars (4.4 MB)',
-                 'G':'G stars (5.6 MB)',
-                 'K':'K stars (5.5 MB)',
-                 'M':'M stars (7.5 MB)',
-                 'L':'L dwarfs (850 kB)',
-                 'T':'T dwarfs (100 kB)'}
+    data_type = {'F': 'F stars (4.4 MB)',
+                 'G': 'G stars (5.6 MB)',
+                 'K': 'K stars (5.5 MB)',
+                 'M': 'M stars (7.5 MB)',
+                 'L': 'L dwarfs (850 kB)',
+                 'T': 'T dwarfs (100 kB)'}
 
     url_root = 'http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/Data/'
 
-    url = {'F':url_root+'F_fits_091201.tar',
-           'G':url_root+'G_fits_091201.tar',
-           'K':url_root+'K_fits_091201.tar',
-           'M':url_root+'M_fits_091201.tar',
-           'L':url_root+'L_fits_091201.tar',
-           'T':url_root+'T_fits_091201.tar'}
+    url = {'F': url_root+'F_fits_091201.tar',
+           'G': url_root+'G_fits_091201.tar',
+           'K': url_root+'K_fits_091201.tar',
+           'M': url_root+'M_fits_091201.tar',
+           'L': url_root+'L_fits_091201.tar',
+           'T': url_root+'T_fits_091201.tar'}
 
     for item in sptypes:
         if not os.path.isfile(data_file[item]):
@@ -116,7 +117,7 @@ def add_irtf(input_path,
                         sys.stdout.write('\rAdding IRTF Spectral Library... '+'{:<40}'.format(name))
                         sys.stdout.flush()
 
-                        simbad_id, distance = queries.get_distance(name) # [pc]
+                        simbad_id, distance = queries.get_distance(name)  # [pc]
 
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 

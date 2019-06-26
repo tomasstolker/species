@@ -67,7 +67,8 @@ class ReadIsochrone:
             None
         """
 
-        with  h5py.File(self.database, 'r') as h5_file:
+        with h5py.File(self.database, 'r') as h5_file:
+            print(h5_file['isochrones/'+self.tag])
             filters = list(h5_file['isochrones/'+self.tag+'/filters'])
             isochrones = np.asarray(h5_file['isochrones/'+self.tag+'/magnitudes'])
 
@@ -79,8 +80,8 @@ class ReadIsochrone:
         index_color_2 = 8 + filters.index(self.filters_color[1])
         index_mag = 8 + filters.index(self.filter_mag)
 
-        masses = np.unique(isochrones[:, 1]) # [Mjup]
-        ages = np.repeat(age, masses.shape[0]) # [Myr]
+        masses = np.unique(isochrones[:, 1])  # [Mjup]
+        ages = np.repeat(age, masses.shape[0])  # [Myr]
 
         mag_color_1 = griddata(points=isochrones[:, 0:2],
                                values=isochrones[:, index_color_1],
