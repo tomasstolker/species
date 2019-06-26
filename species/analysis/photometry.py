@@ -147,8 +147,9 @@ class SyntheticPhotometry:
                                   'wavelength point. Photometry is set to NaN.', RuntimeWarning)
 
                 else:
-                    if threshold is None and (wl_item[0] > self.wl_range[0] or \
-                        wl_item[-1] < self.wl_range[1]):
+                    if threshold is None and (wl_item[0] > self.wl_range[0] or
+                                              wl_item[-1] < self.wl_range[1]):
+
                         warnings.warn('Filter profile of '+self.filter_name+' extends beyond the '
                                       'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). The '
                                       'magnitude is set to NaN.', RuntimeWarning)
@@ -161,8 +162,8 @@ class SyntheticPhotometry:
 
                         transmission = self.filter_interp(wl_item)
 
-                        if threshold is not None and (transmission[0] > threshold or \
-                            transmission[-1] > threshold):
+                        if threshold is not None and (transmission[0] > threshold or
+                                                      transmission[-1] > threshold):
 
                             warnings.warn(f'Filter profile of {self.filter_name} extends beyond '
                                           f'the spectrum ({wl_item[0]} - {wl_item[-1]}). The '
@@ -214,7 +215,7 @@ class SyntheticPhotometry:
             Absolute magnitude (mag).
         """
 
-        vega_mag = 0.03 # [mag]
+        vega_mag = 0.03  # [mag]
 
         zp_flux = self.zero_point()
         syn_flux = self.spectrum_to_photometry(wavelength, flux, threshold)
@@ -250,7 +251,7 @@ class SyntheticPhotometry:
             Error (W m-2 micron-1).
         """
 
-        vega_mag = 0.03 # [mag]
+        vega_mag = 0.03  # [mag]
 
         if zp_flux is None:
             zp_flux = self.zero_point()
@@ -286,7 +287,7 @@ class SyntheticPhotometry:
             Absolute magnitude (mag).
         """
 
-        vega_mag = 0.03 # [mag]
+        vega_mag = 0.03  # [mag]
 
         zp_flux = self.zero_point()
 

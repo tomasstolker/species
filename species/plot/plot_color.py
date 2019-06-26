@@ -22,17 +22,18 @@ mpl.rcParams['font.family'] = 'serif'
 
 plt.rc('axes', edgecolor='black', linewidth=2)
 
+
 def plot_color_magnitude(colorbox,
                          objects,
-                         label_x,
-                         label_y,
-                         output,
                          isochrones=None,
                          models=None,
+                         label_x='color [mag]',
+                         label_y='M [mag]',
                          xlim=None,
                          ylim=None,
                          offset=None,
-                         legend='upper left'):
+                         legend='upper left',
+                         output='color-magnitude.pdf'):
     """
     Parameters
     ----------
@@ -41,29 +42,30 @@ def plot_color_magnitude(colorbox,
     objects : tuple(tuple(str, str, str, str), )
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude.
-    label_x : str
-        Label for the x-axis.
-    label_y : str
-        Label for the y-axis.
-    output : str
-        Output filename.
     isochrones : tuple(species.core.box.IsochroneBox, ), None
         Tuple with boxes of isochrone data. Not used if set to None.
     models : species.core.box.ColorMagBox, None
 
+    label_x : str
+        Label for the x-axis.
+    label_y : str
+        Label for the y-axis.
     xlim : tuple(float, float)
         Limits for the x-axis.
     ylim : tuple(float, float)
         Limits for the y-axis.
     legend : str
         Legend position.
+    output : str
+        Output filename.
 
     Returns
     -------
     None
     """
 
-    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
+    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2',
+                              '3', '4'))
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
@@ -154,7 +156,7 @@ def plot_color_magnitude(colorbox,
                            zorder=5, s=25., alpha=0.6)
 
     if models is not None:
-        ax1.plot(models.color, models.magnitude)
+        ax1.plot(models.color, models.magnitude, 'o', lw=0.)
         # scat = ax1.scatter(m, magnitude, c=sptype, cmap=cmap,
         #                    zorder=5, s=25., alpha=0.6)
 
@@ -202,7 +204,7 @@ def plot_color_magnitude(colorbox,
 
     if handles:
         handles = [h[0] for h in handles]
-        ax1.legend(handles, labels, loc=legend, prop={'size':9}, frameon=False, numpoints=1)
+        ax1.legend(handles, labels, loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()
@@ -248,7 +250,8 @@ def plot_color_color(colorbox,
     None
     """
 
-    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2', '3', '4'))
+    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*', 'd', 'x', '+', '1', '2',
+                              '3', '4'))
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()
@@ -349,7 +352,7 @@ def plot_color_color(colorbox,
 
     if handles:
         handles = [h[0] for h in handles]
-        ax1.legend(handles, labels, loc=legend, prop={'size':9}, frameon=False, numpoints=1)
+        ax1.legend(handles, labels, loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()

@@ -16,6 +16,7 @@ def open_box(box):
         sys.stdout.write(str(item)+' = '+str(box.__dict__[item])+'\n')
         sys.stdout.flush()
 
+
 def create_box(boxtype,
                **kwargs):
     """
