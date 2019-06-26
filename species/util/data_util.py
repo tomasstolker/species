@@ -84,39 +84,51 @@ def sort_data(teff,
     ----------
     teff : numpy.ndarray
     logg : numpy.ndarray
-    feh : numpy.ndarray
+    feh : numpy.ndarray, None
     wavelength : numpy.ndarray
     flux : numpy.ndarray
 
     Returns
     -------
-    numpy.ndarray
-    numpy.ndarray
-    numpy.ndarray
-    numpy.ndarray
-    numpy.ndarray
+    tuple(numpy.ndarray, )
     """
 
     teff_unique = np.unique(teff)
     logg_unique = np.unique(logg)
-    feh_unique = np.unique(feh)
 
-    spectrum = np.zeros((teff_unique.shape[0],
-                         logg_unique.shape[0],
-                         feh_unique.shape[0],
-                         wavelength.shape[0]))
+    if feh is None:
+        spectrum = np.zeros((teff_unique.shape[0],
+                             logg_unique.shape[0],
+                             wavelength.shape[0]))
+
+    else:
+        feh_unique = np.unique(feh)
+
+        spectrum = np.zeros((teff_unique.shape[0],
+                             logg_unique.shape[0],
+                             feh_unique.shape[0],
+                             wavelength.shape[0]))
 
     for i in range(teff.shape[0]):
         index_teff = np.argwhere(teff_unique == teff[i])[0]
         index_logg = np.argwhere(logg_unique == logg[i])[0]
-        index_feh = np.argwhere(feh_unique == feh[i])[0]
 
-        spectrum[index_teff, index_logg, index_feh, :] = flux[i]
+        if feh is None:
+            spectrum[index_teff, index_logg, :] = flux[i]
+        else:
+            index_feh = np.argwhere(feh_unique == feh[i])[0]
+            spectrum[index_teff, index_logg, index_feh, :] = flux[i]
 
-    return (teff_unique, logg_unique, feh_unique, wavelength, spectrum)
+    if feh is None:
+        sorted_data = (teff_unique, logg_unique, wavelength, spectrum)
+    else:
+        sorted_data = (teff_unique, logg_unique, feh_unique, wavelength, spectrum)
+
+    return sorted_data
 
 
 def write_data(model,
+               parameters,
                database,
                data_sorted):
     """
@@ -124,9 +136,11 @@ def write_data(model,
     ----------
     model : str
         Atmosphere model.
+    parameters : tuple(str, )
+        Model parameters.
     database: h5py._hl.files.File
         Database.
-    data_sorted :
+    data_sorted : tuple(numpy.ndarray, )
 
     Returns
     -------
@@ -138,39 +152,34 @@ def write_data(model,
 
     dset = database.create_group('models/'+model)
 
-    dset.attrs['nparam'] = int(3)
-    dset.attrs['parameter0'] = str('teff')
-    dset.attrs['parameter1'] = str('logg')
-    dset.attrs['parameter2'] = str('feh')
+    dset.attrs['nparam'] = len(parameters)
 
-    database.create_dataset('models/'+model+'/teff',
-                            data=data_sorted[0],
-                            dtype='f')
+    for i, item in enumerate(parameters):
+        dset.attrs['parameter'+str(i)] = item
 
-    database.create_dataset('models/'+model+'/logg',
-                            data=data_sorted[1],
-                            dtype='f')
-
-    database.create_dataset('models/'+model+'/feh',
-                            data=data_sorted[2],
-                            dtype='f')
+        database.create_dataset('models/'+model+'/'+item,
+                                data=data_sorted[i],
+                                dtype='f')
 
     database.create_dataset('models/'+model+'/wavelength',
-                            data=data_sorted[3],
+                            data=data_sorted[i+1],
                             dtype='f')
 
     database.create_dataset('models/'+model+'/flux',
-                            data=data_sorted[4],
+                            data=data_sorted[i+2],
                             dtype='f')
 
 
 def add_missing(model,
+                parameters,
                 database):
     """
     Parameters
     ----------
     model : str
         Atmosphere model.
+    parameters : tuple(str, )
+        Model parameters.
     database : h5py._hl.files.File
         Database.
 
@@ -179,22 +188,35 @@ def add_missing(model,
     None
     """
 
-    teff = np.asarray(database['models/'+model+'/teff'])
-    logg = np.asarray(database['models/'+model+'/logg'])
-    feh = np.asarray(database['models/'+model+'/feh'])
+    grid_shape = []
+    for item in parameters:
+        grid_shape.append(database['models/'+model+'/'+item].shape[0])
+
     flux = np.asarray(database['models/'+model+'/flux'])
 
-    for i in range(teff.shape[0]):
-        for j in range(logg.shape[0]):
-            for k in range(feh.shape[0]):
-                if np.count_nonzero(flux[i, j, k]) == 0:
+    for i in range(grid_shape[0]):
+        for j in range(grid_shape[1]):
+
+            if len(parameters) == 2:
+                if np.count_nonzero(flux[i, j]) == 0:
                     try:
                         scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                        flux[i, j, k] = scaling*flux[i+1, j, k] + (1.-scaling)*flux[i-1, j, k]
+                        flux[i, j] = scaling*flux[i+1, j] + (1.-scaling)*flux[i-1, j]
 
                     except IndexError:
-                        flux[i, j, k] = np.nan
+                        flux[i, j] = np.nan
                         warnings.warn('Interpolation not possible, using NaN instead.')
+
+            elif len(parameters) == 3:
+                for j in range(grid_shape[1]):
+                    if np.count_nonzero(flux[i, j, k]) == 0:
+                        try:
+                            scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
+                            flux[i, j, k] = scaling*flux[i+1, j, k] + (1.-scaling)*flux[i-1, j, k]
+
+                        except IndexError:
+                            flux[i, j, k] = np.nan
+                            warnings.warn('Interpolation not possible, using NaN instead.')
 
     del database['models/'+model+'/flux']
 

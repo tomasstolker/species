@@ -156,7 +156,9 @@ def add_btnextgen(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-nextgen', database, data_sorted)
+    data_util.write_data('bt-nextgen', ('teff', 'logg', 'feh'), database, data_sorted)
 
-    sys.stdout.write('\rAdding BT-NextGen model spectra... [DONE]                              \n')
+    sys.stdout.write('\rAdding BT-NextGen model spectra... [DONE]'
+                     '                              \n')
+
     sys.stdout.flush()

@@ -319,10 +319,10 @@ def plot_spectrum(boxes,
 
         elif isinstance(boxitem, box.PhotometryBox):
             if colors:
-                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
+                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6,
                          color=colors[j], label=boxitem.name, zorder=3)
             else:
-                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6, \
+                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6,
                          label=boxitem.name, zorder=3)
 
         elif isinstance(boxitem, box.ObjectBox):
@@ -407,7 +407,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc=legend, prop={'size':9}, frameon=False)
+        ax1.legend(loc=legend, prop={'size': 9}, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()

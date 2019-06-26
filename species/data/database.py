@@ -273,14 +273,15 @@ class Database:
 
         if model[0:13] == 'drift-phoenix':
             drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
+            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
 
         elif model[0:8] == 'bt-settl':
             btsettl.add_btsettl(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         elif model[0:10] == 'bt-nextgen':
             btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff, specres)
-
-        data_util.add_missing(model, h5_file)
+            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
 
         h5_file.close()
 

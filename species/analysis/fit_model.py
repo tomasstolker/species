@@ -342,7 +342,7 @@ class FitModel:
         global MIN_CHISQ
         global MIN_PARAM
 
-        sigma = {'teff':5., 'logg':0.01, 'feh':0.01, 'radius':0.01}
+        sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'radius': 0.01}
 
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()

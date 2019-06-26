@@ -5,6 +5,7 @@ Module for BT-Settl atmospheric models.
 import os
 import sys
 import lzma
+import tarfile
 
 from urllib.request import urlretrieve
 
@@ -79,7 +80,6 @@ def add_btsettl(input_path,
 
     teff = []
     logg = []
-    feh = []
     flux = []
 
     wavelength = [wl_bound[0]]
@@ -101,7 +101,6 @@ def add_btsettl(input_path,
                 if teff_bound[0] <= teff_val <= teff_bound[1]:
                     teff.append(teff_val)
                     logg.append(float(filename[9:12]))
-                    feh.append(0.)
 
                 else:
                     continue
@@ -138,11 +137,11 @@ def add_btsettl(input_path,
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
-                                      np.asarray(feh),
+                                      None,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-settl', database, data_sorted)
+    data_util.write_data('bt-settl', ('teff', 'logg'), database, data_sorted)
 
     sys.stdout.write('\rAdding BT-Settl model spectra... [DONE]'
                      '                                  \n')

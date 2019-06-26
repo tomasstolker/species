@@ -72,6 +72,7 @@ def apparent_to_absolute(app_mag,
 
     return app_mag - 5.*np.log10(distance) + 5.
 
+
 def get_residuals(datatype,
                   spectrum,
                   parameters,

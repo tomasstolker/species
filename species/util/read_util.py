@@ -25,13 +25,13 @@ def get_mass(model_par):
         Mass (Mjup).
     """
 
-    logg = 1e-2 * 10.**model_par['logg'] # [m s-1]
+    logg = 1e-2 * 10.**model_par['logg']  # [m s-1]
 
-    radius = model_par['radius'] # [Rjup]
-    radius *= constants.R_JUP # [m]
+    radius = model_par['radius']  # [Rjup]
+    radius *= constants.R_JUP  # [m]
 
-    mass = logg*radius**2/constants.GRAVITY # [kg]
-    mass /= constants.M_JUP # [Mjup]
+    mass = logg*radius**2/constants.GRAVITY  # [kg]
+    mass /= constants.M_JUP  # [Mjup]
 
     return mass
 
@@ -59,11 +59,11 @@ def add_luminosity(modelbox):
     flux = simps(fullspec.flux, fullspec.wavelength)
 
     if 'distance' in modelbox.parameters:
-        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux # [W]
+        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # [W]
     else:
-        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux # [W]
+        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # [W]
 
-    modelbox.parameters['luminosity'] = luminosity/constants.L_SUN # [Lsun]
+    modelbox.parameters['luminosity'] = luminosity/constants.L_SUN  # [Lsun]
 
     return modelbox
 
@@ -99,18 +99,18 @@ def smooth_spectrum(wavelength,
         kernel = [math.exp(-float(x)**2/(2.*sigma**2))/(sigma*math.sqrt(2.*math.pi)) for x in pos]
         return np.asarray(kernel/sum(kernel))
 
-    if size%2 == 0:
+    if size % 2 == 0:
         raise ValueError('The kernel size should be an odd number.')
 
-    spacing = np.mean(np.diff(wavelength)) # [micron]
-    flux_smooth = np.zeros(flux.shape) # [W m-2 micron-1]
+    spacing = np.mean(np.diff(wavelength))  # [micron]
+    flux_smooth = np.zeros(flux.shape)  # [W m-2 micron-1]
 
     for i, item in enumerate(wavelength):
-        fwhm = item/specres # [micron]
-        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.))) # [micron]
+        fwhm = item/specres  # [micron]
+        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # [micron]
 
-        size = int(5.*sigma/spacing) # Kernel size 5 times the FWHM
-        if size%2 == 0:
+        size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
+        if size % 2 == 0:
             size += 1
 
         gaussian = _gaussian(size, sigma/spacing)

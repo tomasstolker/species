@@ -144,6 +144,10 @@ class ReadModel:
             points = (teff, logg, feh)
             flux = flux[:, :, :, self.wl_index]
 
+        elif self.model == 'bt-settl':
+            points = (teff, logg)
+            flux = flux[:, :, self.wl_index]
+
         elif self.model == 'petitcode_warm_cloudy':
             feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
             fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
@@ -204,6 +208,10 @@ class ReadModel:
             parameters = [model_par['teff'],
                           model_par['logg'],
                           model_par['feh']]
+
+        elif self.model == 'bt-settl':
+            parameters = [model_par['teff'],
+                          model_par['logg']]
 
         elif self.model == 'petitcode_warm_cloudy':
             parameters = [model_par['teff'],

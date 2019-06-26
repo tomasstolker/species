@@ -68,7 +68,6 @@ class ReadIsochrone:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            print(h5_file['isochrones/'+self.tag])
             filters = list(h5_file['isochrones/'+self.tag+'/filters'])
             isochrones = np.asarray(h5_file['isochrones/'+self.tag+'/magnitudes'])
 

@@ -67,8 +67,8 @@ class SpeciesInit:
             config = configparser.ConfigParser()
 
             config['species'] = {'database': database_file,
-                                 'config':config_file,
-                                 'input':input_path}
+                                 'config': config_file,
+                                 'input': input_path}
 
             with open(config_file, 'w') as config_ini:
                 config.write(config_ini)
