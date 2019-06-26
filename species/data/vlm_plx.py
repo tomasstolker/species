@@ -56,8 +56,8 @@ def add_vlm_plx(input_path,
     hdulist = fits.open(data_file)
     photdata = hdulist[1].data
 
-    plx = photdata['PLX'] # [mas]
-    distance = 1./(plx*1e-3) # [pc]
+    plx = photdata['PLX']  # [mas]
+    distance = 1./(plx*1e-3)  # [pc]
 
     name = photdata['NAME']
     name = np.core.defchararray.strip(name)

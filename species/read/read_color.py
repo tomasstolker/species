@@ -76,7 +76,7 @@ class ReadColorMagnitude:
                 h5_file = h5py.File(self.database, 'r')
 
             sptype_tmp = np.asarray(h5_file['photometry/'+item+'/sptype'])
-            distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance']) # [pc]
+            distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance'])  # [pc]
             flag_tmp = np.asarray(h5_file['photometry/'+item+'/flag'])
 
             if object_type == 'field':
@@ -94,7 +94,7 @@ class ReadColorMagnitude:
                 mag2 = np.asarray(h5_file['photometry/'+item+'/'+self.filters_color[1]])
 
             else:
-                distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance']) # [pc]
+                distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance'])  # [pc]
                 distance = np.concatenate((distance, distance_tmp), axis=0)
 
                 sptype_tmp = np.asarray(h5_file['photometry/'+item+'/sptype'])
@@ -191,7 +191,7 @@ class ReadColorColor:
                 h5_file = h5py.File(self.database, 'r')
 
             sptype_tmp = np.asarray(h5_file['photometry/'+item+'/sptype'])
-            distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance']) # [pc]
+            distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance'])  # [pc]
             flag_tmp = np.asarray(h5_file['photometry/'+item+'/flag'])
 
             if object_type == 'field':
@@ -211,7 +211,7 @@ class ReadColorColor:
                 mag4 = np.asarray(h5_file['photometry/'+item+'/'+self.filters[1][1]])
 
             else:
-                distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance']) # [pc]
+                distance_tmp = np.asarray(h5_file['photometry/'+item+'/distance'])  # [pc]
                 distance = np.concatenate((distance, distance_tmp), axis=0)
 
                 sptype_tmp = np.asarray(h5_file['photometry/'+item+'/sptype'])

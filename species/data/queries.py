@@ -41,6 +41,7 @@ class NoStdStreams:
         sys.stderr = self.old_stderr
         self.devnull.close()
 
+
 with NoStdStreams():
     from astroquery.gaia import Gaia
 
@@ -49,11 +50,14 @@ def get_simbad(name):
     """
     Function for getting the Simbad identifier of an object.
 
-    :param name:
-    :type name: numpy.ndarray
+    Parameters
+    ----------
+    name : numpy.ndarray
 
-    :return: Simbad name.
-    :rtype: numpy.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Simbad name.
     """
 
     simbad_id = []
@@ -74,13 +78,20 @@ def get_simbad(name):
 
     return np.asarray(simbad_id, dtype=np.str_)
 
+
 def get_distance(target):
     """
-    :param target: Target name.
-    :type target: str
+    Parameters
+    ----------
+    target : str
+        Target name.
 
-    :return: SIMBAD name and distance (pc).
-    :rtype: str, float
+    Returns
+    -------
+    str
+        SIMBAD name.
+    float
+        Distance (pc).
     """
 
     # Liu et al. (2016)
@@ -148,13 +159,13 @@ def get_distance(target):
 
             if result.keys():
                 try:
-                    parallax = result[0]['plx'][0] # [mas]
+                    parallax = result[0]['plx'][0]  # [mas]
                 except KeyError:
                     pass
 
                 if ma.is_masked(parallax):
                     try:
-                        parallax = result[0]['Plx'][0] # [mas]
+                        parallax = result[0]['Plx'][0]  # [mas]
                     except KeyError:
                         pass
 
@@ -174,11 +185,11 @@ def get_distance(target):
             result = Gaia.query_object(coordinate=coord, width=1.*u.arcsec, height=1.*u.arcsec)
 
             if result:
-                parallax = result['parallax'][0] # [mas]
+                parallax = result['parallax'][0]  # [mas]
 
     if ma.is_masked(parallax) or parallax < 0.:
         distance = np.nan
     else:
-        distance = 1./(parallax*1e-3) # [pc]
+        distance = 1./(parallax*1e-3)  # [pc]
 
     return simbad_id, distance

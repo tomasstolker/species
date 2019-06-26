@@ -15,6 +15,7 @@ setup(
     version='0.0.6',
     description='Toolkit for analyzing spectral and photometric data of planetary and substellar atmospheres',
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     author='Tomas Stolker',
     author_email='tomas.stolker@phys.ethz.ch',
     url='https://github.com/tomasstolker/species',

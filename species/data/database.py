@@ -15,7 +15,7 @@ import numpy as np
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, mamajek
+                         companions, filters, mamajek, btsettl
 from species.read import read_model, read_calibration
 from species.util import data_util
 
@@ -227,8 +227,8 @@ class Database:
         header = np.asarray(header, dtype=bytes)
         isochrones = np.asarray(isochrones, dtype=float)
 
-        isochrones[:, 0] *= 1e3 # [Myr]
-        isochrones[:, 1] *= constants.M_SUN/constants.M_JUP # [Mjup]
+        isochrones[:, 0] *= 1e3  # [Myr]
+        isochrones[:, 1] *= constants.M_SUN/constants.M_JUP  # [Mjup]
 
         sys.stdout.write('Adding isochrones: '+tag+'...')
         sys.stdout.flush()
@@ -273,6 +273,9 @@ class Database:
 
         if model[0:13] == 'drift-phoenix':
             drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
+
+        elif model[0:8] == 'bt-settl':
+            btsettl.add_btsettl(self.input_path, h5_file, wavelength, teff, specres)
 
         elif model[0:10] == 'bt-nextgen':
             btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff, specres)
@@ -324,7 +327,7 @@ class Database:
 
             h5_file.create_dataset('objects/'+object_name+'/distance',
                                    data=distance,
-                                   dtype='f') # [pc]
+                                   dtype='f')  # [pc]
 
         if app_mag:
             flux = {}
@@ -421,7 +424,7 @@ class Database:
             Tag name in the database.
         units : dict, None
             Dictionary with the wavelength and flux units. Default (micron and W m-2 micron-1) is
-            used if set to None
+            used if set to None.
         scaling : tuple(float, float)
             Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux). Not used if
             set to None.
@@ -432,7 +435,7 @@ class Database:
             None
         """
 
-        if not scaling:
+        if scaling is None:
             scaling = (1., 1.)
 
         h5_file = h5py.File(self.database, 'a')
@@ -446,25 +449,29 @@ class Database:
         data = np.loadtxt(filename)
 
         if units is None:
-            wavelength = scaling[0]*data[:, 0] # [micron]
-            flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+            wavelength = scaling[0]*data[:, 0]  # [micron]
+            flux = scaling[1]*data[:, 1]  # [W m-2 micron-1]
 
         else:
             if units['wavelength'] == 'micron':
-                wavelength = scaling[0]*data[:, 0] # [micron]
+                wavelength = scaling[0]*data[:, 0]  # [micron]
 
             if units['flux'] == 'w m-2 micron-1':
-                flux = scaling[1]*data[:, 1] # [W m-2 micron-1]
+                flux = scaling[1]*data[:, 1]  # [W m-2 micron-1]
             elif units['flux'] == 'w m-2':
                 if units['wavelength'] == 'micron':
-                    flux = scaling[1]*data[:, 1]/wavelength # [W m-2 micron-1]
+                    flux = scaling[1]*data[:, 1]/wavelength  # [W m-2 micron-1]
 
         if data.shape[1] == 3:
-            if units['flux'] == 'w m-2 micron-1':
-                error = scaling[1]*data[:, 2] # [W m-2 micron-1]
-            elif units['flux'] == 'w m-2':
-                if units['wavelength'] == 'micron':
-                    error = scaling[1]*data[:, 2]/wavelength # [W m-2 micron-1]
+            if units is None:
+                error = scaling[1]*data[:, 2]  # [W m-2 micron-1]
+
+            else:
+                if units['flux'] == 'w m-2 micron-1':
+                    error = scaling[1]*data[:, 2]  # [W m-2 micron-1]
+                elif units['flux'] == 'w m-2':
+                    if units['wavelength'] == 'micron':
+                        error = scaling[1]*data[:, 2]/wavelength  # [W m-2 micron-1]
 
         else:
             error = np.repeat(0., wavelength.size)

@@ -20,12 +20,17 @@ def add_mamajek(input_path,
     Function for adding "A Modern Mean Dwarf Stellar Color and Effective Temperature Sequence".
     http://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt
 
-    :param input_path:
-    :type input_path: str
-    :param database:
-    :type database: h5py._hl.files.File
+    Parameters
+    ----------
+    input_path : str
+        Path of the data folder.
+    database : h5py._hl.files.File
+        Database.
 
-    :return: None
+    Returns
+    -------
+    NoneType
+        None
     """
 
     data_file = os.path.join(input_path, 'EEM_dwarf_UBVIJHK_colors_Teff.txt')
@@ -48,15 +53,19 @@ def add_mamajek(input_path,
 
     database.create_group(group)
 
-    dataframe = pd.read_csv(data_file, delimiter=r"\s+", nrows=124, header=22, \
+    dataframe = pd.read_csv(data_file,
+                            delimiter=r"\s+",
+                            nrows=124,
+                            header=22,
                             na_values=['...', '....', '.....', ',..', '19.52:'],
-                            dtype={'SpT':str, 'Teff':float, 'logT':float, 'BCv':float, \
-                            'Mv':float, 'logL':float, 'B-V':float, 'Bt-Vt':float, 'U-B':float, \
-                            'V-Rc':float, 'V-Ic':float, 'V-Ks':float, 'J-H':float, 'H-Ks':float, \
-                            'Ks-W1':float, 'W1-W2':float, 'W1-W3':float, 'W1-W4':float, \
-                            'Msun':float, 'logAge':str, 'b-y':float, 'M_J':float, 'M_Ks':float, \
-                            'Mbol':float, 'i-z':float, 'z-Y':float, 'R_Rsun':float, 'SpT':str, \
-                            'G-V':float, 'Bp-Rp':float, 'M_G':float, 'G-Rp':float})
+                            dtype={'SpT': str, 'Teff': float, 'logT': float, 'BCv': float,
+                                   'U-B': float, 'Mv': float, 'logL': float, 'B-V': float,
+                                   'Bt-Vt': float, 'V-Rc': float, 'V-Ic': float, 'V-Ks': float,
+                                   'J-H': float, 'H-Ks': float, 'Ks-W1': float, 'W1-W2': float,
+                                   'W1-W3': float, 'W1-W4': float, 'Msun': float, 'logAge': str,
+                                   'b-y': float, 'M_J': float, 'M_Ks': float, 'Mbol': float,
+                                   'i-z': float, 'z-Y': float, 'R_Rsun': float, 'SpT': str,
+                                   'G-V': float, 'Bp-Rp': float, 'M_G': float, 'G-Rp': float})
 
     dataframe.columns = dataframe.columns.str.replace('#', '')
 
@@ -64,20 +73,20 @@ def add_mamajek(input_path,
     sptype = data_util.update_sptype(sptype)
 
     flag = np.repeat('star', sptype.size)
-    distance = np.repeat(10., sptype.size) # [pc]
+    distance = np.repeat(10., sptype.size)  # [pc]
 
-    v_mag = dataframe['Mv'] # [mag]
-    b_mag = dataframe['B-V']+dataframe['Mv'] # [mag]
-    u_mag = dataframe['U-B']+b_mag # [mag]
+    v_mag = dataframe['Mv']  # [mag]
+    b_mag = dataframe['B-V']+dataframe['Mv']  # [mag]
+    u_mag = dataframe['U-B']+b_mag  # [mag]
 
-    j_mag = dataframe['M_J'] # [mag]
-    ks_mag = dataframe['M_Ks'] # [mag]
-    h_mag = dataframe['H-Ks']+ks_mag # [mag]
+    j_mag = dataframe['M_J']  # [mag]
+    ks_mag = dataframe['M_Ks']  # [mag]
+    h_mag = dataframe['H-Ks']+ks_mag  # [mag]
 
-    w1_mag = -dataframe['Ks-W1']+ks_mag # [mag]
-    w2_mag = -dataframe['W1-W2']+w1_mag # [mag]
-    w3_mag = -dataframe['W1-W3']+w1_mag # [mag]
-    w4_mag = -dataframe['W1-W4']+w1_mag # [mag]
+    w1_mag = -dataframe['Ks-W1']+ks_mag  # [mag]
+    w2_mag = -dataframe['W1-W2']+w1_mag  # [mag]
+    w3_mag = -dataframe['W1-W3']+w1_mag  # [mag]
+    w4_mag = -dataframe['W1-W4']+w1_mag  # [mag]
 
     dtype = h5py.special_dtype(vlen=bytes)
 

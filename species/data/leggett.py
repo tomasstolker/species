@@ -22,7 +22,9 @@ def add_leggett(input_path,
     Parameters
     ----------
     input_path : str
+        Path of the data folder.
     database : h5py._hl.files.File
+        Database.
 
     Returns
     -------
@@ -64,8 +66,8 @@ def add_leggett(input_path,
     dataframe = pd.pandas.read_excel(data_file1)
     dataframe.columns = dataframe.columns.str.replace('\'', '')
 
-    modulus = np.asarray(dataframe['M-m']) # M-m [mag]
-    distance = 10.**(-modulus/5.+1.) # [pc]
+    modulus = np.asarray(dataframe['M-m'])  # M-m [mag]
+    distance = 10.**(-modulus/5.+1.)  # [pc]
 
     name = np.asarray(dataframe['Name'])
 
@@ -107,28 +109,28 @@ def add_leggett(input_path,
 
         sptype = np.append(sptype, spt_tmp)
 
-        modulus = float(item[67:73]) # M-m [mag]
+        modulus = float(item[67:73])  # M-m [mag]
         if modulus == 999.:
             modulus = np.nan
 
-        distance = np.append(distance, 10.**(-modulus/5.+1.)) # [pc]
+        distance = np.append(distance, 10.**(-modulus/5.+1.))  # [pc]
 
         mag = np.zeros(14)
 
-        mag[0] = float(item[95:101]) # MKO Y
-        mag[1] = float(item[102:107]) # MKO J
-        mag[2] = float(item[108:114]) # MKO H
-        mag[3] = float(item[115:121]) # MKO K
-        mag[4] = float(item[122:128]) # MKO L'
-        mag[5] = float(item[129:135]) # MKO M'
-        mag[6] = float(item[136:142]) # Spitzer/IRAC 3.6 micron
-        mag[7] = float(item[143:149]) # Spitzer/IRAC 4.5 micron
-        mag[8] = float(item[150:156]) # Spitzer/IRAC 5.8 micron
-        mag[9] = float(item[157:163]) # Spitzer/IRAC 8.0 micron
-        mag[10] = float(item[164:170]) # WISE W1
-        mag[11] = float(item[171:176]) # WISE W2
-        mag[12] = float(item[177:183]) # WISE W3
-        mag[13] = float(item[184:190]) # WISE W4
+        mag[0] = float(item[95:101])  # MKO Y
+        mag[1] = float(item[102:107])  # MKO J
+        mag[2] = float(item[108:114])  # MKO H
+        mag[3] = float(item[115:121])  # MKO K
+        mag[4] = float(item[122:128])  # MKO L'
+        mag[5] = float(item[129:135])  # MKO M'
+        mag[6] = float(item[136:142])  # Spitzer/IRAC 3.6 micron
+        mag[7] = float(item[143:149])  # Spitzer/IRAC 4.5 micron
+        mag[8] = float(item[150:156])  # Spitzer/IRAC 5.8 micron
+        mag[9] = float(item[157:163])  # Spitzer/IRAC 8.0 micron
+        mag[10] = float(item[164:170])  # WISE W1
+        mag[11] = float(item[171:176])  # WISE W2
+        mag[12] = float(item[177:183])  # WISE W3
+        mag[13] = float(item[184:190])  # WISE W4
 
         for j, mag_item in enumerate(mag):
             if mag_item == 999.:
