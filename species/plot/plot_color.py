@@ -156,9 +156,7 @@ def plot_color_magnitude(colorbox,
                            zorder=5, s=25., alpha=0.6)
 
     if models is not None:
-        ax1.plot(models.color, models.magnitude, 'o', lw=0.)
-        # scat = ax1.scatter(m, magnitude, c=sptype, cmap=cmap,
-        #                    zorder=5, s=25., alpha=0.6)
+        ax1.scatter(models.color, models.magnitude, c='none', s=40, facecolor='none', edgecolor='black', zorder=6)
 
     if isochrones is not None:
         for item in isochrones:

@@ -79,6 +79,9 @@ def add_drift_phoenix(input_path,
                     # [Angstrom] -> [micron]
                     wavelength = data[:, 0]*1e-4
 
+                if np.all(np.diff(wavelength) < 0):
+                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 flux.append(data[:, 1]*1e-7*1e4*1e4)
 

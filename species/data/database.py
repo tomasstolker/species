@@ -255,7 +255,7 @@ class Database:
             Model name.
         wavelength : tuple(float, float)
             Wavelength (micron) range.
-        teff : tuple(float, float)
+        teff : tuple(float, float), None
             Effective temperature (K) range.
         specres : float
             Spectral resolution.

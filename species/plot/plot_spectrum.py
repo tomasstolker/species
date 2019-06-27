@@ -61,7 +61,7 @@ def plot_spectrum(boxes,
         Title.
     offset : tuple(float, float)
         Offset for the label of the x- and y-axis.
-    legend : str
+    legend : str, None
         Location of the legend.
     figsize : tuple(float, float)
         Figure size.
@@ -406,7 +406,7 @@ def plot_spectrum(boxes,
 
     handles, _ = ax1.get_legend_handles_labels()
 
-    if handles:
+    if handles and legend:
         ax1.legend(loc=legend, prop={'size': 9}, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')

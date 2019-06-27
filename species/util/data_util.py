@@ -192,6 +192,7 @@ def add_missing(model,
     for item in parameters:
         grid_shape.append(database['models/'+model+'/'+item].shape[0])
 
+    teff = np.asarray(database['models/'+model+'/teff'])
     flux = np.asarray(database['models/'+model+'/flux'])
 
     for i in range(grid_shape[0]):
@@ -208,7 +209,7 @@ def add_missing(model,
                         warnings.warn('Interpolation not possible, using NaN instead.')
 
             elif len(parameters) == 3:
-                for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
                     if np.count_nonzero(flux[i, j, k]) == 0:
                         try:
                             scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])

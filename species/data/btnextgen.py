@@ -32,7 +32,7 @@ def add_btnextgen(input_path,
         Database.
     wl_bound : tuple(float, float)
         Wavelength range (micron).
-    teff_bound : tuple(float, float)
+    teff_bound : tuple(float, float), None
         Effective temperature range (K).
     specres : float
         Spectral resolution.
@@ -100,24 +100,27 @@ def add_btnextgen(input_path,
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
 
-            if filename.startswith('lte'):
+            if filename.startswith('lte') and filename.endswith('.7.bz2'):
                 sys.stdout.write('\rAdding BT-NextGen model spectra... '+filename)
                 sys.stdout.flush()
 
                 teff_val = float(filename[3:6])*100.
 
-                if teff_bound[0] <= teff_val <= teff_bound[1]:
-                    teff.append(teff_val)
-                    logg.append(float(filename[7:9]))
-                    feh.append(float(filename[11:14]))
+                if teff_bound is not None:
 
-                else:
-                    continue
+                    if teff_bound[0] <= teff_val <= teff_bound[1]:
+                        teff.append(teff_val)
+                        logg.append(float(filename[7:9]))
+                        feh.append(float(filename[11:14]))
+
+                    else:
+                        continue
 
                 dataf = pd.pandas.read_csv(data_folder+filename,
                                            usecols=[0, 1],
                                            names=['wavelength', 'flux'],
                                            header=None,
+                                           dtype={'wavelength': str, 'flux': str},
                                            delim_whitespace=True,
                                            compression='bz2')
 
@@ -136,14 +139,21 @@ def add_btnextgen(input_path,
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                indices = np.where((data_wavel >= wl_bound[0]) &
-                                   (data_wavel <= wl_bound[1]))[0]
+                data = np.vstack((data_wavel, data_flux))
 
-                data_wavel = data_wavel[indices]
-                data_flux = data_flux[indices]
+                index_sort = np.argsort(data[0, :])
+                data = data[:, index_sort]
 
-                flux_interp = interp1d(data_wavel,
-                                       data_flux,
+                if np.all(np.diff(data[0, ]) < 0):
+                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+
+                indices = np.where((data[0, ] >= wl_bound[0]) &
+                                   (data[0, ] <= wl_bound[1]))[0]
+
+                data = data[:, indices]
+
+                flux_interp = interp1d(data[0, ],
+                                       data[1, ],
                                        kind='linear',
                                        bounds_error=False,
                                        fill_value=float('nan'))
