@@ -4,12 +4,12 @@ Module for BT-Settl atmospheric models.
 
 import os
 import sys
-import lzma
 import tarfile
 
 from urllib.request import urlretrieve
 
 import numpy as np
+import pandas as pd
 
 from scipy.interpolate import interp1d
 
@@ -32,7 +32,7 @@ def add_btsettl(input_path,
         Database.
     wl_bound : tuple(float, float)
         Wavelength range (micron).
-    teff_bound : tuple(float, float)
+    teff_bound : tuple(float, float), None
         Effective temperature range (K).
     specres : float
         Spectral resolution.
@@ -51,11 +51,10 @@ def add_btsettl(input_path,
 
     data_folder = os.path.join(input_path, 'bt-settl/')
 
-    input_file = 'BT-Settl_M-0.0a+0.0.tar'
-    label = '[Fe/H]=0.0 (6.0 GB)'
+    input_file = 'BT-Settl_M-0.0_cool.tar'
+    label = '[Fe/H]=0.0 (2.1 GB)'
 
-    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011_2015/' \
-          'SPECTRA/BT-Settl_M-0.0a+0.0.tar'
+    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/AGSS2009/SPECTRA/BT-Settl_M-0.0_cool.tar'
 
     data_file = os.path.join(input_path, input_file)
 
@@ -71,9 +70,9 @@ def add_btsettl(input_path,
     sys.stdout.write(f'Unpacking BT-Settl model spectra {label}...')
     sys.stdout.flush()
 
-    # tar = tarfile.open(data_file)
-    # tar.extractall(data_folder)
-    # tar.close()
+    tar = tarfile.open(data_file)
+    tar.extractall(data_folder)
+    tar.close()
 
     sys.stdout.write(' [DONE]\n')
     sys.stdout.flush()
@@ -92,48 +91,69 @@ def add_btsettl(input_path,
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
 
-            if filename.startswith('lte') and filename.endswith('.7.xz'):
-                sys.stdout.write('\rAdding BT-Settl model spectra... '+filename)
+            if filename.startswith('lte') and filename.endswith('.7.bz2'):
+                sys.stdout.write('\rAdding BT-Settl model spectra... '+filename+'  ')
                 sys.stdout.flush()
 
-                teff_val = float(filename[3:6])*100.
+                if len(filename) == 29:
+                    teff_val = float(filename[3:6])*100.
+                    logg_val = float(filename[7:10])
 
-                if teff_bound[0] <= teff_val <= teff_bound[1]:
+                elif len(filename) == 31:
+                    teff_val = float(filename[3:8])*100.
+                    logg_val = float(filename[9:12])
+
+                if teff_bound is not None:
+                    if teff_val < teff_bound[0] or teff_val > teff_bound[1]:
+                        continue
+
+                dataf = pd.pandas.read_csv(data_folder+filename,
+                                           usecols=[0, 1],
+                                           names=['wavelength', 'flux'],
+                                           header=None,
+                                           dtype={'wavelength': str, 'flux': str},
+                                           delim_whitespace=True,
+                                           compression='bz2')
+
+                dataf['wavelength'] = dataf['wavelength'].str.replace('D', 'E')
+                dataf['flux'] = dataf['flux'].str.replace('D', 'E')
+
+                dataf = dataf.apply(pd.to_numeric)
+                data = dataf.values
+
+                # [Angstrom] -> [micron]
+                data_wavel = data[:, 0]*1e-4
+
+                # See https://phoenix.ens-lyon.fr/Grids/FORMAT
+                data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
+
+                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                data_flux = data_flux*1e-7*1e4*1e4
+
+                data = np.vstack((data_wavel, data_flux))
+
+                index_sort = np.argsort(data[0, :])
+                data = data[:, index_sort]
+
+                if np.all(np.diff(data[0, ]) < 0):
+                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+
+                indices = np.where((data[0, ] >= wl_bound[0]) &
+                                   (data[0, ] <= wl_bound[1]))[0]
+
+                if indices.size > 0:
                     teff.append(teff_val)
-                    logg.append(float(filename[9:12]))
+                    logg.append(logg_val)
 
-                else:
-                    continue
+                    data = data[:, indices]
 
-                data_wavel = []
-                data_flux = []
+                    flux_interp = interp1d(data[0, ],
+                                           data[1, ],
+                                           kind='linear',
+                                           bounds_error=False,
+                                           fill_value=float('nan'))
 
-                with lzma.open(data_folder+filename) as xz_file:
-                    for line in xz_file:
-                        # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-
-                        # [Angstrom] -> [micron]
-                        data_wavel.append(float(line[1:13])*1e-4)
-
-                        # [erg s-1 cm-2 Angstrom-1]
-                        flux_tmp = 10.**(float(line[14:25].replace(b'D', b'E'))-8.)
-
-                        # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
-                        data_flux.append(flux_tmp*1e-7*1e4*1e4)
-
-                data_wavel = np.asarray(data_wavel)
-                data_flux = np.asarray(data_flux)
-
-                indices = np.where((data_wavel >= wl_bound[0]) &
-                                   (data_wavel <= wl_bound[1]))[0]
-
-                flux_interp = interp1d(data_wavel[indices],
-                                       data_flux[indices],
-                                       kind='linear',
-                                       bounds_error=False,
-                                       fill_value=float('nan'))
-
-                flux.append(flux_interp(wavelength))
+                    flux.append(flux_interp(wavelength))
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
