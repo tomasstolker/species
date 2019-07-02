@@ -3,7 +3,7 @@
 Installation
 ============
 
-*species* can be installed from the |pypi| with the |pip|::
+*species* is compatible with Python 3 and can be installed from the |pypi| with the |pip|::
 
     $ pip install species
 
@@ -18,7 +18,7 @@ In that case, the dependencies can be installed from the *species* folder::
 The installation can be tested by starting Python in interactive mode and printing the version number::
 
     >>> import species
-    >>> print species.__version__
+    >>> species.__version__
 
 .. |pypi| raw:: html
 
