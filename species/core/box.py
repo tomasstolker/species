@@ -45,12 +45,15 @@ def create_box(boxtype,
         box.sptype = kwargs['sptype']
 
     elif boxtype == 'isochrone':
-        box = IsochronesBox()
+        box = IsochroneBox()
         box.model = kwargs['model']
         box.filters_color = kwargs['filters_color']
         box.filter_mag = kwargs['filter_mag']
         box.color = kwargs['color']
         box.magnitude = kwargs['magnitude']
+        box.teff = kwargs['teff']
+        box.logg = kwargs['logg']
+        box.mass = kwargs['mass']
 
     elif boxtype == 'model':
         box = ModelBox()
@@ -147,7 +150,7 @@ class ColorColorBox:
         self.sptype = None
 
 
-class IsochronesBox:
+class IsochroneBox:
     """
     Text
     """
@@ -164,6 +167,9 @@ class IsochronesBox:
         self.filter_mag = None
         self.color = None
         self.magnitude = None
+        self.teff = None
+        self.logg = None
+        self.mass = None
 
 
 class ModelBox:

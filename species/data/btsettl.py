@@ -51,10 +51,10 @@ def add_btsettl(input_path,
 
     data_folder = os.path.join(input_path, 'bt-settl/')
 
-    input_file = 'BT-Settl_M-0.0_cool.tar'
-    label = '[Fe/H]=0.0 (2.1 GB)'
+    input_file = 'BT-Settl_M-0.0_a+0.0.tar'
+    label = '(5.8 GB)'
 
-    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/AGSS2009/SPECTRA/BT-Settl_M-0.0_cool.tar'
+    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/BT-Settl_M-0.0_a+0.0.tar'
 
     data_file = os.path.join(input_path, input_file)
 
@@ -95,17 +95,22 @@ def add_btsettl(input_path,
                 sys.stdout.write('\rAdding BT-Settl model spectra... '+filename+'  ')
                 sys.stdout.flush()
 
-                if len(filename) == 29:
+                if len(filename) == 39:
                     teff_val = float(filename[3:6])*100.
                     logg_val = float(filename[7:10])
+                    feh_val = float(filename[11:14])
 
-                elif len(filename) == 31:
+                elif len(filename) == 41:
                     teff_val = float(filename[3:8])*100.
                     logg_val = float(filename[9:12])
+                    feh_val = float(filename[13:16])
 
                 if teff_bound is not None:
                     if teff_val < teff_bound[0] or teff_val > teff_bound[1]:
                         continue
+
+                if feh_val != 0.:
+                    continue
 
                 dataf = pd.pandas.read_csv(data_folder+filename,
                                            usecols=[0, 1],
@@ -130,28 +135,28 @@ def add_btsettl(input_path,
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                data = np.vstack((data_wavel, data_flux))
+                data = np.stack((data_wavel, data_flux), axis=1)
 
-                index_sort = np.argsort(data[0, :])
-                data = data[:, index_sort]
+                index_sort = np.argsort(data[:, 0])
+                data = data[index_sort, :]
 
-                if np.all(np.diff(data[0, ]) < 0):
+                if np.all(np.diff(data[:, 0]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[0, ] >= wl_bound[0]) &
-                                   (data[0, ] <= wl_bound[1]))[0]
+                indices = np.where((data[:, 0] >= wl_bound[0]) &
+                                   (data[:, 0] <= wl_bound[1]))[0]
 
                 if indices.size > 0:
                     teff.append(teff_val)
                     logg.append(logg_val)
 
-                    data = data[:, indices]
+                    data = data[indices, :]
 
-                    flux_interp = interp1d(data[0, ],
-                                           data[1, ],
+                    flux_interp = interp1d(data[:, 0],
+                                           data[:, 1],
                                            kind='linear',
                                            bounds_error=False,
-                                           fill_value=float('nan'))
+                                           fill_value=1e-100)
 
                     flux.append(flux_interp(wavelength))
 

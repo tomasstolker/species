@@ -157,6 +157,12 @@ def model_name(key):
     elif key == 'bt-nextgen':
         name = 'BT-NextGen'
 
+    elif key == 'ames-cond':
+        name = 'AMES-Cond'
+
+    elif key == 'ames-dusty':
+        name = 'AMES-Dusty'
+
     return name
 
 

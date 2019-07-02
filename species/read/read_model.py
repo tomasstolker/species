@@ -3,6 +3,7 @@ Module for reading atmospheric models.
 """
 
 import os
+import math
 import configparser
 
 import h5py
@@ -144,7 +145,7 @@ class ReadModel:
             points = (teff, logg, feh)
             flux = flux[:, :, :, self.wl_index]
 
-        elif self.model == 'bt-settl':
+        elif self.model in ('bt-settl', 'ames-dusty', 'ames-cond'):
             points = (teff, logg)
             flux = flux[:, :, self.wl_index]
 
@@ -197,6 +198,11 @@ class ReadModel:
             Box with the model spectrum.
         """
 
+        if 'mass' in model_par:
+            mass = 1e3 * model_par['mass'] * constants.M_JUP  # [g]
+            radius = math.sqrt(1e3 * constants.GRAVITY * mass / (10.**model_par['logg']))  # [cm]
+            model_par['radius'] = 1e-2 * radius / constants.R_JUP  # [Rjup]
+
         if self.spectrum_interp is None:
             self.interpolate()
 
@@ -209,7 +215,7 @@ class ReadModel:
                           model_par['logg'],
                           model_par['feh']]
 
-        elif self.model == 'bt-settl':
+        elif self.model in ('bt-settl', 'ames-dusty', 'ames-cond'):
             parameters = [model_par['teff'],
                           model_par['logg']]
 
@@ -288,26 +294,43 @@ class ReadModel:
 
             teff_index = np.argwhere(teff == model_par['teff'])[0]
 
-            if not teff_index:
+            if len(teff_index) == 0:
                 raise ValueError('Temperature value not found.')
             else:
                 teff_index = teff_index[0]
 
             logg_index = np.argwhere(logg == model_par['logg'])[0]
 
-            if not logg_index:
+            if len(logg_index) == 0:
                 raise ValueError('Surface gravity value not found.')
             else:
                 logg_index = logg_index[0]
 
             feh_index = np.argwhere(feh == model_par['feh'])[0]
 
-            if not feh_index:
+            if len(feh_index) == 0:
                 raise ValueError('Metallicity value not found.')
             else:
                 feh_index = feh_index[0]
 
             flux = flux[teff_index, logg_index, feh_index, wl_index]
+
+        elif self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
+            teff_index = np.argwhere(teff == model_par['teff'])[0]
+
+            if len(teff_index) == 0:
+                raise ValueError('Temperature value not found.')
+            else:
+                teff_index = teff_index[0]
+
+            logg_index = np.argwhere(logg == model_par['logg'])[0]
+
+            if len(logg_index) == 0:
+                raise ValueError('Surface gravity value not found.')
+            else:
+                logg_index = logg_index[0]
+
+            flux = flux[teff_index, logg_index, wl_index]
 
         if 'radius' in model_par and 'distance' in model_par:
             scaling = (model_par['radius']*constants.R_JUP)**2 / \
@@ -404,6 +427,10 @@ class ReadModel:
                       'logg': (logg[0], logg[-1]),
                       'feh': (feh[0], feh[-1])}
 
+        elif self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
+            bounds = {'teff': (teff[0], teff[-1]),
+                      'logg': (logg[0], logg[-1])}
+
         h5_file.close()
 
         return bounds
@@ -440,7 +467,7 @@ class ReadModel:
         points['teff'] = np.asarray(teff)
         points['logg'] = np.asarray(logg)
 
-        if self.model == 'drift-phoenix':
+        if self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = h5_file['models/'+self.model+'/feh']
             points['feh'] = np.asarray(feh)
 

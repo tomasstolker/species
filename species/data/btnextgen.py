@@ -131,32 +131,32 @@ def add_btnextgen(input_path,
                 data = dataf.values
 
                 # [Angstrom] -> [micron]
-                data_wavel = data[:, 0]*1e-4
+                data_wavel = data[0, :]*1e-4
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
+                data_flux = 10.**(data[1, :]-8.)  # [erg s-1 cm-2 Angstrom-1]
 
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                data = np.vstack((data_wavel, data_flux))
+                data = np.stack((data_wavel, data_flux), axis=1)
 
                 index_sort = np.argsort(data[0, :])
                 data = data[:, index_sort]
 
-                if np.all(np.diff(data[0, ]) < 0):
+                if np.all(np.diff(data[0, :]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[0, ] >= wl_bound[0]) &
-                                   (data[0, ] <= wl_bound[1]))[0]
+                indices = np.where((data[0, :] >= wl_bound[0]) &
+                                   (data[0, :] <= wl_bound[1]))[0]
 
                 data = data[:, indices]
 
-                flux_interp = interp1d(data[0, ],
-                                       data[1, ],
+                flux_interp = interp1d(data[0, :],
+                                       data[1, :],
                                        kind='linear',
                                        bounds_error=False,
-                                       fill_value=float('nan'))
+                                       fill_value=1e-100)
 
                 flux.append(flux_interp(wavelength))
 

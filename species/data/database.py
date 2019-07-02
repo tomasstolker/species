@@ -15,7 +15,8 @@ import numpy as np
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, mamajek, btsettl
+                         companions, filters, mamajek, btsettl, ames_dusty, ames_cond, \
+                         isochrones
 from species.read import read_model, read_calibration
 from species.util import data_util
 
@@ -176,17 +177,21 @@ class Database:
 
     def add_isochrones(self,
                        filename,
-                       tag):
+                       tag,
+                       model='baraffe'):
         """
         Function for adding isochrones data to the database.
 
         Parameters
         ----------
         filename : str
-            Filename with the isochrones data. The data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/.
+            Filename with the isochrones data.
         tag : str
             Tag name in the database.
+        model : str
+            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe' models, the isochrone data
+            can be downloaded from https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models, the
+            data can be requested from Gabriel Marleau.
 
         Returns
         -------
@@ -202,46 +207,13 @@ class Database:
         if 'isochrones/'+tag in h5_file:
             del h5_file['isochrones/'+tag]
 
-        # read in all the data, ignoring empty lines or lines with '---'
-        data = []
-        with open(filename) as data_file:
-            for line in data_file:
-                if '---' in line or line == '\n':
-                    continue
-                else:
-                    data.append(list(filter(None, line.rstrip().split(' '))))
+        if model[0:7] == 'baraffe':
+            isochrones.add_baraffe(h5_file, tag, filename)
 
-        isochrones = []
-
-        for line in data:
-            if '(Gyr)' in line:
-                age = line[-1]
-
-            elif 'lg(g)' in line:
-                header = ['M/Ms', 'Teff(K)'] + line[1:]
-
-            else:
-                line.insert(0, age)
-                isochrones.append(line)
-
-        header = np.asarray(header, dtype=bytes)
-        isochrones = np.asarray(isochrones, dtype=float)
-
-        isochrones[:, 0] *= 1e3  # [Myr]
-        isochrones[:, 1] *= constants.M_SUN/constants.M_JUP  # [Mjup]
-
-        sys.stdout.write('Adding isochrones: '+tag+'...')
-        sys.stdout.flush()
-
-        bytes_type = h5py.special_dtype(vlen=bytes)
-
-        h5_file.create_dataset('isochrones/'+tag+'/filters', data=header[7:], dtype=bytes_type)
-        h5_file.create_dataset('isochrones/'+tag+'/magnitudes', data=isochrones, dtype='f')
+        elif model[0:7] == 'marleau':
+            isochrones.add_marleau(h5_file, tag, filename)
 
         h5_file.close()
-
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
 
     def add_model(self,
                   model,
@@ -282,6 +254,14 @@ class Database:
         elif model[0:10] == 'bt-nextgen':
             btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff, specres)
             data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
+
+        elif model[0:10] == 'ames-dusty':
+            ames_dusty.add_ames_dusty(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg'), h5_file)
+
+        elif model[0:9] == 'ames-cond':
+            ames_cond.add_ames_cond(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         h5_file.close()
 
