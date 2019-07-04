@@ -35,7 +35,14 @@ After adding the relevant data to the database, the user can take advantage of t
 - Creating color-magnitude and color-color diagrams by using photometric libraries, synthetic photometry of spectral libraries, photometry of directly imaged objects, isochrone data.
 - Reading evolutionary tracks and calculating synthetic photometry for a given age and range of masses.
 
-Data which is read from the database, as well as the output of the various *species* functions, are stored in :class:`~species.core.box.Box` objects. These can be inputted directly to the plotting functions but the used can use their content also in their own plotting routine. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box, for example::
+Data which is read from the database, as well as the output of the various *species* functions, are stored in :class:`~species.core.box.Box` objects. These can be inputted directly to the plotting functions but the used can use their content also in their own plotting routine. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box. The following example will add the available photometry of PZ Tel B to the database, reads the data, creates an :class:`~species.core.box.ObjectBox`, and shows its content::
+
+   import species
+
+   species.SpeciesInit('./')
+
+   database = species.Database()
+   database.add_companion(name='PZ Tel B')
 
    objectbox = database.get_object(object_name='PZ Tel B')
    objectbox.open_box()
