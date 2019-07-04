@@ -16,10 +16,6 @@ from species.read import read_model, read_object
 from species.util import read_util
 
 
-MIN_CHISQ = np.inf
-MIN_PARAM = None
-
-
 def lnprior(param,
             bounds,
             modelpar,
@@ -105,9 +101,6 @@ def lnlike(param,
         Log likelihood probability.
     """
 
-    global MIN_CHISQ
-    global MIN_PARAM
-
     paramdict = {}
     for i, item in enumerate(modelpar):
         paramdict[item] = param[i]
@@ -131,10 +124,6 @@ def lnlike(param,
 
         # (4./float(spectrum[:, 0].size))
         chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
-
-    if chisq < MIN_CHISQ:
-        MIN_CHISQ = chisq
-        MIN_PARAM = paramdict
 
     return -0.5*chisq
 
@@ -339,9 +328,6 @@ class FitModel:
             None
         """
 
-        global MIN_CHISQ
-        global MIN_PARAM
-
         sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'radius': 0.01}
 
         sys.stdout.write('Running MCMC...')
@@ -388,6 +374,5 @@ class FitModel:
         species_db.add_samples(sampler=sampler,
                                spectrum=('model', self.model),
                                tag=tag,
-                               chisquare=(MIN_CHISQ, MIN_PARAM),
                                modelpar=self.modelpar,
                                distance=self.distance)

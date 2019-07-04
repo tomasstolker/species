@@ -14,10 +14,6 @@ from species.data import database
 from species.read import read_object, read_calibration
 
 
-MIN_CHISQ = np.inf
-MIN_PARAM = None
-
-
 def lnprob(param,
            bounds,
            modelpar,
@@ -49,9 +45,6 @@ def lnprob(param,
         Log posterior probability.
     """
 
-    global MIN_CHISQ
-    global MIN_PARAM
-
     for i, item in enumerate(modelpar):
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
@@ -72,14 +65,6 @@ def lnprob(param,
 
             else:
                 chisq += (objphot[i][0] - param[0]*specphot[i])**2 / objphot[i][1]**2
-
-        if chisq < MIN_CHISQ:
-            paramdict = {}
-            for i, item in enumerate(modelpar):
-                paramdict[item] = param[i]
-
-            MIN_CHISQ = chisq
-            MIN_PARAM = paramdict
 
         ln_prob = ln_prior - 0.5*chisq
 
@@ -168,9 +153,6 @@ class FitSpectrum:
         None
         """
 
-        global MIN_CHISQ
-        global MIN_PARAM
-
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()
 
@@ -213,6 +195,5 @@ class FitSpectrum:
         species_db.add_samples(sampler=sampler,
                                spectrum=('calibration', self.spectrum),
                                tag=tag,
-                               chisquare=(MIN_CHISQ, MIN_PARAM),
                                modelpar=self.modelpar,
                                distance=None)

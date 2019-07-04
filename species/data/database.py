@@ -4,6 +4,7 @@ Database module.
 
 import os
 import sys
+import math
 import warnings
 import configparser
 
@@ -509,7 +510,6 @@ class Database:
                     sampler,
                     spectrum,
                     tag,
-                    chisquare,
                     modelpar,
                     distance=None):
         """
@@ -522,9 +522,6 @@ class Database:
             'drift-phoenix').
         tag : str
             Database tag.
-        chisquare : tuple(float, float)
-            Maximum likelihood solution. Tuple with the chi-square value and related parameter
-            values.
         modelpar : list(str, )
             List with the model parameter names.
         distance : float
@@ -537,6 +534,12 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'a')
+
+        index_max = np.unravel_index(sampler.lnprobability.argmax(),
+                                     sampler.lnprobability.shape)
+
+        max_prob = math.exp(sampler.lnprobability[index_max])
+        best_sample = sampler.chain[index_max]
 
         if 'results' not in h5_file:
             h5_file.create_group('results')
@@ -561,10 +564,17 @@ class Database:
         for i, item in enumerate(modelpar):
             dset.attrs['parameter'+str(i)] = str(item)
 
-        dset.attrs['min_chi'] = float(chisquare[0])
+        dset.attrs['max_prob'] = max_prob
 
         for i, item in enumerate(modelpar):
-            dset.attrs['chisquare'+str(i)] = float(chisquare[1][item])
+            dset.attrs['best_sample'+str(i)] = best_sample[i]
+
+        sys.stdout.write(f'Maximum probability: {max_prob:.2f}\n')
+        sys.stdout.write(f'Parameter values:')
+        for i, item in enumerate(modelpar):
+            sys.stdout.write(f' {item}={best_sample[i]:.2f}')
+        sys.stdout.write('\n')
+        sys.stdout.flush()
 
         mean_accep = np.mean(sampler.acceptance_fraction)
         dset.attrs['acceptance'] = float(mean_accep)
@@ -587,8 +597,8 @@ class Database:
 
         h5_file.close()
 
-    def get_chisquare(self,
-                      tag):
+    def get_best_sample(self,
+                        tag):
         """
         Parameters
         ----------
@@ -598,7 +608,7 @@ class Database:
         Returns
         -------
         dict
-            Parameters and values with the minimum chi-square.
+            Parameters and values for the sample with the maximum posterior probability.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -606,20 +616,20 @@ class Database:
 
         nparam = dset.attrs['nparam']
 
-        chisquare = {}
+        best_sample = {}
 
         for i in range(nparam):
             par_key = dset.attrs['parameter'+str(i)]
-            par_value = dset.attrs['chisquare'+str(i)]
+            par_value = dset.attrs['best_sample'+str(i)]
 
-            chisquare[par_key] = par_value
+            best_sample[par_key] = par_value
 
         if dset.attrs.__contains__('distance'):
-            chisquare['distance'] = dset.attrs['distance']
+            best_sample['distance'] = dset.attrs['distance']
 
         h5_file.close()
 
-        return chisquare
+        return best_sample
 
     def get_mcmc_spectra(self,
                          tag,
@@ -903,10 +913,10 @@ class Database:
             samples = samples[ran_walker, ran_step, :]
 
         param = []
-        chisquare = []
+        best_sample = []
         for i in range(nparam):
             param.append(dset.attrs['parameter'+str(i)])
-            chisquare.append(dset.attrs['chisquare'+str(i)])
+            best_sample.append(dset.attrs['best_sample'+str(i)])
 
         h5_file.close()
 
@@ -914,4 +924,4 @@ class Database:
                               spectrum=spectrum,
                               parameters=param,
                               samples=samples,
-                              chisquare=chisquare)
+                              best_sample=best_sample)

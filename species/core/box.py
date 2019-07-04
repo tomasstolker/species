@@ -88,7 +88,7 @@ def create_box(boxtype,
         box.spectrum = kwargs['spectrum']
         box.parameters = kwargs['parameters']
         box.samples = kwargs['samples']
-        box.chisquare = kwargs['chisquare']
+        box.best_sample = kwargs['best_sample']
 
     elif boxtype == 'spectrum':
         box = SpectrumBox()
@@ -260,7 +260,7 @@ class SamplesBox:
         self.spectrum = None
         self.parameters = None
         self.samples = None
-        self.chisquare = None
+        self.best_sample = None
 
 
 class SpectrumBox:

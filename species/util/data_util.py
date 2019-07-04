@@ -162,11 +162,11 @@ def write_data(model,
                                 dtype='f')
 
     database.create_dataset('models/'+model+'/wavelength',
-                            data=data_sorted[i+1],
+                            data=data_sorted[len(parameters)],
                             dtype='f')
 
     database.create_dataset('models/'+model+'/flux',
-                            data=data_sorted[i+2],
+                            data=data_sorted[len(parameters)+1],
                             dtype='f')
 
 
