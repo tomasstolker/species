@@ -11,7 +11,7 @@ A configuration file is required in the working folder. In this case, the config
    [species]
    database = species_database.hdf5
    config = species_config.ini
-   input = data/
+   input = /path/to/store/data/
 
 Conversion of photometry units
 ------------------------------

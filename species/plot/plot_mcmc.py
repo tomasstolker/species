@@ -147,7 +147,7 @@ def plot_posterior(tag,
     box = species_db.get_samples(tag)
 
     samples = box.samples
-    par_val = box.chisquare
+    par_val = box.best_sample
 
     labels = plot_util.update_labels(box.parameters)
 

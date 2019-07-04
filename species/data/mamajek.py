@@ -64,7 +64,7 @@ def add_mamajek(input_path,
                                    'J-H': float, 'H-Ks': float, 'Ks-W1': float, 'W1-W2': float,
                                    'W1-W3': float, 'W1-W4': float, 'Msun': float, 'logAge': str,
                                    'b-y': float, 'M_J': float, 'M_Ks': float, 'Mbol': float,
-                                   'i-z': float, 'z-Y': float, 'R_Rsun': float, 'SpT': str,
+                                   'i-z': float, 'z-Y': float, 'R_Rsun': float, 'SpT2': str,
                                    'G-V': float, 'Bp-Rp': float, 'M_G': float, 'G-Rp': float})
 
     dataframe.columns = dataframe.columns.str.replace('#', '')

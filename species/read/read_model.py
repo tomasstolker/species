@@ -294,41 +294,38 @@ class ReadModel:
 
             teff_index = np.argwhere(teff == model_par['teff'])[0]
 
-            if len(teff_index) == 0:
+            if not teff_index:
                 raise ValueError('Temperature value not found.')
-            else:
-                teff_index = teff_index[0]
 
+            teff_index = teff_index[0]
             logg_index = np.argwhere(logg == model_par['logg'])[0]
 
-            if len(logg_index) == 0:
+            if not logg_index:
                 raise ValueError('Surface gravity value not found.')
-            else:
-                logg_index = logg_index[0]
 
+            logg_index = logg_index[0]
             feh_index = np.argwhere(feh == model_par['feh'])[0]
 
-            if len(feh_index) == 0:
+            if not feh_index:
                 raise ValueError('Metallicity value not found.')
-            else:
-                feh_index = feh_index[0]
+
+            feh_index = feh_index[0]
 
             flux = flux[teff_index, logg_index, feh_index, wl_index]
 
         elif self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
             teff_index = np.argwhere(teff == model_par['teff'])[0]
 
-            if len(teff_index) == 0:
+            if not teff_index:
                 raise ValueError('Temperature value not found.')
-            else:
-                teff_index = teff_index[0]
 
+            teff_index = teff_index[0]
             logg_index = np.argwhere(logg == model_par['logg'])[0]
 
-            if len(logg_index) == 0:
+            if not logg_index:
                 raise ValueError('Surface gravity value not found.')
-            else:
-                logg_index = logg_index[0]
+
+            logg_index = logg_index[0]
 
             flux = flux[teff_index, logg_index, wl_index]
 
