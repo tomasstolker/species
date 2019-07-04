@@ -5,18 +5,6 @@ Box module.
 import sys
 
 
-def open_box(box):
-    """
-    Returns
-    -------
-    None
-    """
-
-    for item in box.__dict__.keys():
-        sys.stdout.write(str(item)+' = '+str(box.__dict__[item])+'\n')
-        sys.stdout.flush()
-
-
 def create_box(boxtype,
                **kwargs):
     """
@@ -109,7 +97,34 @@ def create_box(boxtype,
     return box
 
 
-class ColorMagBox:
+class Box:
+    """
+    Text
+    """
+
+    def __init__(self):
+        """
+        Returns
+        -------
+        None
+        """
+
+    def open_box(self):
+        """
+        Returns
+        -------
+        None
+        """
+
+        sys.stdout.write(f'Opening {type(self).__name__}...\n')
+        sys.stdout.flush()
+
+        for item in self.__dict__.keys():
+            sys.stdout.write(str(item)+' = '+str(self.__dict__[item])+'\n')
+            sys.stdout.flush()
+
+
+class ColorMagBox(Box):
     """
     Text
     """
@@ -130,7 +145,7 @@ class ColorMagBox:
         self.sptype = None
 
 
-class ColorColorBox:
+class ColorColorBox(Box):
     """
     Text
     """
@@ -150,7 +165,7 @@ class ColorColorBox:
         self.sptype = None
 
 
-class IsochroneBox:
+class IsochroneBox(Box):
     """
     Text
     """
@@ -172,7 +187,7 @@ class IsochroneBox:
         self.mass = None
 
 
-class ModelBox:
+class ModelBox(Box):
     """
     Text
     """
@@ -191,7 +206,7 @@ class ModelBox:
         self.parameters = None
 
 
-class ObjectBox:
+class ObjectBox(Box):
     """
     Text
     """
@@ -211,7 +226,7 @@ class ObjectBox:
         self.spectrum = None
 
 
-class PhotometryBox:
+class PhotometryBox(Box):
     """
     Text
     """
@@ -228,7 +243,7 @@ class PhotometryBox:
         self.flux = None
 
 
-class ResidualsBox:
+class ResidualsBox(Box):
     """
     Text
     """
@@ -245,7 +260,7 @@ class ResidualsBox:
         self.spectrum = None
 
 
-class SamplesBox:
+class SamplesBox(Box):
     """
     Text
     """
@@ -263,7 +278,7 @@ class SamplesBox:
         self.best_sample = None
 
 
-class SpectrumBox:
+class SpectrumBox(Box):
     """
     Text
     """
@@ -285,7 +300,7 @@ class SpectrumBox:
         self.distance = None
 
 
-class SynphotBox:
+class SynphotBox(Box):
     """
     Text
     """

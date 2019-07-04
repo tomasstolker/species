@@ -21,10 +21,7 @@ from species.read.read_color import ReadColorMagnitude, \
 
 from species.read.read_object import ReadObject
 
-from species.core.box import open_box, \
-                             create_box, \
-                             SpectrumBox, \
-                             PhotometryBox
+from species.core.box import create_box
 
 from species.core.constants import *
 

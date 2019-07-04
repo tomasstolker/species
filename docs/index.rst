@@ -7,6 +7,7 @@ Documentation for species
    :maxdepth: 1
 
    installation
+   overview
    examples
    about
    modules
