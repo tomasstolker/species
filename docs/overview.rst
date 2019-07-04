@@ -3,7 +3,13 @@
 Overview
 ========
 
+Introduction
+------------
+
 *species* provides a coherent framework for analyzing photometric and spectral data of planetary and substellar atmospheres. It has been designed for self-luminous objects such as directly imaged exoplanets and brown dwarfs, that is, objects which are not significantly irradiated by an external source. On this page you find a very short introduction on the design of *species*, the features that have been implemented, and the various types of data it can handle.
+
+Supported data
+--------------
 
 The software profits from publicly available data such as photometric and spectral libraries, atmospheric model spectra, evolutionary models, photometry of directly imaged companions, and filter transmission curves. The relevant data are automatically downloaded and added to a central HDF5 database on request of the user. All data are stored in a fixed format such that the various analysis tools and plotting functions can be directly used without having to deal with the many different data formats and units in which the original data were stored. The following data are currently supported by *species* (support for other data sets can be requested):
 
@@ -24,6 +30,9 @@ The software profits from publicly available data such as photometric and spectr
 
 Please give credit to the relevant authors when using these data in a publication. More details will follow on the references but the information is also available on the respective websites.
 
+Analysis tools
+--------------
+
 After adding the relevant data to the database, the user can take advantage of the suite of tools that have been implemented to analyze the photometric and/or spectral data. Here is an incomplete list of types of analysis for which *species* is suitable:
 
 - Converting between fluxes and magnitudes.
@@ -35,7 +44,10 @@ After adding the relevant data to the database, the user can take advantage of t
 - Creating color-magnitude and color-color diagrams by using photometric libraries, synthetic photometry of spectral libraries, photometry of directly imaged objects, isochrone data.
 - Reading evolutionary tracks and calculating synthetic photometry for a given age and range of masses.
 
-Data which is read from the database, as well as the output of the various *species* functions, are stored in :class:`~species.core.box.Box` objects. These can be inputted directly to the plotting functions but the used can use their content also in their own plotting routine. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box. The following example will add the available photometry of PZ Tel B to the database, reads the data, creates an :class:`~species.core.box.ObjectBox`, and shows its content::
+Output boxes
+------------
+
+Data which are read from the database, as well as the output of the various *species* functions, are stored in :class:`~species.core.box.Box` objects. These can be inputted directly to the plotting functions but the used can use their content also in their own plotting routine. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box. The following example will add the available photometry of PZ Tel B to the database, reads the data, creates an :class:`~species.core.box.ObjectBox`, and shows its content::
 
    import species
 

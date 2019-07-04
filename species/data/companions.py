@@ -191,6 +191,12 @@ def get_data():
                                      'WISE/WISE.W1': (17.17, 0.33),  # Naud et al. 2014
                                      'WISE/WISE.W2': (15.41, 0.22)}},  # Naud et al. 2014
 
+            '2M1207 ABb': {'distance': 47.2,
+                           'app_mag': {'Paranal/NACO.J': (15.47, 0.30),  # Delorme et al. 2013
+                                       'Paranal/NACO.H': (14.27, 0.20),  # Delorme et al. 2013
+                                       'Paranal/NACO.Ks': (13.67, 0.20),  # Delorme et al. 2013
+                                       'Paranal/NACO.Lp': (12.67, 0.10)}},  # Delorme et al. 2013
+
             '1RXS 1609 B': {'distance': 139.67,
                             'app_mag': {'Gemini/NIRI.J-G0202w': (17.90, 0.12),  # Lafreniere et al. 2008
                                         'Gemini/NIRI.H-G0203w': (16.87, 0.07),  # Lafreniere et al. 2008
