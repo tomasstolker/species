@@ -28,6 +28,14 @@ species.read.read\_filter module
     :undoc-members:
     :show-inheritance:
 
+species.read.read\_isochrone module
+-----------------------------------
+
+.. automodule:: species.read.read_isochrone
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.read.read\_model module
 -------------------------------
 

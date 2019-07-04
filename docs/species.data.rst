@@ -4,10 +4,34 @@ species.data package
 Submodules
 ----------
 
+species.data.ames\_cond module
+------------------------------
+
+.. automodule:: species.data.ames_cond
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.data.ames\_dusty module
+-------------------------------
+
+.. automodule:: species.data.ames_dusty
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.btnextgen module
 -----------------------------
 
 .. automodule:: species.data.btnextgen
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.data.btsettl module
+---------------------------
+
+.. automodule:: species.data.btsettl
     :members:
     :undoc-members:
     :show-inheritance:
@@ -48,6 +72,14 @@ species.data.irtf module
 ------------------------
 
 .. automodule:: species.data.irtf
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+species.data.isochrones module
+------------------------------
+
+.. automodule:: species.data.isochrones
     :members:
     :undoc-members:
     :show-inheritance:
