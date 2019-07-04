@@ -131,15 +131,15 @@ def add_btnextgen(input_path,
                 data = dataf.values
 
                 # [Angstrom] -> [micron]
-                data_wavel = data[0, :]*1e-4
+                data_wavel = data[:, 0]*1e-4
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_flux = 10.**(data[1, :]-8.)  # [erg s-1 cm-2 Angstrom-1]
+                data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
 
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                data = np.stack((data_wavel, data_flux), axis=1)
+                data = np.stack((data_wavel, data_flux), axis=0)
 
                 index_sort = np.argsort(data[0, :])
                 data = data[:, index_sort]
