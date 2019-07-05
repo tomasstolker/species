@@ -24,7 +24,7 @@ species
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, photometry of individual targets, and filter transmission curves. All data are stored in a central database and there are tools available for creating color-magnitude diagrams, fitting atmospheric models and retrieving the posterior distributions, creating synthetic photometry, plotting spectra, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ but is still under active development.
+*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of individual targets, and filter transmission curves. All data are stored in a central database and there are tools available for creating color-magnitude diagrams, fitting atmospheric models and plotting the posterior distributions, creating synthetic photometry, plotting spectra and photometry, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained.
 
 Documentation
 -------------
@@ -34,7 +34,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite Stolker et al. in prep. whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* is profiting from. More details will follow.
+Please cite Stolker et al. in prep. whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* is profiting from.
 
 Contributing
 ------------
