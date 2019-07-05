@@ -3,6 +3,8 @@
 Examples
 ========
 
+This page contains an incomplete overview of the functionalities that have been implemented in `species`. More examples will be added at a later stage. Feel free to contact Tomas Stolker (see :ref:`about`) for questions regarding the usability for your specific science case.
+
 Conversion of photometry units
 ------------------------------
 
@@ -10,15 +12,15 @@ To calculated the flux density from a magnitude (and the other way around)::
 
    import species
 
-   species.SpeciesInit("./")
+   species.SpeciesInit('./')
 
-   synphot = species.SyntheticPhotometry("MKO/NSFCam.J")
+   synphot = species.SyntheticPhotometry('MKO/NSFCam.J')
 
    flux, error = synphot.magnitude_to_flux(19.04, 0.40)
    app_mag, _ = synphot.flux_to_magnitude(flux, None)
 
-   print("Apparent flux density [W m-2 micron-1] =", flux)
-   print("Apparent magnitude [mag] =", app_mag)
+   print('Apparent flux density [W m-2 micron-1] =', flux)
+   print('Apparent magnitude [mag] =', app_mag)
 
 Synthetic photometry
 --------------------
