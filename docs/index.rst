@@ -18,6 +18,7 @@ Documentation for species
    :caption: Getting Started
 
    installation
+   running
 
 .. toctree::
    :maxdepth: 2
