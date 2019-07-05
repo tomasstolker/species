@@ -17,7 +17,7 @@ Here you find a first example to get an impression of what a typical workflow wi
 
    # add the AMES-Dusty atmospheric models
    database.add_model(model='ames-dusty',
-                      wavelength=(0.5, 6.),
+                      wavelength=(0.1, 6.),
                       teff=(2500., 3500.),
                       specres=1000.)
 
@@ -26,7 +26,7 @@ Here you find a first example to get an impression of what a typical workflow wi
 
    # create an object for reading model spectra
    readmodel = species.ReadModel(model='ames-dusty',
-                                 wavelength=(0.5, 6.0))
+                                 wavelength=(0.1, 6.0))
 
    # interpolate the grid of spectra
    modelbox = readmodel.get_model(model_par={'teff': 3000.,
@@ -44,7 +44,7 @@ Here you find a first example to get an impression of what a typical workflow wi
                          filters=objectbox.filter,
                          colors=('black', ('tomato', )),
                          offset=(-0.08, -0.07),
-                         xlim=(1., 5.5),
+                         xlim=(0.2, 5.5),
                          ylim=(0., 4.8e-14),
                          legend='upper right',
                          output='spectrum.pdf')
