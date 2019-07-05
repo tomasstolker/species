@@ -47,7 +47,11 @@ After adding the relevant data to the database, the user can take advantage of t
 Output boxes
 ------------
 
-Data which are read from the database, as well as the output of the various *species* functions, are stored in :class:`~species.core.box.Box` objects. These can be inputted directly to the plotting functions but the used can use their content also in their own plotting routine. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box. The following example will add the available photometry of PZ Tel B to the database, reads the data, creates an :class:`~species.core.box.ObjectBox`, and shows its content::
+Data which are read from the database, as well as the output of the various `species` functions, are stored in :class:`~species.core.box.Box` objects. These can be used directly as input for the plotting functionalities of `species`. Alternatively, the user can easily extract the content of a :class:`~species.core.box.Box` and process and plot it to their own needs. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box.
+
+The following example will add the available photometry of PZ Tel B to the database, read the data and properties of companion into an :class:`~species.core.box.ObjectBox`, and list its content. The example also shows how an attribute of a :class:`~species.core.box.Box` object can be extracted.
+
+.. code-block:: python
 
    import species
 
@@ -59,3 +63,4 @@ Data which are read from the database, as well as the output of the various *spe
    objectbox = database.get_object(object_name='PZ Tel B')
    objectbox.open_box()
 
+   print(objectbox.magnitude)
