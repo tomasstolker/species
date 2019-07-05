@@ -38,14 +38,18 @@ def plot_color_magnitude(colorbox=None,
     Parameters
     ----------
     colorbox : species.core.box.ColorMagBox, None
-        Box with the colors and magnitudes.
+        Box with the colors and magnitudes. Not used if set to None.
     objects : tuple(tuple(str, str, str, str), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter IDs for the color, and the filter ID for the absolute magnitude.
+        filter IDs for the color, and the filter ID for the absolute magnitude. Not used if set to
+        None.
     isochrones : tuple(species.core.box.IsochroneBox, ), None
         Tuple with boxes of isochrone data. Not used if set to None.
     models : tuple(species.core.box.ColorMagBox, ), None
-
+        Tuple with :class:`~species.core.box.ColorMagBox` objects which have been created from the
+        isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`.
+        These boxes contain synthetic photometry for a given age and a range of masses. Not used
+        if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -275,22 +279,29 @@ def plot_color_magnitude(colorbox=None,
 
 
 def plot_color_color(colorbox,
-                     objects,
-                     label_x,
-                     label_y,
-                     output,
+                     objects=None,
+                     models=None,
+                     label_x='color [mag]',
+                     label_y='color [mag]',
                      xlim=None,
                      ylim=None,
                      offset=None,
-                     legend='upper left'):
+                     legend='upper left',
+                     output='color-color.pdf'):
     """
     Parameters
     ----------
-    colorbox : species.core.box.ColorMagBox
+    colorbox : species.core.box.ColorColorBox
         Box with the colors and magnitudes.
-    objects : tuple(tuple(str, str, str, str), )
+    objects : tuple(tuple(str, str, str, str), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the
-        two filter IDs for the color, and the filter ID for the absolute magnitude.
+        two filter IDs for the color, and the filter ID for the absolute magnitude. Not used if
+        set to None.
+    models : tuple(species.core.box.ColorMagBox, ), None
+        Tuple with :class:`~species.core.box.ColorColorBox` objects which have been created from
+        the isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`.
+        These boxes contain synthetic photometry for a given age and a range of masses. Not used
+        if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -313,6 +324,9 @@ def plot_color_color(colorbox,
 
     marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*',
                               'd', 'x', '+', '1', '2', '3', '4'))
+
+    model_color = ('tomato', 'teal', 'dodgerblue')
+    model_linestyle = ('-', '--', ':', '-.')
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
     sys.stdout.flush()
@@ -366,9 +380,13 @@ def plot_color_color(colorbox,
     color1 = color1[indices]
     color2 = color2[indices]
 
-    spt_disc = plot_util.sptype_discrete(sptype, color1.shape)
+    if colorbox.object_type == 'star':
+        spt_disc = plot_util.sptype_stellar(sptype, color1.shape)
+        unique = np.arange(0, color1.size, 1)
 
-    _, unique = np.unique(color1, return_index=True)
+    elif colorbox.object_type != 'temperature':
+        spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
+        _, unique = np.unique(color1, return_index=True)
 
     sptype = sptype[unique]
     color1 = color1[unique]
@@ -384,6 +402,53 @@ def plot_color_color(colorbox,
     cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
     cb.set_ticks(np.arange(0.5, 7., 1.))
     cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+
+    if models is not None:
+        cmap_teff = plt.cm.afmhot
+
+        teff_min = np.inf
+        teff_max = -np.inf
+
+        for item in models:
+
+            if np.amin(item.sptype) < teff_min:
+                teff_min = np.amin(item.sptype)
+
+            if np.amax(item.sptype) > teff_max:
+                teff_max = np.amax(item.sptype)
+
+        norm_teff = mpl.colors.Normalize(vmin=teff_min, vmax=teff_max)
+
+        count = 0
+
+        model_dict = {}
+
+        for item in models:
+            if item.library not in model_dict:
+                model_dict[item.library] = [count, 0]
+                count += 1
+
+            else:
+                model_dict[item.library] = [model_dict[item.library][0], model_dict[item.library][1]+1]
+
+            model_count = model_dict[item.library]
+
+            if model_count[1] == 0:
+                label = plot_util.model_name(item.library)
+
+                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
+                         linewidth=0.6, zorder=3, color=model_color[model_count[0]], label=label)
+
+            else:
+                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
+                         linewidth=0.6, zorder=3, color=model_color[model_count[0]])
+
+            # scat_teff = ax1.scatter(item.color, item.magnitude, c=item.sptype, cmap=cmap_teff,
+            #                         norm=norm_teff, zorder=4, s=15, alpha=1.0, edgecolor='none')
+
+        # cb2 = ColorbarBase(ax=ax3, cmap=cmap_teff, norm=norm_teff, orientation='vertical', ticklocation='right')
+        # cb2.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+        # cb2.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
 
     if objects is not None:
         for item in objects:
@@ -412,8 +477,7 @@ def plot_color_color(colorbox,
     handles, labels = ax1.get_legend_handles_labels()
 
     if handles:
-        handles = [h[0] for h in handles]
-        ax1.legend(handles, labels, loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
+        ax1.legend(loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.close()

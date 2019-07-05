@@ -51,7 +51,7 @@ Data which are read from the database, as well as the output of the various *spe
 
    import species
 
-   species.SpeciesInit('./')
+   species.SpeciesInit(config_path='./')
 
    database = species.Database()
    database.add_companion(name='PZ Tel B')

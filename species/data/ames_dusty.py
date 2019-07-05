@@ -127,6 +127,11 @@ def add_ames_dusty(input_path,
                                 data_wavel.append(float(line[1:23].replace('D', 'E')))
                                 data_flux.append(float(line[25:35].replace('D', 'E')))
 
+                            elif len(tmp_wavel) == 21 and tmp_wavel[-4] == 'E' \
+                                    and tmp_flux[-4] == 'E':
+                                data_wavel.append(float(line[1:23]))
+                                data_flux.append(float(line[25:35]))
+
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
                 data_wavel = np.asarray(data_wavel)*1e-4  # [Angstrom] -> [micron]
                 data_flux = 10.**(np.asarray(data_flux)-8.)  # [erg s-1 cm-2 Angstrom-1]

@@ -48,8 +48,8 @@ def get_data():
                                       'Keck/NIRC2.Ks': (17.03, 0.08),  # Marois et al. 2010
                                       'Paranal/SPHERE.IRDIS_D_K12_1': (17.15, 0.06),  # Zurlo et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_K12_2': (16.97, 0.09),  # Zurlo et al. 2016
-                                      'Keck/NIRC2.Lp': (15.58, 0.10),  # Currie et al. 2014
-                                      'Paranal/NACO.NB405': (14.92, 0.18),  # Currie et al. 2014
+                                      'Paranal/NACO.Lp': (15.52, 0.10),  # Currie et al. 2014
+                                      'Paranal/NACO.NB405': (14.82, 0.18),  # Currie et al. 2014
                                       'Keck/NIRC2.Ms': (16.05, 0.30)}},  # Galicher et al. 2011
 
             'HR 8799 c': {'distance': 41.29,
@@ -60,31 +60,31 @@ def get_data():
                                       'Keck/NIRC2.Ks': (16.11, 0.08),  # Marois et al. 2010
                                       'Paranal/SPHERE.IRDIS_D_K12_1': (16.19, 0.05),  # Zurlo et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_K12_2': (15.86, 0.07),  # Zurlo et al. 2016
-                                      'Keck/NIRC2.Lp': (15.72, 0.08),  # Currie et al. 2014
-                                      'Paranal/NACO.NB405': (14.07, 0.08),  # Currie et al. 2014
+                                      'Paranal/NACO.Lp': (14.65, 0.11),  # Currie et al. 2014
+                                      'Paranal/NACO.NB405': (13.97, 0.11),  # Currie et al. 2014
                                       'Keck/NIRC2.Ms': (15.03, 0.14)}},  # Galicher et al. 2011
 
             'HR 8799 d': {'distance': 41.29,
                           'app_mag': {'Paranal/SPHERE.IRDIS_B_J': (18.59, 0.37),  # Zurlo et al. 2016
                                       'Keck/NIRC2.H': (16.71, 0.24),  # Currie et al. 2012
                                       'Paranal/SPHERE.IRDIS_D_H23_2': (17.02, 0.17),  # Zurlo et al. 2016
-                                      'Paranal/SPHERE.IRDIS_D_H23_3': (16.68, 0.21),  # Zurlo et al. 2016
+                                      'Paranal/SPHERE.IRDIS_D_H23_3': (16.85, 0.16),  # Zurlo et al. 2016
                                       'Keck/NIRC2.Ks': (16.09, 0.12),  # Marois et al. 2010
                                       'Paranal/SPHERE.IRDIS_D_K12_1': (16.20, 0.07),  # Zurlo et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_K12_2': (15.84, 0.10),  # Zurlo et al. 2016
-                                      'Keck/NIRC2.Lp': (14.56, 0.09),  # Currie et al. 2014
-                                      'Paranal/NACO.NB405': (13.97, 0.14),  # Currie et al. 2014
+                                      'Paranal/NACO.Lp': (14.55, 0.14),  # Currie et al. 2014
+                                      'Paranal/NACO.NB405': (13.87, 0.15),  # Currie et al. 2014
                                       'Keck/NIRC2.Ms': (14.65, 0.35)}},  # Galicher et al. 2011
 
             'HR 8799 e': {'distance': 41.29,
                           'app_mag': {'Paranal/SPHERE.IRDIS_B_J': (18.40, 0.21),  # Zurlo et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_H23_2': (16.91, 0.20),  # Zurlo et al. 2016
-                                      'Paranal/SPHERE.IRDIS_D_H23_3': (16.85, 0.16),  # Zurlo et al. 2016
+                                      'Paranal/SPHERE.IRDIS_D_H23_3': (16.68, 0.21),  # Zurlo et al. 2016
                                       'Keck/NIRC2.Ks': (15.91, 0.22),  # Marois et al. 2010
                                       'Paranal/SPHERE.IRDIS_D_K12_1': (16.12, 0.10),  # Zurlo et al. 2016
                                       'Paranal/SPHERE.IRDIS_D_K12_2': (15.82, 0.11),  # Zurlo et al. 2016
-                                      'Keck/NIRC2.Lp': (14.55, 0.12),  # Currie et al. 2014
-                                      'Paranal/NACO.NB405': (13.82, 0.20)}},  # Currie et al. 2014
+                                      'Paranal/NACO.Lp': (14.49, 0.21),  # Currie et al. 2014
+                                      'Paranal/NACO.NB405': (13.72, 0.20)}},  # Currie et al. 2014
 
             'HD 95086 b': {'distance': 86.44,
                            'app_mag': {'Gemini/GPI.H': (20.51, 0.25),  # De Rosa et al. 2016
@@ -100,12 +100,12 @@ def get_data():
 
             '2M1207 b': {'distance': 64.42,
                          'app_mag': {'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006
+                                     'HST/NICMOS1.F110M': (20.61, 0.15),  # Song et al. 2006
                                      'HST/NICMOS1.F145M': (19.05, 0.03),  # Song et al. 2006
                                      'HST/NICMOS1.F160W': (18.27, 0.02),  # Song et al. 2006
-                                     'Paranal/NACO.J': (20.0, 0.20),  # Mohanty et al. 200z
+                                     'Paranal/NACO.J': (20.0, 0.2),  # Mohanty et al. 200z
                                      'Paranal/NACO.H': (18.09, 0.21),  # Chauvin et al. 2004
                                      'Paranal/NACO.Ks': (16.93, 0.11),  # Chauvin et al. 2004
-                                     # 'Magellan/MagAO.3.3': (15.46, 0.10),  # Skemer et al. 2014
                                      'Paranal/NACO.Lp': (15.28, 0.14)}},  # Chauvin et al. 2004
 
             'AB Pic B': {'distance': 50.12,
@@ -152,34 +152,28 @@ def get_data():
                                         'Subaru/CIAO.H': (14.95, 0.13),  # Bonnefoy et al. 2014
                                         'Subaru/CIAO.Ks': (14.32, 0.09),  # Bonnefoy et al. 2014
                                         'Keck/NIRC2.Lp': (13.12, 0.1),  # Bonnefoy et al. 2014
-                                        # 'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
+                                        'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
                                         'LBT/LMIRCam.M_77K': (13.3, 0.3)}},  # Bonnefoy et al. 2014
 
-            'ROXs 42B b': {'distance': 144.16,
+            'ROXs 42 Bb': {'distance': 144.16,
                            'app_mag': {'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
                                        'Keck/NIRC2.H': (15.88, 0.05),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ks': (15.01, 0.06),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Lp': (13.97, 0.06),  # Daemgen et al. 2017
-                                       # 'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
+                                       'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ms': (14.01, 0.23)}},  # Daemgen et al. 2017
 
             'GJ 504 b': {'distance': 17.54,
                          'app_mag': {'Paranal/SPHERE.IRDIS_D_Y23_2': (20.98, 0.20),  # Bonnefoy et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_Y23_3': (20.14, 0.09),  # Bonnefoy et al. 2018
-                                     # 'Paranal/SPHERE.IRDIS_D_J23_2': (>21.28, ),  # Bonnefoy et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_J23_3': (19.01, 0.17),  # Bonnefoy et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_H23_2': (18.95, 0.30),  # Bonnefoy et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (21.81, 0.35),  # Bonnefoy et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (18.77, 0.20),  # Bonnefoy et al. 2018
-                                     # 'Paranal/SPHERE.IRDIS_D_K12_2': (>19.96, ),  # Bonnefoy et al. 2018
                                      'Subaru/CIAO.J': (19.78, 0.10),  # Janson et al. 2013
                                      'Subaru/CIAO.H': (20.01, 0.14),  # Janson et al. 2013
                                      'Subaru/CIAO.Ks': (19.38, 0.11),  # Janson et al. 2013
                                      'Subaru/CIAO.CH4s': (19.58, 0.13),  # Janson et al. 2013
-                                     # 'Subaru/CIAO.CH4l': (>20.63, ),  # Janson et al. 2013
-                                     # 'LBTI/LMIRcam.L_NB6': (17.59, 0.17),  # Skemer et al. 2016
-                                     # 'LBTI/LMIRcam.L_NB7': (16.47, 0.19),  # Skemer et al. 2016
-                                     # 'LBTI/LMIRcam.L_NB8': (15.85, 0.17),  # Skemer et al. 2016
                                      'Subaru/IRCS.Lp': (16.70, 0.17)}},  # Kuzuhara et al. 2013
 
             'GU Psc b': {'distance': 47.61,
@@ -191,7 +185,7 @@ def get_data():
                                      'WISE/WISE.W1': (17.17, 0.33),  # Naud et al. 2014
                                      'WISE/WISE.W2': (15.41, 0.22)}},  # Naud et al. 2014
 
-            '2M1207 ABb': {'distance': 47.2,
+            '2M0103 ABb': {'distance': 47.2,
                            'app_mag': {'Paranal/NACO.J': (15.47, 0.30),  # Delorme et al. 2013
                                        'Paranal/NACO.H': (14.27, 0.20),  # Delorme et al. 2013
                                        'Paranal/NACO.Ks': (13.67, 0.20),  # Delorme et al. 2013
@@ -201,8 +195,6 @@ def get_data():
                             'app_mag': {'Gemini/NIRI.J-G0202w': (17.90, 0.12),  # Lafreniere et al. 2008
                                         'Gemini/NIRI.H-G0203w': (16.87, 0.07),  # Lafreniere et al. 2008
                                         'Gemini/NIRI.K-G0204w': (16.17, 0.18),  # Lafreniere et al. 2008
-                                        # 'MMT/Clio.3.1': (15.65, 0.21),  # Bailey et al. 2013
-                                        # 'MMT/Clio.3.3': (15.2, 0.16),  # Bailey et al. 2013
                                         'Gemini/NIRI.Lprime-G0207w': (14.8, 0.3)}},  # Lafreniere et al. 2010
 
             'GSC 06214 B': {'distance': 108.84,
