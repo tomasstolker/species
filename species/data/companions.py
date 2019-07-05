@@ -12,9 +12,9 @@ def get_data():
     """
 
     data = {'beta Pic b': {'distance': 19.75,
-                           'app_mag': {'Paranal/NACO.J': (14.0, 0.3),  # Bonnefoy et al. (2013)
+                           'app_mag': {'Paranal/NACO.J': (14.11, 0.21),  # Currie et al. 2013
                                        'Gemini/NICI.ED286': (13.18, 0.15),  # Males et al. (2014)
-                                       'Paranal/NACO.H': (13.5, 0.2),  # Bonnefoy et al. (2013)
+                                       'Paranal/NACO.H': (13.32, 0.14),  # Currie et al. 2013
                                        'Paranal/NACO.Ks': (12.64, 0.11),  # Bonnefoy et al. (2011)
                                        'Paranal/NACO.NB374': (11.24, 0.15),  # Stolker et al. in prep.
                                        'Paranal/NACO.Lp': (11.30, 0.06),  # Stolker et al. (2019)
@@ -26,8 +26,8 @@ def get_data():
                                         'Paranal/SPHERE.IRDIS_D_H23_3': (17.58, 0.06),  # Chauvin et al. 2017
                                         'Paranal/SPHERE.IRDIS_D_K12_1': (17.01, 0.09),  # Chauvin et al. 2017
                                         'Paranal/SPHERE.IRDIS_D_K12_2': (16.79, 0.09),  # Chauvin et al. 2017
-                                        'Paranal/NACO.NB405': (15.41, 0.30),  # Stolker et al. in prep.
                                         'Paranal/NACO.Lp': (15.34, 0.16),  # Stolker et al. in prep.
+                                        'Paranal/NACO.NB405': (15.41, 0.30),  # Stolker et al. in prep.
                                         'Paranal/NACO.Mp': (14.82, 0.35)}},  # Stolker et al. in prep.
 
             '51 Eri b': {'distance': 29.78,

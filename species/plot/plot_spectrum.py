@@ -24,10 +24,9 @@ plt.rcParams['axes.axisbelow'] = False
 
 
 def plot_spectrum(boxes,
-                  filters,
-                  output,
-                  colors=None,
+                  filters=None,
                   residuals=None,
+                  colors=None,
                   xlim=None,
                   ylim=None,
                   scale=('linear', 'linear'),
@@ -35,22 +34,21 @@ def plot_spectrum(boxes,
                   offset=None,
                   legend='upper left',
                   figsize=(7., 5.),
+                  output='spectrum.pdf',
                   object_type='planet'):
     """
     Parameters
     ----------
     boxes : tuple(species.core.box, )
         Boxes with data.
-    filters : tuple(str, )
-        Filter IDs for which the transmission profile is plotted.
-    output : str
-        Output filename.
-    colors : tuple(str, )
+    filters : tuple(str, ), None
+        Filter IDs for which the transmission profile is plotted. Not plotted if set to None.
+    residuals : species.core.box.ResidualsBox, None
+        Box with residuals of a fit. Not plotted if set to None.
+    colors : tuple(str, ), None
         Colors to be used for the different boxes. Note that a box with residuals requires a tuple
         with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
         to None.
-    residuals : species.core.box.ResidualsBox
-        Box with residuals of a fit.
     xlim : tuple(float, float)
         Limits of the x-axis.
     ylim : tuple(float, float)
@@ -65,6 +63,8 @@ def plot_spectrum(boxes,
         Location of the legend.
     figsize : tuple(float, float)
         Figure size.
+    output : str
+        Output filename.
     object_type : str
         Object type ('planet' or 'star'). With 'planet', the radius and mass are expressed in
         Jupiter units. With 'star', the radius and mass are expressed in solar units.
