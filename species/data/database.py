@@ -316,9 +316,14 @@ class Database:
             error = {}
 
             for item in app_mag:
-                synphot = photometry.SyntheticPhotometry(item)
-                flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0],
-                                                                    app_mag[item][1])
+                try:
+                    synphot = photometry.SyntheticPhotometry(item)
+                    flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0],
+                                                                        app_mag[item][1])
+
+                except ValueError:
+                    # Write NaNs if the filter is not available
+                    flux[item], error[item] = np.nan, np.nan
 
             for item in app_mag:
                 if 'objects/'+object_name+'/'+item in h5_file:
@@ -477,9 +482,9 @@ class Database:
         Parameters
         ----------
         spectrum : str
-            Spectral library.
+            Spectral library ('vega', 'irtf' or 'spex').
         sptypes : tuple(str, )
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for IRTF.
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
 
         Returns
         -------

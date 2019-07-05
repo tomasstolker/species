@@ -3,16 +3,6 @@
 Examples
 ========
 
-Configuration file
-------------------
-
-A configuration file is required in the working folder. In this case, the configuration file is named *species_config.ini* and its content is::
-
-   [species]
-   database = species_database.hdf5
-   config = species_config.ini
-   input = /path/to/store/data/
-
 Conversion of photometry units
 ------------------------------
 

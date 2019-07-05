@@ -24,6 +24,7 @@ Documentation for species
    :caption: User Documentation
 
    overview
+   configuration
    examples
    modules
 

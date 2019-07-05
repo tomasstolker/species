@@ -158,12 +158,10 @@ class ReadIsochrone:
             Masses (Mjup) for which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
-        filters_color : tuple(str, str), None
-            Filter IDs for the color as listed in the file with the isochrone data. Not selected if
-            set to None or if only evolutionary tracks are available.
-        filter_mag : str, None
-            Filter ID for the absolute magnitude as listed in the file with the isochrone data. Not
-            selected if set to None or if only evolutionary tracks are available.
+        filters_color : tuple(str, str)
+            Filter IDs for the color as listed in the file with the isochrone data.
+        filter_mag : str
+            Filter ID for the absolute magnitude as listed in the file with the isochrone data.
 
         Returns
         -------
@@ -209,4 +207,62 @@ class ReadIsochrone:
                               filter_mag=filter_mag,
                               color=mag1-mag2,
                               magnitude=abs_mag,
+                              sptype=isochrone.teff)
+
+    def get_color_color(self,
+                        age,
+                        mass,
+                        model,
+                        filters):
+        """
+        Parameters
+        ----------
+        age : str
+            Age (Myr) that is used to interpolate the isochrone data.
+        mass : numpy.ndarray
+            Masses (Mjup) for which the isochrone data is interpolated.
+        model : str
+            Atmospheric model used to compute the synthetic photometry.
+        filters : tuple(tuple(str, str), tuple(str, str))
+            Filter IDs for the colors as listed in the file with the isochrone data.
+
+        Returns
+        -------
+        species.core.box.ColorColorBox
+            Box with the isochrone data.
+        """
+
+        isochrone = self.get_isochrone(age=age,
+                                       mass=mass,
+                                       filters_color=None,
+                                       filter_mag=None)
+
+        model1 = read_model.ReadModel(model=model, wavelength=filters[0][0])
+        model2 = read_model.ReadModel(model=model, wavelength=filters[0][1])
+        model3 = read_model.ReadModel(model=model, wavelength=filters[1][0])
+        model4 = read_model.ReadModel(model=model, wavelength=filters[1][1])
+
+        mag1 = np.zeros(isochrone.mass.shape[0])
+        mag2 = np.zeros(isochrone.mass.shape[0])
+        mag3 = np.zeros(isochrone.mass.shape[0])
+        mag4 = np.zeros(isochrone.mass.shape[0])
+
+        for i, item in enumerate(isochrone.mass):
+            model_par = {'teff': isochrone.teff[i],
+                         'logg': isochrone.logg[i],
+                         'feh': 0.,
+                         'mass': item,
+                         'distance': 10.}
+
+            mag1[i], _ = model1.get_magnitude(model_par=model_par)
+            mag2[i], _ = model2.get_magnitude(model_par=model_par)
+            mag3[i], _ = model3.get_magnitude(model_par=model_par)
+            mag4[i], _ = model4.get_magnitude(model_par=model_par)
+
+        return box.create_box(boxtype='colorcolor',
+                              library=model,
+                              object_type='temperature',
+                              filters=filters,
+                              color1=mag1-mag2,
+                              color2=mag3-mag4,
                               sptype=isochrone.teff)
