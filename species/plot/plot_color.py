@@ -269,9 +269,10 @@ def plot_color_magnitude(colorbox=None,
         # handles = [h[0] for h in handles]
         # ax1.legend(handles, labels, loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
 
-        ax1.legend(loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
+        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.clf()
     plt.close()
 
     sys.stdout.write('[DONE]\n')
@@ -291,7 +292,7 @@ def plot_color_color(colorbox,
     """
     Parameters
     ----------
-    colorbox : species.core.box.ColorColorBox
+    colorbox : species.core.box.ColorColorBox, None
         Box with the colors and magnitudes.
     objects : tuple(tuple(str, str, str, str), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the
@@ -370,38 +371,39 @@ def plot_color_color(colorbox,
     bounds = np.arange(0, 8, 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-    sptype = colorbox.sptype
-    color1 = colorbox.color1
-    color2 = colorbox.color2
+    if colorbox is not None:
+        sptype = colorbox.sptype
+        color1 = colorbox.color1
+        color2 = colorbox.color2
 
-    indices = np.where(sptype != 'None')[0]
+        indices = np.where(sptype != 'None')[0]
 
-    sptype = sptype[indices]
-    color1 = color1[indices]
-    color2 = color2[indices]
+        sptype = sptype[indices]
+        color1 = color1[indices]
+        color2 = color2[indices]
 
-    if colorbox.object_type == 'star':
-        spt_disc = plot_util.sptype_stellar(sptype, color1.shape)
-        unique = np.arange(0, color1.size, 1)
+        if colorbox.object_type == 'star':
+            spt_disc = plot_util.sptype_stellar(sptype, color1.shape)
+            unique = np.arange(0, color1.size, 1)
 
-    elif colorbox.object_type != 'temperature':
-        spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
-        _, unique = np.unique(color1, return_index=True)
+        elif colorbox.object_type != 'temperature':
+            spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
+            _, unique = np.unique(color1, return_index=True)
 
-    sptype = sptype[unique]
-    color1 = color1[unique]
-    color2 = color2[unique]
-    spt_disc = spt_disc[unique]
+        sptype = sptype[unique]
+        color1 = color1[unique]
+        color2 = color2[unique]
+        spt_disc = spt_disc[unique]
 
-    scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-                       zorder=5, s=40, alpha=0.6, edgecolor='none')
+        scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
+                           zorder=5, s=40, alpha=0.6, edgecolor='none')
 
-    cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
-                  ticklocation='top', format='%.2f')
+        cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+                      ticklocation='top', format='%.2f')
 
-    cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-    cb.set_ticks(np.arange(0.5, 7., 1.))
-    cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+        cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+        cb.set_ticks(np.arange(0.5, 7., 1.))
+        cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
 
     if models is not None:
         cmap_teff = plt.cm.afmhot
@@ -477,9 +479,10 @@ def plot_color_color(colorbox,
     handles, labels = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
+        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.clf()
     plt.close()
 
     sys.stdout.write('[DONE]\n')

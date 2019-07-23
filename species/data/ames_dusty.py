@@ -167,6 +167,8 @@ def add_ames_dusty(input_path,
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
+                                      None,
+                                      None,
                                       wavelength,
                                       np.asarray(flux))
 

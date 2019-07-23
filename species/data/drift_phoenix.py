@@ -88,6 +88,8 @@ def add_drift_phoenix(input_path,
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
+                                      None,
+                                      None,
                                       wavelength,
                                       np.asarray(flux))
 

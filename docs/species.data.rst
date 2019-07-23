@@ -100,6 +100,14 @@ species.data.mamajek module
     :undoc-members:
     :show-inheritance:
 
+species.data.petitcode module
+-----------------------------
+
+.. automodule:: species.data.petitcode
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.queries module
 ---------------------------
 

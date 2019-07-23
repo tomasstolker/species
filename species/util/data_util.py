@@ -77,6 +77,8 @@ def update_filter(filter_in):
 def sort_data(teff,
               logg,
               feh,
+              co,
+              fsed,
               wavelength,
               flux):
     """
@@ -85,6 +87,8 @@ def sort_data(teff,
     teff : numpy.ndarray
     logg : numpy.ndarray
     feh : numpy.ndarray, None
+    co : numpy.ndarray, None
+    fsed : numpy.ndarray, None
     wavelength : numpy.ndarray
     flux : numpy.ndarray
 
@@ -96,12 +100,12 @@ def sort_data(teff,
     teff_unique = np.unique(teff)
     logg_unique = np.unique(logg)
 
-    if feh is None:
+    if feh is None and co is None and fsed is None:
         spectrum = np.zeros((teff_unique.shape[0],
                              logg_unique.shape[0],
                              wavelength.shape[0]))
 
-    else:
+    elif feh is not None and co is None and fsed is None:
         feh_unique = np.unique(feh)
 
         spectrum = np.zeros((teff_unique.shape[0],
@@ -109,20 +113,75 @@ def sort_data(teff,
                              feh_unique.shape[0],
                              wavelength.shape[0]))
 
+    elif feh is not None and co is not None and fsed is None:
+        feh_unique = np.unique(feh)
+        co_unique = np.unique(co)
+
+        spectrum = np.zeros((teff_unique.shape[0],
+                             logg_unique.shape[0],
+                             feh_unique.shape[0],
+                             co_unique.shape[0],
+                             wavelength.shape[0]))
+
+    elif feh is not None and co is None and fsed is not None:
+        feh_unique = np.unique(feh)
+        fsed_unique = np.unique(fsed)
+
+        spectrum = np.zeros((teff_unique.shape[0],
+                             logg_unique.shape[0],
+                             feh_unique.shape[0],
+                             fsed_unique.shape[0],
+                             wavelength.shape[0]))
+
+    else:
+        feh_unique = np.unique(feh)
+        co_unique = np.unique(co)
+        fsed_unique = np.unique(fsed)
+
+        spectrum = np.zeros((teff_unique.shape[0],
+                             logg_unique.shape[0],
+                             feh_unique.shape[0],
+                             co_unique.shape[0],
+                             fsed_unique.shape[0],
+                             wavelength.shape[0]))
+
     for i in range(teff.shape[0]):
         index_teff = np.argwhere(teff_unique == teff[i])[0]
         index_logg = np.argwhere(logg_unique == logg[i])[0]
 
-        if feh is None:
+        if feh is None and co is None and fsed is None:
             spectrum[index_teff, index_logg, :] = flux[i]
-        else:
+
+        elif feh is not None and co is None and fsed is None:
             index_feh = np.argwhere(feh_unique == feh[i])[0]
             spectrum[index_teff, index_logg, index_feh, :] = flux[i]
 
-    if feh is None:
+        elif feh is not None and co is not None and fsed is None:
+            index_feh = np.argwhere(feh_unique == feh[i])[0]
+            index_co = np.argwhere(co_unique == co[i])[0]
+            spectrum[index_teff, index_logg, index_feh, index_co, :] = flux[i]
+
+        elif feh is not None and co is None and fsed is not None:
+            index_feh = np.argwhere(feh_unique == feh[i])[0]
+            index_fsed = np.argwhere(fsed_unique == fsed[i])[0]
+            spectrum[index_teff, index_logg, index_feh, index_fsed, :] = flux[i]
+
+        else:
+            index_feh = np.argwhere(feh_unique == feh[i])[0]
+            index_co = np.argwhere(co_unique == co[i])[0]
+            index_fsed = np.argwhere(fsed_unique == fsed[i])[0]
+            spectrum[index_teff, index_logg, index_feh, index_co, index_fsed, :] = flux[i]
+
+    if feh is None and co is None and fsed is None:
         sorted_data = (teff_unique, logg_unique, wavelength, spectrum)
-    else:
+    elif feh is not None and co is None and fsed is None:
         sorted_data = (teff_unique, logg_unique, feh_unique, wavelength, spectrum)
+    elif feh is not None and co is not None and fsed is None:
+        sorted_data = (teff_unique, logg_unique, feh_unique, co_unique, wavelength, spectrum)
+    elif feh is not None and co is None and fsed is not None:
+        sorted_data = (teff_unique, logg_unique, feh_unique, fsed_unique, wavelength, spectrum)
+    else:
+        sorted_data = (teff_unique, logg_unique, feh_unique, co_unique, fsed_unique, wavelength, spectrum)
 
     return sorted_data
 
@@ -218,6 +277,18 @@ def add_missing(model,
                         except IndexError:
                             flux[i, j, k] = np.nan
                             warnings.warn('Interpolation not possible, using NaN instead.')
+
+            elif len(parameters) == 4:
+                for k in range(grid_shape[2]):
+                    for m in range(grid_shape[3]):
+                        if np.count_nonzero(flux[i, j, k, m]) == 0:
+                            try:
+                                scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
+                                flux[i, j, k, m] = scaling*flux[i+1, j, k, m] + (1.-scaling)*flux[i-1, j, k, m]
+
+                            except IndexError:
+                                flux[i, j, k, m] = np.nan
+                                warnings.warn('Interpolation not possible, using NaN instead.')
 
     del database['models/'+model+'/flux']
 

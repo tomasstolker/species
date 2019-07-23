@@ -3,12 +3,14 @@
 Examples
 ========
 
-This page contains an incomplete overview of the functionalities that have been implemented in `species`. More examples will be added at a later stage. Feel free to contact Tomas Stolker (see :ref:`about`) for questions regarding the usability for your specific science case.
+This page contains an incomplete overview of the functionalities that have been implemented in `species`. More examples will be added at a later stage. Feel free to contact Tomas Stolker (see :ref:`about`) for questions regarding its usability for your specific science case.
 
-Conversion of photometry units
-------------------------------
+Converting photometry units
+---------------------------
 
-To calculated the flux density from a magnitude (and the other way around)::
+To calculated the flux density from a magnitude (and the other way around):
+
+.. code-block:: python
 
    import species
 
@@ -25,7 +27,9 @@ To calculated the flux density from a magnitude (and the other way around)::
 Synthetic photometry
 --------------------
 
-To calculate synthetic photometry from a Planck function for given filter::
+To calculate synthetic photometry from a Planck function for given filter:
+
+.. code-block:: python
 
    import species
 
@@ -48,7 +52,9 @@ To calculate synthetic photometry from a Planck function for given filter::
 Spectral library
 ----------------
 
-The following code will download the IRTF spectral library and add the spectra to the database. An L0 type spectrum is then read from the database and synthetic photometry is computed for the MKO H filter. The spectrum slice is plotted together with the filter profile and the synthetic photometry::
+The following code will download the IRTF spectral library and add the spectra to the database. An L0 type spectrum is then read from the database and synthetic photometry is computed for the MKO H filter. The spectrum slice is plotted together with the filter profile and the synthetic photometry:
+
+.. code-block:: python
 
    import species
 
@@ -83,7 +89,9 @@ The following code will download the IRTF spectral library and add the spectra t
 Color-magnitude diagram
 -----------------------
 
-Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. Then a color-magnitude diagram (J-H vs. J) is created from the IRTF spectral library and the data point of 51 Eri b is added to the plot (black square)::
+Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. Then a color-magnitude diagram (J-H vs. J) is created from the IRTF spectral library and the data point of 51 Eri b is added to the plot (black square):
+
+.. code-block:: python
 
    import species
 
@@ -115,7 +123,9 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
 Atmospheric models
 ------------------
 
-In the last example, the DRIFT-PHOENIX atmospheric models are added to the database. The grid is then interpolated and a spectrum for a given set of parameter values and spectral resolution is computed. The spectrum is then plotted together with several filter curves::
+In the last example, the DRIFT-PHOENIX atmospheric models are added to the database. The grid is then interpolated and a spectrum for a given set of parameter values and spectral resolution is computed. The spectrum is then plotted together with several filter curves:
+
+.. code-block:: python
 
    import species
 
@@ -140,7 +150,9 @@ In the last example, the DRIFT-PHOENIX atmospheric models are added to the datab
    :width: 80%
    :align: center
 
-Or, a spectrum with the original spectral resolution can be obtained from the (discrete) model grid::
+Or, a spectrum with the original spectral resolution can be obtained from the (discrete) model grid:
+
+.. code-block:: python
 
    modelbox = model.get_data(model_par={'teff':1200., 'logg':4.0, 'feh':0., 'radius':1., 'distance':10.})
 
@@ -158,7 +170,9 @@ Or, a spectrum with the original spectral resolution can be obtained from the (d
 Photometric calibration
 -----------------------
 
-In this example, the 2MASS photometry of PZ Tel A is fitted with a IRTF spectrum of a G8V type star (which can be downloaded from the IRTF website). The plots show the posterior distribution scaling parameter that was fitted and randomly selected spectra from the posterior distribution with the best-fit synthetic photometry and the observed photometry (which are overlapping). The residuals are shown in terms of the uncertainty of the 2MASS photometry. The following code will run the MCMC, extrapolate the spectrum a bit  and create the plots::
+In this example, the 2MASS photometry of PZ Tel A is fitted with a IRTF spectrum of a G8V type star (which can be downloaded from the IRTF website). The plots show the posterior distribution scaling parameter that was fitted and randomly selected spectra from the posterior distribution with the best-fit synthetic photometry and the observed photometry (which are overlapping). The residuals are shown in terms of the uncertainty of the 2MASS photometry. The following code will run the MCMC, extrapolate the spectrum a bit  and create the plots:
+
+.. code-block:: python
 
    import species
 
@@ -244,7 +258,9 @@ In this example, the 2MASS photometry of PZ Tel A is fitted with a IRTF spectrum
                          title=r'G8V HD75732 - PZ Tel A',
                          offset=(-0.3, -0.08))
 
-If we need to know the magnitude of PZ Tel A in a specific filter (e.g. VLT/NACO Mp), we can create synthetic photometry in the following way::
+If we need to know the magnitude of PZ Tel A in a specific filter (e.g. VLT/NACO Mp), we can create synthetic photometry in the following way:
+
+.. code-block:: python
 
    synphot = species.SyntheticPhotometry('Paranal/NACO.Mp')
    mag = synphot.spectrum_to_magnitude(spectrum.wavelength, spectrum.flux)
@@ -253,7 +269,9 @@ If we need to know the magnitude of PZ Tel A in a specific filter (e.g. VLT/NACO
    print('NACO Mp [mag] =', mag[0])
    print('NACO Mp [W m-2 micron-1] =', phot)
 
-Which gives::
+Which gives:
+
+.. code-block:: none
 
    NACO Mp [mag] = 6.407877593040467
    NACO Mp [W m-2 micron-1] = 5.9164296e-14
@@ -264,4 +282,100 @@ Which gives::
 
 .. image:: _images/spectrum.png
    :width: 90%
+   :align: center
+
+Fitting photometry
+------------------
+
+In this example we fit the available photometry of beta Pic b with the DRIFT-PHOENIX atmospheric models and sample the posterior distributions of the model parameters with MCMC.
+
+.. code-block:: python
+
+   import species
+
+   species.SpeciesInit('./')
+
+   database = species.Database()
+
+   database.add_model(model='drift-phoenix')
+
+   database.add_companion(name='beta Pic b')
+
+   database.add_filter(filter_id='LCO/VisAO.Ys',
+                       filename='../data/VisAO_Ys_filter_curve.dat')
+
+   database.add_object(object_name='beta Pic b',
+                       distance=None,
+                       app_mag={'LCO/VisAO.Ys': (15.53, 0.34)})  # Males et al. (2014),
+
+   objectbox = database.get_object(object_name='beta Pic b',
+                                   filter_id=None,
+                                   inc_phot=True,
+                                   inc_spec=False)
+
+   fit = species.FitModel(objname='beta Pic b',
+                          filters=None,
+                          model='drift-phoenix',
+                          bounds=None,
+                          inc_phot=True,
+                          inc_spec=False)
+
+   fit.run_mcmc(nwalkers=200,
+                nsteps=1000,
+                guess={'teff': 1800, 'logg': None, 'feh': None, 'radius': 1.3},
+                tag='betapic',
+                prior=('mass', 13., 3.))
+
+   species.plot_walkers(tag='betapic',
+                        nsteps=None,
+                        offset=(-0.24, -0.09),
+                        output='plot/walkers.pdf')
+
+   species.plot_posterior(tag='betapic',
+                          burnin=500,
+                          title=r'DRIFT-PHOENIX - $\beta$ Pic b',
+                          offset=(-0.25, -0.25),
+                          limits=((1500., 1920.), (3.4, 4.7), (-0.6, 0.3), (1.1, 1.8)),
+                          output='plot/posterior.pdf')
+
+   samples = database.get_mcmc_spectra(tag='betapic',
+                                       burnin=500,
+                                       random=30,
+                                       wavelength=(0.7, 6.5),
+                                       specres=50.)
+
+   median = database.get_median_sample('betapic', burnin=500)
+
+   drift = species.ReadModel(model='drift-phoenix', wavelength=(0.7, 6.5))
+
+   model = drift.get_model(model_par=median, specres=50.)
+
+   model = species.add_luminosity(model)
+
+   residuals = species.get_residuals(datatype='model',
+                                     spectrum='drift-phoenix',
+                                     parameters=median,
+                                     filters=None,
+                                     objectbox=objectbox,
+                                     inc_phot=True,
+                                     inc_spec=False)
+
+   synphot = species.multi_photometry(datatype='model',
+                                      spectrum='drift-phoenix',
+                                      filters=objectbox.filter,
+                                      parameters=median)
+
+   species.plot_spectrum(boxes=(samples, model, objectbox, synphot),
+                         filters=objectbox.filter,
+                         residuals=residuals,
+                         colors=('gray', 'tomato', ('black', ), 'black'),
+                         xlim=(0.7, 6.0),
+                         ylim=(-1.2e-15, 1.3e-14),
+                         scale=('linear', 'linear'),
+                         title=r'DRIFT-PHOENIX - $\beta$ Pic b',
+                         offset=(-0.25, -0.06),
+                         output='plot/spectrum.pdf')
+
+.. image:: _images/betapic.png
+   :width: 100%
    :align: center

@@ -18,6 +18,7 @@ The software profits from publicly available data such as photometric and spectr
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_ atmospheric models
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric models
 - `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/>`_ atmospheric models
+- `petitCODE <https://home.strw.leidenuniv.nl/~molliere/#petitcode>`_ atmospheric models
 - All filter profiles from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
 - Spectra from the `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - Spectra from the `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_
