@@ -59,8 +59,10 @@ class ReadCalibration:
 
     def interpolate(self):
         """
-        :return: Linearly interpolated spectrum.
-        :rtype: scipy.interpolate.interpolate.interp1d
+        Returns
+        -------
+        scipy.interpolate.interpolate.interp1d
+            Linearly interpolated spectrum.
         """
 
         calibbox = self.get_spectrum()

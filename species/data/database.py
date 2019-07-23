@@ -4,7 +4,6 @@ Database module.
 
 import os
 import sys
-import math
 import warnings
 import configparser
 
@@ -14,10 +13,10 @@ import progress.bar
 import numpy as np
 
 from species.analysis import photometry
-from species.core import box, constants
+from species.core import box
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, mamajek, btsettl, ames_dusty, ames_cond, \
-                         isochrones
+                         isochrones, petitcode
 from species.read import read_model, read_calibration
 from species.util import data_util
 
@@ -220,18 +219,21 @@ class Database:
                   model,
                   wavelength=None,
                   teff=None,
-                  specres=None):
+                  specres=None,
+                  data_folder=None):
         """
         Parameters
         ----------
         model : str
             Model name.
-        wavelength : tuple(float, float)
+        wavelength : tuple(float, float), None
             Wavelength (micron) range.
         teff : tuple(float, float), None
             Effective temperature (K) range.
-        specres : float
+        specres : float, None
             Spectral resolution.
+        data_folder : str, None
+            Path with input data (only required for petitCODE hot models).
 
         Returns
         -------
@@ -263,6 +265,28 @@ class Database:
         elif model[0:9] == 'ames-cond':
             ames_cond.add_ames_cond(self.input_path, h5_file, wavelength, teff, specres)
             data_util.add_missing(model, ('teff', 'logg'), h5_file)
+
+        elif model[0:9] == 'ames-cond':
+            ames_cond.add_ames_cond(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg'), h5_file)
+
+        elif model[0:20] == 'petitcode-cool-clear':
+            petitcode.add_petitcode_cool_clear(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
+
+        elif model[0:21] == 'petitcode-cool-cloudy':
+            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file, wavelength, teff, specres)
+            data_util.add_missing(model, ('teff', 'logg', 'feh', 'fsed'), h5_file)
+
+        elif model[0:19] == 'petitcode-hot-clear':
+            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, wavelength, teff,
+                                              specres, data_folder)
+            data_util.add_missing(model, ('teff', 'logg', 'feh', 'co'), h5_file)
+
+        elif model[0:20] == 'petitcode-hot-cloudy':
+            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, wavelength, teff,
+                                               specres, data_folder)
+            data_util.add_missing(model, ('teff', 'logg', 'feh', 'co', 'fsed'), h5_file)
 
         h5_file.close()
 
@@ -540,12 +564,6 @@ class Database:
 
         h5_file = h5py.File(self.database, 'a')
 
-        index_max = np.unravel_index(sampler.lnprobability.argmax(),
-                                     sampler.lnprobability.shape)
-
-        max_prob = math.exp(sampler.lnprobability[index_max])
-        best_sample = sampler.chain[index_max]
-
         if 'results' not in h5_file:
             h5_file.create_group('results')
 
@@ -555,9 +573,13 @@ class Database:
         if 'results/mcmc/'+tag in h5_file:
             del h5_file['results/mcmc/'+tag]
 
-        dset = h5_file.create_dataset('results/mcmc/'+tag,
+        dset = h5_file.create_dataset('results/mcmc/'+tag+'/samples',
                                       data=sampler.chain,
                                       dtype='f')
+
+        h5_file.create_dataset('results/mcmc/'+tag+'/probability',
+                               data=np.exp(sampler.lnprobability),
+                               dtype='f')
 
         dset.attrs['type'] = str(spectrum[0])
         dset.attrs['spectrum'] = str(spectrum[1])
@@ -569,15 +591,6 @@ class Database:
         for i, item in enumerate(modelpar):
             dset.attrs['parameter'+str(i)] = str(item)
 
-        dset.attrs['max_prob'] = max_prob
-
-        for i, item in enumerate(modelpar):
-            dset.attrs['best_sample'+str(i)] = best_sample[i]
-
-        sys.stdout.write(f'Maximum probability: {max_prob:.2f}\n')
-        sys.stdout.write(f'Parameter values:')
-        for i, item in enumerate(modelpar):
-            sys.stdout.write(f' {item}={best_sample[i]:.2f}')
         sys.stdout.write('\n')
         sys.stdout.flush()
 
@@ -602,13 +615,16 @@ class Database:
 
         h5_file.close()
 
-    def get_best_sample(self,
-                        tag):
+    def get_probable_sample(self,
+                            tag,
+                            burnin):
         """
         Parameters
         ----------
         tag : str
             Database tag with the MCMC results.
+        burnin : int
+            Number of burnin steps.
 
         Returns
         -------
@@ -617,24 +633,89 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag]
+        dset = h5_file['results/mcmc/'+tag+'/samples']
+
+        samples = np.asarray(dset)
+        samples = samples[:, burnin:, :]
+
+        probability = np.asarray(h5_file['results/mcmc/'+tag+'/probability'])
+        probability = probability[:, burnin:]
 
         nparam = dset.attrs['nparam']
 
-        best_sample = {}
+        index_max = np.unravel_index(probability.argmax(), probability.shape)
+
+        # max_prob = probability[index_max]
+        max_sample = samples[index_max]
+
+        # sys.stdout.write(f'Maximum probability: {max_prob:.2f}\n')
+        # sys.stdout.write(f'Most probable sample:')
+
+        prob_sample = {}
 
         for i in range(nparam):
             par_key = dset.attrs['parameter'+str(i)]
-            par_value = dset.attrs['best_sample'+str(i)]
+            par_value = max_sample[i]
 
-            best_sample[par_key] = par_value
+            prob_sample[par_key] = par_value
+            # sys.stdout.write(f' {par_key}={par_value:.2f}')
 
         if dset.attrs.__contains__('distance'):
-            best_sample['distance'] = dset.attrs['distance']
+            prob_sample['distance'] = dset.attrs['distance']
+
+        # sys.stdout.write('\n')
+        # sys.stdout.flush()
 
         h5_file.close()
 
-        return best_sample
+        return prob_sample
+
+    def get_median_sample(self,
+                          tag,
+                          burnin):
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag with the MCMC results.
+        burnin : int
+            Number of burnin steps.
+
+        Returns
+        -------
+        dict
+            Parameters and values for the sample with the maximum posterior probability.
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        dset = h5_file['results/mcmc/'+tag+'/samples']
+
+        nparam = dset.attrs['nparam']
+
+        samples = np.asarray(dset)
+        samples = samples[:, burnin:, :]
+        samples = np.reshape(samples, (-1, nparam))
+
+        # sys.stdout.write(f'Median sample:')
+
+        median_sample = {}
+
+        for i in range(nparam):
+            par_key = dset.attrs['parameter'+str(i)]
+            par_value = np.percentile(samples[:, i], 50.)
+
+            median_sample[par_key] = par_value
+            # sys.stdout.write(f' {par_key}={par_value:.2f}')
+
+        if dset.attrs.__contains__('distance'):
+            median_sample['distance'] = dset.attrs['distance']
+
+        # sys.stdout.write('\n')
+        # sys.stdout.flush()
+
+        h5_file.close()
+
+        return median_sample
 
     def get_mcmc_spectra(self,
                          tag,
@@ -667,7 +748,7 @@ class Database:
         sys.stdout.flush()
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag]
+        dset = h5_file['results/mcmc/'+tag+'/samples']
 
         nparam = dset.attrs['nparam']
         spectrum_type = dset.attrs['type']
@@ -750,7 +831,7 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag]
+        dset = h5_file['results/mcmc/'+tag+'/samples']
 
         nparam = dset.attrs['nparam']
         spectrum_type = dset.attrs['type']
@@ -889,9 +970,9 @@ class Database:
         ----------
         tag: str
             Database tag with the samples.
-        burnin : int
+        burnin : int, None
             Number of burnin samples to exclude. All samples are selected if set to None.
-        random : int
+        random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to None.
 
@@ -901,16 +982,17 @@ class Database:
             Box with the MCMC samples.
         """
 
+        if burnin is None:
+            burnin = 0
+
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag]
+        dset = h5_file['results/mcmc/'+tag+'/samples']
 
         spectrum = dset.attrs['spectrum']
         nparam = dset.attrs['nparam']
 
         samples = np.asarray(dset)
-
-        if burnin:
-            samples = samples[:, burnin:, :]
+        samples = samples[:, burnin:, :]
 
         if random:
             ran_walker = np.random.randint(samples.shape[0], size=random)
@@ -918,15 +1000,17 @@ class Database:
             samples = samples[ran_walker, ran_step, :]
 
         param = []
-        best_sample = []
         for i in range(nparam):
             param.append(dset.attrs['parameter'+str(i)])
-            best_sample.append(dset.attrs['best_sample'+str(i)])
 
         h5_file.close()
+
+        prob_sample = self.get_probable_sample(tag, burnin)
+        median_sample = self.get_median_sample(tag, burnin)
 
         return box.create_box('samples',
                               spectrum=spectrum,
                               parameters=param,
                               samples=samples,
-                              best_sample=best_sample)
+                              prob_sample=prob_sample,
+                              median_sample=median_sample)

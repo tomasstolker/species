@@ -139,7 +139,7 @@ class ReadModel:
         if self.wl_points is None:
             self.wl_points, self.wl_index = self.wavelength_points(h5_file)
 
-        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode_warm_clear'):
+        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
 
             points = (teff, logg, feh)
@@ -149,24 +149,24 @@ class ReadModel:
             points = (teff, logg)
             flux = flux[:, :, self.wl_index]
 
-        elif self.model == 'petitcode_warm_cloudy':
-            feh = np.asarray(h5_file['models/petitcode_warm_cloudy/feh'])
-            fsed = np.asarray(h5_file['models/petitcode_warm_cloudy/fsed'])
+        elif self.model == 'petitcode-cool-cloudy':
+            feh = np.asarray(h5_file['models/petitcode-cool-cloudy/feh'])
+            fsed = np.asarray(h5_file['models/petitcode-cool-cloudy/fsed'])
 
             points = (teff, logg, feh, fsed)
             flux = flux[:, :, :, :, self.wl_index]
 
-        elif self.model == 'petitcode_hot_clear':
-            feh = np.asarray(h5_file['models/petitcode_hot_clear/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode_hot_clear/co'])
+        elif self.model == 'petitcode-hot-clear':
+            feh = np.asarray(h5_file['models/petitcode-hot-clear/feh'])
+            co_ratio = np.asarray(h5_file['models/petitcode-hot-clear/co'])
 
             points = (teff, logg, feh, co_ratio)
             flux = flux[:, :, :, :, self.wl_index]
 
-        elif self.model == 'petitcode_hot_cloudy':
-            feh = np.asarray(h5_file['models/petitcode_hot_cloudy/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode_hot_cloudy/co'])
-            fsed = np.asarray(h5_file['models/petitcode_hot_cloudy/fsed'])
+        elif self.model == 'petitcode-hot-cloudy':
+            feh = np.asarray(h5_file['models/petitcode-hot-cloudy/feh'])
+            co_ratio = np.asarray(h5_file['models/petitcode-hot-cloudy/co'])
+            fsed = np.asarray(h5_file['models/petitcode-hot-cloudy/fsed'])
 
             flux = flux[:, :, :, :, :, self.wl_index]
             points = (teff, logg, feh, co_ratio, fsed)
@@ -210,7 +210,7 @@ class ReadModel:
             wl_points = self.get_wavelength()
             self.wavelength = (wl_points[0], wl_points[-1])
 
-        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode_warm_clear'):
+        if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear'):
             parameters = [model_par['teff'],
                           model_par['logg'],
                           model_par['feh']]
@@ -219,19 +219,19 @@ class ReadModel:
             parameters = [model_par['teff'],
                           model_par['logg']]
 
-        elif self.model == 'petitcode_warm_cloudy':
+        elif self.model == 'petitcode-cool-cloudy':
             parameters = [model_par['teff'],
                           model_par['logg'],
                           model_par['feh'],
                           model_par['fsed']]
 
-        elif self.model == 'petitcode_hot_clear':
+        elif self.model == 'petitcode-hot-clear':
             parameters = [model_par['teff'],
                           model_par['logg'],
                           model_par['feh'],
                           model_par['co']]
 
-        elif self.model == 'petitcode_hot_cloudy':
+        elif self.model == 'petitcode-hot-cloudy':
             parameters = [model_par['teff'],
                           model_par['logg'],
                           model_par['feh'],
@@ -289,7 +289,23 @@ class ReadModel:
         teff = np.asarray(h5_file['models/'+self.model+'/teff'])
         logg = np.asarray(h5_file['models/'+self.model+'/logg'])
 
-        if self.model in ('drift-phoenix', 'bt-nextgen'):
+        if self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
+            teff_index = np.argwhere(teff == model_par['teff'])[0]
+
+            if not teff_index:
+                raise ValueError('Temperature value not found.')
+
+            teff_index = teff_index[0]
+            logg_index = np.argwhere(logg == model_par['logg'])[0]
+
+            if not logg_index:
+                raise ValueError('Surface gravity value not found.')
+
+            logg_index = logg_index[0]
+
+            flux = flux[teff_index, logg_index, wl_index]
+
+        elif self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
 
             teff_index = np.argwhere(teff == model_par['teff'])[0]
@@ -313,7 +329,10 @@ class ReadModel:
 
             flux = flux[teff_index, logg_index, feh_index, wl_index]
 
-        elif self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
+        elif self.model == 'petitcode-hot-clear':
+            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
+            co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
+
             teff_index = np.argwhere(teff == model_par['teff'])[0]
 
             if not teff_index:
@@ -326,8 +345,58 @@ class ReadModel:
                 raise ValueError('Surface gravity value not found.')
 
             logg_index = logg_index[0]
+            feh_index = np.argwhere(feh == model_par['feh'])[0]
 
-            flux = flux[teff_index, logg_index, wl_index]
+            if not feh_index:
+                raise ValueError('Metallicity value not found.')
+
+            feh_index = feh_index[0]
+            co_index = np.argwhere(co == model_par['co'])[0]
+
+            if not co_index:
+                raise ValueError('C/O value not found.')
+
+            co_index = co_index[0]
+
+            flux = flux[teff_index, logg_index, feh_index, co_index, wl_index]
+
+        elif self.model == 'petitcode-hot-cloudy':
+            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
+            co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
+            fsed_ratio = np.asarray(h5_file['models/'+self.model+'/fsed'])
+
+            teff_index = np.argwhere(teff == model_par['teff'])[0]
+
+            if not teff_index:
+                raise ValueError('Temperature value not found.')
+
+            teff_index = teff_index[0]
+            logg_index = np.argwhere(logg == model_par['logg'])[0]
+
+            if not logg_index:
+                raise ValueError('Surface gravity value not found.')
+
+            logg_index = logg_index[0]
+            feh_index = np.argwhere(feh == model_par['feh'])[0]
+
+            if not feh_index:
+                raise ValueError('Metallicity value not found.')
+
+            feh_index = feh_index[0]
+            co_index = np.argwhere(co == model_par['co'])[0]
+
+            if not co_index:
+                raise ValueError('C/O value not found.')
+
+            co_index = co_index[0]
+            fsed_index = np.argwhere(fsed == model_par['fsed'])[0]
+
+            if not fsed_index:
+                raise ValueError('f_sed value not found.')
+
+            fsed_index = fsed_index[0]
+
+            flux = flux[teff_index, logg_index, feh_index, co_index, fsed_index, wl_index]
 
         if 'radius' in model_par and 'distance' in model_par:
             scaling = (model_par['radius']*constants.R_JUP)**2 / \
@@ -418,15 +487,45 @@ class ReadModel:
         teff = h5_file['models/'+self.model+'/teff']
         logg = h5_file['models/'+self.model+'/logg']
 
-        if self.model in ('drift-phoenix', 'bt-nextgen'):
+        if self.model in ('ames-cond', 'ames-dusty', 'bt-settl'):
+            bounds = {'teff': (teff[0], teff[-1]),
+                      'logg': (logg[0], logg[-1])}
+
+        elif self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear'):
             feh = h5_file['models/'+self.model+'/feh']
+
             bounds = {'teff': (teff[0], teff[-1]),
                       'logg': (logg[0], logg[-1]),
                       'feh': (feh[0], feh[-1])}
 
-        elif self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
+        elif self.model in ('petitcode-cool-cloudy'):
+            feh = h5_file['models/'+self.model+'/feh']
+            fsed = h5_file['models/'+self.model+'/fsed']
+
             bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1])}
+                      'logg': (logg[0], logg[-1]),
+                      'feh': (feh[0], feh[-1]),
+                      'fsed': (fsed[0], fsed[-1])}
+
+        elif self.model in ('petitcode-hot-clear'):
+            feh = h5_file['models/'+self.model+'/feh']
+            co_ratio = h5_file['models/'+self.model+'/co']
+
+            bounds = {'teff': (teff[0], teff[-1]),
+                      'logg': (logg[0], logg[-1]),
+                      'feh': (feh[0], feh[-1]),
+                      'co': (co_ratio[0], co_ratio[-1])}
+
+        elif self.model in ('petitcode-hot-cloudy'):
+            feh = h5_file['models/'+self.model+'/feh']
+            co_ratio = h5_file['models/'+self.model+'/co']
+            fsed = h5_file['models/'+self.model+'/fsed']
+
+            bounds = {'teff': (teff[0], teff[-1]),
+                      'logg': (logg[0], logg[-1]),
+                      'feh': (feh[0], feh[-1]),
+                      'co': (co_ratio[0], co_ratio[-1]),
+                      'fsed': (fsed[0], fsed[-1])}
 
         h5_file.close()
 

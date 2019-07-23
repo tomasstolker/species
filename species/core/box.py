@@ -76,7 +76,8 @@ def create_box(boxtype,
         box.spectrum = kwargs['spectrum']
         box.parameters = kwargs['parameters']
         box.samples = kwargs['samples']
-        box.best_sample = kwargs['best_sample']
+        box.prob_sample = kwargs['prob_sample']
+        box.median_sample = kwargs['median_sample']
 
     elif boxtype == 'spectrum':
         box = SpectrumBox()
@@ -275,7 +276,8 @@ class SamplesBox(Box):
         self.spectrum = None
         self.parameters = None
         self.samples = None
-        self.best_sample = None
+        self.prob_sample = None
+        self.median_sample = None
 
 
 class SpectrumBox(Box):

@@ -34,8 +34,8 @@ def plot_spectrum(boxes,
                   offset=None,
                   legend='upper left',
                   figsize=(7., 5.),
-                  output='spectrum.pdf',
-                  object_type='planet'):
+                  object_type='planet',
+                  output='spectrum.pdf'):
     """
     Parameters
     ----------
@@ -63,11 +63,11 @@ def plot_spectrum(boxes,
         Location of the legend.
     figsize : tuple(float, float)
         Figure size.
-    output : str
-        Output filename.
     object_type : str
         Object type ('planet' or 'star'). With 'planet', the radius and mass are expressed in
         Jupiter units. With 'star', the radius and mass are expressed in solar units.
+    output : str
+        Output filename.
 
     Returns
     -------
@@ -410,6 +410,7 @@ def plot_spectrum(boxes,
         ax1.legend(loc=legend, prop={'size': 9}, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.clf()
     plt.close()
 
     sys.stdout.write(' [DONE]\n')
