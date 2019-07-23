@@ -48,7 +48,7 @@ from species.util.read_util import get_mass, \
 
 __author__ = 'Tomas Stolker'
 __license__ = 'GPLv3'
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'tomas.stolker@phys.ethz.ch'
 __status__ = 'Development'
