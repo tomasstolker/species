@@ -301,8 +301,8 @@ class Database:
         ----------
         object_name: str
             Object name.
-        distance : float
-            Distance (pc). Not written if set to None.
+        distance : tuple(float, float), None
+            Distance and uncertainty (pc). Not written if set to None.
         app_mag : dict
             Apparent magnitudes. Not written if set to None.
         spectrum : str
@@ -327,7 +327,7 @@ class Database:
         if 'objects/'+object_name not in h5_file:
             h5_file.create_group('objects/'+object_name)
 
-        if distance:
+        if distance is not None:
             if 'objects/'+object_name+'/distance' in h5_file:
                 del h5_file['objects/'+object_name+'/distance']
 
@@ -335,7 +335,7 @@ class Database:
                                    data=distance,
                                    dtype='f')  # [pc]
 
-        if app_mag:
+        if app_mag is not None:
             flux = {}
             error = {}
 
@@ -418,8 +418,9 @@ class Database:
         h5_file.close()
 
     def add_calibration(self,
-                        filename,
                         tag,
+                        filename=None,
+                        data=None,
                         units=None,
                         scaling=None):
         """
@@ -427,12 +428,16 @@ class Database:
 
         Parameters
         ----------
-        filename : str
-            Filename with the calibration spectrum. The first column should contain the wavelength
-            (micron), the second column the flux density (W m-2 micron-1), and the third column
-            the error (W m-2 micron-1).
         tag : str
             Tag name in the database.
+        filename : str, None
+            Filename with the calibration spectrum. The first column should contain the wavelength
+            (micron), the second column the flux density (W m-2 micron-1), and the third column
+            the error (W m-2 micron-1). The `data` argument is used if set to None.
+        data : numpy.ndarray, None
+            Spectrum stored as 3D array with shape (n_wavelength, 3). The first column should
+            contain the wavelength (micron), the second column the flux density (W m-2 micron-1),
+            and the third column the error (W m-2 micron-1).
         units : dict, None
             Dictionary with the wavelength and flux units. Default (micron and W m-2 micron-1) is
             used if set to None.
@@ -446,6 +451,9 @@ class Database:
             None
         """
 
+        if filename is None and data is None:
+            raise ValueError('Either the \'filename\' or \'data\' argument should be provided.')
+
         if scaling is None:
             scaling = (1., 1.)
 
@@ -457,7 +465,8 @@ class Database:
         if 'spectra/calibration/'+tag in h5_file:
             del h5_file['spectra/calibration/'+tag]
 
-        data = np.loadtxt(filename)
+        if filename is not None:
+            data = np.loadtxt(filename)
 
         if units is None:
             wavelength = scaling[0]*data[:, 0]  # [micron]
@@ -912,7 +921,7 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['objects/'+object_name]
 
-        distance = np.asarray(dset['distance'])
+        distance = np.asarray(dset['distance'])[0]
 
         if inc_phot:
 

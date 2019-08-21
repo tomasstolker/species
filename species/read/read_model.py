@@ -7,6 +7,7 @@ import math
 import configparser
 
 import h5py
+import spectres
 import numpy as np
 
 from scipy.interpolate import RegularGridInterpolator
@@ -14,7 +15,7 @@ from scipy.interpolate import RegularGridInterpolator
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import database
-from species.read import read_filter
+from species.read import read_filter, read_calibration
 from species.util import read_util
 
 
@@ -59,6 +60,13 @@ class ReadModel:
         else:
             self.filter_name = None
             self.wavelength = wavelength
+
+        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+
+        config = configparser.ConfigParser()
+        config.read_file(open(config_file))
+
+        self.database = config['species']['database']
 
     def open_database(self):
         """
@@ -181,7 +189,8 @@ class ReadModel:
 
     def get_model(self,
                   model_par,
-                  specres=None):
+                  specres=None,
+                  magnitude=False):
         """
         Parameters
         ----------
@@ -191,6 +200,9 @@ class ReadModel:
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
             wavelength points are used if set to None. Using a high spectral resolution is
             computationally faster if the original wavelength grid has a fine sampling.
+        magnitude : bool
+            Normalize the spectrum with a flux calibrated spectrum of Vega and return the magnitude
+            instead of flux density.
 
         Returns
         -------
@@ -260,11 +272,39 @@ class ReadModel:
                                              specres=specres,
                                              size=11)
 
+
+        if magnitude:
+            quantity = 'magnitude'
+
+            with h5py.File(self.database, 'r') as h5_file:
+                try:
+                    h5_file['spectra/calibration/vega']
+
+                except KeyError:
+                    h5_file.close()
+                    species_db = database.Database()
+                    species_db.add_spectrum('vega')
+                    h5_file = h5py.File(self.database, 'r')
+
+            readcalib = read_calibration.ReadCalibration(spectrum='vega', filter_name=None)
+            calibbox = readcalib.get_spectrum()
+
+            flux_vega, error_vega = spectres.spectres(new_spec_wavs=self.wl_points,
+                                                      old_spec_wavs=calibbox.wavelength,
+                                                      spec_fluxes=calibbox.flux,
+                                                      spec_errs=calibbox.error)
+
+            flux = -2.5*np.log10(flux/flux_vega)
+
+        else:
+            quantity = 'flux'
+
         return box.create_box(boxtype='model',
                               model=self.model,
                               wavelength=self.wl_points,
                               flux=flux,
-                              parameters=model_par)
+                              parameters=model_par,
+                              quantity=quantity)
 
     def get_data(self,
                  model_par):
@@ -410,7 +450,8 @@ class ReadModel:
                               model=self.model,
                               wavelength=wl_points,
                               flux=flux,
-                              parameters=model_par)
+                              parameters=model_par,
+                              quantity='flux')
 
     def get_photometry(self,
                        model_par,

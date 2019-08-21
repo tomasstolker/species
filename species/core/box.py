@@ -49,6 +49,7 @@ def create_box(boxtype,
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
         box.parameters = kwargs['parameters']
+        box.quantity = kwargs['quantity']
 
     elif boxtype == 'object':
         box = ObjectBox()
@@ -205,6 +206,7 @@ class ModelBox(Box):
         self.wavelength = None
         self.flux = None
         self.parameters = None
+        self.quantity = None
 
 
 class ObjectBox(Box):

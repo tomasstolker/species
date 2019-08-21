@@ -3,6 +3,7 @@ Module for reading object data.
 """
 
 import os
+import math
 import configparser
 
 import h5py
@@ -38,6 +39,10 @@ class ReadObject:
 
         self.database = config['species']['database']
 
+        with h5py.File(self.database, 'r') as h5_file:
+            if 'objects/'+self.object_name not in h5_file:
+                raise ValueError(f'{self.object_name} is not present in the database')
+
     def get_photometry(self,
                        filter_name):
         """
@@ -53,9 +58,8 @@ class ReadObject:
             flux error (W m-2 micron-1).
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
-        h5_file.close()
+        with h5py.File(self.database, 'r') as h5_file:
+            obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
 
         return obj_phot
 
@@ -67,9 +71,8 @@ class ReadObject:
             Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        spectrum = np.asarray(h5_file['objects/'+self.object_name+'/spectrum'])
-        h5_file.close()
+        with h5py.File(self.database, 'r') as h5_file:
+            spectrum = np.asarray(h5_file['objects/'+self.object_name+'/spectrum'])
 
         return spectrum
 
@@ -81,10 +84,9 @@ class ReadObject:
             Instrument that was used for the spectrum.
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['objects/'+self.object_name+'/spectrum']
-        instrument = dset.attrs['instrument']
-        h5_file.close()
+        with h5py.File(self.database, 'r') as h5_file:
+            dset = h5_file['objects/'+self.object_name+'/spectrum']
+            instrument = dset.attrs['instrument']
 
         return instrument
 
@@ -96,15 +98,17 @@ class ReadObject:
             Distance (pc).
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
-        h5_file.close()
+        with h5py.File(self.database, 'r') as h5_file:
+            obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])[0]
 
         return float(obj_distance)
 
     def get_absmag(self,
                    filter_name):
         """
+        Computes the absolute magnitude from the apparent magnitude and distance. The error
+        on the distance is propagated into the error on the absolute magnitude.
+
         Parameters
         ----------
         filter_name : str
@@ -113,14 +117,16 @@ class ReadObject:
         Returns
         -------
         float, float
-            Absolute magnitude (mag), magnitude error (error).
+            Absolute magnitude (mag), uncertainty (mag).
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
-        obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
-        h5_file.close()
+        with h5py.File(self.database, 'r') as h5_file:
+            obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
+            obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
 
-        abs_mag = phot_util.apparent_to_absolute(obj_phot[0], obj_distance)
+        abs_mag = phot_util.apparent_to_absolute(obj_phot[0], obj_distance[0])
 
-        return abs_mag, obj_phot[1]
+        dist_err = obj_distance[1] * (5./(obj_distance[0]*math.log(10.)))
+        abs_err = math.sqrt(obj_phot[1]**2 + dist_err**2)
+
+        return abs_mag, abs_err

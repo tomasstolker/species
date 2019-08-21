@@ -379,3 +379,102 @@ In this example we fit the available photometry of beta Pic b with the DRIFT-PHO
 .. image:: _images/betapic.png
    :width: 100%
    :align: center
+
+Isochrone data
+--------------
+
+When creating a color-magnitude diagram, various data can be combined such as photometry of isolated brown dwarfs, synthetic photometry of spectra, individual objects, and isochrone data from evolutionary models. Isochrones from the |phoenix| website can be imported into the database after which the related atmospheric models can be used to calculate synthetic photometry for a given age and a range of masses. Alternatively, it is also possible to interpolate the magnitudes of the isochrone data directly. The example below reads and interpolates the AMES-Cond and AMES-Dusty isochrones at 20 Myr, uses these evolutionary data for the computation of synthetic photometry, and plots the isochrones in a color-magnitude diagram together with photometry of field dwarfs and directly imaged companions.
+
+.. code-block:: python
+
+   import species
+   import numpy as np
+
+   mass = np.logspace(-1., 4., 100)  # [Mjup]
+
+   species.SpeciesInit('./')
+
+   database = species.Database()
+
+   # Add the relevant data to the database
+
+   database.add_companion(name=None)
+
+   database.add_photometry(library='vlm-plx')
+   database.add_photometry(library='leggett')
+
+   database.add_model(model='ames-cond',
+                      wavelength=(0.5, 10.),
+                      teff=(100., 4000.),
+                      specres=1000.)
+
+   database.add_model(model='ames-dusty',
+                      wavelength=(0.5, 10.),
+                      teff=(100., 4000.),
+                      specres=1000.)
+
+   database.add_isochrones(filename='/path/to/model.AMES-dusty.M-0.0.MKO.Vega',
+                           tag='iso_dusty')
+
+   database.add_isochrones(filename='/path/to/model.AMES-Cond-2000.M-0.0.MKO.Vega',
+                           tag='iso_cond')
+
+   # Create synthetic photometry for isochrones
+
+   readiso1 = species.ReadIsochrone(tag='iso_cond')
+   readiso2 = species.ReadIsochrone(tag='iso_dusty')
+
+   modelcolor1 = readiso1.get_color_magnitude(age=20.,
+                                              mass=mass,
+                                              model='ames-cond',
+                                              filters_color=('MKO/NSFCam.H', 'MKO/NSFCam.Lp'),
+                                              filter_mag='MKO/NSFCam.Lp')
+
+   modelcolor2 = readiso2.get_color_magnitude(age=20.,
+                                              mass=mass,
+                                              model='ames-dusty',
+                                              filters_color=('MKO/NSFCam.H', 'MKO/NSFCam.Lp'),
+                                              filter_mag='MKO/NSFCam.Lp')
+
+   # Directly imaged companions
+
+   objects = (('beta Pic b', 'Paranal/NACO.H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('HIP 65426 b', 'Paranal/SPHERE.IRDIS_D_H23_2', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('PZ Tel B', 'Paranal/NACO.H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('HD 206893 B', 'Paranal/SPHERE.IRDIS_B_H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('51 Eri b', 'MKO/NSFCam.H', 'Keck/NIRC2.Lp', 'Keck/NIRC2.Lp'),
+              ('HR 8799 b', 'Keck/NIRC2.H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('HR 8799 c', 'Keck/NIRC2.H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('HR 8799 d', 'Keck/NIRC2.H', 'Paranal/NACO.Lp', 'Paranal/NACO.Lp'),
+              ('GSC 06214 B', 'MKO/NSFCam.H', 'MKO/NSFCam.Lp', 'MKO/NSFCam.Lp'),
+              ('ROXs 42 Bb', 'Keck/NIRC2.H', 'Keck/NIRC2.Lp', 'Keck/NIRC2.Lp'))
+
+   # Field dwarfs from photometric libraries
+
+   colormag = species.ReadColorMagnitude(library=('vlm-plx', 'leggett'),
+                                         filters_color=('MKO/NSFCam.H', 'MKO/NSFCam.Lp'),
+                                         filter_mag='MKO/NSFCam.Lp')
+
+   colorbox = colormag.get_color_magnitude(object_type='field')
+
+   # Make color-magnitude diagram
+
+   species.plot_color_magnitude(colorbox=colorbox,
+                                objects=objects,
+                                isochrones=None,
+                                models=(modelcolor1, modelcolor2),
+                                label_x='H - L$^\prime$ [mag]',
+                                label_y='M$_\mathregular{L\prime}$ [mag]',
+                                xlim=(-0, 5),
+                                ylim=(15.65, 4),
+                                offset=(-0.07, -0.1),
+                                legend='upper right',
+                                output='isochrones.pdf')
+
+.. image:: _images/isochrone.png
+   :width: 60%
+   :align: center
+
+.. |phoenix| raw:: html
+
+   <a href="https://phoenix.ens-lyon.fr/Grids/" target="_blank">PHOENIX</a>
