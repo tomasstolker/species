@@ -35,6 +35,7 @@ def plot_spectrum(boxes,
                   legend='upper left',
                   figsize=(7., 5.),
                   object_type='planet',
+                  quantity='flux',
                   output='spectrum.pdf'):
     """
     Parameters
@@ -66,6 +67,8 @@ def plot_spectrum(boxes,
     object_type : str
         Object type ('planet' or 'star'). With 'planet', the radius and mass are expressed in
         Jupiter units. With 'star', the radius and mass are expressed in solar units.
+    quantity: str
+        The quantity of the y-axis ('flux' or 'magnitude').
     output : str
         Output filename.
 
@@ -175,23 +178,31 @@ def plot_spectrum(boxes,
     else:
         ax1.set_xlim(0.6, 6.)
 
-    if ylim:
-        ax1.set_ylim(ylim[0], ylim[1])
-
-        ylim = ax1.get_ylim()
-
-        exponent = math.floor(math.log10(ylim[1]))
-        scaling = 10.**exponent
-
-        ax1.set_ylabel(r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
-        ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
-
-        if ylim[0] < 0.:
-            ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
-
-    else:
-        ax1.set_ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+    if quantity == 'magnitude':
         scaling = 1.
+        ax1.set_ylabel('Flux contrast [mag]', fontsize=13)
+
+        if ylim:
+            ax1.set_ylim(ylim[0], ylim[1])
+
+    elif quantity == 'flux':
+        if ylim:
+            ax1.set_ylim(ylim[0], ylim[1])
+
+            ylim = ax1.get_ylim()
+
+            exponent = math.floor(math.log10(ylim[1]))
+            scaling = 10.**exponent
+
+            ax1.set_ylabel(r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+            ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
+
+            if ylim[0] < 0.:
+                ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
+
+        else:
+            ax1.set_ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+            scaling = 1.
 
     if filters:
         ax2.set_ylim(0., 1.)

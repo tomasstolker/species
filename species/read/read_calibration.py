@@ -25,13 +25,13 @@ class ReadCalibration:
 
     def __init__(self,
                  spectrum,
-                 filter_name):
+                 filter_name=None):
         """
         Parameters
         ----------
         spectrum : str
             Database tag of the calibration spectrum.
-        filter_name : str
+        filter_name : str, None
             Filter ID. Full spectrum is used if set to None.
 
         Returns
@@ -73,46 +73,82 @@ class ReadCalibration:
                         bounds_error=False,
                         fill_value=float('nan'))
 
+    def resample_spectrum(self, wavelengths, mask=False):
+        """
+        Resample the spectrum and associated uncertainties onto a new wavelength grid.
+
+        Parameters
+        ----------
+        wavelengths : numpy.ndarray
+            Wavelength points (micron)
+        mask : bool
+            Exclude negative values and NaN values.
+
+        Returns
+        -------
+        species.core.box.SpectrumBox
+            Box with the resampled spectrum.
+        """
+
+        calibbox = self.get_spectrum()
+
+        if mask:
+            indices = np.where(calibbox.flux > 0.)[0]
+            calibbox.wavelength = calibbox.wavelength[indices]
+            calibbox.flux = calibbox.flux[indices]
+            calibbox.error = calibbox.error[indices]
+
+        flux_new, error_new = spectres.spectres(new_spec_wavs=wavelengths,
+                                                old_spec_wavs=calibbox.wavelength,
+                                                spec_fluxes=calibbox.flux,
+                                                spec_errs=calibbox.error)
+
+        return box.create_box(boxtype='spectrum',
+                              spectrum='calibration',
+                              wavelength=wavelengths,
+                              flux=flux_new,
+                              error=error_new,
+                              name=self.spectrum,
+                              simbad=None,
+                              sptype=None,
+                              distance=None)
+
     def get_spectrum(self,
                      parameters=None,
-                     negative=False,
+                     mask=False,
                      specres=None,
                      extrapolate=False,
                      min_wavelength=None):
         """
         Parameters
         ----------
-
-        parameters : dict
+        parameters : dict, None
             Model parameter values. Not used if set to None.
-        negative : bool
-            Include negative values.
-        specres : float
+        mask : bool
+            Exclude negative values and NaN values.
+        specres : float, None
             Spectral resolution. Original wavelength points are used if set to None.
         extrapolate : bool
             Extrapolate to 6 micron by fitting a power law function.
-        min_wavelength : float
+        min_wavelength : float, None
             Minimum wavelength used for fitting the power law function. All data is used if set
             to None.
 
         Returns
         -------
-        numpy.ndarray
-            Spectrum data.
+        species.core.box.SpectrumBox
+            Box with the spectrum.
         """
 
-        h5_file = h5py.File(self.database, 'r')
+        with h5py.File(self.database, 'r') as h5_file:
+            data = h5_file['spectra/calibration/'+self.spectrum]
+            data = np.asarray(data)
 
-        data = h5_file['spectra/calibration/'+self.spectrum]
-        data = np.asarray(data)
+            wavelength = np.asarray(data[0, ])
+            flux = np.asarray(data[1, ])
+            error = np.asarray(data[2, ])
 
-        wavelength = np.asarray(data[0, ])
-        flux = np.asarray(data[1, ])
-        error = np.asarray(data[2, ])
-
-        h5_file.close()
-
-        if not negative:
+        if mask:
             indices = np.where(flux > 0.)[0]
             wavelength = wavelength[indices]
             flux = flux[indices]
@@ -121,12 +157,11 @@ class ReadCalibration:
         if parameters:
             flux = parameters['scaling']*flux
 
-        if self.wl_range:
+        if self.wl_range is None:
+            wl_index = np.ones(wavelength.size, dtype=bool)
+        else:
             wl_index = (flux > 0.) & (wavelength > self.wl_range[0]) & \
                        (wavelength < self.wl_range[1])
-
-        else:
-            wl_index = np.arange(0, wavelength.size, 1)
 
         count = np.count_nonzero(wl_index)
 

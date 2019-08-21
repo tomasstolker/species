@@ -479,7 +479,7 @@ def plot_color_color(colorbox,
     handles, labels = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1)
+        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

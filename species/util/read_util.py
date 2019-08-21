@@ -91,7 +91,7 @@ def smooth_spectrum(wavelength,
     Returns
     -------
     numpy.ndarray
-        Smoothed spectrum (W m-2 micron-1) at the same wavelength points as the
+        Smoothed spectrum (W m-2 micron-1) at the same wavelength points as the input spectrum.
     """
 
     def _gaussian(size, sigma):
