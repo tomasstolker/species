@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar, ColorbarBase
 
 from species.read import read_object
@@ -27,18 +28,20 @@ def plot_color_magnitude(colorbox=None,
                          objects=None,
                          isochrones=None,
                          models=None,
+                         mass_labels=None,
                          label_x='color [mag]',
                          label_y='M [mag]',
                          xlim=None,
                          ylim=None,
                          offset=None,
                          legend='upper left',
+                         ncolumn=1,
                          output='color-magnitude.pdf'):
     """
     Parameters
     ----------
-    colorbox : species.core.box.ColorMagBox, None
-        Box with the colors and magnitudes. Not used if set to None.
+    colorbox : list(species.core.box.ColorMagBox, ), None
+        Boxes with the colors and magnitudes. Not used if set to None.
     objects : tuple(tuple(str, str, str, str), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude. Not used if set to
@@ -50,6 +53,9 @@ def plot_color_magnitude(colorbox=None,
         isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`.
         These boxes contain synthetic photometry for a given age and a range of masses. Not used
         if set to None.
+    mass_labels : list(float, ), None
+        Plot labels with masses next to the isochrone data of `models`. The list with masses has
+        to be provided in Jupiter mass. No labels are shown if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -58,8 +64,10 @@ def plot_color_magnitude(colorbox=None,
         Limits for the x-axis.
     ylim : tuple(float, float)
         Limits for the y-axis.
-    legend : str
-        Legend position.
+    legend : str, None
+        Legend position. Not shown if set to None.
+    ncolumn : int
+        Numer of columns used for the legend.
     output : str
         Output filename.
 
@@ -77,38 +85,14 @@ def plot_color_magnitude(colorbox=None,
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
     sys.stdout.flush()
 
-    if (models is not None and colorbox is None) or \
-            (models is not None and colorbox.object_type == 'temperature'):
-        plt.figure(1, figsize=(4.4, 4.5))
-        gridsp = mpl.gridspec.GridSpec(1, 3, width_ratios=[4, 0.15, 0.25])
-        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+    plt.figure(1, figsize=(4., 4.8))
+    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
+    gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(gridsp[0, 0])
-        ax2 = plt.subplot(gridsp[0, 2])
+    ax1 = plt.subplot(gridsp[2, 0])
+    ax2 = plt.subplot(gridsp[0, 0])
 
-    elif colorbox.object_type != 'temperature':
-        plt.figure(1, figsize=(4., 4.8))
-        gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
-        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
-
-        ax1 = plt.subplot(gridsp[2, 0])
-        ax2 = plt.subplot(gridsp[0, 0])
-
-    # elif models is not None and colorbox.object_type != 'temperature':
-    #     plt.figure(1, figsize=(4.2, 4.8))
-    #     gridsp = mpl.gridspec.GridSpec(3, 3, width_ratios=[3.7, 0.15, 0.25], height_ratios=[0.25, 0.15, 4.4])
-    #     gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
-    #
-    #     ax1 = plt.subplot(gridsp[2, 0])
-    #     ax2 = plt.subplot(gridsp[0, 0])
-    #     ax3 = plt.subplot(gridsp[2, 2])
-
-    if colorbox is not None:
-        sptype = colorbox.sptype
-        color = colorbox.color
-        magnitude = colorbox.magnitude
-
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
+    # ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -136,68 +120,6 @@ def plot_color_magnitude(colorbox=None,
     if ylim:
         ax1.set_ylim(ylim[0], ylim[1])
 
-    if colorbox is not None:
-        cmap_sptype = plt.cm.viridis
-
-        if colorbox.object_type == 'star':
-            bounds_sptype = np.arange(0, 11, 1)
-        else:
-            bounds_sptype = np.arange(0, 8, 1)
-
-    if colorbox.object_type != 'temperature':
-        norm_sptype = mpl.colors.BoundaryNorm(bounds_sptype, cmap_sptype.N)
-
-        indices = np.where(sptype != b'None')[0]
-
-        sptype = sptype[indices]
-        color = color[indices]
-        magnitude = magnitude[indices]
-
-        if colorbox.object_type == 'star':
-            spt_disc = plot_util.sptype_stellar(sptype, color.shape)
-            unique = np.arange(0, color.size, 1)
-
-        elif colorbox.object_type != 'temperature':
-            spt_disc = plot_util.sptype_substellar(sptype, color.shape)
-            _, unique = np.unique(color, return_index=True)
-
-        if colorbox.object_type == 'temperature':
-            scat_sptype = ax1.scatter(color, magnitude, c=sptype, cmap=cmap_sptype,
-                                      zorder=6, s=40, alpha=0.6, edgecolor='none')
-
-        else:
-            sptype = sptype[unique]
-            color = color[unique]
-            magnitude = magnitude[unique]
-            spt_disc = spt_disc[unique]
-
-            scat_sptype = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap_sptype,
-                                      norm=norm_sptype, zorder=6, s=40, alpha=0.6,
-                                      edgecolor='none')
-
-    if colorbox is not None:
-        if colorbox.object_type == 'temperature':
-            cb1 = Colorbar(ax=ax2, mappable=scat_sptype, orientation='vertical',
-                           ticklocation='right', format='%i')
-
-            cb1.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-            cb1.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
-            cb1.solids.set_edgecolor("face")
-
-        else:
-            cb1 = Colorbar(ax=ax2, mappable=scat_sptype, orientation='horizontal',
-                           ticklocation='top', format='%.2f')
-
-            cb1.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-
-            if colorbox.object_type == 'star':
-                cb1.set_ticks(np.arange(0.5, 10., 1.))
-                cb1.set_ticklabels(['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y'])
-
-            else:
-                cb1.set_ticks(np.arange(0.5, 7., 1.))
-                cb1.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
-
     if models is not None:
         cmap_teff = plt.cm.afmhot
 
@@ -218,7 +140,7 @@ def plot_color_magnitude(colorbox=None,
 
         model_dict = {}
 
-        for item in models:
+        for j, item in enumerate(models):
             if item.library not in model_dict:
                 model_dict[item.library] = [count, 0]
                 count += 1
@@ -232,7 +154,31 @@ def plot_color_magnitude(colorbox=None,
                 label = plot_util.model_name(item.library)
 
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=0.6, zorder=3, color=model_color[model_count[0]], label=label)
+                         linewidth=1, zorder=3, color=model_color[model_count[0]], label=label)
+
+                if mass_labels is not None:
+                    interp_magnitude = interp1d(item.sptype, item.magnitude)
+                    interp_color = interp1d(item.sptype, item.color)
+
+                    for i, mass_item in enumerate(mass_labels):
+                        if j == 0 or (j > 0 and mass_item < 20.):
+                            pos_color = interp_color(mass_item)
+                            pos_mag = interp_magnitude(mass_item)
+
+                            mass_label = str(int(mass_item))+r' M$_\mathregular{J}$'
+
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
+
+                            if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
+                                    ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
+
+                                ax1.scatter(pos_color, pos_mag, c=model_color[model_count[0]], s=15,
+                                            zorder=3, edgecolor='none')
+
+                                ax1.annotate(mass_label, (pos_color, pos_mag),
+                                             color=model_color[model_count[0]], fontsize=9,
+                                             xytext=(pos_color+0.05, pos_mag-0.1), zorder=9)
 
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
@@ -244,6 +190,54 @@ def plot_color_magnitude(colorbox=None,
         # cb2 = ColorbarBase(ax=ax3, cmap=cmap_teff, norm=norm_teff, orientation='vertical', ticklocation='right')
         # cb2.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
         # cb2.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
+
+    if colorbox is not None:
+        cmap = plt.cm.viridis
+
+        # bounds = np.linspace(0, 7, 8)
+        # ticks = np.linspace(0.5, 6.5, 7)
+
+        bounds = np.linspace(0, 6, 7)
+        ticks = np.linspace(0.5, 5.5, 6)
+
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+        for item in colorbox:
+            sptype = item.sptype
+            color = item.color
+            magnitude = item.magnitude
+
+            indices = np.where(sptype != b'None')[0]
+
+            sptype = sptype[indices]
+            color = color[indices]
+            magnitude = magnitude[indices]
+
+            spt_disc = plot_util.sptype_substellar(sptype, color.shape)
+
+            _, unique = np.unique(color, return_index=True)
+
+            sptype = sptype[unique]
+            color = color[unique]
+            magnitude = magnitude[unique]
+            spt_disc = spt_disc[unique]
+
+            if item.object_type == 'field':
+                scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
+                                   s=40, alpha=0.6, edgecolor='none')
+
+                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
+                cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+
+                # cb.set_ticks(np.linspace(0.5, 6.5, 7))
+                # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+
+                cb.set_ticks(np.linspace(0.5, 5.5, 6))
+                cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
+
+            elif item.object_type == 'young':
+                ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.6, 
+                         color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
 
     if isochrones is not None:
         for item in isochrones:
@@ -259,17 +253,31 @@ def plot_color_magnitude(colorbox=None,
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
 
-            ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
-                         marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=10)
+            if item[0] in ('HD 135344A - CC'):
+                ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
+                             marker='*', ms=12, color='magenta', label=objdata.object_name,
+                             markerfacecolor='magenta', markeredgecolor='black', zorder=10)
 
-    handles, labels = ax1.get_legend_handles_labels()
+            else:
+                # if item[0] in ('PDS 70 b'):
+                if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                    color_plot = 'mediumslateblue'
+                else:
+                    color_plot = 'black'
 
-    if handles:
-        # handles = [h[0] for h in handles]
-        # ax1.legend(handles, labels, loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
+                ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
+                             marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
+                             markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
 
-        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1)
+            # ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
+            #              marker=next(marker), ms=6, color='black', label=objdata.object_name,
+            #              markerfacecolor='white', markeredgecolor='black', zorder=10)
+
+    if legend is not None:
+        handles, labels = ax1.get_legend_handles_labels()
+
+        if handles:
+            ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=ncolumn)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
@@ -282,12 +290,14 @@ def plot_color_magnitude(colorbox=None,
 def plot_color_color(colorbox,
                      objects=None,
                      models=None,
+                     mass_labels=None,
                      label_x='color [mag]',
                      label_y='color [mag]',
                      xlim=None,
                      ylim=None,
                      offset=None,
                      legend='upper left',
+                     ncolumn=1,
                      output='color-color.pdf'):
     """
     Parameters
@@ -303,6 +313,9 @@ def plot_color_color(colorbox,
         the isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`.
         These boxes contain synthetic photometry for a given age and a range of masses. Not used
         if set to None.
+    mass_labels : list(float, ), None
+        Plot labels with masses next to the isochrone data of `models`. The list with masses has
+        to be provided in Jupiter mass. No labels are shown if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -317,6 +330,8 @@ def plot_color_color(colorbox,
         Offset of the x- and y-axis label.
     legend : str
         Legend position.
+    ncolumn : int
+        Numer of columns used for the legend.
 
     Returns
     -------
@@ -339,7 +354,7 @@ def plot_color_color(colorbox,
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
+    # ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -367,44 +382,6 @@ def plot_color_color(colorbox,
     if ylim:
         ax1.set_ylim(ylim[0], ylim[1])
 
-    cmap = plt.cm.viridis
-    bounds = np.arange(0, 8, 1)
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-
-    if colorbox is not None:
-        sptype = colorbox.sptype
-        color1 = colorbox.color1
-        color2 = colorbox.color2
-
-        indices = np.where(sptype != 'None')[0]
-
-        sptype = sptype[indices]
-        color1 = color1[indices]
-        color2 = color2[indices]
-
-        if colorbox.object_type == 'star':
-            spt_disc = plot_util.sptype_stellar(sptype, color1.shape)
-            unique = np.arange(0, color1.size, 1)
-
-        elif colorbox.object_type != 'temperature':
-            spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
-            _, unique = np.unique(color1, return_index=True)
-
-        sptype = sptype[unique]
-        color1 = color1[unique]
-        color2 = color2[unique]
-        spt_disc = spt_disc[unique]
-
-        scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-                           zorder=5, s=40, alpha=0.6, edgecolor='none')
-
-        cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
-                      ticklocation='top', format='%.2f')
-
-        cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-        cb.set_ticks(np.arange(0.5, 7., 1.))
-        cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
-
     if models is not None:
         cmap_teff = plt.cm.afmhot
 
@@ -425,7 +402,7 @@ def plot_color_color(colorbox,
 
         model_dict = {}
 
-        for item in models:
+        for j, item in enumerate(models):
             if item.library not in model_dict:
                 model_dict[item.library] = [count, 0]
                 count += 1
@@ -441,6 +418,30 @@ def plot_color_color(colorbox,
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, zorder=3, color=model_color[model_count[0]], label=label)
 
+                if mass_labels is not None:
+                    interp_color1 = interp1d(item.sptype, item.color1)
+                    interp_color2 = interp1d(item.sptype, item.color2)
+
+                    for i, mass_item in enumerate(mass_labels):
+                        if j == 0 or (j > 0 and mass_item < 20.):
+                            pos_color1 = interp_color1(mass_item)
+                            pos_color2 = interp_color2(mass_item)
+
+                            mass_label = str(int(mass_item))+r' M$_\mathregular{J}$'
+
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
+
+                            if xlim[0]+0.2 < pos_color1 < xlim[1]-0.2 and \
+                                    ylim[0]+0.2 < pos_color2 < ylim[1]-0.2:
+
+                                ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]], s=15,
+                                            zorder=3, edgecolor='none')
+
+                                ax1.annotate(mass_label, (pos_color1, pos_color2),
+                                             color=model_color[model_count[0]], fontsize=9,
+                                             xytext=(pos_color1+0.05, pos_color2-0.1), zorder=9)
+
             else:
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, zorder=3, color=model_color[model_count[0]])
@@ -451,6 +452,63 @@ def plot_color_color(colorbox,
         # cb2 = ColorbarBase(ax=ax3, cmap=cmap_teff, norm=norm_teff, orientation='vertical', ticklocation='right')
         # cb2.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
         # cb2.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
+
+    if colorbox is not None:
+        cmap = plt.cm.viridis
+
+        # bounds = np.linspace(0, 7, 8)
+        # ticks = np.linspace(0.5, 6.5, 7)
+
+        bounds = np.linspace(0, 6, 7)
+        ticks = np.linspace(0.5, 5.5, 6)
+
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+        for item in colorbox:
+            sptype = item.sptype
+            color1 = item.color1
+            color2 = item.color2
+
+            indices = np.where(sptype != 'None')[0]
+
+            sptype = sptype[indices]
+            color1 = color1[indices]
+            color2 = color2[indices]
+
+            spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
+            _, unique = np.unique(color1, return_index=True)
+
+            sptype = sptype[unique]
+            color1 = color1[unique]
+            color2 = color2[unique]
+            spt_disc = spt_disc[unique]
+
+            if item.object_type == 'field':
+                scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
+                                   s=40, alpha=0.6, edgecolor='none')
+
+                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
+                cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+
+                # cb.set_ticks(np.linspace(0.5, 6.5, 7))
+                # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
+
+                cb.set_ticks(np.linspace(0.5, 5.5, 6))
+                cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
+
+            elif item.object_type == 'young':
+                ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.6, 
+                         color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
+
+            # scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
+            #                    zorder=5, s=40, alpha=0.6, edgecolor='none')
+            #
+            # cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+            #               ticklocation='top', format='%.2f')
+
+            # cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+            # cb.set_ticks(np.arange(0.5, 7., 1.))
+            # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
 
     if objects is not None:
         for item in objects:
@@ -472,14 +530,24 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
+            # if item[0] in ('PDS 70 b'):
+            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                color_plot = 'mediumslateblue'
+            else:
+                color_plot = 'black'
+
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
-                         marker=next(marker), ms=6, color='black', label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor='black', zorder=10)
+                         marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
+                         markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
+
+            # ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
+            #              marker=next(marker), ms=6, color='black', label=objdata.object_name,
+            #              markerfacecolor='white', markeredgecolor='black', zorder=10)
 
     handles, labels = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=1)
+        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=ncolumn)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

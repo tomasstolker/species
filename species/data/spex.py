@@ -124,9 +124,6 @@ def add_spex(input_path, database):
             name = name.decode('utf-8')
             twomass_id = table.get_field_by_id('name2m').value
 
-            sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format(name))
-            sys.stdout.flush()
-
             try:
                 sptype = table.get_field_by_id('nirspty').value
                 sptype = sptype.decode('utf-8')
@@ -139,7 +136,7 @@ def add_spex(input_path, database):
                 except KeyError:
                     sptype = 'None'
 
-            sptype = data_util.update_sptype(np.array([sptype]))[0]
+            sptype = data_util.update_sptype(np.array([sptype]))[0].strip()
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, None, h_zp)
             phot = h_twomass.spectrum_to_photometry(wavelength, flux)  # Normalized units
@@ -150,15 +147,19 @@ def add_spex(input_path, database):
 
             simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8'))  # [pc]
 
-            dset = database.create_dataset('spectra/spex/'+name, data=spdata)
+            if sptype[0] in ('M', 'L', 'T') and len(sptype) == 2:
+                sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format(name))
+                sys.stdout.flush()
 
-            dset.attrs['name'] = str(name)
-            dset.attrs['sptype'] = str(sptype)
-            dset.attrs['simbad'] = str(simbad_id)
-            dset.attrs['2MASS/2MASS.J'] = j_mag
-            dset.attrs['2MASS/2MASS.H'] = h_mag
-            dset.attrs['2MASS/2MASS.Ks'] = ks_mag
-            dset.attrs['distance'] = distance  # [pc]
+                dset = database.create_dataset('spectra/spex/'+name, data=spdata)
+
+                dset.attrs['name'] = str(name).encode()
+                dset.attrs['sptype'] = str(sptype).encode()
+                dset.attrs['simbad'] = str(simbad_id).encode()
+                dset.attrs['2MASS/2MASS.J'] = j_mag
+                dset.attrs['2MASS/2MASS.H'] = h_mag
+                dset.attrs['2MASS/2MASS.Ks'] = ks_mag
+                dset.attrs['distance'] = distance  # [pc]
 
     sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
     sys.stdout.flush()

@@ -4,6 +4,7 @@ Module for fitting atmospheric models.
 
 import sys
 import math
+import multiprocessing
 
 import emcee
 import spectres
@@ -19,7 +20,7 @@ from species.util import read_util
 def lnprior(param,
             bounds,
             modelpar,
-            prior):
+            prior=None):
     """
     Function for the prior probability.
 
@@ -31,7 +32,7 @@ def lnprior(param,
         Parameter boundaries.
     modelpar : list(str, )
         Parameter names.
-    prior : tuple(str, float, float)
+    prior : tuple(str, float, float), None
         Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
         ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
         used if set to None.
@@ -42,22 +43,24 @@ def lnprior(param,
         Log prior probability.
     """
 
-    if prior:
+    if prior is not None:
 
         modeldict = {}
         for i, item in enumerate(modelpar):
             modeldict[item] = param[i]
 
+    ln_prior = 0
+
     for i, item in enumerate(modelpar):
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
 
-            if prior is None:
-                ln_prior = 0.
-
-            elif prior[0] == 'mass':
+            if prior is not None and prior[0] == 'mass' and item == 'logg':
                 mass = read_util.get_mass(modeldict)
-                ln_prior = -0.5*(mass-prior[1])**2/prior[2]**2
+                ln_prior += -0.5*(mass-prior[1])**2/prior[2]**2
+
+            else:
+                ln_prior += 0.
 
         else:
             ln_prior = -np.inf
@@ -74,7 +77,8 @@ def lnlike(param,
            distance,
            spectrum,
            instrument,
-           modelspec):
+           modelspec,
+           weighting):
     """
     Function for the likelihood probability.
 
@@ -94,6 +98,12 @@ def lnlike(param,
     instrument : str
         Instrument that was used for the spectrum (currently only 'gpi' possible).
     modelspec : species.read.read_model.ReadModel
+    weighting : float, None
+        Weighting applied to the spectrum when calculating the likelihood function in order
+        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
+        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
+        that is equal to three photometry points. The spectrum data points have an equal
+        weighting as the photometry points if set to None.
 
     Returns
     -------
@@ -122,8 +132,11 @@ def lnlike(param,
                                      spec_fluxes=model.flux,
                                      spec_errs=None)
 
-        # (4./float(spectrum[:, 0].size))
-        chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+        if weighting is None:
+            chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+
+        else:
+            chisq += (weighting/float(spectrum[:, 0].size)) * np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
 
     return -0.5*chisq
 
@@ -138,7 +151,8 @@ def lnprob(param,
            prior,
            spectrum,
            instrument,
-           modelspec):
+           modelspec,
+           weighting):
     """
     Function for the posterior probability.
 
@@ -164,6 +178,12 @@ def lnprob(param,
     instrument : str
         Instrument that was used for the spectrum (currently only 'gpi' possible).
     modelspec : species.read.read_model.ReadModel
+    weighting : float, None
+        Weighting applied to the spectrum when calculating the likelihood function in order
+        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
+        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
+        that is equal to three photometry points. The spectrum data points have an equal
+        weighting as the photometry points if set to None.
 
     Returns
     -------
@@ -185,7 +205,8 @@ def lnprob(param,
                                     distance,
                                     spectrum,
                                     instrument,
-                                    modelspec)
+                                    modelspec,
+                                    weighting)
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -302,7 +323,8 @@ class FitModel:
                  nsteps,
                  guess,
                  tag,
-                 prior=None):
+                 prior=None,
+                 weighting=None):
         """
         Function to run the MCMC sampler.
 
@@ -321,6 +343,12 @@ class FitModel:
             Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
             ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
             used if set to None.
+        weighting : float, None
+            Weighting applied to the spectrum when calculating the likelihood function in order
+            to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
+            then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
+            that is equal to three photometry points. The spectrum data points have an equal
+            weighting as the photometry points if set to None.
 
         Returns
         -------
@@ -345,29 +373,48 @@ class FitModel:
                                                   high=self.bounds[item][1],
                                                   size=nwalkers)
 
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
-                                        dim=ndim,
-                                        lnpostfn=lnprob,
-                                        a=2.,
-                                        args=([self.bounds,
-                                               self.modelpar,
-                                               self.modelphot,
-                                               self.objphot,
-                                               self.synphot,
-                                               self.distance,
-                                               prior,
-                                               self.spectrum,
-                                               self.instrument,
-                                               self.modelspec]))
+        with Pool(processes=multiprocessing.cpu_count()) as pool:
+            sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
+                                            ndim=ndim,
+                                            log_prob_fn=lnprob,
+                                            args=([self.bounds,
+                                                   self.modelpar,
+                                                   self.modelphot,
+                                                   self.objphot,
+                                                   self.synphot,
+                                                   self.distance,
+                                                   prior,
+                                                   self.spectrum,
+                                                   self.instrument,
+                                                   self.modelspec,
+                                                   weighting]))
 
-        progbar = progress.bar.Bar('\rRunning MCMC...',
-                                   max=nsteps,
-                                   suffix='%(percent)d%%')
+            sampler.run_mcmc(initial, nsteps, progress=True)
 
-        for i, _ in enumerate(sampler.sample(initial, iterations=nsteps)):
-            progbar.next()
+        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
+        #                                 dim=ndim,
+        #                                 lnpostfn=lnprob,
+        #                                 a=2.,
+        #                                 args=([self.bounds,
+        #                                        self.modelpar,
+        #                                        self.modelphot,
+        #                                        self.objphot,
+        #                                        self.synphot,
+        #                                        self.distance,
+        #                                        prior,
+        #                                        self.spectrum,
+        #                                        self.instrument,
+        #                                        self.modelspec,
+        #                                        weighting]))
 
-        progbar.finish()
+        # progbar = progress.bar.Bar('\rRunning MCMC...',
+        #                            max=nsteps,
+        #                            suffix='%(percent)d%%')
+
+        # for i, _ in enumerate(sampler.sample(initial, iterations=nsteps)):
+        #     progbar.next()
+
+        # progbar.finish()
 
         species_db = database.Database()
 

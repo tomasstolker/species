@@ -26,7 +26,7 @@ class ReadSpectrum:
         ----------
         spectrum : str
             Spectral library.
-        filter_name : str
+        filter_name : str, None
             Filter name. Full spectrum is read if set to None.
 
         Returns
@@ -164,6 +164,7 @@ class ReadSpectrum:
             for item in sptypes:
                 if indices is None:
                     indices = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
+
                 else:
                     ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
                     indices = np.append(indices, ind_tmp)

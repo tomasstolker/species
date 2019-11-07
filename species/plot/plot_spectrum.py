@@ -272,28 +272,44 @@ def plot_spectrum(boxes,
                     par_val = list(param.values())
 
                     label = ''
+                    newline = False
+
                     for i, item in enumerate(par_key):
 
                         if item == r'$T_\mathregular{eff}$':
                             value = f'{par_val[i]:.1f}'
-                        elif item in (r'$\log\,g$', '[Fe/H]'):
+
+                        elif item in (r'$\log\,g$', '[Fe/H]', 'C/O', r'f$_\mathregular{sed}$'):
                             value = f'{par_val[i]:.2f}'
+
                         elif item == r'$R$':
+
                             if object_type == 'planet':
                                 value = f'{par_val[i]:.2f}'
+
                             elif object_type == 'star':
                                 value = f'{par_val[i]*constants.R_JUP/constants.R_SUN:.2f}'
+
                         elif item == r'$M$':
                             if object_type == 'planet':
                                 value = f'{par_val[i]:.2f}'
                             elif object_type == 'star':
                                 value = f'{par_val[i]*constants.M_JUP/constants.M_SUN:.2f}'
+
                         elif item == r'$L$':
                             value = f'{par_val[i]:.1e}'
+
                         else:
                             continue
 
-                        label += item+' = '+str(value)+' '+par_unit[i]
+                        # if len(label) > 110 and newline == False:
+                        #     label += '\n'
+                        #     newline = True
+
+                        if par_unit[i] is None:
+                            label += item+' = '+str(value)
+                        else:
+                            label += item+' = '+str(value)+' '+par_unit[i]
 
                         if i < len(par_key)-1:
                             label += ', '
