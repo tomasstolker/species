@@ -207,7 +207,7 @@ class ReadIsochrone:
                               filter_mag=filter_mag,
                               color=mag1-mag2,
                               magnitude=abs_mag,
-                              sptype=isochrone.teff)
+                              sptype=mass)
 
     def get_color_color(self,
                         age,
@@ -265,4 +265,4 @@ class ReadIsochrone:
                               filters=filters,
                               color1=mag1-mag2,
                               color2=mag3-mag4,
-                              sptype=isochrone.teff)
+                              sptype=mass)

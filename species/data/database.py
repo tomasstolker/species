@@ -366,7 +366,7 @@ class Database:
         sys.stdout.write('Adding object: '+object_name+'...')
         sys.stdout.flush()
 
-        if spectrum:
+        if spectrum is not None:
 
             if 'objects/'+object_name+'/spectrum' in h5_file:
                 del h5_file['objects/'+object_name+'/spectrum']
@@ -516,7 +516,7 @@ class Database:
         ----------
         spectrum : str
             Spectral library ('vega', 'irtf' or 'spex').
-        sptypes : tuple(str, )
+        sptypes : list(str, )
             Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
 
         Returns

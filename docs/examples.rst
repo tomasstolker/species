@@ -61,7 +61,7 @@ The following code will download the IRTF spectral library and add the spectra t
    species.SpeciesInit('./')
 
    spectrum = species.ReadSpectrum(spectrum='irtf', filter_name='MKO/NSFCam.H')
-   specbox = spectrum.get_spectrum(sptype='L0')
+   specbox = spectrum.get_spectrum(sptype=['L0', ])
 
    synphot = species.SyntheticPhotometry(filter_name='MKO/NSFCam.H')
 

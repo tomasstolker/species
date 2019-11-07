@@ -39,8 +39,8 @@ def sptype_substellar(sptype,
         elif item[0:2] in (b'T5', b'T6', b'T7', b'T8', b'T9'):
             spt_disc[i] = 5.5
 
-        elif b'Y' in item:
-            spt_disc[i] = 6.5
+        # elif b'Y' in item:
+        #     spt_disc[i] = 6.5
 
         else:
             spt_disc[i] = np.nan
@@ -125,6 +125,14 @@ def update_labels(param):
         index = param.index('feh')
         param[index] = r'Fe/H [dex]'
 
+    if 'fsed' in param:
+        index = param.index('fsed')
+        param[index] = r'f$_\mathregular{sed}$'
+
+    if 'co' in param:
+        index = param.index('co')
+        param[index] = r'C/O'
+
     if 'radius' in param:
         index = param.index('radius')
         param[index] = r'$R$ [$\mathregular{R_{Jup}}$]'
@@ -154,14 +162,17 @@ def model_name(key):
     if key == 'drift-phoenix':
         name = 'DRIFT-PHOENIX'
 
-    elif key == 'bt-nextgen':
-        name = 'BT-NextGen'
-
     elif key == 'ames-cond':
         name = 'AMES-Cond'
 
     elif key == 'ames-dusty':
         name = 'AMES-Dusty'
+
+    elif key == 'bt-settl':
+        name = 'BT-Settl'
+
+    elif key == 'bt-nextgen':
+        name = 'BT-NextGen'
 
     return name
 
@@ -194,6 +205,14 @@ def quantity_unit(param,
     if 'feh' in param:
         quantity.append(r'[Fe/H]')
         unit.append('dex')
+
+    if 'fsed' in param:
+        quantity.append(r'f$_\mathregular{sed}$')
+        unit.append(None)
+
+    if 'co' in param:
+        quantity.append(r'C/O')
+        unit.append(None)
 
     if 'radius' in param:
         quantity.append(r'$R$')

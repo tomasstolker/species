@@ -55,7 +55,7 @@ def plot_walkers(tag,
     ndim = samples.shape[-1]
 
     plt.figure(1, figsize=(6, 5))
-    gridsp = mpl.gridspec.GridSpec(4, 1)
+    gridsp = mpl.gridspec.GridSpec(ndim, 1)
     gridsp.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
     for i in range(ndim):
