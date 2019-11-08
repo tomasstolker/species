@@ -35,17 +35,18 @@ def plot_color_magnitude(colorbox=None,
                          ylim=None,
                          offset=None,
                          legend='upper left',
-                         ncolumn=1,
                          output='color-magnitude.pdf'):
     """
     Parameters
     ----------
     colorbox : list(species.core.box.ColorMagBox, ), None
         Boxes with the colors and magnitudes. Not used if set to None.
-    objects : tuple(tuple(str, str, str, str), ), None
+    objects : tuple(tuple(str, str, str, str), ),
+              tuple(tuple(str, str, str, str, float, float), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter IDs for the color, and the filter ID for the absolute magnitude. Not used if set to
-        None.
+        filter IDs for the color, and the filter ID for the absolute magnitude. Optionally, the
+        fractional horizontal and vertical offset values (default = 5e-3) for the label can be
+        provided. Not used if set to None.
     isochrones : tuple(species.core.box.IsochroneBox, ), None
         Tuple with boxes of isochrone data. Not used if set to None.
     models : tuple(species.core.box.ColorMagBox, ), None
@@ -66,8 +67,6 @@ def plot_color_magnitude(colorbox=None,
         Limits for the y-axis.
     legend : str, None
         Legend position. Not shown if set to None.
-    ncolumn : int
-        Numer of columns used for the legend.
     output : str
         Output filename.
 
@@ -76,10 +75,7 @@ def plot_color_magnitude(colorbox=None,
     None
     """
 
-    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*',
-                              'd', 'x', '+', '1', '2', '3', '4'))
-
-    model_color = ('tomato', 'teal', 'dodgerblue')
+    model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
     sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
@@ -91,8 +87,6 @@ def plot_color_magnitude(colorbox=None,
 
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
-
-    # ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -154,7 +148,7 @@ def plot_color_magnitude(colorbox=None,
                 label = plot_util.model_name(item.library)
 
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=1, zorder=3, color=model_color[model_count[0]], label=label)
+                         linewidth=1.2, zorder=3, color=model_color[model_count[0]], label=label)
 
                 if mass_labels is not None:
                     interp_magnitude = interp1d(item.sptype, item.magnitude)
@@ -183,13 +177,6 @@ def plot_color_magnitude(colorbox=None,
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, zorder=3, color=model_color[model_count[0]])
-
-            # scat_teff = ax1.scatter(item.color, item.magnitude, c=item.sptype, cmap=cmap_teff,
-            #                         norm=norm_teff, zorder=4, s=15, alpha=1.0, edgecolor='none')
-
-        # cb2 = ColorbarBase(ax=ax3, cmap=cmap_teff, norm=norm_teff, orientation='vertical', ticklocation='right')
-        # cb2.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-        # cb2.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
 
     if colorbox is not None:
         cmap = plt.cm.viridis
@@ -224,7 +211,7 @@ def plot_color_magnitude(colorbox=None,
 
             if item.object_type == 'field':
                 scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
-                                   s=40, alpha=0.6, edgecolor='none')
+                                   s=50, alpha=0.7, edgecolor='none')
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
                 cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
@@ -236,12 +223,12 @@ def plot_color_magnitude(colorbox=None,
                 cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
 
             elif item.object_type == 'young':
-                ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.6, 
+                ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.7, 
                          color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
 
     if isochrones is not None:
         for item in isochrones:
-            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1., color='black')
+            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1.2, color='black')
 
     if objects is not None:
         for item in objects:
@@ -253,31 +240,57 @@ def plot_color_magnitude(colorbox=None,
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
 
-            if item[0] in ('HD 135344A - CC'):
-                ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
-                             marker='*', ms=12, color='magenta', label=objdata.object_name,
-                             markerfacecolor='magenta', markeredgecolor='black', zorder=10)
+            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                color = '#eb4242'
+                markerfacecolor = '#eb4242'
+                markeredgecolor = 'black'
+                marker = '*'
+                ms = 12
 
             else:
-                # if item[0] in ('PDS 70 b'):
-                if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                    color_plot = 'mediumslateblue'
-                else:
-                    color_plot = 'black'
+                color = 'black'
+                markerfacecolor = 'white'
+                markeredgecolor = 'black'
+                marker = '>'
+                ms = 6
 
-                ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
-                             marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
-                             markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
+            # ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=next(marker), ms=6,
+            #              color=color, label=objdata.object_name, markerfacecolor='white',
+            #              markeredgecolor=color, zorder=10)
 
-            # ax1.errorbar(objcolor1[0]-objcolor2[0], abs_mag[0], yerr=abs_mag[1], xerr=colorerr,
-            #              marker=next(marker), ms=6, color='black', label=objdata.object_name,
-            #              markerfacecolor='white', markeredgecolor='black', zorder=10)
+            x_color = objcolor1[0]-objcolor2[0]
+            y_mag = abs_mag[0]
+
+            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=ms,
+                         color=color, markerfacecolor=markerfacecolor,
+                         markeredgecolor=markeredgecolor, zorder=10)
+
+            x_range = ax1.get_xlim()
+            y_range = ax1.get_ylim()
+
+            if len(item) == 8:
+                ha = item[4]
+                va = item[5]
+                x_scaling = item[6]
+                y_scaling = item[7]
+
+            else:
+                ha = 'left'
+                va = 'bottom'
+                x_scaling = 8e-3
+                y_scaling = 8e-3
+
+            x_offset = x_scaling*abs(x_range[1]-x_range[0])
+            y_offset = y_scaling*abs(y_range[1]-y_range[0])
+
+            ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
+                     fontsize=8, color=color)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
 
         if handles:
-            ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=ncolumn)
+            ax1.legend(loc=legend, prop={'size': 8.5}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
@@ -297,7 +310,6 @@ def plot_color_color(colorbox,
                      ylim=None,
                      offset=None,
                      legend='upper left',
-                     ncolumn=1,
                      output='color-color.pdf'):
     """
     Parameters
@@ -330,8 +342,6 @@ def plot_color_color(colorbox,
         Offset of the x- and y-axis label.
     legend : str
         Legend position.
-    ncolumn : int
-        Numer of columns used for the legend.
 
     Returns
     -------
@@ -353,8 +363,6 @@ def plot_color_color(colorbox,
 
     ax1 = plt.subplot(gridsp[2, 0])
     ax2 = plt.subplot(gridsp[0, 0])
-
-    # ax1.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4), zorder=0)
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=0.8, length=5, labelsize=12, top=True,
@@ -446,13 +454,6 @@ def plot_color_color(colorbox,
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, zorder=3, color=model_color[model_count[0]])
 
-            # scat_teff = ax1.scatter(item.color, item.magnitude, c=item.sptype, cmap=cmap_teff,
-            #                         norm=norm_teff, zorder=4, s=15, alpha=1.0, edgecolor='none')
-
-        # cb2 = ColorbarBase(ax=ax3, cmap=cmap_teff, norm=norm_teff, orientation='vertical', ticklocation='right')
-        # cb2.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-        # cb2.ax.set_ylabel('Temperature [K]', rotation=270, fontsize=12, labelpad=22)
-
     if colorbox is not None:
         cmap = plt.cm.viridis
 
@@ -485,7 +486,7 @@ def plot_color_color(colorbox,
 
             if item.object_type == 'field':
                 scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
-                                   s=40, alpha=0.6, edgecolor='none')
+                                   s=50, alpha=0.7, edgecolor='none')
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
                 cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
@@ -497,11 +498,11 @@ def plot_color_color(colorbox,
                 cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
 
             elif item.object_type == 'young':
-                ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.6, 
+                ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7, 
                          color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
 
             # scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-            #                    zorder=5, s=40, alpha=0.6, edgecolor='none')
+            #                    zorder=5, s=40, alpha=0.7, edgecolor='none')
             #
             # cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
             #               ticklocation='top', format='%.2f')
@@ -530,7 +531,6 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            # if item[0] in ('PDS 70 b'):
             if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
                 color_plot = 'mediumslateblue'
             else:
@@ -547,7 +547,7 @@ def plot_color_color(colorbox,
     handles, labels = ax1.get_legend_handles_labels()
 
     if handles:
-        ax1.legend(loc=legend, prop={'size': 8}, frameon=False, numpoints=1, ncol=ncolumn)
+        ax1.legend(loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

@@ -219,7 +219,7 @@ class Database:
                   model,
                   wavelength=None,
                   teff=None,
-                  specres=None,
+                  specres=1000.,
                   data_folder=None):
         """
         Parameters
@@ -230,7 +230,7 @@ class Database:
             Wavelength (micron) range.
         teff : tuple(float, float), None
             Effective temperature (K) range.
-        specres : float, None
+        specres : float
             Spectral resolution.
         data_folder : str, None
             Path with input data (only required for petitCODE hot models).
