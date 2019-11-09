@@ -5,6 +5,8 @@ Module for fitting a calibration spectrum.
 import sys
 import math
 
+from multiprocessing import Pool, cpu_count
+
 import emcee
 import progress.bar
 import numpy as np
@@ -171,24 +173,35 @@ class FitSpectrum:
                 self.modelpar.append('scaling'+str(i))
                 self.bounds['scaling'+str(i)] = (0., 1e2)
 
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
-                                        dim=ndim,
-                                        lnpostfn=lnprob,
-                                        a=2.,
-                                        args=([self.bounds,
-                                               self.modelpar,
-                                               self.objphot,
-                                               self.specphot,
-                                               bands]))
+        with Pool(processes=cpu_count()) as pool:
+            sampler = emcee.EnsembleSampler(nwalkers,
+                                            ndim,
+                                            lnprob,
+                                            args=([self.bounds,
+                                                   self.modelpar,
+                                                   self.objphot,
+                                                   self.specphot]))
 
-        progbar = progress.bar.Bar('\rRunning MCMC...',
-                                   max=nsteps,
-                                   suffix='%(percent)d%%')
+            sampler.run_mcmc(initial, nsteps, progress=True)
 
-        for _ in sampler.sample(initial, iterations=nsteps):
-            progbar.next()
-
-        progbar.finish()
+        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
+        #                                 dim=ndim,
+        #                                 lnpostfn=lnprob,
+        #                                 a=2.,
+        #                                 args=([self.bounds,
+        #                                        self.modelpar,
+        #                                        self.objphot,
+        #                                        self.specphot,
+        #                                        bands]))
+        #
+        # progbar = progress.bar.Bar('\rRunning MCMC...',
+        #                            max=nsteps,
+        #                            suffix='%(percent)d%%')
+        #
+        # for _ in sampler.sample(initial, iterations=nsteps):
+        #     progbar.next()
+        #
+        # progbar.finish()
 
         species_db = database.Database()
 
