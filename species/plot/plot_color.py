@@ -247,31 +247,37 @@ def plot_color_magnitude(colorbox=None,
             y_mag = abs_mag[0]
 
             # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     marker = '*'
+            #     markersize = 12
             #     color = '#eb4242'
             #     markerfacecolor = '#eb4242'
             #     markeredgecolor = 'black'
-            #     marker = '*'
-            #     ms = 12
             #
             # else:
+            #     marker = '>'
+            #     markersize = 6
             #     color = 'black'
             #     markerfacecolor = 'white'
             #     markeredgecolor = 'black'
-            #     marker = '>'
-            #     ms = 6
+            #
+            # if item[0] == 'HR 8799 b':
+            #     label = 'Directly imaged'
+            # else:
+            #     label = None
 
             marker = '>'
             markersize = 6
+            color = 'black
             markerfacecolor = 'white'
             markeredgecolor = 'black'
 
-            if not companion_labels and i == 0:
+            if i == 0:
                 label = 'Directly imaged'
             else:
                 label = None
 
             ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=markersize,
-                         color=markerfacecolor, markerfacecolor=markerfacecolor,
+                         color=color, markerfacecolor=markerfacecolor,
                          markeredgecolor=markeredgecolor, zorder=10, label=label)
 
             if companion_labels:
@@ -294,7 +300,7 @@ def plot_color_magnitude(colorbox=None,
                 y_offset = y_scaling*abs(y_range[1]-y_range[0])
 
                 ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color)
+                         fontsize=8, color=color, zorder=10)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
@@ -327,10 +333,12 @@ def plot_color_color(colorbox,
     ----------
     colorbox : species.core.box.ColorColorBox, None
         Box with the colors and magnitudes.
-    objects : tuple(tuple(str, str, str, str), ), None
-        Tuple with individual objects. The objects require a tuple with their database tag, the
-        two filter IDs for the color, and the filter ID for the absolute magnitude. Not used if
-        set to None.
+    objects : tuple(tuple(str, str, str, str), ),
+              tuple(tuple(str, str, str, str, str, str, float, float), ), None
+        Tuple with individual objects. The objects require a tuple with their database tag, the two
+        filter IDs for the first color, and the two filter IDs for the second color. Optionally,
+        the horizontal and vertical alignment and fractional offset values can be provided for the
+        label can be provided (default: 'left', 'bottom', 8e-3, 8e-3). Not used if set to None.
     models : tuple(species.core.box.ColorMagBox, ), None
         Tuple with :class:`~species.core.box.ColorColorBox` objects which have been created from
         the isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`.
@@ -532,21 +540,27 @@ def plot_color_color(colorbox,
             error2 = math.sqrt(err3**2+err4**2)
 
             # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     marker = '*'
+            #     markersize = 12
             #     color = '#eb4242'
             #     markerfacecolor = '#eb4242'
             #     markeredgecolor = 'black'
-            #     marker = '*'
-            #     ms = 12
             #
             # else:
+            #     marker = '>'
+            #     markersize = 6
             #     color = 'black'
             #     markerfacecolor = 'white'
             #     markeredgecolor = 'black'
-            #     marker = '>'
-            #     ms = 6
+            #
+            # if item[0] == 'HR 8799 b':
+            #     label = 'Directly imaged'
+            # else:
+            #     label = None
 
             marker = '>'
             markersize = 6
+            color = 'black'
             markerfacecolor = 'white'
             markeredgecolor = 'black'
 
@@ -556,18 +570,18 @@ def plot_color_color(colorbox,
                 label = None
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=markersize,
-                         color=markerfacecolor, markerfacecolor=markerfacecolor,
+                         color=color, markerfacecolor=markerfacecolor,
                          markeredgecolor=markeredgecolor, zorder=10, label=label)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
                 y_range = ax1.get_ylim()
 
-                if len(item) == 8:
-                    ha = item[4]
-                    va = item[5]
-                    x_scaling = item[6]
-                    y_scaling = item[7]
+                if len(item) == 7:
+                    ha = item[3]
+                    va = item[4]
+                    x_scaling = item[5]
+                    y_scaling = item[6]
 
                 else:
                     ha = 'left'
@@ -578,8 +592,8 @@ def plot_color_color(colorbox,
                 x_offset = x_scaling*abs(x_range[1]-x_range[0])
                 y_offset = y_scaling*abs(y_range[1]-y_range[0])
 
-                ax1.text(color1+x_offset, color2-y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color)
+                ax1.text(color1+x_offset, color2+y_offset, objdata.object_name, ha=ha, va=va,
+                         fontsize=8, color=color, zorder=10)
 
     handles, labels = ax1.get_legend_handles_labels()
 
