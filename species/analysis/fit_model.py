@@ -4,7 +4,8 @@ Module for fitting atmospheric models.
 
 import sys
 import math
-import multiprocessing
+
+from multiprocessing import Pool, cpu_count
 
 import emcee
 import spectres
@@ -373,10 +374,10 @@ class FitModel:
                                                   high=self.bounds[item][1],
                                                   size=nwalkers)
 
-        with Pool(processes=multiprocessing.cpu_count()) as pool:
-            sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
-                                            ndim=ndim,
-                                            log_prob_fn=lnprob,
+        with Pool(processes=cpu_count()) as pool:
+            sampler = emcee.EnsembleSampler(nwalkers,
+                                            ndim,
+                                            lnprob,
                                             args=([self.bounds,
                                                    self.modelpar,
                                                    self.modelphot,

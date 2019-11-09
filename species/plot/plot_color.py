@@ -42,11 +42,11 @@ def plot_color_magnitude(colorbox=None,
     colorbox : list(species.core.box.ColorMagBox, ), None
         Boxes with the colors and magnitudes. Not used if set to None.
     objects : tuple(tuple(str, str, str, str), ),
-              tuple(tuple(str, str, str, str, float, float), ), None
+              tuple(tuple(str, str, str, str, str, str, float, float), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude. Optionally, the
-        fractional horizontal and vertical offset values (default = 5e-3) for the label can be
-        provided. Not used if set to None.
+        horizontal and vertical alignment and fractional offset values can be provided for the
+        label can be provided (default: 'left', 'bottom', 8e-3, 8e-3). Not used if set to None.
     isochrones : tuple(species.core.box.IsochroneBox, ), None
         Tuple with boxes of isochrone data. Not used if set to None.
     models : tuple(species.core.box.ColorMagBox, ), None
@@ -531,18 +531,56 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                color_plot = 'mediumslateblue'
-            else:
-                color_plot = 'black'
-
-            ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
-                         marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
-                         markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
+            # ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
+            #              marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
+            #              markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
 
             # ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
             #              marker=next(marker), ms=6, color='black', label=objdata.object_name,
             #              markerfacecolor='white', markeredgecolor='black', zorder=10)
+
+            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                color = '#eb4242'
+                markerfacecolor = '#eb4242'
+                markeredgecolor = 'black'
+                marker = '*'
+                ms = 12
+
+            else:
+                color = 'black'
+                markerfacecolor = 'white'
+                markeredgecolor = 'black'
+                marker = '>'
+                ms = 6
+
+            # ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=next(marker), ms=6,
+            #              color=color, label=objdata.object_name, markerfacecolor='white',
+            #              markeredgecolor=color, zorder=10)
+
+            ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=ms,
+                         color=color, markerfacecolor=markerfacecolor,
+                         markeredgecolor=markeredgecolor, zorder=10)
+
+            x_range = ax1.get_xlim()
+            y_range = ax1.get_ylim()
+
+            if len(item) == 8:
+                ha = item[4]
+                va = item[5]
+                x_scaling = item[6]
+                y_scaling = item[7]
+
+            else:
+                ha = 'left'
+                va = 'bottom'
+                x_scaling = 8e-3
+                y_scaling = 8e-3
+
+            x_offset = x_scaling*abs(x_range[1]-x_range[0])
+            y_offset = y_scaling*abs(y_range[1]-y_range[0])
+
+            ax1.text(color1+x_offset, color2-y_offset, objdata.object_name, ha=ha, va=va,
+                     fontsize=8, color=color)
 
     handles, labels = ax1.get_legend_handles_labels()
 
