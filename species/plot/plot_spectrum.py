@@ -112,8 +112,6 @@ def plot_spectrum(boxes,
 
         ax1 = plt.subplot(gridsp[0, 0])
 
-    ax1.grid(True, linestyle=':', linewidth=0.7, color='gray', dashes=(1, 4), alpha=0.3, zorder=0)
-
     if residuals:
         labelbottom = False
     else:
@@ -128,9 +126,6 @@ def plot_spectrum(boxes,
                     bottom=True, left=True, right=True, labelbottom=labelbottom)
 
     if filters:
-        ax2.grid(True, linestyle=':', linewidth=0.7, color='gray', dashes=(1, 4),
-                 alpha=0.3, zorder=0)
-
         ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                         direction='in', width=0.8, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True, labelbottom=False)
@@ -140,9 +135,6 @@ def plot_spectrum(boxes,
                         bottom=True, left=True, right=True, labelbottom=False)
 
     if residuals:
-        ax3.grid(True, linestyle=':', linewidth=0.7, color='gray', dashes=(1, 4),
-                 alpha=0.3, zorder=0)
-
         ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                         direction='in', width=0.8, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
@@ -414,7 +406,7 @@ def plot_spectrum(boxes,
             if max_tmp > res_max:
                 res_max = max_tmp
 
-        res_lim = math.ceil(res_max)
+        res_lim = math.ceil(1.1*res_max)
 
         ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
         ax3.set_ylim(-res_lim, res_lim)
