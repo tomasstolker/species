@@ -29,6 +29,7 @@ def plot_color_magnitude(colorbox=None,
                          isochrones=None,
                          models=None,
                          mass_labels=None,
+                         companion_labels=False,
                          label_x='color [mag]',
                          label_y='M [mag]',
                          xlim=None,
@@ -57,6 +58,8 @@ def plot_color_magnitude(colorbox=None,
     mass_labels : list(float, ), None
         Plot labels with masses next to the isochrone data of `models`. The list with masses has
         to be provided in Jupiter mass. No labels are shown if set to None.
+    companion_labels : bool
+        Plot labels with the names of the directly imaged companions.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -231,7 +234,7 @@ def plot_color_magnitude(colorbox=None,
             ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1.2, color='black')
 
     if objects is not None:
-        for item in objects:
+        for i, item in enumerate(objects):
             objdata = read_object.ReadObject(item[0])
 
             objcolor1 = objdata.get_photometry(item[1])
@@ -240,51 +243,58 @@ def plot_color_magnitude(colorbox=None,
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
 
-            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                color = '#eb4242'
-                markerfacecolor = '#eb4242'
-                markeredgecolor = 'black'
-                marker = '*'
-                ms = 12
-
-            else:
-                color = 'black'
-                markerfacecolor = 'white'
-                markeredgecolor = 'black'
-                marker = '>'
-                ms = 6
-
-            # ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=next(marker), ms=6,
-            #              color=color, label=objdata.object_name, markerfacecolor='white',
-            #              markeredgecolor=color, zorder=10)
-
             x_color = objcolor1[0]-objcolor2[0]
             y_mag = abs_mag[0]
 
-            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=ms,
-                         color=color, markerfacecolor=markerfacecolor,
-                         markeredgecolor=markeredgecolor, zorder=10)
+            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     color = '#eb4242'
+            #     markerfacecolor = '#eb4242'
+            #     markeredgecolor = 'black'
+            #     marker = '*'
+            #     ms = 12
+            #
+            # else:
+            #     color = 'black'
+            #     markerfacecolor = 'white'
+            #     markeredgecolor = 'black'
+            #     marker = '>'
+            #     ms = 6
 
-            x_range = ax1.get_xlim()
-            y_range = ax1.get_ylim()
+            marker = '>'
+            markersize = 6
+            markerfacecolor = 'white'
+            markeredgecolor = 'black'
 
-            if len(item) == 8:
-                ha = item[4]
-                va = item[5]
-                x_scaling = item[6]
-                y_scaling = item[7]
-
+            if not companion_labels and i == 0:
+                label = 'Directly imaged'
             else:
-                ha = 'left'
-                va = 'bottom'
-                x_scaling = 8e-3
-                y_scaling = 8e-3
+                label = None
 
-            x_offset = x_scaling*abs(x_range[1]-x_range[0])
-            y_offset = y_scaling*abs(y_range[1]-y_range[0])
+            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=markersize,
+                         color=markerfacecolor, markerfacecolor=markerfacecolor,
+                         markeredgecolor=markeredgecolor, zorder=10, label=label)
 
-            ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
-                     fontsize=8, color=color)
+            if companion_labels:
+                x_range = ax1.get_xlim()
+                y_range = ax1.get_ylim()
+
+                if len(item) == 8:
+                    ha = item[4]
+                    va = item[5]
+                    x_scaling = item[6]
+                    y_scaling = item[7]
+
+                else:
+                    ha = 'left'
+                    va = 'bottom'
+                    x_scaling = 8e-3
+                    y_scaling = 8e-3
+
+                x_offset = x_scaling*abs(x_range[1]-x_range[0])
+                y_offset = y_scaling*abs(y_range[1]-y_range[0])
+
+                ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
+                         fontsize=8, color=color)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
@@ -304,6 +314,7 @@ def plot_color_color(colorbox,
                      objects=None,
                      models=None,
                      mass_labels=None,
+                     companion_labels=False,
                      label_x='color [mag]',
                      label_y='color [mag]',
                      xlim=None,
@@ -328,6 +339,8 @@ def plot_color_color(colorbox,
     mass_labels : list(float, ), None
         Plot labels with masses next to the isochrone data of `models`. The list with masses has
         to be provided in Jupiter mass. No labels are shown if set to None.
+    companion_labels : bool
+        Plot labels with the names of the directly imaged companions.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -348,10 +361,7 @@ def plot_color_color(colorbox,
     None
     """
 
-    marker = itertools.cycle(('o', 's', '<', '>', 'p', 'v', '^', '*',
-                              'd', 'x', '+', '1', '2', '3', '4'))
-
-    model_color = ('tomato', 'teal', 'dodgerblue')
+    model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
     sys.stdout.write('Plotting color-color diagram: '+output+'... ')
@@ -501,18 +511,8 @@ def plot_color_color(colorbox,
                 ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7, 
                          color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
 
-            # scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm,
-            #                    zorder=5, s=40, alpha=0.7, edgecolor='none')
-            #
-            # cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
-            #               ticklocation='top', format='%.2f')
-
-            # cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
-            # cb.set_ticks(np.arange(0.5, 7., 1.))
-            # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
-
     if objects is not None:
-        for item in objects:
+        for i, item in enumerate(objects):
             objdata = read_object.ReadObject(item[0])
 
             mag1 = objdata.get_photometry(item[1][0])[0]
@@ -531,56 +531,55 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            # ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
-            #              marker=next(marker), ms=6, color=color_plot, label=objdata.object_name,
-            #              markerfacecolor='white', markeredgecolor=color_plot, zorder=10)
+            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     color = '#eb4242'
+            #     markerfacecolor = '#eb4242'
+            #     markeredgecolor = 'black'
+            #     marker = '*'
+            #     ms = 12
+            #
+            # else:
+            #     color = 'black'
+            #     markerfacecolor = 'white'
+            #     markeredgecolor = 'black'
+            #     marker = '>'
+            #     ms = 6
 
-            # ax1.errorbar(color1, color2, xerr=error1, yerr=error2,
-            #              marker=next(marker), ms=6, color='black', label=objdata.object_name,
-            #              markerfacecolor='white', markeredgecolor='black', zorder=10)
+            marker = '>'
+            markersize = 6
+            markerfacecolor = 'white'
+            markeredgecolor = 'black'
 
-            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                color = '#eb4242'
-                markerfacecolor = '#eb4242'
-                markeredgecolor = 'black'
-                marker = '*'
-                ms = 12
-
+            if not companion_labels and i == 0:
+                label = 'Directly imaged'
             else:
-                color = 'black'
-                markerfacecolor = 'white'
-                markeredgecolor = 'black'
-                marker = '>'
-                ms = 6
+                label = None
 
-            # ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=next(marker), ms=6,
-            #              color=color, label=objdata.object_name, markerfacecolor='white',
-            #              markeredgecolor=color, zorder=10)
+            ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=markersize,
+                         color=markerfacecolor, markerfacecolor=markerfacecolor,
+                         markeredgecolor=markeredgecolor, zorder=10, label=label)
 
-            ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=ms,
-                         color=color, markerfacecolor=markerfacecolor,
-                         markeredgecolor=markeredgecolor, zorder=10)
+            if companion_labels:
+                x_range = ax1.get_xlim()
+                y_range = ax1.get_ylim()
 
-            x_range = ax1.get_xlim()
-            y_range = ax1.get_ylim()
+                if len(item) == 8:
+                    ha = item[4]
+                    va = item[5]
+                    x_scaling = item[6]
+                    y_scaling = item[7]
 
-            if len(item) == 8:
-                ha = item[4]
-                va = item[5]
-                x_scaling = item[6]
-                y_scaling = item[7]
+                else:
+                    ha = 'left'
+                    va = 'bottom'
+                    x_scaling = 8e-3
+                    y_scaling = 8e-3
 
-            else:
-                ha = 'left'
-                va = 'bottom'
-                x_scaling = 8e-3
-                y_scaling = 8e-3
+                x_offset = x_scaling*abs(x_range[1]-x_range[0])
+                y_offset = y_scaling*abs(y_range[1]-y_range[0])
 
-            x_offset = x_scaling*abs(x_range[1]-x_range[0])
-            y_offset = y_scaling*abs(y_range[1]-y_range[0])
-
-            ax1.text(color1+x_offset, color2-y_offset, objdata.object_name, ha=ha, va=va,
-                     fontsize=8, color=color)
+                ax1.text(color1+x_offset, color2-y_offset, objdata.object_name, ha=ha, va=va,
+                         fontsize=8, color=color)
 
     handles, labels = ax1.get_legend_handles_labels()
 

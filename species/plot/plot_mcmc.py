@@ -61,8 +61,6 @@ def plot_walkers(tag,
     for i in range(ndim):
         ax = plt.subplot(gridsp[i, 0])
 
-        ax.grid(True, linestyle=':', linewidth=0.7, color='silver', dashes=(1, 4))
-
         if i == ndim-1:
             ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                            direction='in', width=0.8, length=5, labelsize=12, top=True,
