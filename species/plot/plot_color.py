@@ -267,7 +267,7 @@ def plot_color_magnitude(colorbox=None,
 
             marker = '>'
             markersize = 6
-            color = 'black
+            color = 'black'
             markerfacecolor = 'white'
             markeredgecolor = 'black'
 
