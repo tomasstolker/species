@@ -262,6 +262,8 @@ def plot_color_magnitude(colorbox=None,
             #
             # if item[0] == 'HR 8799 b':
             #     label = 'Directly imaged'
+            # elif item[0] == 'beta Pic b':
+            #     label = 'This study'
             # else:
             #     label = None
 
@@ -555,6 +557,8 @@ def plot_color_color(colorbox,
             #
             # if item[0] == 'HR 8799 b':
             #     label = 'Directly imaged'
+            # elif item[0] == 'beta Pic b':
+            #     label = 'This study'
             # else:
             #     label = None
 
