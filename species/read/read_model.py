@@ -192,6 +192,11 @@ class ReadModel:
                   specres=None,
                   magnitude=False):
         """
+        Function to extract a model spectrum with a multidimensional interpolation of the model
+        grid. The parameters values should therefore lie within the boundaries of the grid points
+        that are stored in the database. The stored grid points can be inspected with
+        :func:`~species.read.read_model.ReadModel.get_points`.
+
         Parameters
         ----------
         model_par : dict
@@ -309,6 +314,10 @@ class ReadModel:
     def get_data(self,
                  model_par):
         """
+        Function to extract a model spectra without interpolation for parameter values that are
+        stored within the database. The stored grid points can be inspected with
+        :func:`~species.read.read_model.ReadModel.get_points`.
+
         Parameters
         ----------
         model_par : dict
