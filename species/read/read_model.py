@@ -304,10 +304,12 @@ class ReadModel:
         else:
             quantity = 'flux'
 
+        is_finite = np.where(np.isfinite(flux))[0]
+
         return box.create_box(boxtype='model',
                               model=self.model,
-                              wavelength=self.wl_points,
-                              flux=flux,
+                              wavelength=self.wl_points[is_finite],
+                              flux=flux[is_finite],
                               parameters=model_par,
                               quantity=quantity)
 
