@@ -27,6 +27,8 @@ from species.core.constants import *
 
 from species.core.setup import SpeciesInit
 
+from species.data.companions import get_data
+
 from species.data.database import Database
 
 from species.data.queries import get_distance

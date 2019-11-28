@@ -21,7 +21,7 @@ from species.util import plot_util
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
-plt.rc('axes', edgecolor='black', linewidth=2)
+plt.rc('axes', edgecolor='black', linewidth=2.5)
 
 
 def plot_color_magnitude(colorbox=None,
@@ -92,11 +92,11 @@ def plot_color_magnitude(colorbox=None,
     ax2 = plt.subplot(gridsp[0, 0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    direction='in', width=1.0, length=5, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    direction='in', width=1.0, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.set_xlabel(label_x, fontsize=14)
@@ -217,7 +217,7 @@ def plot_color_magnitude(colorbox=None,
                                    s=50, alpha=0.7, edgecolor='none')
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
-                cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+                cb.ax.tick_params(width=1.0, length=5, labelsize=10, direction='in', color='black')
 
                 # cb.set_ticks(np.linspace(0.5, 6.5, 7))
                 # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
@@ -246,6 +246,7 @@ def plot_color_magnitude(colorbox=None,
             x_color = objcolor1[0]-objcolor2[0]
             y_mag = abs_mag[0]
 
+            # if item[0] in ('PDS 70 b'):
             # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
             #     marker = '*'
             #     markersize = 12
@@ -259,10 +260,12 @@ def plot_color_magnitude(colorbox=None,
             #     color = 'black'
             #     markerfacecolor = 'white'
             #     markeredgecolor = 'black'
-            #
+
             # if item[0] == 'HR 8799 b':
             #     label = 'Directly imaged'
             # elif item[0] == 'beta Pic b':
+            #     label = 'This study'
+            # elif item[0] == 'PDS 70 b':
             #     label = 'This study'
             # else:
             #     label = None
@@ -385,11 +388,11 @@ def plot_color_color(colorbox,
     ax2 = plt.subplot(gridsp[0, 0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    direction='in', width=1.0, length=5, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    direction='in', width=1.0, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.set_xlabel(label_x, fontsize=14)
@@ -509,7 +512,7 @@ def plot_color_color(colorbox,
                                    s=50, alpha=0.7, edgecolor='none')
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
-                cb.ax.tick_params(width=0.8, length=5, labelsize=10, direction='in', color='black')
+                cb.ax.tick_params(width=1.0, length=5, labelsize=10, direction='in', color='black')
 
                 # cb.set_ticks(np.linspace(0.5, 6.5, 7))
                 # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])

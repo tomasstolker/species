@@ -97,9 +97,9 @@ def get_data():
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (17.95, 0.17),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (16.65, 0.06),  # Müller et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_K12_2': (16.44, 0.05),  # Müller et al. 2018
-                                     'Paranal/NACO.Lp': (14.56, 0.5),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (13.79, 0.5),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Mp': (13.56, 0.5)}},  # Stolker et al. in prep.
+                                     'Paranal/NACO.Lp': (13.87, 0.24),  # Stolker et al. in prep.
+                                     'Paranal/NACO.NB405': (13.53, 0.14),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Mp': (13.51, 0.15)}},  # Stolker et al. in prep.
 
             '2M1207 b': {'distance': (64.42, 0.65),
                          'app_mag': {'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006

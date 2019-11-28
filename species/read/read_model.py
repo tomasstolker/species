@@ -270,7 +270,9 @@ class ReadModel:
             index = np.where(np.isnan(flux))[0]
 
             if index.size > 0:
-                raise ValueError('Flux values should not contains NaNs.')
+                raise ValueError('Flux values should not contains NaNs. Please make sure that '
+                                 'the parameter values and the wavelength range are within '
+                                 'the grid boundaries as stored in the database.')
 
             flux = read_util.smooth_spectrum(wavelength=self.wl_points,
                                              flux=flux,
@@ -511,18 +513,17 @@ class ReadModel:
             self.interpolate()
 
         spectrum = self.get_model(model_par, None)
-
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         if 'distance' in model_par:
             app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
                                                              spectrum.flux,
-                                                             model_par['distance'])
+                                                             distance=model_par['distance'])
 
         else:
             app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
                                                              spectrum.flux,
-                                                             None)
+                                                             distance=None)
 
         return app_mag, abs_mag
 
