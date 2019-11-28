@@ -244,14 +244,12 @@ class ReadCalibration:
                               distance=None)
 
     def get_photometry(self,
-                       parameters=None,
-                       synphot=None):
+                       parameters=None):
         """
         Parameters
         ----------
         parameters : dict, None
             Model parameter values. Not used if set to None.
-        synphot
 
         Returns
         -------
@@ -266,14 +264,12 @@ class ReadCalibration:
         return synphot.spectrum_to_photometry(specbox.wavelength, specbox.flux)
 
     def get_magnitude(self,
-                      parameters=None,
-                      synphot=None):
+                      parameters=None):
         """
         Parameters
         ----------
         parameters : dict, None
             Model parameter values. Not used if set to None.
-        synphot
 
         Returns
         -------

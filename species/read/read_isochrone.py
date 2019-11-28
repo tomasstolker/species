@@ -187,8 +187,23 @@ class ReadIsochrone:
                          'mass': item,
                          'distance': 10.}
 
-            mag1[i], _ = model1.get_magnitude(model_par=model_par)
-            mag2[i], _ = model2.get_magnitude(model_par=model_par)
+            if np.isnan(isochrone.teff[i]):
+                mag1[i] = np.nan
+                mag2[i] = np.nan
+
+            else:
+                for item in model1.get_bounds():
+                    if model_par[item] <= model1.get_bounds()[item][0]:
+                        mag1[i] = np.nan
+                        mag2[i] = np.nan
+
+                    elif model_par[item] >= model1.get_bounds()[item][1]:
+                        mag1[i] = np.nan
+                        mag2[i] = np.nan
+
+                if not np.isnan(mag1[i]):
+                    mag1[i], _ = model1.get_magnitude(model_par=model_par)
+                    mag2[i], _ = model2.get_magnitude(model_par=model_par)
 
         if filter_mag == filters_color[0]:
             abs_mag = mag1

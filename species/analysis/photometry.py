@@ -103,7 +103,7 @@ class SyntheticPhotometry:
             Average flux density (W m-2 micron-1).
         """
 
-        if not self.filter_interp:
+        if self.filter_interp is None:
             transmission = read_filter.ReadFilter(self.filter_name)
             self.filter_interp = transmission.interpolate()
 
