@@ -1,11 +1,11 @@
-astropy ~= 3.1
+astropy ~= 3.2
 astroquery ~= 0.3
 corner ~= 2.0
 emcee ~= 3.0
-h5py ~= 2.9
-matplotlib ~= 3.0
+h5py ~= 2.10
+matplotlib ~= 3.1
 numpy ~= 1.17
-pandas ~= 0.24
+pandas ~= 0.25
 progress ~= 1.5
 scipy ~= 1.3
 spectres ~= 2.0
