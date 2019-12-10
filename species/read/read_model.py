@@ -279,7 +279,6 @@ class ReadModel:
                                              specres=specres,
                                              size=11)
 
-
         if magnitude:
             quantity = 'magnitude'
 
@@ -296,10 +295,10 @@ class ReadModel:
             readcalib = read_calibration.ReadCalibration(spectrum='vega', filter_name=None)
             calibbox = readcalib.get_spectrum()
 
-            flux_vega, error_vega = spectres.spectres(new_spec_wavs=self.wl_points,
-                                                      old_spec_wavs=calibbox.wavelength,
-                                                      spec_fluxes=calibbox.flux,
-                                                      spec_errs=calibbox.error)
+            flux_vega, _ = spectres.spectres(new_spec_wavs=self.wl_points,
+                                             old_spec_wavs=calibbox.wavelength,
+                                             spec_fluxes=calibbox.flux,
+                                             spec_errs=calibbox.error)
 
             flux = -2.5*np.log10(flux/flux_vega)
 
@@ -551,7 +550,7 @@ class ReadModel:
                       'logg': (logg[0], logg[-1]),
                       'feh': (feh[0], feh[-1])}
 
-        elif self.model in ('petitcode-cool-cloudy'):
+        elif self.model in ('petitcode-cool-cloudy', ):
             feh = h5_file['models/'+self.model+'/feh']
             fsed = h5_file['models/'+self.model+'/fsed']
 
@@ -560,7 +559,7 @@ class ReadModel:
                       'feh': (feh[0], feh[-1]),
                       'fsed': (fsed[0], fsed[-1])}
 
-        elif self.model in ('petitcode-hot-clear'):
+        elif self.model in ('petitcode-hot-clear', ):
             feh = h5_file['models/'+self.model+'/feh']
             co_ratio = h5_file['models/'+self.model+'/co']
 
@@ -569,7 +568,7 @@ class ReadModel:
                       'feh': (feh[0], feh[-1]),
                       'co': (co_ratio[0], co_ratio[-1])}
 
-        elif self.model in ('petitcode-hot-cloudy'):
+        elif self.model in ('petitcode-hot-cloudy', ):
             feh = h5_file['models/'+self.model+'/feh']
             co_ratio = h5_file['models/'+self.model+'/co']
             fsed = h5_file['models/'+self.model+'/fsed']

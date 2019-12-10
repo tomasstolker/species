@@ -17,7 +17,7 @@ from species.core import box
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, mamajek, btsettl, ames_dusty, ames_cond, \
                          isochrones, petitcode
-from species.read import read_model, read_calibration
+from species.read import read_model, read_calibration, read_planck
 from species.util import data_util
 
 
@@ -784,7 +784,11 @@ class Database:
             param.append(str(dset.attrs['parameter'+str(i)]))
 
         if spectrum_type == 'model':
-            readmodel = read_model.ReadModel(spectrum_name, wavelength)
+            if spectrum_name == 'planck':
+                readmodel = read_planck.ReadPlanck(wavelength)
+            else:
+                readmodel = read_model.ReadModel(spectrum_name, wavelength)
+
         elif spectrum_type == 'calibration':
             readcalib = read_calibration.ReadCalibration(spectrum_name, None)
 
@@ -803,7 +807,11 @@ class Database:
                 model_par['distance'] = distance
 
             if spectrum_type == 'model':
-                specbox = readmodel.get_model(model_par, specres)
+                if spectrum_name == 'planck':
+                    specbox = readmodel.get_spectrum(model_par, specres)
+                else:
+                    specbox = readmodel.get_model(model_par, specres)
+
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_par)
 

@@ -9,7 +9,7 @@ import numpy as np
 from scipy.integrate import simps
 
 from species.core import constants
-from species.read import read_model
+from species.read import read_model, read_planck
 
 
 def get_mass(model_par):
@@ -53,8 +53,13 @@ def add_luminosity(modelbox):
         The input box with the luminosity added in the parameter dictionary.
     """
 
-    readmodel = read_model.ReadModel(model=modelbox.model, wavelength=None, teff=None)
-    fullspec = readmodel.get_model(model_par=modelbox.parameters)
+    if modelbox.model == 'planck':
+        readmodel = read_planck.ReadPlanck(wavelength=(1e-1, 1e3))
+        fullspec = readmodel.get_spectrum(model_par=modelbox.parameters, specres=1000.)
+
+    else:
+        readmodel = read_model.ReadModel(model=modelbox.model, wavelength=None, teff=None)
+        fullspec = readmodel.get_model(model_par=modelbox.parameters)
 
     flux = simps(fullspec.flux, fullspec.wavelength)
 
