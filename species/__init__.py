@@ -1,5 +1,7 @@
 from species.analysis.fit_model import FitModel
 
+from species.analysis.fit_planck import FitPlanck
+
 from species.analysis.fit_spectrum import FitSpectrum
 
 from species.analysis.photometry import SyntheticPhotometry
@@ -12,7 +14,7 @@ from species.read.read_isochrone import ReadIsochrone
 
 from species.read.read_model import ReadModel
 
-from species.read.read_planck import get_planck
+from species.read.read_planck import ReadPlanck
 
 from species.read.read_spectrum import ReadSpectrum
 

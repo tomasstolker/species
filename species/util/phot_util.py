@@ -8,7 +8,7 @@ import spectres
 import numpy as np
 
 from species.core import box
-from species.read import read_model, read_calibration, read_filter
+from species.read import read_model, read_calibration, read_filter, read_planck
 
 
 def multi_photometry(datatype,
@@ -40,7 +40,11 @@ def multi_photometry(datatype,
 
     if datatype == 'model':
         for item in filters:
-            readmodel = read_model.ReadModel(spectrum, item)
+            if spectrum == 'planck':
+                readmodel = read_planck.ReadPlanck(item)
+            else:
+                readmodel = read_model.ReadModel(spectrum, item)
+
             flux[item] = readmodel.get_photometry(parameters)
 
     elif datatype == 'calibration':
