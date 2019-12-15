@@ -18,12 +18,17 @@ class ReadResult:
                  res_type,
                  tag):
         """
-        :param res_type: Result type.
-        :type res_type: str
-        :param tag: Database tag.
-        :type tag: str
+        Parameters
+        ----------
+        res_type : str
+            Result type.
+        tag : str
+            Database tag.
 
-        :return: None
+        Returns
+        -------
+        NoneType
+            None
         """
 
         self.res_type = res_type
@@ -38,27 +43,30 @@ class ReadResult:
 
     def get_chisquare(self, fix=None):
         """
-        :param fix:
-        :type fix: dict
+        Parameters
+        ----------
+        fix : dict
+            Some text.
 
-        :return: Grid points and reduced chi-square values.
-        :rtype: numpy.ndarray, numpy.ndarray
+        Returns
+        -------
+        numpy.ndarray
+            Grid points.
+        numpy.ndarray
+            Reduced chi-square values.
         """
 
-        h5_file = h5py.File(self.database, 'r')
+        with h5py.File(self.database, 'r') as h5_file:
+            dset = h5_file['results/chisquare/'+self.tag]
+            nparam = int(dset.attrs['nparam'])
 
-        dset = h5_file['results/chisquare/'+self.tag]
-        nparam = int(dset.attrs['nparam'])
+            points = {}
+            for i in range(nparam):
+                param = dset.attrs['parameter'+str(i)]
+                values = np.asarray(h5_file['results/chisquare/'+self.tag+'/'+param])
+                points[param] = values
 
-        points = {}
-        for i in range(nparam):
-            param = dset.attrs['parameter'+str(i)]
-            values = np.asarray(h5_file['results/chisquare/'+self.tag+'/'+param])
-            points[param] = values
-
-        chisquare = np.asarray(h5_file['results/chisquare/'+self.tag+'/chisquare'])
-
-        h5_file.close()
+            chisquare = np.asarray(h5_file['results/chisquare/'+self.tag+'/chisquare'])
 
         if fix:
             if nparam == 4:
