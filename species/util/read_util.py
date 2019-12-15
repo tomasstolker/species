@@ -92,6 +92,8 @@ def smooth_spectrum(wavelength,
         Flux density (W m-2 micron-1).
     specres : float
         Spectral resolution
+    size : int
+        Kernel size (odd number).
 
     Returns
     -------
