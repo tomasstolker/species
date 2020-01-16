@@ -1,5 +1,5 @@
 """
-Module for creating synthetic photometry.
+Module with functionalities for calculating synthetic photometry.
 """
 
 import os
@@ -15,7 +15,7 @@ from species.read import read_filter, read_calibration
 
 class SyntheticPhotometry:
     """
-    Create synthetic photometry from a spectrum.
+    Class for calculating synthetic photometry from a spectrum.
     """
 
     def __init__(self,
@@ -24,11 +24,13 @@ class SyntheticPhotometry:
         Parameters
         ----------
         filter_name : str
-            Filter ID.
+            Filter ID as listed in the database. Filters from the SVO Filter Profile Service are
+            automatically downloaded and added to the database.
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.filter_name = filter_name
@@ -44,9 +46,12 @@ class SyntheticPhotometry:
 
     def zero_point(self):
         """
+        Internal function for calculating the zero-point of the provided `filter_name`.
+
         Returns
         -------
-        tuple(float, float)
+        float
+            Zero-point flux density (W m-2 micron-1).
         """
 
         if self.wavel_range is None:
@@ -78,20 +83,22 @@ class SyntheticPhotometry:
 
         h5_file.close()
 
-        return self.spectrum_to_photometry(wavelength_crop, flux_crop)
+        return self.spectrum_to_flux(wavelength_crop, flux_crop)
 
-    def spectrum_to_photometry(self,
-                               wavelength,
-                               flux,
-                               threshold=None):
+    def spectrum_to_flux(self,
+                         wavelength,
+                         flux,
+                         threshold=None):
         """
+        Function for calculating the average flux density from a spectrum and a filter profile.
+
         Parameters
         ----------
-        wavelength : numpy.ndarray
-            Wavelength (micron).
-        flux : numpy.ndarray
-            Flux density (W m-2 micron-1).
-        threshold : float
+        wavelength : numpy.ndarray, list(numpy.ndarray)
+            Wavelength points (micron) provided as a 1D array or a list of 1D arrays.
+        flux : numpy.ndarray, list(numpy.ndarray)
+            Flux density (W m-2 micron-1) provided as a 1D array or a list of 1D arrays.
+        threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter profile. Not used if set to
@@ -99,7 +106,7 @@ class SyntheticPhotometry:
 
         Returns
         -------
-        float or numpy.ndarray
+        float, numpy.ndarray
             Average flux density (W m-2 micron-1).
         """
 
@@ -142,7 +149,8 @@ class SyntheticPhotometry:
             photometry = []
 
             for i, wl_item in enumerate(wavelength):
-                indices = np.where((self.wavel_range[0] <= wl_item) & (wl_item <= self.wavel_range[1]))[0]
+                indices = np.where((self.wavel_range[0] <= wl_item) &
+                                   (wl_item <= self.wavel_range[1]))[0]
 
                 if indices.size < 2:
                     photometry.append(np.nan)
@@ -197,15 +205,18 @@ class SyntheticPhotometry:
                               distance=None,
                               threshold=None):
         """
+        Function for calculating the apparent and absolute magnitude from a spectrum and a
+        filter profile.
+
         Parameters
         ----------
-        wavelength : numpy.ndarray
-            Wavelength (micron).
-        flux : numpy.ndarray
-            Flux density (W m-2 micron-1).
-        distance : float
+        wavelength : numpy.ndarray, list(numpy.ndarray)
+            Wavelength points (micron) provided as a 1D array or a list of 1D arrays.
+        flux : numpy.ndarray, list(numpy.ndarray)
+            Flux density (W m-2 micron-1) provided as a 1D array or a list of 1D arrays.
+        distance : float, None
             Distance (pc). No absolute magnitude is calculated if set to None.
-        threshold : float
+        threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter profile. Not used if set to
@@ -213,16 +224,16 @@ class SyntheticPhotometry:
 
         Returns
         -------
-        float or numpy.ndarray
+        float, numpy.ndarray
             Apparent magnitude (mag).
-        float or numpy.ndarray
+        float, numpy.ndarray
             Absolute magnitude (mag).
         """
 
         vega_mag = 0.03  # [mag]
 
         zp_flux = self.zero_point()
-        syn_flux = self.spectrum_to_photometry(wavelength, flux, threshold)
+        syn_flux = self.spectrum_to_flux(wavelength, flux, threshold)
 
         app_mag = vega_mag - 2.5*np.log10(syn_flux/zp_flux)
 
@@ -235,17 +246,19 @@ class SyntheticPhotometry:
 
     def magnitude_to_flux(self,
                           magnitude,
-                          error,
+                          error=None,
                           zp_flux=None):
         """
+        Function for converting a magnitude to a flux density.
+
         Parameters
         ----------
         magnitude : float
             Magnitude (mag).
-        error : float
+        error : float, None
             Error (mag). Not used if set to None.
         zp_flux : float
-            Zero point flux (W m-2 micron-1). Calculated if set to None.
+            Zero-point flux density (W m-2 micron-1). The value is calculated if set to None.
 
         Returns
         -------
@@ -276,6 +289,8 @@ class SyntheticPhotometry:
                           flux,
                           distance):
         """
+        Function for converting a flux density to a magnitude.
+
         Parameters
         ----------
         flux : float

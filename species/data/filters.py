@@ -2,13 +2,10 @@
 Module for downloading filter data from the SVO website.
 """
 
-import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import os
 
+import wget
 import numpy as np
-
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def download_filter(filter_id):
@@ -27,45 +24,27 @@ def download_filter(filter_id):
     """
 
     if filter_id == 'LCO/VisAO.Ys':
-        url = 'https://visao.as.arizona.edu/software_files/visao/html/VisAO_Ys_filter_curve.dat'
+        url = 'https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat'
 
-        session = requests.Session()
-        response = session.get(url, verify=False)
-        data = response.content
+        wget.download(url, out='VisAO_Ys_filter_curve.dat', bar=None)
 
-        wavelength = []
-        transmission = []
-        for line in data.splitlines():
-            if not line.startswith(b'#'):
-                split = line.split()
-
-                wavelength.append(float(split[0]))  # [micron]
-                transmission.append(float(split[1]))
-
-        wavelength = np.asarray(wavelength)
-        transmission = np.asarray(transmission)
+        wavelength, transmission, _, _ = np.loadtxt('VisAO_Ys_filter_curve.dat', unpack=True)
 
         wavelength = wavelength[:-7]
         transmission = transmission[:-7]
 
+        os.remove('VisAO_Ys_filter_curve.dat')
+
     else:
         url = 'http://svo2.cab.inta-csic.es/svo/theory/fps/getdata.php?format=ascii&id='+filter_id
 
-        session = requests.Session()
-        response = session.get(url)
-        data = response.content
+        wget.download(url, out='filter.dat', bar=None)
 
-        wavelength = []
-        transmission = []
-        for line in data.splitlines():
-            if not line.startswith(b'#'):
-                split = line.split(b' ')
+        wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
 
-                wavelength.append(float(split[0])*1e-4)  # [micron]
-                transmission.append(float(split[1]))
+        wavelength *= 1e-4  # [micron]
 
-        wavelength = np.asarray(wavelength)
-        transmission = np.asarray(transmission)
+        os.remove('filter.dat')
 
     indices = []
 

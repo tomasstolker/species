@@ -270,7 +270,7 @@ class ReadCalibration:
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_photometry(specbox.wavelength, specbox.flux)
+        return synphot.spectrum_to_flux(specbox.wavelength, specbox.flux)
 
     def get_magnitude(self,
                       model_param=None):

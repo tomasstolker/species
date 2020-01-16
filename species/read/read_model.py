@@ -492,7 +492,7 @@ class ReadModel:
         if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)
+        return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
     def get_magnitude(self,
                       model_param):

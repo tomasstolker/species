@@ -138,7 +138,7 @@ def add_spex(input_path, database):
             sptype = data_util.update_sptype(np.array([sptype]))[0].strip()
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, None, h_zp)
-            phot = h_twomass.spectrum_to_photometry(wavelength, flux)  # Normalized units
+            phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
             flux *= h_flux/phot  # [W m-2 micron-1]
 
