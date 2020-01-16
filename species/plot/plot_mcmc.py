@@ -3,7 +3,6 @@ Module for plotting MCMC results.
 """
 
 import os
-import sys
 
 import corner
 import numpy as np
@@ -17,7 +16,7 @@ from species.util import plot_util
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
-plt.rc('axes', edgecolor='black', linewidth=2)
+plt.rc('axes', edgecolor='black', linewidth=2.5)
 
 
 def plot_walkers(tag,
@@ -43,8 +42,7 @@ def plot_walkers(tag,
     None
     """
 
-    sys.stdout.write('Plotting walkers: '+output+'...')
-    sys.stdout.flush()
+    print(f'Plotting walkers: {output}...', end='')
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -63,20 +61,20 @@ def plot_walkers(tag,
 
         if i == ndim-1:
             ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=5, labelsize=12, top=True,
+                           direction='in', width=1, length=5, labelsize=12, top=True,
                            bottom=True, left=True, right=True, labelbottom=True)
 
             ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=3, labelsize=12, top=True,
+                           direction='in', width=1, length=3, labelsize=12, top=True,
                            bottom=True, left=True, right=True, labelbottom=True)
 
         else:
             ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=5, labelsize=12, top=True,
+                           direction='in', width=1, length=5, labelsize=12, top=True,
                            bottom=True, left=True, right=True, labelbottom=False)
 
             ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                           direction='in', width=0.8, length=3, labelsize=12, top=True,
+                           direction='in', width=1, length=3, labelsize=12, top=True,
                            bottom=True, left=True, right=True, labelbottom=False)
 
         if i == ndim-1:
@@ -104,8 +102,7 @@ def plot_walkers(tag,
     plt.clf()
     plt.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
 
 def plot_posterior(tag,
@@ -140,8 +137,7 @@ def plot_posterior(tag,
     None
     """
 
-    sys.stdout.write('Plotting posteriors: '+output+'...')
-    sys.stdout.flush()
+    print(f'Plotting posteriors: {output}...', end='')
 
     species_db = database.Database()
     box = species_db.get_samples(tag, burnin=burnin)
@@ -166,11 +162,11 @@ def plot_posterior(tag,
                 ax = axes[i, j]
 
                 ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                               direction='in', width=0.8, length=5, labelsize=12, top=True,
+                               direction='in', width=1, length=5, labelsize=12, top=True,
                                bottom=True, left=True, right=True)
 
                 ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                               direction='in', width=0.8, length=3, labelsize=12, top=True,
+                               direction='in', width=1, length=3, labelsize=12, top=True,
                                bottom=True, left=True, right=True)
 
                 if limits is not None:
@@ -200,8 +196,7 @@ def plot_posterior(tag,
     plt.clf()
     plt.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
 
 def plot_photometry(tag,
@@ -222,7 +217,7 @@ def plot_photometry(tag,
         Number of burnin steps to exclude. All samples are used if set to None.
     xlim : tuple(float, float), None
         Axis limits. Automatically set if set to None.
-    output : str
+    output : strr
         Output filename.
 
     Returns
@@ -234,8 +229,7 @@ def plot_photometry(tag,
 
     samples = species_db.get_mcmc_photometry(tag, burnin, filter_id)
 
-    sys.stdout.write('Plotting photometry samples: '+output+'...')
-    sys.stdout.flush()
+    print(f'Plotting photometry samples: {output}...', end='')
 
     fig = corner.corner(samples, labels=['Magnitude'], quantiles=[0.16, 0.5, 0.84],
                         label_kwargs={'fontsize': 13}, show_titles=True,
@@ -246,11 +240,11 @@ def plot_photometry(tag,
     ax = axes[0, 0]
 
     ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                   direction='in', width=0.8, length=5, labelsize=12, top=True,
+                   direction='in', width=1, length=5, labelsize=12, top=True,
                    bottom=True, left=True, right=True)
 
     ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                   direction='in', width=0.8, length=3, labelsize=12, top=True,
+                   direction='in', width=1, length=3, labelsize=12, top=True,
                    bottom=True, left=True, right=True)
 
     if xlim is not None:
@@ -262,5 +256,4 @@ def plot_photometry(tag,
     plt.clf()
     plt.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')

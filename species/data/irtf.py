@@ -113,7 +113,7 @@ def add_irtf(input_path,
 
                     spt_split = sptype.split()
 
-                    if item in ('L', 'T') or spt_split[1][0] == 'V':
+                    if item in ['L', 'T'] or spt_split[1][0] == 'V':
                         sys.stdout.write('\rAdding IRTF Spectral Library... '+'{:<40}'.format(name))
                         sys.stdout.flush()
 

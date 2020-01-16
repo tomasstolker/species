@@ -3,7 +3,6 @@ Module with functions for creating color-magnitude and color-color plots.
 """
 
 import os
-import sys
 import math
 import itertools
 
@@ -30,6 +29,7 @@ def plot_color_magnitude(colorbox=None,
                          models=None,
                          mass_labels=None,
                          companion_labels=False,
+                         field_range=None,
                          label_x='color [mag]',
                          label_y='M [mag]',
                          xlim=None,
@@ -60,6 +60,10 @@ def plot_color_magnitude(colorbox=None,
         to be provided in Jupiter mass. No labels are shown if set to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
+    field_range : tuple(str, str), None
+        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
+        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
+        The full range is used if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -81,8 +85,7 @@ def plot_color_magnitude(colorbox=None,
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
-    sys.stdout.write('Plotting color-magnitude diagram: '+output+'... ')
-    sys.stdout.flush()
+    print(f'Plotting color-magnitude diagram: {output}... ', end='')
 
     plt.figure(1, figsize=(4., 4.8))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
@@ -92,11 +95,11 @@ def plot_color_magnitude(colorbox=None,
     ax2 = plt.subplot(gridsp[0, 0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=1.0, length=5, labelsize=12, top=True,
+                    direction='in', width=1, length=5, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=1.0, length=3, labelsize=12, top=True,
+                    direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.set_xlabel(label_x, fontsize=14)
@@ -151,7 +154,7 @@ def plot_color_magnitude(colorbox=None,
                 label = plot_util.model_name(item.library)
 
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=1.2, zorder=3, color=model_color[model_count[0]], label=label)
+                         linewidth=1.2, color=model_color[model_count[0]], label=label, zorder=0)
 
                 if mass_labels is not None:
                     interp_magnitude = interp1d(item.sptype, item.magnitude)
@@ -171,25 +174,20 @@ def plot_color_magnitude(colorbox=None,
                                     ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
 
                                 ax1.scatter(pos_color, pos_mag, c=model_color[model_count[0]], s=15,
-                                            zorder=3, edgecolor='none')
+                                            edgecolor='none', zorder=0)
 
                                 ax1.annotate(mass_label, (pos_color, pos_mag),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=(pos_color+0.05, pos_mag-0.1), zorder=9)
+                                             xytext=(pos_color+0.05, pos_mag-0.1), zorder=1)
 
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=0.6, zorder=3, color=model_color[model_count[0]])
+                         linewidth=0.6, color=model_color[model_count[0]], zorder=0)
 
     if colorbox is not None:
         cmap = plt.cm.viridis
 
-        # bounds = np.linspace(0, 7, 8)
-        # ticks = np.linspace(0.5, 6.5, 7)
-
-        bounds = np.linspace(0, 6, 7)
-        ticks = np.linspace(0.5, 5.5, 6)
-
+        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in colorbox:
@@ -213,21 +211,18 @@ def plot_color_magnitude(colorbox=None,
             spt_disc = spt_disc[unique]
 
             if item.object_type == 'field':
-                scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
-                                   s=50, alpha=0.7, edgecolor='none')
+                scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, s=50,
+                                   alpha=0.7, edgecolor='none', zorder=2)
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
-                cb.ax.tick_params(width=1.0, length=5, labelsize=10, direction='in', color='black')
+                cb.ax.tick_params(width=1, length=5, labelsize=10, direction='in', color='black')
 
-                # cb.set_ticks(np.linspace(0.5, 6.5, 7))
-                # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
-
-                cb.set_ticks(np.linspace(0.5, 5.5, 6))
-                cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
+                cb.set_ticks(ticks)
+                cb.set_ticklabels(ticklabels)
 
             elif item.object_type == 'young':
-                ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.7, 
-                         color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
+                ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.7,
+                         color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
     if isochrones is not None:
         for item in isochrones:
@@ -247,43 +242,43 @@ def plot_color_magnitude(colorbox=None,
             y_mag = abs_mag[0]
 
             # if item[0] in ('PDS 70 b'):
-            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-            #     marker = '*'
-            #     markersize = 12
-            #     color = '#eb4242'
-            #     markerfacecolor = '#eb4242'
-            #     markeredgecolor = 'black'
-            #
-            # else:
-            #     marker = '>'
-            #     markersize = 6
-            #     color = 'black'
-            #     markerfacecolor = 'white'
-            #     markeredgecolor = 'black'
+            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                marker = '*'
+                markersize = 12
+                color = '#eb4242'
+                markerfacecolor = '#eb4242'
+                markeredgecolor = 'black'
 
-            # if item[0] == 'HR 8799 b':
-            #     label = 'Directly imaged'
-            # elif item[0] == 'beta Pic b':
-            #     label = 'This study'
-            # elif item[0] == 'PDS 70 b':
-            #     label = 'This study'
-            # else:
-            #     label = None
+            else:
+                marker = '>'
+                markersize = 6
+                color = 'black'
+                markerfacecolor = 'white'
+                markeredgecolor = 'black'
 
-            marker = '>'
-            markersize = 6
-            color = 'black'
-            markerfacecolor = 'white'
-            markeredgecolor = 'black'
-
-            if i == 0:
+            if item[0] == 'HR 8799 b':
                 label = 'Directly imaged'
+            elif item[0] == 'beta Pic b':
+                label = 'This work'
+            # elif item[0] == 'PDS 70 b':
+            #     label = 'This work'
             else:
                 label = None
 
+            # marker = '>'
+            # markersize = 6
+            # color = 'black'
+            # markerfacecolor = 'white'
+            # markeredgecolor = 'black'
+
+            # if i == 0:
+            #     label = 'Directly imaged'
+            # else:
+            #     label = None
+
             ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=markersize,
-                         color=color, markerfacecolor=markerfacecolor,
-                         markeredgecolor=markeredgecolor, zorder=10, label=label)
+                         color=color, markerfacecolor=markerfacecolor, zorder=3,
+                         markeredgecolor=markeredgecolor, label=label)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
@@ -305,7 +300,7 @@ def plot_color_magnitude(colorbox=None,
                 y_offset = y_scaling*abs(y_range[1]-y_range[0])
 
                 ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color, zorder=10)
+                         fontsize=8, color=color, zorder=3)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
@@ -317,8 +312,7 @@ def plot_color_magnitude(colorbox=None,
     plt.clf()
     plt.close()
 
-    sys.stdout.write('[DONE]\n')
-    sys.stdout.flush()
+    print('[DONE]')
 
 
 def plot_color_color(colorbox,
@@ -326,6 +320,7 @@ def plot_color_color(colorbox,
                      models=None,
                      mass_labels=None,
                      companion_labels=False,
+                     field_range=None,
                      label_x='color [mag]',
                      label_y='color [mag]',
                      xlim=None,
@@ -354,6 +349,10 @@ def plot_color_color(colorbox,
         to be provided in Jupiter mass. No labels are shown if set to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
+    field_range : tuple(str, str), None
+        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
+        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
+        The full range is used if set to None.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -377,8 +376,7 @@ def plot_color_color(colorbox,
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
-    sys.stdout.write('Plotting color-color diagram: '+output+'... ')
-    sys.stdout.flush()
+    print(f'Plotting color-color diagram: {output}... ', end='')
 
     plt.figure(1, figsize=(4, 4.3))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.])
@@ -388,11 +386,11 @@ def plot_color_color(colorbox,
     ax2 = plt.subplot(gridsp[0, 0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=1.0, length=5, labelsize=12, top=True,
+                    direction='in', width=1, length=5, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=1.0, length=3, labelsize=12, top=True,
+                    direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
     ax1.set_xlabel(label_x, fontsize=14)
@@ -447,7 +445,7 @@ def plot_color_color(colorbox,
                 label = plot_util.model_name(item.library)
 
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
-                         linewidth=0.6, zorder=3, color=model_color[model_count[0]], label=label)
+                         linewidth=0.6, color=model_color[model_count[0]], label=label, zorder=0)
 
                 if mass_labels is not None:
                     interp_color1 = interp1d(item.sptype, item.color1)
@@ -467,25 +465,20 @@ def plot_color_color(colorbox,
                                     ylim[0]+0.2 < pos_color2 < ylim[1]-0.2:
 
                                 ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]], s=15,
-                                            zorder=3, edgecolor='none')
+                                            edgecolor='none', zorder=0)
 
                                 ax1.annotate(mass_label, (pos_color1, pos_color2),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=(pos_color1+0.05, pos_color2-0.1), zorder=9)
+                                             xytext=(pos_color1+0.05, pos_color2-0.1), zorder=1)
 
             else:
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
-                         linewidth=0.6, zorder=3, color=model_color[model_count[0]])
+                         linewidth=0.6, color=model_color[model_count[0]], zorder=0)
 
     if colorbox is not None:
         cmap = plt.cm.viridis
 
-        # bounds = np.linspace(0, 7, 8)
-        # ticks = np.linspace(0.5, 6.5, 7)
-
-        bounds = np.linspace(0, 6, 7)
-        ticks = np.linspace(0.5, 5.5, 6)
-
+        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in colorbox:
@@ -508,21 +501,18 @@ def plot_color_color(colorbox,
             spt_disc = spt_disc[unique]
 
             if item.object_type == 'field':
-                scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, zorder=6,
-                                   s=50, alpha=0.7, edgecolor='none')
+                scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, s=50,
+                                   alpha=0.7, edgecolor='none', zorder=2)
 
                 cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
-                cb.ax.tick_params(width=1.0, length=5, labelsize=10, direction='in', color='black')
+                cb.ax.tick_params(width=1, length=5, labelsize=10, direction='in', color='black')
 
-                # cb.set_ticks(np.linspace(0.5, 6.5, 7))
-                # cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2'])
-
-                cb.set_ticks(np.linspace(0.5, 5.5, 6))
-                cb.set_ticklabels(['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8'])
+                cb.set_ticks(ticks)
+                cb.set_ticklabels(ticklabels)
 
             elif item.object_type == 'young':
                 ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7, 
-                         color='gray', markeredgecolor='black', zorder=7, label='Young/low-gravity')
+                         color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
     if objects is not None:
         for i, item in enumerate(objects):
@@ -544,41 +534,41 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-            #     marker = '*'
-            #     markersize = 12
-            #     color = '#eb4242'
-            #     markerfacecolor = '#eb4242'
-            #     markeredgecolor = 'black'
-            #
-            # else:
-            #     marker = '>'
-            #     markersize = 6
-            #     color = 'black'
-            #     markerfacecolor = 'white'
-            #     markeredgecolor = 'black'
-            #
-            # if item[0] == 'HR 8799 b':
-            #     label = 'Directly imaged'
-            # elif item[0] == 'beta Pic b':
-            #     label = 'This study'
-            # else:
-            #     label = None
+            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+                marker = '*'
+                markersize = 12
+                color = '#eb4242'
+                markerfacecolor = '#eb4242'
+                markeredgecolor = 'black'
 
-            marker = '>'
-            markersize = 6
-            color = 'black'
-            markerfacecolor = 'white'
-            markeredgecolor = 'black'
+            else:
+                marker = '>'
+                markersize = 6
+                color = 'black'
+                markerfacecolor = 'white'
+                markeredgecolor = 'black'
 
-            if not companion_labels and i == 0:
+            if item[0] == 'HR 8799 b':
                 label = 'Directly imaged'
+            elif item[0] == 'beta Pic b':
+                label = 'This work'
             else:
                 label = None
 
+            # marker = '>'
+            # markersize = 6
+            # color = 'black'
+            # markerfacecolor = 'white'
+            # markeredgecolor = 'black'
+            #
+            # if not companion_labels and i == 0:
+            #     label = 'Directly imaged'
+            # else:
+            #     label = None
+
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=markersize,
                          color=color, markerfacecolor=markerfacecolor,
-                         markeredgecolor=markeredgecolor, zorder=10, label=label)
+                         markeredgecolor=markeredgecolor, label=label, zorder=3)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
@@ -600,7 +590,7 @@ def plot_color_color(colorbox,
                 y_offset = y_scaling*abs(y_range[1]-y_range[0])
 
                 ax1.text(color1+x_offset, color2+y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color, zorder=10)
+                         fontsize=8, color=color, zorder=3)
 
     handles, labels = ax1.get_legend_handles_labels()
 
@@ -611,5 +601,4 @@ def plot_color_color(colorbox,
     plt.clf()
     plt.close()
 
-    sys.stdout.write('[DONE]\n')
-    sys.stdout.flush()
+    print('[DONE]')

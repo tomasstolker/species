@@ -1,5 +1,5 @@
 """
-Module for reading isochrones data from the database.
+Module with reading functionalities for isochrones.
 """
 
 import os
@@ -16,16 +16,16 @@ from species.read import read_model
 
 class ReadIsochrone:
     """
-    Reading filter data and information from the database.
+    Class for reading an isochrone from the database.
     """
 
     def __init__(self,
-                 tag):
+                 isochrone_tag):
         """
         Parameters
         ----------
-        tag : str
-            Database tag.
+        isochrone_tag : str
+            Database tag of the isochrone data.
 
         Returns
         -------
@@ -33,7 +33,7 @@ class ReadIsochrone:
             None
         """
 
-        self.tag = tag
+        self.isochrone_tag = isochrone_tag
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -44,16 +44,18 @@ class ReadIsochrone:
 
     def get_isochrone(self,
                       age,
-                      mass,
+                      masses,
                       filters_color,
                       filter_mag):
         """
+        Function for selecting an isochrone.
+
         Parameters
         ----------
         age : str
-            Age (Myr) that is used to interpolate the isochrone data.
-        mass : numpy.ndarray
-            Masses (Mjup) for which the isochrone data is interpolated.
+            Age (Myr) at which the isochrone data is interpolated.
+        masses : numpy.ndarray
+            Masses (Mjup) at which the isochrone data is interpolated.
         filters_color : tuple(str, str), None
             Filter IDs for the color as listed in the file with the isochrone data. Not selected if
             set to None or if only evolutionary tracks are available.
@@ -64,10 +66,10 @@ class ReadIsochrone:
         Returns
         -------
         species.core.box.IsochroneBox
-            Box with the isochrone data.
+            Box with the isochrone.
         """
 
-        age_points = np.repeat(age, mass.shape[0])  # [Myr]
+        age_points = np.repeat(age, masses.shape[0])  # [Myr]
 
         color = None
         mag_abs = None
@@ -76,12 +78,12 @@ class ReadIsochrone:
         index_logg = 4
 
         with h5py.File(self.database, 'r') as h5_file:
-            model = h5_file['isochrones/'+self.tag+'/evolution'].attrs['model']
-            evolution = np.asarray(h5_file['isochrones/'+self.tag+'/evolution'])
+            model = h5_file['isochrones/'+self.isochrone_tag+'/evolution'].attrs['model']
+            evolution = np.asarray(h5_file['isochrones/'+self.isochrone_tag+'/evolution'])
 
             if model == 'baraffe':
-                filters = list(h5_file['isochrones/'+self.tag+'/filters'])
-                magnitudes = np.asarray(h5_file['isochrones/'+self.tag+'/magnitudes'])
+                filters = list(h5_file['isochrones/'+self.isochrone_tag+'/filters'])
+                magnitudes = np.asarray(h5_file['isochrones/'+self.isochrone_tag+'/magnitudes'])
 
         if model == 'baraffe':
             for i, item in enumerate(filters):
@@ -97,14 +99,14 @@ class ReadIsochrone:
             if filters_color is not None:
                 mag_color_1 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_1],
-                                       xi=np.stack((age_points, mass), axis=1),
+                                       xi=np.stack((age_points, masses), axis=1),
                                        method='linear',
                                        fill_value='nan',
                                        rescale=False)
 
                 mag_color_2 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_2],
-                                       xi=np.stack((age_points, mass), axis=1),
+                                       xi=np.stack((age_points, masses), axis=1),
                                        method='linear',
                                        fill_value='nan',
                                        rescale=False)
@@ -114,77 +116,81 @@ class ReadIsochrone:
             if filter_mag is not None:
                 mag_abs = griddata(points=evolution[:, 0:2],
                                    values=magnitudes[:, index_mag],
-                                   xi=np.stack((age_points, mass), axis=1),
+                                   xi=np.stack((age_points, masses), axis=1),
                                    method='linear',
                                    fill_value='nan',
                                    rescale=False)
 
         teff = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_teff],
-                        xi=np.stack((age_points, mass), axis=1),
+                        xi=np.stack((age_points, masses), axis=1),
                         method='linear',
                         fill_value='nan',
                         rescale=False)
 
         logg = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_logg],
-                        xi=np.stack((age_points, mass), axis=1),
+                        xi=np.stack((age_points, masses), axis=1),
                         method='linear',
                         fill_value='nan',
                         rescale=False)
 
         return box.create_box(boxtype='isochrone',
-                              model=self.tag,
+                              model=self.isochrone_tag,
                               filters_color=filters_color,
                               filter_mag=filter_mag,
                               color=color,
                               magnitude=mag_abs,
                               teff=teff,
                               logg=logg,
-                              mass=mass)
+                              masses=masses)
 
     def get_color_magnitude(self,
                             age,
-                            mass,
+                            masses,
                             model,
                             filters_color,
                             filter_mag):
         """
+        Function for calculating color-magnitude combinations from a selected isochrone.
+
         Parameters
         ----------
         age : str
-            Age (Myr) that is used to interpolate the isochrone data.
-        mass : numpy.ndarray
-            Masses (Mjup) for which the isochrone data is interpolated.
+            Age (Myr) at which the isochrone data is interpolated.
+        masses : numpy.ndarray
+            Masses (Mjup) at which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_color : tuple(str, str)
-            Filter IDs for the color as listed in the file with the isochrone data.
+            Filter IDs for the color as listed in the file with the isochrone data. The filter IDs
+            should be provided in the format of the SVO Filter Profile Service.
         filter_mag : str
-            Filter ID for the absolute magnitude as listed in the file with the isochrone data.
+            Filter ID for the absolute magnitude as listed in the file with the isochrone data. The
+            value should be equal to one of the ``filters_color`` values.
 
         Returns
         -------
         species.core.box.ColorMagBox
-            Box with the isochrone data.
+            Box with the color-magnitude data.
         """
 
         isochrone = self.get_isochrone(age=age,
-                                       mass=mass,
+                                       masses=masses,
                                        filters_color=None,
                                        filter_mag=None)
 
-        model1 = read_model.ReadModel(model=model, wavelength=filters_color[0])
-        model2 = read_model.ReadModel(model=model, wavelength=filters_color[1])
+        model1 = read_model.ReadModel(model=model, filter_name=filters_color[0])
+        model2 = read_model.ReadModel(model=model, filter_name=filters_color[1])
 
-        mag1 = np.zeros(isochrone.mass.shape[0])
-        mag2 = np.zeros(isochrone.mass.shape[0])
+        mag1 = np.zeros(isochrone.masses.shape[0])
+        mag2 = np.zeros(isochrone.masses.shape[0])
 
-        for i, item in enumerate(isochrone.mass):
-            model_par = {'teff': isochrone.teff[i],
+        for i, mass_item in enumerate(isochrone.masses):
+            model_param = {'teff': isochrone.teff[i],
                          'logg': isochrone.logg[i],
                          'feh': 0.,
-                         'mass': item,
+                         'mass': mass_item,
                          'distance': 10.}
 
             if np.isnan(isochrone.teff[i]):
@@ -192,18 +198,18 @@ class ReadIsochrone:
                 mag2[i] = np.nan
 
             else:
-                for item in model1.get_bounds():
-                    if model_par[item] <= model1.get_bounds()[item][0]:
+                for item_bounds in model1.get_bounds():
+                    if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
 
-                    elif model_par[item] >= model1.get_bounds()[item][1]:
+                    elif model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
 
                 if not np.isnan(mag1[i]):
-                    mag1[i], _ = model1.get_magnitude(model_par=model_par)
-                    mag2[i], _ = model2.get_magnitude(model_par=model_par)
+                    mag1[i], _ = model1.get_magnitude(model_param=model_param)
+                    mag2[i], _ = model2.get_magnitude(model_param=model_param)
 
         if filter_mag == filters_color[0]:
             abs_mag = mag1
@@ -222,57 +228,60 @@ class ReadIsochrone:
                               filter_mag=filter_mag,
                               color=mag1-mag2,
                               magnitude=abs_mag,
-                              sptype=mass)
+                              sptype=masses)
 
     def get_color_color(self,
                         age,
-                        mass,
+                        masses,
                         model,
                         filters):
         """
+        Function for calculating color-magnitude combinations from a selected isochrone.
+
         Parameters
         ----------
         age : str
-            Age (Myr) that is used to interpolate the isochrone data.
-        mass : numpy.ndarray
-            Masses (Mjup) for which the isochrone data is interpolated.
+            Age (Myr) at which the isochrone data is interpolated.
+        masses : numpy.ndarray
+            Masses (Mjup) at which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters : tuple(tuple(str, str), tuple(str, str))
-            Filter IDs for the colors as listed in the file with the isochrone data.
+            Filter IDs for the colors as listed in the file with the isochrone data. The filter IDs
+            should be provided in the format of the SVO Filter Profile Service.
 
         Returns
         -------
         species.core.box.ColorColorBox
-            Box with the isochrone data.
+            Box with the color-color data.
         """
 
         isochrone = self.get_isochrone(age=age,
-                                       mass=mass,
+                                       masses=masses,
                                        filters_color=None,
                                        filter_mag=None)
 
-        model1 = read_model.ReadModel(model=model, wavelength=filters[0][0])
-        model2 = read_model.ReadModel(model=model, wavelength=filters[0][1])
-        model3 = read_model.ReadModel(model=model, wavelength=filters[1][0])
-        model4 = read_model.ReadModel(model=model, wavelength=filters[1][1])
+        model1 = read_model.ReadModel(model=model, filter_name=filters[0][0])
+        model2 = read_model.ReadModel(model=model, filter_name=filters[0][1])
+        model3 = read_model.ReadModel(model=model, filter_name=filters[1][0])
+        model4 = read_model.ReadModel(model=model, filter_name=filters[1][1])
 
-        mag1 = np.zeros(isochrone.mass.shape[0])
-        mag2 = np.zeros(isochrone.mass.shape[0])
-        mag3 = np.zeros(isochrone.mass.shape[0])
-        mag4 = np.zeros(isochrone.mass.shape[0])
+        mag1 = np.zeros(isochrone.masses.shape[0])
+        mag2 = np.zeros(isochrone.masses.shape[0])
+        mag3 = np.zeros(isochrone.masses.shape[0])
+        mag4 = np.zeros(isochrone.masses.shape[0])
 
-        for i, item in enumerate(isochrone.mass):
-            model_par = {'teff': isochrone.teff[i],
+        for i, mass_item in enumerate(isochrone.masses):
+            model_param = {'teff': isochrone.teff[i],
                          'logg': isochrone.logg[i],
                          'feh': 0.,
-                         'mass': item,
+                         'mass': mass_item,
                          'distance': 10.}
 
-            mag1[i], _ = model1.get_magnitude(model_par=model_par)
-            mag2[i], _ = model2.get_magnitude(model_par=model_par)
-            mag3[i], _ = model3.get_magnitude(model_par=model_par)
-            mag4[i], _ = model4.get_magnitude(model_par=model_par)
+            mag1[i], _ = model1.get_magnitude(model_param=model_param)
+            mag2[i], _ = model2.get_magnitude(model_param=model_param)
+            mag3[i], _ = model3.get_magnitude(model_param=model_param)
+            mag4[i], _ = model4.get_magnitude(model_param=model_param)
 
         return box.create_box(boxtype='colorcolor',
                               library=model,
@@ -280,4 +289,4 @@ class ReadIsochrone:
                               filters=filters,
                               color1=mag1-mag2,
                               color2=mag3-mag4,
-                              sptype=mass)
+                              sptype=masses)

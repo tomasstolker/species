@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'species'
-copyright = '2019, Tomas Stolker'
+copyright = '2018-2020, Tomas Stolker'
 author = 'Tomas Stolker'
 
 # The short X.Y version
@@ -172,7 +172,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'species', 'species Documentation',
-     author, 'species', 'Toolkit for analyzing spectral and photometric data of planetary and substellar atmospheres',
+     author, 'species', 'Toolkit for spectral and photometric analysis of planetary and substellar atmospheres',
      'Miscellaneous'),
 ]
 

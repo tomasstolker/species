@@ -1,5 +1,5 @@
 """
-Module for reading atmospheric models.
+Module with reading functionalities for atmospheric model spectra.
 """
 
 import os
@@ -21,23 +21,24 @@ from species.util import read_util
 
 class ReadModel:
     """
-    Read atmospheric model spectra.
+    Class for reading a model spectrum from the database.
     """
 
     def __init__(self,
                  model,
-                 wavelength,
-                 teff=None):
+                 wavel_range=None,
+                 filter_name=None):
         """
         Parameters
         ----------
         model : str
-            Model name.
-        wavelength : tuple(float, float) or str
-            Wavelength range (micron) or filter name. Full spectrum is used if set to None.
-        teff : tuple(float, float)
-            Effective temperature (K) range. Restricting the temperature range will speed up the
-            computation.
+            Name of the atmospheric model.
+        wavel_range : tuple(float, float), str, None
+            Wavelength range (micron) or filter ID. Full spectrum is selected if set to None. Not
+            used if ``filter_name`` is not None.
+        filter_name : str, None
+            Filter ID that is used for the wavelength range. The ``wavel_range`` is used if set
+            to None.
 
         Returns
         -------
@@ -46,20 +47,17 @@ class ReadModel:
         """
 
         self.model = model
-        self.teff = teff
 
         self.spectrum_interp = None
         self.wl_points = None
         self.wl_index = None
 
-        if isinstance(wavelength, str):
-            self.filter_name = wavelength
-            transmission = read_filter.ReadFilter(wavelength)
-            self.wavelength = transmission.wavelength_range()
+        self.filter_name = filter_name
+        self.wavel_range = wavel_range
 
-        else:
-            self.filter_name = None
-            self.wavelength = wavelength
+        if self.filter_name is not None:
+            transmission = read_filter.ReadFilter(self.filter_name)
+            self.wavel_range = transmission.wavelength_range()
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -70,10 +68,12 @@ class ReadModel:
 
     def open_database(self):
         """
+        Internal function for opening the `species` database.
+
         Returns
         -------
         h5py._hl.files.File
-            Database.
+            The HDF5 database.
         """
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
@@ -87,22 +87,21 @@ class ReadModel:
 
         try:
             h5_file['models/'+self.model]
-
         except KeyError:
-            h5_file.close()
-            species_db = database.Database()
-            species_db.add_model(self.model, self.wavelength, self.teff)
-            h5_file = h5py.File(database_path, 'r')
+            raise ValueError(f'The \'{self.model}\' model spectra are not present in the '
+                             f'database.')
 
         return h5_file
 
     def wavelength_points(self,
                           hdf5_file):
         """
+        Internal function for extracting the wavelength points and indices that are used.
+
         Parameters
         ----------
         hdf5_file : h5py._hl.files.File
-            hdf5_file.
+            The HDF5 database.
 
         Returns
         -------
@@ -115,11 +114,11 @@ class ReadModel:
 
         wl_points = np.asarray(hdf5_file['models/'+self.model+'/wavelength'])
 
-        if self.wavelength is None:
+        if self.wavel_range is None:
             wl_index = np.ones(wl_points.shape[0], dtype=bool)
 
         else:
-            wl_index = (wl_points > self.wavelength[0]) & (wl_points < self.wavelength[1])
+            wl_index = (wl_points > self.wavel_range[0]) & (wl_points < self.wavel_range[1])
             index = np.where(wl_index)[0]
 
             if index[0]-1 >= 0:
@@ -130,8 +129,10 @@ class ReadModel:
 
         return wl_points[wl_index], wl_index
 
-    def interpolate(self):
+    def interpolate_model(self):
         """
+        Internal function for linearly interpolating the grid of model spectra.
+
         Returns
         -------
         NoneType
@@ -188,23 +189,22 @@ class ReadModel:
                                                        fill_value=np.nan)
 
     def get_model(self,
-                  model_par,
-                  specres=None,
+                  model_param,
+                  spec_res=None,
                   magnitude=False):
         """
-        Function to extract a model spectrum with a multidimensional interpolation of the model
-        grid. The parameters values should therefore lie within the boundaries of the grid points
-        that are stored in the database. The stored grid points can be inspected with
+        Function for extracting a model spectrum by linearly interpolating the model grid. The
+        parameters values should lie within the boundaries of the grid points that are stored
+        in the database. The stored grid points can be inspected with
         :func:`~species.read.read_model.ReadModel.get_points`.
 
         Parameters
         ----------
-        model_par : dict
-            Model parameter values.
-        specres : float
+        model_param : dict
+            Model parameters and values.
+        spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None. Using a high spectral resolution is
-            computationally faster if the original wavelength grid has a fine sampling.
+            wavelength points are used if set to None.
         magnitude : bool
             Normalize the spectrum with a flux calibrated spectrum of Vega and return the magnitude
             instead of flux density.
@@ -215,58 +215,58 @@ class ReadModel:
             Box with the model spectrum.
         """
 
-        if 'mass' in model_par:
-            mass = 1e3 * model_par['mass'] * constants.M_JUP  # [g]
-            radius = math.sqrt(1e3 * constants.GRAVITY * mass / (10.**model_par['logg']))  # [cm]
-            model_par['radius'] = 1e-2 * radius / constants.R_JUP  # [Rjup]
+        if 'mass' in model_param:
+            mass = 1e3 * model_param['mass'] * constants.M_JUP  # [g]
+            radius = math.sqrt(1e3 * constants.GRAVITY * mass / (10.**model_param['logg']))  # [cm]
+            model_param['radius'] = 1e-2 * radius / constants.R_JUP  # [Rjup]
 
         if self.spectrum_interp is None:
-            self.interpolate()
+            self.interpolate_model()
 
-        if self.wavelength is None:
-            wl_points = self.get_wavelength()
-            self.wavelength = (wl_points[0], wl_points[-1])
+        if self.wavel_range is None:
+            wl_points = self.get_wavelengths()
+            self.wavel_range = (wl_points[0], wl_points[-1])
 
         if self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear'):
-            parameters = [model_par['teff'],
-                          model_par['logg'],
-                          model_par['feh']]
+            parameters = [model_param['teff'],
+                          model_param['logg'],
+                          model_param['feh']]
 
         elif self.model in ('bt-settl', 'ames-dusty', 'ames-cond'):
-            parameters = [model_par['teff'],
-                          model_par['logg']]
+            parameters = [model_param['teff'],
+                          model_param['logg']]
 
         elif self.model == 'petitcode-cool-cloudy':
-            parameters = [model_par['teff'],
-                          model_par['logg'],
-                          model_par['feh'],
-                          model_par['fsed']]
+            parameters = [model_param['teff'],
+                          model_param['logg'],
+                          model_param['feh'],
+                          model_param['fsed']]
 
         elif self.model == 'petitcode-hot-clear':
-            parameters = [model_par['teff'],
-                          model_par['logg'],
-                          model_par['feh'],
-                          model_par['co']]
+            parameters = [model_param['teff'],
+                          model_param['logg'],
+                          model_param['feh'],
+                          model_param['co']]
 
         elif self.model == 'petitcode-hot-cloudy':
-            parameters = [model_par['teff'],
-                          model_par['logg'],
-                          model_par['feh'],
-                          model_par['co'],
-                          model_par['fsed']]
+            parameters = [model_param['teff'],
+                          model_param['logg'],
+                          model_param['feh'],
+                          model_param['co'],
+                          model_param['fsed']]
 
         flux = self.spectrum_interp(parameters)[0]
 
-        if 'radius' in model_par:
-            model_par['mass'] = read_util.get_mass(model_par)
+        if 'radius' in model_param:
+            model_param['mass'] = read_util.get_mass(model_param)
 
-            if 'distance' in model_par:
-                scaling = (model_par['radius']*constants.R_JUP)**2 / \
-                          (model_par['distance']*constants.PARSEC)**2
+            if 'distance' in model_param:
+                scaling = (model_param['radius']*constants.R_JUP)**2 / \
+                          (model_param['distance']*constants.PARSEC)**2
 
                 flux *= scaling
 
-        if specres is not None:
+        if spec_res is not None:
             index = np.where(np.isnan(flux))[0]
 
             if index.size > 0:
@@ -276,7 +276,7 @@ class ReadModel:
 
             flux = read_util.smooth_spectrum(wavelength=self.wl_points,
                                              flux=flux,
-                                             specres=specres,
+                                             spec_res=spec_res,
                                              size=11)
 
         if magnitude:
@@ -292,7 +292,7 @@ class ReadModel:
                     species_db.add_spectrum('vega')
                     h5_file = h5py.File(self.database, 'r')
 
-            readcalib = read_calibration.ReadCalibration(spectrum='vega', filter_name=None)
+            readcalib = read_calibration.ReadCalibration('vega', filter_name=None)
             calibbox = readcalib.get_spectrum()
 
             flux_vega, _ = spectres.spectres(new_spec_wavs=self.wl_points,
@@ -311,21 +311,21 @@ class ReadModel:
                               model=self.model,
                               wavelength=self.wl_points[is_finite],
                               flux=flux[is_finite],
-                              parameters=model_par,
+                              parameters=model_param,
                               quantity=quantity)
 
     def get_data(self,
-                 model_par):
+                 model_param):
         """
-        Function to extract a model spectra without interpolation for parameter values that are
-        stored within the database. The stored grid points can be inspected with
+        Function for selecting a model spectrum (without interpolation) for a set of parameter
+        values that coincide with the grid points. The stored grid points can be inspected with
         :func:`~species.read.read_model.ReadModel.get_points`.
 
         Parameters
         ----------
-        model_par : dict
-            Model parameter values. Only discrete values from the original grid are possible. Else,
-            the nearest grid values are selected.
+        model_param : dict
+            Model parameters and values. Only discrete values from the original grid are possible.
+            Else, the nearest grid values are selected.
 
         Returns
         -------
@@ -342,13 +342,13 @@ class ReadModel:
         logg = np.asarray(h5_file['models/'+self.model+'/logg'])
 
         if self.model in ('bt-settl', 'ames-cond', 'ames-dusty'):
-            teff_index = np.argwhere(teff == model_par['teff'])[0]
+            teff_index = np.argwhere(teff == model_param['teff'])[0]
 
             if not teff_index:
                 raise ValueError('Temperature value not found.')
 
             teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_par['logg'])[0]
+            logg_index = np.argwhere(logg == model_param['logg'])[0]
 
             if not logg_index:
                 raise ValueError('Surface gravity value not found.')
@@ -360,19 +360,19 @@ class ReadModel:
         elif self.model in ('drift-phoenix', 'bt-nextgen'):
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
 
-            teff_index = np.argwhere(teff == model_par['teff'])[0]
+            teff_index = np.argwhere(teff == model_param['teff'])[0]
 
             if not teff_index:
                 raise ValueError('Temperature value not found.')
 
             teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_par['logg'])[0]
+            logg_index = np.argwhere(logg == model_param['logg'])[0]
 
             if not logg_index:
                 raise ValueError('Surface gravity value not found.')
 
             logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_par['feh'])[0]
+            feh_index = np.argwhere(feh == model_param['feh'])[0]
 
             if not feh_index:
                 raise ValueError('Metallicity value not found.')
@@ -385,25 +385,25 @@ class ReadModel:
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
             co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
 
-            teff_index = np.argwhere(teff == model_par['teff'])[0]
+            teff_index = np.argwhere(teff == model_param['teff'])[0]
 
             if not teff_index:
                 raise ValueError('Temperature value not found.')
 
             teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_par['logg'])[0]
+            logg_index = np.argwhere(logg == model_param['logg'])[0]
 
             if not logg_index:
                 raise ValueError('Surface gravity value not found.')
 
             logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_par['feh'])[0]
+            feh_index = np.argwhere(feh == model_param['feh'])[0]
 
             if not feh_index:
                 raise ValueError('Metallicity value not found.')
 
             feh_index = feh_index[0]
-            co_index = np.argwhere(co == model_par['co'])[0]
+            co_index = np.argwhere(co_ratio == model_param['co'])[0]
 
             if not co_index:
                 raise ValueError('C/O value not found.')
@@ -415,33 +415,33 @@ class ReadModel:
         elif self.model == 'petitcode-hot-cloudy':
             feh = np.asarray(h5_file['models/'+self.model+'/feh'])
             co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
-            fsed_ratio = np.asarray(h5_file['models/'+self.model+'/fsed'])
+            fsed = np.asarray(h5_file['models/'+self.model+'/fsed'])
 
-            teff_index = np.argwhere(teff == model_par['teff'])[0]
+            teff_index = np.argwhere(teff == model_param['teff'])[0]
 
             if not teff_index:
                 raise ValueError('Temperature value not found.')
 
             teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_par['logg'])[0]
+            logg_index = np.argwhere(logg == model_param['logg'])[0]
 
             if not logg_index:
                 raise ValueError('Surface gravity value not found.')
 
             logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_par['feh'])[0]
+            feh_index = np.argwhere(feh == model_param['feh'])[0]
 
             if not feh_index:
                 raise ValueError('Metallicity value not found.')
 
             feh_index = feh_index[0]
-            co_index = np.argwhere(co == model_par['co'])[0]
+            co_index = np.argwhere(co_ratio == model_param['co'])[0]
 
             if not co_index:
                 raise ValueError('C/O value not found.')
 
             co_index = co_index[0]
-            fsed_index = np.argwhere(fsed == model_par['fsed'])[0]
+            fsed_index = np.argwhere(fsed == model_param['fsed'])[0]
 
             if not fsed_index:
                 raise ValueError('f_sed value not found.')
@@ -450,9 +450,9 @@ class ReadModel:
 
             flux = flux[teff_index, logg_index, feh_index, co_index, fsed_index, wl_index]
 
-        if 'radius' in model_par and 'distance' in model_par:
-            scaling = (model_par['radius']*constants.R_JUP)**2 / \
-                      (model_par['distance']*constants.PARSEC)**2
+        if 'radius' in model_param and 'distance' in model_param:
+            scaling = (model_param['radius']*constants.R_JUP)**2 / \
+                      (model_param['distance']*constants.PARSEC)**2
 
             flux *= scaling
 
@@ -462,19 +462,21 @@ class ReadModel:
                               model=self.model,
                               wavelength=wl_points,
                               flux=flux,
-                              parameters=model_par,
+                              parameters=model_param,
                               quantity='flux')
 
-    def get_photometry(self,
-                       model_par,
-                       synphot=None):
+    def get_flux(self,
+                 model_param,
+                 synphot=None):
         """
+        Function for calculating the average flux density for the ``filter_name``.
+
         Parameters
         ----------
-        model_par : dict
-            Model parameter values.
-        synphot : species.analysis.photometry.SyntheticPhotometry
-            Synthetic photometry object.
+        model_param : dict
+            Model parameters and values.
+        synphot : species.analysis.photometry.SyntheticPhotometry, None
+            Synthetic photometry object. The object is created if set to None.
 
         Returns
         -------
@@ -483,22 +485,24 @@ class ReadModel:
         """
 
         if self.spectrum_interp is None:
-            self.interpolate()
+            self.interpolate_model()
 
-        spectrum = self.get_model(model_par, None)
+        spectrum = self.get_model(model_param, None)
 
-        if not synphot:
+        if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)
 
     def get_magnitude(self,
-                      model_par):
+                      model_param):
         """
+        Function for calculating the apparent and absolute magnitudes for the ``filter_name``.
+
         Parameters
         ----------
-        model_par : dict
-            Model parameter values.
+        model_param : dict
+            Model parameters and values.
 
         Returns
         -------
@@ -509,29 +513,36 @@ class ReadModel:
         """
 
         if self.spectrum_interp is None:
-            self.interpolate()
+            self.interpolate_model()
 
-        spectrum = self.get_model(model_par, None)
+        spectrum = self.get_model(model_param, None)
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        if 'distance' in model_par:
-            app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
-                                                             spectrum.flux,
-                                                             distance=model_par['distance'])
+        if spectrum.wavelength.size == 0:
+            app_mag = np.nan
+            abs_mag = np.nan
 
         else:
-            app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
-                                                             spectrum.flux,
-                                                             distance=None)
+            if 'distance' in model_param:
+                app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
+                                                                 spectrum.flux,
+                                                                 distance=model_param['distance'])
+
+            else:
+                app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
+                                                                 spectrum.flux,
+                                                                 distance=None)
 
         return app_mag, abs_mag
 
     def get_bounds(self):
         """
+        Function for extracting the grid boundaries.
+
         Returns
         -------
         dict
-            Parameter boundaries of the model grid.
+            Boundaries of parameter grid.
         """
 
         h5_file = self.open_database()
@@ -583,8 +594,10 @@ class ReadModel:
 
         return bounds
 
-    def get_wavelength(self):
+    def get_wavelengths(self):
         """
+        Function for extracting the wavelength points.
+
         Returns
         -------
         numpy.ndarray
@@ -599,6 +612,8 @@ class ReadModel:
 
     def get_points(self):
         """
+        Function for extracting the grid points.
+
         Returns
         -------
         dict
@@ -625,6 +640,8 @@ class ReadModel:
 
     def get_parameters(self):
         """
+        Function for extracting the parameter names.
+
         Returns
         -------
         list(str, )

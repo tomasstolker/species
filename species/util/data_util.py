@@ -14,7 +14,7 @@ def update_sptype(sptypes):
     Parameters
     ----------
     sptypes : numpy.ndarray
-        Spectral types.
+        Input spectral types.
 
     Returns
     -------
@@ -22,20 +22,20 @@ def update_sptype(sptypes):
         Updated spectral types.
     """
 
-    mlty = ('O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y')
+    sptype_list = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y']
 
-    for i, spt in enumerate(sptypes):
-        if spt == 'None':
+    for i, spt_item in enumerate(sptypes):
+        if spt_item == 'None':
             pass
 
-        elif spt == 'null':
+        elif spt_item == 'null':
             sptypes[i] = 'None'
 
         else:
-            for item in mlty:
+            for list_item in sptype_list:
                 try:
-                    sp_index = spt.index(item)
-                    sptypes[i] = spt[sp_index:sp_index+2]
+                    sp_index = spt_item.index(list_item)
+                    sptypes[i] = spt_item[sp_index:sp_index+2]
 
                 except ValueError:
                     pass
@@ -45,7 +45,7 @@ def update_sptype(sptypes):
 
 def update_filter(filter_in):
     """
-    Function to update filter ID from the Vizier Photometry viewer VOTable to the filter ID from
+    Function to update afilter ID from the Vizier Photometry viewer VOTable to the filter ID from
     the SVO Filter Profile Service.
 
     Parameters

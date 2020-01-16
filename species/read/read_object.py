@@ -1,5 +1,5 @@
 """
-Module for reading object data.
+Module with reading functionalities for data from individual objects.
 """
 
 import os
@@ -14,7 +14,7 @@ from species.util import phot_util
 
 class ReadObject:
     """
-    Reading object data from the database.
+    Class for reading data from an individual object from the database.
     """
 
     def __init__(self,
@@ -23,11 +23,12 @@ class ReadObject:
         Parameters
         ----------
         object_name : str
-            Object name.
+            Object name as stored in the database (e.g. 'beta Pic b', 'PZ Tel B').
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.object_name = object_name
@@ -41,20 +42,23 @@ class ReadObject:
 
         with h5py.File(self.database, 'r') as h5_file:
             if 'objects/'+self.object_name not in h5_file:
-                raise ValueError(f'{self.object_name} is not present in the database')
+                raise ValueError(f'The object \'{self.object_name}\' is not present in the '
+                                 f'database.')
 
     def get_photometry(self,
                        filter_name):
         """
+        Function for extracting the photometry of the object.
+
         Parameters
         ----------
         filter_name : str
-            Filter name.
+            Filter ID.
 
         Returns
         -------
         numpy.ndarray
-            Apparent magnitude (mag), magnitude error (error), apparent flux (W m-2 micron-1),
+            Apparent magnitude (mag), magnitude error (error), flux (W m-2 micron-1),
             flux error (W m-2 micron-1).
         """
 
@@ -65,10 +69,12 @@ class ReadObject:
 
     def get_spectrum(self):
         """
+        Function for extracting the spectrum of the object.
+
         Returns
         -------
         numpy.ndarray
-            Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+            Wavelength (micron), flux (W m-2 micron-1), and flux error (W m-2 micron-1).
         """
 
         with h5py.File(self.database, 'r') as h5_file:
@@ -78,6 +84,8 @@ class ReadObject:
 
     def get_instrument(self):
         """
+        Function for extracting the instrument name of the spectrum.
+
         Returns
         -------
         str
@@ -85,13 +93,19 @@ class ReadObject:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            dset = h5_file['objects/'+self.object_name+'/spectrum']
-            instrument = dset.attrs['instrument']
+            if 'objects/'+self.object_name+'/spectrum' in h5_file:
+                dset = h5_file['objects/'+self.object_name+'/spectrum']
+                instrument = dset.attrs['instrument']
+
+            else:
+                instrument = None
 
         return instrument
 
     def get_distance(self):
         """
+        Function for extracting the distance to the object.
+
         Returns
         -------
         float
@@ -106,13 +120,14 @@ class ReadObject:
     def get_absmag(self,
                    filter_name):
         """
-        Computes the absolute magnitude from the apparent magnitude and distance. The error
-        on the distance is propagated into the error on the absolute magnitude.
+        Function for calculating the absolute magnitudes of the object from the apparent
+        magnitudes and distance. The errors on the apparent magnitude and distance are propagated
+        into an error on the absolute magnitude.
 
         Parameters
         ----------
         filter_name : str
-            Filter name.
+            Filter ID.
 
         Returns
         -------

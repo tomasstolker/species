@@ -24,7 +24,10 @@ species
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-*species* is a toolkit for analyzing spectral and photometric data of planetary and substellar objects. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of individual targets, and filter transmission curves. All data are stored in a central database and there are tools available for creating color-magnitude diagrams, fitting atmospheric models and plotting the posterior distributions, creating synthetic photometry, plotting spectra and photometry, etc. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained.
+.. image:: http://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
+    :target: https://arxiv.org/abs/1912.13316
+
+*species* is a toolkit for spectral and photometric analysis of planetary and substellar atmospheres. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of directly imaged planets, and filter transmission curves. All data are stored in a central database and there are tools available for extracting, inspecting, analyzing, and plotting of data, models, and results. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------
@@ -34,7 +37,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite Stolker et al. in prep. whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* is profiting from.
+Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S/>`_ whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* benefits from.
 
 Contributing
 ------------
@@ -44,6 +47,6 @@ Contributions are very welcome, please consider forking the repository and creat
 License
 -------
 
-Copyright 2019 Tomas Stolker
+Copyright 2018-2020 Tomas Stolker
 
 *species* is distributed under the GNU General Public License v3. See the LICENSE file for the terms and conditions.

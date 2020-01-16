@@ -3,7 +3,6 @@ Module with a function for plotting spectra.
 """
 
 import os
-import sys
 import math
 import itertools
 
@@ -118,29 +117,29 @@ def plot_spectrum(boxes,
         labelbottom = True
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=5, labelsize=12, top=True,
+                    direction='in', width=1, length=5, labelsize=12, top=True,
                     bottom=True, left=True, right=True, labelbottom=labelbottom)
 
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                    direction='in', width=0.8, length=3, labelsize=12, top=True,
+                    direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True, labelbottom=labelbottom)
 
     if filters:
         ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                        direction='in', width=0.8, length=5, labelsize=12, top=True,
+                        direction='in', width=1, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True, labelbottom=False)
 
         ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                        direction='in', width=0.8, length=3, labelsize=12, top=True,
+                        direction='in', width=1, length=3, labelsize=12, top=True,
                         bottom=True, left=True, right=True, labelbottom=False)
 
     if residuals:
         ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                        direction='in', width=0.8, length=5, labelsize=12, top=True,
+                        direction='in', width=1, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
 
         ax3.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                        direction='in', width=0.8, length=3, labelsize=12, top=True,
+                        direction='in', width=1, length=3, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
 
     if residuals and filters:
@@ -414,8 +413,7 @@ def plot_spectrum(boxes,
     if filters:
         ax2.set_ylim(0., 1.1)
 
-    sys.stdout.write('Plotting spectrum: '+output+'...')
-    sys.stdout.flush()
+    print(f'Plotting spectrum: {output}...', end='')
 
     if title:
         if filters:
@@ -432,5 +430,4 @@ def plot_spectrum(boxes,
     plt.clf()
     plt.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')

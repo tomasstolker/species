@@ -41,7 +41,7 @@ def create_box(boxtype,
         box.magnitude = kwargs['magnitude']
         box.teff = kwargs['teff']
         box.logg = kwargs['logg']
-        box.mass = kwargs['mass']
+        box.masses = kwargs['masses']
 
     elif boxtype == 'model':
         box = ModelBox()
@@ -186,7 +186,7 @@ class IsochroneBox(Box):
         self.magnitude = None
         self.teff = None
         self.logg = None
-        self.mass = None
+        self.masses = None
 
 
 class ModelBox(Box):

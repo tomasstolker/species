@@ -1,5 +1,5 @@
 """
-Read module.
+Module with reading functionalities for calibration spectra.
 """
 
 import os
@@ -20,19 +20,19 @@ from species.read import read_filter
 
 class ReadCalibration:
     """
-    Text
+    Class for reading a calibration spectrum from the database.
     """
 
     def __init__(self,
-                 spectrum,
+                 spectrum_tag,
                  filter_name=None):
         """
         Parameters
         ----------
-        spectrum : str
+        spectrum_tag : str
             Database tag of the calibration spectrum.
         filter_name : str, None
-            Filter ID. Full spectrum is used if set to None.
+            Filter ID that is used for the wavelength range. Full spectrum is used if set to None.
 
         Returns
         -------
@@ -40,15 +40,15 @@ class ReadCalibration:
             None
         """
 
-        self.spectrum = spectrum
+        self.spectrum_tag = spectrum_tag
         self.filter_name = filter_name
 
-        if filter_name:
-            transmission = read_filter.ReadFilter(filter_name)
-            self.wl_range = transmission.wavelength_range()
+        if filter_name is None:
+            self.wavel_range = None
 
         else:
-            self.wl_range = None
+            transmission = read_filter.ReadFilter(filter_name)
+            self.wavel_range = transmission.wavelength_range()
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -57,8 +57,10 @@ class ReadCalibration:
 
         self.database = config['species']['database']
 
-    def interpolate(self):
+    def interpolate_spectrum(self):
         """
+        Function for linearly interpolating of a calibration spectrum.
+
         Returns
         -------
         scipy.interpolate.interpolate.interp1d
@@ -73,15 +75,15 @@ class ReadCalibration:
                         bounds_error=False,
                         fill_value=float('nan'))
 
-    def resample_spectrum(self, wavelengths, mask=False):
+    def resample_spectrum(self, wavel_points, apply_mask=False):
         """
-        Resample the spectrum and associated uncertainties onto a new wavelength grid.
+        Function for resampling of a spectrum and uncertainties onto a new wavelength grid.
 
         Parameters
         ----------
-        wavelengths : numpy.ndarray
-            Wavelength points (micron)
-        mask : bool
+        wavel_points : numpy.ndarray
+            Wavelength points (micron).
+        apply_mask : bool
             Exclude negative values and NaN values.
 
         Returns
@@ -92,41 +94,44 @@ class ReadCalibration:
 
         calibbox = self.get_spectrum()
 
-        if mask:
+        if apply_mask:
             indices = np.where(calibbox.flux > 0.)[0]
+
             calibbox.wavelength = calibbox.wavelength[indices]
             calibbox.flux = calibbox.flux[indices]
             calibbox.error = calibbox.error[indices]
 
-        flux_new, error_new = spectres.spectres(new_spec_wavs=wavelengths,
+        flux_new, error_new = spectres.spectres(new_spec_wavs=wavel_points,
                                                 old_spec_wavs=calibbox.wavelength,
                                                 spec_fluxes=calibbox.flux,
                                                 spec_errs=calibbox.error)
 
         return box.create_box(boxtype='spectrum',
                               spectrum='calibration',
-                              wavelength=wavelengths,
+                              wavelength=wavel_points,
                               flux=flux_new,
                               error=error_new,
-                              name=self.spectrum,
+                              name=self.spectrum_tag,
                               simbad=None,
                               sptype=None,
                               distance=None)
 
     def get_spectrum(self,
-                     parameters=None,
-                     mask=False,
-                     specres=None,
+                     model_param=None,
+                     apply_mask=False,
+                     spec_res=None,
                      extrapolate=False,
                      min_wavelength=None):
         """
+        Function for selecting the calibration spectrum.
+
         Parameters
         ----------
-        parameters : dict, None
-            Model parameter values. Not used if set to None.
-        mask : bool
+        model_param : dict, None
+            Model parameters. Should contain the 'scaling' value. Not used if set to None.
+        apply_mask : bool
             Exclude negative values and NaN values.
-        specres : float, None
+        spec_res : float, None
             Spectral resolution. Original wavelength points are used if set to None.
         extrapolate : bool
             Extrapolate to 6 micron by fitting a power law function.
@@ -141,27 +146,27 @@ class ReadCalibration:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            data = h5_file['spectra/calibration/'+self.spectrum]
-            data = np.asarray(data)
+            data = np.asarray(h5_file['spectra/calibration/'+self.spectrum_tag])
 
             wavelength = np.asarray(data[0, ])
             flux = np.asarray(data[1, ])
             error = np.asarray(data[2, ])
 
-        if mask:
+        if apply_mask:
             indices = np.where(flux > 0.)[0]
+
             wavelength = wavelength[indices]
             flux = flux[indices]
             error = error[indices]
 
-        if parameters:
-            flux = parameters['scaling']*flux
+        if model_param is not None:
+            flux = model_param['scaling']*flux
 
-        if self.wl_range is None:
+        if self.wavel_range is None:
             wl_index = np.ones(wavelength.size, dtype=bool)
         else:
-            wl_index = (flux > 0.) & (wavelength > self.wl_range[0]) & \
-                       (wavelength < self.wl_range[1])
+            wl_index = (flux > 0.) & (wavelength > self.wavel_range[0]) & \
+                       (wavelength < self.wavel_range[1])
 
         count = np.count_nonzero(wl_index)
 
@@ -195,22 +200,24 @@ class ReadCalibration:
 
             sigma = np.sqrt(np.diag(pcov))
 
-            sys.stdout.write('Fit result for f(x) = a + b*x^c:\n')
-            sys.stdout.write('a = '+str(popt[0])+' +/- '+str(sigma[0])+'\n')
-            sys.stdout.write('b = '+str(popt[1])+' +/- '+str(sigma[1])+'\n')
-            sys.stdout.write('c = '+str(popt[2])+' +/- '+str(sigma[2])+'\n')
+            sys.stdout.write(f'Fit result for f(x) = a + b*x^c:\n')
+            sys.stdout.write(f'a = {popt[0]} +/- {sigma[0]}\n')
+            sys.stdout.write(f'b = {popt[1]} +/- {sigma[1]}\n')
+            sys.stdout.write(f'c = {popt[2]} +/- {sigma[2]}\n')
             sys.stdout.flush()
 
             while wavelength[-1] <= 6.:
                 wl_add = wavelength[-1] + wavelength[-1]/1000.
+
                 wavelength = np.append(wavelength, wl_add)
                 flux = np.append(flux, _power_law(wl_add, popt[0], popt[1], popt[2]))
                 error = np.append(error, 0.)
 
-        if specres:
+        if spec_res is not None:
             wavelength_new = [wavelength[0]]
+
             while wavelength_new[-1] < wavelength[-1]:
-                wavelength_new.append(wavelength_new[-1] + wavelength_new[-1]/specres)
+                wavelength_new.append(wavelength_new[-1] + wavelength_new[-1]/spec_res)
 
             wavelength_new = np.asarray(wavelength_new[:-1])
 
@@ -238,18 +245,20 @@ class ReadCalibration:
                               wavelength=wavelength,
                               flux=flux,
                               error=error,
-                              name=self.spectrum,
+                              name=self.spectrum_tag,
                               simbad=None,
                               sptype=None,
                               distance=None)
 
-    def get_photometry(self,
-                       parameters=None):
+    def get_flux(self,
+                 model_param=None):
         """
+        Function for calculating the average flux density for the ``filter_name``.
+
         Parameters
         ----------
-        parameters : dict, None
-            Model parameter values. Not used if set to None.
+        model_param : dict, None
+            Model parameters. Should contain the 'scaling' value. Not used if set to None.
 
         Returns
         -------
@@ -257,19 +266,21 @@ class ReadCalibration:
             Average flux density (W m-2 micron-1).
         """
 
-        specbox = self.get_spectrum(parameters, )
+        specbox = self.get_spectrum(model_param=model_param)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_photometry(specbox.wavelength, specbox.flux)
 
     def get_magnitude(self,
-                      parameters=None):
+                      model_param=None):
         """
+        Function for calculating the apparent magnitude for the ``filter_name``.
+
         Parameters
         ----------
-        parameters : dict, None
-            Model parameter values. Not used if set to None.
+        model_param : dict, None
+            Model parameters. Should contain the 'scaling' value. Not used if set to None.
 
         Returns
         -------
@@ -277,7 +288,7 @@ class ReadCalibration:
             Apparent magnitude (mag).
         """
 
-        specbox = self.get_spectrum(parameters, )
+        specbox = self.get_spectrum(model_param=model_param)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 

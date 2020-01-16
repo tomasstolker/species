@@ -55,7 +55,7 @@ def add_luminosity(modelbox):
 
     if modelbox.model == 'planck':
         readmodel = read_planck.ReadPlanck(wavelength=(1e-1, 1e3))
-        fullspec = readmodel.get_spectrum(model_par=modelbox.parameters, specres=1000.)
+        fullspec = readmodel.get_spectrum(model_par=modelbox.parameters, spec_res=1000.)
 
     else:
         readmodel = read_model.ReadModel(model=modelbox.model, wavelength=None, teff=None)
@@ -75,7 +75,7 @@ def add_luminosity(modelbox):
 
 def smooth_spectrum(wavelength,
                     flux,
-                    specres,
+                    spec_res,
                     size=11):
     """
     Function to convolve a spectrum with a Gaussian kernel to a fixed spectral resolution. The
@@ -90,7 +90,7 @@ def smooth_spectrum(wavelength,
         Wavelength points (micron). Should be equally-spaced.
     flux : numpy.ndarray
         Flux density (W m-2 micron-1).
-    specres : float
+    spec_res : float
         Spectral resolution
     size : int
         Kernel size (odd number).
@@ -113,7 +113,7 @@ def smooth_spectrum(wavelength,
     flux_smooth = np.zeros(flux.shape)  # [W m-2 micron-1]
 
     for i, item in enumerate(wavelength):
-        fwhm = item/specres  # [micron]
+        fwhm = item/spec_res  # [micron]
         sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # [micron]
 
         size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM

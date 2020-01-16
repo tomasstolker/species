@@ -33,7 +33,7 @@ class SyntheticPhotometry:
 
         self.filter_name = filter_name
         self.filter_interp = None
-        self.wl_range = None
+        self.wavel_range = None
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -49,9 +49,9 @@ class SyntheticPhotometry:
         tuple(float, float)
         """
 
-        if self.wl_range is None:
+        if self.wavel_range is None:
             transmission = read_filter.ReadFilter(self.filter_name)
-            self.wl_range = transmission.wavelength_range()
+            self.wavel_range = transmission.wavelength_range()
 
         h5_file = h5py.File(self.database, 'r')
 
@@ -70,11 +70,11 @@ class SyntheticPhotometry:
         wavelength = calibbox.wavelength
         flux = calibbox.flux
 
-        wavelength_crop = wavelength[(wavelength > self.wl_range[0]) &
-                                     (wavelength < self.wl_range[1])]
+        wavelength_crop = wavelength[(wavelength > self.wavel_range[0]) &
+                                     (wavelength < self.wavel_range[1])]
 
-        flux_crop = flux[(wavelength > self.wl_range[0]) &
-                         (wavelength < self.wl_range[1])]
+        flux_crop = flux[(wavelength > self.wavel_range[0]) &
+                         (wavelength < self.wavel_range[1])]
 
         h5_file.close()
 
@@ -105,14 +105,18 @@ class SyntheticPhotometry:
 
         if self.filter_interp is None:
             transmission = read_filter.ReadFilter(self.filter_name)
-            self.filter_interp = transmission.interpolate()
+            self.filter_interp = transmission.interpolate_filter()
 
-            if self.wl_range is None:
-                self.wl_range = transmission.wavelength_range()
+            if self.wavel_range is None:
+                self.wavel_range = transmission.wavelength_range()
+
+        if wavelength.size == 0:
+            raise ValueError('Calculation of the mean flux is not possible because the '
+                             'wavelength array is empty.')
 
         if isinstance(wavelength[0], (np.float32, np.float64)):
-            indices = np.where((self.wl_range[0] < wavelength) &
-                               (wavelength < self.wl_range[1]))[0]
+            indices = np.where((self.wavel_range[0] < wavelength) &
+                               (wavelength < self.wavel_range[1]))[0]
 
             if indices.size == 1:
                 raise ValueError("Calculating synthetic photometry requires more than one "
@@ -138,7 +142,7 @@ class SyntheticPhotometry:
             photometry = []
 
             for i, wl_item in enumerate(wavelength):
-                indices = np.where((self.wl_range[0] <= wl_item) & (wl_item <= self.wl_range[1]))[0]
+                indices = np.where((self.wavel_range[0] <= wl_item) & (wl_item <= self.wavel_range[1]))[0]
 
                 if indices.size < 2:
                     photometry.append(np.nan)
@@ -147,8 +151,8 @@ class SyntheticPhotometry:
                                   'wavelength point. Photometry is set to NaN.', RuntimeWarning)
 
                 else:
-                    if threshold is None and (wl_item[0] > self.wl_range[0] or
-                                              wl_item[-1] < self.wl_range[1]):
+                    if threshold is None and (wl_item[0] > self.wavel_range[0] or
+                                              wl_item[-1] < self.wavel_range[1]):
 
                         warnings.warn('Filter profile of '+self.filter_name+' extends beyond the '
                                       'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). The '

@@ -292,7 +292,7 @@ class FitModel:
 
             for item in filters:
                 readmodel = read_model.ReadModel(self.model, item, teff_bound)
-                readmodel.interpolate()
+                readmodel.interpolate_model()
                 self.modelphot.append(readmodel)
 
                 sphot = photometry.SyntheticPhotometry(item)

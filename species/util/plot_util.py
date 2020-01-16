@@ -239,3 +239,65 @@ def quantity_unit(param,
         unit.append(r'$L_\odot$')
 
     return quantity, unit
+
+
+def field_bounds_ticks(field_range):
+    """
+    Parameters
+    ----------
+    field_range : tuple(str, str), None
+        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
+        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
+        The full range is used if set to None.
+
+    Returns
+    -------
+    np.ndarray
+    np.ndarray
+    list(str, )
+    """
+
+    spectral_ranges = ['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2']
+
+    if field_range is None:
+        index_start = 0
+        index_end = 7
+
+    else:
+        if field_range[0] == 'early M':
+            index_start = 0
+        elif field_range[0] == 'late M':
+            index_start = 1
+        elif field_range[0] == 'early L':
+            index_start = 2
+        elif field_range[0] == 'late L':
+            index_start = 3
+        elif field_range[0] == 'early T':
+            index_start = 4
+        elif field_range[0] == 'late T':
+            index_start = 5
+        elif field_range[0] == 'early Y':
+            index_start = 6
+
+        if field_range[1] == 'early M':
+            index_end = 1
+        elif field_range[1] == 'late M':
+            index_end = 2
+        elif field_range[1] == 'early L':
+            index_end = 3
+        elif field_range[1] == 'late L':
+            index_end = 4
+        elif field_range[1] == 'early T':
+            index_end = 5
+        elif field_range[1] == 'late T':
+            index_end = 6
+        elif field_range[1] == 'early Y':
+            index_end = 7
+
+    index_range = index_end - index_start + 1
+
+    bounds = np.linspace(index_start, index_end, index_range)
+    ticks = np.linspace(index_start+0.5, index_end-0.5, index_range-1)
+    labels = spectral_ranges[index_start:index_end]
+
+    return bounds, ticks, labels

@@ -49,7 +49,7 @@ class SpeciesInit:
                 file_obj.write('[species]\n')
                 file_obj.write('database = species_database.hdf5\n')
                 file_obj.write('config = species_config.ini\n')
-                file_obj.write('input = ./')
+                file_obj.write('input = ./\n')
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

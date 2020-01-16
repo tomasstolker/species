@@ -1,5 +1,5 @@
 """
-Text
+Module with reading functionalities for Planck spectra.
 """
 
 import os
@@ -15,16 +15,16 @@ from species.read import read_filter
 
 class ReadPlanck:
     """
-    Read a Planck spectrum.
+    Class for reading a Planck spectrum.
     """
 
     def __init__(self,
-                 wavelength):
+                 filter_name):
         """
         Parameters
         ----------
-        wavelength : tuple(float, float) or str
-            Wavelength range (micron) or filter name. Full spectrum is used if set to None.
+        filter_name : str, None
+            Filter ID that is used for the wavelength range. Full spectrum is used if set to None.
 
         Returns
         -------
@@ -36,14 +36,14 @@ class ReadPlanck:
         self.wl_points = None
         self.wl_index = None
 
-        if isinstance(wavelength, str):
-            self.filter_name = wavelength
-            transmission = read_filter.ReadFilter(wavelength)
-            self.wavelength = transmission.wavelength_range()
+        if isinstance(filter_name, str):
+            self.filter_name = filter_name
+            transmission = read_filter.ReadFilter(filter_name)
+            self.wavel_range = transmission.wavelength_range()
 
         else:
             self.filter_name = None
-            self.wavelength = wavelength
+            self.wavel_range = filter_name
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -53,13 +53,15 @@ class ReadPlanck:
         self.database = config['species']['database']
 
     @staticmethod
-    def planck(wl_points,
+    def planck(wavel_points,
                temperature,
                scaling):
         """
+        Internal function for calculating a Planck function.
+
         Parameters
         ----------
-        wl_points : numpy.ndarray
+        wavel_points : numpy.ndarray
             Wavelength points (micron).
         temperature : float
             Temperature (K).
@@ -72,24 +74,24 @@ class ReadPlanck:
             Flux density (W m-2 micron-1).
         """
 
-        planck1 = 2.*constants.PLANCK*constants.LIGHT**2/(1e-6*wl_points)**5
-        planck2 = np.exp(constants.PLANCK*constants.LIGHT /
-                         (1e-6*wl_points*constants.BOLTZMANN*temperature)) - 1.
+        planck_1 = 2.*constants.PLANCK*constants.LIGHT**2/(1e-6*wavel_points)**5
 
-        flux = 4.*math.pi * scaling * planck1/planck2  # [W m-2 m-1]
-        flux *= 1e-6  # [W m-2 micron-1]
+        planck_2 = np.exp(constants.PLANCK*constants.LIGHT /
+                          (1e-6*wavel_points*constants.BOLTZMANN*temperature)) - 1.
 
-        return flux
+        return 1e-6 * 4.*math.pi * scaling * planck_1/planck_2  # [W m-2 micron-1]
 
     def get_spectrum(self,
-                     model_par,
-                     specres):
+                     model_param,
+                     spec_res):
         """
+        Function for calculating a Planck spectrum.
+
         Parameters
         ----------
-        model_par : dict
+        model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
-        specres : float
+        spec_res : float
             Spectral resolution.
 
         Returns
@@ -98,32 +100,37 @@ class ReadPlanck:
             Box with the Planck spectrum.
         """
 
-        wl_points = [self.wavelength[0]]
-        while wl_points[-1] <= self.wavelength[1]:
-            wl_points.append(wl_points[-1] + wl_points[-1]/specres)
+        wavel_points = [self.wavel_range[0]]
 
-        wl_points = np.asarray(wl_points)  # [micron]
+        while wavel_points[-1] <= self.wavel_range[1]:
+            wavel_points.append(wavel_points[-1] + wavel_points[-1]/spec_res)
 
-        scaling = (model_par['radius']*constants.R_JUP/(model_par['distance']*constants.PARSEC))**2
-        flux = self.planck(np.copy(wl_points), model_par['teff'], scaling)  # [W m-2 micron-1]
+        wavel_points = np.asarray(wavel_points)  # [micron]
+
+        scaling = ((model_param['radius']*constants.R_JUP) /
+                   (model_param['distance']*constants.PARSEC))**2
+
+        flux = self.planck(np.copy(wavel_points), model_param['teff'], scaling)  # [W m-2 micron-1]
 
         return box.create_box(boxtype='model',
                               model='planck',
-                              wavelength=wl_points,
+                              wavelength=wavel_points,
                               flux=flux,
-                              parameters=model_par,
+                              parameters=model_param,
                               quantity='flux')
 
-    def get_photometry(self,
-                       model_par,
-                       synphot=None):
+    def get_flux(self,
+                 model_param,
+                 synphot=None):
         """
+        Function for calculating the average flux density for the ``filter_name``.
+
         Parameters
         ----------
-        model_par : dict
+        model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
-        synphot : species.analysis.photometry.SyntheticPhotometry
-            Synthetic photometry object.
+        synphot : species.analysis.photometry.SyntheticPhotometry, None
+            Synthetic photometry object. The object is created if set to None.
 
         Returns
         -------
@@ -131,9 +138,9 @@ class ReadPlanck:
             Average flux density (W m-2 micron-1).
         """
 
-        spectrum = self.get_spectrum(model_par, 100.)
+        spectrum = self.get_spectrum(model_param, 100.)
 
-        if not synphot:
+        if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_photometry(spectrum.wavelength, spectrum.flux)

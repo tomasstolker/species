@@ -1,5 +1,5 @@
 """
-Module for reading spectral library data from the database.
+Module with reading functionalities for spectral libraries.
 """
 
 import os
@@ -15,34 +15,35 @@ from species.read import read_filter
 
 class ReadSpectrum:
     """
-    Reading a spectral library.
+    Class for reading spectral library data from the database.
     """
 
     def __init__(self,
-                 spectrum,
-                 filter_name):
+                 spec_library,
+                 filter_name=None):
         """
         Parameters
         ----------
-        spectrum : str
-            Spectral library.
+        spec_library : str
+            Name of the spectral library ('irtf', 'spex') or other type of spectrum ('vega').
         filter_name : str, None
-            Filter name. Full spectrum is read if set to None.
+            Filter ID for the wavelength range. Full spectra are read if set to None.
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
-        self.spectrum = spectrum
+        self.spec_library = spec_library
         self.filter_name = filter_name
 
         if filter_name is None:
-            self.wl_range = None
+            self.wavel_range = None
 
         else:
             transmission = read_filter.ReadFilter(filter_name)
-            self.wl_range = transmission.wavelength_range()
+            self.wavel_range = transmission.wavelength_range()
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -52,15 +53,18 @@ class ReadSpectrum:
         self.database = config['species']['database']
 
     def get_spectrum(self,
-                     ignore_nan=True,
-                     sptypes=None):
+                     sptypes=None,
+                     exclude_nan=True):
         """
+        Function for selecting spectra from the database.
+
         Parameters
         ----------
-        ignore_nan : bool
-            Ignore wavelength points for which the flux is NaN.
-        sptypes : tuple('str', )
-            Spectral types to select. All spectra are retrieved if set to None.
+        sptypes : list('str', )
+            Spectral types to select from a library. The spectral types should be indicated with
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+        exclude_nan : bool
+            Exclude wavelength points for which the flux is NaN.
 
         Returns
         -------
@@ -71,12 +75,12 @@ class ReadSpectrum:
         h5_file = h5py.File(self.database, 'r')
 
         try:
-            h5_file['spectra/'+self.spectrum]
+            h5_file['spectra/'+self.spec_library]
 
         except KeyError:
             h5_file.close()
             species_db = database.Database()
-            species_db.add_spectrum(self.spectrum, sptypes)
+            species_db.add_spec_library(self.spec_library, sptypes)
             h5_file = h5py.File(self.database, 'r')
 
         list_wavelength = []
@@ -86,8 +90,8 @@ class ReadSpectrum:
         list_sptype = []
         list_distance = []
 
-        for item in h5_file['spectra/'+self.spectrum]:
-            data = h5_file['spectra/'+self.spectrum+'/'+item]
+        for item in h5_file['spectra/'+self.spec_library]:
+            data = h5_file['spectra/'+self.spec_library+'/'+item]
 
             wavelength = data[0, :]  # [micron]
             flux = data[1, :]  # [W m-2 micron-1]
@@ -95,7 +99,7 @@ class ReadSpectrum:
             if data.shape[0] == 3:
                 error = data[2, :]  # [W m-2 micron-1]
 
-            if ignore_nan:
+            if exclude_nan:
                 indices = np.isnan(flux)
                 indices = np.logical_not(indices)
                 indices = np.where(indices)[0]
@@ -106,12 +110,12 @@ class ReadSpectrum:
                 if data.shape[0] == 3:
                     error = error[indices]
 
-            if self.wl_range is None:
+            if self.wavel_range is None:
                 wl_index = np.arange(0, len(wavelength), 1)
 
             else:
-                wl_index = (flux > 0.) & (wavelength > self.wl_range[0]) & \
-                           (wavelength < self.wl_range[1])
+                wl_index = (flux > 0.) & (wavelength > self.wavel_range[0]) & \
+                           (wavelength < self.wavel_range[1])
 
             count = np.count_nonzero(wl_index)
 
@@ -142,7 +146,7 @@ class ReadSpectrum:
 
         specbox = box.SpectrumBox()
 
-        specbox.spectrum = self.spectrum
+        specbox.spec_library = self.spec_library
         specbox.wavelength = np.asarray(list_wavelength)
         specbox.flux = np.asarray(list_flux)
 

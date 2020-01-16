@@ -1,5 +1,5 @@
 """
-Module for reading filter data from the database.
+Module with reading functionalities for filter profiles.
 """
 
 import os
@@ -15,7 +15,7 @@ from species.data import database
 
 class ReadFilter:
     """
-    Reading filter data and information from the database.
+    Class for reading a filter profile from the database.
     """
 
     def __init__(self,
@@ -24,11 +24,13 @@ class ReadFilter:
         Parameters
         ----------
         filter_name : str
-            Filter ID.
+            Filter ID as stored in the database. Filter IDs from the SVO Filter Profile Service
+            will be automatically downloaded, stored in the database, and read from the database.
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.filter_name = filter_name
@@ -42,10 +44,12 @@ class ReadFilter:
 
     def get_filter(self):
         """
+        Function for selecting a filter profile from the database.
+
         Returns
         -------
         numpy.ndarray
-            Filter data.
+            Filter transmission profile.
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -59,15 +63,16 @@ class ReadFilter:
             species_db.add_filter(self.filter_name)
             h5_file = h5py.File(self.database, 'r')
 
-        data = h5_file['filters/'+self.filter_name]
-        data = np.asarray(data)
+        data = np.asarray(h5_file['filters/'+self.filter_name])
 
         h5_file.close()
 
         return data
 
-    def interpolate(self):
+    def interpolate_filter(self):
         """
+        Linearly interpolate the filter profile.
+
         Returns
         -------
         scipy.interpolate.interpolate.interp1d
@@ -84,6 +89,8 @@ class ReadFilter:
 
     def wavelength_range(self):
         """
+        Extract the wavelength range of the filter profile.
+
         Returns
         -------
         float
@@ -98,6 +105,8 @@ class ReadFilter:
 
     def mean_wavelength(self):
         """
+        Calculate the weighted mean wavelength of the filter profile.
+
         Returns
         -------
         float
@@ -110,6 +119,8 @@ class ReadFilter:
 
     def filter_fwhm(self):
         """
+        Calculate the full width at half maximum (FWHM) of the filter profile.
+
         Returns
         -------
         float

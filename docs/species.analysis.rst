@@ -12,6 +12,14 @@ species.analysis.fit\_model module
     :undoc-members:
     :show-inheritance:
 
+species.analysis.fit\_planck module
+-----------------------------------
+
+.. automodule:: species.analysis.fit_planck
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.analysis.fit\_spectrum module
 -------------------------------------
 

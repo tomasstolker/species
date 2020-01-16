@@ -132,9 +132,9 @@ def get_residuals(datatype,
     sys.stdout.flush()
 
     if inc_spec:
-        wl_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
+        wavel_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
 
-        readmodel = read_model.ReadModel(spectrum, wl_range)
+        readmodel = read_model.ReadModel(spectrum, wavel_range)
         model = readmodel.get_model(parameters)
 
         wl_new = objectbox.spectrum[:, 0]

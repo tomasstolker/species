@@ -36,6 +36,14 @@ species.util.read\_util module
     :undoc-members:
     :show-inheritance:
 
+species.util.test\_util module
+------------------------------
+
+.. automodule:: species.util.test_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
