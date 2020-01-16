@@ -61,4 +61,5 @@ class TestPhotometry:
         read_object = species.ReadObject('beta Pic b')
         abs_mag = read_object.get_absmag('Paranal/NACO.Lp')
 
-        assert abs_mag == (9.822164416313171, 0.06167897877453941)
+        assert np.allclose(abs_mag[0], 9.822164416313171, rtol=self.limit, atol=0.)
+        assert np.allclose(abs_mag[1], 0.06167897877453941, rtol=self.limit, atol=0.)
