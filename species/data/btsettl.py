@@ -6,8 +6,7 @@ import os
 import sys
 import tarfile
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 import pandas as pd
 
@@ -62,7 +61,7 @@ def add_btsettl(input_path,
         sys.stdout.write(f'Downloading BT-Settl model spectra {label}...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

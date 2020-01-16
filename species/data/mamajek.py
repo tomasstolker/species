@@ -5,8 +5,7 @@ Text
 import os
 import sys
 
-from urllib.request import urlretrieve
-
+import wget
 import h5py
 import numpy as np
 import pandas as pd
@@ -41,7 +40,7 @@ def add_mamajek(input_path,
         sys.stdout.write('Downloading Stellar Colors and Effective Temperatures (53 kB)...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

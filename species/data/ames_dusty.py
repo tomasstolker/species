@@ -7,8 +7,7 @@ import sys
 import gzip
 import tarfile
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 from scipy.interpolate import interp1d
@@ -65,7 +64,7 @@ def add_ames_dusty(input_path,
         sys.stdout.write(f'Downloading AMES-Dusty model spectra {label}...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

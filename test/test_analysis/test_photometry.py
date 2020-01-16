@@ -18,7 +18,7 @@ class TestPhotometry:
         shutil.rmtree('data/')
 
     def test_species_init(self):
-        test_util.create_config()
+        test_util.create_config('./')
         species.SpeciesInit('./')
 
     def test_synthetic_photometry(self):

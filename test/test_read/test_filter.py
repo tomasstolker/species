@@ -12,6 +12,7 @@ class TestFilter:
 
     def setup_class(self):
         self.limit = 1e-10
+        self.test_path = os.path.dirname(__file__) + '/'
 
     def teardown_class(self):
         os.remove('species_database.hdf5')
@@ -19,7 +20,7 @@ class TestFilter:
         shutil.rmtree('data/')
 
     def test_species_init(self):
-        test_util.create_config()
+        test_util.create_config('./')
         species.SpeciesInit('./')
 
     def test_read_filter(self):

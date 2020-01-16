@@ -6,8 +6,7 @@ import os
 import sys
 import tarfile
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 from astropy.io import fits
@@ -77,7 +76,7 @@ def add_irtf(input_path,
             sys.stdout.write('Downloading IRTF Spectral Library - '+data_type[item]+'...')
             sys.stdout.flush()
 
-            urlretrieve(url[item], data_file[item])
+            wget.download(url[item], out=data_file[item], bar=None)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

@@ -5,8 +5,7 @@ Text
 import os
 import sys
 
-from urllib.request import urlretrieve
-
+import wget
 import h5py
 import numpy as np
 import pandas as pd
@@ -42,7 +41,7 @@ def add_leggett(input_path,
         sys.stdout.write('Downloading Leggett L and T Dwarf Data (88 kB)...')
         sys.stdout.flush()
 
-        urlretrieve(url1, data_file1)
+        wget.download(url1, out=data_file1, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()
@@ -51,7 +50,7 @@ def add_leggett(input_path,
         sys.stdout.write('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...')
         sys.stdout.flush()
 
-        urlretrieve(url2, data_file2)
+        wget.download(url2, out=data_file2, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

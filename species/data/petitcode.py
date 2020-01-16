@@ -6,8 +6,7 @@ import os
 import sys
 import zipfile
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 from species.core import constants
@@ -59,7 +58,7 @@ def add_petitcode_cool_clear(input_path,
         sys.stdout.write(f'Downloading petitCODE cool clear model spectra...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()
@@ -162,7 +161,7 @@ def add_petitcode_cool_cloudy(input_path,
         sys.stdout.write(f'Downloading petitCODE cool cloudy model spectra...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

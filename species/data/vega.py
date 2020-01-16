@@ -5,8 +5,7 @@ Text
 import os
 import sys
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 from astropy.io import fits
@@ -36,7 +35,7 @@ def add_vega(input_path, database):
         sys.stdout.write('Downloading Vega spectrum (270 kB)... ')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write('[DONE]\n')
         sys.stdout.flush()

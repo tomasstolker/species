@@ -5,8 +5,7 @@ Text
 import os
 import sys
 
-from urllib.request import urlretrieve
-
+import wget
 import h5py
 import numpy as np
 
@@ -41,7 +40,7 @@ def add_vlm_plx(input_path,
         sys.stdout.write('Downloading Database of Ultracool Parallaxes (307 kB)...')
         sys.stdout.flush()
 
-        urlretrieve(url, data_file)
+        wget.download(url, out=data_file, bar=None)
 
         sys.stdout.write(' [DONE]\n')
         sys.stdout.flush()

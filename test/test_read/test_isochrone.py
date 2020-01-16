@@ -1,8 +1,7 @@
 import os
 import shutil
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 import species
@@ -13,22 +12,22 @@ class TestIsochrone:
 
     def setup_class(self):
         self.limit = 1e-10
+        self.test_path = os.path.dirname(__file__) + '/'
+
+        filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
         url = 'https://phoenix.ens-lyon.fr/Grids/AMES-Cond/ISOCHRONES/' \
               'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
-        filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
-
-        urlretrieve(url, filename)
+        wget.download(url, out=filename, bar=None)
 
     def teardown_class(self):
         os.remove('species_database.hdf5')
         os.remove('species_config.ini')
         os.remove('model.AMES-Cond-2000.M-0.0.NaCo.Vega')
-        shutil.rmtree('data/')
 
     def test_species_init(self):
-        test_util.create_config()
+        test_util.create_config('./')
         species.SpeciesInit('./')
 
     def test_read_isochrone(self):

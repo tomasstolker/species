@@ -6,8 +6,7 @@ import os
 import sys
 import tarfile
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 import pandas as pd
 
@@ -70,7 +69,7 @@ def add_btnextgen(input_path,
             sys.stdout.write('Downloading BT-NextGen model spectra '+labels[i]+'...')
             sys.stdout.flush()
 
-            urlretrieve(urls[i], data_file)
+            wget.download(urls[i], out=data_file, bar=None)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

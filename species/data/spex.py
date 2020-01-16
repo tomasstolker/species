@@ -6,8 +6,7 @@ import os
 import sys
 import warnings
 
-from urllib.request import urlretrieve
-
+import wget
 import numpy as np
 
 from astropy.io.votable import parse_single_table
@@ -51,7 +50,7 @@ def add_spex(input_path, database):
 
     xml_file = os.path.join(data_path, 'spex.xml')
 
-    urlretrieve(url_all, xml_file)
+    wget.download(url_all, out=xml_file, bar=None)
 
     table = parse_single_table(xml_file)
     name = table.array['name']
@@ -62,7 +61,7 @@ def add_spex(input_path, database):
 
     for i, item in enumerate(url):
         xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
-        urlretrieve(item.decode('utf-8'), xml_file)
+        wget.download(item.decode('utf-8'), out=xml_file, bar=None)
 
         table = parse_single_table(xml_file)
         name = table.array['ID']
@@ -75,7 +74,7 @@ def add_spex(input_path, database):
         os.remove(xml_file)
 
         xml_file = os.path.join(data_path, name+'.xml')
-        urlretrieve(url[0].decode('utf-8'), xml_file)
+        wget.download(url[0].decode('utf-8'), out=xml_file, bar=None)
 
     sys.stdout.write('\rDownloading SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
     sys.stdout.flush()
