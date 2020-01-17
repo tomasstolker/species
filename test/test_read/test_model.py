@@ -25,7 +25,7 @@ class TestModel:
 
     def test_read_model(self):
         database = species.Database()
-        database.add_model('ames-cond', teff=(2000., 2500))
+        database.add_model('ames-cond', teff_range=(2000., 2500))
 
         read_model = species.ReadModel('ames-cond')
         assert read_model.model == 'ames-cond'

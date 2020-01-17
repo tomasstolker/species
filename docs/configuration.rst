@@ -3,19 +3,18 @@
 Configuration
 =============
 
-A configuration file is required in the working folder with the name `species_config.ini`. The file contains the path to the HDF5 database, the path to the configuration file, and the folder where all the data is dowloaded before it is stored into the database.
-
-The paths can be either absolute or relative to the working folder. It is recommended to use the same input folder for different configurations of `species` such that data only has to be downloaded once. As an example, this is what the content of the configuration file may look like:
+A configuration file with the name `species_config.ini` is required in the working folder. At the moment, the file only contains the folder path where all the data is dowloaded before it is stored into the database. The path can be provided either absolute or relative to the working folder. This is what the content of the configuration file may look like:
 
 .. code-block:: ini
 
    [species]
-   database = species_database.hdf5
-   config = species_config.ini
-   input = /path/to/store/data/
+   data_folder = /path/to/store/data/
 
 A configuration file with default values is automatically created when `species` is initiated by running :class:`~species.core.setup.SpeciesInit` and no configuration file is present in the working folder, for example::
 
    import species
 
    species.SpeciesInit(config_path='./')
+
+.. tip::
+   The same `data_folder` can be set in multiple configuration files of `species`. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`.

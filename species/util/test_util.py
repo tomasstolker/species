@@ -1,8 +1,9 @@
 """
-Text
+Utility functions for running the unit tests.
 """
 
 import os
+
 
 def create_config(test_path):
     """
@@ -23,9 +24,7 @@ def create_config(test_path):
     database_file = os.path.join(test_path, 'species_database.hdf5')
     data_folder = os.path.join(test_path, 'data/')
 
-    config = open(config_file, 'w')
-    config.write('[species]\n')
-    config.write('database = '+database_file+'\n')
-    config.write('config = '+config_file+'\n')
-    config.write('input = '+data_folder)
-    config.close()
+    with open(config_file, 'w') as config:
+        config.write('[species]\n')
+        config.write('database = '+database_file+'\n')
+        config.write('data_folder = '+data_folder)

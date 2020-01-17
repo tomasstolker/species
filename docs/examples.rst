@@ -82,7 +82,7 @@ The following code will download the IRTF spectral library and add the spectra t
                          xlim=(1., 2.5),
                          offset=(-0.08, -0.06))
 
-.. image:: _images/photometry.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/photometry.png
    :width: 80%
    :align: center
 
@@ -116,7 +116,7 @@ Here photometric data of 51 Eri b (Rajan et al. 2017) is added to the database. 
                                 output='color_mag.pdf',
                                 legend='upper left')
 
-.. image:: _images/color_mag.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/color_mag.png
    :width: 70%
    :align: center
 
@@ -146,7 +146,7 @@ In the last example, the DRIFT-PHOENIX atmospheric models are added to the datab
                          xlim=(1., 5.),
                          ylim=(0., 1.1e5))
 
-.. image:: _images/model1.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/model1.png
    :width: 80%
    :align: center
 
@@ -163,7 +163,7 @@ Or, a spectrum with the original spectral resolution can be obtained from the (d
                          xlim=(1., 5.),
                          ylim=(0., 2.15e-15))
 
-.. image:: _images/model2.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/model2.png
    :width: 80%
    :align: center
 
@@ -276,11 +276,11 @@ Which gives:
    NACO Mp [mag] = 6.407877593040467
    NACO Mp [W m-2 micron-1] = 5.9164296e-14
 
-.. image:: _images/posterior.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/posterior.png
    :width: 40%
    :align: center
 
-.. image:: _images/spectrum.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/spectrum.png
    :width: 90%
    :align: center
 
@@ -376,7 +376,7 @@ In this example we fit the available photometry of beta Pic b with the DRIFT-PHO
                          offset=(-0.25, -0.06),
                          output='plot/spectrum.pdf')
 
-.. image:: _images/betapic.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/betapic.png
    :width: 100%
    :align: center
 
@@ -471,7 +471,7 @@ When creating a color-magnitude diagram, various data can be combined such as ph
                                 legend='upper right',
                                 output='isochrones.pdf')
 
-.. image:: _images/isochrone.png
+.. image:: https://people.phys.ethz.ch/~stolkert/species/isochrone.png
    :width: 60%
    :align: center
 

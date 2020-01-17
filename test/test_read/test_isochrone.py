@@ -33,7 +33,7 @@ class TestIsochrone:
     def test_read_isochrone(self):
         database = species.Database()
         database.add_isochrones('model.AMES-Cond-2000.M-0.0.NaCo.Vega', 'ames-cond_isochrone')
-        database.add_model('ames-cond', teff=(2000., 2500))
+        database.add_model('ames-cond', teff_range=(2000., 2500))
 
         read_isochrone = species.ReadIsochrone('ames-cond_isochrone')
         assert read_isochrone.isochrone_tag == 'ames-cond_isochrone'

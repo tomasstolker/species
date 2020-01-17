@@ -11,4 +11,4 @@ Questions & feedback
 Attribution
 -----------
 
-Please cite Stolker et al. in prep. whenever results from *species* are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that *species* is using, such as the photometric and spectral libraries, atmospheric models, filter transmission curves, and photometry of individual objects. More details will follow.
+Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S/>`_ whenever results from *species* are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that *species* is using, such as the photometric and spectral libraries, atmospheric models, evolutionary models, and photometry of individual objects.

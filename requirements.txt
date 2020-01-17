@@ -1,4 +1,4 @@
-astropy ~= 3.2
+astropy ~= 4.0
 astroquery ~= 0.3
 corner ~= 2.0
 emcee ~= 3.0

@@ -1,5 +1,5 @@
 """
-Setup module.
+Module for setting up species in the working folder.
 """
 
 import os
@@ -13,7 +13,8 @@ import species
 
 class SpeciesInit:
     """
-    Text.
+    Class for initiating species by creating the database and configuration file in case they are
+    not present in the working folder, and creating the data folder for storage of input data.
     """
 
     def __init__(self,
@@ -48,8 +49,7 @@ class SpeciesInit:
             with open(config_file, 'w') as file_obj:
                 file_obj.write('[species]\n')
                 file_obj.write('database = species_database.hdf5\n')
-                file_obj.write('config = species_config.ini\n')
-                file_obj.write('input = ./\n')
+                file_obj.write('data_folder = ./data/\n')
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()
@@ -58,13 +58,13 @@ class SpeciesInit:
         config.read_file(open(config_file))
 
         database_file = config['species']['database']
-        input_path = config['species']['input']
+        data_folder = config['species']['data_folder']
 
-        if not os.path.exists(input_path):
-            sys.stdout.write('Creating input folder...')
+        if not os.path.exists(data_folder):
+            sys.stdout.write('Creating data folder...')
             sys.stdout.flush()
 
-            os.makedirs(input_path)
+            os.makedirs(data_folder)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

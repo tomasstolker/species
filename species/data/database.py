@@ -40,7 +40,7 @@ class Database:
         config.read_file(open(config_file))
 
         self.database = config['species']['database']
-        self.input_path = config['species']['input']
+        self.input_path = config['species']['data_folder']
 
     def list_items(self):
         """
@@ -217,20 +217,20 @@ class Database:
 
     def add_model(self,
                   model,
-                  wavelength=None,
-                  teff=None,
-                  specres=1000.,
+                  wavel_range=None,
+                  teff_range=None,
+                  spec_res=1000.,
                   data_folder=None):
         """
         Parameters
         ----------
         model : str
             Model name.
-        wavelength : tuple(float, float), None
-            Wavelength (micron) range.
-        teff : tuple(float, float), None
-            Effective temperature (K) range.
-        specres : float
+        wavel_range : tuple(float, float), None
+            Wavelength range (micron).
+        teff_range : tuple(float, float), None
+            Effective temperature range (K).
+        spec_res : float
             Spectral resolution.
         data_folder : str, None
             Path with input data (only required for petitCODE hot models).
@@ -251,41 +251,41 @@ class Database:
             data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
 
         elif model[0:8] == 'bt-settl':
-            btsettl.add_btsettl(self.input_path, h5_file, wavelength, teff, specres)
+            btsettl.add_btsettl(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         elif model[0:10] == 'bt-nextgen':
-            btnextgen.add_btnextgen(self.input_path, h5_file, wavelength, teff, specres)
+            btnextgen.add_btnextgen(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
 
         elif model[0:10] == 'ames-dusty':
-            ames_dusty.add_ames_dusty(self.input_path, h5_file, wavelength, teff, specres)
+            ames_dusty.add_ames_dusty(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         elif model[0:9] == 'ames-cond':
-            ames_cond.add_ames_cond(self.input_path, h5_file, wavelength, teff, specres)
+            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         elif model[0:9] == 'ames-cond':
-            ames_cond.add_ames_cond(self.input_path, h5_file, wavelength, teff, specres)
+            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg'), h5_file)
 
         elif model[0:20] == 'petitcode-cool-clear':
-            petitcode.add_petitcode_cool_clear(self.input_path, h5_file, wavelength, teff, specres)
+            petitcode.add_petitcode_cool_clear(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
 
         elif model[0:21] == 'petitcode-cool-cloudy':
-            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file, wavelength, teff, specres)
+            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file, wavel_range, teff_range, spec_res)
             data_util.add_missing(model, ('teff', 'logg', 'feh', 'fsed'), h5_file)
 
         elif model[0:19] == 'petitcode-hot-clear':
-            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, wavelength, teff,
-                                              specres, data_folder)
+            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, wavel_range, teff_range,
+                                              spec_res, data_folder)
             data_util.add_missing(model, ('teff', 'logg', 'feh', 'co'), h5_file)
 
         elif model[0:20] == 'petitcode-hot-cloudy':
-            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, wavelength, teff,
-                                               specres, data_folder)
+            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, wavel_range, teff_range,
+                                               spec_res, data_folder)
             data_util.add_missing(model, ('teff', 'logg', 'feh', 'co', 'fsed'), h5_file)
 
         h5_file.close()
@@ -730,8 +730,8 @@ class Database:
                          tag,
                          burnin,
                          random,
-                         wavelength,
-                         specres=None):
+                         wavel_range,
+                         spec_res=None):
         """
         Parameters
         ----------
@@ -741,9 +741,9 @@ class Database:
             Number of burnin steps.
         random : int
             Number of random samples.
-        wavelength : tuple(float, float) or str
+        wavel_range : tuple(float, float) or str
             Wavelength range (micron) or filter name. Full spectrum if set to None.
-        specres : float
+        spec_res : float
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
             wavelength points are used if set to None.
 
@@ -763,7 +763,7 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        if specres is not None and spectrum_type == 'calibration':
+        if spec_res is not None and spectrum_type == 'calibration':
             warnings.warn("Smoothing of the spectral resolution is not implemented for calibration "
                           "spectra.")
 
@@ -785,9 +785,9 @@ class Database:
 
         if spectrum_type == 'model':
             if spectrum_name == 'planck':
-                readmodel = read_planck.ReadPlanck(wavelength)
+                readmodel = read_planck.ReadPlanck(wavel_range)
             else:
-                readmodel = read_model.ReadModel(spectrum_name, wavelength)
+                readmodel = read_model.ReadModel(spectrum_name, wavel_range)
 
         elif spectrum_type == 'calibration':
             readcalib = read_calibration.ReadCalibration(spectrum_name, None)
@@ -808,9 +808,9 @@ class Database:
 
             if spectrum_type == 'model':
                 if spectrum_name == 'planck':
-                    specbox = readmodel.get_spectrum(model_par, specres)
+                    specbox = readmodel.get_spectrum(model_par, spec_res)
                 else:
-                    specbox = readmodel.get_model(model_par, specres)
+                    specbox = readmodel.get_model(model_par, spec_res)
 
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_par)
