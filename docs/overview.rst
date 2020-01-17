@@ -6,12 +6,14 @@ Overview
 Introduction
 ------------
 
-*species* provides a coherent framework for analyzing photometric and spectral data of planetary and substellar atmospheres. It has been designed for self-luminous objects such as directly imaged exoplanets and brown dwarfs, that is, objects which are not significantly irradiated by an external source. On this page you find a very short introduction on the design of *species*, the features that have been implemented, and the various types of data it can handle.
+*species* provides a coherent framework for analyzing emission spectra and photometry of self-luminous objects such as directly imaged planets and brown dwarfs. This page provides a short introduction on the design of *species*, the features that have been implemented, and the various types of data it can handle.
 
 Supported data
 --------------
 
-The software profits from publicly available data such as photometric and spectral libraries, atmospheric model spectra, evolutionary models, photometry of directly imaged companions, and filter transmission curves. The relevant data are automatically downloaded and added to a central HDF5 database on request of the user. All data are stored in a fixed format such that the various analysis tools and plotting functions can be directly used without having to deal with the many different data formats and units in which the original data were stored. The following data are currently supported by *species* (support for other data sets can be requested):
+The software profits from publicly available data such as photometric and spectral libraries, atmospheric model spectra, evolutionary models, photometry of directly imaged companions, and filter transmission profiles. The relevant data are automatically downloaded and can be added to the HDF5 database. All data are stored in a fixed format in the database which has the advantage that the analysis tools and plotting functions can be easily used without having to deal with the original data formats and units.
+
+The following data are currently supported by *species* (support for other data sets can be requested):
 
 - `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov/index.php?model=drift>`_ atmospheric models
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_ atmospheric models
@@ -26,10 +28,10 @@ The software profits from publicly available data such as photometric and spectr
 - Photometry from the `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `Sandy Leggett <http://www.gemini.edu/staff/sleggett>`_
 - Photometry from `A Modern Mean Dwarf Stellar Color and Effective Temperature Sequence <http://www.pas.rochester.edu/~emamajek>`_
-- Photometry of directly images companions
-- Vega `calibration spectrum <http://ssb.stsci.edu/cdbs/calspec/>`_
+- Photometry of directly imaged companions (see dictionary in :class:`~species.data.companions`)
+- Calibration spectrum of `Vega <http://ssb.stsci.edu/cdbs/calspec/>`_
 
-Please give credit to the relevant authors when using these data in a publication. More details will follow on the references but the information is also available on the respective websites.
+Please give credit to the relevant authors when using these data in a publication. More information is available on the respective websites.
 
 Analysis tools
 --------------
@@ -48,9 +50,9 @@ After adding the relevant data to the database, the user can take advantage of t
 Output boxes
 ------------
 
-Data which are read from the database, as well as the output of the various `species` functions, are stored in :class:`~species.core.box.Box` objects. These can be used directly as input for the plotting functionalities of `species`. Alternatively, the user can easily extract the content of a :class:`~species.core.box.Box` and process and plot it to their own needs. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a box.
+Data which are read from the database, as well as the output of various functions, are stored in :class:`~species.core.box.Box` objects. These can be used directly as input for the plotting functionalities of `species`. Alternatively, the user can easily extract the content of a :class:`~species.core.box.Box` and process and plot it to their own needs. The :func:`~species.core.box.Box.open_box` function can be used to see which attributes are inside a :class:`~species.core.box.Box`.
 
-The following example will add the available photometry of PZ Tel B to the database, read the data and properties of companion into an :class:`~species.core.box.ObjectBox`, and list its content. The example also shows how an attribute of a :class:`~species.core.box.Box` object can be extracted.
+The following example will add already available photometry of PZ Tel B to the database, read the data and properties of companion into an :class:`~species.core.box.ObjectBox`, and list its content.
 
 .. code-block:: python
 
@@ -64,4 +66,8 @@ The following example will add the available photometry of PZ Tel B to the datab
    objectbox = database.get_object(object_name='PZ Tel B')
    objectbox.open_box()
 
-   print(objectbox.magnitude)
+As an example, a dictionary with the apparent magnitudes can be extracted from the :class:`~species.core.box.ObjectBox` in the following way:
+
+.. code-block:: python
+
+   app_mag = objectbox.magnitude
