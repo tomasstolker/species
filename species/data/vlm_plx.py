@@ -101,15 +101,15 @@ def add_vlm_plx(input_path,
     sys.stdout.write(' [DONE]\n')
     sys.stdout.flush()
 
-    sys.stdout.write('Querying SIMBAD...')
-    sys.stdout.flush()
+    # sys.stdout.write('Querying SIMBAD...')
+    # sys.stdout.flush()
 
-    simbad_id = queries.get_simbad(name)
+    # simbad_id = queries.get_simbad(name)
 
-    dset = database.create_dataset(group+'/simbad', (np.size(simbad_id), ), dtype=dtype)
-    dset[...] = simbad_id
+    # dset = database.create_dataset(group+'/simbad', (np.size(simbad_id), ), dtype=dtype)
+    # dset[...] = simbad_id
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    # sys.stdout.write(' [DONE]\n')
+    # sys.stdout.flush()
 
     database.close()

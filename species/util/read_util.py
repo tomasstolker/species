@@ -12,11 +12,11 @@ from species.core import constants
 from species.read import read_model, read_planck
 
 
-def get_mass(model_par):
+def get_mass(model_param):
     """
     Parameters
     ----------
-    model_par : dict
+    model_param : dict
         Model parameter values. Should contain the surface gravity and radius.
 
     Returns
@@ -25,9 +25,9 @@ def get_mass(model_par):
         Mass (Mjup).
     """
 
-    logg = 1e-2 * 10.**model_par['logg']  # [m s-1]
+    logg = 1e-2 * 10.**model_param['logg']  # [m s-1]
 
-    radius = model_par['radius']  # [Rjup]
+    radius = model_param['radius']  # [Rjup]
     radius *= constants.R_JUP  # [m]
 
     mass = logg*radius**2/constants.GRAVITY  # [kg]
@@ -54,12 +54,12 @@ def add_luminosity(modelbox):
     """
 
     if modelbox.model == 'planck':
-        readmodel = read_planck.ReadPlanck(wavelength=(1e-1, 1e3))
-        fullspec = readmodel.get_spectrum(model_par=modelbox.parameters, spec_res=1000.)
+        readmodel = read_planck.ReadPlanck(wavel_range=(1e-1, 1e3))
+        fullspec = readmodel.get_spectrum(model_param=modelbox.parameters, spec_res=1000.)
 
     else:
-        readmodel = read_model.ReadModel(model=modelbox.model, wavelength=None, teff=None)
-        fullspec = readmodel.get_model(model_par=modelbox.parameters)
+        readmodel = read_model.ReadModel(model=modelbox.model)
+        fullspec = readmodel.get_model(model_param=modelbox.parameters)
 
     flux = simps(fullspec.flux, fullspec.wavelength)
 

@@ -41,16 +41,16 @@ def multi_photometry(datatype,
     if datatype == 'model':
         for item in filters:
             if spectrum == 'planck':
-                readmodel = read_planck.ReadPlanck(item)
+                readmodel = read_planck.ReadPlanck(filter_name=item)
             else:
-                readmodel = read_model.ReadModel(spectrum, item)
+                readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            flux[item] = readmodel.get_photometry(parameters)
+            flux[item] = readmodel.get_flux(parameters)
 
     elif datatype == 'calibration':
         for item in filters:
-            readcalib = read_calibration.ReadCalibration(spectrum, item)
-            flux[item] = readcalib.get_photometry(parameters)
+            readcalib = read_calibration.ReadCalibration(spectrum, filter_name=item)
+            flux[item] = readcalib.get_flux(parameters)
 
     sys.stdout.write(' [DONE]\n')
     sys.stdout.flush()
@@ -109,7 +109,7 @@ def get_residuals(datatype,
     """
 
     if filters is None:
-        filters = objectbox.filter
+        filters = objectbox.filters
 
     if inc_phot:
         model_phot = multi_photometry(datatype=datatype,
@@ -134,8 +134,13 @@ def get_residuals(datatype,
     if inc_spec:
         wavel_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
 
-        readmodel = read_model.ReadModel(spectrum, wavel_range)
-        model = readmodel.get_model(parameters)
+        if spectrum == 'planck':
+            readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
+            model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
+
+        else:
+            readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
+            model = readmodel.get_model(model_param=parameters, spec_res=1000.)
 
         wl_new = objectbox.spectrum[:, 0]
 

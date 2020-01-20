@@ -1,5 +1,5 @@
 """
-Module for fitting atmospheric models.
+Module with functionalities for fitting atmospheric model specra.
 """
 
 import sys
@@ -22,7 +22,7 @@ def lnprior(param,
             modelpar,
             prior=None):
     """
-    Function for the prior probability.
+    Internal function for the prior probability.
 
     Parameters
     ----------
@@ -76,11 +76,10 @@ def lnlike(param,
            synphot,
            distance,
            spectrum,
-           instrument,
            modelspec,
            weighting):
     """
-    Function for the likelihood probability.
+    Internal function for the likelihood probability.
 
     Parameters
     ----------
@@ -95,8 +94,6 @@ def lnlike(param,
         Distance (pc).
     spectrum : numpy.ndarray
         Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    instrument : str
-        Instrument that was used for the spectrum (currently only 'gpi' possible).
     modelspec : species.read.read_model.ReadModel
     weighting : float, None
         Weighting applied to the spectrum when calculating the likelihood function in order
@@ -151,11 +148,10 @@ def lnprob(param,
            distance,
            prior,
            spectrum,
-           instrument,
            modelspec,
            weighting):
     """
-    Function for the posterior probability.
+    Internal function for the posterior probability.
 
     Parameters
     ----------
@@ -176,8 +172,6 @@ def lnprob(param,
         used if set to None.
     spectrum : numpy.ndarray
         Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    instrument : str
-        Instrument that was used for the spectrum (currently only 'gpi' possible).
     modelspec : species.read.read_model.ReadModel
     weighting : float, None
         Weighting applied to the spectrum when calculating the likelihood function in order
@@ -205,7 +199,6 @@ def lnprob(param,
                                     synphot,
                                     distance,
                                     spectrum,
-                                    instrument,
                                     modelspec,
                                     weighting)
 
@@ -217,11 +210,11 @@ def lnprob(param,
 
 class FitModel:
     """
-    Fit atmospheric model spectra to photometric and spectral data.
+    Class for fitting atmospheric model spectra to photometric data.
     """
 
     def __init__(self,
-                 objname,
+                 object_name,
                  filters,
                  model,
                  bounds,
@@ -230,7 +223,7 @@ class FitModel:
         """
         Parameters
         ----------
-        objname : str
+        object_name : str
             Object name in the database.
         filters : tuple(str, )
             Filter IDs for which the photometry is selected. All available photometry of the
@@ -251,7 +244,7 @@ class FitModel:
             None
         """
 
-        self.object = read_object.ReadObject(objname)
+        self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()
 
         self.model = model
@@ -260,13 +253,8 @@ class FitModel:
         if not inc_phot and not inc_spec:
             raise ValueError('No photometric or spectral data has been selected.')
 
-        if self.bounds is not None and 'teff' in self.bounds:
-            teff_bound = self.bounds['teff']
-        else:
-            teff_bound = None
-
         if self.bounds is not None:
-            readmodel = read_model.ReadModel(self.model, None, teff_bound)
+            readmodel = read_model.ReadModel(self.model)
             bounds_grid = readmodel.get_bounds()
 
             for item in bounds_grid:
@@ -287,11 +275,11 @@ class FitModel:
 
             if not filters:
                 species_db = database.Database()
-                objectbox = species_db.get_object(objname, None)
-                filters = objectbox.filter
+                objectbox = species_db.get_object(object_name, None)
+                filters = objectbox.filters
 
             for item in filters:
-                readmodel = read_model.ReadModel(self.model, item, teff_bound)
+                readmodel = read_model.ReadModel(self.model, filter_name=item)
                 readmodel.interpolate_model()
                 self.modelphot.append(readmodel)
 
@@ -309,7 +297,7 @@ class FitModel:
         if inc_spec:
             self.spectrum = self.object.get_spectrum()
             self.instrument = self.object.get_instrument()
-            self.modelspec = read_model.ReadModel(self.model, (0.9, 2.5), teff_bound)
+            self.modelspec = read_model.ReadModel(self.model, wavel_range=(0.9, 2.5))
 
         else:
             self.spectrum = None
@@ -374,7 +362,7 @@ class FitModel:
                                                   high=self.bounds[item][1],
                                                   size=nwalkers)
 
-        with Pool(processes=cpu_count()) as pool:
+        with Pool(processes=cpu_count()):
             sampler = emcee.EnsembleSampler(nwalkers,
                                             ndim,
                                             lnprob,
@@ -386,36 +374,10 @@ class FitModel:
                                                    self.distance,
                                                    prior,
                                                    self.spectrum,
-                                                   self.instrument,
                                                    self.modelspec,
                                                    weighting]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
-
-        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
-        #                                 dim=ndim,
-        #                                 lnpostfn=lnprob,
-        #                                 a=2.,
-        #                                 args=([self.bounds,
-        #                                        self.modelpar,
-        #                                        self.modelphot,
-        #                                        self.objphot,
-        #                                        self.synphot,
-        #                                        self.distance,
-        #                                        prior,
-        #                                        self.spectrum,
-        #                                        self.instrument,
-        #                                        self.modelspec,
-        #                                        weighting]))
-
-        # progbar = progress.bar.Bar('\rRunning MCMC...',
-        #                            max=nsteps,
-        #                            suffix='%(percent)d%%')
-
-        # for i, _ in enumerate(sampler.sample(initial, iterations=nsteps)):
-        #     progbar.next()
-
-        # progbar.finish()
 
         species_db = database.Database()
 

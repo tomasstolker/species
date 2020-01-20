@@ -33,9 +33,9 @@ class ReadModel:
         ----------
         model : str
             Name of the atmospheric model.
-        wavel_range : tuple(float, float), str, None
-            Wavelength range (micron) or filter ID. Full spectrum is selected if set to None. Not
-            used if ``filter_name`` is not None.
+        wavel_range : tuple(float, float), None
+            Wavelength range (micron). Full spectrum is selected if set to None. Not used if
+            ``filter_name`` is not None.
         filter_name : str, None
             Filter ID that is used for the wavelength range. The ``wavel_range`` is used if set
             to None.

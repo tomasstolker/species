@@ -24,14 +24,14 @@ class TestPlanck:
         species.SpeciesInit('./')
 
     def test_read_planck(self):
-        read_planck = species.ReadPlanck('MKO/NSFCam.J')
+        read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
         assert read_planck.wavel_range == pytest.approx((1.1308, 1.3812))
 
-        read_planck = species.ReadPlanck((1., 5.))
+        read_planck = species.ReadPlanck(wavel_range=(1., 5.))
         assert read_planck.wavel_range == (1., 5.)
 
     def test_get_spectrum(self):
-        read_planck = species.ReadPlanck('MKO/NSFCam.J')
+        read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
         modelbox = read_planck.get_spectrum({'teff': 2000., 'radius': 1., 'distance': 10.}, 100.)
 
         assert modelbox.model == 'planck'
@@ -42,11 +42,11 @@ class TestPlanck:
         assert np.allclose(np.sum(modelbox.flux), 1.827363592502394e-12, rtol=self.limit, atol=0.)
 
     def test_get_flux(self):
-        read_planck = species.ReadPlanck('MKO/NSFCam.J')
+        read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
 
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.})
         assert flux == 8.322445907073985e-14
 
-        synphot = species.SyntheticPhotometry('MKO/NSFCam.J')
+        synphot = species.SyntheticPhotometry(filter_name='MKO/NSFCam.J')
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.}, synphot=synphot)
         assert flux == 8.322445907073985e-14

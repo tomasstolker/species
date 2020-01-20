@@ -1,5 +1,5 @@
 """
-Database module.
+Module with functionalities for reading and writing of data.
 """
 
 import os
@@ -23,7 +23,7 @@ from species.util import data_util
 
 class Database:
     """
-    Text.
+    Class for fitting atmospheric model spectra to photometric data.
     """
 
     def __init__(self):
@@ -618,6 +618,10 @@ class Database:
         except emcee.autocorr.AutocorrError:
             int_auto = None
 
+            sys.stdout.write('The chain is shorter than 50 times the integrated autocorrelation '
+                             'time. [WARNING]\n')
+            sys.stdout.flush()
+
         if int_auto is not None:
             for i, item in enumerate(int_auto):
                 dset.attrs['autocorrelation'+str(i)] = float(item)
@@ -764,8 +768,8 @@ class Database:
         spectrum_name = dset.attrs['spectrum']
 
         if spec_res is not None and spectrum_type == 'calibration':
-            warnings.warn("Smoothing of the spectral resolution is not implemented for calibration "
-                          "spectra.")
+            warnings.warn('Smoothing of the spectral resolution is not implemented for calibration '
+                          'spectra.')
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
@@ -799,21 +803,21 @@ class Database:
                                    suffix='%(percent)d%%')
 
         for i in range(samples.shape[0]):
-            model_par = {}
+            model_param = {}
             for j in range(samples.shape[1]):
-                model_par[param[j]] = samples[i, j]
+                model_param[param[j]] = samples[i, j]
 
             if distance:
-                model_par['distance'] = distance
+                model_param['distance'] = distance
 
             if spectrum_type == 'model':
                 if spectrum_name == 'planck':
-                    specbox = readmodel.get_spectrum(model_par, spec_res)
+                    specbox = readmodel.get_spectrum(model_param, spec_res)
                 else:
-                    specbox = readmodel.get_model(model_par, spec_res)
+                    specbox = readmodel.get_model(model_param, spec_res)
 
             elif spectrum_type == 'calibration':
-                specbox = readcalib.get_spectrum(model_par)
+                specbox = readcalib.get_spectrum(model_param)
 
             box.type = 'mcmc'
 
@@ -881,17 +885,17 @@ class Database:
                                    suffix='%(percent)d%%')
 
         for i in range(samples.shape[0]):
-            model_par = {}
+            model_param = {}
             for j in range(nparam):
-                model_par[param[j]] = samples[i, j]
+                model_param[param[j]] = samples[i, j]
 
             if distance:
-                model_par['distance'] = distance
+                model_param['distance'] = distance
 
             if spectrum_type == 'model':
-                mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_par)
+                mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
             # elif spectrum_type == 'calibration':
-            #     specbox = readcalib.get_spectrum(model_par)
+            #     specbox = readcalib.get_spectrum(model_param)
 
             progbar.next()
 
@@ -901,7 +905,7 @@ class Database:
 
     def get_object(self,
                    object_name,
-                   filter_id=None,
+                   filters=None,
                    inc_phot=True,
                    inc_spec=True):
         """
@@ -909,7 +913,7 @@ class Database:
         ----------
         object_name : str
             Object name in the database.
-        filter_id : tuple(str, )
+        filters : tuple(str, )
             Filter IDs for which the photometry is selected. All available photometry of the object
             is selected if set to None.
         inc_phot : bool
@@ -936,8 +940,8 @@ class Database:
             magnitude = {}
             flux = {}
 
-            if filter_id:
-                for item in filter_id:
+            if filters:
+                for item in filters:
                     data = dset[item]
 
                     magnitude[item] = np.asarray(data[0:2])
@@ -952,13 +956,13 @@ class Database:
                             magnitude[name] = np.asarray(dset[name][0:2])
                             flux[name] = np.asarray(dset[name][2:4])
 
-            filterids = tuple(magnitude.keys())
+            filters = tuple(magnitude.keys())
 
         else:
 
             magnitude = None
             flux = None
-            filterids = None
+            filters = None
 
         if inc_spec and 'objects/'+object_name+'/spectrum' in h5_file:
             spectrum = np.asarray(h5_file['objects/'+object_name+'/spectrum'])
@@ -972,7 +976,7 @@ class Database:
 
         return box.create_box('object',
                               name=object_name,
-                              filter=filterids,
+                              filters=filters,
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance,

@@ -1,5 +1,5 @@
 """
-Module for fitting a calibration spectrum.
+Module with functionalities for fitting a calibration spectrum.
 """
 
 import sys
@@ -23,6 +23,8 @@ def lnprob(param,
            specphot,
            bands):
     """
+    Internal function for the posterior probability.
+
     Parameters
     ----------
     param : numpy.ndarray
@@ -75,18 +77,18 @@ def lnprob(param,
 
 class FitSpectrum:
     """
-    Fit a calibration spectrum to photometric data.
+    Class for fitting a calibration spectrum to photometric data.
     """
 
     def __init__(self,
-                 objname,
+                 object_name,
                  filters,
                  spectrum,
                  bounds):
         """
         Parameters
         ----------
-        objname : str
+        object_name : str
             Object name in the database.
         filters : tuple(str, )
             Filter IDs for which the photometry is selected. All available photometry of the
@@ -101,7 +103,7 @@ class FitSpectrum:
         None
         """
 
-        self.object = read_object.ReadObject(objname)
+        self.object = read_object.ReadObject(object_name)
 
         self.spectrum = spectrum
         self.bounds = bounds
@@ -111,8 +113,8 @@ class FitSpectrum:
 
         if filters is None:
             species_db = database.Database()
-            objectbox = species_db.get_object(objname, None)
-            filters = objectbox.filter
+            objectbox = species_db.get_object(object_name, None)
+            filters = objectbox.filters
 
         for item in filters:
             readcalib = read_calibration.ReadCalibration(self.spectrum, item)

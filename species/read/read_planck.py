@@ -19,12 +19,17 @@ class ReadPlanck:
     """
 
     def __init__(self,
-                 filter_name):
+                 wavel_range=None,
+                 filter_name=None):
         """
         Parameters
         ----------
+        wavel_range : tuple(float, float), None
+            Wavelength range (micron). A wavelength range of 0.1-1000 micron is used if set to
+            None. Not used if ``filter_name`` is not None.
         filter_name : str, None
-            Filter ID that is used for the wavelength range. Full spectrum is used if set to None.
+            Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
+            to None.
 
         Returns
         -------
@@ -36,14 +41,15 @@ class ReadPlanck:
         self.wl_points = None
         self.wl_index = None
 
-        if isinstance(filter_name, str):
-            self.filter_name = filter_name
-            transmission = read_filter.ReadFilter(filter_name)
+        self.filter_name = filter_name
+        self.wavel_range = wavel_range
+
+        if self.filter_name is not None:
+            transmission = read_filter.ReadFilter(self.filter_name)
             self.wavel_range = transmission.wavelength_range()
 
-        else:
-            self.filter_name = None
-            self.wavel_range = filter_name
+        elif self.wavel_range is None:
+            self.wavel_range = (0.1, 1000.)
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -85,12 +91,15 @@ class ReadPlanck:
                      model_param,
                      spec_res):
         """
-        Function for calculating a Planck spectrum.
+        Function for calculating a Planck spectrum or a combination of multiple Planck spectra.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values of
+            'teff' and 'radius' can be a single float, or a list with floats for a combination of
+             multiple Planck functions, e.g. ``{'teff': [1500., 1000.], 'radius': [1., 2.],
+            'distance': 10.}``.
         spec_res : float
             Spectral resolution.
 
@@ -107,10 +116,26 @@ class ReadPlanck:
 
         wavel_points = np.asarray(wavel_points)  # [micron]
 
-        scaling = ((model_param['radius']*constants.R_JUP) /
-                   (model_param['distance']*constants.PARSEC))**2
+        n_planck = (len(model_param)-1) // 2
 
-        flux = self.planck(np.copy(wavel_points), model_param['teff'], scaling)  # [W m-2 micron-1]
+        if n_planck == 1:
+            scaling = ((model_param['radius']*constants.R_JUP) /
+                       (model_param['distance']*constants.PARSEC))**2
+
+            flux = self.planck(np.copy(wavel_points),
+                               model_param['teff'],
+                               scaling)  # [W m-2 micron-1]
+
+        else:
+            flux = np.zeros(wavel_points.shape)
+
+            for i in range(n_planck):
+                scaling = ((model_param[f'radius_{i}']*constants.R_JUP) /
+                           (model_param['distance']*constants.PARSEC))**2
+
+                flux += self.planck(np.copy(wavel_points),
+                                    model_param[f'teff_{i}'],
+                                    scaling)  # [W m-2 micron-1]
 
         return box.create_box(boxtype='model',
                               model='planck',

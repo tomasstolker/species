@@ -54,7 +54,7 @@ def create_box(boxtype,
     elif boxtype == 'object':
         box = ObjectBox()
         box.name = kwargs['name']
-        box.filter = kwargs['filter']
+        box.filters = kwargs['filters']
         box.magnitude = kwargs['magnitude']
         box.flux = kwargs['flux']
         box.distance = kwargs['distance']
@@ -222,7 +222,7 @@ class ObjectBox(Box):
         """
 
         self.name = None
-        self.filter = None
+        self.filters = None
         self.magnitude = None
         self.flux = None
         self.distance = None

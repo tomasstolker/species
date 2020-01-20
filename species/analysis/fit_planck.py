@@ -1,5 +1,5 @@
 """
-Module for fitting atmospheric models.
+Module with functionalities for fitting a Planck spectrum.
 """
 
 import sys
@@ -17,19 +17,18 @@ from species.read import read_object, read_planck
 
 
 def lnprior(param,
-            bounds,
-            modelpar):
+            bounds):
     """
-    Function for the prior probability.
+    Internal function for the prior probability.
 
     Parameters
     ----------
     param : numpy.ndarray
         Parameter values.
     bounds : dict
-        Parameter boundaries.
-    modelpar : list(str, )
-        Parameter names.
+        Parameter boundaries for 'teff' and 'radius'. The values should be provided in a list
+        such that multiple Planck functions can be combined, e.g. ``{'teff': [(1000., 2000.),
+        (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
 
     Returns
     -------
@@ -39,8 +38,7 @@ def lnprior(param,
 
     ln_prior = 0
 
-    for i, item in enumerate(modelpar):
-
+    for i, item in enumerate(bounds):
         if bounds[item][0] <= param[i] <= bounds[item][1]:
             ln_prior += 0.
 
@@ -52,30 +50,33 @@ def lnprior(param,
 
 
 def lnlike(param,
-           modelpar,
+           bounds,
            objphot,
            synphot,
            distance,
            spectrum,
-           instrument,
            weighting):
     """
-    Function for the likelihood probability.
+    Internal function for the likelihood probability.
 
     Parameters
     ----------
     param : numpy.ndarray
         Parameter values.
-    modelpar : list(str, )
-        Parameter names.
+    bounds : dict
+        Parameter boundaries for 'teff' and 'radius'. The values should be provided in a list
+        such that multiple Planck functions can be combined, e.g. ``{'teff': [(1000., 2000.),
+        (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
     objphot : list(tuple(float, float), )
+        List with the photometric fluxes and uncertainties.
     synphot : list(species.analysis.photometry.SyntheticPhotometry, )
+        List with the :class:`~species.analysis.photometry.SyntheticPhotometry` objects for
+        calculation of synthetic photometry from the model spectra.
     distance : float
         Distance (pc).
-    spectrum : numpy.ndarray
-        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    instrument : str
-        Instrument that was used for the spectrum (currently only 'gpi' possible).
+    spectrum : numpy.ndarray, None
+        Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
+        (W m-2 micron-1). Not used if set to None.
     weighting : float, None
         Weighting applied to the spectrum when calculating the likelihood function in order
         to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
@@ -90,7 +91,7 @@ def lnlike(param,
     """
 
     paramdict = {}
-    for i, item in enumerate(modelpar):
+    for i, item in enumerate(bounds.keys()):
         paramdict[item] = param[i]
 
     paramdict['distance'] = distance
@@ -98,15 +99,15 @@ def lnlike(param,
     chisq = 0.
 
     if objphot is not None:
-        for i, item in enumerate(objphot):
-            readplanck = read_planck.ReadPlanck(synphot[i].filter_name)
-            flux = readplanck.get_photometry(paramdict, synphot=synphot[i])
+        for i, obj_item in enumerate(objphot):
+            readplanck = read_planck.ReadPlanck(filter_name=synphot[i].filter_name)
+            flux = readplanck.get_flux(paramdict, synphot=synphot[i])
 
-            chisq += (item[0]-flux)**2 / item[1]**2
+            chisq += (obj_item[0]-flux)**2 / obj_item[1]**2
 
     if spectrum is not None:
-        # TODO check if the wavelength range of get_planck is broad enought for spectres
-        readplanck = read_planck.ReadPlanck((spectrum[0, 0], spectrum[-1, 0]))
+        readplanck = read_planck.ReadPlanck((0.9*spectrum[0, 0], 1.1*spectrum[-1, 0]))
+
         model = readplanck.get_spectrum(paramdict, 100.)
 
         flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
@@ -126,32 +127,32 @@ def lnlike(param,
 
 def lnprob(param,
            bounds,
-           modelpar,
            objphot,
            synphot,
            distance,
            spectrum,
-           instrument,
            weighting):
     """
-    Function for the posterior probability.
+    Internal function for the posterior probability.
 
     Parameters
     ----------
     param : numpy.ndarray
         Parameter values.
     bounds : dict
-        Parameter boundaries.
-    modelpar : list(str, )
-        Parameter names.
+        Parameter boundaries for 'teff' and 'radius'. The values should be provided in a list
+        such that multiple Planck functions can be combined, e.g. ``{'teff': [(1000., 2000.),
+        (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
     objphot : list(tuple(float, float), )
+        List with the photometric fluxes and uncertainties.
     synphot : list(species.analysis.photometry.SyntheticPhotometry, )
+        List with the :class:`~species.analysis.photometry.SyntheticPhotometry` objects for
+        calculation of synthetic photometry from the model spectra.
     distance : float
         Distance (pc).
-    spectrum : numpy.ndarray
-        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    instrument : str
-        Instrument that was used for the spectrum (currently only 'gpi' possible).
+    spectrum : numpy.ndarray, None
+        Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
+        (W m-2 micron-1). Not used if set to None.
     weighting : float, None
         Weighting applied to the spectrum when calculating the likelihood function in order
         to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
@@ -165,19 +166,18 @@ def lnprob(param,
         Log posterior probability.
     """
 
-    ln_prior = lnprior(param, bounds, modelpar)
+    ln_prior = lnprior(param, bounds)
 
     if math.isinf(ln_prior):
         ln_prob = -np.inf
 
     else:
         ln_prob = ln_prior + lnlike(param,
-                                    modelpar,
+                                    bounds,
                                     objphot,
                                     synphot,
                                     distance,
                                     spectrum,
-                                    instrument,
                                     weighting)
 
     if np.isnan(ln_prob):
@@ -188,11 +188,11 @@ def lnprob(param,
 
 class FitPlanck:
     """
-    Fit Planck spectrum to photometric and spectral data.
+    Class for fitting Planck spectra to spectral and photometric data.
     """
 
     def __init__(self,
-                 objname,
+                 object_name,
                  filters,
                  bounds,
                  inc_phot=True,
@@ -200,13 +200,15 @@ class FitPlanck:
         """
         Parameters
         ----------
-        objname : str
+        object_name : str
             Object name in the database.
         filters : tuple(str, )
-            Filter IDs for which the photometry is selected. All available photometry of the
-            object is selected if set to None.
+            Filter names for which the photometry is selected. All available photometry of the
+            object are used if set to None.
         bounds : dict
-            Parameter boundaries for 'teff' and 'radius'.
+            Parameter boundaries for 'teff' and 'radius'. The values should be provided either as
+            float or as list of floats such that multiple Planck functions can be combined,
+            e.g. ``{'teff': [(1000., 2000.), (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
         inc_phot : bool
             Include photometry data with the fit.
         inc_spec : bool
@@ -218,18 +220,31 @@ class FitPlanck:
             None
         """
 
-        self.object = read_object.ReadObject(objname)
-        self.distance = self.object.get_distance()
-
-        self.model = 'planck'
-        self.bounds = bounds
-        self.modelpar = ['teff', 'radius']
-
         if not inc_phot and not inc_spec:
             raise ValueError('No photometric or spectral data has been selected.')
 
-        if 'teff' not in self.bounds or 'radius' not in self.bounds:
+        if 'teff' not in bounds or 'radius' not in bounds:
             raise ValueError('The \'bounds\' dictionary should contain \'teff\' and \'radius\'.')
+
+        self.model = 'planck'
+
+        self.object = read_object.ReadObject(object_name)
+        self.distance = self.object.get_distance()
+
+        if isinstance(bounds['teff'], list) and isinstance(bounds['radius'], list):
+            self.modelpar = []
+            self.bounds = {}
+
+            for i, item in enumerate(bounds['teff']):
+                self.modelpar.append(f'teff_{i}')
+                self.modelpar.append(f'radius_{i}')
+
+                self.bounds[f'teff_{i}'] = bounds['teff'][i]
+                self.bounds[f'radius_{i}'] = bounds['radius'][i]
+
+        else:
+            self.modelpar = ['teff', 'radius']
+            self.bounds = bounds
 
         if inc_phot:
             self.synphot = []
@@ -237,8 +252,8 @@ class FitPlanck:
 
             if not filters:
                 species_db = database.Database()
-                objectbox = species_db.get_object(objname, None)
-                filters = objectbox.filter
+                objectbox = species_db.get_object(object_name, None)
+                filters = objectbox.filters
 
             for item in filters:
                 sphot = photometry.SyntheticPhotometry(item)
@@ -276,7 +291,9 @@ class FitPlanck:
             Number of steps per walker.
         guess : dict, None
             Guess for the 'teff' and 'radius'. Random values between the boundary values are used
-            if a dictionary value is set to None.
+            if a value is set to None. The values should be provided either as float or in a list
+            of floats such that multiple Planck functions can be combined, e.g.
+            ``{'teff': [1500., 1000.], 'radius': [1., 2.]``.
         tag : str
             Database tag where the MCMC samples are stored.
         weighting : float, None
@@ -292,14 +309,30 @@ class FitPlanck:
             None
         """
 
-        sigma = {'teff': 5., 'radius': 0.01}
-
         sys.stdout.write('Running MCMC...')
         sys.stdout.flush()
 
-        ndim = 2
+        ndim = len(self.bounds)
+
+        if ndim == 2:
+            sigma = {'teff': 5., 'radius': 0.01}
+
+        else:
+            sigma = {}
+
+            for i, item in enumerate(guess['teff']):
+                sigma[f'teff_{i}'] = 5.
+                guess[f'teff_{i}'] = guess['teff'][i]
+
+            for i, item in enumerate(guess['radius']):
+                sigma[f'radius_{i}'] = 0.01
+                guess[f'radius_{i}'] = guess['radius'][i]
+
+            del guess['teff']
+            del guess['radius']
 
         initial = np.zeros((nwalkers, ndim))
+
         for i, item in enumerate(self.modelpar):
             if guess[item] is not None:
                 initial[:, i] = guess[item] + np.random.normal(0, sigma[item], nwalkers)
@@ -309,17 +342,15 @@ class FitPlanck:
                                                   high=self.bounds[item][1],
                                                   size=nwalkers)
 
-        with Pool(processes=cpu_count()) as pool:
+        with Pool(processes=cpu_count()):
             sampler = emcee.EnsembleSampler(nwalkers,
                                             ndim,
                                             lnprob,
                                             args=([self.bounds,
-                                                   self.modelpar,
                                                    self.objphot,
                                                    self.synphot,
                                                    self.distance,
                                                    self.spectrum,
-                                                   self.instrument,
                                                    weighting]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
