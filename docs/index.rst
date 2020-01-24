@@ -14,7 +14,7 @@ Documentation for species
    :caption: Getting Started
 
    installation
-   running
+   tutorials/running_species.ipynb
 
 .. toctree::
    :maxdepth: 2
@@ -22,7 +22,7 @@ Documentation for species
 
    overview
    configuration
-   examples
+   tutorials
    modules
 
 .. toctree::

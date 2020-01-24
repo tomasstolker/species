@@ -41,7 +41,11 @@ clean:
 	rm -f .coverage
 	rm -f coverage.xml
 	rm -rf .pytest_cache/
-	rm -rf docs/_build
+	rm -rf docs/_build.
+	rm -rf docs/tutorials/data/
+	rm -rf docs/tutorials/species_config.ini
+	rm -rf docs/tutorials/species_database.hdf5
+	rm -rf docs/tutorials/spectrum.png
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/

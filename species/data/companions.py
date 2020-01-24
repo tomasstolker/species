@@ -1,10 +1,13 @@
 """
-Module with a function for data of directly imaged companions.
+Module for extracting data of directly imaged planets and brown dwarfs.
 """
 
 
 def get_data():
     """
+    Function for extracting a dictionary with the distances (pc) and apparent magnitudes of
+    directly imaged planets and brown dwarfs.
+
     Returns
     -------
     dict
@@ -96,10 +99,7 @@ def get_data():
                          'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (17.94, 0.24),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (17.95, 0.17),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (16.65, 0.06),  # Müller et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.44, 0.05),  # Müller et al. 2018
-                                     'Paranal/NACO.Lp': (14.46, 0.50),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (14.15, 0.21),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Mp': (13.52, 0.26)}},  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.44, 0.05)}},  # Müller et al. 2018
 
             'PDS 70 c': {'distance': (113.43, 0.52),
                          'app_mag': {'Paranal/NACO.NB405': (15.05, 0.59)}},  # Stolker et al. in prep.

@@ -3,7 +3,7 @@
 Installation
 ============
 
-*species* is compatible with Python 3 and is available in the |pypi| and on |github|.
+*species* is compatible with Python 3.6/3.7 and is available in the |pypi| and on |github|.
 
 Virtual Environment
 -------------------
@@ -92,8 +92,8 @@ By adding the path of the repository to the ``PYTHONPATH`` environment variable 
 
 Do you want to makes changes to the code? Then please fork the `species` repository on the Github page and clone your own fork instead of the main repository. Contributions and pull requests are very welcome (see :ref:`contributing` section).
 
-Testing species
----------------
+Testing `species`
+-----------------
 
 The installation can be tested by starting Python in interactive mode and printing the `species` version:
 

@@ -1,7 +1,14 @@
-.. _examples:
+.. _tutorials:
 
-Examples
-========
+Tutorials
+=========
+
+The tutorials are also available as `Jupyter notebooks <https://github.com/tomasstolker/species/tree/master/docs/tutorials>`_. If you find a bug, or if something is unclear, then please create an issue on GitHub.
+
+.. .. toctree::
+..    :maxdepth: 1
+..
+..    tutorials/runnning_species.ipynb
 
 This page contains an incomplete overview of the functionalities that have been implemented in `species`. More examples will be added at a later stage. Feel free to contact Tomas Stolker (see :ref:`about`) for questions regarding its usability for your specific science case.
 

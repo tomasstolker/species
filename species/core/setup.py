@@ -60,21 +60,21 @@ class SpeciesInit:
         database_file = config['species']['database']
         data_folder = config['species']['data_folder']
 
-        if not os.path.exists(data_folder):
-            sys.stdout.write('Creating data folder...')
-            sys.stdout.flush()
-
-            os.makedirs(data_folder)
-
-            sys.stdout.write(' [DONE]\n')
-            sys.stdout.flush()
-
         if not os.path.isfile(database_file):
             sys.stdout.write('Creating species_database.hdf5...')
             sys.stdout.flush()
 
             h5_file = h5py.File(database_file, 'w')
             h5_file.close()
+
+            sys.stdout.write(' [DONE]\n')
+            sys.stdout.flush()
+
+        if not os.path.exists(data_folder):
+            sys.stdout.write('Creating data folder...')
+            sys.stdout.flush()
+
+            os.makedirs(data_folder)
 
             sys.stdout.write(' [DONE]\n')
             sys.stdout.flush()

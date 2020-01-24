@@ -42,7 +42,7 @@ class Database:
         self.database = config['species']['database']
         self.input_path = config['species']['data_folder']
 
-    def list_items(self):
+    def list_content(self):
         """
         Returns
         -------
@@ -225,7 +225,9 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name.
+            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-nextgen', 'drift-phoenix',
+            'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear', or
+            'petitcode-hot-cloudy').
         wavel_range : tuple(float, float), None
             Wavelength range (micron).
         teff_range : tuple(float, float), None
@@ -233,7 +235,8 @@ class Database:
         spec_res : float
             Spectral resolution.
         data_folder : str, None
-            Path with input data (only required for petitCODE hot models).
+            Folder with input data. Only required for the petitCODE hot models which are not
+            publically available.
 
         Returns
         -------

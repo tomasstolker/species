@@ -3,3 +3,14 @@ build:
 
 python:
     version: 3.6
+
+sphinx:
+  configuration: docs/conf.py
+
+dependencies:
+  - pandoc
+  - nbconvert
+  - ipykernel
+
+  - pip:
+    - nbsphinx

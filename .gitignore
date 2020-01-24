@@ -1,6 +1,7 @@
 *.pyc
 .DS_Store
 docs/_build
+docs/tutorials/.ipynb_checkpoints/*
 build/
 dist/
 species.egg-info/
