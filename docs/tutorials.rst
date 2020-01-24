@@ -12,6 +12,9 @@ The tutorials are also available as `Jupyter notebooks <https://github.com/tomas
 
 This page contains an incomplete overview of the functionalities that have been implemented in `species`. More examples will be added at a later stage. Feel free to contact Tomas Stolker (see :ref:`about`) for questions regarding its usability for your specific science case.
 
+.. important::
+   A flux calibrated spectrum of Vega is used for the conversion between flux densities and magnitudes. The magnitude of Vega is set to 0.03 mag for all filters.
+
 Converting photometry units
 ---------------------------
 

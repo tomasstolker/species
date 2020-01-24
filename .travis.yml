@@ -7,11 +7,14 @@ python:
   - 3.7
 
 install:
+  - sudo apt-get install pandoc
   - pip install -r requirements.txt
   - pip install pytest-cov
   - pip install coveralls
   - pip install sphinx
   - pip install sphinx_rtd_theme
+  - pip install nbsphinx
+  - pip install jupyter
 
 script:
   - make docs

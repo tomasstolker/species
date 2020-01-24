@@ -1,8 +1,6 @@
 species
 =======
 
-**spectral and photometric examination code for investigating exoplanet and substellar atmospheres**
-
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
 
