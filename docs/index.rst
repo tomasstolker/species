@@ -1,7 +1,7 @@
 .. _index:
 
-Documentation for species
-=========================
+Documentation for *species*
+===========================
 
 *species* is a toolkit for spectral and photometric analysis of planetary and substellar atmospheres. The package has been developed and is maintained by |stolker|.
 

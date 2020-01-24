@@ -242,39 +242,39 @@ def plot_color_magnitude(colorbox=None,
             y_mag = abs_mag[0]
 
             # if item[0] in ('PDS 70 b'):
-            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                marker = '*'
-                markersize = 12
-                color = '#eb4242'
-                markerfacecolor = '#eb4242'
-                markeredgecolor = 'black'
+            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     marker = '*'
+            #     markersize = 12
+            #     color = '#eb4242'
+            #     markerfacecolor = '#eb4242'
+            #     markeredgecolor = 'black'
+            #
+            # else:
+            #     marker = '>'
+            #     markersize = 6
+            #     color = 'black'
+            #     markerfacecolor = 'white'
+            #     markeredgecolor = 'black'
 
-            else:
-                marker = '>'
-                markersize = 6
-                color = 'black'
-                markerfacecolor = 'white'
-                markeredgecolor = 'black'
-
-            if item[0] == 'HR 8799 b':
-                label = 'Directly imaged'
-            elif item[0] == 'beta Pic b':
-                label = 'This work'
+            # if item[0] == 'HR 8799 b':
+            #     label = 'Directly imaged'
+            # elif item[0] == 'beta Pic b':
+            #     label = 'This work'
             # elif item[0] == 'PDS 70 b':
             #     label = 'This work'
-            else:
-                label = None
-
-            # marker = '>'
-            # markersize = 6
-            # color = 'black'
-            # markerfacecolor = 'white'
-            # markeredgecolor = 'black'
-
-            # if i == 0:
-            #     label = 'Directly imaged'
             # else:
             #     label = None
+
+            marker = '>'
+            markersize = 6
+            color = 'black'
+            markerfacecolor = 'white'
+            markeredgecolor = 'black'
+
+            if i == 0:
+                label = 'Directly imaged'
+            else:
+                label = None
 
             ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=markersize,
                          color=color, markerfacecolor=markerfacecolor, zorder=3,
@@ -534,37 +534,37 @@ def plot_color_color(colorbox,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-                marker = '*'
-                markersize = 12
-                color = '#eb4242'
-                markerfacecolor = '#eb4242'
-                markeredgecolor = 'black'
-
-            else:
-                marker = '>'
-                markersize = 6
-                color = 'black'
-                markerfacecolor = 'white'
-                markeredgecolor = 'black'
-
-            if item[0] == 'HR 8799 b':
-                label = 'Directly imaged'
-            elif item[0] == 'beta Pic b':
-                label = 'This work'
-            else:
-                label = None
-
-            # marker = '>'
-            # markersize = 6
-            # color = 'black'
-            # markerfacecolor = 'white'
-            # markeredgecolor = 'black'
+            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
+            #     marker = '*'
+            #     markersize = 12
+            #     color = '#eb4242'
+            #     markerfacecolor = '#eb4242'
+            #     markeredgecolor = 'black'
             #
-            # if not companion_labels and i == 0:
+            # else:
+            #     marker = '>'
+            #     markersize = 6
+            #     color = 'black'
+            #     markerfacecolor = 'white'
+            #     markeredgecolor = 'black'
+            #
+            # if item[0] == 'HR 8799 b':
             #     label = 'Directly imaged'
+            # elif item[0] == 'beta Pic b':
+            #     label = 'This work'
             # else:
             #     label = None
+
+            marker = '>'
+            markersize = 6
+            color = 'black'
+            markerfacecolor = 'white'
+            markeredgecolor = 'black'
+
+            if not companion_labels and i == 0:
+                label = 'Directly imaged'
+            else:
+                label = None
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=markersize,
                          color=color, markerfacecolor=markerfacecolor,
