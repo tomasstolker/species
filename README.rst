@@ -37,7 +37,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S/>`_ whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* benefits from.
+Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S/>`_ whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* benefits from. The *species* logo is `available <https://people.phys.ethz.ch/~stolkert/species/species_logo.zip>`_ for use in presentations.
 
 Contributing
 ------------

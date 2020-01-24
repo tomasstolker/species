@@ -9,10 +9,6 @@ Documentation for species
 
 	<a href="https://people.phys.ethz.ch/~stolkert/" target="_blank">Tomas Stolker</a>
 
-.. figure:: https://people.phys.ethz.ch/~stolkert/species/species.jpg
-   :width: 30%
-   :align: center
-
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started

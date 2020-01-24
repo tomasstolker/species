@@ -96,10 +96,10 @@ class ReadPlanck:
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values of
-            'teff' and 'radius' can be a single float, or a list with floats for a combination of
-             multiple Planck functions, e.g. ``{'teff': [1500., 1000.], 'radius': [1., 2.],
-            'distance': 10.}``.
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values
+            of 'teff' and 'radius' can be a single float, or a list with floats for a combination
+            of multiple Planck functions, e.g.
+            {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
         spec_res : float
             Spectral resolution.
 
