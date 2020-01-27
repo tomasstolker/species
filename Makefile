@@ -45,7 +45,7 @@ clean:
 	rm -rf docs/tutorials/data/
 	rm -rf docs/tutorials/species_config.ini
 	rm -rf docs/tutorials/species_database.hdf5
-	rm -rf docs/tutorials/spectrum.png
+	rm -rf docs/tutorials/*.png
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/

@@ -2,13 +2,11 @@
 Module with functionalities for fitting a calibration spectrum.
 """
 
-import sys
 import math
 
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import progress.bar
 import numpy as np
 
 from species.analysis import photometry
@@ -113,7 +111,12 @@ class FitSpectrum:
 
         if filters is None:
             species_db = database.Database()
-            objectbox = species_db.get_object(object_name, None)
+
+            objectbox = species_db.get_object(object_name,
+                                              filters=None,
+                                              inc_phot=True,
+                                              inc_spec=False)
+
             filters = objectbox.filters
 
         for item in filters:
@@ -157,8 +160,7 @@ class FitSpectrum:
         None
         """
 
-        sys.stdout.write('Running MCMC...')
-        sys.stdout.flush()
+        print('Running MCMC...')
 
         if bands:
             ndim = 1 + len(self.objphot)
@@ -182,28 +184,10 @@ class FitSpectrum:
                                             args=([self.bounds,
                                                    self.modelpar,
                                                    self.objphot,
-                                                   self.specphot]))
+                                                   self.specphot,
+                                                   bands]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
-
-        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers,
-        #                                 dim=ndim,
-        #                                 lnpostfn=lnprob,
-        #                                 a=2.,
-        #                                 args=([self.bounds,
-        #                                        self.modelpar,
-        #                                        self.objphot,
-        #                                        self.specphot,
-        #                                        bands]))
-        #
-        # progbar = progress.bar.Bar('\rRunning MCMC...',
-        #                            max=nsteps,
-        #                            suffix='%(percent)d%%')
-        #
-        # for _ in sampler.sample(initial, iterations=nsteps):
-        #     progbar.next()
-        #
-        # progbar.finish()
 
         species_db = database.Database()
 

@@ -2,7 +2,6 @@
 Module with functionalities for fitting a Planck spectrum.
 """
 
-import sys
 import math
 
 from multiprocessing import Pool, cpu_count
@@ -309,8 +308,7 @@ class FitPlanck:
             None
         """
 
-        sys.stdout.write('Running MCMC...')
-        sys.stdout.flush()
+        print('Running MCMC...')
 
         ndim = len(self.bounds)
 

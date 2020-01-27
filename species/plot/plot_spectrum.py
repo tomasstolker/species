@@ -39,13 +39,13 @@ def plot_spectrum(boxes,
     """
     Parameters
     ----------
-    boxes : tuple(species.core.box, )
+    boxes : list(species.core.box, )
         Boxes with data.
-    filters : tuple(str, ), None
+    filters : list(str, ), None
         Filter IDs for which the transmission profile is plotted. Not plotted if set to None.
     residuals : species.core.box.ResidualsBox, None
         Box with residuals of a fit. Not plotted if set to None.
-    colors : tuple(str, ), None
+    colors : list(str, ), None
         Colors to be used for the different boxes. Note that a box with residuals requires a tuple
         with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
         to None.
@@ -185,7 +185,9 @@ def plot_spectrum(boxes,
             exponent = math.floor(math.log10(ylim[1]))
             scaling = 10.**exponent
 
-            ax1.set_ylabel(r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+            ylabel = r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]'
+
+            ax1.set_ylabel(ylabel, fontsize=13)
             ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
             if ylim[0] < 0.:
@@ -319,9 +321,14 @@ def plot_spectrum(boxes,
                     data = np.array(flux[i], dtype=np.float64)
                     masked = np.ma.array(data, mask=np.isnan(data))
 
-                    ax1.plot(item, masked/scaling, lw=0.5)
+                    if isinstance(boxitem.name[i], bytes):
+                        label = boxitem.name[i].decode('utf-8')
+                    else:
+                        label = boxitem.name[i]
 
-        elif isinstance(boxitem, tuple):
+                    ax1.plot(item, masked/scaling, lw=0.5, label=label)
+
+        elif isinstance(boxitem, list):
             for i, item in enumerate(boxitem):
                 wavelength = item.wavelength
                 flux = item.flux
@@ -336,12 +343,19 @@ def plot_spectrum(boxes,
                     ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=1)
 
         elif isinstance(boxitem, box.PhotometryBox):
-            if colors:
-                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6,
-                         color=colors[j], label=boxitem.name, zorder=3)
-            else:
-                ax1.plot(boxitem.wavelength, boxitem.flux/scaling, marker=next(marker), ms=6,
-                         label=boxitem.name, zorder=3)
+            marker = next(marker)
+
+            if boxitem.quantity != 'flux':
+                raise ValueError(f'The quantity of the PhotometryBox is \'{boxitem.quantity}\' '
+                                 f'and not \'flux\'.')
+
+            for i, _ in enumerate(boxitem.wavelength):
+                if colors:
+                    ax1.plot(boxitem.wavelength[i], boxitem.flux[i]/scaling, marker=marker, ms=6,
+                             color=colors[j], zorder=3)
+                else:
+                    ax1.plot(boxitem.wavelength[i], boxitem.flux[i]/scaling, marker=marker, ms=6,
+                             zorder=3, color='black')
 
         elif isinstance(boxitem, box.ObjectBox):
             if boxitem.flux is not None:

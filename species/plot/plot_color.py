@@ -146,7 +146,8 @@ def plot_color_magnitude(colorbox=None,
                 count += 1
 
             else:
-                model_dict[item.library] = [model_dict[item.library][0], model_dict[item.library][1]+1]
+                model_dict[item.library] = [model_dict[item.library][0],
+                                            model_dict[item.library][1]+1]
 
             model_count = model_dict[item.library]
 
@@ -214,7 +215,9 @@ def plot_color_magnitude(colorbox=None,
                 scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
-                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
+                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+                              ticklocation='top', format='%.2f')
+
                 cb.ax.tick_params(width=1, length=5, labelsize=10, direction='in', color='black')
 
                 cb.set_ticks(ticks)
@@ -276,9 +279,9 @@ def plot_color_magnitude(colorbox=None,
             else:
                 label = None
 
-            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker, ms=markersize,
-                         color=color, markerfacecolor=markerfacecolor, zorder=3,
-                         markeredgecolor=markeredgecolor, label=label)
+            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker,
+                         ms=markersize, color=color, markerfacecolor=markerfacecolor,
+                         zorder=3, markeredgecolor=markeredgecolor, label=label)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
@@ -293,8 +296,8 @@ def plot_color_magnitude(colorbox=None,
                 else:
                     ha = 'left'
                     va = 'bottom'
-                    x_scaling = 8e-3
-                    y_scaling = 8e-3
+                    x_scaling = 1e-2
+                    y_scaling = 5e-3
 
                 x_offset = x_scaling*abs(x_range[1]-x_range[0])
                 y_offset = y_scaling*abs(y_range[1]-y_range[0])
@@ -437,7 +440,8 @@ def plot_color_color(colorbox,
                 count += 1
 
             else:
-                model_dict[item.library] = [model_dict[item.library][0], model_dict[item.library][1]+1]
+                model_dict[item.library] = [model_dict[item.library][0],
+                                            model_dict[item.library][1]+1]
 
             model_count = model_dict[item.library]
 
@@ -464,8 +468,8 @@ def plot_color_color(colorbox,
                             if xlim[0]+0.2 < pos_color1 < xlim[1]-0.2 and \
                                     ylim[0]+0.2 < pos_color2 < ylim[1]-0.2:
 
-                                ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]], s=15,
-                                            edgecolor='none', zorder=0)
+                                ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]],
+                                            s=15, edgecolor='none', zorder=0)
 
                                 ax1.annotate(mass_label, (pos_color1, pos_color2),
                                              color=model_color[model_count[0]], fontsize=9,
@@ -504,14 +508,16 @@ def plot_color_color(colorbox,
                 scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
-                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal', ticklocation='top', format='%.2f')
+                cb = Colorbar(ax=ax2, mappable=scat, orientation='horizontal',
+                              ticklocation='top', format='%.2f')
+
                 cb.ax.tick_params(width=1, length=5, labelsize=10, direction='in', color='black')
 
                 cb.set_ticks(ticks)
                 cb.set_ticklabels(ticklabels)
 
             elif item.object_type == 'young':
-                ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7, 
+                ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7,
                          color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
     if objects is not None:

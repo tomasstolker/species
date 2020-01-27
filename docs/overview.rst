@@ -6,7 +6,7 @@ Overview
 Introduction
 ------------
 
-*species* provides a coherent framework for analyzing emission spectra and photometry of self-luminous objects such as directly imaged planets and brown dwarfs. This page provides a short introduction on the design of *species*, the features that have been implemented, and the various types of data it can handle.
+*species* provides a coherent framework for analyzing spectra and photometry of directly imaged planets and brown dwarfs. This page provides a short introduction on the design of *species*, the features that have been implemented, and the various types of data it can handle.
 
 Supported data
 --------------
@@ -20,7 +20,7 @@ The following data are currently supported by *species* (support for other data 
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_ atmospheric models
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric models
 - `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/>`_ atmospheric models
-- `petitCODE <https://home.strw.leidenuniv.nl/~molliere/#petitcode>`_ atmospheric models
+- `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_ atmospheric models
 - All filter profiles from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
 - Spectra from the `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - Spectra from the `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_
@@ -28,7 +28,7 @@ The following data are currently supported by *species* (support for other data 
 - Photometry from the `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `Sandy Leggett <http://www.gemini.edu/staff/sleggett>`_
 - Photometry from `A Modern Mean Dwarf Stellar Color and Effective Temperature Sequence <http://www.pas.rochester.edu/~emamajek>`_
-- Photometry of directly imaged companions (see dictionary in :class:`~species.data.companions`)
+- Photometry of directly imaged planets and brown dwarfs (see dictionary in :class:`~species.data.companions`)
 - Calibration spectrum of `Vega <http://ssb.stsci.edu/cdbs/calspec/>`_
 
 Please give credit to the relevant authors when using these data in a publication. More information is available on the respective websites.

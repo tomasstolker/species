@@ -39,8 +39,8 @@ def sptype_substellar(sptype,
         elif item[0:2] in (b'T5', b'T6', b'T7', b'T8', b'T9'):
             spt_disc[i] = 5.5
 
-        # elif b'Y' in item:
-        #     spt_disc[i] = 6.5
+        elif b'Y' in item:
+            spt_disc[i] = 6.5
 
         else:
             spt_disc[i] = np.nan
@@ -257,7 +257,7 @@ def field_bounds_ticks(field_range):
     list(str, )
     """
 
-    spectral_ranges = ['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T6-T8', 'Y1-Y2']
+    spectral_ranges = ['M0-M4', 'M5-M9', 'L0-L4', 'L5-L9', 'T0-T4', 'T5-T9', 'Y1-Y2']
 
     if field_range is None:
         index_start = 0

@@ -8,6 +8,7 @@ import configparser
 import h5py
 import numpy as np
 
+from species.analysis import photometry
 from species.core import box
 from species.data import database
 from species.read import read_filter
@@ -80,7 +81,7 @@ class ReadSpectrum:
         except KeyError:
             h5_file.close()
             species_db = database.Database()
-            species_db.add_spec_library(self.spec_library, sptypes)
+            species_db.add_spectrum(self.spec_library, sptypes)
             h5_file = h5py.File(self.database, 'r')
 
         list_wavelength = []
@@ -181,3 +182,85 @@ class ReadSpectrum:
             specbox.distance = specbox.distance[indices]
 
         return specbox
+
+    def get_flux(self,
+                 sptypes=None):
+        """
+        Function for calculating the average flux density for the ``filter_name``.
+
+        Parameters
+        ----------
+        sptypes : list('str', )
+            Spectral types to select from a library. The spectral types should be indicated with
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+
+        Returns
+        -------
+        species.core.box.PhotometryBox
+            Box with the synthetic photometry.
+        """
+
+        specbox = self.get_spectrum(sptypes=sptypes,
+                                    exclude_nan=True)
+
+        filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
+        mean_wavel = filter_profile.mean_wavelength()
+
+        synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
+
+        phot_wavel = []
+        phot_flux = []
+
+        for i, _ in enumerate(specbox.wavelength):
+            flux = synphot.spectrum_to_flux(wavelength=specbox.wavelength[i],
+                                            flux=specbox.flux[i])
+
+            phot_wavel.append(mean_wavel)
+            phot_flux.append(flux)
+
+        return box.create_box(boxtype='photometry',
+                              name=specbox.name,
+                              wavelength=phot_wavel,
+                              flux=phot_flux,
+                              quantity='flux')
+
+    def get_magnitude(self,
+                      sptypes=None):
+        """
+        Function for calculating the apparent magnitude for the ``filter_name``.
+
+        Parameters
+        ----------
+        sptypes : list('str', )
+            Spectral types to select from a library. The spectral types should be indicated with
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+
+        Returns
+        -------
+        species.core.box.PhotometryBox
+            Box with the synthetic photometry.
+        """
+
+        specbox = self.get_spectrum(sptypes=sptypes,
+                                    exclude_nan=True)
+
+        filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
+        mean_wavel = filter_profile.mean_wavelength()
+
+        synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
+
+        phot_wavel = []
+        phot_flux = []
+
+        for i, _ in enumerate(specbox.wavelength):
+            flux = synphot.spectrum_to_flux(wavelength=specbox.wavelength[i],
+                                            flux=specbox.flux[i])
+
+            phot_wavel.append(mean_wavel)
+            phot_flux.append(flux)
+
+        return box.create_box(boxtype='photometry',
+                              name=specbox.name,
+                              wavelength=phot_wavel,
+                              flux=phot_flux,
+                              quantity='magnitude')

@@ -52,7 +52,7 @@ def plot_walkers(tag,
 
     ndim = samples.shape[-1]
 
-    plt.figure(1, figsize=(6, 5))
+    plt.figure(1, figsize=(6, ndim*1.5))
     gridsp = mpl.gridspec.GridSpec(ndim, 1)
     gridsp.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
@@ -84,7 +84,7 @@ def plot_walkers(tag,
 
         ax.set_ylabel(labels[i], fontsize=10)
 
-        if offset:
+        if offset is not None:
             ax.get_xaxis().set_label_coords(0.5, offset[0])
             ax.get_yaxis().set_label_coords(offset[1], 0.5)
 
@@ -92,7 +92,7 @@ def plot_walkers(tag,
             ax.get_xaxis().set_label_coords(0.5, -0.22)
             ax.get_yaxis().set_label_coords(-0.09, 0.5)
 
-        if nsteps:
+        if nsteps is not None:
             ax.set_xlim(0, nsteps)
 
         for j in range(samples.shape[0]):
@@ -105,13 +105,13 @@ def plot_walkers(tag,
     print(' [DONE]')
 
 
-def plot_posterior(tag,
-                   burnin=None,
-                   title=None,
-                   offset=None,
-                   title_fmt='.2f',
-                   limits=None,
-                   output='posterior.pdf'):
+def plot_posteriors(tag,
+                    burnin=None,
+                    title=None,
+                    offset=None,
+                    title_fmt='.2f',
+                    limits=None,
+                    output='posterior.pdf'):
     """
     Function to plot the posterior distributions.
 

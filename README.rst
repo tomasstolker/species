@@ -1,5 +1,5 @@
-species
-=======
+*species*
+=========
 
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species

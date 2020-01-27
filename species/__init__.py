@@ -35,11 +35,12 @@ from species.data.database import Database
 
 from species.data.queries import get_distance
 
-from species.plot.plot_mcmc import plot_posterior, \
+from species.plot.plot_mcmc import plot_posteriors, \
                                    plot_walkers, \
                                    plot_photometry
 
-from species.plot.plot_color import plot_color_magnitude, plot_color_color
+from species.plot.plot_color import plot_color_magnitude, \
+                                    plot_color_color
 
 from species.plot.plot_spectrum import plot_spectrum
 

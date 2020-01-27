@@ -1,6 +1,10 @@
 *.pyc
 .DS_Store
 docs/_build
+docs/tutorials/species_config.ini
+docs/tutorials/species_database.hdf5
+docs/tutorials/*.png
+docs/tutorials/data/*
 docs/tutorials/.ipynb_checkpoints/*
 build/
 dist/

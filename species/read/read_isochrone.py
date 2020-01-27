@@ -188,10 +188,10 @@ class ReadIsochrone:
 
         for i, mass_item in enumerate(isochrone.masses):
             model_param = {'teff': isochrone.teff[i],
-                         'logg': isochrone.logg[i],
-                         'feh': 0.,
-                         'mass': mass_item,
-                         'distance': 10.}
+                           'logg': isochrone.logg[i],
+                           'feh': 0.,
+                           'mass': mass_item,
+                           'distance': 10.}
 
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
@@ -273,10 +273,10 @@ class ReadIsochrone:
 
         for i, mass_item in enumerate(isochrone.masses):
             model_param = {'teff': isochrone.teff[i],
-                         'logg': isochrone.logg[i],
-                         'feh': 0.,
-                         'mass': mass_item,
-                         'distance': 10.}
+                           'logg': isochrone.logg[i],
+                           'feh': 0.,
+                           'mass': mass_item,
+                           'distance': 10.}
 
             mag1[i], _ = model1.get_magnitude(model_param=model_param)
             mag2[i], _ = model2.get_magnitude(model_param=model_param)

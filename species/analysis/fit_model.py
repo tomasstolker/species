@@ -2,7 +2,6 @@
 Module with functionalities for fitting atmospheric model specra.
 """
 
-import sys
 import math
 
 from multiprocessing import Pool, cpu_count
@@ -118,7 +117,7 @@ def lnlike(param,
 
     if objphot is not None:
         for i, item in enumerate(objphot):
-            flux = modelphot[i].get_photometry(paramdict, synphot[i])
+            flux = modelphot[i].get_flux(paramdict, synphot[i])
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
@@ -347,8 +346,7 @@ class FitModel:
 
         sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'radius': 0.01}
 
-        sys.stdout.write('Running MCMC...')
-        sys.stdout.flush()
+        print('Running MCMC...')
 
         ndim = len(self.bounds)
 

@@ -265,7 +265,9 @@ def add_missing(model,
 
                     except IndexError:
                         flux[i, j] = np.nan
-                        warnings.warn('Interpolation not possible, using NaN instead.')
+                        warnings.warn(f'Interpolation is not possible at the edge of the '
+                                      f'parameter grid. A NaN value is stored for Teff = '
+                                      f'{teff[i]} K.')
 
             elif len(parameters) == 3:
                 for k in range(grid_shape[2]):
@@ -276,7 +278,9 @@ def add_missing(model,
 
                         except IndexError:
                             flux[i, j, k] = np.nan
-                            warnings.warn('Interpolation not possible, using NaN instead.')
+                            warnings.warn(f'Interpolation is not possible at the edge of the '
+                                          f'parameter grid. A NaN value is stored for Teff = '
+                                          f'{teff[i]} K.')
 
             elif len(parameters) == 4:
                 for k in range(grid_shape[2]):
@@ -288,7 +292,9 @@ def add_missing(model,
 
                             except IndexError:
                                 flux[i, j, k, m] = np.nan
-                                warnings.warn('Interpolation not possible, using NaN instead.')
+                                warnings.warn(f'Interpolation is not possible at the edge of the '
+                                              f'parameter grid. A NaN value is stored for Teff = '
+                                              f'{teff[i]} K.')
 
     del database['models/'+model+'/flux']
 

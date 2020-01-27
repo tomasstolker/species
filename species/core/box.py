@@ -2,8 +2,6 @@
 Box module.
 """
 
-import sys
-
 
 def create_box(boxtype,
                **kwargs):
@@ -65,6 +63,7 @@ def create_box(boxtype,
         box.name = kwargs['name']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
+        box.quantity = kwargs['quantity']
 
     elif boxtype == 'residuals':
         box = ResidualsBox()
@@ -118,12 +117,10 @@ class Box:
         None
         """
 
-        sys.stdout.write(f'Opening {type(self).__name__}...\n')
-        sys.stdout.flush()
+        print(f'Opening {type(self).__name__}...\n')
 
         for item in self.__dict__.keys():
-            sys.stdout.write(str(item)+' = '+str(self.__dict__[item])+'\n')
-            sys.stdout.flush()
+            print(f'{item} = {self.__dict__[item]}')
 
 
 class ColorMagBox(Box):
@@ -244,6 +241,7 @@ class PhotometryBox(Box):
         self.name = None
         self.wavelength = None
         self.flux = None
+        self.quantity = None
 
 
 class ResidualsBox(Box):

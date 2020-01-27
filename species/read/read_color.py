@@ -28,9 +28,9 @@ class ReadColorMagnitude:
         phot_library : list(str, )
             Photometric libraries ('vlm-plx', 'leggett', or 'mamajek').
         filters_color : tuple(str, str)
-            Filter IDs for the color (typically in the MKO, 2MASS, or WISE system).
+            Filter names for the color (typically in the MKO, 2MASS, or WISE system).
         filter_mag : str
-            Filter ID for the absolute magnitudes (typically in the MKO, 2MASS, or WISE system).
+            Filter name for the absolute magnitudes (typically in the MKO, 2MASS, or WISE system).
 
         Returns
         -------
@@ -50,7 +50,7 @@ class ReadColorMagnitude:
         self.database = config['species']['database']
 
         if isinstance(self.phot_library, str):
-            self.phot_library = (self.phot_library, )
+            self.phot_library = [self.phot_library, ]
 
     def get_color_magnitude(self,
                             object_type=None):
@@ -165,7 +165,7 @@ class ReadColorColor:
         phot_library : list(str, )
             Photometric libraries ('vlm-plx', 'leggett', or 'mamajek').
         filters_colors : tuple(tuple(str, str), tuple(str, str))
-            Filter IDs for the two color (typically in the MKO, 2MASS, or WISE system).
+            Filter names for the two color (typically in the MKO, 2MASS, or WISE system).
 
         Returns
         -------

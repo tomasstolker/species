@@ -16,7 +16,8 @@ def get_data():
     """
 
     data = {'beta Pic b': {'distance': (19.75, 0.13),
-                           'app_mag': {'Paranal/NACO.J': (14.11, 0.21),  # Currie et al. 2013
+                           'app_mag': {'LCO/VisAO.Ys': (15.53, 0.34),  # Males et al. (2014),
+                                       'Paranal/NACO.J': (14.11, 0.21),  # Currie et al. 2013
                                        'Gemini/NICI.ED286': (13.18, 0.15),  # Males et al. (2014)
                                        'Paranal/NACO.H': (13.32, 0.14),  # Currie et al. 2013
                                        'Paranal/NACO.Ks': (12.64, 0.11),  # Bonnefoy et al. (2011)
@@ -158,7 +159,7 @@ def get_data():
                                         'Subaru/CIAO.H': (14.95, 0.13),  # Bonnefoy et al. 2014
                                         'Subaru/CIAO.Ks': (14.32, 0.09),  # Bonnefoy et al. 2014
                                         'Keck/NIRC2.Lp': (13.12, 0.1),  # Bonnefoy et al. 2014
-                                        'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
+                                        # 'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
                                         'LBT/LMIRCam.M_77K': (13.3, 0.3)}},  # Bonnefoy et al. 2014
 
             'ROXs 42 Bb': {'distance': (144.16, 1.54),
@@ -166,7 +167,7 @@ def get_data():
                                        'Keck/NIRC2.H': (15.88, 0.05),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ks': (15.01, 0.06),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Lp': (13.97, 0.06),  # Daemgen et al. 2017
-                                       'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
+                                       # 'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ms': (14.01, 0.23)}},  # Daemgen et al. 2017
 
             'GJ 504 b': {'distance': (17.54, 0.08),

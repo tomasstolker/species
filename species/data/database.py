@@ -3,13 +3,12 @@ Module with functionalities for reading and writing of data.
 """
 
 import os
-import sys
 import warnings
 import configparser
 
 import h5py
+import tqdm
 import emcee
-import progress.bar
 import numpy as np
 
 from species.analysis import photometry
@@ -50,7 +49,7 @@ class Database:
             None
         """
 
-        sys.stdout.write('Database content:\n')
+        print('Database content:')
 
         def descend(h5_object,
                     seperator=''):
@@ -68,20 +67,18 @@ class Database:
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
                 for key in h5_object.keys():
-                    sys.stdout.write(seperator+'- '+key+': '+str(h5_object[key])+'\n')
+                    print(seperator+'- '+key+': '+str(h5_object[key]))
                     descend(h5_object[key], seperator=seperator+'\t')
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
                 for key in h5_object.attrs.keys():
-                    sys.stdout.write(seperator+'- '+key+': '+str(h5_object.attrs[key])+'\n')
+                    print(seperator+'- '+key+': '+str(h5_object.attrs[key]))
 
-        h5_file = h5py.File(self.database, 'r')
-        descend(h5_file)
-        h5_file.close()
+        with h5py.File(self.database, 'r') as hdf_file:
+            descend(hdf_file)
 
-        sys.stdout.flush()
-
-    def list_companions(self):
+    @staticmethod
+    def list_companions():
         """
         Returns
         -------
@@ -89,19 +86,24 @@ class Database:
             None
         """
 
-        comp_phot = companions.get_data()
+        for planet_name, planet_dict in companions.get_data().items():
+            distance = planet_dict['distance']
+            app_mag = planet_dict['app_mag']
 
-        sys.stdout.write('Database: '+self.database+'\n')
-        sys.stdout.write('Directly imaged companions: ')
-        sys.stdout.write(str(list(comp_phot.keys()))+'\n')
-        sys.stdout.flush()
+            print(f'Object name = {planet_name}')
+            print(f'Distance [pc] = {distance[0]} +/- {distance[1]}')
+
+            for mag_name, mag_dict in app_mag.items():
+                print(f'{mag_name} [mag] = {mag_dict[0]} +/- {mag_dict[1]}')
+
+            print()
 
     def add_companion(self,
                       name=None):
         """
         Parameters
         ----------
-        name : tuple(str, )
+        name : list(str, )
             Companion name. All companions are added if set to None.
 
         Returns
@@ -111,7 +113,7 @@ class Database:
         """
 
         if isinstance(name, str):
-            name = tuple((name, ))
+            name = list((name, ))
 
         data = companions.get_data()
 
@@ -124,13 +126,13 @@ class Database:
                             app_mag=data[item]['app_mag'])
 
     def add_filter(self,
-                   filter_id,
+                   filter_name,
                    filename=None):
         """
         Parameters
         ----------
-        filter_id : str
-            Filter ID from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
+        filter_name : str
+            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
         filename : str
             Filename with the filter profile. The first column should contain the wavelength
             (micron) and the second column the transmission (no units). The profile is downloaded
@@ -142,7 +144,7 @@ class Database:
             None
         """
 
-        filter_split = filter_id.split('/')
+        filter_split = filter_name.split('/')
 
         h5_file = h5py.File(self.database, 'a')
 
@@ -152,11 +154,10 @@ class Database:
         if 'filters/'+filter_split[0] not in h5_file:
             h5_file.create_group('filters/'+filter_split[0])
 
-        if 'filters/'+filter_id in h5_file:
-            del h5_file['filters/'+filter_id]
+        if 'filters/'+filter_name in h5_file:
+            del h5_file['filters/'+filter_name]
 
-        sys.stdout.write('Adding filter: '+filter_id+'...')
-        sys.stdout.flush()
+        print(f'Adding filter: {filter_name}...', end='')
 
         if filename:
             data = np.loadtxt(filename)
@@ -164,20 +165,19 @@ class Database:
             transmission = data[:, 1]
 
         else:
-            wavelength, transmission = filters.download_filter(filter_id)
+            wavelength, transmission = filters.download_filter(filter_name)
 
-        h5_file.create_dataset('filters/'+filter_id,
+        h5_file.create_dataset('filters/'+filter_name,
                                data=np.vstack((wavelength, transmission)),
                                dtype='f')
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
         h5_file.close()
 
     def add_isochrones(self,
                        filename,
-                       tag,
+                       isochrone_tag,
                        model='baraffe'):
         """
         Function for adding isochrones data to the database.
@@ -186,8 +186,8 @@ class Database:
         ----------
         filename : str
             Filename with the isochrones data.
-        tag : str
-            Tag name in the database.
+        isochrone_tag : str
+            Database tag name where the isochrone that will be stored.
         model : str
             Evolutionary model ('baraffe' or 'marleau'). For 'baraffe' models, the isochrone data
             can be downloaded from https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models, the
@@ -204,14 +204,14 @@ class Database:
         if 'isochrones' not in h5_file:
             h5_file.create_group('isochrones')
 
-        if 'isochrones/'+tag in h5_file:
-            del h5_file['isochrones/'+tag]
+        if 'isochrones/'+isochrone_tag in h5_file:
+            del h5_file['isochrones/'+isochrone_tag]
 
         if model[0:7] == 'baraffe':
-            isochrones.add_baraffe(h5_file, tag, filename)
+            isochrones.add_baraffe(h5_file, isochrone_tag, filename)
 
         elif model[0:7] == 'marleau':
-            isochrones.add_marleau(h5_file, tag, filename)
+            isochrones.add_marleau(h5_file, isochrone_tag, filename)
 
         h5_file.close()
 
@@ -366,8 +366,7 @@ class Database:
                                        data=data,
                                        dtype='f')
 
-        sys.stdout.write('Adding object: '+object_name+'...')
-        sys.stdout.flush()
+        print(f'Adding object: {object_name}...', end='')
 
         if spectrum is not None:
 
@@ -382,18 +381,17 @@ class Database:
 
             dset.attrs['instrument'] = str(instrument)
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
         h5_file.close()
 
     def add_photometry(self,
-                       library):
+                       phot_library):
         """
         Parameters
         ----------
-        library : str
-            Photometry library.
+        phot_library : str
+            Photometric library ('vlm-plx', 'leggett' or 'mamajek').
 
         Returns
         -------
@@ -406,16 +404,16 @@ class Database:
         if 'photometry' not in h5_file:
             h5_file.create_group('photometry')
 
-        if 'photometry/'+library in h5_file:
-            del h5_file['photometry/'+library]
+        if 'photometry/'+phot_library in h5_file:
+            del h5_file['photometry/'+phot_library]
 
-        if library[0:7] == 'vlm-plx':
+        if phot_library[0:7] == 'vlm-plx':
             vlm_plx.add_vlm_plx(self.input_path, h5_file)
 
-        elif library[0:7] == 'leggett':
+        elif phot_library[0:7] == 'leggett':
             leggett.add_leggett(self.input_path, h5_file)
 
-        elif library[0:7] == 'mamajek':
+        elif phot_library[0:7] == 'mamajek':
             mamajek.add_mamajek(self.input_path, h5_file)
 
         h5_file.close()
@@ -499,8 +497,7 @@ class Database:
         else:
             error = np.repeat(0., wavelength.size)
 
-        sys.stdout.write('Adding calibration spectrum: '+tag+'...')
-        sys.stdout.flush()
+        print(f'Adding calibration spectrum: {tag}...', end='')
 
         h5_file.create_dataset('spectra/calibration/'+tag,
                                data=np.vstack((wavelength, flux, error)),
@@ -508,17 +505,16 @@ class Database:
 
         h5_file.close()
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
     def add_spectrum(self,
-                     spectrum,
+                     spec_library,
                      sptypes=None):
         """
         Parameters
         ----------
-        spectrum : str
-            Spectral library ('vega', 'irtf' or 'spex').
+        spec_library : str
+            Spectral library ('irtf' or 'spex').
         sptypes : list(str, )
             Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
 
@@ -533,16 +529,16 @@ class Database:
         if 'spectra' not in h5_file:
             h5_file.create_group('spectra')
 
-        if 'spectra/'+spectrum in h5_file:
-            del h5_file['spectra/'+spectrum]
+        if 'spectra/'+spec_library in h5_file:
+            del h5_file['spectra/'+spec_library]
 
-        if spectrum[0:5] == 'vega':
+        if spec_library[0:5] == 'vega':
             vega.add_vega(self.input_path, h5_file)
 
-        elif spectrum[0:5] == 'irtf':
+        elif spec_library[0:5] == 'irtf':
             irtf.add_irtf(self.input_path, h5_file, sptypes)
 
-        elif spectrum[0:5] == 'spex':
+        elif spec_library[0:5] == 'spex':
             spex.add_spex(self.input_path, h5_file)
 
         h5_file.close()
@@ -603,27 +599,19 @@ class Database:
         for i, item in enumerate(modelpar):
             dset.attrs['parameter'+str(i)] = str(item)
 
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
         mean_accep = np.mean(sampler.acceptance_fraction)
         dset.attrs['acceptance'] = float(mean_accep)
-
-        sys.stdout.write('Mean acceptance fraction: {0:.3f}'.format(mean_accep)+'\n')
-        sys.stdout.flush()
+        print(f'Mean acceptance fraction: {mean_accep:.3f}')
 
         try:
             int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
-
-            sys.stdout.write('Integrated autocorrelation time = '+str(int_auto)+'\n')
-            sys.stdout.flush()
+            print(f'Integrated autocorrelation time = {int_auto}')
 
         except emcee.autocorr.AutocorrError:
             int_auto = None
 
-            sys.stdout.write('The chain is shorter than 50 times the integrated autocorrelation '
-                             'time. [WARNING]\n')
-            sys.stdout.flush()
+            print('The chain is shorter than 50 times the integrated autocorrelation time. '
+                  '[WARNING]')
 
         if int_auto is not None:
             for i, item in enumerate(int_auto):
@@ -756,15 +744,14 @@ class Database:
 
         Returns
         -------
-        tuple(species.core.box.ModelBox, )
+        list(species.core.box.ModelBox, )
             Boxes with the randomly sampled spectra.
         """
 
-        sys.stdout.write('Getting MCMC spectra...')
-        sys.stdout.flush()
+        print('Getting MCMC spectra...')
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag+'/samples']
+        dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
         spectrum_type = dset.attrs['type']
@@ -788,7 +775,7 @@ class Database:
 
         param = []
         for i in range(nparam):
-            param.append(str(dset.attrs['parameter'+str(i)]))
+            param.append(str(dset.attrs[f'parameter{i}']))
 
         if spectrum_type == 'model':
             if spectrum_name == 'planck':
@@ -797,15 +784,11 @@ class Database:
                 readmodel = read_model.ReadModel(spectrum_name, wavel_range)
 
         elif spectrum_type == 'calibration':
-            readcalib = read_calibration.ReadCalibration(spectrum_name, None)
+            readcalib = read_calibration.ReadCalibration(spectrum_name, filter_name=None)
 
         boxes = []
 
-        progbar = progress.bar.Bar('\rGetting MCMC spectra...',
-                                   max=samples.shape[0],
-                                   suffix='%(percent)d%%')
-
-        for i in range(samples.shape[0]):
+        for i in tqdm.tqdm(range(samples.shape[0])):
             model_param = {}
             for j in range(samples.shape[1]):
                 model_param[param[j]] = samples[i, j]
@@ -826,18 +809,14 @@ class Database:
 
             boxes.append(specbox)
 
-            progbar.next()
-
-        progbar.finish()
-
         h5_file.close()
 
-        return tuple(boxes)
+        return list(boxes)
 
     def get_mcmc_photometry(self,
                             tag,
                             burnin,
-                            filter_id):
+                            filter_name):
         """
         Parameters
         ----------
@@ -845,8 +824,8 @@ class Database:
             Database tag with the MCMC samples.
         burnin : int
             Number of burnin steps.
-        filter_id : str
-            Filter ID for which the photometry is calculated.
+        filter_name : str
+            Filter name for which the photometry is calculated.
 
         Returns
         -------
@@ -854,8 +833,10 @@ class Database:
             Synthetic photometry (mag).
         """
 
+        print('Getting MCMC photometry...')
+
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag+'/samples']
+        dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
         spectrum_type = dset.attrs['type']
@@ -877,17 +858,13 @@ class Database:
         h5_file.close()
 
         if spectrum_type == 'model':
-            readmodel = read_model.ReadModel(spectrum_name, filter_id)
+            readmodel = read_model.ReadModel(spectrum_name, filter_name)
         # elif spectrum_type == 'calibration':
         #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
 
         mcmc_phot = np.zeros((samples.shape[0], 1))
 
-        progbar = progress.bar.Bar('Getting MCMC photometry...',
-                                   max=samples.shape[0],
-                                   suffix='%(percent)d%%')
-
-        for i in range(samples.shape[0]):
+        for i in tqdm.tqdm(range(samples.shape[0])):
             model_param = {}
             for j in range(nparam):
                 model_param[param[j]] = samples[i, j]
@@ -899,10 +876,6 @@ class Database:
                 mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
             # elif spectrum_type == 'calibration':
             #     specbox = readcalib.get_spectrum(model_param)
-
-            progbar.next()
-
-        progbar.finish()
 
         return mcmc_phot
 
@@ -916,8 +889,8 @@ class Database:
         ----------
         object_name : str
             Object name in the database.
-        filters : tuple(str, )
-            Filter IDs for which the photometry is selected. All available photometry of the object
+        filters : list(str, )
+            Filter names for which the photometry is selected. All available photometry of the object
             is selected if set to None.
         inc_phot : bool
             Include photometry in the box.
@@ -930,8 +903,7 @@ class Database:
             Box with the object's data.
         """
 
-        sys.stdout.write('Getting object: '+object_name+'...')
-        sys.stdout.flush()
+        print(f'Getting object: {object_name}...', end='')
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['objects/'+object_name]
@@ -959,7 +931,7 @@ class Database:
                             magnitude[name] = np.asarray(dset[name][0:2])
                             flux[name] = np.asarray(dset[name][2:4])
 
-            filters = tuple(magnitude.keys())
+            filters = list(magnitude.keys())
 
         else:
 
@@ -974,8 +946,7 @@ class Database:
 
         h5_file.close()
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
         return box.create_box('object',
                               name=object_name,

@@ -3,7 +3,6 @@ Module with reading functionalities for calibration spectra.
 """
 
 import os
-import sys
 import configparser
 
 import h5py
@@ -200,11 +199,10 @@ class ReadCalibration:
 
             sigma = np.sqrt(np.diag(pcov))
 
-            sys.stdout.write(f'Fit result for f(x) = a + b*x^c:\n')
-            sys.stdout.write(f'a = {popt[0]} +/- {sigma[0]}\n')
-            sys.stdout.write(f'b = {popt[1]} +/- {sigma[1]}\n')
-            sys.stdout.write(f'c = {popt[2]} +/- {sigma[2]}\n')
-            sys.stdout.flush()
+            print(f'Fit result for f(x) = a + b*x^c:')
+            print(f'a = {popt[0]} +/- {sigma[0]}')
+            print(f'b = {popt[1]} +/- {sigma[1]}')
+            print(f'c = {popt[2]} +/- {sigma[2]}')
 
             while wavelength[-1] <= 6.:
                 wl_add = wavelength[-1] + wavelength[-1]/1000.
