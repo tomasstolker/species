@@ -66,23 +66,19 @@ def add_btnextgen(input_path,
         data_file = os.path.join(input_path, item)
 
         if not os.path.isfile(data_file):
-            sys.stdout.write('Downloading BT-NextGen model spectra '+labels[i]+'...')
-            sys.stdout.flush()
+            print(f'Downloading BT-NextGen model spectra {labels[i]}...', end='')
 
             wget.download(urls[i], out=data_file, bar=None)
 
-            sys.stdout.write(' [DONE]\n')
-            sys.stdout.flush()
+            print(' [DONE]')
 
-        sys.stdout.write('Unpacking BT-NextGen model spectra '+labels[i]+'...')
-        sys.stdout.flush()
+        print(f'Unpacking BT-NextGen model spectra {labels[i]}...', end='')
 
         tar = tarfile.open(data_file)
         tar.extractall(data_folder)
         tar.close()
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
     teff = []
     logg = []

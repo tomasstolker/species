@@ -3,7 +3,6 @@ Text
 """
 
 import os
-import sys
 
 import wget
 import numpy as np
@@ -32,13 +31,11 @@ def add_vega(input_path, database):
     url = 'http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits'
 
     if not os.path.isfile(data_file):
-        sys.stdout.write('Downloading Vega spectrum (270 kB)... ')
-        sys.stdout.flush()
+        print('Downloading Vega spectrum (270 kB)...', end='')
 
         wget.download(url, out=data_file, bar=None)
 
-        sys.stdout.write('[DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
     if 'spectra/calibration' not in database:
         database.create_group('spectra/calibration')
@@ -51,20 +48,18 @@ def add_vega(input_path, database):
     wavelength = data['WAVELENGTH']  # [Angstrom]
     flux = data['FLUX']  # [erg s-1 cm-2 A-1]
     error_stat = data['STATERROR']  # [erg s-1 cm-2 A-1]
-    error_sys = data['SYSERROR']  # [erg s-1 cm-2 A-1]
+    error_syst = data['SYSERROR']  # [erg s-1 cm-2 A-1]
     hdu.close()
 
     wavelength *= 1e-4  # [Angstrom] -> [micron]
     flux *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
     error_stat *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
-    error_sys *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
+    error_syst *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
 
-    sys.stdout.write('Adding Vega spectrum... ')
-    sys.stdout.flush()
+    print('Adding Vega spectrum...', end='')
 
     database.create_dataset('spectra/calibration/vega',
                             data=np.vstack((wavelength, flux, error_stat)),
                             dtype='f')
 
-    sys.stdout.write('[DONE]\n')
-    sys.stdout.flush()
+    print('[DONE]')

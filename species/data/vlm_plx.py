@@ -3,7 +3,6 @@ Text
 """
 
 import os
-import sys
 
 import wget
 import h5py
@@ -37,16 +36,13 @@ def add_vlm_plx(input_path,
           'Database_of_Ultracool_Parallaxes_files/vlm-plx-all.fits'
 
     if not os.path.isfile(data_file):
-        sys.stdout.write('Downloading Database of Ultracool Parallaxes (307 kB)...')
-        sys.stdout.flush()
+        print('Downloading Database of Ultracool Parallaxes (307 kB)...', end='')
 
         wget.download(url, out=data_file, bar=None)
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
-    sys.stdout.write('Adding Database of Ultracool Parallaxes...')
-    sys.stdout.flush()
+    print('Adding Database of Ultracool Parallaxes...', end='')
 
     group = 'photometry/vlm-plx'
 
@@ -98,18 +94,15 @@ def add_vlm_plx(input_path,
     database.create_dataset(group+'/2MASS/2MASS.H', data=photdata['H2MAG'], dtype='f')
     database.create_dataset(group+'/2MASS/2MASS.Ks', data=photdata['K2MAG'], dtype='f')
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
-    # sys.stdout.write('Querying SIMBAD...')
-    # sys.stdout.flush()
+    # print('Querying SIMBAD...', end=')
 
     # simbad_id = queries.get_simbad(name)
 
     # dset = database.create_dataset(group+'/simbad', (np.size(simbad_id), ), dtype=dtype)
     # dset[...] = simbad_id
 
-    # sys.stdout.write(' [DONE]\n')
-    # sys.stdout.flush()
+    # print(' [DONE]')
 
     database.close()

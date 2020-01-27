@@ -73,24 +73,20 @@ def add_irtf(input_path,
 
     for item in sptypes:
         if not os.path.isfile(data_file[item]):
-            sys.stdout.write('Downloading IRTF Spectral Library - '+data_type[item]+'...')
-            sys.stdout.flush()
+            print(f'Downloading IRTF Spectral Library - {data_type[item]}...', end='')
 
             wget.download(url[item], out=data_file[item], bar=None)
 
-            sys.stdout.write(' [DONE]\n')
-            sys.stdout.flush()
+            print(' [DONE]')
 
-    sys.stdout.write('Unpacking IRTF Spectral Library...')
-    sys.stdout.flush()
+    print('Unpacking IRTF Spectral Library...', end='')
 
     for item in sptypes:
         tar = tarfile.open(data_file[item])
         tar.extractall(path=datadir)
         tar.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     database.create_group('spectra/irtf')
 

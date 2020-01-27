@@ -58,23 +58,19 @@ def add_btsettl(input_path,
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        sys.stdout.write(f'Downloading BT-Settl model spectra {label}...')
-        sys.stdout.flush()
+        print(f'Downloading BT-Settl model spectra {label}...', end='')
 
         wget.download(url, out=data_file, bar=None)
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
-    sys.stdout.write(f'Unpacking BT-Settl model spectra {label}...')
-    sys.stdout.flush()
+    print(f'Unpacking BT-Settl model spectra {label}...', end='')
 
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     teff = []
     logg = []

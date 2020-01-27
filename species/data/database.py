@@ -652,8 +652,8 @@ class Database:
         # max_prob = probability[index_max]
         max_sample = samples[index_max]
 
-        # sys.stdout.write(f'Maximum probability: {max_prob:.2f}\n')
-        # sys.stdout.write(f'Most probable sample:')
+        # print(f'Maximum probability: {max_prob:.2f}')
+        # print(f'Most probable sample:', end='')
 
         prob_sample = {}
 
@@ -662,13 +662,12 @@ class Database:
             par_value = max_sample[i]
 
             prob_sample[par_key] = par_value
-            # sys.stdout.write(f' {par_key}={par_value:.2f}')
+            # print(f' {par_key}={par_value:.2f}', end=')
 
         if dset.attrs.__contains__('distance'):
             prob_sample['distance'] = dset.attrs['distance']
 
-        # sys.stdout.write('\n')
-        # sys.stdout.flush()
+        # print()
 
         h5_file.close()
 
@@ -700,7 +699,7 @@ class Database:
         samples = samples[:, burnin:, :]
         samples = np.reshape(samples, (-1, nparam))
 
-        # sys.stdout.write(f'Median sample:')
+        # print(f'Median sample:', end='')
 
         median_sample = {}
 
@@ -709,13 +708,12 @@ class Database:
             par_value = np.percentile(samples[:, i], 50.)
 
             median_sample[par_key] = par_value
-            # sys.stdout.write(f' {par_key}={par_value:.2f}')
+            # print(f' {par_key}={par_value:.2f}', end='')
 
         if dset.attrs.__contains__('distance'):
             median_sample['distance'] = dset.attrs['distance']
 
-        # sys.stdout.write('\n')
-        # sys.stdout.flush()
+        # print()
 
         h5_file.close()
 

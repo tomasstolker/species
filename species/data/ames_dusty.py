@@ -61,23 +61,19 @@ def add_ames_dusty(input_path,
     data_file = os.path.join(data_folder, input_file)
 
     if not os.path.isfile(data_file):
-        sys.stdout.write(f'Downloading AMES-Dusty model spectra {label}...')
-        sys.stdout.flush()
+        print(f'Downloading AMES-Dusty model spectra {label}...', end='')
 
         wget.download(url, out=data_file, bar=None)
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
-    sys.stdout.write(f'Unpacking AMES-Dusty model spectra {label}...')
-    sys.stdout.flush()
+    print(f'Unpacking AMES-Dusty model spectra {label}...', end='')
 
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     data_folder += 'SPECTRA/'
 

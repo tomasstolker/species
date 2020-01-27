@@ -37,23 +37,19 @@ def add_drift_phoenix(input_path,
     url = 'https://people.phys.ethz.ch/~stolkert/species/drift-phoenix.tgz'
 
     if not os.path.isfile(data_file):
-        sys.stdout.write('Downloading DRIFT-PHOENIX model spectra (151 MB)...')
-        sys.stdout.flush()
+        print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='')
 
         wget.download(url, out=data_file, bar=None)
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
-    sys.stdout.write('Unpacking DRIFT-PHOENIX model spectra...')
-    sys.stdout.flush()
+    print('Unpacking DRIFT-PHOENIX model spectra...', end='')
 
     tar = tarfile.open(data_file)
     tar.extractall(input_path)
     tar.close()
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     teff = []
     logg = []

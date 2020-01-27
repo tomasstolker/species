@@ -2,8 +2,6 @@
 Module for isochrone data of evolutionary models.
 """
 
-import sys
-
 import h5py
 import numpy as np
 
@@ -65,8 +63,7 @@ def add_baraffe(database,
     index_sort = np.argsort(isochrones[:, 0])
     isochrones = isochrones[index_sort, :]
 
-    sys.stdout.write('Adding isochrones: '+tag+'...')
-    sys.stdout.flush()
+    print(f'Adding isochrones: {tag}...', end='')
 
     bytes_type = h5py.special_dtype(vlen=bytes)
 
@@ -84,8 +81,7 @@ def add_baraffe(database,
 
     dset.attrs['model'] = 'baraffe'
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
 
 def add_marleau(database,
@@ -124,8 +120,7 @@ def add_marleau(database,
 
     logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
 
-    sys.stdout.write('Adding isochrones: '+tag+'...')
-    sys.stdout.flush()
+    print(f'Adding isochrones: {tag}...', end='')
 
     isochrones = np.vstack((age, mass, teff, luminosity, logg))
     isochrones = np.transpose(isochrones)
@@ -139,4 +134,4 @@ def add_marleau(database,
 
     dset.attrs['model'] = 'marleau'
 
-    sys.stdout.write(' [DONE]\n')
+    print(' [DONE]')
