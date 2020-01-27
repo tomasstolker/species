@@ -14,7 +14,7 @@ import numpy as np
 from species.analysis import photometry
 from species.core import box
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, mamajek, btsettl, ames_dusty, ames_cond, \
+                         companions, filters, btsettl, ames_dusty, ames_cond, \
                          isochrones, petitcode
 from species.read import read_model, read_calibration, read_planck
 from species.util import data_util
@@ -391,7 +391,7 @@ class Database:
         Parameters
         ----------
         phot_library : str
-            Photometric library ('vlm-plx', 'leggett' or 'mamajek').
+            Photometric library ('vlm-plx' or 'leggett').
 
         Returns
         -------
@@ -412,9 +412,6 @@ class Database:
 
         elif phot_library[0:7] == 'leggett':
             leggett.add_leggett(self.input_path, h5_file)
-
-        elif phot_library[0:7] == 'mamajek':
-            mamajek.add_mamajek(self.input_path, h5_file)
 
         h5_file.close()
 
@@ -746,8 +743,6 @@ class Database:
             Boxes with the randomly sampled spectra.
         """
 
-        print('Getting MCMC spectra...')
-
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
@@ -786,7 +781,7 @@ class Database:
 
         boxes = []
 
-        for i in tqdm.tqdm(range(samples.shape[0])):
+        for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC spectra'):
             model_param = {}
             for j in range(samples.shape[1]):
                 model_param[param[j]] = samples[i, j]
@@ -831,8 +826,6 @@ class Database:
             Synthetic photometry (mag).
         """
 
-        print('Getting MCMC photometry...')
-
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
@@ -862,7 +855,7 @@ class Database:
 
         mcmc_phot = np.zeros((samples.shape[0], 1))
 
-        for i in tqdm.tqdm(range(samples.shape[0])):
+        for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC photometry'):
             model_param = {}
             for j in range(nparam):
                 model_param[param[j]] = samples[i, j]

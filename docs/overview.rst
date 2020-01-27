@@ -27,7 +27,6 @@ The following data are currently supported by *species* (support for other data 
 - All isochrone data from the `Phoenix model grids <https://phoenix.ens-lyon.fr/Grids/>`_
 - Photometry from the `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `Sandy Leggett <http://www.gemini.edu/staff/sleggett>`_
-- Photometry from `A Modern Mean Dwarf Stellar Color and Effective Temperature Sequence <http://www.pas.rochester.edu/~emamajek>`_
 - Photometry of directly imaged planets and brown dwarfs (see dictionary in :class:`~species.data.companions`)
 - Calibration spectrum of `Vega <http://ssb.stsci.edu/cdbs/calspec/>`_
 

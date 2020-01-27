@@ -175,17 +175,17 @@ def get_distance(target):
             if not ma.is_masked(parallax):
                 break
 
-    if ma.is_masked(parallax):
-
-        if simbad is not None:
-            coord_ra = simbad['RA'][0]
-            coord_dec = simbad['DEC'][0]
-
-            coord = SkyCoord(ra=coord_ra, dec=coord_dec, unit=(u.hourangle, u.deg), frame='icrs')
-            result = Gaia.query_object(coordinate=coord, width=1.*u.arcsec, height=1.*u.arcsec)
-
-            if result:
-                parallax = result['parallax'][0]  # [mas]
+    # if ma.is_masked(parallax):
+    #
+    #     if simbad is not None:
+    #         coord_ra = simbad['RA'][0]
+    #         coord_dec = simbad['DEC'][0]
+    #
+    #         coord = SkyCoord(ra=coord_ra, dec=coord_dec, unit=(u.hourangle, u.deg), frame='icrs')
+    #         result = Gaia.query_object(coordinate=coord, width=1.*u.arcsec, height=1.*u.arcsec)
+    #
+    #         if result:
+    #             parallax = result['parallax'][0]  # [mas]
 
     if ma.is_masked(parallax) or parallax < 0.:
         distance = np.nan

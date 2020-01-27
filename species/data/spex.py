@@ -146,7 +146,9 @@ def add_spex(input_path, database):
 
             simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8'))  # [pc]
 
-            if sptype[0] in ('M', 'L', 'T') and len(sptype) == 2:
+            print(twomass_id, simbad_id)
+
+            if sptype[0] in ['M', 'L', 'T'] and len(sptype) == 2:
                 sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format(name))
                 sys.stdout.flush()
 
