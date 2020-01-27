@@ -12,7 +12,7 @@ reqs = [str(ir.req) for ir in reqs]
 
 setup(
     name='species',
-    version='0.1.0',
+    version='0.1.1',
     description='Toolkit for spectral and photometric analysis of planetary and substellar atmospheres',
     long_description=open('README.rst').read(),
     long_description_content_type='text/x-rst',
