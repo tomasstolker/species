@@ -2,8 +2,6 @@
 Utility functions for photometry.
 """
 
-import sys
-
 import spectres
 import numpy as np
 
@@ -33,8 +31,7 @@ def multi_photometry(datatype,
         Box with synthetic photometry.
     """
 
-    sys.stdout.write('Calculating synthetic photometry...')
-    sys.stdout.flush()
+    print('Calculating synthetic photometry...', end='')
 
     flux = {}
 
@@ -52,8 +49,7 @@ def multi_photometry(datatype,
             readcalib = read_calibration.ReadCalibration(spectrum, filter_name=item)
             flux[item] = readcalib.get_flux(parameters)
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     return box.create_box('synphot', name='synphot', flux=flux)
 
@@ -128,8 +124,7 @@ def get_residuals(datatype,
     else:
         res_phot = None
 
-    sys.stdout.write('Calculating residuals...')
-    sys.stdout.flush()
+    print('Calculating residuals...', end='')
 
     if inc_spec:
         wavel_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
@@ -157,8 +152,7 @@ def get_residuals(datatype,
     else:
         res_spec = None
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

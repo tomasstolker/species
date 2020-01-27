@@ -3,22 +3,17 @@ Text
 """
 
 import os
-import sys
 import warnings
 
 import wget
 import numpy as np
 
 from astropy.io.votable import parse_single_table
-from astropy.utils.exceptions import AstropyWarning
 
 from species.analysis import photometry
 from species.data import queries
 from species.read import read_filter
 from species.util import data_util
-
-
-warnings.simplefilter('ignore', category=AstropyWarning)
 
 
 def add_spex(input_path, database):
@@ -30,7 +25,7 @@ def add_spex(input_path, database):
     input_path : str
         Path of the data folder.
     database : h5py._hl.files.File
-        Database.
+        The HDF5 database.
 
     Returns
     -------
@@ -59,25 +54,30 @@ def add_spex(input_path, database):
 
     os.remove(xml_file)
 
+    unique_id = []
+
     for i, item in enumerate(url):
-        xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
-        wget.download(item.decode('utf-8'), out=xml_file, bar=None)
+        if twomass[i] not in unique_id:
+            xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
+            wget.download(item.decode('utf-8'), out=xml_file, bar=None)
 
-        table = parse_single_table(xml_file)
-        name = table.array['ID']
-        name = name[0].decode('utf-8')
-        url = table.array['access_url']
+            table = parse_single_table(xml_file)
+            name = table.array['ID']
+            name = name[0].decode('utf-8')
+            url = table.array['access_url']
 
-        sys.stdout.write('\rDownloading SpeX Prism Spectral Library... '+'{:<40}'.format(name))
-        sys.stdout.flush()
+            print_message = f'Downloading SpeX Prism Spectral Library... {name}'
+            print(f'\r{print_message:<80}', end='')
 
-        os.remove(xml_file)
+            os.remove(xml_file)
 
-        xml_file = os.path.join(data_path, name+'.xml')
-        wget.download(url[0].decode('utf-8'), out=xml_file, bar=None)
+            xml_file = os.path.join(data_path, name+'.xml')
+            wget.download(url[0].decode('utf-8'), out=xml_file, bar=None)
 
-    sys.stdout.write('\rDownloading SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
-    sys.stdout.flush()
+            unique_id.append(twomass[i])
+
+    print_message = 'Downloading SpeX Prism Spectral Library... [DONE]'
+    print(f'\r{print_message:<80}')
 
     h_twomass = photometry.SyntheticPhotometry('2MASS/2MASS.H')
 
@@ -146,11 +146,9 @@ def add_spex(input_path, database):
 
             simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8'))  # [pc]
 
-            print(twomass_id, simbad_id)
-
             if sptype[0] in ['M', 'L', 'T'] and len(sptype) == 2:
-                sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format(name))
-                sys.stdout.flush()
+                print_message = f'Adding SpeX Prism Spectral Library... {name}'
+                print(f'\r{print_message:<80}', end='')
 
                 dset = database.create_dataset('spectra/spex/'+name, data=spdata)
 
@@ -162,7 +160,7 @@ def add_spex(input_path, database):
                 dset.attrs['2MASS/2MASS.Ks'] = ks_mag
                 dset.attrs['distance'] = distance  # [pc]
 
-    sys.stdout.write('\rAdding SpeX Prism Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
-    sys.stdout.flush()
+    print_message = 'Adding SpeX Prism Spectral Library... [DONE]'
+    print(f'\r{print_message:<80}')
 
     database.close()

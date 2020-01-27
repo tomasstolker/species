@@ -5,6 +5,7 @@ Text
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 
@@ -89,7 +90,7 @@ def get_distance(target):
     Returns
     -------
     str
-        SIMBAD name.
+        Simbad name.
     float
         Distance (pc).
     """
@@ -115,13 +116,18 @@ def get_distance(target):
     # Monet et al. (1992)
     # http://cdsarc.u-strasbg.fr/viz-bin/cat/J/AJ/103/638
 
-    catalogues = ('J/ApJ/833/96'
-                  'J/ApJS/201/19',
-                  'J/ApJ/752/56',
-                  'J/AJ/152/24',
-                  'J/ApJ/862/173',
-                  'J/ApJ/753/156',
-                  'J/AJ/103/638')
+    # Faherty et al. (2009)
+    # https://vizier.u-strasbg.fr/viz-bin/VizieR?-source=J/AJ/137/1
+
+    catalogs = ['J/ApJ/833/96'
+                'J/ApJS/201/19',
+                'J/ApJ/752/56',
+                'J/AJ/152/24',
+                'J/ApJ/862/173',
+                'J/ApJ/753/156',
+                'J/AJ/103/638',
+                'J/AJ/137/1',
+                'V/144']
 
     if target[-2:] == 'AB':
         target = target[:-2]
@@ -148,13 +154,16 @@ def get_distance(target):
 
     simbad = simbad.query_object(target)
 
+    # search Simbad
     if simbad is not None:
         simbad_id = simbad['MAIN_ID'][0]
         simbad_id = simbad_id.decode('utf-8')
         parallax = simbad['PLX_VALUE'][0]
 
+    # search VizieR catalogs
     if ma.is_masked(parallax):
-        for _, item in enumerate(catalogues):
+        
+        for _, item in enumerate(catalogs):
             result = Vizier.query_object(target, catalog=item)
 
             if result.keys():
@@ -169,12 +178,20 @@ def get_distance(target):
                     except KeyError:
                         pass
 
+                if ma.is_masked(parallax):
+                    try:
+                        distance = result[0]['Dist'][0]  # [pc]
+                        parallax = 1e3/distance  # [mas]
+                    except KeyError:
+                        pass
+
             else:
                 continue
 
             if not ma.is_masked(parallax):
                 break
 
+    # search Gaia catalog
     # if ma.is_masked(parallax):
     #
     #     if simbad is not None:
@@ -187,8 +204,11 @@ def get_distance(target):
     #         if result:
     #             parallax = result['parallax'][0]  # [mas]
 
+    # write NaN if no parallax is found
     if ma.is_masked(parallax) or parallax < 0.:
+        warnings.warn(f'No parallax was found for {target} so storing a NaN value.')
         distance = np.nan
+
     else:
         distance = 1./(parallax*1e-3)  # [pc]
 

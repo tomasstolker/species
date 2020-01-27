@@ -3,7 +3,6 @@ Module for AMES-Dusty atmospheric models.
 """
 
 import os
-import sys
 import gzip
 import tarfile
 
@@ -62,9 +61,7 @@ def add_ames_dusty(input_path,
 
     if not os.path.isfile(data_file):
         print(f'Downloading AMES-Dusty model spectra {label}...', end='')
-
         wget.download(url, out=data_file, bar=None)
-
         print(' [DONE]')
 
     print(f'Unpacking AMES-Dusty model spectra {label}...', end='')
@@ -92,8 +89,8 @@ def add_ames_dusty(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte') and filename.endswith('.7.gz'):
-                sys.stdout.write('\rAdding AMES-Dusty model spectra... '+filename+'   ')
-                sys.stdout.flush()
+                print_message = f'Adding AMES-Dusty model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 teff_val = float(filename[3:5])*100.
                 logg_val = float(filename[6:9])
@@ -169,7 +166,5 @@ def add_ames_dusty(input_path,
 
     data_util.write_data('ames-dusty', ('teff', 'logg'), database, data_sorted)
 
-    sys.stdout.write('\rAdding AMES-Dusty model spectra... [DONE]'
-                     '                                  \n')
-
-    sys.stdout.flush()
+    print_message = 'Adding AMES-Dusty model spectra... [DONE]'
+    print(f'\r{print_message:<80}')

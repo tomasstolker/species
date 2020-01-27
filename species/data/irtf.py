@@ -3,7 +3,6 @@ Module for adding IRTF spectra tot the database.
 """
 
 import os
-import sys
 import tarfile
 
 import wget
@@ -74,9 +73,7 @@ def add_irtf(input_path,
     for item in sptypes:
         if not os.path.isfile(data_file[item]):
             print(f'Downloading IRTF Spectral Library - {data_type[item]}...', end='')
-
             wget.download(url[item], out=data_file[item], bar=None)
-
             print(' [DONE]')
 
     print('Unpacking IRTF Spectral Library...', end='')
@@ -109,8 +106,8 @@ def add_irtf(input_path,
                     spt_split = sptype.split()
 
                     if item in ['L', 'T'] or spt_split[1][0] == 'V':
-                        sys.stdout.write('\rAdding IRTF Spectral Library... '+'{:<40}'.format(name))
-                        sys.stdout.flush()
+                        print_message = f'Adding IRTF Spectral Library... {name}'
+                        print(f'\r{print_message:<80}', end='')
 
                         simbad_id, distance = queries.get_distance(name)  # [pc]
 
@@ -125,7 +122,7 @@ def add_irtf(input_path,
                         dset.attrs['simbad'] = str(simbad_id).encode()
                         dset.attrs['distance'] = distance
 
-    sys.stdout.write('\rAdding IRTF Spectral Library... '+'{:<40}'.format('[DONE]')+'\n')
-    sys.stdout.flush()
+    print_message = 'Adding IRTF Spectral Library... [DONE]'
+    print(f'\r{print_message:<80}')
 
     database.close()

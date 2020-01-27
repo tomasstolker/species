@@ -3,7 +3,6 @@ Module for BT-Settl atmospheric models.
 """
 
 import os
-import sys
 import tarfile
 
 import wget
@@ -59,9 +58,7 @@ def add_btsettl(input_path,
 
     if not os.path.isfile(data_file):
         print(f'Downloading BT-Settl model spectra {label}...', end='')
-
         wget.download(url, out=data_file, bar=None)
-
         print(' [DONE]')
 
     print(f'Unpacking BT-Settl model spectra {label}...', end='')
@@ -87,8 +84,8 @@ def add_btsettl(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte') and filename.endswith('.7.bz2'):
-                sys.stdout.write('\rAdding BT-Settl model spectra... '+filename+'  ')
-                sys.stdout.flush()
+                print_message = f'Adding BT-Settl model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 if len(filename) == 39:
                     teff_val = float(filename[3:6])*100.
@@ -165,7 +162,5 @@ def add_btsettl(input_path,
 
     data_util.write_data('bt-settl', ('teff', 'logg'), database, data_sorted)
 
-    sys.stdout.write('\rAdding BT-Settl model spectra... [DONE]'
-                     '                                  \n')
-
-    sys.stdout.flush()
+    print_message = 'Adding BT-Settl model spectra... [DONE]'
+    print(f'\r{print_message:<80}')

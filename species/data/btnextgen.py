@@ -3,7 +3,6 @@ Module for BT-NextGen atmospheric models.
 """
 
 import os
-import sys
 import tarfile
 
 import wget
@@ -67,9 +66,7 @@ def add_btnextgen(input_path,
 
         if not os.path.isfile(data_file):
             print(f'Downloading BT-NextGen model spectra {labels[i]}...', end='')
-
             wget.download(urls[i], out=data_file, bar=None)
-
             print(' [DONE]')
 
         print(f'Unpacking BT-NextGen model spectra {labels[i]}...', end='')
@@ -96,8 +93,8 @@ def add_btnextgen(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte') and filename.endswith('.7.bz2'):
-                sys.stdout.write('\rAdding BT-NextGen model spectra... '+filename)
-                sys.stdout.flush()
+                print_message = f'Adding BT-NextGen model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 teff_val = float(filename[3:6])*100.
 
@@ -165,7 +162,5 @@ def add_btnextgen(input_path,
 
     data_util.write_data('bt-nextgen', ('teff', 'logg', 'feh'), database, data_sorted)
 
-    sys.stdout.write('\rAdding BT-NextGen model spectra... [DONE]'
-                     '                              \n')
-
-    sys.stdout.flush()
+    print_message = 'Adding BT-NextGen model spectra... [DONE]'
+    print(f'\r{print_message:<80}')

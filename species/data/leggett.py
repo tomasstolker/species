@@ -3,7 +3,6 @@ Text
 """
 
 import os
-import sys
 
 import wget
 import h5py
@@ -38,25 +37,16 @@ def add_leggett(input_path,
     url2 = 'http://staff.gemini.edu/~sleggett/datafile8.txt'
 
     if not os.path.isfile(data_file1):
-        sys.stdout.write('Downloading Leggett L and T Dwarf Data (88 kB)...')
-        sys.stdout.flush()
-
+        print('Downloading Leggett L and T Dwarf Data (88 kB)...', end='')
         wget.download(url1, out=data_file1, bar=None)
-
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
+        print(' [DONE]')
 
     if not os.path.isfile(data_file2):
-        sys.stdout.write('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...')
-        sys.stdout.flush()
-
+        print('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...', end='')
         wget.download(url2, out=data_file2, bar=None)
+        print(' [DONE]')
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
-
-    sys.stdout.write('Adding Leggett L and T Dwarf Data...')
-    sys.stdout.flush()
+    print('Adding Leggett L and T Dwarf Data...', end='')
 
     group = 'photometry/leggett'
 
@@ -88,11 +78,8 @@ def add_leggett(input_path,
     mag_w3 = np.repeat(np.nan, np.size(name))
     mag_w4 = np.repeat(np.nan, np.size(name))
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
-
-    sys.stdout.write('Adding Leggett T6+ and Y Dwarf Data...')
-    sys.stdout.flush()
+    print(' [DONE]')
+    print('Adding Leggett T6+ and Y Dwarf Data...', end='')
 
     file_io = open(data_file2, 'r')
     lines = file_io.readlines()[69:]
@@ -181,7 +168,6 @@ def add_leggett(input_path,
     database.create_dataset(group+'/WISE/WISE.W3', data=mag_w3, dtype='f')
     database.create_dataset(group+'/WISE/WISE.W4', data=mag_w4, dtype='f')
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     database.close()

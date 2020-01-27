@@ -3,7 +3,6 @@ Module for DRIFT-PHOENIX atmospheric models.
 """
 
 import os
-import sys
 import tarfile
 
 import wget
@@ -38,9 +37,7 @@ def add_drift_phoenix(input_path,
 
     if not os.path.isfile(data_file):
         print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='')
-
         wget.download(url, out=data_file, bar=None)
-
         print(' [DONE]')
 
     print('Unpacking DRIFT-PHOENIX model spectra...', end='')
@@ -61,8 +58,8 @@ def add_drift_phoenix(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte_'):
-                sys.stdout.write('\rAdding DRIFT-PHOENIX model spectra... '+filename)
-                sys.stdout.flush()
+                print_message = f'Adding DRIFT-PHOENIX model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 teff.append(float(filename[4:8]))
                 logg.append(float(filename[9:12]))
@@ -90,5 +87,5 @@ def add_drift_phoenix(input_path,
 
     data_util.write_data('drift-phoenix', ('teff', 'logg', 'feh'), database, data_sorted)
 
-    sys.stdout.write('\rAdding DRIFT-PHOENIX model spectra... [DONE]                    \n')
-    sys.stdout.flush()
+    print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
+    print(f'\r{print_message:<80}')

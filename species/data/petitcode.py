@@ -3,7 +3,6 @@ Module for petitCODE atmospheric models.
 """
 
 import os
-import sys
 import zipfile
 
 import wget
@@ -55,22 +54,16 @@ def add_petitcode_cool_clear(input_path,
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        sys.stdout.write(f'Downloading petitCODE cool clear model spectra...')
-        sys.stdout.flush()
-
+        print('Downloading petitCODE cool clear model spectra...', end='')
         wget.download(url, out=data_file, bar=None)
+        print(' [DONE]')
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
-
-    sys.stdout.write(f'Unpacking petitCODE cool clear model spectra...')
-    sys.stdout.flush()
+    print('Unpacking petitCODE cool clear model spectra...', end='')
 
     with zipfile.ZipFile(data_file, 'r') as zip_ref:
         zip_ref.extractall(input_path)
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     teff = []
     logg = []
@@ -80,9 +73,8 @@ def add_petitcode_cool_clear(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-
-            sys.stdout.write('\rAdding petitCODE cool clear model spectra... '+filename+' ')
-            sys.stdout.flush()
+            print_message = f'Adding petitCODE cool clear model spectra... {filename}'
+            print(f'\r{print_message:<110}', end='')
 
             file_split = filename.split('_')
 
@@ -112,8 +104,8 @@ def add_petitcode_cool_clear(input_path,
 
     data_util.write_data('petitcode-cool-clear', ('teff', 'logg', 'feh'), database, data_sorted)
 
-    sys.stdout.write('\rAdding petitCODE cool clear model spectra... [DONE]                                                 \n')
-    sys.stdout.flush()
+    print_message = 'Adding petitCODE cool clear model spectra... [DONE]'
+    print(f'\r{print_message:<110}')
 
 
 def add_petitcode_cool_cloudy(input_path,
@@ -158,22 +150,16 @@ def add_petitcode_cool_cloudy(input_path,
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        sys.stdout.write(f'Downloading petitCODE cool cloudy model spectra...')
-        sys.stdout.flush()
-
+        print('Downloading petitCODE cool cloudy model spectra...', end='')
         wget.download(url, out=data_file, bar=None)
+        print(' [DONE]')
 
-        sys.stdout.write(' [DONE]\n')
-        sys.stdout.flush()
-
-    sys.stdout.write(f'Unpacking petitCODE cool cloudy model spectra...')
-    sys.stdout.flush()
+    print('Unpacking petitCODE cool cloudy model spectra...', end='')
 
     with zipfile.ZipFile(data_file, 'r') as zip_ref:
         zip_ref.extractall(input_path)
 
-    sys.stdout.write(' [DONE]\n')
-    sys.stdout.flush()
+    print(' [DONE]')
 
     teff = []
     logg = []
@@ -184,9 +170,8 @@ def add_petitcode_cool_cloudy(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-
-            sys.stdout.write('\rAdding petitCODE cool cloudy model spectra... '+filename+' ')
-            sys.stdout.flush()
+            print_message = f'Adding petitCODE cool cloudy model spectra... {filename}'
+            print(f'\r{print_message:<110}', end='')
 
             file_split = filename.split('_')
 
@@ -217,8 +202,8 @@ def add_petitcode_cool_cloudy(input_path,
 
     data_util.write_data('petitcode-cool-cloudy', ('teff', 'logg', 'feh', 'fsed'), database, data_sorted)
 
-    sys.stdout.write('\rAdding petitCODE cool cloudy model spectra... [DONE]                                                 \n')
-    sys.stdout.flush()
+    print_message = 'Adding petitCODE cool cloudy model spectra... [DONE]'
+    print(f'\r{print_message:<110}')
 
 
 def add_petitcode_hot_clear(input_path,
@@ -266,8 +251,8 @@ def add_petitcode_hot_clear(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            sys.stdout.write('\rAdding petitCODE model spectra... '+filename)
-            sys.stdout.flush()
+            print_message = f'Adding petitCODE hot clear model spectra... {filename}'
+            print(f'\r{print_message:<110}', end='')
 
             teff.append(float(filename[9:13]))
             logg.append(float(filename[19:23]))
@@ -296,8 +281,8 @@ def add_petitcode_hot_clear(input_path,
 
     data_util.write_data('petitcode-hot-clear', ('teff', 'logg', 'feh', 'co'), database, data_sorted)
 
-    sys.stdout.write('\rAdding petitCODE model spectra... [DONE]                                                 \n')
-    sys.stdout.flush()
+    print_message = 'Adding petitCODE hot clear model spectra... [DONE]'
+    print(f'\r{print_message:<110}')
 
 
 def add_petitcode_hot_cloudy(input_path,
@@ -346,8 +331,8 @@ def add_petitcode_hot_cloudy(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            sys.stdout.write('\rAdding petitCODE model spectra... '+filename)
-            sys.stdout.flush()
+            print_message = f'Adding petitCODE hot cloudy model spectra... {filename}'
+            print(f'\r{print_message:<110}', end='')
 
             teff.append(float(filename[9:13]))
             logg.append(float(filename[19:23]))
@@ -377,5 +362,5 @@ def add_petitcode_hot_cloudy(input_path,
 
     data_util.write_data('petitcode-hot-cloudy', ('teff', 'logg', 'feh', 'co', 'fsed'), database, data_sorted)
 
-    sys.stdout.write('\rAdding petitCODE model spectra... [DONE]                                                            \n')
-    sys.stdout.flush()
+    print_message = 'Adding petitCODE hot cloudy model spectra... [DONE]'
+    print(f'\r{print_message:<110}')
