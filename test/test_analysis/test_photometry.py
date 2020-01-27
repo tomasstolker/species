@@ -19,7 +19,7 @@ class TestPhotometry:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_synthetic_photometry(self):
         species.SyntheticPhotometry('MKO/NSFCam.J')

@@ -22,7 +22,7 @@ class TestCalibration:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_read_calibration(self):
         database = species.Database()

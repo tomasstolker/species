@@ -21,7 +21,7 @@ class TestModel:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_read_model(self):
         database = species.Database()

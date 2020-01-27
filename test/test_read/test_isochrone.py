@@ -28,7 +28,7 @@ class TestIsochrone:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_read_isochrone(self):
         database = species.Database()

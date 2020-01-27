@@ -16,14 +16,8 @@ class SpeciesInit:
     not present in the working folder, and creating the data folder for storage of input data.
     """
 
-    def __init__(self,
-                 config_path):
+    def __init__(self):
         """
-        Parameters
-        ----------
-        config_path : str
-            Location of the configuration file named *species_config.ini*.
-
         Returns
         -------
         NoneType
@@ -32,9 +26,9 @@ class SpeciesInit:
 
         print(f'Initiating species v{species.__version__}...', end='')
 
-        self.config_path = config_path
+        working_folder = os.path.abspath(os.getcwd())
 
-        config_file = os.path.join(self.config_path, 'species_config.ini')
+        config_file = os.path.join(working_folder, 'species_config.ini')
 
         print(' [DONE]')
 
@@ -52,20 +46,20 @@ class SpeciesInit:
         config = configparser.ConfigParser()
         config.read_file(open(config_file))
 
-        database_file = config['species']['database']
-        data_folder = config['species']['data_folder']
+        database_file = os.path.abspath(config['species']['database'])
+        data_folder = os.path.abspath(config['species']['data_folder'])
+
+        print(f'Database: {database_file}')
+        print(f'Data folder: {data_folder}')
+        print(f'Working folder: {working_folder}')
 
         if not os.path.isfile(database_file):
             print('Creating species_database.hdf5...', end='')
-
             h5_file = h5py.File(database_file, 'w')
             h5_file.close()
-
             print(' [DONE]')
 
         if not os.path.exists(data_folder):
             print('Creating data folder...', end='')
-
             os.makedirs(data_folder)
-
             print(' [DONE]')

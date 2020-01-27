@@ -62,4 +62,4 @@ def add_vega(input_path, database):
                             data=np.vstack((wavelength, flux, error_stat)),
                             dtype='f')
 
-    print('[DONE]')
+    print(' [DONE]')

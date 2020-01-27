@@ -20,7 +20,7 @@ class TestColor:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_read_color_magnitude(self):
         database = species.Database()

@@ -21,7 +21,7 @@ class TestPlanck:
 
     def test_species_init(self):
         test_util.create_config('./')
-        species.SpeciesInit('./')
+        species.SpeciesInit()
 
     def test_read_planck(self):
         read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
