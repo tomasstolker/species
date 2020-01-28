@@ -61,9 +61,11 @@ def create_box(boxtype,
     elif boxtype == 'photometry':
         box = PhotometryBox()
         box.name = kwargs['name']
+        box.sptype = kwargs['sptype']
         box.wavelength = kwargs['wavelength']
         box.flux = kwargs['flux']
-        box.quantity = kwargs['quantity']
+        box.app_mag = kwargs['app_mag']
+        box.abs_mag = kwargs['abs_mag']
 
     elif boxtype == 'residuals':
         box = ResidualsBox()
@@ -107,20 +109,22 @@ class Box:
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
     def open_box(self):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
-        print(f'Opening {type(self).__name__}...\n')
+        print(f'Opening {type(self).__name__}...')
 
-        for item in self.__dict__.keys():
-            print(f'{item} = {self.__dict__[item]}')
+        for key, value in self.__dict__.items():
+            print(f'{key} = {value}')
 
 
 class ColorMagBox(Box):
@@ -132,7 +136,8 @@ class ColorMagBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.library = None
@@ -153,7 +158,8 @@ class ColorColorBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.library = None
@@ -173,7 +179,8 @@ class IsochroneBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.model = None
@@ -195,7 +202,8 @@ class ModelBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.model = None
@@ -215,7 +223,8 @@ class ObjectBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.name = None
@@ -235,13 +244,16 @@ class PhotometryBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.name = None
+        self.sptype = None
         self.wavelength = None
         self.flux = None
-        self.quantity = None
+        self.app_mag = None
+        self.abs_mag = None
 
 
 class ResidualsBox(Box):
@@ -253,7 +265,8 @@ class ResidualsBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.name = None
@@ -270,7 +283,8 @@ class SamplesBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.spectrum = None
@@ -289,7 +303,8 @@ class SpectrumBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.spectrum = None
@@ -311,7 +326,8 @@ class SynphotBox(Box):
         """
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.name = None

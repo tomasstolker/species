@@ -177,7 +177,7 @@ class Database:
 
     def add_isochrones(self,
                        filename,
-                       isochrone_tag,
+                       tag,
                        model='baraffe'):
         """
         Function for adding isochrones data to the database.
@@ -186,7 +186,7 @@ class Database:
         ----------
         filename : str
             Filename with the isochrones data.
-        isochrone_tag : str
+        tag : str
             Database tag name where the isochrone that will be stored.
         model : str
             Evolutionary model ('baraffe' or 'marleau'). For 'baraffe' models, the isochrone data
@@ -204,14 +204,14 @@ class Database:
         if 'isochrones' not in h5_file:
             h5_file.create_group('isochrones')
 
-        if 'isochrones/'+isochrone_tag in h5_file:
-            del h5_file['isochrones/'+isochrone_tag]
+        if 'isochrones/'+tag in h5_file:
+            del h5_file['isochrones/'+tag]
 
         if model[0:7] == 'baraffe':
-            isochrones.add_baraffe(h5_file, isochrone_tag, filename)
+            isochrones.add_baraffe(h5_file, tag, filename)
 
         elif model[0:7] == 'marleau':
-            isochrones.add_marleau(h5_file, isochrone_tag, filename)
+            isochrones.add_marleau(h5_file, tag, filename)
 
         h5_file.close()
 

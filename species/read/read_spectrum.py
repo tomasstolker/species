@@ -220,9 +220,11 @@ class ReadSpectrum:
 
         return box.create_box(boxtype='photometry',
                               name=specbox.name,
+                              sptype=specbox.sptype,
                               wavelength=phot_wavel,
                               flux=phot_flux,
-                              quantity='flux')
+                              app_mag=None,
+                              abs_mag=None)
 
     def get_magnitude(self,
                       sptypes=None):
@@ -246,21 +248,18 @@ class ReadSpectrum:
 
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
+        wavelength = np.full(specbox.wavelength.shape[0], mean_wavel)
 
         synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
 
-        phot_wavel = []
-        phot_flux = []
-
-        for i, _ in enumerate(specbox.wavelength):
-            flux = synphot.spectrum_to_flux(wavelength=specbox.wavelength[i],
-                                            flux=specbox.flux[i])
-
-            phot_wavel.append(mean_wavel)
-            phot_flux.append(flux)
+        app_mag, abs_mag = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength,
+                                                         flux=specbox.flux,
+                                                         distance=specbox.distance)
 
         return box.create_box(boxtype='photometry',
                               name=specbox.name,
-                              wavelength=phot_wavel,
-                              flux=phot_flux,
-                              quantity='magnitude')
+                              sptype=specbox.sptype,
+                              wavelength=wavelength,
+                              flux=None,
+                              app_mag=app_mag,
+                              abs_mag=abs_mag)

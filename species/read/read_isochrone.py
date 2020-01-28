@@ -20,11 +20,11 @@ class ReadIsochrone:
     """
 
     def __init__(self,
-                 isochrone_tag):
+                 tag):
         """
         Parameters
         ----------
-        isochrone_tag : str
+        tag : str
             Database tag of the isochrone data.
 
         Returns
@@ -33,7 +33,7 @@ class ReadIsochrone:
             None
         """
 
-        self.isochrone_tag = isochrone_tag
+        self.tag = tag
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -78,12 +78,12 @@ class ReadIsochrone:
         index_logg = 4
 
         with h5py.File(self.database, 'r') as h5_file:
-            model = h5_file['isochrones/'+self.isochrone_tag+'/evolution'].attrs['model']
-            evolution = np.asarray(h5_file['isochrones/'+self.isochrone_tag+'/evolution'])
+            model = h5_file['isochrones/'+self.tag+'/evolution'].attrs['model']
+            evolution = np.asarray(h5_file['isochrones/'+self.tag+'/evolution'])
 
             if model == 'baraffe':
-                filters = list(h5_file['isochrones/'+self.isochrone_tag+'/filters'])
-                magnitudes = np.asarray(h5_file['isochrones/'+self.isochrone_tag+'/magnitudes'])
+                filters = list(h5_file['isochrones/'+self.tag+'/filters'])
+                magnitudes = np.asarray(h5_file['isochrones/'+self.tag+'/magnitudes'])
 
         if model == 'baraffe':
             for i, item in enumerate(filters):
@@ -136,7 +136,7 @@ class ReadIsochrone:
                         rescale=False)
 
         return box.create_box(boxtype='isochrone',
-                              model=self.isochrone_tag,
+                              model=self.tag,
                               filters_color=filters_color,
                               filter_mag=filter_mag,
                               color=color,
@@ -223,7 +223,7 @@ class ReadIsochrone:
 
         return box.create_box(boxtype='colormag',
                               library=model,
-                              object_type='temperature',
+                              object_type='model',
                               filters_color=filters_color,
                               filter_mag=filter_mag,
                               color=mag1-mag2,
@@ -285,7 +285,7 @@ class ReadIsochrone:
 
         return box.create_box(boxtype='colorcolor',
                               library=model,
-                              object_type='temperature',
+                              object_type='model',
                               filters=filters,
                               color1=mag1-mag2,
                               color2=mag3-mag4,

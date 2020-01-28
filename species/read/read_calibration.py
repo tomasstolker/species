@@ -23,12 +23,12 @@ class ReadCalibration:
     """
 
     def __init__(self,
-                 spectrum_tag,
+                 tag,
                  filter_name=None):
         """
         Parameters
         ----------
-        spectrum_tag : str
+        tag : str
             Database tag of the calibration spectrum.
         filter_name : str, None
             Filter ID that is used for the wavelength range. Full spectrum is used if set to None.
@@ -39,7 +39,7 @@ class ReadCalibration:
             None
         """
 
-        self.spectrum_tag = spectrum_tag
+        self.tag = tag
         self.filter_name = filter_name
 
         if filter_name is None:
@@ -110,7 +110,7 @@ class ReadCalibration:
                               wavelength=wavel_points,
                               flux=flux_new,
                               error=error_new,
-                              name=self.spectrum_tag,
+                              name=self.tag,
                               simbad=None,
                               sptype=None,
                               distance=None)
@@ -145,7 +145,7 @@ class ReadCalibration:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            data = np.asarray(h5_file['spectra/calibration/'+self.spectrum_tag])
+            data = np.asarray(h5_file['spectra/calibration/'+self.tag])
 
             wavelength = np.asarray(data[0, ])
             flux = np.asarray(data[1, ])
@@ -243,7 +243,7 @@ class ReadCalibration:
                               wavelength=wavelength,
                               flux=flux,
                               error=error,
-                              name=self.spectrum_tag,
+                              name=self.tag,
                               simbad=None,
                               sptype=None,
                               distance=None)
@@ -271,7 +271,8 @@ class ReadCalibration:
         return synphot.spectrum_to_flux(specbox.wavelength, specbox.flux)
 
     def get_magnitude(self,
-                      model_param=None):
+                      model_param=None,
+                      distance=None):
         """
         Function for calculating the apparent magnitude for the ``filter_name``.
 
@@ -279,15 +280,21 @@ class ReadCalibration:
         ----------
         model_param : dict, None
             Model parameters. Should contain the 'scaling' value. Not used if set to None.
+        distance : float, None
+            Distance to the calibration objects (pc).
 
         Returns
         -------
         float
             Apparent magnitude (mag).
+        float, None
+            Absolute magnitude (mag).
         """
 
         specbox = self.get_spectrum(model_param=model_param)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_magnitude(specbox.wavelength, specbox.flux, distance=None)
+        return synphot.spectrum_to_magnitude(specbox.wavelength,
+                                             specbox.flux,
+                                             distance=distance)

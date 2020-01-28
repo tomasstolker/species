@@ -6,7 +6,6 @@ import os
 import configparser
 
 import h5py
-
 import species
 
 

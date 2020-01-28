@@ -4,15 +4,15 @@ Module with functions for creating color-magnitude and color-color plots.
 
 import os
 import math
-import itertools
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import interp1d
-from matplotlib.colorbar import Colorbar, ColorbarBase
+from matplotlib.colorbar import Colorbar
 
+from species.core import box
 from species.read import read_object
 from species.util import plot_util
 
@@ -23,15 +23,13 @@ mpl.rcParams['font.family'] = 'serif'
 plt.rc('axes', edgecolor='black', linewidth=2.5)
 
 
-def plot_color_magnitude(colorbox=None,
+def plot_color_magnitude(boxes,
                          objects=None,
-                         isochrones=None,
-                         models=None,
                          mass_labels=None,
                          companion_labels=False,
                          field_range=None,
-                         label_x='color [mag]',
-                         label_y='M [mag]',
+                         label_x='Color [mag]',
+                         label_y='Magnitude [mag]',
                          xlim=None,
                          ylim=None,
                          offset=None,
@@ -40,21 +38,17 @@ def plot_color_magnitude(colorbox=None,
     """
     Parameters
     ----------
-    colorbox : list(species.core.box.ColorMagBox, ), None
-        Boxes with the colors and magnitudes. Not used if set to None.
+    boxes : list(species.core.box.ColorMagBox, species.core.box.IsochroneBox, )
+        Boxes with the color-magnitude and isochrone data from photometric libraries, spectral
+        libraries, and/or atmospheric models. The synthetic data have to be created with
+        :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`. These boxes
+        contain synthetic colors and magnitudes for a given age and a range of masses.
     objects : tuple(tuple(str, str, str, str), ),
               tuple(tuple(str, str, str, str, str, str, float, float), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter IDs for the color, and the filter ID for the absolute magnitude. Optionally, the
         horizontal and vertical alignment and fractional offset values can be provided for the
         label can be provided (default: 'left', 'bottom', 8e-3, 8e-3). Not used if set to None.
-    isochrones : tuple(species.core.box.IsochroneBox, ), None
-        Tuple with boxes of isochrone data. Not used if set to None.
-    models : tuple(species.core.box.ColorMagBox, ), None
-        Tuple with :class:`~species.core.box.ColorMagBox` objects which have been created from the
-        isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`.
-        These boxes contain synthetic photometry for a given age and a range of masses. Not used
-        if set to None.
     mass_labels : list(float, ), None
         Plot labels with masses next to the isochrone data of `models`. The list with masses has
         to be provided in Jupiter mass. No labels are shown if set to None.
@@ -68,10 +62,12 @@ def plot_color_magnitude(colorbox=None,
         Label for the x-axis.
     label_y : str
         Label for the y-axis.
-    xlim : tuple(float, float)
+    xlim : tuple(float, float), None
         Limits for the x-axis.
-    ylim : tuple(float, float)
+    ylim : tuple(float, float), None
         Limits for the y-axis.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label.
     legend : str, None
         Legend position. Not shown if set to None.
     output : str
@@ -79,20 +75,48 @@ def plot_color_magnitude(colorbox=None,
 
     Returns
     -------
-    None
+    NoneType
+        None
+
     """
+
+    print(f'Plotting color-magnitude diagram: {output}... ', end='')
 
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
-    print(f'Plotting color-magnitude diagram: {output}... ', end='')
+    isochrones = []
+    models = []
+    empirical = []
 
-    plt.figure(1, figsize=(4., 4.8))
-    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
-    gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+    for item in boxes:
+        if isinstance(item, box.IsochroneBox):
+            isochrones.append(item)
 
-    ax1 = plt.subplot(gridsp[2, 0])
-    ax2 = plt.subplot(gridsp[0, 0])
+        elif isinstance(item, box.ColorMagBox):
+            if item.object_type == 'model':
+                models.append(item)
+            else:
+                empirical.append(item)
+
+        else:
+            raise ValueError(f'Found a {type(item)} while only ColorMagBox and IsochroneBox '
+                             f'objects can be provided to \'boxes\'.')
+
+    if empirical:
+        plt.figure(1, figsize=(4., 4.8))
+        gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
+        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+
+        ax1 = plt.subplot(gridsp[2, 0])
+        ax2 = plt.subplot(gridsp[0, 0])
+
+    else:
+        plt.figure(1, figsize=(4., 4.5))
+        gridsp = mpl.gridspec.GridSpec(1, 1)
+        gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
+
+        ax1 = plt.subplot(gridsp[0, 0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=1, length=5, labelsize=12, top=True,
@@ -107,17 +131,18 @@ def plot_color_magnitude(colorbox=None,
 
     ax1.invert_yaxis()
 
-    if offset:
+    if offset is not None:
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
+
     else:
         ax1.get_xaxis().set_label_coords(0.5, -0.08)
         ax1.get_yaxis().set_label_coords(-0.12, 0.5)
 
-    if xlim:
+    if xlim is not None:
         ax1.set_xlim(xlim[0], xlim[1])
 
-    if ylim:
+    if ylim is not None:
         ax1.set_ylim(ylim[0], ylim[1])
 
     if models is not None:
@@ -185,13 +210,13 @@ def plot_color_magnitude(colorbox=None,
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, color=model_color[model_count[0]], zorder=0)
 
-    if colorbox is not None:
+    if empirical:
         cmap = plt.cm.viridis
 
         bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-        for item in colorbox:
+        for item in empirical:
             sptype = item.sptype
             color = item.color
             magnitude = item.magnitude
@@ -211,7 +236,7 @@ def plot_color_magnitude(colorbox=None,
             magnitude = magnitude[unique]
             spt_disc = spt_disc[unique]
 
-            if item.object_type == 'field':
+            if item.object_type == 'field' or item.object_type is None:
                 scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
@@ -227,7 +252,7 @@ def plot_color_magnitude(colorbox=None,
                 ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.7,
                          color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
-    if isochrones is not None:
+    if isochrones:
         for item in isochrones:
             ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1.2, color='black')
 
@@ -318,9 +343,8 @@ def plot_color_magnitude(colorbox=None,
     print('[DONE]')
 
 
-def plot_color_color(colorbox,
+def plot_color_color(boxes,
                      objects=None,
-                     models=None,
                      mass_labels=None,
                      companion_labels=False,
                      field_range=None,
@@ -334,7 +358,7 @@ def plot_color_color(colorbox,
     """
     Parameters
     ----------
-    colorbox : species.core.box.ColorColorBox, None
+    boxes : species.core.box.ColorColorBox, None
         Box with the colors and magnitudes.
     objects : tuple(tuple(str, str, str, str), ),
               tuple(tuple(str, str, str, str, str, str, float, float), ), None
@@ -366,20 +390,39 @@ def plot_color_color(colorbox,
         Limits for the x-axis.
     ylim : tuple(float, float)
         Limits for the y-axis.
-    offset : tuple(float, float)
+    offset : tuple(float, float), None
         Offset of the x- and y-axis label.
     legend : str
         Legend position.
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
+
+    print(f'Plotting color-color diagram: {output}... ', end='')
 
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
 
-    print(f'Plotting color-color diagram: {output}... ', end='')
+    isochrones = []
+    models = []
+    empirical = []
+
+    for item in boxes:
+        if isinstance(item, box.IsochroneBox):
+            isochrones.append(item)
+
+        elif isinstance(item, box.ColorMagBox):
+            if item.object_type == 'model':
+                models.append(item)
+            else:
+                empirical.append(item)
+
+        else:
+            raise ValueError(f'Found a {type(item)} while only ColorMagBox and IsochroneBox '
+                             f'objects can be provided to \'boxes\'.')
 
     plt.figure(1, figsize=(4, 4.3))
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.])
@@ -479,13 +522,13 @@ def plot_color_color(colorbox,
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, color=model_color[model_count[0]], zorder=0)
 
-    if colorbox is not None:
+    if empirical:
         cmap = plt.cm.viridis
 
         bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
-        for item in colorbox:
+        for item in empirical:
             sptype = item.sptype
             color1 = item.color1
             color2 = item.color2
@@ -519,6 +562,10 @@ def plot_color_color(colorbox,
             elif item.object_type == 'young':
                 ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7,
                          color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
+
+    if isochrones:
+        for item in isochrones:
+            ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1.2, color='black')
 
     if objects is not None:
         for i, item in enumerate(objects):

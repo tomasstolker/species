@@ -49,7 +49,7 @@ with NoStdStreams():
 
 def get_simbad(name):
     """
-    Function for getting the Simbad identifier of an object.
+    Function for getting the SIMBAD identifier of an object.
 
     Parameters
     ----------
@@ -58,7 +58,7 @@ def get_simbad(name):
     Returns
     -------
     numpy.ndarray
-        Simbad name.
+        SIMBAD name.
     """
 
     simbad_id = []
@@ -90,7 +90,7 @@ def get_distance(target):
     Returns
     -------
     str
-        Simbad name.
+        SIMBAD name.
     float
         Distance (pc).
     """
@@ -154,7 +154,7 @@ def get_distance(target):
 
     simbad = simbad.query_object(target)
 
-    # search Simbad
+    # search SIMBAD
     if simbad is not None:
         simbad_id = simbad['MAIN_ID'][0]
         simbad_id = simbad_id.decode('utf-8')

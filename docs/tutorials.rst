@@ -11,7 +11,8 @@ This page contains a list of tutorials which highlight some of the functionaliti
    tutorials/flux_magnitude.ipynb
    tutorials/synthetic_photometry.ipynb
    tutorials/spectral_library.ipynb
-   tutorials/color_magnitude.ipynb
+   tutorials/color_magnitude_broadband.ipynb
+   tutorials/color_magnitude_narrowband.ipynb
    tutorials/atmospheric_models.ipynb
    tutorials/data_model.ipynb
    tutorials/photometric_calibration.ipynb
