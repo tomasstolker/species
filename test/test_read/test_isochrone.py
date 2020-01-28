@@ -36,7 +36,7 @@ class TestIsochrone:
         database.add_model('ames-cond', teff_range=(2000., 2500))
 
         read_isochrone = species.ReadIsochrone('ames-cond_isochrone')
-        assert read_isochrone.isochrone_tag == 'ames-cond_isochrone'
+        assert read_isochrone.tag == 'ames-cond_isochrone'
 
     def test_get_isochrone(self):
         read_isochrone = species.ReadIsochrone('ames-cond_isochrone')
@@ -70,7 +70,7 @@ class TestIsochrone:
                                                           ('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                           'MKO/NSFCam.J')
 
-        assert colormag_box.object_type == 'temperature'
+        assert colormag_box.object_type == 'model'
         assert colormag_box.color.shape == (10, )
         assert colormag_box.magnitude.shape == (10, )
 
@@ -92,7 +92,7 @@ class TestIsochrone:
                                                         (('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                          ('MKO/NSFCam.H', 'MKO/NSFCam.Ks')))
 
-        assert colorcolor_box.object_type == 'temperature'
+        assert colorcolor_box.object_type == 'model'
         assert colorcolor_box.color1.shape == (10, )
         assert colorcolor_box.color2.shape == (10, )
 

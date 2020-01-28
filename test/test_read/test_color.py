@@ -27,7 +27,7 @@ class TestColor:
         database.add_photometry('vlm-plx')
         database.add_photometry('leggett')
 
-        read_colormag = species.ReadColorMagnitude(['vlm-plx', 'leggett'],
+        read_colormag = species.ReadColorMagnitude('vlm-plx',
                                                    ('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                    'MKO/NSFCam.J')
 
@@ -35,17 +35,17 @@ class TestColor:
         assert read_colormag.filter_mag == 'MKO/NSFCam.J'
 
     def test_get_color_magnitude(self):
-        read_colormag = species.ReadColorMagnitude(['vlm-plx', 'leggett'],
+        read_colormag = species.ReadColorMagnitude('leggett',
                                                    ('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                    'MKO/NSFCam.J')
 
         colormag_box = read_colormag.get_color_magnitude(object_type=None)
 
-        assert np.nansum(colormag_box.color) == pytest.approx(234.09106)
-        assert np.nansum(colormag_box.magnitude) == pytest.approx(6794.118)
+        assert np.nansum(colormag_box.color) == pytest.approx(71.96)
+        assert np.nansum(colormag_box.magnitude) == pytest.approx(1519.373)
 
     def test_read_color_color(self):
-        read_colorcolor = species.ReadColorColor(['vlm-plx', ],
+        read_colorcolor = species.ReadColorColor('vlm-plx',
                                                  (('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                   ('MKO/NSFCam.H', 'MKO/NSFCam.K')))
 
@@ -53,7 +53,7 @@ class TestColor:
                                                   ('MKO/NSFCam.H', 'MKO/NSFCam.K'))
 
     def test_get_color_color(self):
-        read_colorcolor = species.ReadColorColor(['vlm-plx', ],
+        read_colorcolor = species.ReadColorColor('vlm-plx',
                                                  (('MKO/NSFCam.J', 'MKO/NSFCam.H'),
                                                   ('MKO/NSFCam.H', 'MKO/NSFCam.K')))
 
