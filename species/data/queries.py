@@ -162,7 +162,7 @@ def get_distance(target):
 
     # search VizieR catalogs
     if ma.is_masked(parallax):
-        
+
         for _, item in enumerate(catalogs):
             result = Vizier.query_object(target, catalog=item)
 

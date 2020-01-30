@@ -4,8 +4,8 @@ Text
 
 import os
 import warnings
+import urllib.request
 
-import wget
 import numpy as np
 
 from astropy.io.votable import parse_single_table
@@ -45,7 +45,7 @@ def add_spex(input_path, database):
 
     xml_file = os.path.join(data_path, 'spex.xml')
 
-    wget.download(url_all, out=xml_file, bar=None)
+    urllib.request.urlretrieve(url_all, xml_file)
 
     table = parse_single_table(xml_file)
     name = table.array['name']
@@ -59,7 +59,7 @@ def add_spex(input_path, database):
     for i, item in enumerate(url):
         if twomass[i] not in unique_id:
             xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
-            wget.download(item.decode('utf-8'), out=xml_file, bar=None)
+            urllib.request.urlretrieve(item.decode('utf-8'), xml_file)
 
             table = parse_single_table(xml_file)
             name = table.array['ID']
@@ -72,7 +72,7 @@ def add_spex(input_path, database):
             os.remove(xml_file)
 
             xml_file = os.path.join(data_path, name+'.xml')
-            wget.download(url[0].decode('utf-8'), out=xml_file, bar=None)
+            urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file)
 
             unique_id.append(twomass[i])
 

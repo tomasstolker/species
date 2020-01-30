@@ -3,8 +3,8 @@ Text
 """
 
 import os
+import urllib.request
 
-import wget
 import numpy as np
 
 from astropy.io import fits
@@ -31,10 +31,8 @@ def add_vega(input_path, database):
     url = 'http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits'
 
     if not os.path.isfile(data_file):
-        print('Downloading Vega spectrum (270 kB)...', end='')
-
-        wget.download(url, out=data_file, bar=None)
-
+        print('Downloading Vega spectrum (270 kB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
     if 'spectra/calibration' not in database:
@@ -56,7 +54,7 @@ def add_vega(input_path, database):
     error_stat *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
     error_sys *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
 
-    print('Adding Vega spectrum...', end='')
+    print('Adding Vega spectrum...', end='', flush=True)
 
     database.create_dataset('spectra/calibration/vega',
                             data=np.vstack((wavelength, flux, error_stat)),

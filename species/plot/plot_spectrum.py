@@ -427,7 +427,7 @@ def plot_spectrum(boxes,
     if filters:
         ax2.set_ylim(0., 1.1)
 
-    print(f'Plotting spectrum: {output}...', end='')
+    print(f'Plotting spectrum: {output}...', end='', flush=True)
 
     if title:
         if filters:

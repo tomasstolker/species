@@ -3,8 +3,8 @@ Text
 """
 
 import os
+import urllib.request
 
-import wget
 import h5py
 import numpy as np
 
@@ -36,13 +36,11 @@ def add_vlm_plx(input_path,
           'Database_of_Ultracool_Parallaxes_files/vlm-plx-all.fits'
 
     if not os.path.isfile(data_file):
-        print('Downloading Database of Ultracool Parallaxes (307 kB)...', end='')
-
-        wget.download(url, out=data_file, bar=None)
-
+        print('Downloading Database of Ultracool Parallaxes (307 kB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Adding Database of Ultracool Parallaxes...', end='')
+    print('Adding Database of Ultracool Parallaxes...', end='', flush=True)
 
     group = 'photometry/vlm-plx'
 

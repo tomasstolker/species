@@ -10,4 +10,3 @@ scipy ~= 1.4
 spectres ~= 2.0
 tqdm ~= 4.42
 xlrd ~= 1.2
-wget ~= 3.2

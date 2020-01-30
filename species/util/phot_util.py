@@ -31,7 +31,7 @@ def multi_photometry(datatype,
         Box with synthetic photometry.
     """
 
-    print('Calculating synthetic photometry...', end='')
+    print('Calculating synthetic photometry...', end='', flush=True)
 
     flux = {}
 
@@ -124,7 +124,7 @@ def get_residuals(datatype,
     else:
         res_phot = None
 
-    print('Calculating residuals...', end='')
+    print('Calculating residuals...', end='', flush=True)
 
     if inc_spec:
         wavel_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
@@ -135,7 +135,7 @@ def get_residuals(datatype,
 
         else:
             readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-            model = readmodel.get_model(model_param=parameters, spec_res=1000.)
+            model = readmodel.get_model(parameters, spec_res=None)
 
         wl_new = objectbox.spectrum[:, 0]
 

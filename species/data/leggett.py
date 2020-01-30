@@ -3,8 +3,8 @@ Text
 """
 
 import os
+import urllib.request
 
-import wget
 import h5py
 import numpy as np
 import pandas as pd
@@ -37,16 +37,16 @@ def add_leggett(input_path,
     url2 = 'http://staff.gemini.edu/~sleggett/datafile8.txt'
 
     if not os.path.isfile(data_file1):
-        print('Downloading Leggett L and T Dwarf Data (88 kB)...', end='')
-        wget.download(url1, out=data_file1, bar=None)
+        print('Downloading Leggett L and T Dwarf Data (88 kB)...', end='', flush=True)
+        urllib.request.urlretrieve(url1, data_file1)
         print(' [DONE]')
 
     if not os.path.isfile(data_file2):
-        print('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...', end='')
-        wget.download(url2, out=data_file2, bar=None)
+        print('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...', end='', flush=True)
+        urllib.request.urlretrieve(url2, data_file2)
         print(' [DONE]')
 
-    print('Adding Leggett L and T Dwarf Data...', end='')
+    print('Adding Leggett L and T Dwarf Data...', end='', flush=True)
 
     group = 'photometry/leggett'
 
@@ -79,7 +79,7 @@ def add_leggett(input_path,
     mag_w4 = np.repeat(np.nan, np.size(name))
 
     print(' [DONE]')
-    print('Adding Leggett T6+ and Y Dwarf Data...', end='')
+    print('Adding Leggett T6+ and Y Dwarf Data...', end='', flush=True)
 
     file_io = open(data_file2, 'r')
     lines = file_io.readlines()[69:]

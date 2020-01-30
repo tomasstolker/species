@@ -1,11 +1,11 @@
 """
-Module for DRIFT-PHOENIX atmospheric models.
+Module for DRIFT-PHOENIX atmospheric model spectra.
 """
 
 import os
 import tarfile
+import urllib.request
 
-import wget
 import numpy as np
 
 from species.util import data_util
@@ -19,7 +19,9 @@ def add_drift_phoenix(input_path,
     Parameters
     ----------
     input_path : str
+        Folder where the data is located.
     database : h5py._hl.files.File
+        Database.
 
     Returns
     -------
@@ -36,16 +38,14 @@ def add_drift_phoenix(input_path,
     url = 'https://people.phys.ethz.ch/~stolkert/species/drift-phoenix.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='')
-        wget.download(url, out=data_file, bar=None)
+        print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking DRIFT-PHOENIX model spectra...', end='')
-
+    print('Unpacking DRIFT-PHOENIX model spectra...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(input_path)
     tar.close()
-
     print(' [DONE]')
 
     teff = []

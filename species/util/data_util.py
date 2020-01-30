@@ -173,15 +173,19 @@ def sort_data(teff,
             spectrum[index_teff, index_logg, index_feh, index_co, index_fsed, :] = flux[i]
 
     if feh is None and co is None and fsed is None:
-        sorted_data = (teff_unique, logg_unique, wavelength, spectrum)
+        sorted_data = [teff_unique, logg_unique, wavelength, spectrum]
+
     elif feh is not None and co is None and fsed is None:
-        sorted_data = (teff_unique, logg_unique, feh_unique, wavelength, spectrum)
+        sorted_data = [teff_unique, logg_unique, feh_unique, wavelength, spectrum]
+
     elif feh is not None and co is not None and fsed is None:
-        sorted_data = (teff_unique, logg_unique, feh_unique, co_unique, wavelength, spectrum)
+        sorted_data = [teff_unique, logg_unique, feh_unique, co_unique, wavelength, spectrum]
+
     elif feh is not None and co is None and fsed is not None:
-        sorted_data = (teff_unique, logg_unique, feh_unique, fsed_unique, wavelength, spectrum)
+        sorted_data = [teff_unique, logg_unique, feh_unique, fsed_unique, wavelength, spectrum]
+
     else:
-        sorted_data = (teff_unique, logg_unique, feh_unique, co_unique, fsed_unique, wavelength, spectrum)
+        sorted_data = [teff_unique, logg_unique, feh_unique, co_unique, fsed_unique, wavelength, spectrum]
 
     return sorted_data
 

@@ -121,7 +121,7 @@ def lnlike(param,
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
-        model = modelspec.get_model(paramdict, None)
+        model = modelspec.get_model(paramdict)
 
         flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
                                      old_spec_wavs=model.wavelength,

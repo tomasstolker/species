@@ -42,7 +42,7 @@ def plot_walkers(tag,
     None
     """
 
-    print(f'Plotting walkers: {output}...', end='')
+    print(f'Plotting walkers: {output}...', end='', flush=True)
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -137,7 +137,7 @@ def plot_posteriors(tag,
     None
     """
 
-    print(f'Plotting posteriors: {output}...', end='')
+    print(f'Plotting posteriors: {output}...', end='', flush=True)
 
     species_db = database.Database()
     box = species_db.get_samples(tag, burnin=burnin)
@@ -229,7 +229,7 @@ def plot_photometry(tag,
 
     samples = species_db.get_mcmc_photometry(tag, burnin, filter_id)
 
-    print(f'Plotting photometry samples: {output}...', end='')
+    print(f'Plotting photometry samples: {output}...', end='', flush=True)
 
     fig = corner.corner(samples, labels=['Magnitude'], quantiles=[0.16, 0.5, 0.84],
                         label_kwargs={'fontsize': 13}, show_titles=True,

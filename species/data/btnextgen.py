@@ -1,11 +1,11 @@
 """
-Module for BT-NextGen atmospheric models.
+Module for BT-NextGen atmospheric model spectra.
 """
 
 import os
 import tarfile
+import urllib.request
 
-import wget
 import numpy as np
 import pandas as pd
 
@@ -16,9 +16,9 @@ from species.util import data_util
 
 def add_btnextgen(input_path,
                   database,
-                  wl_bound,
-                  teff_bound,
-                  specres):
+                  wavel_range,
+                  teff_range,
+                  spec_res):
     """
     Function for adding the BT-NextGen atmospheric models to the database.
 
@@ -28,11 +28,11 @@ def add_btnextgen(input_path,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    wl_bound : tuple(float, float)
+    wavel_range : tuple(float, float)
         Wavelength range (micron).
-    teff_bound : tuple(float, float), None
+    teff_range : tuple(float, float), None
         Effective temperature range (K).
-    specres : float
+    spec_res : float
         Spectral resolution.
 
     Returns
@@ -40,9 +40,6 @@ def add_btnextgen(input_path,
     NoneType
         None
     """
-
-    if not wl_bound:
-        wl_bound = (1e-2, 1e2)
 
     if not os.path.exists(input_path):
         os.makedirs(input_path)
@@ -65,16 +62,14 @@ def add_btnextgen(input_path,
         data_file = os.path.join(input_path, item)
 
         if not os.path.isfile(data_file):
-            print(f'Downloading BT-NextGen model spectra {labels[i]}...', end='')
-            wget.download(urls[i], out=data_file, bar=None)
+            print(f'Downloading BT-NextGen model spectra {labels[i]}...', end='', flush=True)
+            urllib.request.urlretrieve(urls[i], data_file)
             print(' [DONE]')
 
-        print(f'Unpacking BT-NextGen model spectra {labels[i]}...', end='')
-
+        print(f'Unpacking BT-NextGen model spectra {labels[i]}...', end='', flush=True)
         tar = tarfile.open(data_file)
         tar.extractall(data_folder)
         tar.close()
-
         print(' [DONE]')
 
     teff = []
@@ -82,10 +77,10 @@ def add_btnextgen(input_path,
     feh = []
     flux = []
 
-    wavelength = [wl_bound[0]]
+    wavelength = [wavel_range[0]]
 
-    while wavelength[-1] <= wl_bound[1]:
-        wavelength.append(wavelength[-1] + wavelength[-1]/specres)
+    while wavelength[-1] <= wavel_range[1]:
+        wavelength.append(wavelength[-1] + wavelength[-1]/spec_res)
 
     wavelength = np.asarray(wavelength[:-1])
 
@@ -98,15 +93,13 @@ def add_btnextgen(input_path,
 
                 teff_val = float(filename[3:6])*100.
 
-                if teff_bound is not None:
-
-                    if teff_bound[0] <= teff_val <= teff_bound[1]:
-                        teff.append(teff_val)
-                        logg.append(float(filename[7:9]))
-                        feh.append(float(filename[11:14]))
-
-                    else:
+                if teff_range is not None:
+                    if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
+
+                teff.append(teff_val)
+                logg.append(float(filename[7:9]))
+                feh.append(float(filename[11:14]))
 
                 dataf = pd.pandas.read_csv(data_folder+filename,
                                            usecols=[0, 1],
@@ -139,8 +132,8 @@ def add_btnextgen(input_path,
                 if np.all(np.diff(data[0, :]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[0, :] >= wl_bound[0]) &
-                                   (data[0, :] <= wl_bound[1]))[0]
+                indices = np.where((data[0, :] >= wavel_range[0]) &
+                                   (data[0, :] <= wavel_range[1]))[0]
 
                 data = data[:, indices]
 

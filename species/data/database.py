@@ -157,7 +157,7 @@ class Database:
         if 'filters/'+filter_name in h5_file:
             del h5_file['filters/'+filter_name]
 
-        print(f'Adding filter: {filter_name}...', end='')
+        print(f'Adding filter: {filter_name}...', end='', flush=True)
 
         if filename:
             data = np.loadtxt(filename)
@@ -218,8 +218,8 @@ class Database:
     def add_model(self,
                   model,
                   wavel_range=None,
+                  spec_res=None,
                   teff_range=None,
-                  spec_res=1000.,
                   data_folder=None):
         """
         Parameters
@@ -229,11 +229,15 @@ class Database:
             'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear', or
             'petitcode-hot-cloudy').
         wavel_range : tuple(float, float), None
-            Wavelength range (micron).
+            Wavelength range (micron). Not required for the DRIFT-PHOENIX and petitCODE models, in
+            which case the argument can be set to None.
+        spec_res : float, None
+            Spectral resolution. Not required for the DRIFT-PHOENIX and petitCODE models, in which
+            case the argument can be set to None.
         teff_range : tuple(float, float), None
-            Effective temperature range (K).
-        spec_res : float
-            Spectral resolution.
+            Effective temperature range (K). Not required for the DRIFT-PHOENIX and petitCODE
+            models, in which case the argument can be set to None. Setting the value to None for
+            the other models will add all available temperatures.
         data_folder : str, None
             Folder with input data. Only required for the petitCODE hot models which are not
             publically available.
@@ -244,52 +248,85 @@ class Database:
             None
         """
 
+        if model in ['petitcode-hot-clear', 'petitcode-hot-cloudy'] and data_folder is None:
+            raise ValueError('The petitCODE hot models are not publicly available and should '
+                             'be imported by setting the \'data_folder\' parameter. Please '
+                             'contact Paul Mollière (molliere@mpia.de) for the model spectra.')
+
+        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and wavel_range is not None:
+            warnings.warn('The \'wavel_range\' parameter is not required for the DRIFT-PHOENIX '
+                          'and petitCODE model spectra because they are sampled on a fixed '
+                          'wavelength grid.')
+
+        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and spec_res is not None:
+            warnings.warn('The \'spec_res\' parameter is not required for the DRIFT-PHOENIX and '
+                          'petitCODE model spectra because they are sampled on a fixed wavelength '
+                          'grid.')
+
+        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and wavel_range is None:
+            raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
+                             'resample the original spectra on a fixed wavelength grid.')
+
+        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and spec_res is None:
+            raise ValueError('The \'spec_res\' should be set for the \'{model}\' models to '
+                             'resample the original spectra on a fixed wavelength grid.')
+
+        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and teff_range is not None:
+            warnings.warn('The \'teff_range\' parameter is ignored for the DRIFT-PHOENIX and '
+                          'petitCODE model spectra.')
+
+        if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
+            warnings.warn('The temperature range is not restricted with the \'teff_range\''
+                          'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
+                          'will be very slow.')
+
         h5_file = h5py.File(self.database, 'a')
 
         if 'models' not in h5_file:
             h5_file.create_group('models')
 
-        if model[0:13] == 'drift-phoenix':
-            drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
-            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
+        if model == 'ames-cond':
+            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
-        elif model[0:8] == 'bt-settl':
-            btsettl.add_btsettl(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg'), h5_file)
-
-        elif model[0:10] == 'bt-nextgen':
-            btnextgen.add_btnextgen(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
-
-        elif model[0:10] == 'ames-dusty':
+        elif model == 'ames-dusty':
             ames_dusty.add_ames_dusty(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg'), h5_file)
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
-        elif model[0:9] == 'ames-cond':
-            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg'), h5_file)
+        elif model == 'bt-settl':
+            btsettl.add_btsettl(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
-        elif model[0:9] == 'ames-cond':
-            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg'), h5_file)
+        elif model == 'bt-nextgen':
+            btnextgen.add_btnextgen(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
-        elif model[0:20] == 'petitcode-cool-clear':
-            petitcode.add_petitcode_cool_clear(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg', 'feh'), h5_file)
+        elif model == 'drift-phoenix':
+            drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
-        elif model[0:21] == 'petitcode-cool-cloudy':
-            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-            data_util.add_missing(model, ('teff', 'logg', 'feh', 'fsed'), h5_file)
+        elif model == 'petitcode-cool-clear':
+            petitcode.add_petitcode_cool_clear(self.input_path, h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
-        elif model[0:19] == 'petitcode-hot-clear':
-            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, wavel_range, teff_range,
-                                              spec_res, data_folder)
-            data_util.add_missing(model, ('teff', 'logg', 'feh', 'co'), h5_file)
+        elif model == 'petitcode-cool-cloudy':
+            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'fsed'], h5_file)
 
-        elif model[0:20] == 'petitcode-hot-cloudy':
-            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, wavel_range, teff_range,
-                                               spec_res, data_folder)
-            data_util.add_missing(model, ('teff', 'logg', 'feh', 'co', 'fsed'), h5_file)
+        elif model == 'petitcode-hot-clear':
+            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, data_folder)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co'], h5_file)
+
+        elif model == 'petitcode-hot-cloudy':
+            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, data_folder)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co', 'fsed'], h5_file)
+
+        else:
+            raise ValueError(f'The {model} atmospheric model does not exist. Please choose from '
+                             f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
+                             f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
+                             f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
+                             f'\'petitcode-hot-cloudy\'.')
 
         h5_file.close()
 
@@ -366,7 +403,7 @@ class Database:
                                        data=data,
                                        dtype='f')
 
-        print(f'Adding object: {object_name}...', end='')
+        print(f'Adding object: {object_name}...', end='', flush=True)
 
         if spectrum is not None:
 
@@ -494,7 +531,7 @@ class Database:
         else:
             error = np.repeat(0., wavelength.size)
 
-        print(f'Adding calibration spectrum: {tag}...', end='')
+        print(f'Adding calibration spectrum: {tag}...', end='', flush=True)
 
         h5_file.create_dataset('spectra/calibration/'+tag,
                                data=np.vstack((wavelength, flux, error)),
@@ -650,7 +687,7 @@ class Database:
         max_sample = samples[index_max]
 
         # print(f'Maximum probability: {max_prob:.2f}')
-        # print(f'Most probable sample:', end='')
+        # print(f'Most probable sample:', end='', flush=True)
 
         prob_sample = {}
 
@@ -696,7 +733,7 @@ class Database:
         samples = samples[:, burnin:, :]
         samples = np.reshape(samples, (-1, nparam))
 
-        # print(f'Median sample:', end='')
+        # print(f'Median sample:', end='', flush=True)
 
         median_sample = {}
 
@@ -705,7 +742,7 @@ class Database:
             par_value = np.percentile(samples[:, i], 50.)
 
             median_sample[par_key] = par_value
-            # print(f' {par_key}={par_value:.2f}', end='')
+            # print(f' {par_key}={par_value:.2f}', end='', flush=True)
 
         if dset.attrs.__contains__('distance'):
             median_sample['distance'] = dset.attrs['distance']
@@ -735,7 +772,8 @@ class Database:
             Wavelength range (micron) or filter name. Full spectrum if set to None.
         spec_res : float
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None.
+            wavelength points are used if set to None. Note that this requires equally-spaced
+            wavelength bins.
 
         Returns
         -------
@@ -793,7 +831,7 @@ class Database:
                 if spectrum_name == 'planck':
                     specbox = readmodel.get_spectrum(model_param, spec_res)
                 else:
-                    specbox = readmodel.get_model(model_param, spec_res)
+                    specbox = readmodel.get_model(model_param, spec_res=spec_res, smooth=True)
 
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_param)
@@ -881,8 +919,8 @@ class Database:
         object_name : str
             Object name in the database.
         filters : list(str, )
-            Filter names for which the photometry is selected. All available photometry of the object
-            is selected if set to None.
+            Filter names for which the photometry is selected. All available photometry of the
+            object is selected if set to None.
         inc_phot : bool
             Include photometry in the box.
         inc_spec : bool
@@ -894,7 +932,7 @@ class Database:
             Box with the object's data.
         """
 
-        print(f'Getting object: {object_name}...', end='')
+        print(f'Getting object: {object_name}...', end='', flush=True)
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file['objects/'+object_name]

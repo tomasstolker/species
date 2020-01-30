@@ -63,7 +63,7 @@ def add_baraffe(database,
     index_sort = np.argsort(isochrones[:, 0])
     isochrones = isochrones[index_sort, :]
 
-    print(f'Adding isochrones: {tag}...', end='')
+    print(f'Adding isochrones: {tag}...', end='', flush=True)
 
     bytes_type = h5py.special_dtype(vlen=bytes)
 
@@ -120,7 +120,7 @@ def add_marleau(database,
 
     logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
 
-    print(f'Adding isochrones: {tag}...', end='')
+    print(f'Adding isochrones: {tag}...', end='', flush=True)
 
     isochrones = np.vstack((age, mass, teff, luminosity, logg))
     isochrones = np.transpose(isochrones)

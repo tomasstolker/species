@@ -80,7 +80,7 @@ def plot_color_magnitude(boxes,
 
     """
 
-    print(f'Plotting color-magnitude diagram: {output}... ', end='')
+    print(f'Plotting color-magnitude diagram: {output}... ', end='', flush=True)
 
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')
@@ -401,7 +401,7 @@ def plot_color_color(boxes,
         None
     """
 
-    print(f'Plotting color-color diagram: {output}... ', end='')
+    print(f'Plotting color-color diagram: {output}... ', end='', flush=True)
 
     model_color = ('#234398', '#f6a432')
     model_linestyle = ('-', '--', ':', '-.')

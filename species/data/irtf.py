@@ -4,8 +4,8 @@ Module for adding IRTF spectra tot the database.
 
 import os
 import tarfile
+import urllib.request
 
-import wget
 import numpy as np
 
 from astropy.io import fits
@@ -73,10 +73,10 @@ def add_irtf(input_path,
     for item in sptypes:
         if not os.path.isfile(data_file[item]):
             print(f'Downloading IRTF Spectral Library - {data_type[item]}...', end='')
-            wget.download(url[item], out=data_file[item], bar=None)
+            urllib.request.urlretrieve(url[item], data_file[item])
             print(' [DONE]')
 
-    print('Unpacking IRTF Spectral Library...', end='')
+    print('Unpacking IRTF Spectral Library...', end='', flush=True)
 
     for item in sptypes:
         tar = tarfile.open(data_file[item])

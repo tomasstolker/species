@@ -1,11 +1,11 @@
 """
-Module for BT-Settl atmospheric models.
+Module for BT-Settl atmospheric model spectra.
 """
 
 import os
 import tarfile
+import urllib.request
 
-import wget
 import numpy as np
 import pandas as pd
 
@@ -16,9 +16,9 @@ from species.util import data_util
 
 def add_btsettl(input_path,
                 database,
-                wl_bound,
-                teff_bound,
-                specres):
+                wavel_range,
+                teff_range,
+                spec_res):
     """
     Function for adding the BT-Settl atmospheric models to the database.
 
@@ -28,11 +28,11 @@ def add_btsettl(input_path,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    wl_bound : tuple(float, float)
+    wavel_range : tuple(float, float)
         Wavelength range (micron).
-    teff_bound : tuple(float, float), None
+    teff_range : tuple(float, float), None
         Effective temperature range (K).
-    specres : float
+    spec_res : float
         Spectral resolution.
 
     Returns
@@ -41,42 +41,36 @@ def add_btsettl(input_path,
         None
     """
 
-    if not wl_bound:
-        wl_bound = (1e-2, 1e2)
-
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
     data_folder = os.path.join(input_path, 'bt-settl/')
 
     input_file = 'BT-Settl_M-0.0_a+0.0.tar'
-    label = '(5.8 GB)'
 
     url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/BT-Settl_M-0.0_a+0.0.tar'
 
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print(f'Downloading BT-Settl model spectra {label}...', end='')
-        wget.download(url, out=data_file, bar=None)
+        print('Downloading BT-Settl model spectra (5.8 GB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print(f'Unpacking BT-Settl model spectra {label}...', end='')
-
+    print('Unpacking BT-Settl model spectra (5.8 GB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
-
     print(' [DONE]')
 
     teff = []
     logg = []
     flux = []
 
-    wavelength = [wl_bound[0]]
+    wavelength = [wavel_range[0]]
 
-    while wavelength[-1] <= wl_bound[1]:
-        wavelength.append(wavelength[-1] + wavelength[-1]/specres)
+    while wavelength[-1] <= wavel_range[1]:
+        wavelength.append(wavelength[-1] + wavelength[-1]/spec_res)
 
     wavelength = np.asarray(wavelength[:-1])
 
@@ -97,8 +91,12 @@ def add_btsettl(input_path,
                     logg_val = float(filename[9:12])
                     feh_val = float(filename[13:16])
 
-                if teff_bound is not None:
-                    if teff_val < teff_bound[0] or teff_val > teff_bound[1]:
+                else:
+                    raise ValueError('The length of the filename is not compatible for reading '
+                                     'the parameter values.')
+
+                if teff_range is not None:
+                    if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
                 if feh_val != 0.:
@@ -135,8 +133,8 @@ def add_btsettl(input_path,
                 if np.all(np.diff(data[:, 0]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[:, 0] >= wl_bound[0]) &
-                                   (data[:, 0] <= wl_bound[1]))[0]
+                indices = np.where((data[:, 0] >= wavel_range[0]) &
+                                   (data[:, 0] <= wavel_range[1]))[0]
 
                 if indices.size > 0:
                     teff.append(teff_val)
@@ -160,7 +158,7 @@ def add_btsettl(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-settl', ('teff', 'logg'), database, data_sorted)
+    data_util.write_data('bt-settl', ['teff', 'logg'], database, data_sorted)
 
     print_message = 'Adding BT-Settl model spectra... [DONE]'
     print(f'\r{print_message:<80}')

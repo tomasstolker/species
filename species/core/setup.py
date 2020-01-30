@@ -23,7 +23,7 @@ class SpeciesInit:
             None
         """
 
-        print(f'Initiating species v{species.__version__}...', end='')
+        print(f'Initiating species v{species.__version__}...', end='', flush=True)
 
         working_folder = os.path.abspath(os.getcwd())
 
@@ -33,7 +33,7 @@ class SpeciesInit:
 
         if not os.path.isfile(config_file):
 
-            print('Creating species_config.ini...', end='')
+            print('Creating species_config.ini...', end='', flush=True)
 
             with open(config_file, 'w') as file_obj:
                 file_obj.write('[species]\n')
@@ -53,12 +53,12 @@ class SpeciesInit:
         print(f'Working folder: {working_folder}')
 
         if not os.path.isfile(database_file):
-            print('Creating species_database.hdf5...', end='')
+            print('Creating species_database.hdf5...', end='', flush=True)
             h5_file = h5py.File(database_file, 'w')
             h5_file.close()
             print(' [DONE]')
 
         if not os.path.exists(data_folder):
-            print('Creating data folder...', end='')
+            print('Creating data folder...', end='', flush=True)
             os.makedirs(data_folder)
             print(' [DONE]')

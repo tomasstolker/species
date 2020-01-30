@@ -1,7 +1,7 @@
 import os
 import shutil
+import urllib.request
 
-import wget
 import numpy as np
 
 import species
@@ -19,7 +19,7 @@ class TestIsochrone:
         url = 'https://phoenix.ens-lyon.fr/Grids/AMES-Cond/ISOCHRONES/' \
               'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
-        wget.download(url, out=filename, bar=None)
+        urllib.request.urlretrieve(url, filename)
 
     def teardown_class(self):
         os.remove('species_database.hdf5')
@@ -33,7 +33,11 @@ class TestIsochrone:
     def test_read_isochrone(self):
         database = species.Database()
         database.add_isochrones('model.AMES-Cond-2000.M-0.0.NaCo.Vega', 'ames-cond_isochrone')
-        database.add_model('ames-cond', teff_range=(2000., 2500))
+
+        database.add_model('ames-cond',
+                           wavel_range=(1., 5.),
+                           spec_res=100.,
+                           teff_range=(2000., 2500))
 
         read_isochrone = species.ReadIsochrone('ames-cond_isochrone')
         assert read_isochrone.tag == 'ames-cond_isochrone'
@@ -74,10 +78,10 @@ class TestIsochrone:
         assert colormag_box.color.shape == (10, )
         assert colormag_box.magnitude.shape == (10, )
 
-        assert np.allclose(np.sum(colormag_box.color), 2.6331156719128295,
+        assert np.allclose(np.sum(colormag_box.color), 1.4008303791405279,
                            rtol=self.limit, atol=0.)
 
-        assert np.allclose(np.sum(colormag_box.magnitude), 109.7461532106704,
+        assert np.allclose(np.sum(colormag_box.magnitude), 109.04012329375813,
                            rtol=self.limit, atol=0.)
 
         assert np.allclose(np.sum(colormag_box.sptype), 400.,
@@ -96,10 +100,10 @@ class TestIsochrone:
         assert colorcolor_box.color1.shape == (10, )
         assert colorcolor_box.color2.shape == (10, )
 
-        assert np.allclose(np.sum(colorcolor_box.color1), 2.6331156719128295,
+        assert np.allclose(np.sum(colorcolor_box.color1), 1.4008303791405279,
                            rtol=self.limit, atol=0.)
 
-        assert np.allclose(np.sum(colorcolor_box.color2), 3.5341201019561055,
+        assert np.allclose(np.sum(colorcolor_box.color2), 3.3543215260896577,
                            rtol=self.limit, atol=0.)
 
         assert np.allclose(np.sum(colorcolor_box.sptype), 400.,
