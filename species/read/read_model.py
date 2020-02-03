@@ -324,6 +324,7 @@ class ReadModel:
                         index_error = True
 
                     if not index_error:
+                        wavel_resample = wavel_resample[indices][i:-i]
                         break
 
         if magnitude:
