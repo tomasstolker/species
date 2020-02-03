@@ -371,18 +371,20 @@ def plot_spectrum(boxes,
                                  color=color_obj_phot, markerfacecolor=color_obj_phot)
 
             if boxitem.spectrum is not None:
-                masked = np.ma.array(boxitem.spectrum, mask=np.isnan(boxitem.spectrum))
+                for key, value in boxitem.spectrum.items():
+                    masked = np.ma.array(boxitem.spectrum[key][0],
+                                         mask=np.isnan(boxitem.spectrum[key][0]))
 
-                color_obj_spec = colors[j][1]
+                    color_obj_spec = colors[j][1]
 
-                if colors is None:
-                    ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                 ms=2, marker='s', zorder=2.5, ls='none')
+                    if colors is None:
+                        ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
+                                     ms=2, marker='s', zorder=2.5, ls='none')
 
-                else:
-                    ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                 marker='o', ms=2, zorder=2.5, color=color_obj_spec,
-                                 markerfacecolor=color_obj_spec, ls='none')
+                    else:
+                        ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
+                                     marker='o', ms=2, zorder=2.5, color=color_obj_spec,
+                                     markerfacecolor=color_obj_spec, ls='none')
 
         elif isinstance(boxitem, box.SynphotBox):
             for item in boxitem.flux:
@@ -411,13 +413,14 @@ def plot_spectrum(boxes,
             res_max = np.nanmax(np.abs(residuals.photometry[1, ]))
 
         if residuals.spectrum is not None:
-            ax3.plot(residuals.spectrum[0, ], residuals.spectrum[1, ], marker='o',
-                     ms=2, linestyle='none', color=color_obj_spec, zorder=1)
+            for key, value in residuals.spectrum.items():
+                ax3.plot(value[:, 0], value[:, 1], marker='o',
+                         ms=2, linestyle='none', color=color_obj_spec, zorder=1)
 
-            max_tmp = np.nanmax(np.abs(residuals.spectrum[1, ]))
+                max_tmp = np.nanmax(np.abs(value[:, 1]))
 
-            if max_tmp > res_max:
-                res_max = max_tmp
+                if max_tmp > res_max:
+                    res_max = max_tmp
 
         res_lim = math.ceil(1.1*res_max)
 

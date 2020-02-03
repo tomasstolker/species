@@ -25,6 +25,7 @@ class TestIsochrone:
         os.remove('species_database.hdf5')
         os.remove('species_config.ini')
         os.remove('model.AMES-Cond-2000.M-0.0.NaCo.Vega')
+        shutil.rmtree('data/')
 
     def test_species_init(self):
         test_util.create_config('./')
@@ -78,10 +79,10 @@ class TestIsochrone:
         assert colormag_box.color.shape == (10, )
         assert colormag_box.magnitude.shape == (10, )
 
-        assert np.allclose(np.sum(colormag_box.color), 1.4008303791405279,
+        assert np.allclose(np.sum(colormag_box.color), 2.5051430554779106,
                            rtol=self.limit, atol=0.)
 
-        assert np.allclose(np.sum(colormag_box.magnitude), 109.04012329375813,
+        assert np.allclose(np.sum(colormag_box.magnitude), 109.60059994388715,
                            rtol=self.limit, atol=0.)
 
         assert np.allclose(np.sum(colormag_box.sptype), 400.,
@@ -100,10 +101,10 @@ class TestIsochrone:
         assert colorcolor_box.color1.shape == (10, )
         assert colorcolor_box.color2.shape == (10, )
 
-        assert np.allclose(np.sum(colorcolor_box.color1), 1.4008303791405279,
+        assert np.allclose(np.sum(colorcolor_box.color1), 2.5051430554779106,
                            rtol=self.limit, atol=0.)
 
-        assert np.allclose(np.sum(colorcolor_box.color2), 3.3543215260896577,
+        assert np.allclose(np.sum(colorcolor_box.color2), 3.3549617411553143,
                            rtol=self.limit, atol=0.)
 
         assert np.allclose(np.sum(colorcolor_box.sptype), 400.,

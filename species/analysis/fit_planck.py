@@ -53,8 +53,7 @@ def lnlike(param,
            objphot,
            synphot,
            distance,
-           spectrum,
-           weighting):
+           spectrum):
     """
     Internal function for the likelihood probability.
 
@@ -76,12 +75,6 @@ def lnlike(param,
     spectrum : numpy.ndarray, None
         Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
         (W m-2 micron-1). Not used if set to None.
-    weighting : float, None
-        Weighting applied to the spectrum when calculating the likelihood function in order
-        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-        that is equal to three photometry points. The spectrum data points have an equal
-        weighting as the photometry points if set to None.
 
     Returns
     -------
@@ -105,21 +98,26 @@ def lnlike(param,
             chisq += (obj_item[0]-flux)**2 / obj_item[1]**2
 
     if spectrum is not None:
-        readplanck = read_planck.ReadPlanck((0.9*spectrum[0, 0], 1.1*spectrum[-1, 0]))
+        for i, item in enumerate(spectrum.keys()):
+            readplanck = read_planck.ReadPlanck((0.9*spectrum[item][0][0, 0],
+                                                 1.1*spectrum[item][0][-1, 0]))
 
-        model = readplanck.get_spectrum(paramdict, 100.)
+            model = readplanck.get_spectrum(paramdict, 100.)
 
-        flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
-                                     old_spec_wavs=model.wavelength,
-                                     spec_fluxes=model.flux,
-                                     spec_errs=None)
+            flux_new = spectres.spectres(new_spec_wavs=spectrum[item][0][:, 0],
+                                         old_spec_wavs=model.wavelength,
+                                         spec_fluxes=model.flux,
+                                         spec_errs=None)
 
-        if weighting is None:
-            chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+            if spectrum[item][1] is not None:
+                spec_res = spectrum[item][0][:, 1] - flux_new
 
-        else:
-            chisq += (weighting/float(spectrum[:, 0].size)) * \
-                      np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+                dot_tmp = np.dot(np.transpose(spec_res), np.linalg.inv(spectrum[item][1]))
+                chisq += np.dot(dot_tmp, spec_res)
+
+            else:
+                chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /
+                                   spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
 
@@ -129,8 +127,7 @@ def lnprob(param,
            objphot,
            synphot,
            distance,
-           spectrum,
-           weighting):
+           spectrum):
     """
     Internal function for the posterior probability.
 
@@ -152,12 +149,6 @@ def lnprob(param,
     spectrum : numpy.ndarray, None
         Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
         (W m-2 micron-1). Not used if set to None.
-    weighting : float, None
-        Weighting applied to the spectrum when calculating the likelihood function in order
-        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-        that is equal to three photometry points. The spectrum data points have an equal
-        weighting as the photometry points if set to None.
 
     Returns
     -------
@@ -176,8 +167,7 @@ def lnprob(param,
                                     objphot,
                                     synphot,
                                     distance,
-                                    spectrum,
-                                    weighting)
+                                    spectrum)
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -267,18 +257,14 @@ class FitPlanck:
 
         if inc_spec:
             self.spectrum = self.object.get_spectrum()
-            self.instrument = self.object.get_instrument()
-
         else:
             self.spectrum = None
-            self.instrument = None
 
     def run_mcmc(self,
                  nwalkers,
                  nsteps,
                  guess,
-                 tag,
-                 weighting=None):
+                 tag):
         """
         Function to run the MCMC sampler.
 
@@ -295,12 +281,6 @@ class FitPlanck:
             ``{'teff': [1500., 1000.], 'radius': [1., 2.]``.
         tag : str
             Database tag where the MCMC samples are stored.
-        weighting : float, None
-            Weighting applied to the spectrum when calculating the likelihood function in order
-            to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-            then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-            that is equal to three photometry points. The spectrum data points have an equal
-            weighting as the photometry points if set to None.
 
         Returns
         -------
@@ -348,8 +328,7 @@ class FitPlanck:
                                                    self.objphot,
                                                    self.synphot,
                                                    self.distance,
-                                                   self.spectrum,
-                                                   weighting]))
+                                                   self.spectrum]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
 

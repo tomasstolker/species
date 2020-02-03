@@ -1,5 +1,5 @@
 """
-Module with functionalities for fitting atmospheric model specra.
+Module with functionalities for fitting atmospheric model spectra.
 """
 
 import math
@@ -75,8 +75,7 @@ def lnlike(param,
            synphot,
            distance,
            spectrum,
-           modelspec,
-           weighting):
+           modelspec):
     """
     Internal function for the likelihood probability.
 
@@ -86,20 +85,14 @@ def lnlike(param,
         Parameter values.
     modelpar : list(str, )
         Parameter names.
-    modelphot : list('species.read.read_model.ReadModel, )
+    modelphot : list(species.read.read_model.ReadModel, )
     objphot : list(tuple(float, float), )
     synphot : list(species.analysis.photometry.SyntheticPhotometry, )
     distance : float
         Distance (pc).
-    spectrum : numpy.ndarray
+    spectrum : dict
         Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    modelspec : species.read.read_model.ReadModel
-    weighting : float, None
-        Weighting applied to the spectrum when calculating the likelihood function in order
-        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-        that is equal to three photometry points. The spectrum data points have an equal
-        weighting as the photometry points if set to None.
+    modelspec : list(species.read.read_model.ReadModel, )
 
     Returns
     -------
@@ -121,19 +114,23 @@ def lnlike(param,
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
-        model = modelspec.get_model(paramdict)
+        for i, item in enumerate(spectrum.keys()):
+            model = modelspec[i].get_model(paramdict)
 
-        flux_new = spectres.spectres(new_spec_wavs=spectrum[:, 0],
-                                     old_spec_wavs=model.wavelength,
-                                     spec_fluxes=model.flux,
-                                     spec_errs=None)
+            flux_new = spectres.spectres(new_spec_wavs=spectrum[item][0][:, 0],
+                                         old_spec_wavs=model.wavelength,
+                                         spec_fluxes=model.flux,
+                                         spec_errs=None)
 
-        if weighting is None:
-            chisq += np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+            if spectrum[item][1] is not None:
+                spec_res = spectrum[item][0][:, 1] - flux_new
 
-        else:
-            chisq += (weighting/float(spectrum[:, 0].size)) * \
-                      np.nansum((spectrum[:, 1] - flux_new)**2/spectrum[:, 2]**2)
+                dot_tmp = np.dot(np.transpose(spec_res), np.linalg.inv(spectrum[item][1]))
+                chisq += np.dot(dot_tmp, spec_res)
+
+            else:
+                chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /
+                                   spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
 
@@ -147,8 +144,7 @@ def lnprob(param,
            distance,
            prior,
            spectrum,
-           modelspec,
-           weighting):
+           modelspec):
     """
     Internal function for the posterior probability.
 
@@ -169,15 +165,9 @@ def lnprob(param,
         Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
         ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
         used if set to None.
-    spectrum : numpy.ndarray
+    spectrum : dict
         Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
-    modelspec : species.read.read_model.ReadModel
-    weighting : float, None
-        Weighting applied to the spectrum when calculating the likelihood function in order
-        to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-        then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-        that is equal to three photometry points. The spectrum data points have an equal
-        weighting as the photometry points if set to None.
+    modelspec : list(species.read.read_model.ReadModel, )
 
     Returns
     -------
@@ -198,8 +188,7 @@ def lnprob(param,
                                     synphot,
                                     distance,
                                     spectrum,
-                                    modelspec,
-                                    weighting)
+                                    modelspec)
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -295,12 +284,14 @@ class FitModel:
 
         if inc_spec:
             self.spectrum = self.object.get_spectrum()
-            self.instrument = self.object.get_instrument()
-            self.modelspec = read_model.ReadModel(self.model, wavel_range=(0.9, 2.5))
+
+            self.modelspec = []
+            for key, value in self.spectrum.items():
+                wavel_range = (0.9*value[0][0, 0], 1.1*value[0][-1, 0])
+                self.modelspec.append(read_model.ReadModel(self.model, wavel_range=wavel_range))
 
         else:
             self.spectrum = None
-            self.instrument = None
             self.modelspec = None
 
         self.modelpar = readmodel.get_parameters()
@@ -311,8 +302,7 @@ class FitModel:
                  nsteps,
                  guess,
                  tag,
-                 prior=None,
-                 weighting=None):
+                 prior=None):
         """
         Function to run the MCMC sampler.
 
@@ -331,12 +321,6 @@ class FitModel:
             Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
             ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
             used if set to None.
-        weighting : float, None
-            Weighting applied to the spectrum when calculating the likelihood function in order
-            to not have a spectrum dominate the chi-squared value. For example, with `weighting=3`
-            then all combined spectrum points (e.g. covering the YJH bandpasses) have a weighted
-            that is equal to three photometry points. The spectrum data points have an equal
-            weighting as the photometry points if set to None.
 
         Returns
         -------
@@ -344,7 +328,7 @@ class FitModel:
             None
         """
 
-        sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'radius': 0.01}
+        sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'fsed': 0.01, 'co': 0.01, 'radius': 0.01}
 
         print('Running MCMC...')
 
@@ -372,8 +356,7 @@ class FitModel:
                                                    self.distance,
                                                    prior,
                                                    self.spectrum,
-                                                   self.modelspec,
-                                                   weighting]))
+                                                   self.modelspec]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
 

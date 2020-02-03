@@ -46,11 +46,11 @@ class TestObject:
         assert photometry[2] == pytest.approx(1.5898817e-15)
         assert photometry[3] == pytest.approx(8.790484e-17)
 
-    def test_get_instrument(self):
-        read_object = species.ReadObject('beta Pic b')
-        instrument = read_object.get_instrument()
-
-        assert instrument is None
+    # def test_get_instrument(self):
+    #     read_object = species.ReadObject('beta Pic b')
+    #     instrument = read_object.get_instrument()
+    #
+    #     assert instrument is None
 
     def test_get_distance(self):
         read_object = species.ReadObject('beta Pic b')

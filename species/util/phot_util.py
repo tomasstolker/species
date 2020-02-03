@@ -127,27 +127,30 @@ def get_residuals(datatype,
     print('Calculating residuals...', end='', flush=True)
 
     if inc_spec:
-        wavel_range = (0.9*objectbox.spectrum[0, 0], 1.1*objectbox.spectrum[-1, 0])
+        res_spec = {}
 
-        if spectrum == 'planck':
-            readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
-            model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
+        for key in objectbox.spectrum:
+            wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
+                           1.1*objectbox.spectrum[key][0][-1, 0])
 
-        else:
-            readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-            model = readmodel.get_model(parameters, spec_res=None)
+            if spectrum == 'planck':
+                readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
+                model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-        wl_new = objectbox.spectrum[:, 0]
+            else:
+                readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
+                model = readmodel.get_model(parameters, spec_res=None)
 
-        flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                                     old_spec_wavs=model.wavelength,
-                                     spec_fluxes=model.flux,
-                                     spec_errs=None)
+            wl_new = objectbox.spectrum[key][0][:, 0]
 
-        res_spec = np.zeros((2, objectbox.spectrum.shape[0]))
+            flux_new = spectres.spectres(new_spec_wavs=wl_new,
+                                         old_spec_wavs=model.wavelength,
+                                         spec_fluxes=model.flux,
+                                         spec_errs=None)
 
-        res_spec[0, :] = wl_new
-        res_spec[1, :] = (objectbox.spectrum[:, 1]-flux_new)/objectbox.spectrum[:, 2]
+            res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
+
+            res_spec[key] = np.column_stack([wl_new, res_tmp])
 
     else:
         res_spec = None

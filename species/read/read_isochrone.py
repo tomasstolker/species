@@ -183,13 +183,18 @@ class ReadIsochrone:
         model1 = read_model.ReadModel(model=model, filter_name=filters_color[0])
         model2 = read_model.ReadModel(model=model, filter_name=filters_color[1])
 
+        if model1.get_parameters() != ['teff', 'logg']:
+            raise ValueError('Creating synthetic colors and magnitudes from isochrones is '
+                             'currently only implemented for models with only Teff and log(g) '
+                             'as free parameters. Please contact Tomas Stolker if additional '
+                             'functionalities are required.')
+
         mag1 = np.zeros(isochrone.masses.shape[0])
         mag2 = np.zeros(isochrone.masses.shape[0])
 
         for i, mass_item in enumerate(isochrone.masses):
             model_param = {'teff': isochrone.teff[i],
                            'logg': isochrone.logg[i],
-                           'feh': 0.,
                            'mass': mass_item,
                            'distance': 10.}
 
@@ -266,6 +271,12 @@ class ReadIsochrone:
         model3 = read_model.ReadModel(model=model, filter_name=filters[1][0])
         model4 = read_model.ReadModel(model=model, filter_name=filters[1][1])
 
+        if model1.get_parameters() != ['teff', 'logg']:
+            raise ValueError('Creating synthetic colors and magnitudes from isochrones is '
+                             'currently only implemented for models with only Teff and log(g) '
+                             'as free parameters. Please contact Tomas Stolker if additional '
+                             'functionalities are required.')
+
         mag1 = np.zeros(isochrone.masses.shape[0])
         mag2 = np.zeros(isochrone.masses.shape[0])
         mag3 = np.zeros(isochrone.masses.shape[0])
@@ -274,7 +285,6 @@ class ReadIsochrone:
         for i, mass_item in enumerate(isochrone.masses):
             model_param = {'teff': isochrone.teff[i],
                            'logg': isochrone.logg[i],
-                           'feh': 0.,
                            'mass': mass_item,
                            'distance': 10.}
 

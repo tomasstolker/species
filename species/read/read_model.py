@@ -112,7 +112,7 @@ class ReadModel:
             wavelength point was used.
         """
 
-        wl_points = np.asarray(hdf5_file['models/'+self.model+'/wavelength'])
+        wl_points = np.asarray(hdf5_file[f'models/{self.model}/wavelength'])
 
         if self.wavel_range is None:
             wl_index = np.ones(wl_points.shape[0], dtype=bool)
@@ -202,7 +202,9 @@ class ReadModel:
         Parameters
         ----------
         model_param : dict
-            Model parameters and values.
+            Model parameters and values. The values should be within the boundaries of the grid.
+            The grid boundaries of the available spectra in the database can be obtained with
+            :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
             wavelength points are used if set to None.
@@ -220,6 +222,20 @@ class ReadModel:
         species.core.box.ModelBox
             Box with the model spectrum.
         """
+
+        grid_bounds = self.get_bounds()
+
+        for key, value in model_param.items():
+            if key not in ['radius', 'distance', 'mass', 'luminosity']:
+                if value < grid_bounds[key][0]:
+                    raise ValueError(f'The input value of \'{key}\' is smaller than the lower '
+                                     f'boundary of the model grid ({value} < '
+                                     f'{grid_bounds[key][0]}).')
+
+                if value > grid_bounds[key][1]:
+                    raise ValueError(f'The input value of \'{key}\' is larger than the upper '
+                                     f'boundary of the model grid ({value} > '
+                                     f'{grid_bounds[key][1]}).')
 
         if 'mass' in model_param:
             mass = 1e3 * model_param['mass'] * constants.M_JUP  # [g]
@@ -293,13 +309,22 @@ class ReadModel:
 
                 wavel_resample = np.asarray(wavel_resample[:-1])
 
-                flux_interp = interp1d(self.wl_points,
-                                       flux,
-                                       kind='linear',
-                                       bounds_error=False,
-                                       fill_value=1e-100)
+                indices = np.where((wavel_resample > self.wl_points[0]) &
+                                   (wavel_resample < self.wl_points[-2]))[0]
 
-                flux = flux_interp(wavel_resample)
+                for i in range(10):
+                    try:
+                        index_error = False
+
+                        flux = spectres.spectres(new_spec_wavs=wavel_resample[indices][i:-i],
+                                                 old_spec_wavs=self.wl_points,
+                                                 spec_fluxes=flux)
+
+                    except:
+                        index_error = True
+
+                    if not index_error:
+                        break
 
         if magnitude:
             quantity = 'magnitude'
@@ -334,12 +359,12 @@ class ReadModel:
         else:
             wavelength = self.wl_points[is_finite]
 
-        return  box.create_box(boxtype='model',
-                                   model=self.model,
-                                   wavelength=wavelength,
-                                   flux=flux[is_finite],
-                                   parameters=model_param,
-                                   quantity=quantity)
+        return box.create_box(boxtype='model',
+                              model=self.model,
+                              wavelength=wavelength,
+                              flux=flux[is_finite],
+                              parameters=model_param,
+                              quantity=quantity)
 
     def get_data(self,
                  model_param):
@@ -608,18 +633,18 @@ class ReadModel:
         teff = h5_file['models/'+self.model+'/teff']
         logg = h5_file['models/'+self.model+'/logg']
 
-        if self.model in ('ames-cond', 'ames-dusty', 'bt-settl'):
+        if self.model in ['ames-cond', 'ames-dusty', 'bt-settl']:
             bounds = {'teff': (teff[0], teff[-1]),
                       'logg': (logg[0], logg[-1])}
 
-        elif self.model in ('drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear'):
+        elif self.model in ['drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear']:
             feh = h5_file['models/'+self.model+'/feh']
 
             bounds = {'teff': (teff[0], teff[-1]),
                       'logg': (logg[0], logg[-1]),
                       'feh': (feh[0], feh[-1])}
 
-        elif self.model in ('petitcode-cool-cloudy', ):
+        elif self.model in ['petitcode-cool-cloudy', ]:
             feh = h5_file['models/'+self.model+'/feh']
             fsed = h5_file['models/'+self.model+'/fsed']
 
@@ -628,7 +653,7 @@ class ReadModel:
                       'feh': (feh[0], feh[-1]),
                       'fsed': (fsed[0], fsed[-1])}
 
-        elif self.model in ('petitcode-hot-clear', ):
+        elif self.model in ['petitcode-hot-clear', ]:
             feh = h5_file['models/'+self.model+'/feh']
             co_ratio = h5_file['models/'+self.model+'/co']
 
@@ -637,7 +662,7 @@ class ReadModel:
                       'feh': (feh[0], feh[-1]),
                       'co': (co_ratio[0], co_ratio[-1])}
 
-        elif self.model in ('petitcode-hot-cloudy', ):
+        elif self.model in ['petitcode-hot-cloudy', ]:
             feh = h5_file['models/'+self.model+'/feh']
             co_ratio = h5_file['models/'+self.model+'/co']
             fsed = h5_file['models/'+self.model+'/fsed']

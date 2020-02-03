@@ -11,6 +11,8 @@ import tqdm
 import emcee
 import numpy as np
 
+from astropy.io import fits
+
 from species.analysis import photometry
 from species.core import box
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
@@ -97,6 +99,28 @@ class Database:
                 print(f'{mag_name} [mag] = {mag_dict[0]} +/- {mag_dict[1]}')
 
             print()
+
+    def delete_data(self,
+                    dataset):
+        """
+        Function for deleting a dataset from the HDF5 database.
+
+        Parameters
+        ----------
+        dataset : str
+            Dataset path in the HDF5 database.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, 'a') as hdf_file:
+            if dataset in hdf_file:
+                del hdf_file[dataset]
+            else:
+                warnings.warn(f'The dataset {dataset} is not found in {self.database}.')
 
     def add_companion(self,
                       name=None):
@@ -334,8 +358,7 @@ class Database:
                    object_name,
                    distance=None,
                    app_mag=None,
-                   spectrum=None,
-                   instrument=None):
+                   spectrum=None):
         """
         Parameters
         ----------
@@ -345,13 +368,16 @@ class Database:
             Distance and uncertainty (pc). Not written if set to None.
         app_mag : dict
             Apparent magnitudes. Not written if set to None.
-        spectrum : str
-            Spectrum filename. The first three columns should contain the wavelength (micron),
-            flux density (W m-2 micron-1), and the error (W m-2 micron-1). Not written if set
-            to None.
-        instrument : str
-            Instrument that was used for the spectrum (currently only 'gpi' possible). Not
-            used if set to None.
+        spectrum : dict
+            Dictionary with spectra and correlation matrices. Multiple spectra can be included and
+            the files have to be in the FITS or ASCII format. The spectra should have 3 columns
+            with wavelength (micron), flux density (W m-2 micron-1), and error (W m-2 micron-1).
+            The correlation matrix should be 2D with the same number of wavelength points as the
+            spectrum. For example, {'sphere_ifs': ('ifs_spectrum.dat', 'ifs_correlation.fits')}.
+            No data is stored for a correlation matrix if set to None, for example, {'sphere_ifs':
+            ('ifs_spectrum.dat', None)}. The ``spectrum`` parameter is ignored if set to None.
+            The correlation matrix and uncertainties are used to compute the covariance matrix.
+            The covariance matrix is stored in the database.
 
         Returns
         -------
@@ -364,14 +390,14 @@ class Database:
         if 'objects' not in h5_file:
             h5_file.create_group('objects')
 
-        if 'objects/'+object_name not in h5_file:
-            h5_file.create_group('objects/'+object_name)
+        if f'objects/{object_name}' not in h5_file:
+            h5_file.create_group(f'objects/{object_name}')
 
         if distance is not None:
-            if 'objects/'+object_name+'/distance' in h5_file:
-                del h5_file['objects/'+object_name+'/distance']
+            if f'objects/{object_name}/distance' in h5_file:
+                del h5_file[f'objects/{object_name}/distance']
 
-            h5_file.create_dataset('objects/'+object_name+'/distance',
+            h5_file.create_dataset(f'objects/{object_name}/distance',
                                    data=distance,
                                    dtype='f')  # [pc]
 
@@ -390,8 +416,8 @@ class Database:
                     flux[item], error[item] = np.nan, np.nan
 
             for item in app_mag:
-                if 'objects/'+object_name+'/'+item in h5_file:
-                    del h5_file['objects/'+object_name+'/'+item]
+                if f'objects/{object_name}/{item}' in h5_file:
+                    del h5_file[f'objects/{object_name}/'+item]
 
                 data = np.asarray([app_mag[item][0],
                                    app_mag[item][1],
@@ -399,24 +425,90 @@ class Database:
                                    error[item]])
 
                 # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
-                h5_file.create_dataset('objects/'+object_name+'/'+item,
+                h5_file.create_dataset(f'objects/{object_name}/'+item,
                                        data=data,
                                        dtype='f')
 
         print(f'Adding object: {object_name}...', end='', flush=True)
 
         if spectrum is not None:
+            read_spec = {}
+            read_cov = {}
 
-            if 'objects/'+object_name+'/spectrum' in h5_file:
-                del h5_file['objects/'+object_name+'/spectrum']
+            if f'objects/{object_name}/spectrum' in h5_file:
+                del h5_file[f'objects/{object_name}/spectrum']
 
-            data = np.loadtxt(spectrum)
+            # Read spectra
 
-            dset = h5_file.create_dataset('objects/'+object_name+'/spectrum',
-                                          data=data[:, 0:3],
-                                          dtype='f')
+            for key, value in spectrum.items():
+                if value[0].endswith('.fits'):
+                    with fits.open(value[0]) as hdulist:
+                        for i, hdu_item in enumerate(hdulist):
+                            data = np.asarray(hdu_item.data)
 
-            dset.attrs['instrument'] = str(instrument)
+                            if data.ndim == 2 and 3 in data.shape and key not in read_spec:
+                                read_spec[key] = data
+
+                        if key not in read_spec:
+                            raise ValueError(f'The spectrum data from {value[0]} can not be read. '
+                                             f'The data format should be 2D with 3 columns.')
+
+                else:
+                    try:
+                        data = np.loadtxt(value[0])
+                    except UnicodeDecodeError:
+                        raise ValueError(f'The spectrum data from {value[0]} can not be read. '
+                                         f'Please provide a FITS or ASCII file.')
+
+                    if data.ndim != 2 or 3 not in data.shape:
+                        raise ValueError(f'The spectrum data from {value[0]} can not be read. The '
+                                         f'data format should be 2D with 3 columns.')
+                    read_spec[key] = data
+
+            # Read covariance matrix
+
+            for key, value in spectrum.items():
+                if value[1] is None:
+                    read_cov[key] = None
+
+                elif value[1].endswith('.fits'):
+                    with fits.open(value[1]) as hdulist:
+                        for i, hdu_item in enumerate(hdulist):
+                            data = np.asarray(hdu_item.data)
+                            if data.ndim == 2 and data.shape[0] == data.shape[1]:
+                                if key not in read_cov:
+                                    if data.shape[0] == read_spec[key].shape[0]:
+                                        read_cov[key] = data_util.correlation_to_covariance(
+                                            data, read_spec[key][:, 2])
+
+                        if key not in read_cov:
+                            raise ValueError(f'The correlation matrix from {value[1]} can not be '
+                                             f'read. The data format should be 2D with the same '
+                                             f'number of wavelength points as the spectrum.')
+
+                else:
+                    try:
+                        data = np.loadtxt(value[1])
+                    except UnicodeDecodeError:
+                        raise ValueError(f'The correlation matrix from {value[1]} can not be read. '
+                                         f'Please provide a FITS or ASCII file.')
+
+                    if data.ndim != 2 or 3 not in data.shape:
+                        raise ValueError(f'The correlation matrix from {value[1]} can not be read. '
+                                         f'The data format should be 2D with the same number of '
+                                         f'wavelength points as the spectrum.')
+
+                    read_cov[key] = data_util.correlation_to_covariance(
+                        data, read_spec[key][:, 2])
+
+            for key, value in read_spec.items():
+                dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
+                                              data=read_spec[key],
+                                              dtype='f')
+
+                dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/covariance',
+                                              data=read_cov[key],
+                                              dtype='f')
 
         print(' [DONE]')
 
@@ -657,6 +749,8 @@ class Database:
                             tag,
                             burnin):
         """
+        Function for extracting the sample parameters with the highest posterior probability.
+
         Parameters
         ----------
         tag : str
@@ -671,12 +765,12 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag+'/samples']
+        dset = h5_file[f'results/mcmc/{tag}/samples']
 
         samples = np.asarray(dset)
         samples = samples[:, burnin:, :]
 
-        probability = np.asarray(h5_file['results/mcmc/'+tag+'/probability'])
+        probability = np.asarray(h5_file[f'results/mcmc/{tag}/probability'])
         probability = probability[:, burnin:]
 
         nparam = dset.attrs['nparam']
@@ -692,7 +786,7 @@ class Database:
         prob_sample = {}
 
         for i in range(nparam):
-            par_key = dset.attrs['parameter'+str(i)]
+            par_key = dset.attrs[f'parameter{i}']
             par_value = max_sample[i]
 
             prob_sample[par_key] = par_value
@@ -780,6 +874,8 @@ class Database:
         list(species.core.box.ModelBox, )
             Boxes with the randomly sampled spectra.
         """
+
+        print('The smooth_spectrum function has not been fully tested. [WARNING]')
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
@@ -935,7 +1031,7 @@ class Database:
         print(f'Getting object: {object_name}...', end='', flush=True)
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['objects/'+object_name]
+        dset = h5_file[f'objects/{object_name}']
 
         distance = np.asarray(dset['distance'])[0]
 
@@ -953,7 +1049,7 @@ class Database:
 
             else:
                 for key in dset.keys():
-                    if key not in ('distance', 'spectrum'):
+                    if key not in ['distance', 'spectrum']:
                         for item in dset[key]:
                             name = key+'/'+item
 
@@ -968,8 +1064,18 @@ class Database:
             flux = None
             filters = None
 
-        if inc_spec and 'objects/'+object_name+'/spectrum' in h5_file:
-            spectrum = np.asarray(h5_file['objects/'+object_name+'/spectrum'])
+        if inc_spec and f'objects/{object_name}/spectrum' in h5_file:
+            spectrum = {}
+
+            for item in h5_file[f'objects/{object_name}/spectrum']:
+                data_group = f'objects/{object_name}/spectrum/{item}'
+
+                if h5_file[f'{data_group}/covariance'].shape is None:
+                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
+                else:
+                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                      np.asarray(h5_file[f'{data_group}/covariance']))
+
         else:
             spectrum = None
 

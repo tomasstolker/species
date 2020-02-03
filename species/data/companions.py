@@ -39,6 +39,7 @@ def get_data():
                          'app_mag': {'MKO/NSFCam.J': (19.04, 0.40),  # Rajan et al. 2017
                                      'MKO/NSFCam.H': (18.99, 0.21),  # Rajan et al. 2017
                                      'MKO/NSFCam.K': (18.67, 0.19),  # Rajan et al. 2017
+                                     # 'Paranal/SPHERE.IRDIS_B_H': (19.45, 0.29),  # Samland et al. 2017
                                      'Paranal/SPHERE.IRDIS_D_H23_2': (18.41, 0.26),  # Samland et al. 2017
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (17.55, 0.14),  # Samland et al. 2017
                                      'Keck/NIRC2.Lp': (16.20, 0.11),  # Rajan et al. 2017

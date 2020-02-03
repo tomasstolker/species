@@ -7,9 +7,8 @@ import gzip
 import tarfile
 import urllib.request
 
+import spectres
 import numpy as np
-
-from scipy.interpolate import interp1d
 
 from species.util import data_util
 
@@ -84,9 +83,6 @@ def add_ames_dusty(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte') and filename.endswith('.7.gz'):
-                print_message = f'Adding AMES-Dusty model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
-
                 teff_val = float(filename[3:5])*100.
                 logg_val = float(filename[6:9])
                 feh_val = float(filename[10:13])
@@ -97,6 +93,9 @@ def add_ames_dusty(input_path,
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
+
+                print_message = f'Adding AMES-Dusty model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 data_wavel = []
                 data_flux = []
@@ -134,22 +133,13 @@ def add_ames_dusty(input_path,
                 if np.all(np.diff(data[:, 0]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[:, 0] >= wavel_range[0]) &
-                                   (data[:, 0] <= wavel_range[1]))[0]
+                teff.append(teff_val)
+                logg.append(logg_val)
 
-                if indices.size > 0:
-                    teff.append(teff_val)
-                    logg.append(logg_val)
-
-                    data = data[indices, :]
-
-                    flux_interp = interp1d(data[:, 0],
-                                           data[:, 1],
-                                           kind='linear',
-                                           bounds_error=False,
-                                           fill_value=1e-100)
-
-                    flux.append(flux_interp(wavelength))
+                try:
+                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
+                except ValueError:
+                    flux.append(np.zeros(wavelength.shape[0]))
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -159,7 +149,7 @@ def add_ames_dusty(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('ames-dusty', ('teff', 'logg'), database, data_sorted)
+    data_util.write_data('ames-dusty', ['teff', 'logg'], database, data_sorted)
 
     print_message = 'Adding AMES-Dusty model spectra... [DONE]'
     print(f'\r{print_message:<80}')

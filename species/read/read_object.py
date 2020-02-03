@@ -63,44 +63,57 @@ class ReadObject:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
+            obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
 
         return obj_phot
 
     def get_spectrum(self):
         """
-        Function for extracting the spectrum of the object.
+        Function for extracting the spectra and covariance matrices of the object.
 
         Returns
         -------
-        numpy.ndarray
-            Wavelength (micron), flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+        dict
+            Dictionary with spectra and covariance matrices.
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            spectrum = np.asarray(h5_file['objects/'+self.object_name+'/spectrum'])
+            if f'objects/{self.object_name}/spectrum' in h5_file:
+                spectrum = {}
+
+                for item in h5_file[f'objects/{self.object_name}/spectrum']:
+                    data_group = f'objects/{self.object_name}/spectrum/{item}'
+
+                    if h5_file[f'{data_group}/covariance'].shape is None:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
+                    else:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                          np.asarray(h5_file[f'{data_group}/covariance']))
+
+            else:
+                spectrum = None
 
         return spectrum
 
-    def get_instrument(self):
-        """
-        Function for extracting the instrument name of the spectrum.
-
-        Returns
-        -------
-        str
-            Instrument that was used for the spectrum.
-        """
-
-        with h5py.File(self.database, 'r') as h5_file:
-            if 'objects/'+self.object_name+'/spectrum' in h5_file:
-                dset = h5_file['objects/'+self.object_name+'/spectrum']
-                instrument = dset.attrs['instrument']
-
-            else:
-                instrument = None
-
-        return instrument
+    # def get_instrument(self):
+    #     """
+    #     Function for extracting the instrument name of the spectrum.
+    #
+    #     Returns
+    #     -------
+    #     str
+    #         Instrument that was used for the spectrum.
+    #     """
+    #
+    #     with h5py.File(self.database, 'r') as h5_file:
+    #         if 'objects/'+self.object_name+'/spectrum' in h5_file:
+    #             dset = h5_file['objects/'+self.object_name+'/spectrum']
+    #             instrument = dset.attrs['instrument']
+    #
+    #         else:
+    #             instrument = None
+    #
+    #     return instrument
 
     def get_distance(self):
         """
@@ -113,7 +126,7 @@ class ReadObject:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])[0]
+            obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])[0]
 
         return float(obj_distance)
 
@@ -136,8 +149,8 @@ class ReadObject:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            obj_distance = np.asarray(h5_file['objects/'+self.object_name+'/distance'])
-            obj_phot = np.asarray(h5_file['objects/'+self.object_name+'/'+filter_name])
+            obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])
+            obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
 
         abs_mag = phot_util.apparent_to_absolute(obj_phot[0], obj_distance[0])
 

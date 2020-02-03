@@ -6,10 +6,9 @@ import os
 import tarfile
 import urllib.request
 
+import spectres
 import numpy as np
 import pandas as pd
-
-from scipy.interpolate import interp1d
 
 from species.util import data_util
 
@@ -88,18 +87,16 @@ def add_btnextgen(input_path,
         for filename in sorted(file_list):
 
             if filename.startswith('lte') and filename.endswith('.7.bz2'):
-                print_message = f'Adding BT-NextGen model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
-
                 teff_val = float(filename[3:6])*100.
+                logg_val = float(filename[7:9])
+                feh_val = float(filename[11:14])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                teff.append(teff_val)
-                logg.append(float(filename[7:9]))
-                feh.append(float(filename[11:14]))
+                print_message = f'Adding BT-NextGen model spectra... {filename}'
+                print(f'\r{print_message:<80}', end='')
 
                 dataf = pd.pandas.read_csv(data_folder+filename,
                                            usecols=[0, 1],
@@ -132,18 +129,14 @@ def add_btnextgen(input_path,
                 if np.all(np.diff(data[0, :]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                indices = np.where((data[0, :] >= wavel_range[0]) &
-                                   (data[0, :] <= wavel_range[1]))[0]
+                teff.append(teff_val)
+                logg.append(logg_val)
+                feh.append(feh_val)
 
-                data = data[:, indices]
-
-                flux_interp = interp1d(data[0, :],
-                                       data[1, :],
-                                       kind='linear',
-                                       bounds_error=False,
-                                       fill_value=1e-100)
-
-                flux.append(flux_interp(wavelength))
+                try:
+                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
+                except ValueError:
+                    flux.append(np.zeros(wavelength.shape[0]))
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),

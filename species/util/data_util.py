@@ -45,7 +45,7 @@ def update_sptype(sptypes):
 
 def update_filter(filter_in):
     """
-    Function to update afilter ID from the Vizier Photometry viewer VOTable to the filter ID from
+    Function to update a filter ID from the Vizier Photometry viewer VOTable to the filter ID from
     the SVO Filter Profile Service.
 
     Parameters
@@ -94,7 +94,7 @@ def sort_data(teff,
 
     Returns
     -------
-    tuple(numpy.ndarray, )
+    list(numpy.ndarray, )
     """
 
     teff_unique = np.unique(teff)
@@ -173,19 +173,42 @@ def sort_data(teff,
             spectrum[index_teff, index_logg, index_feh, index_co, index_fsed, :] = flux[i]
 
     if feh is None and co is None and fsed is None:
-        sorted_data = [teff_unique, logg_unique, wavelength, spectrum]
+        sorted_data = [teff_unique,
+                       logg_unique,
+                       wavelength,
+                       spectrum]
 
     elif feh is not None and co is None and fsed is None:
-        sorted_data = [teff_unique, logg_unique, feh_unique, wavelength, spectrum]
+        sorted_data = [teff_unique,
+                       logg_unique,
+                       feh_unique,
+                       wavelength,
+                       spectrum]
 
     elif feh is not None and co is not None and fsed is None:
-        sorted_data = [teff_unique, logg_unique, feh_unique, co_unique, wavelength, spectrum]
+        sorted_data = [teff_unique,
+                       logg_unique,
+                       feh_unique,
+                       co_unique,
+                       wavelength,
+                       spectrum]
 
     elif feh is not None and co is None and fsed is not None:
-        sorted_data = [teff_unique, logg_unique, feh_unique, fsed_unique, wavelength, spectrum]
+        sorted_data = [teff_unique,
+                       logg_unique,
+                       feh_unique,
+                       fsed_unique,
+                       wavelength,
+                       spectrum]
 
     else:
-        sorted_data = [teff_unique, logg_unique, feh_unique, co_unique, fsed_unique, wavelength, spectrum]
+        sorted_data = [teff_unique,
+                       logg_unique,
+                       feh_unique,
+                       co_unique,
+                       fsed_unique,
+                       wavelength,
+                       spectrum]
 
     return sorted_data
 
@@ -199,15 +222,16 @@ def write_data(model,
     ----------
     model : str
         Atmosphere model.
-    parameters : tuple(str, )
+    parameters : list(str, )
         Model parameters.
     database: h5py._hl.files.File
         Database.
-    data_sorted : tuple(numpy.ndarray, )
+    data_sorted : list(numpy.ndarray, )
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     if 'models/'+model in database:
@@ -241,22 +265,23 @@ def add_missing(model,
     ----------
     model : str
         Atmosphere model.
-    parameters : tuple(str, )
+    parameters : list(str, )
         Model parameters.
     database : h5py._hl.files.File
         Database.
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     grid_shape = []
     for item in parameters:
-        grid_shape.append(database['models/'+model+'/'+item].shape[0])
+        grid_shape.append(database[f'models/{model}/{item}'].shape[0])
 
-    teff = np.asarray(database['models/'+model+'/teff'])
-    flux = np.asarray(database['models/'+model+'/flux'])
+    teff = np.asarray(database[f'models/{model}/teff'])
+    flux = np.asarray(database[f'models/{model}/flux'])
 
     for i in range(grid_shape[0]):
         for j in range(grid_shape[1]):
@@ -292,7 +317,8 @@ def add_missing(model,
                         if np.count_nonzero(flux[i, j, k, m]) == 0:
                             try:
                                 scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                                flux[i, j, k, m] = scaling*flux[i+1, j, k, m] + (1.-scaling)*flux[i-1, j, k, m]
+                                flux[i, j, k, m] = scaling*flux[i+1, j, k, m] + \
+                                    (1.-scaling)*flux[i-1, j, k, m]
 
                             except IndexError:
                                 flux[i, j, k, m] = np.nan
@@ -300,8 +326,57 @@ def add_missing(model,
                                               f'parameter grid. A NaN value is stored for Teff = '
                                               f'{teff[i]} K.')
 
-    del database['models/'+model+'/flux']
+            elif len(parameters) == 5:
+                for k in range(grid_shape[2]):
+                    for m in range(grid_shape[3]):
+                        for n in range(grid_shape[4]):
+                            if np.count_nonzero(flux[i, j, k, m, n]) == 0:
+                                try:
+                                    scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
+                                    flux[i, j, k, m, n] = scaling*flux[i+1, j, k, m, n] + \
+                                        (1.-scaling)*flux[i-1, j, k, mm ]
 
-    database.create_dataset('models/'+model+'/flux',
+                                except IndexError:
+                                    print(i, j, k, m, n)
+                                    flux[i, j, k, m, n] = np.nan
+                                    warnings.warn(f'Interpolation is not possible at the edge of the '
+                                                  f'parameter grid. A NaN value is stored for Teff = '
+                                                  f'{teff[i]} K.')
+
+            else:
+                raise ValueError('The interpolation of missing data is not yet been implemented '
+                                 'for 6 or more parameters.')
+
+    del database[f'models/{model}/flux']
+
+    database.create_dataset(f'models/{model}/flux',
                             data=flux,
                             dtype='f')
+
+
+def correlation_to_covariance(cor_matrix,
+                              spec_sigma):
+    """
+    Parameters
+    ----------
+    cor_matrix : numpy.ndarray
+        Correlation matrix of the spectrum.
+    spec_sigma : numpy.ndarray
+        Uncertainties (W m-2 micron-1).
+
+    Returns
+    -------
+    numpy.ndarrays
+        Covariance matrix of the spectrum.
+    """
+
+    cov_matrix = np.zeros(cor_matrix.shape)
+
+    for i in range(cor_matrix.shape[0]):
+        for j in range(cor_matrix.shape[1]):
+            cov_matrix[i, j] = cor_matrix[i, j]*spec_sigma[i]*spec_sigma[j]
+
+            if i == j:
+                assert cor_matrix[i, j] == 1.
+
+    return cov_matrix

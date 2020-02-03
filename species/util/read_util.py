@@ -3,6 +3,7 @@ Utility functions for reading data.
 """
 
 import math
+import warnings
 
 import numpy as np
 
@@ -87,7 +88,7 @@ def smooth_spectrum(wavelength,
     Parameters
     ----------
     wavelength : numpy.ndarray
-        Wavelength points (micron). Should be equally-spaced.
+        Wavelength points (micron). Should be uniformly spaced.
     flux : numpy.ndarray
         Flux density (W m-2 micron-1).
     spec_res : float
@@ -108,6 +109,8 @@ def smooth_spectrum(wavelength,
 
     if size % 2 == 0:
         raise ValueError('The kernel size should be an odd number.')
+
+    test_diff = np.diff(wavelength)
 
     spacing = np.mean(np.diff(wavelength))  # [micron]
     flux_smooth = np.zeros(flux.shape)  # [W m-2 micron-1]

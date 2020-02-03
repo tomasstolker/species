@@ -43,7 +43,7 @@ class TestModel:
                                          smooth=True)
 
         assert np.allclose(np.sum(model_box.wavelength), 45.969303, rtol=1e-8, atol=0.)
-        assert np.allclose(np.sum(model_box.flux), 8.282984147434914e-13, rtol=self.limit, atol=0.)
+        assert np.allclose(np.sum(model_box.flux), 8.523746896870085e-13, rtol=self.limit, atol=0.)
 
         model_box = read_model.get_model(self.model_param,
                                          spec_res=100.,
@@ -51,27 +51,27 @@ class TestModel:
                                          smooth=True)
 
         assert np.allclose(np.sum(model_box.wavelength), 45.969303, rtol=1e-8, atol=0.)
-        assert np.allclose(np.sum(model_box.flux), 325.94157665022743, rtol=self.limit, atol=0.)
+        assert np.allclose(np.sum(model_box.flux), 324.1306680899266, rtol=self.limit, atol=0.)
 
     def test_get_data(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         model_box = read_model.get_data(self.model_param)
 
         assert np.allclose(np.sum(model_box.wavelength), 47.859764, rtol=1e-8, atol=0.)
-        assert np.allclose(np.sum(model_box.flux), 8.396668e-13, rtol=1e-6, atol=0.)
+        assert np.allclose(np.sum(model_box.flux), 8.6538816e-13, rtol=1e-6, atol=0.)
 
     def test_get_flux(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         flux = read_model.get_flux(self.model_param)
 
-        assert np.allclose(flux, 3.451203668214645e-14, rtol=self.limit, atol=0.)
+        assert np.allclose(flux, 3.489526718415845e-14, rtol=self.limit, atol=0.)
 
     def test_get_magnitude(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         magnitude = read_model.get_magnitude(self.model_param)
 
-        assert np.allclose(magnitude[0], 11.320554805593877, rtol=self.limit, atol=0.)
-        assert np.allclose(magnitude[1], 11.320554805593877, rtol=self.limit, atol=0.)
+        assert np.allclose(magnitude[0], 11.308564959105956, rtol=self.limit, atol=0.)
+        assert np.allclose(magnitude[1], 11.308564959105956, rtol=self.limit, atol=0.)
 
     def test_get_bounds(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
