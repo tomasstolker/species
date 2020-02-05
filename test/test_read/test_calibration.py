@@ -31,16 +31,6 @@ class TestCalibration:
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
         assert read_calib.wavel_range == pytest.approx((1.44, 1.88))
 
-    def test_interpolate_spectrum(self):
-        read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
-        interp_spectrum = read_calib.interpolate_spectrum()
-
-        assert interp_spectrum.x.shape == (268, )
-        assert interp_spectrum.y.shape == (268, )
-
-        assert np.allclose(np.sum(interp_spectrum.x), 442.18668, rtol=1e-8, atol=0.)
-        assert np.allclose(np.sum(interp_spectrum.y), 3.1471103e-07, rtol=1e-8, atol=0.)
-
     def test_resample_spectrum(self):
         read_calib = species.ReadCalibration('vega')
         spec_box = read_calib.resample_spectrum(np.linspace(1., 2., 10), apply_mask=True)
