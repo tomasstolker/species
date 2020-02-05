@@ -218,7 +218,7 @@ def add_petitcode_hot_clear(input_path,
     for _, _, files in os.walk(data_folder):
         for filename in files:
             print_message = f'Adding petitCODE hot clear model spectra... {filename}'
-            print(f'\r{print_message:<112}', end='')
+            print(f'\r{print_message:<100}', end='')
 
             teff.append(float(filename[9:13]))
             logg.append(float(filename[19:23]))
@@ -251,7 +251,7 @@ def add_petitcode_hot_clear(input_path,
                          data_sorted)
 
     print_message = 'Adding petitCODE hot clear model spectra... [DONE]'
-    print(f'\r{print_message:<112}')
+    print(f'\r{print_message:<100}')
 
 
 def add_petitcode_hot_cloudy(input_path,

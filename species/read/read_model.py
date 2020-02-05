@@ -4,6 +4,7 @@ Module with reading functionalities for atmospheric model spectra.
 
 import os
 import math
+import warnings
 import configparser
 
 import h5py
@@ -191,6 +192,7 @@ class ReadModel:
     def get_model(self,
                   model_param,
                   spec_res=None,
+                  wavel_resample=None,
                   magnitude=False,
                   smooth=False):
         """
@@ -207,7 +209,10 @@ class ReadModel:
             :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None.
+            wavelength points are used if both ``spec_res`` and ``wavel_resample`` are set to None.
+        wavel_resample : numpy.ndarray
+            Wavelength points (micron) to which the spectrum is resampled. Only used if
+            ``spec_res`` is set to None.
         magnitude : bool
             Normalize the spectrum with a flux calibrated spectrum of Vega and return the magnitude
             instead of flux density.
@@ -223,10 +228,22 @@ class ReadModel:
             Box with the model spectrum.
         """
 
+        if spec_res is not None and wavel_resample is not None:
+            raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
+                             'simultaneously. Please set one of them to None.')
+
+        if smooth and wavel_resample is not None:
+            warnings.warn('The \'smooth\' parameter is ignored because it can only be used in '
+                          'combination with \'spec_res\'.')
+
         grid_bounds = self.get_bounds()
 
         for key, value in model_param.items():
             if key not in ['radius', 'distance', 'mass', 'luminosity']:
+                if key not in self.get_parameters():
+                    raise ValueError(f'The \'{key}\' parameter is not required by \'{self.model}\''
+                                     f'. The mandatory parameters are {self.get_parameters()}.')
+
                 if value < grid_bounds[key][0]:
                     raise ValueError(f'The input value of \'{key}\' is smaller than the lower '
                                      f'boundary of the model grid ({value} < '
@@ -288,7 +305,12 @@ class ReadModel:
 
                 flux *= scaling
 
-        if spec_res is not None:
+        if spec_res is None and wavel_resample is not None:
+            flux = spectres.spectres(new_spec_wavs=wavel_resample,
+                                     old_spec_wavs=self.wl_points,
+                                     spec_fluxes=flux)
+
+        elif spec_res is not None:
             index = np.where(np.isnan(flux))[0]
 
             if index.size > 0:
@@ -355,10 +377,10 @@ class ReadModel:
 
         is_finite = np.where(np.isfinite(flux))[0]
 
-        if not smooth and spec_res is not None:
-            wavelength = wavel_resample[is_finite]
-        else:
+        if wavel_resample is None:
             wavelength = self.wl_points[is_finite]
+        else:
+            wavelength = wavel_resample[is_finite]
 
         return box.create_box(boxtype='model',
                               model=self.model,

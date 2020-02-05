@@ -56,25 +56,9 @@ class ReadCalibration:
 
         self.database = config['species']['database']
 
-    def interpolate_spectrum(self):
-        """
-        Function for linearly interpolating of a calibration spectrum.
-
-        Returns
-        -------
-        scipy.interpolate.interpolate.interp1d
-            Linearly interpolated spectrum.
-        """
-
-        calibbox = self.get_spectrum()
-
-        return interp1d(calibbox.wavelength,
-                        calibbox.flux,
-                        kind='linear',
-                        bounds_error=False,
-                        fill_value=float('nan'))
-
-    def resample_spectrum(self, wavel_points, apply_mask=False):
+    def resample_spectrum(self,
+                          wavel_points,
+                          apply_mask=False):
         """
         Function for resampling of a spectrum and uncertainties onto a new wavelength grid.
 
