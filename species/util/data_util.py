@@ -146,69 +146,48 @@ def sort_data(teff,
                              wavelength.shape[0]))
 
     for i in range(teff.shape[0]):
-        index_teff = np.argwhere(teff_unique == teff[i])[0]
-        index_logg = np.argwhere(logg_unique == logg[i])[0]
+        index_teff = np.argwhere(teff_unique == teff[i])[0][0]
+        index_logg = np.argwhere(logg_unique == logg[i])[0][0]
 
         if feh is None and co is None and fsed is None:
             spectrum[index_teff, index_logg, :] = flux[i]
 
         elif feh is not None and co is None and fsed is None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0]
+            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
             spectrum[index_teff, index_logg, index_feh, :] = flux[i]
 
         elif feh is not None and co is not None and fsed is None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0]
-            index_co = np.argwhere(co_unique == co[i])[0]
+            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
+            index_co = np.argwhere(co_unique == co[i])[0][0]
             spectrum[index_teff, index_logg, index_feh, index_co, :] = flux[i]
 
+            # for j, item in enumerate(flux[i]):
+            #     spectrum[index_teff, index_logg, index_feh, index_co, j] = item
+
         elif feh is not None and co is None and fsed is not None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0]
-            index_fsed = np.argwhere(fsed_unique == fsed[i])[0]
+            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
+            index_fsed = np.argwhere(fsed_unique == fsed[i])[0][0]
             spectrum[index_teff, index_logg, index_feh, index_fsed, :] = flux[i]
 
         else:
-            index_feh = np.argwhere(feh_unique == feh[i])[0]
-            index_co = np.argwhere(co_unique == co[i])[0]
-            index_fsed = np.argwhere(fsed_unique == fsed[i])[0]
+            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
+            index_co = np.argwhere(co_unique == co[i])[0][0]
+            index_fsed = np.argwhere(fsed_unique == fsed[i])[0][0]
             spectrum[index_teff, index_logg, index_feh, index_co, index_fsed, :] = flux[i]
 
-    if feh is None and co is None and fsed is None:
-        sorted_data = [teff_unique,
-                       logg_unique,
-                       wavelength,
-                       spectrum]
+    sorted_data = [teff_unique, logg_unique]
 
-    elif feh is not None and co is None and fsed is None:
-        sorted_data = [teff_unique,
-                       logg_unique,
-                       feh_unique,
-                       wavelength,
-                       spectrum]
+    if feh is not None:
+        sorted_data.append(feh_unique)
 
-    elif feh is not None and co is not None and fsed is None:
-        sorted_data = [teff_unique,
-                       logg_unique,
-                       feh_unique,
-                       co_unique,
-                       wavelength,
-                       spectrum]
+    if co is not None:
+        sorted_data.append(co_unique)
 
-    elif feh is not None and co is None and fsed is not None:
-        sorted_data = [teff_unique,
-                       logg_unique,
-                       feh_unique,
-                       fsed_unique,
-                       wavelength,
-                       spectrum]
+    if fsed is not None:
+        sorted_data.append(fsed_unique)
 
-    else:
-        sorted_data = [teff_unique,
-                       logg_unique,
-                       feh_unique,
-                       co_unique,
-                       fsed_unique,
-                       wavelength,
-                       spectrum]
+    sorted_data.append(wavelength)
+    sorted_data.append(spectrum)
 
     return sorted_data
 
@@ -218,6 +197,8 @@ def write_data(model,
                database,
                data_sorted):
     """
+    Function for writing the model spectra and parameters to the database.
+
     Parameters
     ----------
     model : str
@@ -227,6 +208,8 @@ def write_data(model,
     database: h5py._hl.files.File
         Database.
     data_sorted : list(numpy.ndarray, )
+        Sorted model data with the parameter values, wavelength points (micron), and flux
+        densities (W m-2 micron-1).
 
     Returns
     -------
@@ -235,26 +218,23 @@ def write_data(model,
     """
 
     if 'models/'+model in database:
-        del database['models/'+model]
+        del database[f'models/{model}']
 
-    dset = database.create_group('models/'+model)
+    dset = database.create_group(f'models/{model}')
 
     dset.attrs['nparam'] = len(parameters)
 
     for i, item in enumerate(parameters):
-        dset.attrs['parameter'+str(i)] = item
+        dset.attrs[f'parameter{i}'] = item
 
-        database.create_dataset('models/'+model+'/'+item,
-                                data=data_sorted[i],
-                                dtype='f')
+        database.create_dataset(f'models/{model}/{item}',
+                                data=data_sorted[i])
 
-    database.create_dataset('models/'+model+'/wavelength',
-                            data=data_sorted[len(parameters)],
-                            dtype='f')
+    database.create_dataset(f'models/{model}/wavelength',
+                            data=data_sorted[len(parameters)])
 
-    database.create_dataset('models/'+model+'/flux',
-                            data=data_sorted[len(parameters)+1],
-                            dtype='f')
+    database.create_dataset(f'models/{model}/flux',
+                            data=data_sorted[len(parameters)+1])
 
 
 def add_missing(model,
@@ -337,7 +317,6 @@ def add_missing(model,
                                         (1.-scaling)*flux[i-1, j, k, mm ]
 
                                 except IndexError:
-                                    print(i, j, k, m, n)
                                     flux[i, j, k, m, n] = np.nan
                                     warnings.warn(f'Interpolation is not possible at the edge of the '
                                                   f'parameter grid. A NaN value is stored for Teff = '
@@ -350,8 +329,7 @@ def add_missing(model,
     del database[f'models/{model}/flux']
 
     database.create_dataset(f'models/{model}/flux',
-                            data=flux,
-                            dtype='f')
+                            data=flux)
 
 
 def correlation_to_covariance(cor_matrix,

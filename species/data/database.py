@@ -192,8 +192,7 @@ class Database:
             wavelength, transmission = filters.download_filter(filter_name)
 
         h5_file.create_dataset('filters/'+filter_name,
-                               data=np.vstack((wavelength, transmission)),
-                               dtype='f')
+                               data=np.vstack((wavelength, transmission)))
 
         print(' [DONE]')
 
@@ -398,8 +397,7 @@ class Database:
                 del h5_file[f'objects/{object_name}/distance']
 
             h5_file.create_dataset(f'objects/{object_name}/distance',
-                                   data=distance,
-                                   dtype='f')  # [pc]
+                                   data=distance)  # [pc]
 
         if app_mag is not None:
             flux = {}
@@ -426,8 +424,7 @@ class Database:
 
                 # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
                 h5_file.create_dataset(f'objects/{object_name}/'+item,
-                                       data=data,
-                                       dtype='f')
+                                       data=data)
 
         print(f'Adding object: {object_name}...', end='', flush=True)
 
@@ -503,12 +500,10 @@ class Database:
 
             for key, value in read_spec.items():
                 dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
-                                              data=read_spec[key],
-                                              dtype='f')
+                                              data=read_spec[key])
 
                 dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/covariance',
-                                              data=read_cov[key],
-                                              dtype='f')
+                                              data=read_cov[key])
 
         print(' [DONE]')
 
@@ -626,8 +621,7 @@ class Database:
         print(f'Adding calibration spectrum: {tag}...', end='', flush=True)
 
         h5_file.create_dataset('spectra/calibration/'+tag,
-                               data=np.vstack((wavelength, flux, error)),
-                               dtype='f')
+                               data=np.vstack((wavelength, flux, error)))
 
         h5_file.close()
 
@@ -708,12 +702,10 @@ class Database:
             del h5_file['results/mcmc/'+tag]
 
         dset = h5_file.create_dataset('results/mcmc/'+tag+'/samples',
-                                      data=sampler.chain,
-                                      dtype='f')
+                                      data=sampler.chain)
 
         h5_file.create_dataset('results/mcmc/'+tag+'/probability',
-                               data=np.exp(sampler.lnprobability),
-                               dtype='f')
+                               data=np.exp(sampler.lnprobability))
 
         dset.attrs['type'] = str(spectrum[0])
         dset.attrs['spectrum'] = str(spectrum[1])

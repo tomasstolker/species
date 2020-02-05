@@ -57,7 +57,6 @@ def add_vega(input_path, database):
     print('Adding Vega spectrum...', end='', flush=True)
 
     database.create_dataset('spectra/calibration/vega',
-                            data=np.vstack((wavelength, flux, error_stat)),
-                            dtype='f')
+                            data=np.vstack((wavelength, flux, error_stat)))
 
     print(' [DONE]')

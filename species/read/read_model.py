@@ -408,6 +408,12 @@ class ReadModel:
             Box with the model spectrum.
         """
 
+        for key, value in model_param.items():
+            if key not in ['radius', 'distance', 'mass', 'luminosity']:
+                if key not in self.get_parameters():
+                    raise ValueError(f'The \'{key}\' parameter is not required by \'{self.model}\''
+                                     f'. The mandatory parameters are {self.get_parameters()}.')
+
         h5_file = self.open_database()
 
         wl_points, wl_index = self.wavelength_points(h5_file)

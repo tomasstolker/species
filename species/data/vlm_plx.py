@@ -81,16 +81,16 @@ def add_vlm_plx(input_path,
     dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
     dset[...] = flag
 
-    database.create_dataset(group+'/distance', data=distance, dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.Y', data=photdata['YMAG'], dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.J', data=photdata['JMAG'], dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.H', data=photdata['HMAG'], dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.K', data=photdata['KMAG'], dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.Lp', data=photdata['LMAG'], dtype='f')
-    database.create_dataset(group+'/MKO/NSFCam.Mp', data=photdata['MMAG'], dtype='f')
-    database.create_dataset(group+'/2MASS/2MASS.J', data=photdata['J2MAG'], dtype='f')
-    database.create_dataset(group+'/2MASS/2MASS.H', data=photdata['H2MAG'], dtype='f')
-    database.create_dataset(group+'/2MASS/2MASS.Ks', data=photdata['K2MAG'], dtype='f')
+    database.create_dataset(group+'/distance', data=distance)
+    database.create_dataset(group+'/MKO/NSFCam.Y', data=photdata['YMAG'])
+    database.create_dataset(group+'/MKO/NSFCam.J', data=photdata['JMAG'])
+    database.create_dataset(group+'/MKO/NSFCam.H', data=photdata['HMAG'])
+    database.create_dataset(group+'/MKO/NSFCam.K', data=photdata['KMAG'])
+    database.create_dataset(group+'/MKO/NSFCam.Lp', data=photdata['LMAG'])
+    database.create_dataset(group+'/MKO/NSFCam.Mp', data=photdata['MMAG'])
+    database.create_dataset(group+'/2MASS/2MASS.J', data=photdata['J2MAG'])
+    database.create_dataset(group+'/2MASS/2MASS.H', data=photdata['H2MAG'])
+    database.create_dataset(group+'/2MASS/2MASS.Ks', data=photdata['K2MAG'])
 
     print(' [DONE]')
 

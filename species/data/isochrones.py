@@ -72,12 +72,10 @@ def add_baraffe(database,
                             dtype=bytes_type)
 
     database.create_dataset('isochrones/'+tag+'/magnitudes',
-                            data=isochrones[:, 8:],
-                            dtype='f')
+                            data=isochrones[:, 8:])
 
     dset = database.create_dataset('isochrones/'+tag+'/evolution',
-                                   data=isochrones[:, 0:8],
-                                   dtype='f')
+                                   data=isochrones[:, 0:8])
 
     dset.attrs['model'] = 'baraffe'
 
@@ -129,8 +127,7 @@ def add_marleau(database,
     isochrones = isochrones[index_sort, :]
 
     dset = database.create_dataset('isochrones/'+tag+'/evolution',
-                                   data=isochrones,
-                                   dtype='f')
+                                   data=isochrones)
 
     dset.attrs['model'] = 'marleau'
 

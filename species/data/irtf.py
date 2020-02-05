@@ -114,8 +114,7 @@ def add_irtf(input_path,
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 
                         dset = database.create_dataset('spectra/irtf/'+name,
-                                                       data=spdata,
-                                                       dtype='f')
+                                                       data=spdata)
 
                         dset.attrs['name'] = str(name).encode()
                         dset.attrs['sptype'] = str(sptype).encode()
