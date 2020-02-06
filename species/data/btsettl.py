@@ -3,12 +3,12 @@ Module for BT-Settl atmospheric model spectra.
 """
 
 import os
+import lzma
 import tarfile
 import urllib.request
 
 import spectres
 import numpy as np
-import pandas as pd
 
 from species.util import data_util
 
@@ -19,7 +19,9 @@ def add_btsettl(input_path,
                 teff_range,
                 spec_res):
     """
-    Function for adding the BT-Settl atmospheric models to the database.
+    Function for adding the BT-Settl atmospheric models (solar metallicity) to the database.
+    The spectra are read line-by-line because the wavelength and flux are not separated in the
+    input data.
 
     Parameters
     ----------
@@ -45,22 +47,24 @@ def add_btsettl(input_path,
 
     data_folder = os.path.join(input_path, 'bt-settl/')
 
-    input_file = 'BT-Settl_M-0.0_a+0.0.tar'
+    input_file = 'SPECTRA.tar'
 
-    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/BT-Settl_M-0.0_a+0.0.tar'
+    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA.tar'
 
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print('Downloading BT-Settl model spectra (5.8 GB)...', end='', flush=True)
+        print('Downloading BT-Settl model spectra (8.1 GB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking BT-Settl model spectra (5.8 GB)...', end='', flush=True)
+    print('Unpacking BT-Settl model spectra (8.1 GB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
+
+    data_folder = os.path.join(data_folder, 'SPECTRA')
 
     teff = []
     logg = []
@@ -76,13 +80,13 @@ def add_btsettl(input_path,
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
 
-            if filename.startswith('lte') and filename.endswith('.7.bz2'):
-                if len(filename) == 39:
+            if filename.startswith('lte') and filename.endswith('.7.xz'):
+                if len(filename) == 38:
                     teff_val = float(filename[3:6])*100.
                     logg_val = float(filename[7:10])
                     feh_val = float(filename[11:14])
 
-                elif len(filename) == 41:
+                elif len(filename) == 40:
                     teff_val = float(filename[3:8])*100.
                     logg_val = float(filename[9:12])
                     feh_val = float(filename[13:16])
@@ -101,28 +105,30 @@ def add_btsettl(input_path,
                 print_message = f'Adding BT-Settl model spectra... {filename}'
                 print(f'\r{print_message:<80}', end='')
 
-                dataf = pd.pandas.read_csv(data_folder+filename,
-                                           usecols=[0, 1],
-                                           names=['wavelength', 'flux'],
-                                           header=None,
-                                           dtype={'wavelength': str, 'flux': str},
-                                           delim_whitespace=True,
-                                           compression='bz2')
+                data_wavel = []
+                data_flux = []
 
-                dataf['wavelength'] = dataf['wavelength'].str.replace('D', 'E')
-                dataf['flux'] = dataf['flux'].str.replace('D', 'E')
+                with lzma.open(os.path.join(data_folder, filename), mode='rt') as xz_file:
+                    for line in xz_file:
+                        line = line[:line.find('D')+4].split()
 
-                dataf = dataf.apply(pd.to_numeric)
-                data = dataf.values
+                        if len(line) == 1:
+                            line = line[0]
+                            wavel_tmp = line[:line.find('-')]
+                            flux_tmp = line[line.find('-'):]
 
-                # [Angstrom] -> [micron]
-                data_wavel = data[:, 0]*1e-4
+                        elif len(line) == 2:
+                            wavel_tmp = line[0]
+                            flux_tmp = line[1]
 
-                # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
+                        # [Angstrom] -> [micron]
+                        data_wavel.append(float(wavel_tmp)*1e-4)
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
-                data_flux = data_flux*1e-7*1e4*1e4
+                        # See https://phoenix.ens-lyon.fr/Grids/FORMAT
+                        flux_cgs = 10.**(float(flux_tmp.replace('D', 'E'))-8.)
+
+                        # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                        data_flux.append(flux_cgs*1e-7*1e4*1e4)
 
                 data = np.stack((data_wavel, data_flux), axis=1)
 
