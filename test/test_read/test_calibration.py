@@ -29,21 +29,21 @@ class TestCalibration:
         database.add_spectrum('vega')
 
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
-        assert read_calib.wavel_range == pytest.approx((1.44, 1.88))
+        assert read_calib.wavel_range == pytest.approx((1.44, 1.88), rel=self.limit, abs=0.)
 
     def test_resample_spectrum(self):
         read_calib = species.ReadCalibration('vega')
         spec_box = read_calib.resample_spectrum(np.linspace(1., 2., 10), apply_mask=True)
 
         assert np.sum(spec_box.wavelength) == 15.
-        assert np.allclose(np.sum(spec_box.flux), 2.288734689409295e-08, rtol=self.limit, atol=0.)
+        assert np.sum(spec_box.flux) == pytest.approx(2.288734760321133e-08, rel=self.limit, abs=0.)
 
     def test_get_spectrum(self):
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.Lp')
         spec_box = read_calib.get_spectrum(self.model_param, apply_mask=True, spec_res=100.)
 
-        assert np.allclose(np.sum(spec_box.wavelength), 79.7966233185033, rtol=self.limit, atol=0.)
-        assert np.allclose(np.sum(spec_box.flux), 1.0942469537490926e-09, rtol=self.limit, atol=0.)
+        assert np.sum(spec_box.wavelength) == pytest.approx(79.79662545707652, rel=self.limit, abs=0.)
+        assert np.sum(spec_box.flux) == pytest.approx(1.094246808910988e-09, rel=self.limit, abs=0.)
 
         with pytest.warns(UserWarning) as warning:
             spec_box = read_calib.get_spectrum(self.model_param, apply_mask=True, spec_res=1000.,
@@ -51,14 +51,14 @@ class TestCalibration:
 
         assert len(warning) == 2
 
-        assert np.allclose(np.sum(spec_box.wavelength), 2594.77301502914, rtol=self.limit, atol=0.)
-        assert np.allclose(np.sum(spec_box.flux), 1.519444387600341e-08, rtol=self.limit, atol=0.)
+        assert np.sum(spec_box.wavelength) == pytest.approx(2594.7730845698397, rel=self.limit, abs=0.)
+        assert np.sum(spec_box.flux) == pytest.approx(1.5194443166871866e-08, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
         flux = read_calib.get_flux(model_param=self.model_param)
 
-        assert np.allclose(flux, 1.1329024e-09, rtol=1e-7, atol=0.)
+        assert flux  == pytest.approx(1.1329023591019857e-09, rel=self.limit, abs=0.)
 
     def test_get_magnitude(self):
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')

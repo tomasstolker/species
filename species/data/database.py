@@ -176,10 +176,10 @@ class Database:
             h5_file.create_group('filters')
 
         if 'filters/'+filter_split[0] not in h5_file:
-            h5_file.create_group('filters/'+filter_split[0])
+            h5_file.create_group(f'filters/{filter_split[0]}')
 
         if 'filters/'+filter_name in h5_file:
-            del h5_file['filters/'+filter_name]
+            del h5_file[f'filters/{filter_name}']
 
         print(f'Adding filter: {filter_name}...', end='', flush=True)
 
@@ -191,7 +191,7 @@ class Database:
         else:
             wavelength, transmission = filters.download_filter(filter_name)
 
-        h5_file.create_dataset('filters/'+filter_name,
+        h5_file.create_dataset(f'filters/{filter_name}',
                                data=np.vstack((wavelength, transmission)))
 
         print(' [DONE]')

@@ -29,7 +29,7 @@ class TestSpectrum:
         database.add_spectrum('irtf', sptypes=['L', ])
 
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
-        assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656))
+        assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656), rel=self.limit, abs=0.)
 
     def test_get_spectrum(self):
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
@@ -38,8 +38,8 @@ class TestSpectrum:
         assert spec_box.wavelength[0].shape == (1000, )
         assert spec_box.flux[0].shape == (1000, )
 
-        assert np.allclose(np.sum(spec_box.wavelength[0]), 1611.2432, rtol=1e-7, atol=0.)
-        assert np.allclose(np.sum(spec_box.flux[0]), 2.3606193e-11, rtol=1e-7, atol=0.)
+        assert np.sum(spec_box.wavelength[0]) == pytest.approx(1611.2432, rel=1e-7, abs=0.)
+        assert np.sum(spec_box.flux[0]) == pytest.approx(2.3606193e-11, rel=1e-7, abs=0.)
 
         species.plot_spectrum(boxes=[spec_box, ],
                               filters=['MKO/NSFCam.H', ],

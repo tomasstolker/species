@@ -71,7 +71,7 @@ class ReadFilter:
 
     def interpolate_filter(self):
         """
-        Linearly interpolate the filter profile.
+        Function for linearly interpolating a filter profile.
 
         Returns
         -------

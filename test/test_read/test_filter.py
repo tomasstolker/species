@@ -33,7 +33,7 @@ class TestFilter:
         filter_profile = read_filter.get_filter()
 
         assert filter_profile.shape == (2, 970)
-        assert np.allclose(np.sum(filter_profile), 2089.2432, rtol=1e-7, atol=0.)
+        assert np.sum(filter_profile) == pytest.approx(2089.2430860000004, rel=self.limit, abs=0.)
 
     def test_interpolate_filter(self):
         read_filter = species.ReadFilter('MKO/NSFCam.H')
@@ -42,24 +42,24 @@ class TestFilter:
         assert interp_filter.x.shape == (970, )
         assert interp_filter.y.shape == (970, )
 
-        assert np.allclose(np.sum(interp_filter.x), 1575.1079, rtol=1e-7, atol=0.)
-        assert np.allclose(np.sum(interp_filter.y), 514.1352, rtol=1e-7, atol=0.)
+        assert np.sum(interp_filter.x) == pytest.approx(1575.1079, rel=self.limit, abs=0.)
+        assert np.sum(interp_filter.y) == pytest.approx(514.135186, rel=self.limit, abs=0.)
 
     def test_wavelength_range(self):
         read_filter = species.ReadFilter('MKO/NSFCam.H')
         min_wavel, max_wavel = read_filter.wavelength_range()
 
-        assert min_wavel == pytest.approx(1.382)
-        assert max_wavel == pytest.approx(1.8656)
+        assert min_wavel == pytest.approx(1.382, rel=self.limit, abs=0.)
+        assert max_wavel == pytest.approx(1.8656, rel=self.limit, abs=0.)
 
     def test_mean_wavelength(self):
         read_filter = species.ReadFilter('MKO/NSFCam.H')
         mean_wavel = read_filter.mean_wavelength()
 
-        assert mean_wavel == pytest.approx(1.6298258)
+        assert mean_wavel == pytest.approx(1.6298259560690347, rel=self.limit, abs=0.)
 
     def test_filter_fwhm(self):
         read_filter = species.ReadFilter('MKO/NSFCam.H')
         filter_fwhm = read_filter.filter_fwhm()
 
-        assert filter_fwhm == 0.2956945805173905
+        assert filter_fwhm == pytest.approx(0.2956945960962718, rel=self.limit, abs=0.)

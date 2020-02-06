@@ -41,16 +41,10 @@ class TestObject:
 
         assert isinstance(photometry, np.ndarray)
 
-        assert photometry[0] == pytest.approx(11.3)
-        assert photometry[1] == pytest.approx(0.06)
-        assert photometry[2] == pytest.approx(1.5898817e-15)
-        assert photometry[3] == pytest.approx(8.790484e-17)
-
-    # def test_get_instrument(self):
-    #     read_object = species.ReadObject('beta Pic b')
-    #     instrument = read_object.get_instrument()
-    #
-    #     assert instrument is None
+        assert photometry[0] == pytest.approx(11.3, rel=self.limit, abs=0.)
+        assert photometry[1] == pytest.approx(0.06, rel=self.limit, abs=0.)
+        assert photometry[2] == pytest.approx(1.5898815856603153e-15, rel=self.limit, abs=0.)
+        assert photometry[3] == pytest.approx(8.790482938961674e-17, rel=self.limit, abs=0.)
 
     def test_get_distance(self):
         read_object = species.ReadObject('beta Pic b')
@@ -62,5 +56,5 @@ class TestObject:
         read_object = species.ReadObject('beta Pic b')
         abs_mag = read_object.get_absmag('Paranal/NACO.Lp')
 
-        assert abs_mag[0] == pytest.approx(9.822164416313171)
-        assert abs_mag[1] == pytest.approx(0.06167897877453941)
+        assert abs_mag[0] == pytest.approx(9.822164500187604, rel=self.limit, abs=0.)
+        assert abs_mag[1] == pytest.approx(0.06167898020063019, rel=self.limit, abs=0.)
