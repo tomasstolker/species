@@ -25,7 +25,7 @@
 .. image:: http://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
     :target: https://arxiv.org/abs/1912.13316
 
-*species* is a toolkit for atmospheric characterization of exoplanets and brown dwarfs. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of directly imaged planets, and filter transmission curves. All data are stored in a central database and there are tools available for extracting, inspecting, analyzing, and plotting of data, models, and results. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+*species* is a toolkit for atmospheric characterization of exoplanets and brown dwarfs. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of directly imaged planets, and filter transmission profiles. All data are stored in a central database and there are tools available for extracting, inspecting, analyzing, and plotting of data, models, and results. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------
@@ -40,7 +40,7 @@ Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2019arXiv1
 Contributing
 ------------
 
-Contributions are very welcome, please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
+Contributions are welcome, please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
 
 License
 -------
