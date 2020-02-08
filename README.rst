@@ -19,7 +19,7 @@
 .. image:: https://www.codefactor.io/repository/github/tomasstolker/species/badge
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
 
-.. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
+.. image:: https://img.shields.io/badge/MIT-blue.svg
     :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
 .. image:: http://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
@@ -47,4 +47,4 @@ License
 
 Copyright 2018-2020 Tomas Stolker
 
-*species* is distributed under the GNU General Public License v3. See the LICENSE file for the terms and conditions.
+*species* is distributed under the MIT License. See the LICENSE file for the terms and conditions.

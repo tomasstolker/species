@@ -1,4 +1,4 @@
-.PHONY: help pypi docs coverage test tox clean
+.PHONY: help pypi ppypi-test docs coverage test clean
 
 help:
 	@echo "pypi - submit package to the PyPI server"
