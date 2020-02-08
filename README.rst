@@ -25,7 +25,7 @@
 .. image:: http://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
     :target: https://arxiv.org/abs/1912.13316
 
-*species* is a toolkit for spectral and photometric analysis of planetary and substellar atmospheres. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of directly imaged planets, and filter transmission curves. All data are stored in a central database and there are tools available for extracting, inspecting, analyzing, and plotting of data, models, and results. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+*species* is a toolkit for atmospheric characterization of exoplanets and brown dwarfs. It provides a coherent framework for atmospheric characterization which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, evolutionary models, photometry of directly imaged planets, and filter transmission curves. All data are stored in a central database and there are tools available for extracting, inspecting, analyzing, and plotting of data, models, and results. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------

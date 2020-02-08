@@ -52,7 +52,7 @@ from species.util.read_util import get_mass, \
                                    add_luminosity
 
 __author__ = 'Tomas Stolker'
-__license__ = 'GPLv3'
+__license__ = 'MIT'
 __version__ = '0.1.3'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'tomas.stolker@phys.ethz.ch'
