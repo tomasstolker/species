@@ -60,7 +60,7 @@ def add_petitcode_cool_clear(input_path,
     for _, _, files in os.walk(data_folder):
         for filename in files:
             print_message = f'Adding petitCODE cool clear model spectra... {filename}'
-            print(f'\r{print_message:<112}', end='')
+            print(f'\r{print_message:<87}', end='')
 
             file_split = filename.split('_')
 
@@ -94,7 +94,7 @@ def add_petitcode_cool_clear(input_path,
                          data_sorted)
 
     print_message = 'Adding petitCODE cool clear model spectra... [DONE]'
-    print(f'\r{print_message:<112}')
+    print(f'\r{print_message:<87}')
 
 
 def add_petitcode_cool_cloudy(input_path,

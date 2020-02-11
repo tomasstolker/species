@@ -1,5 +1,5 @@
 """
-Module with functions for creating color-magnitude and color-color plots.
+Module with functions for creating color-magnitude and color-color plot.
 """
 
 import os
@@ -36,6 +36,8 @@ def plot_color_magnitude(boxes,
                          legend='upper left',
                          output='color-magnitude.pdf'):
     """
+    Function for creating a color-magnitude diagram.
+
     Parameters
     ----------
     boxes : list(species.core.box.ColorMagBox, species.core.box.IsochroneBox, )
@@ -44,14 +46,18 @@ def plot_color_magnitude(boxes,
         :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`. These boxes
         contain synthetic colors and magnitudes for a given age and a range of masses.
     objects : tuple(tuple(str, str, str, str), ),
-              tuple(tuple(str, str, str, str, str, str, float, float), ), None
+              tuple(tuple(str, str, str, str, str, str, dict, dict), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter IDs for the color, and the filter ID for the absolute magnitude. Optionally, the
-        horizontal and vertical alignment and fractional offset values can be provided for the
-        label can be provided (default: 'left', 'bottom', 8e-3, 8e-3). Not used if set to None.
-    mass_labels : list(float, ), None
+        filter names for the color, and the filter names for the absolute magnitude. Optionally, a
+        dictionary with keyword arguments can be provided for the object's marker and label,
+        respectively. For example, ``{'marker': 'o', 'ms': 10}`` for the marker and
+        ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the label. Not used if set to
+        None.
+    mass_labels : list(float, ), list(tuple(float, str), ), None
         Plot labels with masses next to the isochrone data of `models`. The list with masses has
-        to be provided in Jupiter mass. No labels are shown if set to None.
+        to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
+        the planet mass and position of the label ('left' or 'right), for example
+        ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     field_range : tuple(str, str), None
@@ -63,9 +69,9 @@ def plot_color_magnitude(boxes,
     label_y : str
         Label for the y-axis.
     xlim : tuple(float, float), None
-        Limits for the x-axis.
+        Limits for the x-axis. Not used if set to None.
     ylim : tuple(float, float), None
-        Limits for the y-axis.
+        Limits for the y-axis. Not used if set to None.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
     legend : str, None
@@ -82,7 +88,7 @@ def plot_color_magnitude(boxes,
 
     print(f'Plotting color-magnitude diagram: {output}... ', end='', flush=True)
 
-    model_color = ('#234398', '#f6a432')
+    model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
 
     isochrones = []
@@ -176,6 +182,9 @@ def plot_color_magnitude(boxes,
 
             model_count = model_dict[item.library]
 
+            if model_count[0] == 3:
+                raise ValueError('Only three different types of model atmospheres can be added.')
+
             if model_count[1] == 0:
                 label = plot_util.model_name(item.library)
 
@@ -187,11 +196,27 @@ def plot_color_magnitude(boxes,
                     interp_color = interp1d(item.sptype, item.color)
 
                     for i, mass_item in enumerate(mass_labels):
-                        if j == 0 or (j > 0 and mass_item < 20.):
-                            pos_color = interp_color(mass_item)
-                            pos_mag = interp_magnitude(mass_item)
+                        if isinstance(mass_item, tuple):
+                            mass_val = mass_item[0]
+                            mass_pos = mass_item[1]
 
-                            mass_label = str(int(mass_item))+r' M$_\mathregular{J}$'
+                        else:
+                            mass_val = mass_item
+                            mass_pos = 'right'
+
+                        if j == 0 or (j > 0 and mass_val < 20.):
+                            pos_color = interp_color(mass_val)
+                            pos_mag = interp_magnitude(mass_val)
+
+                            if mass_pos == 'left':
+                                mass_ha = 'right'
+                                mass_xytext = (pos_color-0.05, pos_mag)
+
+                            else:
+                                mass_ha = 'left'
+                                mass_xytext = (pos_color+0.05, pos_mag)
+
+                            mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
 
                             xlim = ax1.get_xlim()
                             ylim = ax1.get_ylim()
@@ -204,7 +229,7 @@ def plot_color_magnitude(boxes,
 
                                 ax1.annotate(mass_label, (pos_color, pos_mag),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=(pos_color+0.05, pos_mag-0.1), zorder=1)
+                                             xytext=mass_xytext, zorder=1, ha=mass_ha, va='center')
 
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
@@ -269,72 +294,45 @@ def plot_color_magnitude(boxes,
             x_color = objcolor1[0]-objcolor2[0]
             y_mag = abs_mag[0]
 
-            # if item[0] in ('PDS 70 b'):
-            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-            #     marker = '*'
-            #     markersize = 12
-            #     color = '#eb4242'
-            #     markerfacecolor = '#eb4242'
-            #     markeredgecolor = 'black'
-            #
-            # else:
-            #     marker = '>'
-            #     markersize = 6
-            #     color = 'black'
-            #     markerfacecolor = 'white'
-            #     markeredgecolor = 'black'
+            if len(item) > 4 and item[4] is not None:
+                kwargs = item[4]
 
-            # if item[0] == 'HR 8799 b':
-            #     label = 'Directly imaged'
-            # elif item[0] == 'beta Pic b':
-            #     label = 'This work'
-            # elif item[0] == 'PDS 70 b':
-            #     label = 'This work'
-            # else:
-            #     label = None
-
-            marker = '>'
-            markersize = 6
-            color = 'black'
-            markerfacecolor = 'white'
-            markeredgecolor = 'black'
-
-            if i == 0:
-                label = 'Directly imaged'
             else:
-                label = None
+                kwargs = {'marker': '>',
+                          'ms': 6.,
+                          'color': 'black',
+                          'mfc': 'white',
+                          'mec': 'black',
+                          'label': 'Directly imaged'}
 
-            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, marker=marker,
-                         ms=markersize, color=color, markerfacecolor=markerfacecolor,
-                         zorder=3, markeredgecolor=markeredgecolor, label=label)
+            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, zorder=3, **kwargs)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
                 y_range = ax1.get_ylim()
 
-                if len(item) == 8:
-                    ha = item[4]
-                    va = item[5]
-                    x_scaling = item[6]
-                    y_scaling = item[7]
+                if len(item) > 4:
+                    kwargs = item[5]
 
                 else:
-                    ha = 'left'
-                    va = 'bottom'
-                    x_scaling = 1e-2
-                    y_scaling = 5e-3
+                    kwargs = {'ha': 'left',
+                              'va': 'bottom',
+                              'fontsize': 8.5,
+                              'xytext': (5., 5.),
+                              'color': 'black'}
 
-                x_offset = x_scaling*abs(x_range[1]-x_range[0])
-                y_offset = y_scaling*abs(y_range[1]-y_range[0])
-
-                ax1.text(x_color+x_offset, y_mag-y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color, zorder=3)
+                ax1.annotate(objdata.object_name, (x_color, y_mag), zorder=3,
+                             textcoords='offset points', **kwargs)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
 
+        # prevent duplicates
+        by_label = dict(zip(labels, handles))
+
         if handles:
-            ax1.legend(loc=legend, prop={'size': 8.5}, frameon=False, numpoints=1)
+            ax1.legend(by_label.values(), by_label.keys(), loc=legend, fontsize=8.5,
+                       frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
@@ -356,24 +354,28 @@ def plot_color_color(boxes,
                      legend='upper left',
                      output='color-color.pdf'):
     """
+    Function for creating a color-color diagram.
+
     Parameters
     ----------
-    boxes : species.core.box.ColorColorBox, None
-        Box with the colors and magnitudes.
+    boxes : list(species.core.box.ColorColorBox, species.core.box.IsochroneBox, )
+        Boxes with the color-color and isochrone data from photometric libraries, spectral
+        libraries, and/or atmospheric models. The synthetic data have to be created with
+        :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`. These boxes
+        contain synthetic colors for a given age and a range of masses.
     objects : tuple(tuple(str, str, str, str), ),
-              tuple(tuple(str, str, str, str, str, str, float, float), ), None
+              tuple(tuple(str, str, str, str, str, str, dict, dict), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter IDs for the first color, and the two filter IDs for the second color. Optionally,
-        the horizontal and vertical alignment and fractional offset values can be provided for the
-        label can be provided (default: 'left', 'bottom', 8e-3, 8e-3). Not used if set to None.
-    models : tuple(species.core.box.ColorMagBox, ), None
-        Tuple with :class:`~species.core.box.ColorColorBox` objects which have been created from
-        the isochrone data with :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`.
-        These boxes contain synthetic photometry for a given age and a range of masses. Not used
-        if set to None.
-    mass_labels : list(float, ), None
+        filter names for the first color, and the two filter names for the second color.
+        Optionally, a dictionary with keyword arguments can be provided for the object's marker and
+        label, respectively. For example, ``{'marker': 'o', 'ms': 10}`` for the marker and
+        ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the label. Not used if set to
+        None.
+    mass_labels : list(float, ), list(tuple(float, str), ), None
         Plot labels with masses next to the isochrone data of `models`. The list with masses has
-        to be provided in Jupiter mass. No labels are shown if set to None.
+        to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
+        the planet mass and position of the label ('left' or 'right), for example
+        ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     field_range : tuple(str, str), None
@@ -414,14 +416,14 @@ def plot_color_color(boxes,
         if isinstance(item, box.IsochroneBox):
             isochrones.append(item)
 
-        elif isinstance(item, box.ColorMagBox):
+        elif isinstance(item, box.ColorColorBox):
             if item.object_type == 'model':
                 models.append(item)
             else:
                 empirical.append(item)
 
         else:
-            raise ValueError(f'Found a {type(item)} while only ColorMagBox and IsochroneBox '
+            raise ValueError(f'Found a {type(item)} while only ColorColorBox and IsochroneBox '
                              f'objects can be provided to \'boxes\'.')
 
     plt.figure(1, figsize=(4, 4.3))
@@ -499,11 +501,27 @@ def plot_color_color(boxes,
                     interp_color2 = interp1d(item.sptype, item.color2)
 
                     for i, mass_item in enumerate(mass_labels):
-                        if j == 0 or (j > 0 and mass_item < 20.):
-                            pos_color1 = interp_color1(mass_item)
-                            pos_color2 = interp_color2(mass_item)
+                        if isinstance(mass_item, tuple):
+                            mass_val = mass_item[0]
+                            mass_pos = mass_item[1]
 
-                            mass_label = str(int(mass_item))+r' M$_\mathregular{J}$'
+                        else:
+                            mass_val = mass_item
+                            mass_pos = 'right'
+
+                        if j == 0 or (j > 0 and mass_val < 20.):
+                            pos_color1 = interp_color1(mass_val)
+                            pos_color2 = interp_color2(mass_val)
+
+                            if mass_pos == 'left':
+                                mass_ha = 'right'
+                                mass_xytext = (pos_color1-0.05, pos_color2)
+
+                            else:
+                                mass_ha = 'left'
+                                mass_xytext = (pos_color1+0.05, pos_color2)
+
+                            mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
 
                             xlim = ax1.get_xlim()
                             ylim = ax1.get_ylim()
@@ -516,7 +534,7 @@ def plot_color_color(boxes,
 
                                 ax1.annotate(mass_label, (pos_color1, pos_color2),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=(pos_color1+0.05, pos_color2-0.1), zorder=1)
+                                             xytext=mass_xytext, ha=mass_ha, va='center', zorder=1)
 
             else:
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
@@ -587,68 +605,47 @@ def plot_color_color(boxes,
             error1 = math.sqrt(err1**2+err2**2)
             error2 = math.sqrt(err3**2+err4**2)
 
-            # if item[0] in ('beta Pic b', 'HIP 65426 b', 'PZ Tel B', 'HD 206893 B'):
-            #     marker = '*'
-            #     markersize = 12
-            #     color = '#eb4242'
-            #     markerfacecolor = '#eb4242'
-            #     markeredgecolor = 'black'
-            #
-            # else:
-            #     marker = '>'
-            #     markersize = 6
-            #     color = 'black'
-            #     markerfacecolor = 'white'
-            #     markeredgecolor = 'black'
-            #
-            # if item[0] == 'HR 8799 b':
-            #     label = 'Directly imaged'
-            # elif item[0] == 'beta Pic b':
-            #     label = 'This work'
-            # else:
-            #     label = None
+            if len(item) > 3 and item[3] is not None:
+                kwargs = item[3]
 
-            marker = '>'
-            markersize = 6
-            color = 'black'
-            markerfacecolor = 'white'
-            markeredgecolor = 'black'
-
-            if not companion_labels and i == 0:
-                label = 'Directly imaged'
             else:
-                label = None
+                kwargs = {'marker': '>',
+                          'ms': 6.,
+                          'color': 'black',
+                          'mfc': 'white',
+                          'mec': 'black',
+                          'label': 'Directly imaged'}
 
-            ax1.errorbar(color1, color2, xerr=error1, yerr=error2, marker=marker, ms=markersize,
-                         color=color, markerfacecolor=markerfacecolor,
-                         markeredgecolor=markeredgecolor, label=label, zorder=3)
+            ax1.errorbar(color1, color2, xerr=error1, yerr=error2, zorder=3, **kwargs)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
                 y_range = ax1.get_ylim()
 
-                if len(item) == 7:
-                    ha = item[3]
-                    va = item[4]
-                    x_scaling = item[5]
-                    y_scaling = item[6]
+                if len(item) > 3:
+                    kwargs = item[4]
 
                 else:
-                    ha = 'left'
-                    va = 'bottom'
-                    x_scaling = 8e-3
-                    y_scaling = 8e-3
+                    kwargs = {'ha': 'left',
+                              'va': 'bottom',
+                              'fontsize': 8.5,
+                              'xytext': (5., 5.),
+                              'color': 'black'}
 
-                x_offset = x_scaling*abs(x_range[1]-x_range[0])
-                y_offset = y_scaling*abs(y_range[1]-y_range[0])
-
-                ax1.text(color1+x_offset, color2+y_offset, objdata.object_name, ha=ha, va=va,
-                         fontsize=8, color=color, zorder=3)
+                ax1.annotate(objdata.object_name, (color1, color2), zorder=3,
+                             textcoords='offset points', **kwargs)
 
     handles, labels = ax1.get_legend_handles_labels()
 
-    if handles:
-        ax1.legend(loc=legend, prop={'size': 9}, frameon=False, numpoints=1)
+    if legend is not None:
+        handles, labels = ax1.get_legend_handles_labels()
+
+        # prevent duplicates
+        by_label = dict(zip(labels, handles))
+
+        if handles:
+            ax1.legend(by_label.values(), by_label.keys(), loc=legend, fontsize=8.5,
+                       frameon=False, numpoints=1)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

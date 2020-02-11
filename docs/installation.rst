@@ -8,11 +8,11 @@ Installation
 Installation from PyPI
 ----------------------
 
-*species* can be installed from the |pypi| with the |pip|::
+*species* can be installed with the |pip|::
 
     $ pip install species
 
-To update the installation to the most recent version:
+And to update to the most recent version:
 
 .. code-block:: console
 
@@ -50,14 +50,6 @@ The installation can be tested by starting Python in interactive mode and printi
 
     >>> import species
     >>> species.__version__
-
-.. tip::
-   If the `species` package is not find by Python then possibly the path was not set correctly. The list of folders that are searched by Python for modules can be printed in interactive mode as:
-
-      .. code-block:: python
-
-         >>> import sys
-         >>> sys.path
 
 .. |pypi| raw:: html
 

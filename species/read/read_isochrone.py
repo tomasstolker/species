@@ -288,10 +288,25 @@ class ReadIsochrone:
                            'mass': mass_item,
                            'distance': 10.}
 
-            mag1[i], _ = model1.get_magnitude(model_param=model_param)
-            mag2[i], _ = model2.get_magnitude(model_param=model_param)
-            mag3[i], _ = model3.get_magnitude(model_param=model_param)
-            mag4[i], _ = model4.get_magnitude(model_param=model_param)
+            if np.isnan(isochrone.teff[i]):
+                mag1[i] = np.nan
+                mag2[i] = np.nan
+
+            else:
+                for item_bounds in model1.get_bounds():
+                    if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
+                        mag1[i] = np.nan
+                        mag2[i] = np.nan
+
+                    elif model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]:
+                        mag1[i] = np.nan
+                        mag2[i] = np.nan
+
+                if not np.isnan(mag1[i]):
+                    mag1[i], _ = model1.get_magnitude(model_param=model_param)
+                    mag2[i], _ = model2.get_magnitude(model_param=model_param)
+                    mag3[i], _ = model3.get_magnitude(model_param=model_param)
+                    mag4[i], _ = model4.get_magnitude(model_param=model_param)
 
         return box.create_box(boxtype='colorcolor',
                               library=model,

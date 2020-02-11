@@ -59,7 +59,7 @@ def add_drift_phoenix(input_path,
 
             if filename.startswith('lte_'):
                 print_message = f'Adding DRIFT-PHOENIX model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
+                print(f'\r{print_message:<65}', end='')
 
                 teff.append(float(filename[4:8]))
                 logg.append(float(filename[9:12]))
@@ -88,4 +88,4 @@ def add_drift_phoenix(input_path,
     data_util.write_data('drift-phoenix', ('teff', 'logg', 'feh'), database, data_sorted)
 
     print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<65}')

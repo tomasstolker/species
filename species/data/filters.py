@@ -39,11 +39,13 @@ def download_filter(filter_id):
         urllib.request.urlretrieve(url, 'filter.dat')
 
         if os.stat('filter.dat').st_size == 0:
-            raise ValueError(f'Filter {filter_id} not found on the SVO Filter Profile Service.')
+            os.remove('filter.dat')
 
-        else:
-            wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
-            wavelength *= 1e-4  # [micron]
+            raise ValueError(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
+                             f'Service.')
+
+        wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
+        wavelength *= 1e-4  # [micron]
 
         os.remove('filter.dat')
 

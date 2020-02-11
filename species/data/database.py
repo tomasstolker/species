@@ -410,6 +410,11 @@ class Database:
                                                                         app_mag[item][1])
 
                 except ValueError:
+                    warnings.warn(f'Filter \'{item}\' is not available on the SVO Filter Profile '
+                                  f'Service so a flux calibration can not be done. Please add the '
+                                  f'filter manually with the \'add_filter\' function. For now, '
+                                  f'only the \'{item}\' magnitude of \'{object_name}\' is stored.')
+
                     # Write NaNs if the filter is not available
                     flux[item], error[item] = np.nan, np.nan
 

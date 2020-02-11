@@ -627,23 +627,28 @@ class ReadModel:
         if self.spectrum_interp is None:
             self.interpolate_model()
 
-        spectrum = self.get_model(model_param, None)
-        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        try:
+            spectrum = self.get_model(model_param, None)
+        except ValueError:
+            warnings.warn(f'The set of model parameters {model_param} is outside the grid range '
+                          f'{self.get_bounds()} so returning a NaN.')
+
+            return np.nan, np.nan
 
         if spectrum.wavelength.size == 0:
             app_mag = np.nan
             abs_mag = np.nan
 
         else:
+            synphot = photometry.SyntheticPhotometry(self.filter_name)
+
             if 'distance' in model_param:
-                app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
-                                                                 spectrum.flux,
-                                                                 distance=model_param['distance'])
+                app_mag, abs_mag = synphot.spectrum_to_magnitude(
+                    spectrum.wavelength, spectrum.flux, distance=model_param['distance'])
 
             else:
-                app_mag, abs_mag = synphot.spectrum_to_magnitude(spectrum.wavelength,
-                                                                 spectrum.flux,
-                                                                 distance=None)
+                app_mag, abs_mag = synphot.spectrum_to_magnitude(
+                    spectrum.wavelength, spectrum.flux, distance=None)
 
         return app_mag, abs_mag
 

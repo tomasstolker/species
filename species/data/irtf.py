@@ -72,7 +72,7 @@ def add_irtf(input_path,
 
     for item in sptypes:
         if not os.path.isfile(data_file[item]):
-            print(f'Downloading IRTF Spectral Library - {data_type[item]}...', end='')
+            print(f'Downloading IRTF Spectral Library - {data_type[item]}...', end='', flush=True)
             urllib.request.urlretrieve(url[item], data_file[item])
             print(' [DONE]')
 

@@ -95,7 +95,7 @@ def add_ames_dusty(input_path,
                         continue
 
                 print_message = f'Adding AMES-Dusty model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
+                print(f'\r{print_message:<75}', end='')
 
                 data_wavel = []
                 data_flux = []
@@ -152,4 +152,4 @@ def add_ames_dusty(input_path,
     data_util.write_data('ames-dusty', ['teff', 'logg'], database, data_sorted)
 
     print_message = 'Adding AMES-Dusty model spectra... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<75}')
