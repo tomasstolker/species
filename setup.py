@@ -12,7 +12,7 @@ reqs = [str(ir.req) for ir in reqs]
 
 setup(
     name='species',
-    version='0.1.3',
+    version='0.1.4',
     description='Toolkit for atmospheric characterization of exoplanets and brown dwarfs',
     long_description=open('README.rst').read(),
     long_description_content_type='text/x-rst',
