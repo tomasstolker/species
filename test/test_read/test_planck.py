@@ -1,7 +1,7 @@
 import os
 import shutil
-import pytest
 
+import pytest
 import numpy as np
 
 import species

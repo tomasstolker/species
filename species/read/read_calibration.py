@@ -10,7 +10,6 @@ import spectres
 import numpy as np
 
 from scipy.optimize import curve_fit
-from scipy.interpolate import interp1d
 
 from species.analysis import photometry
 from species.core import box

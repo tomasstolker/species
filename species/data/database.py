@@ -368,15 +368,13 @@ class Database:
         app_mag : dict
             Apparent magnitudes. Not written if set to None.
         spectrum : dict
-            Dictionary with spectra and correlation matrices. Multiple spectra can be included and
+            Dictionary with spectra and covariance matrices. Multiple spectra can be included and
             the files have to be in the FITS or ASCII format. The spectra should have 3 columns
             with wavelength (micron), flux density (W m-2 micron-1), and error (W m-2 micron-1).
-            The correlation matrix should be 2D with the same number of wavelength points as the
-            spectrum. For example, {'sphere_ifs': ('ifs_spectrum.dat', 'ifs_correlation.fits')}.
-            No data is stored for a correlation matrix if set to None, for example, {'sphere_ifs':
+            The covariance matrix should be 2D with the same number of wavelength points as the
+            spectrum. For example, {'sphere_ifs': ('ifs_spectrum.dat', 'ifs_covariance.fits')}.
+            No covariance data is stored if set to None, for example, {'sphere_ifs':
             ('ifs_spectrum.dat', None)}. The ``spectrum`` parameter is ignored if set to None.
-            The correlation matrix and uncertainties are used to compute the covariance matrix.
-            The covariance matrix is stored in the database.
 
         Returns
         -------
@@ -480,11 +478,20 @@ class Database:
                             if data.ndim == 2 and data.shape[0] == data.shape[1]:
                                 if key not in read_cov:
                                     if data.shape[0] == read_spec[key].shape[0]:
-                                        read_cov[key] = data_util.correlation_to_covariance(
-                                            data, read_spec[key][:, 2])
+                                        if np.all(np.diag(data) == 1.):
+                                            warnings.warn(f'The covariance matrix from {value[1]} '
+                                                          f'contains ones on the diagonal. '
+                                                          f'Converting this correlation matrix '
+                                                          f'into a covariance matrix.')
+
+                                            read_cov[key] = data_util.correlation_to_covariance(
+                                                data, read_spec[key][:, 2])
+
+                                        else:
+                                            read_cov[key] = data
 
                         if key not in read_cov:
-                            raise ValueError(f'The correlation matrix from {value[1]} can not be '
+                            raise ValueError(f'The covariance matrix from {value[1]} can not be '
                                              f'read. The data format should be 2D with the same '
                                              f'number of wavelength points as the spectrum.')
 
@@ -492,23 +499,32 @@ class Database:
                     try:
                         data = np.loadtxt(value[1])
                     except UnicodeDecodeError:
-                        raise ValueError(f'The correlation matrix from {value[1]} can not be read. '
+                        raise ValueError(f'The covariance matrix from {value[1]} can not be read. '
                                          f'Please provide a FITS or ASCII file.')
 
                     if data.ndim != 2 or 3 not in data.shape:
-                        raise ValueError(f'The correlation matrix from {value[1]} can not be read. '
+                        raise ValueError(f'The covariance matrix from {value[1]} can not be read. '
                                          f'The data format should be 2D with the same number of '
                                          f'wavelength points as the spectrum.')
 
-                    read_cov[key] = data_util.correlation_to_covariance(
-                        data, read_spec[key][:, 2])
+                    if np.all(np.diag(data) == 1.):
+                        warnings.warn(f'The covariance matrix from {value[1]} contains ones on '
+                                      f'the diagonal. Converting this correlation matrix into a '
+                                      f'covariance matrix.')
+
+                        read_cov[key] = data_util.correlation_to_covariance(
+                            data, read_spec[key][:, 2])
+
+                    else:
+                        read_cov[key] = data
 
             for key, value in read_spec.items():
-                dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
-                                              data=read_spec[key])
+                h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
+                                       data=read_spec[key])
 
-                dset = h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/covariance',
-                                              data=read_cov[key])
+                if read_cov[key] is not None:
+                    h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/covariance',
+                                           data=read_cov[key])
 
         print(' [DONE]')
 
@@ -1067,7 +1083,7 @@ class Database:
             for item in h5_file[f'objects/{object_name}/spectrum']:
                 data_group = f'objects/{object_name}/spectrum/{item}'
 
-                if h5_file[f'{data_group}/covariance'].shape is None:
+                if f'{data_group}/covariance' not in h5_file:
                     spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
                 else:
                     spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),

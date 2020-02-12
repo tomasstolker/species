@@ -84,7 +84,7 @@ class ReadObject:
                 for item in h5_file[f'objects/{self.object_name}/spectrum']:
                     data_group = f'objects/{self.object_name}/spectrum/{item}'
 
-                    if h5_file[f'{data_group}/covariance'].shape is None:
+                    if f'{data_group}/covariance' not in h5_file:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
                     else:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
@@ -94,26 +94,6 @@ class ReadObject:
                 spectrum = None
 
         return spectrum
-
-    # def get_instrument(self):
-    #     """
-    #     Function for extracting the instrument name of the spectrum.
-    #
-    #     Returns
-    #     -------
-    #     str
-    #         Instrument that was used for the spectrum.
-    #     """
-    #
-    #     with h5py.File(self.database, 'r') as h5_file:
-    #         if 'objects/'+self.object_name+'/spectrum' in h5_file:
-    #             dset = h5_file['objects/'+self.object_name+'/spectrum']
-    #             instrument = dset.attrs['instrument']
-    #
-    #         else:
-    #             instrument = None
-    #
-    #     return instrument
 
     def get_distance(self):
         """

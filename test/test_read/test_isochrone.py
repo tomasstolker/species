@@ -1,8 +1,8 @@
 import os
 import shutil
-import pytest
 import urllib.request
 
+import pytest
 import numpy as np
 
 import species

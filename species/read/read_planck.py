@@ -87,6 +87,35 @@ class ReadPlanck:
 
         return 1e-6 * 4.*math.pi * scaling * planck_1/planck_2  # [W m-2 micron-1]
 
+    @staticmethod
+    def update_parameters(model_param):
+        """
+        Internal function for updating the dictionary with model parameters.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values
+            of 'teff' and 'radius' can be a single float, or a list with floats for a combination
+            of multiple Planck functions, e.g.
+            {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
+
+        Returns
+        -------
+        dict
+            Updated dictionary with model parameters.
+        """
+
+        updated_param = {}
+
+        for i, _ in enumerate(model_param['teff']):
+            updated_param[f'teff_{i}'] = model_param['teff'][i]
+            updated_param[f'radius_{i}'] = model_param['radius'][i]
+
+        updated_param['distance'] = model_param['distance']
+
+        return updated_param
+
     def get_spectrum(self,
                      model_param,
                      spec_res):
@@ -108,6 +137,9 @@ class ReadPlanck:
         species.core.box.ModelBox
             Box with the Planck spectrum.
         """
+
+        if 'teff' in model_param and isinstance(model_param['teff'], list):
+            model_param = self.update_parameters(model_param)
 
         wavel_points = [self.wavel_range[0]]
 
@@ -162,6 +194,9 @@ class ReadPlanck:
         float
             Average flux density (W m-2 micron-1).
         """
+
+        if 'teff' in model_param and isinstance(model_param['teff'], list):
+            model_param = self.update_parameters(model_param)
 
         spectrum = self.get_spectrum(model_param, 100.)
 

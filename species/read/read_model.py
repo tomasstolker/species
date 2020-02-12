@@ -11,7 +11,7 @@ import h5py
 import spectres
 import numpy as np
 
-from scipy.interpolate import RegularGridInterpolator, interp1d
+from scipy.interpolate import RegularGridInterpolator
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -342,7 +342,7 @@ class ReadModel:
                                                  old_spec_wavs=self.wl_points,
                                                  spec_fluxes=flux)
 
-                    except:
+                    except ValueError:
                         index_error = True
 
                     if not index_error:
@@ -408,7 +408,7 @@ class ReadModel:
             Box with the model spectrum.
         """
 
-        for key, value in model_param.items():
+        for key in model_param:
             if key not in ['radius', 'distance', 'mass', 'luminosity']:
                 if key not in self.get_parameters():
                     raise ValueError(f'The \'{key}\' parameter is not required by \'{self.model}\''

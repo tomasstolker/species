@@ -177,7 +177,7 @@ class FitSpectrum:
                 self.modelpar.append('scaling'+str(i))
                 self.bounds['scaling'+str(i)] = (0., 1e2)
 
-        with Pool(processes=cpu_count()) as pool:
+        with Pool(processes=cpu_count()):
             sampler = emcee.EnsembleSampler(nwalkers,
                                             ndim,
                                             lnprob,
