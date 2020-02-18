@@ -5,6 +5,7 @@ Module for AMES-Dusty atmospheric model spectra.
 import os
 import gzip
 import tarfile
+import warnings
 import urllib.request
 
 import spectres
@@ -140,6 +141,13 @@ def add_ames_dusty(input_path,
                     flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
                 except ValueError:
                     flux.append(np.zeros(wavelength.shape[0]))
+
+                    warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
+                                  f' micron) should fall within the range of the original '
+                                  f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
+                                  f'micron). Storing zeros for the flux of Teff={teff_val} '
+                                  f'and log(g)={logg_val}, which will be corrected by the '
+                                  f'\'write_data\' function afterwards.')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),

@@ -10,7 +10,6 @@ import numpy as np
 
 from astropy.io import fits
 
-from species.data import queries
 from species.util import data_util
 
 
@@ -46,11 +45,17 @@ def add_vlm_plx(input_path,
 
     database.create_group(group)
 
-    hdulist = fits.open(data_file)
-    photdata = hdulist[1].data
+    with fits.open(data_file) as hdulist:
+        header = hdulist[1].header
+        photdata = hdulist[1].data
 
-    plx = photdata['PLX']  # [mas]
-    distance = 1./(plx*1e-3)  # [pc]
+    parallax = photdata['PLX']  # [mas]
+    parallax_error = photdata['EPLX']  # [mas]
+    distance = 1./(parallax*1e-3)  # [pc]
+
+    distance_minus = distance - 1./((parallax+parallax_error)*1e-3)  # [pc]
+    distance_plus = 1./((parallax-parallax_error)*1e-3) - distance  # [pc]
+    distance_error = (distance_plus+distance_minus)/2.  # [pc]
 
     name = photdata['NAME']
     name = np.core.defchararray.strip(name)
@@ -70,7 +75,7 @@ def add_vlm_plx(input_path,
 
     sptype = data_util.update_sptype(sptype)
 
-    dtype = h5py.special_dtype(vlen=bytes)
+    dtype = h5py.special_dtype(vlen=str)
 
     dset = database.create_dataset(group+'/name', (np.size(name), ), dtype=dtype)
     dset[...] = name
@@ -81,7 +86,10 @@ def add_vlm_plx(input_path,
     dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
     dset[...] = flag
 
+    database.create_dataset(group+'/ra', data=photdata['RA'])  # [deg]
+    database.create_dataset(group+'/dec', data=photdata['DEC'])  # [deg]
     database.create_dataset(group+'/distance', data=distance)
+    database.create_dataset(group+'/distance_error', data=distance_error)
     database.create_dataset(group+'/MKO/NSFCam.Y', data=photdata['YMAG'])
     database.create_dataset(group+'/MKO/NSFCam.J', data=photdata['JMAG'])
     database.create_dataset(group+'/MKO/NSFCam.H', data=photdata['HMAG'])
@@ -93,14 +101,5 @@ def add_vlm_plx(input_path,
     database.create_dataset(group+'/2MASS/2MASS.Ks', data=photdata['K2MAG'])
 
     print(' [DONE]')
-
-    # print('Querying SIMBAD...', end=')
-
-    # simbad_id = queries.get_simbad(name)
-
-    # dset = database.create_dataset(group+'/simbad', (np.size(simbad_id), ), dtype=dtype)
-    # dset[...] = simbad_id
-
-    # print(' [DONE]')
 
     database.close()

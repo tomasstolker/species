@@ -125,7 +125,7 @@ class FitSpectrum:
 
             synphot = photometry.SyntheticPhotometry(item)
             spec_phot = synphot.spectrum_to_flux(calibspec.wavelength, calibspec.flux)
-            self.specphot.append(spec_phot)
+            self.specphot.append(spec_phot[0])
 
             obj_phot = self.object.get_photometry(item)
             self.objphot.append((obj_phot[2], obj_phot[3]))

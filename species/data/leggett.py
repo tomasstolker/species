@@ -56,7 +56,12 @@ def add_leggett(input_path,
     dataframe.columns = dataframe.columns.str.replace('\'', '')
 
     modulus = np.asarray(dataframe['M-m'])  # M-m [mag]
+    modulus_error = np.asarray(dataframe['Mmerr'])  # M-m [mag]
+
     distance = 10.**(-modulus/5.+1.)  # [pc]
+    distance_lower = distance - 10.**(-(modulus+modulus_error)/5.+1.)  # [pc]
+    distance_upper = 10.**(-(modulus-modulus_error)/5.+1.) - distance  # [pc]
+    distance_error = (distance_lower+distance_upper)/2.
 
     name = np.asarray(dataframe['Name'])
 
@@ -139,7 +144,7 @@ def add_leggett(input_path,
 
     file_io.close()
 
-    dtype = h5py.special_dtype(vlen=bytes)
+    dtype = h5py.special_dtype(vlen=str)
 
     dset = database.create_dataset(group+'/name', (np.size(name), ), dtype=dtype)
     dset[...] = name
@@ -153,6 +158,7 @@ def add_leggett(input_path,
     dset[...] = flag
 
     database.create_dataset(group+'/distance', data=distance)
+    database.create_dataset(group+'/distance_error', data=distance_error)
     database.create_dataset(group+'/MKO/NSFCam.Y', data=mag_y)
     database.create_dataset(group+'/MKO/NSFCam.J', data=mag_j)
     database.create_dataset(group+'/MKO/NSFCam.H', data=mag_h)

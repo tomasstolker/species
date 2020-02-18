@@ -5,6 +5,7 @@ Module for AMES-Cond atmospheric model spectra.
 import os
 import gzip
 import tarfile
+import warnings
 import urllib.request
 
 import spectres
@@ -170,6 +171,9 @@ def add_ames_cond(input_path,
                     flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
                 except ValueError:
                     flux.append(np.zeros(wavelength.shape[0]))
+
+                    warnings.warn('The wavelength range should fall within the range of the '
+                                  'original wavelength sampling. Storing zeros instead.')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),

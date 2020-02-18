@@ -54,7 +54,7 @@ def add_baraffe(database,
             line.insert(0, age)
             isochrones.append(line)
 
-    header = np.asarray(header, dtype=bytes)
+    header = np.asarray(header, dtype=str)
     isochrones = np.asarray(isochrones, dtype=float)
 
     isochrones[:, 0] *= 1e3  # [Myr]
@@ -65,16 +65,15 @@ def add_baraffe(database,
 
     print(f'Adding isochrones: {tag}...', end='', flush=True)
 
-    bytes_type = h5py.special_dtype(vlen=bytes)
+    dtype = h5py.special_dtype(vlen=str)
 
-    database.create_dataset('isochrones/'+tag+'/filters',
-                            data=header[7:],
-                            dtype=bytes_type)
+    dset = database.create_dataset(f'isochrones/{tag}/filters', (np.size(header[7:]), ), dtype=dtype)
+    dset[...] = header[7:]
 
-    database.create_dataset('isochrones/'+tag+'/magnitudes',
+    database.create_dataset(f'isochrones/{tag}/magnitudes',
                             data=isochrones[:, 8:])
 
-    dset = database.create_dataset('isochrones/'+tag+'/evolution',
+    dset = database.create_dataset(f'isochrones/{tag}/evolution',
                                    data=isochrones[:, 0:8])
 
     dset.attrs['model'] = 'baraffe'

@@ -21,25 +21,25 @@ def sptype_substellar(sptype,
     spt_disc = np.zeros(shape)
 
     for i, item in enumerate(sptype):
-        if item[0:2] in (b'M0', b'M1', b'M2', b'M3', b'M4'):
+        if item[0:2] in ['M0', 'M1', 'M2', 'M3', 'M4']:
             spt_disc[i] = 0.5
 
-        elif item[0:2] in (b'M5', b'M6', b'M7', b'M8', b'M9'):
+        elif item[0:2] in ['M5', 'M6', 'M7', 'M8', 'M9']:
             spt_disc[i] = 1.5
 
-        elif item[0:2] in (b'L0', b'L1', b'L2', b'L3', b'L4'):
+        elif item[0:2] in ['L0', 'L1', 'L2', 'L3', 'L4']:
             spt_disc[i] = 2.5
 
-        elif item[0:2] in (b'L5', b'L6', b'L7', b'L8', b'L9'):
+        elif item[0:2] in ['L5', 'L6', 'L7', 'L8', 'L9']:
             spt_disc[i] = 3.5
 
-        elif item[0:2] in (b'T0', b'T1', b'T2', b'T3', b'T4'):
+        elif item[0:2] in ['T0', 'T1', 'T2', 'T3', 'T4']:
             spt_disc[i] = 4.5
 
-        elif item[0:2] in (b'T5', b'T6', b'T7', b'T8', b'T9'):
+        elif item[0:2] in ['T5', 'T6', 'T7', 'T8', 'T9']:
             spt_disc[i] = 5.5
 
-        elif b'Y' in item:
+        elif 'Y' in item:
             spt_disc[i] = 6.5
 
         else:
@@ -65,34 +65,34 @@ def sptype_stellar(sptype,
     spt_disc = np.zeros(shape)
 
     for i, item in enumerate(sptype):
-        if item[0] == b'O':
+        if item[0] == 'O':
             spt_disc[i] = 0.5
 
-        elif item[0] == b'B':
+        elif item[0] == 'B':
             spt_disc[i] = 1.5
 
-        elif item[0] == b'A':
+        elif item[0] == 'A':
             spt_disc[i] = 2.5
 
-        elif item[0] == b'F':
+        elif item[0] == 'F':
             spt_disc[i] = 3.5
 
-        elif item[0] == b'G':
+        elif item[0] == 'G':
             spt_disc[i] = 4.5
 
-        elif item[0] == b'K':
+        elif item[0] == 'K':
             spt_disc[i] = 5.5
 
-        elif item[0] == b'M':
+        elif item[0] == 'M':
             spt_disc[i] = 6.5
 
-        elif item[0] == b'L':
+        elif item[0] == 'L':
             spt_disc[i] = 7.5
 
-        elif item[0] == b'T':
+        elif item[0] == 'T':
             spt_disc[i] = 8.5
 
-        elif item[0] == b'Y':
+        elif item[0] == 'Y':
             spt_disc[i] = 9.5
 
         else:

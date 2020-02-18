@@ -10,8 +10,7 @@ import numpy as np
 
 from astropy.io import fits
 
-from species.data import queries
-from species.util import data_util
+from species.util import data_util, query_util
 
 
 def add_irtf(input_path,
@@ -93,6 +92,7 @@ def add_irtf(input_path,
             for _, filename in enumerate(files):
                 if filename[-9:] != '_ext.fits':
                     fitsfile = os.path.join(root, filename)
+
                     spdata, header = fits.getdata(fitsfile, header=True)
 
                     name = header['OBJECT']
@@ -107,21 +107,22 @@ def add_irtf(input_path,
 
                     if item in ['L', 'T'] or spt_split[1][0] == 'V':
                         print_message = f'Adding IRTF Spectral Library... {name}'
-                        print(f'\r{print_message:<80}', end='')
+                        print(f'\r{print_message:<70}', end='')
 
-                        simbad_id, distance = queries.get_distance(name)  # [pc]
+                        simbad_id, distance = query_util.get_distance(name)  # [pc]
 
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 
-                        dset = database.create_dataset('spectra/irtf/'+name,
+                        dset = database.create_dataset(f'spectra/irtf/{name}',
                                                        data=spdata)
 
                         dset.attrs['name'] = str(name).encode()
                         dset.attrs['sptype'] = str(sptype).encode()
                         dset.attrs['simbad'] = str(simbad_id).encode()
-                        dset.attrs['distance'] = distance
+                        dset.attrs['distance'] = distance[0]
+                        dset.attrs['distance_error'] = distance[1]
 
     print_message = 'Adding IRTF Spectral Library... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<70}')
 
     database.close()

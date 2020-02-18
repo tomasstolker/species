@@ -28,6 +28,7 @@ def plot_spectrum(boxes,
                   colors=None,
                   xlim=None,
                   ylim=None,
+                  ylim_res=None,
                   scale=('linear', 'linear'),
                   title=None,
                   offset=None,
@@ -50,9 +51,12 @@ def plot_spectrum(boxes,
         with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
         to None.
     xlim : tuple(float, float)
-        Limits of the x-axis.
+        Limits of the wavelength axis.
     ylim : tuple(float, float)
-        Limits of the y-axis.
+        Limits of the flux axis.
+    ylim_res : tuple(float, float), None
+        Limits of the residuals axis. Automatically chosen (based on the minimum and maximum
+        residual value) if set to None.
     scale : tuple(str, str)
         Scale of the axes ('linear' or 'log').
     title : str
@@ -78,6 +82,10 @@ def plot_spectrum(boxes,
     """
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
+
+    if colors is not None and len(boxes) != len(colors):
+        raise ValueError(f'The number of \'boxes\' ({len(boxes)}) should be the same as the '
+                         f'number of \'colors\' ({len(colors)}).')
 
     if residuals and filters:
         plt.figure(1, figsize=figsize)
@@ -345,17 +353,18 @@ def plot_spectrum(boxes,
         elif isinstance(boxitem, box.PhotometryBox):
             marker = next(marker)
 
-            if boxitem.quantity != 'flux':
-                raise ValueError(f'The quantity of the PhotometryBox is \'{boxitem.quantity}\' '
-                                 f'and not \'flux\'.')
+            for i, item in enumerate(boxitem.wavelength):
+                transmission = read_filter.ReadFilter(boxitem.filter_name[i])
+                fwhm = transmission.filter_fwhm()
 
-            for i, _ in enumerate(boxitem.wavelength):
                 if colors:
-                    ax1.plot(boxitem.wavelength[i], boxitem.flux[i]/scaling, marker=marker, ms=6,
-                             color=colors[j], zorder=3)
+                    ax1.errorbar(item, boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                 yerr=boxitem.flux[i][1], marker=marker, ms=6, color=colors[j],
+                                 zorder=3)
                 else:
-                    ax1.plot(boxitem.wavelength[i], boxitem.flux[i]/scaling, marker=marker, ms=6,
-                             zorder=3, color='black')
+                    ax1.errorbar(item, boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                yerr=boxitem.flux[i][1], marker=marker, ms=6, color='black',
+                                zorder=3)
 
         elif isinstance(boxitem, box.ObjectBox):
             if boxitem.flux is not None:
@@ -424,8 +433,15 @@ def plot_spectrum(boxes,
 
         res_lim = math.ceil(1.1*res_max)
 
+        if res_lim > 10.:
+            res_lim = 5.
+
         ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
-        ax3.set_ylim(-res_lim, res_lim)
+
+        if ylim_res is None:
+            ax3.set_ylim(-res_lim, res_lim)
+        else:
+            ax3.set_ylim(ylim_res[0], ylim_res[1])
 
     if filters:
         ax2.set_ylim(0., 1.1)
@@ -441,7 +457,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles and legend:
-        ax1.legend(loc=legend, prop={'size': 9}, frameon=False)
+        ax1.legend(loc=legend, fontsize=9, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

@@ -100,14 +100,6 @@ species.data.petitcode module
     :undoc-members:
     :show-inheritance:
 
-species.data.queries module
----------------------------
-
-.. automodule:: species.data.queries
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 species.data.spex module
 ------------------------
 

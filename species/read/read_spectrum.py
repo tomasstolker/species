@@ -76,7 +76,7 @@ class ReadSpectrum:
         h5_file = h5py.File(self.database, 'r')
 
         try:
-            h5_file['spectra/'+self.spec_library]
+            h5_file[f'spectra/{self.spec_library}']
 
         except KeyError:
             h5_file.close()
@@ -86,19 +86,18 @@ class ReadSpectrum:
 
         list_wavelength = []
         list_flux = []
+        list_error = []
         list_name = []
         list_simbad = []
         list_sptype = []
         list_distance = []
 
-        for item in h5_file['spectra/'+self.spec_library]:
-            data = h5_file['spectra/'+self.spec_library+'/'+item]
+        for item in h5_file[f'spectra/{self.spec_library}']:
+            data = h5_file[f'spectra/{self.spec_library}/{item}']
 
             wavelength = data[0, :]  # [micron]
             flux = data[1, :]  # [W m-2 micron-1]
-
-            if data.shape[0] == 3:
-                error = data[2, :]  # [W m-2 micron-1]
+            error = data[2, :]  # [W m-2 micron-1]
 
             if exclude_nan:
                 indices = np.isnan(flux)
@@ -107,9 +106,7 @@ class ReadSpectrum:
 
                 wavelength = wavelength[indices]
                 flux = flux[indices]
-
-                if data.shape[0] == 3:
-                    error = error[indices]
+                error = error[indices]
 
             if self.wavel_range is None:
                 wl_index = np.arange(0, len(wavelength), 1)
@@ -131,25 +128,28 @@ class ReadSpectrum:
 
                 list_wavelength.append(wavelength[wl_index])
                 list_flux.append(flux[wl_index])
+                list_error.append(error[wl_index])
 
                 attrs = data.attrs
+
                 if 'name' in attrs:
-                    list_name.append(data.attrs['name'])
+                    list_name.append(data.attrs['name'].decode('utf-8'))
 
                 if 'simbad' in attrs:
-                    list_simbad.append(data.attrs['simbad'])
+                    list_simbad.append(data.attrs['simbad'].decode('utf-8'))
 
                 if 'sptype' in attrs:
-                    list_sptype.append(data.attrs['sptype'])
+                    list_sptype.append(data.attrs['sptype'].decode('utf-8'))
 
                 if 'distance' in attrs:
-                    list_distance.append(data.attrs['distance'])
+                    list_distance.append((data.attrs['distance'], data.attrs['distance_error']))
 
         specbox = box.SpectrumBox()
 
         specbox.spec_library = self.spec_library
         specbox.wavelength = np.asarray(list_wavelength)
         specbox.flux = np.asarray(list_flux)
+        specbox.error = np.asarray(list_error)
 
         if list_name:
             specbox.name = np.asarray(list_name)
@@ -168,14 +168,15 @@ class ReadSpectrum:
 
             for item in sptypes:
                 if indices is None:
-                    indices = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
+                    indices = np.where(np.chararray.startswith(specbox.sptype, item))[0]
 
                 else:
-                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item.encode()))[0]
+                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item))[0]
                     indices = np.append(indices, ind_tmp)
 
             specbox.wavelength = specbox.wavelength[indices]
             specbox.flux = specbox.flux[indices]
+            specbox.error = specbox.error[indices]
             specbox.name = specbox.name[indices]
             specbox.simbad = specbox.simbad[indices]
             specbox.sptype = specbox.sptype[indices]
@@ -203,28 +204,35 @@ class ReadSpectrum:
         specbox = self.get_spectrum(sptypes=sptypes,
                                     exclude_nan=True)
 
+        n_spectra = specbox.wavelength.shape[0]
+
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
 
+        wavelengths = np.full(specbox.wavelength.shape[0], mean_wavel)
+        filters = np.full(specbox.wavelength.shape[0], self.filter_name)
+
         synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
 
-        phot_wavel = []
         phot_flux = []
 
-        for i, _ in enumerate(specbox.wavelength):
+        for i in range(n_spectra):
             flux = synphot.spectrum_to_flux(wavelength=specbox.wavelength[i],
-                                            flux=specbox.flux[i])
+                                            flux=specbox.flux[i],
+                                            error=specbox.error[i])
 
-            phot_wavel.append(mean_wavel)
             phot_flux.append(flux)
+
+        phot_flux = np.asarray(phot_flux)
 
         return box.create_box(boxtype='photometry',
                               name=specbox.name,
                               sptype=specbox.sptype,
-                              wavelength=phot_wavel,
+                              wavelength=wavelengths,
                               flux=phot_flux,
                               app_mag=None,
-                              abs_mag=None)
+                              abs_mag=None,
+                              filter_name=filters)
 
     def get_magnitude(self,
                       sptypes=None):
@@ -246,20 +254,36 @@ class ReadSpectrum:
         specbox = self.get_spectrum(sptypes=sptypes,
                                     exclude_nan=True)
 
+        n_spectra = specbox.wavelength.shape[0]
+
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
-        wavelength = np.full(specbox.wavelength.shape[0], mean_wavel)
+
+        wavelengths = np.full(specbox.wavelength.shape[0], mean_wavel)
+        filters = np.full(specbox.wavelength.shape[0], self.filter_name)
 
         synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
 
-        app_mag, abs_mag = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength,
-                                                         flux=specbox.flux,
-                                                         distance=specbox.distance)
+        app_mag = []
+        abs_mag = []
+
+        for i in range(n_spectra):
+            app_tmp, abs_tmp = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength[i],
+                                                             flux=specbox.flux[i],
+                                                             error=specbox.error[i],
+                                                             distance=specbox.distance[i])
+
+            app_mag.append(app_tmp)
+            abs_mag.append(abs_tmp)
+
+        app_mag = np.asarray(app_mag)
+        abs_mag = np.asarray(abs_mag)
 
         return box.create_box(boxtype='photometry',
                               name=specbox.name,
                               sptype=specbox.sptype,
-                              wavelength=wavelength,
+                              wavelength=wavelengths,
                               flux=None,
                               app_mag=app_mag,
-                              abs_mag=abs_mag)
+                              abs_mag=abs_mag,
+                              filter_name=filters)

@@ -11,9 +11,8 @@ import numpy as np
 from astropy.io.votable import parse_single_table
 
 from species.analysis import photometry
-from species.data import queries
 from species.read import read_filter
-from species.util import data_util
+from species.util import data_util, query_util
 
 
 def add_spex(input_path, database):
@@ -48,7 +47,7 @@ def add_spex(input_path, database):
     urllib.request.urlretrieve(url_all, xml_file)
 
     table = parse_single_table(xml_file)
-    name = table.array['name']
+    # name = table.array['name']
     twomass = table.array['name2m']
     url = table.array['access_url']
 
@@ -67,7 +66,7 @@ def add_spex(input_path, database):
             url = table.array['access_url']
 
             print_message = f'Downloading SpeX Prism Spectral Library... {name}'
-            print(f'\r{print_message:<80}', end='')
+            print(f'\r{print_message:<72}', end='')
 
             os.remove(xml_file)
 
@@ -77,7 +76,7 @@ def add_spex(input_path, database):
             unique_id.append(twomass[i])
 
     print_message = 'Downloading SpeX Prism Spectral Library... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<72}')
 
     h_twomass = photometry.SyntheticPhotometry('2MASS/2MASS.H')
 
@@ -98,30 +97,37 @@ def add_spex(input_path, database):
 
             wavelength = np.array(wavelength*1e-4)  # [micron]
             flux = np.array(flux)
+            error = np.full(flux.shape[0], np.nan)
 
             # 2MASS magnitudes
             j_mag = table.get_field_by_id('jmag').value
             h_mag = table.get_field_by_id('hmag').value
             ks_mag = table.get_field_by_id('ksmag').value
 
-            if j_mag == b'':
+            j_mag = j_mag.decode('utf-8')
+            h_mag = h_mag.decode('utf-8')
+            ks_mag = ks_mag.decode('utf-8')
+
+            if j_mag == '':
                 j_mag = np.nan
             else:
                 j_mag = float(j_mag)
 
-            if h_mag == b'':
+            if h_mag == '':
                 h_mag = np.nan
             else:
                 h_mag = float(h_mag)
 
-            if ks_mag == b'':
+            if ks_mag == '':
                 ks_mag = np.nan
             else:
                 ks_mag = float(ks_mag)
 
             name = table.get_field_by_id('name').value
             name = name.decode('utf-8')
+
             twomass_id = table.get_field_by_id('name2m').value
+            twomass_id = twomass_id.decode('utf-8')
 
             try:
                 sptype = table.get_field_by_id('nirspty').value
@@ -137,18 +143,21 @@ def add_spex(input_path, database):
 
             sptype = data_util.update_sptype(np.array([sptype]))[0].strip()
 
-            h_flux, _ = h_twomass.magnitude_to_flux(h_mag, None, h_zp)
+            h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None, zp_flux=h_zp)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
-            flux *= h_flux/phot  # [W m-2 micron-1]
+            flux *= h_flux/phot[0]  # [W m-2 micron-1]
 
-            spdata = np.vstack((wavelength, flux))
+            spdata = np.vstack([wavelength, flux, error])
 
-            simbad_id, distance = queries.get_distance('2MASS '+twomass_id.decode('utf-8'))  # [pc]
+            simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')  # [pc]
+
+            # simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
+            # simbad_id = simbad_id.decode('utf-8')
 
             if sptype[0] in ['M', 'L', 'T'] and len(sptype) == 2:
                 print_message = f'Adding SpeX Prism Spectral Library... {name}'
-                print(f'\r{print_message:<80}', end='')
+                print(f'\r{print_message:<72}', end='')
 
                 dset = database.create_dataset('spectra/spex/'+name, data=spdata)
 
@@ -158,9 +167,10 @@ def add_spex(input_path, database):
                 dset.attrs['2MASS/2MASS.J'] = j_mag
                 dset.attrs['2MASS/2MASS.H'] = h_mag
                 dset.attrs['2MASS/2MASS.Ks'] = ks_mag
-                dset.attrs['distance'] = distance  # [pc]
+                dset.attrs['distance'] = distance[0]  # [pc]
+                dset.attrs['distance_error'] = distance[1]  # [pc]
 
     print_message = 'Adding SpeX Prism Spectral Library... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<72}')
 
     database.close()

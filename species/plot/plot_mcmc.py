@@ -105,15 +105,15 @@ def plot_walkers(tag,
     print(' [DONE]')
 
 
-def plot_posteriors(tag,
-                    burnin=None,
-                    title=None,
-                    offset=None,
-                    title_fmt='.2f',
-                    limits=None,
-                    output='posterior.pdf'):
+def plot_posterior(tag,
+                   burnin=None,
+                   title=None,
+                   offset=None,
+                   title_fmt='.2f',
+                   limits=None,
+                   output='posterior.pdf'):
     """
-    Function to plot the posterior distributions.
+    Function to plot the posterior distribution.
 
     Parameters
     ----------
@@ -137,10 +137,14 @@ def plot_posteriors(tag,
     None
     """
 
-    print(f'Plotting posteriors: {output}...', end='', flush=True)
-
     species_db = database.Database()
     box = species_db.get_samples(tag, burnin=burnin)
+
+    print(f'Median sample:')
+    for key, value in box.median_sample.items():
+        print(f'   - {key} = {value:.2f}')
+
+    print(f'Plotting the posterior: {output}...', end='', flush=True)
 
     samples = box.samples
     par_val = tuple(box.prob_sample.values())
@@ -252,7 +256,7 @@ def plot_photometry(tag,
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
-    plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.savefig(f'{os.getcwd()}/{output}', bbox_inches='tight')
     plt.clf()
     plt.close()
 

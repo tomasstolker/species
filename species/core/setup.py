@@ -3,7 +3,9 @@ Module for setting up species in the working folder.
 """
 
 import os
+import json
 import configparser
+import urllib.request
 
 import h5py
 import species
@@ -30,6 +32,17 @@ class SpeciesInit:
         config_file = os.path.join(working_folder, 'species_config.ini')
 
         print(' [DONE]')
+
+        try:
+            contents = urllib.request.urlopen('https://pypi.org/pypi/species/json').read()
+            data = json.loads(contents)
+            latest_version = data['info']['version']
+
+        except urllib.error.URLError:
+            latest_version = None
+
+        if latest_version is not None and species.__version__ != latest_version:
+            print(f'A new version ({latest_version}) is available!')
 
         if not os.path.isfile(config_file):
 

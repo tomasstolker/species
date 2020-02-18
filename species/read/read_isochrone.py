@@ -78,17 +78,14 @@ class ReadIsochrone:
         index_logg = 4
 
         with h5py.File(self.database, 'r') as h5_file:
-            model = h5_file['isochrones/'+self.tag+'/evolution'].attrs['model']
-            evolution = np.asarray(h5_file['isochrones/'+self.tag+'/evolution'])
+            model = h5_file[f'isochrones/{self.tag}/evolution'].attrs['model']
+            evolution = np.asarray(h5_file[f'isochrones/{self.tag}/evolution'])
 
             if model == 'baraffe':
-                filters = list(h5_file['isochrones/'+self.tag+'/filters'])
-                magnitudes = np.asarray(h5_file['isochrones/'+self.tag+'/magnitudes'])
+                filters = list(h5_file[f'isochrones/{self.tag}/filters'])
+                magnitudes = np.asarray(h5_file[f'isochrones/{self.tag}/magnitudes'])
 
         if model == 'baraffe':
-            for i, item in enumerate(filters):
-                filters[i] = item.decode()
-
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])

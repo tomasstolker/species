@@ -26,20 +26,24 @@ class TestSpectrum:
 
     def test_read_spectrum(self):
         database = species.Database()
-        database.add_spectrum('irtf', sptypes=['L', ])
+
+        with pytest.warns(UserWarning) as warning:
+            database.add_spectrum('irtf', sptypes=['L', ])
+
+        assert len(warning) == 2
 
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
         assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656), rel=self.limit, abs=0.)
 
     def test_get_spectrum(self):
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
-        spec_box = read_spectrum.get_spectrum(sptypes=['L', ], exclude_nan=True)
+        spec_box = read_spectrum.get_spectrum(sptypes=['L0', ], exclude_nan=True)
 
-        assert spec_box.wavelength[0].shape == (1000, )
-        assert spec_box.flux[0].shape == (1000, )
+        assert spec_box.wavelength[0].shape == (1063, )
+        assert spec_box.flux[0].shape == (1063, )
 
-        assert np.sum(spec_box.wavelength[0]) == pytest.approx(1611.2432, rel=1e-7, abs=0.)
-        assert np.sum(spec_box.flux[0]) == pytest.approx(2.3606193e-11, rel=1e-7, abs=0.)
+        assert np.sum(spec_box.wavelength[0]) == pytest.approx(1692.8604, rel=1e-7, abs=0.)
+        assert np.sum(spec_box.flux[0]) == pytest.approx(4.5681937e-11, rel=1e-7, abs=0.)
 
         species.plot_spectrum(boxes=[spec_box, ],
                               filters=['MKO/NSFCam.H', ],

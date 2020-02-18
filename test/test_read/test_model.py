@@ -65,7 +65,7 @@ class TestModel:
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         flux = read_model.get_flux(self.model_param)
 
-        assert flux == pytest.approx(3.4895271009175577e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(3.4895271009175577e-14, rel=self.limit, abs=0.)
 
     def test_get_magnitude(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')

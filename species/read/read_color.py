@@ -85,23 +85,24 @@ class ReadColorMagnitude:
 
         if self.lib_type == 'phot_lib':
             sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
-            distance = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # [pc]
+            dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # [pc]
+            dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])  # [pc]
             flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
 
             if object_type is None:
                 indices = np.arange(0, np.size(sptype), 1)
 
             elif object_type == 'field':
-                indices = np.where(flag == b'null')[0]
+                indices = np.where(flag == 'null')[0]
 
             elif object_type == 'young':
                 indices = []
 
                 for j, object_flag in enumerate(flag):
-                    if b'young' in object_flag:
+                    if 'young' in object_flag:
                         indices.append(j)
 
-                    elif b'lowg' in object_flag:
+                    elif 'lowg' in object_flag:
                         indices.append(j)
 
                 indices = np.array(indices)
@@ -113,10 +114,10 @@ class ReadColorMagnitude:
             color = mag1 - mag2
 
             if self.filter_mag == self.filters_color[0]:
-                mag = phot_util.apparent_to_absolute(mag1, distance)
+                mag, error = phot_util.apparent_to_absolute((mag1, None), (dist, dist_error))
 
             elif self.filter_mag == self.filters_color[1]:
-                mag = phot_util.apparent_to_absolute(mag2, distance)
+                mag, error = phot_util.apparent_to_absolute((mag2, None), (dist, dist_error))
 
             colormag_box = box.create_box(boxtype='colormag',
                                           library=self.library,
@@ -228,16 +229,16 @@ class ReadColorColor:
                 indices = np.arange(0, np.size(sptype), 1)
 
             elif object_type == 'field':
-                indices = np.where(flag == b'null')[0]
+                indices = np.where(flag == 'null')[0]
 
             elif object_type == 'young':
                 indices = []
 
                 for j, object_flag in enumerate(flag):
-                    if b'young' in object_flag:
+                    if 'young' in object_flag:
                         indices.append(j)
 
-                    elif b'lowg' in object_flag:
+                    elif 'lowg' in object_flag:
                         indices.append(j)
 
                 indices = np.array(indices)

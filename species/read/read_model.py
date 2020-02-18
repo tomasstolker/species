@@ -334,7 +334,7 @@ class ReadModel:
                 indices = np.where((wavel_resample > self.wl_points[0]) &
                                    (wavel_resample < self.wl_points[-2]))[0]
 
-                for i in range(10):
+                for i in range(1, 10):
                     try:
                         index_error = False
 
@@ -644,13 +644,13 @@ class ReadModel:
 
             if 'distance' in model_param:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
-                    spectrum.wavelength, spectrum.flux, distance=model_param['distance'])
+                    spectrum.wavelength, spectrum.flux, distance=(model_param['distance'], None))
 
             else:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
                     spectrum.wavelength, spectrum.flux, distance=None)
 
-        return app_mag, abs_mag
+        return app_mag[0], abs_mag[0]
 
     def get_bounds(self):
         """
@@ -782,12 +782,12 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        dset = h5_file['models/'+self.model]
+        dset = h5_file[f'models/{self.model}']
         nparam = dset.attrs['nparam']
 
         param = []
         for i in range(nparam):
-            param.append(dset.attrs['parameter'+str(i)])
+            param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()
 

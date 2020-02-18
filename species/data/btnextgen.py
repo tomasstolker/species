@@ -4,6 +4,7 @@ Module for BT-NextGen atmospheric model spectra.
 
 import os
 import tarfile
+import warnings
 import urllib.request
 
 import spectres
@@ -96,7 +97,7 @@ def add_btnextgen(input_path,
                         continue
 
                 print_message = f'Adding BT-NextGen model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
+                print(f'\r{print_message:<72}', end='')
 
                 dataf = pd.pandas.read_csv(data_folder+filename,
                                            usecols=[0, 1],
@@ -121,22 +122,27 @@ def add_btnextgen(input_path,
                 # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
-                data = np.stack((data_wavel, data_flux), axis=0)
+                data = np.stack([data_wavel, data_flux], axis=1)
 
-                index_sort = np.argsort(data[0, :])
-                data = data[:, index_sort]
+                index_sort = np.argsort(data[:, 0])
+                data = data[index_sort, :]
 
-                if np.all(np.diff(data[0, :]) < 0):
+                if np.all(np.diff(data[:, 0]) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
                 teff.append(teff_val)
                 logg.append(logg_val)
                 feh.append(feh_val)
 
+                flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
+
                 try:
                     flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
                 except ValueError:
                     flux.append(np.zeros(wavelength.shape[0]))
+
+                    warnings.warn('The wavelength range should fall within the range of the '
+                                  'original wavelength sampling. Storing zeros instead.')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -146,7 +152,7 @@ def add_btnextgen(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-nextgen', ('teff', 'logg', 'feh'), database, data_sorted)
+    data_util.write_data('bt-nextgen', ['teff', 'logg', 'feh'], database, data_sorted)
 
     print_message = 'Adding BT-NextGen model spectra... [DONE]'
-    print(f'\r{print_message:<80}')
+    print(f'\r{print_message:<72}')

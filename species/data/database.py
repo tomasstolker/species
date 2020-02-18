@@ -228,7 +228,7 @@ class Database:
             h5_file.create_group('isochrones')
 
         if 'isochrones/'+tag in h5_file:
-            del h5_file['isochrones/'+tag]
+            del h5_file[f'isochrones/{tag}']
 
         if model[0:7] == 'baraffe':
             isochrones.add_baraffe(h5_file, tag, filename)
@@ -359,6 +359,8 @@ class Database:
                    app_mag=None,
                    spectrum=None):
         """
+        Function for adding the photometric and/or spectroscopic data of an object to the database.
+
         Parameters
         ----------
         object_name: str
@@ -525,6 +527,9 @@ class Database:
                 if read_cov[key] is not None:
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/covariance',
                                            data=read_cov[key])
+
+                    h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
+                                           data=np.linalg.inv(read_cov[key]))
 
         print(' [DONE]')
 
@@ -719,13 +724,13 @@ class Database:
         if 'results/mcmc' not in h5_file:
             h5_file.create_group('results/mcmc')
 
-        if 'results/mcmc/'+tag in h5_file:
-            del h5_file['results/mcmc/'+tag]
+        if f'results/mcmc/{tag}' in h5_file:
+            del h5_file[f'results/mcmc/{tag}']
 
-        dset = h5_file.create_dataset('results/mcmc/'+tag+'/samples',
+        dset = h5_file.create_dataset(f'results/mcmc/{tag}/samples',
                                       data=sampler.chain)
 
-        h5_file.create_dataset('results/mcmc/'+tag+'/probability',
+        h5_file.create_dataset(f'results/mcmc/{tag}/probability',
                                data=np.exp(sampler.lnprobability))
 
         dset.attrs['type'] = str(spectrum[0])
@@ -736,7 +741,7 @@ class Database:
             dset.attrs['distance'] = float(distance)
 
         for i, item in enumerate(modelpar):
-            dset.attrs['parameter'+str(i)] = str(item)
+            dset.attrs[f'parameter{i}'] = str(item)
 
         mean_accep = np.mean(sampler.acceptance_fraction)
         dset.attrs['acceptance'] = float(mean_accep)
@@ -754,7 +759,7 @@ class Database:
 
         if int_auto is not None:
             for i, item in enumerate(int_auto):
-                dset.attrs['autocorrelation'+str(i)] = float(item)
+                dset.attrs[f'autocorrelation{i}'] = float(item)
 
         h5_file.close()
 
@@ -818,6 +823,8 @@ class Database:
                           tag,
                           burnin):
         """
+        Function for extracting the median parameter values from the MCMC samples.
+
         Parameters
         ----------
         tag : str
@@ -832,7 +839,7 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag+'/samples']
+        dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
 
@@ -840,21 +847,16 @@ class Database:
         samples = samples[:, burnin:, :]
         samples = np.reshape(samples, (-1, nparam))
 
-        # print(f'Median sample:', end='', flush=True)
-
         median_sample = {}
 
         for i in range(nparam):
-            par_key = dset.attrs['parameter'+str(i)]
+            par_key = dset.attrs[f'parameter{i}']
             par_value = np.percentile(samples[:, i], 50.)
 
             median_sample[par_key] = par_value
-            # print(f' {par_key}={par_value:.2f}', end='', flush=True)
 
         if dset.attrs.__contains__('distance'):
             median_sample['distance'] = dset.attrs['distance']
-
-        # print()
 
         h5_file.close()
 
@@ -915,7 +917,7 @@ class Database:
 
         param = []
         for i in range(nparam):
-            param.append(str(dset.attrs[f'parameter{i}']))
+            param.append(dset.attrs[f'parameter{i}'])
 
         if spectrum_type == 'model':
             if spectrum_name == 'planck':
@@ -977,8 +979,8 @@ class Database:
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
-        spectrum_type = dset.attrs['type']
-        spectrum_name = dset.attrs['spectrum']
+        spectrum_type = dset.attrs['type'].decode('utf-8')
+        spectrum_name = dset.attrs['spectrum'].decode('utf-8')
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
@@ -991,7 +993,7 @@ class Database:
 
         param = []
         for i in range(nparam):
-            param.append(str(dset.attrs['parameter'+str(i)]))
+            param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()
 
@@ -1007,7 +1009,7 @@ class Database:
             for j in range(nparam):
                 model_param[param[j]] = samples[i, j]
 
-            if distance:
+            if distance is not None:
                 model_param['distance'] = distance
 
             if spectrum_type == 'model':
@@ -1023,6 +1025,9 @@ class Database:
                    inc_phot=True,
                    inc_spec=True):
         """
+        Function for extracting the photometric and/or spectroscopic data of an object from the
+        database. The spectroscopic data contains optionally the covariance matrix and its inverse.
+
         Parameters
         ----------
         object_name : str
@@ -1046,7 +1051,7 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'objects/{object_name}']
 
-        distance = np.asarray(dset['distance'])[0]
+        distance = np.asarray(dset['distance'])
 
         if inc_phot:
 
@@ -1084,10 +1089,12 @@ class Database:
                 data_group = f'objects/{object_name}/spectrum/{item}'
 
                 if f'{data_group}/covariance' not in h5_file:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
+                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None, None)
+
                 else:
                     spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                      np.asarray(h5_file[f'{data_group}/covariance']))
+                                      np.asarray(h5_file[f'{data_group}/covariance']),
+                                      np.asarray(h5_file[f'{data_group}/inv_covariance']))
 
         else:
             spectrum = None
@@ -1129,7 +1136,7 @@ class Database:
             burnin = 0
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file['results/mcmc/'+tag+'/samples']
+        dset = h5_file[f'results/mcmc/{tag}/samples']
 
         spectrum = dset.attrs['spectrum']
         nparam = dset.attrs['nparam']
@@ -1144,7 +1151,7 @@ class Database:
 
         param = []
         for i in range(nparam):
-            param.append(dset.attrs['parameter'+str(i)])
+            param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()
 

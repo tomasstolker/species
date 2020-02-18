@@ -91,7 +91,9 @@ def lnlike(param,
     distance : float
         Distance (pc).
     spectrum : dict
-        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+        Dictionary with the spectrum stored as wavelength (micron), flux (W m-2 micron-1),
+        and error (W m-2 micron-1), and optionally the covariance matrix and the inverse of
+        the covariance matrix.
     modelspec : list(species.read.read_model.ReadModel, )
 
     Returns
@@ -110,7 +112,7 @@ def lnlike(param,
 
     if objphot is not None:
         for i, item in enumerate(objphot):
-            flux = modelphot[i].get_flux(paramdict, synphot[i])
+            flux = modelphot[i].get_flux(paramdict, synphot[i])[0]
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
@@ -122,11 +124,9 @@ def lnlike(param,
                                          spec_fluxes=model.flux,
                                          spec_errs=None)
 
-            if spectrum[item][1] is not None:
-                spec_res = spectrum[item][0][:, 1] - flux_new
-
-                dot_tmp = np.dot(np.transpose(spec_res), np.linalg.inv(spectrum[item][1]))
-                chisq += np.dot(dot_tmp, spec_res)
+            if spectrum[item][2] is not None:
+                spec_diff = spectrum[item][0][:, 1] - flux_new
+                chisq += np.dot(spec_diff, np.dot(spectrum[item][2], spec_diff))
 
             else:
                 chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /
@@ -198,14 +198,14 @@ def lnprob(param,
 
 class FitModel:
     """
-    Class for fitting atmospheric model spectra to photometric data.
+    Class for fitting atmospheric model spectra to photometric and/or spectroscopic data.
     """
 
     def __init__(self,
                  object_name,
                  filters,
                  model,
-                 bounds,
+                 bounds=None,
                  inc_phot=True,
                  inc_spec=True):
         """
@@ -217,14 +217,15 @@ class FitModel:
             Filter IDs for which the photometry is selected. All available photometry of the
             object is selected if set to None.
         model : str
-            Atmospheric model.
-        bounds : dict
-            Parameter boundaries. Full parameter range is used if set to None or not specified.
-            The radius parameter range is set to 0-5 Rjup if not specified.
+            Atmospheric model (e.g. 'drift-phoenix', 'petitcode-cool-cloudy', or 'bt-settl').
+        bounds : dict, None
+            Parameter boundaries. The full range is used for each parameter if set to None. In that
+            case, the radius range is set to 0-5 Rjup. It is also possible to specify the bounds
+            for a subset of the parameters, for example, ``{'radius': (0.5, 10.)}``.
         inc_phot : bool
-            Include photometry data with the fit.
+            Include photometric data in the fit.
         inc_spec : bool
-            Include spectral data with the fit.
+            Include spectroscopic data in the fit.
 
         Returns
         -------
@@ -353,7 +354,7 @@ class FitModel:
                                                    self.modelphot,
                                                    self.objphot,
                                                    self.synphot,
-                                                   self.distance,
+                                                   self.distance[0],
                                                    prior,
                                                    self.spectrum,
                                                    self.modelspec]))
@@ -366,4 +367,4 @@ class FitModel:
                                spectrum=('model', self.model),
                                tag=tag,
                                modelpar=self.modelpar,
-                               distance=self.distance)
+                               distance=self.distance[0])

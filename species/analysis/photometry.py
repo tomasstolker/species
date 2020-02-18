@@ -3,6 +3,7 @@ Module with functionalities for calculating synthetic photometry.
 """
 
 import os
+import math
 import warnings
 import configparser
 
@@ -11,6 +12,7 @@ import numpy as np
 
 from species.data import database
 from species.read import read_filter, read_calibration
+from species.util import phot_util
 
 
 class SyntheticPhotometry:
@@ -25,7 +27,7 @@ class SyntheticPhotometry:
         ----------
         filter_name : str
             Filter ID as listed in the database. Filters from the SVO Filter Profile Service are
-            automatically downloaded and added to the database.
+            downloaded and added to the database.
 
         Returns
         -------
@@ -37,6 +39,8 @@ class SyntheticPhotometry:
         self.filter_interp = None
         self.wavel_range = None
 
+        self.vega_mag = 0.03  # [mag]
+
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
         config = configparser.ConfigParser()
@@ -46,12 +50,12 @@ class SyntheticPhotometry:
 
     def zero_point(self):
         """
-        Internal function for calculating the zero-point of the provided `filter_name`.
+        Internal function for calculating the zero point of the provided ``filter_name``.
 
         Returns
         -------
         float
-            Zero-point flux density (W m-2 micron-1).
+            Zero-point flux (W m-2 micron-1).
         """
 
         if self.wavel_range is None:
@@ -83,21 +87,25 @@ class SyntheticPhotometry:
 
         h5_file.close()
 
-        return self.spectrum_to_flux(wavelength_crop, flux_crop)
+        return self.spectrum_to_flux(wavelength_crop, flux_crop)[0]
 
     def spectrum_to_flux(self,
                          wavelength,
                          flux,
-                         threshold=None):
+                         error=None,
+                         threshold=0.05):
         """
-        Function for calculating the average flux density from a spectrum and a filter profile.
+        Function for calculating the average flux from a spectrum and a filter profile. The error
+        is propagated by sampling 200 random values from the error distributions.
 
         Parameters
         ----------
-        wavelength : numpy.ndarray, list(numpy.ndarray)
-            Wavelength points (micron) provided as a 1D array or a list of 1D arrays.
-        flux : numpy.ndarray, list(numpy.ndarray)
-            Flux density (W m-2 micron-1) provided as a 1D array or a list of 1D arrays.
+        wavelength : numpy.ndarray
+            Wavelength points (micron).
+        flux : numpy.ndarray
+            Flux (W m-2 micron-1).
+        error : numpy.ndarray
+            Uncertainty (W m-2 micron-1). Not used if set to None. 
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
@@ -106,8 +114,10 @@ class SyntheticPhotometry:
 
         Returns
         -------
-        float, numpy.ndarray
-            Average flux density (W m-2 micron-1).
+        float
+            Average flux (W m-2 micron-1).
+        float, None
+            Uncertainty (W m-2 micron-1).
         """
 
         if self.filter_interp is None:
@@ -121,101 +131,119 @@ class SyntheticPhotometry:
             raise ValueError('Calculation of the mean flux is not possible because the '
                              'wavelength array is empty.')
 
-        if isinstance(wavelength[0], (np.float32, np.float64)):
-            indices = np.where((self.wavel_range[0] < wavelength) &
-                               (wavelength < self.wavel_range[1]))[0]
+        indices = np.where((wavelength > self.wavel_range[0]) &
+                           (wavelength < self.wavel_range[1]))[0]
 
-            if indices.size == 1:
-                raise ValueError("Calculating synthetic photometry requires more than one "
-                                 "wavelength point.")
+        if indices.size == 1:
+            raise ValueError('Calculating synthetic photometry requires more than one '
+                             'wavelength point.')
 
-            wavelength = wavelength[indices]
-            flux = flux[indices]
+        wavelength = wavelength[indices]
+        flux = flux[indices]
 
-            transmission = self.filter_interp(wavelength)
+        if error is not None:
+            error = error[indices]
 
-            indices = np.isnan(transmission)
-            indices = np.logical_not(indices)
+        indices = np.where((self.wavel_range[0] <= wavelength) &
+                           (wavelength <= self.wavel_range[1]))[0]
 
-            integrand1 = transmission[indices]*flux[indices]
-            integrand2 = transmission[indices]
+        if indices.size < 2:
+            syn_flux = np.nan
 
-            integral1 = np.trapz(integrand1, wavelength[indices])
-            integral2 = np.trapz(integrand2, wavelength[indices])
-
-            photometry = integral1/integral2
+            warnings.warn('Calculating a synthetic flux requires more than one wavelength '
+                          'point. Photometry is set to NaN.')
 
         else:
-            photometry = []
 
-            for i, wl_item in enumerate(wavelength):
-                indices = np.where((self.wavel_range[0] <= wl_item) &
-                                   (wl_item <= self.wavel_range[1]))[0]
+            if threshold is None and (wavelength[0] > self.wavel_range[0] or
+                                      wavelength[-1] < self.wavel_range[1]):
 
-                if indices.size < 2:
-                    photometry.append(np.nan)
+                warnings.warn(f'The filter profile of {self.filter_name} '
+                              f'({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) extends '
+                              f' beyond the wavelength range of the spectrum ({wavelength[0]:.4f} '
+                              f'-{wavelength[-1]:.4f}). The flux is set to NaN. Setting the '
+                              f'\'threshold\' parameter will loosen the wavelength constraints.')
 
-                    warnings.warn('Calculating synthetic photometry requires more than one '
-                                  'wavelength point. Photometry is set to NaN.', RuntimeWarning)
+                syn_flux = np.nan
+
+            else:
+                wavelength = wavelength[indices]
+                flux = flux[indices]
+
+                if error is not None:
+                    error = error[indices]
+
+                transmission = self.filter_interp(wavelength)
+
+                if threshold is not None and (transmission[0] > threshold or transmission[-1] > \
+                        threshold) and (wavelength[0] < self.wavel_range[0] or \
+                        wavelength[-1] > self.wavel_range[-1]):
+
+                    warnings.warn(f'The filter profile of {self.filter_name} '
+                                  f'({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) '
+                                  f'extends beyond the wavelength range of the spectrum '
+                                  f'({wavelength[0]:.4f}-{wavelength[-1]:.4f}). The flux '
+                                  f'is set to NaN. Increasing the \'threshold\' parameter '
+                                  f'({threshold}) will loosen the wavelength constraint.')
+
+                    syn_flux = np.nan
 
                 else:
-                    if threshold is None and (wl_item[0] > self.wavel_range[0] or
-                                              wl_item[-1] < self.wavel_range[1]):
+                    indices = np.isnan(transmission)
+                    indices = np.logical_not(indices)
 
-                        warnings.warn('Filter profile of '+self.filter_name+' extends beyond the '
-                                      'spectrum ('+str(wl_item[0])+'-'+str(wl_item[-1])+'). The '
-                                      'magnitude is set to NaN.', RuntimeWarning)
+                    integrand1 = transmission[indices]*flux[indices]
+                    integrand2 = transmission[indices]
 
-                        photometry.append(np.nan)
+                    integral1 = np.trapz(integrand1, wavelength[indices])
+                    integral2 = np.trapz(integrand2, wavelength[indices])
 
-                    else:
-                        wl_item = wl_item[indices]
-                        flux_item = flux[i][indices]
+                    syn_flux = integral1/integral2
 
-                        transmission = self.filter_interp(wl_item)
+        if error is not None and not np.any(np.isnan(error)):
+            error_flux = np.zeros(200)
 
-                        if threshold is not None and (transmission[0] > threshold or
-                                                      transmission[-1] > threshold):
+            for i in range(200):
+                spec_random = flux+np.random.normal(loc=0.,
+                                                    scale=1.,
+                                                    size=wavelength.shape[0])*error
 
-                            warnings.warn(f'Filter profile of {self.filter_name} extends beyond '
-                                          f'the spectrum ({wl_item[0]} - {wl_item[-1]}). The '
-                                          f'magnitude is set to NaN.', RuntimeWarning)
+                spec_tmp = self.spectrum_to_flux(wavelength,
+                                                 spec_random,
+                                                 error=None,
+                                                 threshold=threshold)[0]
 
-                            photometry.append(np.nan)
+                error_flux[i] = spec_tmp
 
-                        else:
-                            indices = np.isnan(transmission)
-                            indices = np.logical_not(indices)
+            error_flux = np.std(error_flux)
 
-                            integrand1 = transmission[indices]*flux_item[indices]
-                            integrand2 = transmission[indices]
+        else:
+            error_flux = None
 
-                            integral1 = np.trapz(integrand1, wl_item[indices])
-                            integral2 = np.trapz(integrand2, wl_item[indices])
-
-                            photometry.append(integral1/integral2)
-
-            photometry = np.asarray(photometry)
-
-        return photometry
+        return syn_flux, error_flux
 
     def spectrum_to_magnitude(self,
                               wavelength,
                               flux,
+                              error=None,
                               distance=None,
-                              threshold=None):
+                              threshold=0.05):
         """
         Function for calculating the apparent and absolute magnitude from a spectrum and a
-        filter profile.
+        filter profile. The error is propagated by sampling 200 random values from the error
+        distributions.
 
         Parameters
         ----------
-        wavelength : numpy.ndarray, list(numpy.ndarray)
-            Wavelength points (micron) provided as a 1D array or a list of 1D arrays.
-        flux : numpy.ndarray, list(numpy.ndarray)
-            Flux density (W m-2 micron-1) provided as a 1D array or a list of 1D arrays.
-        distance : float, None
-            Distance (pc). No absolute magnitude is calculated if set to None.
+        wavelength : numpy.ndarray
+            Wavelength points (micron).
+        flux : numpy.ndarray
+            Flux (W m-2 micron-1).
+        error : numpy.ndarray, list(numpy.ndarray), None
+            Uncertainty (W m-2 micron-1).
+        distance : tuple(float, float), None
+            Distance and uncertainty (pc). No absolute magnitude is calculated if set to None.
+            No error on the absolute magnitude is calculated if the uncertainty is set to None.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
@@ -224,32 +252,63 @@ class SyntheticPhotometry:
 
         Returns
         -------
-        float, numpy.ndarray
-            Apparent magnitude (mag).
-        float, numpy.ndarray
-            Absolute magnitude (mag).
+        tuple(float, float)
+            Apparent magnitude and uncertainty (mag).
+        tuple(float, float)
+            Absolute magnitude and uncertainty (mag).
         """
 
-        vega_mag = 0.03  # [mag]
-
         zp_flux = self.zero_point()
-        syn_flux = self.spectrum_to_flux(wavelength, flux, threshold)
 
-        app_mag = vega_mag - 2.5*np.log10(syn_flux/zp_flux)
+        syn_flux = self.spectrum_to_flux(wavelength,
+                                         flux,
+                                         error=error,
+                                         threshold=threshold)
+
+        app_mag = self.vega_mag - 2.5*math.log10(syn_flux[0]/zp_flux)
+
+        if error is not None and not np.any(np.isnan(error)):
+            error_app_mag = np.zeros(200)
+
+            for i in range(200):
+                spec_random = flux+np.random.normal(loc=0.,
+                                                    scale=1.,
+                                                    size=wavelength.shape[0])*error
+
+                flux_random = self.spectrum_to_flux(wavelength,
+                                                    spec_random,
+                                                    error=None,
+                                                    threshold=threshold)
+
+                error_app_mag[i] = self.vega_mag - 2.5*np.log10(flux_random[0]/zp_flux)
+
+            error_app_mag = np.std(error_app_mag)
+
+        else:
+            error_app_mag = None
 
         if distance is None:
             abs_mag = None
-        else:
-            abs_mag = app_mag - 5.*np.log10(distance) + 5.
+            error_abs_mag = None
 
-        return app_mag, abs_mag
+        else:
+            abs_mag = app_mag - 5.*np.log10(distance[0]) + 5.
+
+            if error_app_mag is not None and distance[1] is not None:
+                error_dist = distance[1] * (5./(distance[0]*math.log(10.)))
+                error_abs_mag = math.sqrt(error_app_mag**2 + error_dist**2)
+
+            else:
+                error_abs_mag = None
+
+        return (app_mag, error_app_mag), (abs_mag, error_abs_mag)
 
     def magnitude_to_flux(self,
                           magnitude,
                           error=None,
                           zp_flux=None):
         """
-        Function for converting a magnitude to a flux density.
+        Function for converting a magnitude to a flux.
 
         Parameters
         ----------
@@ -258,22 +317,20 @@ class SyntheticPhotometry:
         error : float, None
             Error (mag). Not used if set to None.
         zp_flux : float
-            Zero-point flux density (W m-2 micron-1). The value is calculated if set to None.
+            Zero-point flux (W m-2 micron-1). The value is calculated if set to None.
 
         Returns
         -------
         float
-            Flux density (W m-2 micron-1).
+            Flux (W m-2 micron-1).
         float
             Error (W m-2 micron-1).
         """
 
-        vega_mag = 0.03  # [mag]
-
         if zp_flux is None:
             zp_flux = self.zero_point()
 
-        flux = 10.**(-0.4*(magnitude-vega_mag))*zp_flux
+        flux = 10.**(-0.4*(magnitude-self.vega_mag))*zp_flux
 
         if error is None:
             error_flux = None
@@ -287,34 +344,50 @@ class SyntheticPhotometry:
 
     def flux_to_magnitude(self,
                           flux,
-                          distance):
+                          error=None,
+                          distance=None):
         """
-        Function for converting a flux density to a magnitude.
+        Function for converting a flux into a magnitude.
 
         Parameters
         ----------
-        flux : float
-            Flux density (W m-2 micron-1).
-        distance : float
-            Distance (pc).
+        flux : float, numpy.ndarray
+            Flux (W m-2 micron-1).
+        error : float, numpy.ndarray, None
+            Uncertainty (W m-2 micron-1). Not used if set to None.
+        distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+            Distance and uncertainty (pc). The returned absolute magnitude is set to None in case
+            ``distance`` is set to None. The error is not propagated into the error on the absolute
+            magnitude in case the distance uncertainty is set to None, for example
+            ``distance=(20., None)``
 
         Returns
         -------
-        float
-            Apparent magnitude (mag).
-        float
-            Absolute magnitude (mag).
+        tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+            Apparent magnitude and uncertainty (mag).
+        tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+            Absolute magnitude and uncertainty (mag).
         """
-
-        vega_mag = 0.03  # [mag]
 
         zp_flux = self.zero_point()
 
-        app_mag = vega_mag - 2.5*np.log10(flux/zp_flux)
+        app_mag = self.vega_mag - 2.5*np.log10(flux/zp_flux)
+
+        if error is None:
+            error_app_mag = None
+            error_abs_mag = None
+
+        else:
+            error_app_lower = app_mag - (self.vega_mag - 2.5*np.log10((flux+error)/zp_flux))
+            error_app_upper = (self.vega_mag - 2.5*np.log10((flux-error)/zp_flux)) - app_mag
+            error_app_mag = (error_app_lower+error_app_upper)/2.
 
         if distance is None:
             abs_mag = None
-        else:
-            abs_mag = app_mag - 5.*np.log10(distance) + 5.
+            error_abs_mag = None
 
-        return app_mag, abs_mag
+        else:
+            abs_mag, error_abs_mag = phot_util.apparent_to_absolute(
+                (app_mag, error_app_mag), distance)
+
+        return (app_mag, error_app_mag), (abs_mag, error_abs_mag)

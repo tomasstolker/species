@@ -229,7 +229,7 @@ def plot_color_magnitude(boxes,
 
                                 ax1.annotate(mass_label, (pos_color, pos_mag),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=mass_xytext, zorder=1, ha=mass_ha, va='center')
+                                             xytext=mass_xytext, zorder=3, ha=mass_ha, va='center')
 
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
@@ -246,7 +246,7 @@ def plot_color_magnitude(boxes,
             color = item.color
             magnitude = item.magnitude
 
-            indices = np.where(sptype != b'None')[0]
+            indices = np.where(sptype != 'None')[0]
 
             sptype = sptype[indices]
             color = color[indices]
@@ -287,12 +287,10 @@ def plot_color_magnitude(boxes,
 
             objcolor1 = objdata.get_photometry(item[1])
             objcolor2 = objdata.get_photometry(item[2])
-            abs_mag = objdata.get_absmag(item[3])
+            abs_mag, abs_err = objdata.get_absmag(item[3])
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
-
             x_color = objcolor1[0]-objcolor2[0]
-            y_mag = abs_mag[0]
 
             if len(item) > 4 and item[4] is not None:
                 kwargs = item[4]
@@ -305,7 +303,7 @@ def plot_color_magnitude(boxes,
                           'mec': 'black',
                           'label': 'Directly imaged'}
 
-            ax1.errorbar(x_color, y_mag, yerr=abs_mag[1], xerr=colorerr, zorder=3, **kwargs)
+            ax1.errorbar(x_color, abs_mag, yerr=abs_err, xerr=colorerr, zorder=3, **kwargs)
 
             if companion_labels:
                 x_range = ax1.get_xlim()
@@ -321,7 +319,7 @@ def plot_color_magnitude(boxes,
                               'xytext': (5., 5.),
                               'color': 'black'}
 
-                ax1.annotate(objdata.object_name, (x_color, y_mag), zorder=3,
+                ax1.annotate(objdata.object_name, (x_color, abs_mag), zorder=3,
                              textcoords='offset points', **kwargs)
 
     if legend is not None:
@@ -534,7 +532,7 @@ def plot_color_color(boxes,
 
                                 ax1.annotate(mass_label, (pos_color1, pos_color2),
                                              color=model_color[model_count[0]], fontsize=9,
-                                             xytext=mass_xytext, ha=mass_ha, va='center', zorder=1)
+                                             xytext=mass_xytext, ha=mass_ha, va='center', zorder=3)
 
             else:
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],

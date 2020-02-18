@@ -93,7 +93,7 @@ def lnlike(param,
     if objphot is not None:
         for i, obj_item in enumerate(objphot):
             readplanck = read_planck.ReadPlanck(filter_name=synphot[i].filter_name)
-            flux = readplanck.get_flux(paramdict, synphot=synphot[i])
+            flux = readplanck.get_flux(paramdict, synphot=synphot[i])[0]
 
             chisq += (obj_item[0]-flux)**2 / obj_item[1]**2
 
@@ -327,7 +327,7 @@ class FitPlanck:
                                             args=([self.bounds,
                                                    self.objphot,
                                                    self.synphot,
-                                                   self.distance,
+                                                   self.distance[0],
                                                    self.spectrum]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)

@@ -88,7 +88,8 @@ class ReadObject:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None)
                     else:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                          np.asarray(h5_file[f'{data_group}/covariance']))
+                                          np.asarray(h5_file[f'{data_group}/covariance']),
+                                          np.asarray(h5_file[f'{data_group}/inv_covariance']))
 
             else:
                 spectrum = None
@@ -103,12 +104,14 @@ class ReadObject:
         -------
         float
             Distance (pc).
+        float
+            Uncertainty (pc).
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])[0]
+            obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])
 
-        return float(obj_distance)
+        return obj_distance[0], obj_distance[1]
 
     def get_absmag(self,
                    filter_name):
@@ -132,9 +135,4 @@ class ReadObject:
             obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])
             obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
 
-        abs_mag = phot_util.apparent_to_absolute(obj_phot[0], obj_distance[0])
-
-        dist_err = obj_distance[1] * (5./(obj_distance[0]*math.log(10.)))
-        abs_err = math.sqrt(obj_phot[1]**2 + dist_err**2)
-
-        return abs_mag, abs_err
+        return phot_util.apparent_to_absolute(obj_phot[0:2], obj_distance)

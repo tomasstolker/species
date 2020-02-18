@@ -66,6 +66,7 @@ def create_box(boxtype,
         box.flux = kwargs['flux']
         box.app_mag = kwargs['app_mag']
         box.abs_mag = kwargs['abs_mag']
+        box.filter_name = kwargs['filter_name']
 
     elif boxtype == 'residuals':
         box = ResidualsBox()
@@ -88,9 +89,12 @@ def create_box(boxtype,
         box.flux = kwargs['flux']
         box.error = kwargs['error']
         box.name = kwargs['name']
-        box.simbad = kwargs['simbad']
-        box.sptype = kwargs['sptype']
-        box.distance = kwargs['distance']
+        if 'simbad' in kwargs:
+            box.simbad = kwargs['simbad']
+        if 'sptype' in kwargs:
+            box.sptype = kwargs['sptype']
+        if 'distance' in kwargs:
+            box.distance = kwargs['distance']
 
     elif boxtype == 'synphot':
         box = SynphotBox()
@@ -254,6 +258,7 @@ class PhotometryBox(Box):
         self.flux = None
         self.app_mag = None
         self.abs_mag = None
+        self.filter_name = None
 
 
 class ResidualsBox(Box):

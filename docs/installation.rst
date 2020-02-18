@@ -8,7 +8,9 @@ Installation
 Installation from PyPI
 ----------------------
 
-*species* can be installed with the |pip|::
+*species* can be installed with the |pip|:
+
+.. code-block:: console
 
     $ pip install species
 

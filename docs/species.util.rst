@@ -28,6 +28,14 @@ species.util.plot\_util module
     :undoc-members:
     :show-inheritance:
 
+species.util.query\_util module
+-------------------------------
+
+.. automodule:: species.util.query_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.util.read\_util module
 ------------------------------
 

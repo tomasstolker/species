@@ -50,7 +50,7 @@ class TestObject:
         read_object = species.ReadObject('beta Pic b')
         distance = read_object.get_distance()
 
-        assert distance == 19.75
+        assert distance == (19.75, 0.13)
 
     def test_get_absmag(self):
         read_object = species.ReadObject('beta Pic b')

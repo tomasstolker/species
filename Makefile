@@ -41,7 +41,7 @@ clean:
 	rm -f .coverage
 	rm -f coverage.xml
 	rm -rf .pytest_cache/
-	rm -rf docs/_build.
+	rm -rf docs/_build/
 	rm -rf docs/tutorials/data/
 	rm -rf docs/tutorials/.ipynb_checkpoints
 	rm -f docs/tutorials/species_config.ini

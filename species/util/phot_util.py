@@ -2,6 +2,8 @@
 Utility functions for photometry.
 """
 
+import math
+
 import spectres
 import numpy as np
 
@@ -42,12 +44,12 @@ def multi_photometry(datatype,
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            flux[item] = readmodel.get_flux(parameters)
+            flux[item] = readmodel.get_flux(parameters)[0]
 
     elif datatype == 'calibration':
         for item in filters:
             readcalib = read_calibration.ReadCalibration(spectrum, filter_name=item)
-            flux[item] = readcalib.get_flux(parameters)
+            flux[item] = readcalib.get_flux(parameters)[0]
 
     print(' [DONE]')
 
@@ -57,20 +59,40 @@ def multi_photometry(datatype,
 def apparent_to_absolute(app_mag,
                          distance):
     """
+    Function for converting an apparent magnitude into an absolute magnitude. The uncertainty on
+    the distance is propagated into the uncertainty on the absolute magnitude.
+
     Parameters
     ----------
-    app_mag : float or numpy.ndarray
-        Apparent magnitude (mag).
-    distance : float or numpy.ndarray
-        Distance (pc).
+    app_mag : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Apparent magnitude and uncertainty (mag). The returned error on the absolute magnitude
+        is set to None if the error on the apparent magnitude is set to None, for example
+        ``app_mag=(15., None)``.
+    distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Distance and uncertainty (pc). The error is not propagated into the error on the absolute
+        magnitude if set to None, for example ``distance=(20., None)``.
 
     Returns
     -------
-    float or numpy.ndarray
+    float, numpy.ndarray
         Absolute magnitude (mag).
+    float, numpy.ndarray, None
+        Uncertainty (mag).
     """
 
-    return app_mag - 5.*np.log10(distance) + 5.
+    abs_mag = app_mag[0] - 5.*np.log10(distance[0]) + 5.
+
+    if app_mag[1] is not None and distance[1] is not None:
+        dist_err = distance[1] * (5./(distance[0]*math.log(10.)))
+        abs_err = math.sqrt(app_mag[1]**2 + dist_err**2)
+
+    elif app_mag[1] is not None and distance[1] is None:
+        abs_err = app_mag[1]
+
+    else:
+        abs_err = None
+
+    return abs_mag, abs_err
 
 
 def get_residuals(datatype,
@@ -156,6 +178,16 @@ def get_residuals(datatype,
         res_spec = None
 
     print(' [DONE]')
+
+    print('Residuals [sigma]:')
+
+    if res_phot is not None:
+        for i, item in enumerate(filters):
+            print(f'   - {item}: {res_phot[1, i]:.2f}')
+
+    if res_spec is not None:
+        for key in objectbox.spectrum:
+            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, max: {np.amax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

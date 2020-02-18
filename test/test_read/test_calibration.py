@@ -58,11 +58,11 @@ class TestCalibration:
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
         flux = read_calib.get_flux(model_param=self.model_param)
 
-        assert flux  == pytest.approx(1.1329023591019857e-09, rel=self.limit, abs=0.)
+        assert flux[0]  == pytest.approx(1.1329023591019857e-09, rel=self.limit, abs=0.)
 
     def test_get_magnitude(self):
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
-        magnitude = read_calib.get_magnitude(model_param=self.model_param)
+        app_mag, abs_mag = read_calib.get_magnitude(model_param=self.model_param)
 
-        assert magnitude[0] == 0.03
-        assert magnitude[1] is None
+        assert app_mag[0] == 0.03
+        assert abs_mag[0] == None

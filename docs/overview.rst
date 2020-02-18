@@ -19,7 +19,7 @@ The following data are currently supported by *species* (support for other data 
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_ atmospheric models
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_ atmospheric models
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric models
-- `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011/SPECTRA/>`_ atmospheric models
+- `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA/>`_ atmospheric models
 - `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_ atmospheric models
 - All filter profiles from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
 - Spectra from the `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
@@ -57,7 +57,7 @@ The following example will add already available photometry of PZ Tel B to the d
 
    import species
 
-   species.SpeciesInit(config_path='./')
+   species.SpeciesInit()
 
    database = species.Database()
    database.add_companion(name='PZ Tel B')

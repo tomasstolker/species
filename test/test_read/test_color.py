@@ -40,6 +40,7 @@ class TestColor:
                                                    'MKO/NSFCam.J')
 
         colormag_box = read_colormag.get_color_magnitude(object_type=None)
+        colormag_box.open_box()
 
         assert np.nansum(colormag_box.color) == pytest.approx(71.96)
         assert np.nansum(colormag_box.magnitude) == pytest.approx(1519.373)

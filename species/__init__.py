@@ -33,9 +33,7 @@ from species.data.companions import get_data
 
 from species.data.database import Database
 
-from species.data.queries import get_distance
-
-from species.plot.plot_mcmc import plot_posteriors, \
+from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers, \
                                    plot_photometry
 
@@ -47,6 +45,8 @@ from species.plot.plot_spectrum import plot_spectrum
 from species.util.phot_util import apparent_to_absolute, \
                                    multi_photometry, \
                                    get_residuals
+
+from species.util.query_util import get_parallax
 
 from species.util.read_util import get_mass, \
                                    add_luminosity

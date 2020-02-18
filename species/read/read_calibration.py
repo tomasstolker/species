@@ -57,6 +57,7 @@ class ReadCalibration:
 
     def resample_spectrum(self,
                           wavel_points,
+                          model_param=None,
                           apply_mask=False):
         """
         Function for resampling of a spectrum and uncertainties onto a new wavelength grid.
@@ -65,6 +66,8 @@ class ReadCalibration:
         ----------
         wavel_points : numpy.ndarray
             Wavelength points (micron).
+        model_param : dict, None
+            Model parameters. Should contain the 'scaling' value. Not used if set to None.
         apply_mask : bool
             Exclude negative values and NaN values.
 
@@ -87,6 +90,9 @@ class ReadCalibration:
                                                 old_spec_wavs=calibbox.wavelength,
                                                 spec_fluxes=calibbox.flux,
                                                 spec_errs=calibbox.error)
+
+        if model_param is not None:
+            flux_new = model_param['scaling']*flux_new
 
         return box.create_box(boxtype='spectrum',
                               spectrum='calibration',
@@ -280,4 +286,5 @@ class ReadCalibration:
 
         return synphot.spectrum_to_magnitude(specbox.wavelength,
                                              specbox.flux,
+                                             error=specbox.error,
                                              distance=distance)
