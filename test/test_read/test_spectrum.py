@@ -30,8 +30,6 @@ class TestSpectrum:
         with pytest.warns(UserWarning) as warning:
             database.add_spectrum('irtf', sptypes=['L', ])
 
-        assert len(warning) == 2
-
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
         assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656), rel=self.limit, abs=0.)
 
