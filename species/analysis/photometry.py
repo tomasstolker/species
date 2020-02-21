@@ -105,7 +105,7 @@ class SyntheticPhotometry:
         flux : numpy.ndarray
             Flux (W m-2 micron-1).
         error : numpy.ndarray
-            Uncertainty (W m-2 micron-1). Not used if set to None. 
+            Uncertainty (W m-2 micron-1). Not used if set to None.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
@@ -175,9 +175,9 @@ class SyntheticPhotometry:
 
                 transmission = self.filter_interp(wavelength)
 
-                if threshold is not None and (transmission[0] > threshold or transmission[-1] > \
-                        threshold) and (wavelength[0] < self.wavel_range[0] or \
-                        wavelength[-1] > self.wavel_range[-1]):
+                if threshold is not None and (transmission[0] > threshold or transmission[-1] > 
+                        threshold) and (wavelength[0] < self.wavel_range[0] or wavelength[-1] > 
+                        self.wavel_range[-1]):
 
                     warnings.warn(f'The filter profile of {self.filter_name} '
                                   f'({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) '

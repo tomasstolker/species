@@ -87,7 +87,7 @@ class ReadModel:
         h5_file = h5py.File(database_path, 'r')
 
         try:
-            h5_file['models/'+self.model]
+            h5_file[f'models/{self.model}']
         except KeyError:
             raise ValueError(f'The \'{self.model}\' model spectra are not present in the '
                              f'database.')
@@ -142,49 +142,143 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        flux = np.asarray(h5_file[f'models/{self.model}/flux'])
-        teff = np.asarray(h5_file[f'models/{self.model}/teff'])
-        logg = np.asarray(h5_file[f'models/{self.model}/logg'])
+        points = []
+        for item in self.get_points().values():
+            points.append(item)
 
         if self.wl_points is None:
             self.wl_points, self.wl_index = self.wavelength_points(h5_file)
 
-        if self.model in ['ames-cond', 'ames-dusty', 'bt-settl']:
-            points = (teff, logg)
-            flux = flux[:, :, self.wl_index]
-
-        if self.model in ['bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear']:
-            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-
-            points = (teff, logg, feh)
-            flux = flux[:, :, :, self.wl_index]
-
-        elif self.model == 'petitcode-cool-cloudy':
-            feh = np.asarray(h5_file['models/petitcode-cool-cloudy/feh'])
-            fsed = np.asarray(h5_file['models/petitcode-cool-cloudy/fsed'])
-
-            points = (teff, logg, feh, fsed)
-            flux = flux[:, :, :, :, self.wl_index]
-
-        elif self.model == 'petitcode-hot-clear':
-            feh = np.asarray(h5_file['models/petitcode-hot-clear/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode-hot-clear/co'])
-
-            points = (teff, logg, feh, co_ratio)
-            flux = flux[:, :, :, :, self.wl_index]
-
-        elif self.model == 'petitcode-hot-cloudy':
-            feh = np.asarray(h5_file['models/petitcode-hot-cloudy/feh'])
-            co_ratio = np.asarray(h5_file['models/petitcode-hot-cloudy/co'])
-            fsed = np.asarray(h5_file['models/petitcode-hot-cloudy/fsed'])
-
-            flux = flux[:, :, :, :, :, self.wl_index]
-            points = (teff, logg, feh, co_ratio, fsed)
-
-        h5_file.close()
+        flux = np.asarray(h5_file[f'models/{self.model}/flux'])
+        flux = flux[..., self.wl_index]
 
         self.spectrum_interp = RegularGridInterpolator(points=points,
                                                        values=flux,
+                                                       method='linear',
+                                                       bounds_error=False,
+                                                       fill_value=np.nan)
+
+    def interpolate_grid(self,
+                         bounds=None,
+                         wavel_resample=None):
+        """
+        Internal function for linearly interpolating the grid of model spectra.
+
+        bounds : dict, None
+
+        wavel_resample : numpy.array, None
+            Wavelength points for the resampling of the spectrum. The ``filter_name`` is used
+            if set to None.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.interpolate_model()
+
+        points = []
+        for key, value in self.get_points().items():
+            value_new = []
+
+            for i, item in enumerate(value):
+                if bounds[key][0] <= item <= bounds[key][-1]:
+                    value_new.append(item)
+
+            points.append(value_new)
+
+        param = self.get_parameters()
+        n_param = len(param)
+
+        dim_size = []
+        for item in points:
+            dim_size.append(len(item))
+
+        if self.filter_name is not None:
+            dim_size.append(1)
+        else:
+            dim_size.append(wavel_resample.size)
+
+        flux_new = np.zeros(dim_size)
+
+        if n_param == 2:
+            model_param = {}
+
+            for i, item_0 in enumerate(points[0]):
+                for j, item_1 in enumerate(points[1]):
+                    model_param[param[0]] = item_0
+                    model_param[param[1]] = item_1
+
+                    if self.filter_name is not None:
+                        flux_new[i, j] = self.get_flux(model_param)[0]
+                    else:
+                        flux_new[i, j, :] = self.get_model(model_param,
+                            wavel_resample=wavel_resample).flux
+
+        elif n_param == 3:
+            model_param = {}
+
+            for i, item_0 in enumerate(points[0]):
+                for j, item_1 in enumerate(points[1]):
+                    for k, item_2 in enumerate(points[2]):
+                        model_param[param[0]] = item_0
+                        model_param[param[1]] = item_1
+                        model_param[param[2]] = item_2
+
+                        if self.filter_name is not None:
+                            flux_new[i, j, k] = self.get_flux(model_param)[0]
+                        else:
+                            flux_new[i, j, k, :] = self.get_model(model_param,
+                                wavel_resample=wavel_resample).flux
+
+        elif n_param == 4:
+            model_param = {}
+
+            for i, item_0 in enumerate(points[0]):
+                for j, item_1 in enumerate(points[1]):
+                    for k, item_2 in enumerate(points[2]):
+                        for l, item_3 in enumerate(points[3]):
+                            model_param[param[0]] = item_0
+                            model_param[param[1]] = item_1
+                            model_param[param[2]] = item_2
+                            model_param[param[3]] = item_3
+
+                            if self.filter_name is not None:
+                                flux_new[i, j, k, l] = self.get_flux(model_param)[0]
+                            else:
+                                flux_new[i, j, k, l, :] = self.get_model(model_param,
+                                    wavel_resample=wavel_resample).flux
+
+        elif n_param == 5:
+            model_param = {}
+
+            for i, item_0 in enumerate(points[0]):
+                for j, item_1 in enumerate(points[1]):
+                    for k, item_2 in enumerate(points[2]):
+                        for l, item_3 in enumerate(points[3]):
+                            for m, item_4 in enumerate(points[4]):
+                                model_param[param[0]] = item_0
+                                model_param[param[1]] = item_1
+                                model_param[param[2]] = item_2
+                                model_param[param[3]] = item_3
+                                model_param[param[4]] = item_4
+
+                                if self.filter_name is not None:
+                                    flux_new[i, j, k, l, m] = self.get_flux(model_param)[0]
+                                else:
+                                    flux_new[i, j, k, l, m, :] = self.get_model(model_param,
+                                        wavel_resample=wavel_resample).flux
+
+        if self.filter_name is not None:
+            transmission = read_filter.ReadFilter(self.filter_name)
+            self.wl_points = [transmission.mean_wavelength()]
+
+        else:
+            self.wl_points = wavel_resample
+
+        self.spectrum_interp = RegularGridInterpolator(points=points,
+                                                       values=flux_new,
                                                        method='linear',
                                                        bounds_error=False,
                                                        fill_value=np.nan)
@@ -266,33 +360,22 @@ class ReadModel:
             wl_points = self.get_wavelengths()
             self.wavel_range = (wl_points[0], wl_points[-1])
 
-        if self.model in ['ames-cond', 'ames-dusty', 'bt-settl']:
-            parameters = [model_param['teff'],
-                          model_param['logg']]
+        parameters = []
 
-        elif self.model in ['bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear']:
-            parameters = [model_param['teff'],
-                          model_param['logg'],
-                          model_param['feh']]
+        if 'teff' in model_param:
+            parameters.append(model_param['teff'])
 
-        elif self.model == 'petitcode-cool-cloudy':
-            parameters = [model_param['teff'],
-                          model_param['logg'],
-                          model_param['feh'],
-                          model_param['fsed']]
+        if 'logg' in model_param:
+            parameters.append(model_param['logg'])
 
-        elif self.model == 'petitcode-hot-clear':
-            parameters = [model_param['teff'],
-                          model_param['logg'],
-                          model_param['feh'],
-                          model_param['co']]
+        if 'feh' in model_param:
+            parameters.append(model_param['feh'])
 
-        elif self.model == 'petitcode-hot-cloudy':
-            parameters = [model_param['teff'],
-                          model_param['logg'],
-                          model_param['feh'],
-                          model_param['co'],
-                          model_param['fsed']]
+        if 'co' in model_param:
+            parameters.append(model_param['co'])
+
+        if 'fsed' in model_param:
+            parameters.append(model_param['fsed'])
 
         flux = self.spectrum_interp(parameters)[0]
 
@@ -416,151 +499,47 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        wl_points, wl_index = self.wavelength_points(h5_file)
+        param_key = []
+        param_val = []
+
+        if 'teff' in model_param:
+            param_key.append('teff')
+            param_val.append(model_param['teff'])
+
+        if 'logg' in model_param:
+            param_key.append('logg')
+            param_val.append(model_param['logg'])
+
+        if 'feh' in model_param:
+            param_key.append('feh')
+            param_val.append(model_param['feh'])
+
+        if 'co' in model_param:
+            param_key.append('co')
+            param_val.append(model_param['co'])
+
+        if 'fsed' in model_param:
+            param_key.append('fsed')
+            param_val.append(model_param['fsed'])
 
         flux = np.asarray(h5_file[f'models/{self.model}/flux'])
-        teff = np.asarray(h5_file[f'models/{self.model}/teff'])
-        logg = np.asarray(h5_file[f'models/{self.model}/logg'])
 
-        if self.model in ['ames-cond', 'ames-dusty', 'bt-settl']:
-            teff_index = np.argwhere(teff == model_param['teff'])[0]
+        indices = []
 
-            if len(teff_index) == 0:
-                raise ValueError('Temperature value not found.')
+        for i, item in enumerate(param_key):
+            data = np.asarray(h5_file[f'models/{self.model}/{item}'])
+            data_index = np.argwhere(data == model_param[item])[0]
 
-            teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_param['logg'])[0]
+            if len(data_index) == 0:
+                raise ValueError('The parameter {item}={model_val[i]} is not found.')
 
-            if len(logg_index) == 0:
-                raise ValueError('Surface gravity value not found.')
+            indices.append(data_index[0])
 
-            logg_index = logg_index[0]
+        wl_points, wl_index = self.wavelength_points(h5_file)
 
-            flux = flux[teff_index, logg_index, wl_index]
+        indices.append(wl_index)
 
-        elif self.model in ['bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear']:
-            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-
-            teff_index = np.argwhere(teff == model_param['teff'])[0]
-
-            if len(teff_index) == 0:
-                raise ValueError('Temperature value not found.')
-
-            teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_param['logg'])[0]
-
-            if len(logg_index) == 0:
-                raise ValueError('Surface gravity value not found.')
-
-            logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_param['feh'])[0]
-
-            if len(feh_index) == 0:
-                raise ValueError('Metallicity value not found.')
-
-            feh_index = feh_index[0]
-
-            flux = flux[teff_index, logg_index, feh_index, wl_index]
-
-        elif self.model == 'petitcode-cool-cloudy':
-            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-            fsed = np.asarray(h5_file['models/'+self.model+'/fsed'])
-
-            teff_index = np.argwhere(teff == model_param['teff'])[0]
-
-            if len(teff_index) == 0:
-                raise ValueError('Temperature value not found.')
-
-            teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_param['logg'])[0]
-
-            if len(logg_index) == 0:
-                raise ValueError('Surface gravity value not found.')
-
-            logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_param['feh'])[0]
-
-            if len(feh_index) == 0:
-                raise ValueError('Metallicity value not found.')
-
-            feh_index = feh_index[0]
-            fsed_index = np.argwhere(fsed == model_param['fsed'])[0]
-
-            if len(fsed_index) == 0:
-                raise ValueError('f_sed value not found.')
-
-            fsed_index = fsed_index[0]
-
-            flux = flux[teff_index, logg_index, feh_index, fsed_index, wl_index]
-
-        elif self.model == 'petitcode-hot-clear':
-            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-            co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
-
-            teff_index = np.argwhere(teff == model_param['teff'])[0]
-
-            if len(teff_index) == 0:
-                raise ValueError('Temperature value not found.')
-
-            teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_param['logg'])[0]
-
-            if len(logg_index) == 0:
-                raise ValueError('Surface gravity value not found.')
-
-            logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_param['feh'])[0]
-
-            if len(feh_index) == 0:
-                raise ValueError('Metallicity value not found.')
-
-            feh_index = feh_index[0]
-            co_index = np.argwhere(co_ratio == model_param['co'])[0]
-
-            if len(co_index) == 0:
-                raise ValueError('C/O value not found.')
-
-            co_index = co_index[0]
-
-            flux = flux[teff_index, logg_index, feh_index, co_index, wl_index]
-
-        elif self.model == 'petitcode-hot-cloudy':
-            feh = np.asarray(h5_file['models/'+self.model+'/feh'])
-            co_ratio = np.asarray(h5_file['models/'+self.model+'/co'])
-            fsed = np.asarray(h5_file['models/'+self.model+'/fsed'])
-
-            teff_index = np.argwhere(teff == model_param['teff'])[0]
-
-            if len(teff_index) == 0:
-                raise ValueError('Temperature value not found.')
-
-            teff_index = teff_index[0]
-            logg_index = np.argwhere(logg == model_param['logg'])[0]
-
-            if len(logg_index) == 0:
-                raise ValueError('Surface gravity value not found.')
-
-            logg_index = logg_index[0]
-            feh_index = np.argwhere(feh == model_param['feh'])[0]
-
-            if len(feh_index) == 0:
-                raise ValueError('Metallicity value not found.')
-
-            feh_index = feh_index[0]
-            co_index = np.argwhere(co_ratio == model_param['co'])[0]
-
-            if len(co_index) == 0:
-                raise ValueError('C/O value not found.')
-
-            co_index = co_index[0]
-            fsed_index = np.argwhere(fsed == model_param['fsed'])[0]
-
-            if len(fsed_index) == 0:
-                raise ValueError('f_sed value not found.')
-
-            fsed_index = fsed_index[0]
-
-            flux = flux[teff_index, logg_index, feh_index, co_index, fsed_index, wl_index]
+        flux = flux[tuple(indices)]
 
         if 'radius' in model_param and 'distance' in model_param:
             scaling = (model_param['radius']*constants.R_JUP)**2 / \
@@ -593,7 +572,9 @@ class ReadModel:
         Returns
         -------
         float
-            Average flux density (W m-2 micron-1).
+            Average flux (W m-2 micron-1).
+        float, None
+            Uncertainty (W m-2 micron-1), which is set to None.
         """
 
         if self.spectrum_interp is None:
@@ -664,48 +645,13 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        teff = h5_file['models/'+self.model+'/teff']
-        logg = h5_file['models/'+self.model+'/logg']
+        parameters = self.get_parameters()
 
-        if self.model in ['ames-cond', 'ames-dusty', 'bt-settl']:
-            bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1])}
+        bounds = {}
 
-        elif self.model in ['drift-phoenix', 'bt-nextgen', 'petitcode-cool-clear']:
-            feh = h5_file['models/'+self.model+'/feh']
-
-            bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1]),
-                      'feh': (feh[0], feh[-1])}
-
-        elif self.model in ['petitcode-cool-cloudy', ]:
-            feh = h5_file['models/'+self.model+'/feh']
-            fsed = h5_file['models/'+self.model+'/fsed']
-
-            bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1]),
-                      'feh': (feh[0], feh[-1]),
-                      'fsed': (fsed[0], fsed[-1])}
-
-        elif self.model in ['petitcode-hot-clear', ]:
-            feh = h5_file['models/'+self.model+'/feh']
-            co_ratio = h5_file['models/'+self.model+'/co']
-
-            bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1]),
-                      'feh': (feh[0], feh[-1]),
-                      'co': (co_ratio[0], co_ratio[-1])}
-
-        elif self.model in ['petitcode-hot-cloudy', ]:
-            feh = h5_file['models/'+self.model+'/feh']
-            co_ratio = h5_file['models/'+self.model+'/co']
-            fsed = h5_file['models/'+self.model+'/fsed']
-
-            bounds = {'teff': (teff[0], teff[-1]),
-                      'logg': (logg[0], logg[-1]),
-                      'feh': (feh[0], feh[-1]),
-                      'co': (co_ratio[0], co_ratio[-1]),
-                      'fsed': (fsed[0], fsed[-1])}
+        for i, item in enumerate(parameters):
+            data = h5_file[f'models/{self.model}/{item}']
+            bounds[item] = (data[0], data[-1])
 
         h5_file.close()
 
@@ -721,9 +667,8 @@ class ReadModel:
             Wavelength points (micron).
         """
 
-        h5_file = self.open_database()
-        wavelength = np.asarray(h5_file['models/'+self.model+'/wavelength'])
-        h5_file.close()
+        with self.open_database() as h5_file:
+            wavelength = np.asarray(h5_file[f'models/{self.model}/wavelength'])
 
         return wavelength
 
@@ -741,30 +686,13 @@ class ReadModel:
 
         h5_file = self.open_database()
 
-        teff = h5_file[f'models/{self.model}/teff']
-        logg = h5_file[f'models/{self.model}/logg']
+        parameters = self.get_parameters()
 
-        points['teff'] = np.asarray(teff)
-        points['logg'] = np.asarray(logg)
+        points = {}
 
-        feh_models = ['drift-phoenix',
-                      'bt-nextgen',
-                      'petitcode-cool-clear',
-                      'petitcode-cool-cloudy',
-                      'petitcode-hot-clear',
-                      'petitcode-hot-cloudy']
-
-        if self.model in feh_models:
-            feh = h5_file[f'models/{self.model}/feh']
-            points['feh'] = np.asarray(feh)
-
-        if self.model in ['petitcode-cool-cloudy', 'petitcode-hot-cloudy']:
-            fsed = h5_file[f'models/{self.model}/fsed']
-            points['fsed'] = np.asarray(fsed)
-
-        if self.model in ['petitcode-hot-clear', 'petitcode-hot-cloudy']:
-            co_ratio = h5_file[f'models/{self.model}/co']
-            points['co'] = np.asarray(co_ratio)
+        for i, item in enumerate(parameters):
+            data = h5_file[f'models/{self.model}/{item}']
+            points[item] = np.asarray(data)
 
         h5_file.close()
 

@@ -338,4 +338,4 @@ class FitPlanck:
                                spectrum=('model', self.model),
                                tag=tag,
                                modelpar=self.modelpar,
-                               distance=self.distance)
+                               distance=self.distance[0])

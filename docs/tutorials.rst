@@ -16,7 +16,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
    tutorials/atmospheric_models.ipynb
    tutorials/data_model.ipynb
    tutorials/photometric_calibration.ipynb
-   tutorials/fitting_photometry.ipynb
+   tutorials/fitting_model_spectra.ipynb
 
 .. important::
    A flux calibrated spectrum of Vega is used for the conversion between flux density and magnitude. The magnitude of Vega is set to 0.03 mag for all filters (see also `Stolker et al. 2020 <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S>`_).

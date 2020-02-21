@@ -63,7 +63,7 @@ class ReadFilter:
             species_db.add_filter(self.filter_name)
             h5_file = h5py.File(self.database, 'r')
 
-        data = np.asarray(h5_file['filters/'+self.filter_name])
+        data = np.asarray(h5_file[f'filters/{self.filter_name}'])
 
         h5_file.close()
 

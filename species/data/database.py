@@ -252,15 +252,15 @@ class Database:
             'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear', or
             'petitcode-hot-cloudy').
         wavel_range : tuple(float, float), None
-            Wavelength range (micron). Not required for the DRIFT-PHOENIX and petitCODE models, in
+            Wavelength range (micron). Optional for the DRIFT-PHOENIX and petitCODE models. For
+            these models, the original wavelength points are used if set to None.
             which case the argument can be set to None.
         spec_res : float, None
-            Spectral resolution. Not required for the DRIFT-PHOENIX and petitCODE models, in which
-            case the argument can be set to None.
+            Spectral resolution. Optional for the DRIFT-PHOENIX and petitCODE models, in which
+            case the argument is only used if ``wavel_range`` is not None.
         teff_range : tuple(float, float), None
-            Effective temperature range (K). Not required for the DRIFT-PHOENIX and petitCODE
-            models, in which case the argument can be set to None. Setting the value to None for
-            the other models will add all available temperatures.
+            Effective temperature range (K). Setting the value to None for will add all available
+            temperatures.
         data_folder : str, None
             Folder with input data. Only required for the petitCODE hot models which are not
             publically available.
@@ -276,16 +276,6 @@ class Database:
                              'be imported by setting the \'data_folder\' parameter. Please '
                              'contact Paul Mollière (molliere@mpia.de) for the model spectra.')
 
-        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and wavel_range is not None:
-            warnings.warn('The \'wavel_range\' parameter is not required for the DRIFT-PHOENIX '
-                          'and petitCODE model spectra because they are sampled on a fixed '
-                          'wavelength grid.')
-
-        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and spec_res is not None:
-            warnings.warn('The \'spec_res\' parameter is not required for the DRIFT-PHOENIX and '
-                          'petitCODE model spectra because they are sampled on a fixed wavelength '
-                          'grid.')
-
         if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and wavel_range is None:
             raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
@@ -293,10 +283,6 @@ class Database:
         if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and spec_res is None:
             raise ValueError('The \'spec_res\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
-
-        if (model[0:9] == 'petitcode' or model == 'drift-phoenix') and teff_range is not None:
-            warnings.warn('The \'teff_range\' parameter is ignored for the DRIFT-PHOENIX and '
-                          'petitCODE model spectra.')
 
         if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
             warnings.warn('The temperature range is not restricted with the \'teff_range\''
@@ -309,43 +295,90 @@ class Database:
             h5_file.create_group('models')
 
         if model == 'ames-cond':
-            ames_cond.add_ames_cond(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            ames_cond.add_ames_cond(self.input_path,
+                                    h5_file,
+                                    wavel_range,
+                                    teff_range,
+                                    spec_res)
+
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
         elif model == 'ames-dusty':
-            ames_dusty.add_ames_dusty(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            ames_dusty.add_ames_dusty(self.input_path,
+                                      h5_file,
+                                      wavel_range,
+                                      teff_range,
+                                      spec_res)
+
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
         elif model == 'bt-settl':
-            btsettl.add_btsettl(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            btsettl.add_btsettl(self.input_path,
+                                h5_file,
+                                wavel_range,
+                                teff_range,
+                                spec_res)
+
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
         elif model == 'bt-nextgen':
-            btnextgen.add_btnextgen(self.input_path, h5_file, wavel_range, teff_range, spec_res)
+            btnextgen.add_btnextgen(self.input_path,
+                                    h5_file,
+                                    wavel_range,
+                                    teff_range,
+                                    spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
         elif model == 'drift-phoenix':
-            drift_phoenix.add_drift_phoenix(self.input_path, h5_file)
+            drift_phoenix.add_drift_phoenix(self.input_path,
+                                            h5_file,
+                                            wavel_range,
+                                            teff_range,
+                                            spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
         elif model == 'petitcode-cool-clear':
-            petitcode.add_petitcode_cool_clear(self.input_path, h5_file)
+            petitcode.add_petitcode_cool_clear(self.input_path,
+                                               h5_file,
+                                               wavel_range,
+                                               teff_range,
+                                               spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
         elif model == 'petitcode-cool-cloudy':
-            petitcode.add_petitcode_cool_cloudy(self.input_path, h5_file)
+            petitcode.add_petitcode_cool_cloudy(self.input_path,
+                                                h5_file,
+                                                wavel_range,
+                                                teff_range,
+                                                spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh', 'fsed'], h5_file)
 
         elif model == 'petitcode-hot-clear':
-            petitcode.add_petitcode_hot_clear(self.input_path, h5_file, data_folder)
+            petitcode.add_petitcode_hot_clear(self.input_path,
+                                              h5_file,
+                                              data_folder,
+                                              wavel_range,
+                                              teff_range,
+                                              spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh', 'co'], h5_file)
 
         elif model == 'petitcode-hot-cloudy':
-            petitcode.add_petitcode_hot_cloudy(self.input_path, h5_file, data_folder)
+            petitcode.add_petitcode_hot_cloudy(self.input_path,
+                                               h5_file,
+                                               data_folder,
+                                               wavel_range,
+                                               teff_range,
+                                               spec_res)
+
             data_util.add_missing(model, ['teff', 'logg', 'feh', 'co', 'fsed'], h5_file)
 
         else:
-            raise ValueError(f'The {model} atmospheric model does not exist. Please choose from '
+            raise ValueError(f'The {model} atmospheric model is not available. Please choose from '
                              f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
                              f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '

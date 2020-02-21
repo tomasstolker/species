@@ -67,7 +67,10 @@ def add_baraffe(database,
 
     dtype = h5py.special_dtype(vlen=str)
 
-    dset = database.create_dataset(f'isochrones/{tag}/filters', (np.size(header[7:]), ), dtype=dtype)
+    dset = database.create_dataset(f'isochrones/{tag}/filters',
+                                   (np.size(header[7:]), ),
+                                   dtype=dtype)
+
     dset[...] = header[7:]
 
     database.create_dataset(f'isochrones/{tag}/magnitudes',

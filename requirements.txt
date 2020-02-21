@@ -8,5 +8,5 @@ numpy ~= 1.18
 pandas ~= 0.25
 scipy ~= 1.4
 spectres ~= 2.0
-tqdm ~= 4.42
+tqdm ~= 4.43
 xlrd ~= 1.2

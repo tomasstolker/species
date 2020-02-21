@@ -7,10 +7,10 @@ import math
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import spectres
 import numpy as np
 
 from species.analysis import photometry
+from species.core import constants
 from species.data import database
 from species.read import read_model, read_object
 from species.util import read_util
@@ -72,7 +72,6 @@ def lnlike(param,
            modelpar,
            modelphot,
            objphot,
-           synphot,
            distance,
            spectrum,
            modelspec):
@@ -87,7 +86,6 @@ def lnlike(param,
         Parameter names.
     modelphot : list(species.read.read_model.ReadModel, )
     objphot : list(tuple(float, float), )
-    synphot : list(species.analysis.photometry.SyntheticPhotometry, )
     distance : float
         Distance (pc).
     spectrum : dict
@@ -104,32 +102,30 @@ def lnlike(param,
 
     paramdict = {}
     for i, item in enumerate(modelpar):
-        paramdict[item] = param[i]
+        if item == 'radius':
+            radius = param[i]
+        else:
+            paramdict[item] = param[i]
 
-    paramdict['distance'] = distance
+    scaling = (radius*constants.R_JUP)**2 / (distance*constants.PARSEC)**2
 
     chisq = 0.
 
     if objphot is not None:
         for i, item in enumerate(objphot):
-            flux = modelphot[i].get_flux(paramdict, synphot[i])[0]
+            flux = scaling * modelphot[i].spectrum_interp(list(paramdict.values()))
             chisq += (item[0]-flux)**2 / item[1]**2
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
-            model = modelspec[i].get_model(paramdict)
-
-            flux_new = spectres.spectres(new_spec_wavs=spectrum[item][0][:, 0],
-                                         old_spec_wavs=model.wavelength,
-                                         spec_fluxes=model.flux,
-                                         spec_errs=None)
+            flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
 
             if spectrum[item][2] is not None:
-                spec_diff = spectrum[item][0][:, 1] - flux_new
+                spec_diff = spectrum[item][0][:, 1] - flux
                 chisq += np.dot(spec_diff, np.dot(spectrum[item][2], spec_diff))
 
             else:
-                chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /
+                chisq += np.nansum((spectrum[item][0][:, 1] - flux)**2 /
                                    spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
@@ -140,7 +136,6 @@ def lnprob(param,
            modelpar,
            modelphot,
            objphot,
-           synphot,
            distance,
            prior,
            spectrum,
@@ -158,7 +153,6 @@ def lnprob(param,
         Parameter names.
     modelphot : list('species.read.read_model.ReadModel, )
     objphot : list(tuple(float, float), )
-    synphot : list(species.analysis.photometry.SyntheticPhotometry, )
     distance : float
         Distance (pc).
     prior : tuple(str, float, float)
@@ -185,7 +179,6 @@ def lnprob(param,
                                     modelpar,
                                     modelphot,
                                     objphot,
-                                    synphot,
                                     distance,
                                     spectrum,
                                     modelspec)
@@ -209,19 +202,29 @@ class FitModel:
                  inc_phot=True,
                  inc_spec=True):
         """
+        For each photometric point and spectrum, the model grid is linearly interpolated at the
+        required synthetic photometry and wavelength sampling before running the MCMC. Therefore,
+        the computation time of this initial interpolation depends on the wavelength range and
+        spectral resolution of the spectra that are stored in the database, and the prior
+        boundaries that are chosen with ``bounds``.
+
         Parameters
         ----------
         object_name : str
-            Object name in the database.
+            Object name in the database as created with
+            :func:`~species.data.database.Database.add_object` or
+            :func:`~species.data.database.Database.add_companion`.
         filters : tuple(str, )
-            Filter IDs for which the photometry is selected. All available photometry of the
+            Filter names for which the photometry is selected. All available photometry of the
             object is selected if set to None.
         model : str
             Atmospheric model (e.g. 'drift-phoenix', 'petitcode-cool-cloudy', or 'bt-settl').
         bounds : dict, None
             Parameter boundaries. The full range is used for each parameter if set to None. In that
             case, the radius range is set to 0-5 Rjup. It is also possible to specify the bounds
-            for a subset of the parameters, for example, ``{'radius': (0.5, 10.)}``.
+            for a subset of the parameters, for example, ``{'radius': (0.5, 10.)}``. Restricting
+            the boundaries will decrease the computation time with the interpolation prior to the
+            MCMC sampling.
         inc_phot : bool
             Include photometric data in the fit.
         inc_spec : bool
@@ -257,23 +260,27 @@ class FitModel:
         if 'radius' not in self.bounds:
             self.bounds['radius'] = (0., 5.)
 
+        print('Prior and interpolation boundaries:')
+        for key, value in self.bounds.items():
+            print(f'   - {key} = {value}')
+
         if inc_phot:
             self.objphot = []
             self.modelphot = []
-            self.synphot = []
 
-            if not filters:
+            if filters is None:
                 species_db = database.Database()
                 objectbox = species_db.get_object(object_name, None)
                 filters = objectbox.filters
 
             for item in filters:
+                print(f'Interpolating {item}...', end='', flush=True)
+
                 readmodel = read_model.ReadModel(self.model, filter_name=item)
-                readmodel.interpolate_model()
+                readmodel.interpolate_grid(bounds=self.bounds)
                 self.modelphot.append(readmodel)
 
-                sphot = photometry.SyntheticPhotometry(item)
-                self.synphot.append(sphot)
+                print(f' [DONE]')
 
                 obj_phot = self.object.get_photometry(item)
                 self.objphot.append((obj_phot[2], obj_phot[3]))
@@ -281,15 +288,24 @@ class FitModel:
         else:
             self.objphot = None
             self.modelphot = None
-            self.synphot = None
 
         if inc_spec:
             self.spectrum = self.object.get_spectrum()
 
             self.modelspec = []
             for key, value in self.spectrum.items():
+                print(f'\rInterpolating {key}...', end='', flush=True)
+
                 wavel_range = (0.9*value[0][0, 0], 1.1*value[0][-1, 0])
-                self.modelspec.append(read_model.ReadModel(self.model, wavel_range=wavel_range))
+
+                readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
+
+                readmodel.interpolate_grid(bounds=self.bounds,
+                                           wavel_resample=self.spectrum[key][0][:, 0])
+
+                self.modelspec.append(readmodel)
+
+                print(f' [DONE]')
 
         else:
             self.spectrum = None
@@ -305,7 +321,7 @@ class FitModel:
                  tag,
                  prior=None):
         """
-        Function to run the MCMC sampler.
+        Function to run the MCMC sampler
 
         Parameters
         ----------
@@ -317,7 +333,7 @@ class FitModel:
             Guess for the parameter values. Random values between the boundary values are used
             if set to None.
         tag : str
-            Database tag where the MCMC samples are stored.
+            Database tag where the MCMC samples will be stored.
         prior : tuple(str, float, float)
             Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
             ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
@@ -353,7 +369,6 @@ class FitModel:
                                                    self.modelpar,
                                                    self.modelphot,
                                                    self.objphot,
-                                                   self.synphot,
                                                    self.distance[0],
                                                    prior,
                                                    self.spectrum,
