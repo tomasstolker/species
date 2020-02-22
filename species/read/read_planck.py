@@ -85,7 +85,7 @@ class ReadPlanck:
         planck_2 = np.exp(constants.PLANCK*constants.LIGHT /
                           (1e-6*wavel_points*constants.BOLTZMANN*temperature)) - 1.
 
-        return 1e-6 * 4.*math.pi * scaling * planck_1/planck_2  # [W m-2 micron-1]
+        return 1e-6 * math.pi * scaling * planck_1/planck_2  # [W m-2 micron-1]
 
     @staticmethod
     def update_parameters(model_param):
