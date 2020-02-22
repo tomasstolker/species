@@ -146,8 +146,6 @@ def get_residuals(datatype,
     else:
         res_phot = None
 
-    print('Calculating residuals...', end='', flush=True)
-
     if inc_spec:
         res_spec = {}
 
@@ -170,6 +168,11 @@ def get_residuals(datatype,
                                          spec_fluxes=model.flux,
                                          spec_errs=None)
 
+            if key in parameters:
+                print(f'Scaling the flux of {key} by {parameters[key]:.2e}...', end='', flush=True)
+                flux_new *= parameters[key]
+                print(' [DONE]')
+
             res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
 
             res_spec[key] = np.column_stack([wl_new, res_tmp])
@@ -177,7 +180,7 @@ def get_residuals(datatype,
     else:
         res_spec = None
 
-    print(' [DONE]')
+    print('Calculating residuals... [DONE]')
 
     print('Residuals [sigma]:')
 

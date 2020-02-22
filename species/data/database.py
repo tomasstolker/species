@@ -727,7 +727,8 @@ class Database:
                     spectrum,
                     tag,
                     modelpar,
-                    distance=None):
+                    distance=None,
+                    spec_labels=None):
         """
         Parameters
         ----------
@@ -742,6 +743,9 @@ class Database:
             List with the model parameter names.
         distance : float
             Distance to the object (pc). Not used if set to None.
+        spec_labels : list(str, )
+            List with the spectrum labels that are used for fitting an additional scaling
+            parameter.
 
         Returns
         -------
@@ -773,8 +777,16 @@ class Database:
         if distance:
             dset.attrs['distance'] = float(distance)
 
+        count_scaling = 0
+
         for i, item in enumerate(modelpar):
             dset.attrs[f'parameter{i}'] = str(item)
+
+            if spec_labels is not None and item in spec_labels:
+                dset.attrs[f'scaling{count_scaling}'] = str(item)
+                count_scaling += 1
+
+        dset.attrs['nscaling'] = int(count_scaling)
 
         mean_accep = np.mean(sampler.acceptance_fraction)
         dset.attrs['acceptance'] = float(mean_accep)
@@ -831,9 +843,6 @@ class Database:
         # max_prob = probability[index_max]
         max_sample = samples[index_max]
 
-        # print(f'Maximum probability: {max_prob:.2f}')
-        # print(f'Most probable sample:', end='', flush=True)
-
         prob_sample = {}
 
         for i in range(nparam):
@@ -841,12 +850,9 @@ class Database:
             par_value = max_sample[i]
 
             prob_sample[par_key] = par_value
-            # print(f' {par_key}={par_value:.2f}', end=')
 
         if dset.attrs.__contains__('distance'):
             prob_sample['distance'] = dset.attrs['distance']
-
-        # print()
 
         h5_file.close()
 
@@ -875,6 +881,11 @@ class Database:
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
+        nscaling = dset.attrs['nscaling']
+
+        scaling = []
+        for i in range(nscaling):
+            scaling.append(dset.attrs[f'scaling{i}'])
 
         samples = np.asarray(dset)
         samples = samples[:, burnin:, :]
@@ -885,7 +896,6 @@ class Database:
         for i in range(nparam):
             par_key = dset.attrs[f'parameter{i}']
             par_value = np.percentile(samples[:, i], 50.)
-
             median_sample[par_key] = par_value
 
         if dset.attrs.__contains__('distance'):
@@ -923,12 +933,12 @@ class Database:
             Boxes with the randomly sampled spectra.
         """
 
-        print('The smooth_spectrum function has not been fully tested. [WARNING]')
-
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
         nparam = dset.attrs['nparam']
+        nscaling = dset.attrs['nscaling']
+
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
@@ -952,6 +962,10 @@ class Database:
         for i in range(nparam):
             param.append(dset.attrs[f'parameter{i}'])
 
+        scaling = []
+        for i in range(nscaling):
+            scaling.append(dset.attrs[f'scaling{i}'])
+
         if spectrum_type == 'model':
             if spectrum_name == 'planck':
                 readmodel = read_planck.ReadPlanck(wavel_range)
@@ -966,7 +980,8 @@ class Database:
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC spectra'):
             model_param = {}
             for j in range(samples.shape[1]):
-                model_param[param[j]] = samples[i, j]
+                if param[j] not in scaling:
+                    model_param[param[j]] = samples[i, j]
 
             if distance:
                 model_param['distance'] = distance

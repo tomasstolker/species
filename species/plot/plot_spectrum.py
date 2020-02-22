@@ -84,7 +84,7 @@ def plot_spectrum(boxes,
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
     if colors is not None and len(boxes) != len(colors):
-        raise ValueError(f'The number of \'boxes\' ({len(boxes)}) should be the same as the '
+        raise ValueError(f'The number of \'boxes\' ({len(boxes)}) should be equal to the '
                          f'number of \'colors\' ({len(colors)}).')
 
     if residuals and filters:
@@ -153,18 +153,18 @@ def plot_spectrum(boxes,
     if residuals and filters:
         ax1.set_xlabel('', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
-        ax3.set_xlabel('Wavelength [micron]', fontsize=13)
+        ax3.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
 
     elif residuals:
         ax1.set_xlabel('', fontsize=13)
-        ax3.set_xlabel('Wavelength [micron]', fontsize=13)
+        ax3.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
 
     elif filters:
-        ax1.set_xlabel('Wavelength [micron]', fontsize=13)
+        ax1.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
 
     else:
-        ax1.set_xlabel('Wavelength [micron]', fontsize=13)
+        ax1.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
 
     if filters:
         ax2.set_ylabel('Transmission', fontsize=13)
@@ -267,38 +267,36 @@ def plot_spectrum(boxes,
                 if isinstance(boxitem, box.ModelBox):
                     param = boxitem.parameters
 
-                    par_key, par_unit = plot_util.quantity_unit(param=list(param.keys()),
-                                                                object_type=object_type)
-
-                    par_val = list(param.values())
+                    par_key, par_unit, par_label = plot_util.quantity_unit(
+                        param=list(param.keys()), object_type=object_type)
 
                     label = ''
                     newline = False
 
                     for i, item in enumerate(par_key):
 
-                        if item == r'$T_\mathregular{eff}$':
-                            value = f'{par_val[i]:.1f}'
+                        if item == 'teff':
+                            value = f'{param[item]:.1f}'
 
-                        elif item in (r'$\log\,g$', '[Fe/H]', 'C/O', r'f$_\mathregular{sed}$'):
-                            value = f'{par_val[i]:.2f}'
+                        elif item in ['logg', 'feh', 'co', 'fsed']:
+                            value = f'{param[item]:.2f}'
 
-                        elif item == r'$R$':
+                        elif item == 'radius':
 
                             if object_type == 'planet':
-                                value = f'{par_val[i]:.2f}'
+                                value = f'{param[item]:.2f}'
 
                             elif object_type == 'star':
-                                value = f'{par_val[i]*constants.R_JUP/constants.R_SUN:.2f}'
+                                value = f'{param[item]*constants.R_JUP/constants.R_SUN:.2f}'
 
-                        elif item == r'$M$':
+                        elif item == 'mass':
                             if object_type == 'planet':
-                                value = f'{par_val[i]:.2f}'
+                                value = f'{param[item]:.2f}'
                             elif object_type == 'star':
-                                value = f'{par_val[i]*constants.M_JUP/constants.M_SUN:.2f}'
+                                value = f'{param[item]*constants.M_JUP/constants.M_SUN:.2f}'
 
-                        elif item == r'$L$':
-                            value = f'{par_val[i]:.1e}'
+                        elif item == 'luminosity':
+                            value = f'{param[item]:.1e}'
 
                         else:
                             continue
@@ -308,9 +306,9 @@ def plot_spectrum(boxes,
                         #     newline = True
 
                         if par_unit[i] is None:
-                            label += item+' = '+str(value)
+                            label += f'{par_label[i]} = {value}'
                         else:
-                            label += item+' = '+str(value)+' '+par_unit[i]
+                            label += f'{par_label[i]} = {value} {par_unit[i]}'
 
                         if i < len(par_key)-1:
                             label += ', '

@@ -189,56 +189,69 @@ def quantity_unit(param,
     -------
     list
     list
+    list
     """
 
     quantity = []
     unit = []
+    label = []
 
     if 'teff' in param:
-        quantity.append(r'$T_\mathregular{eff}$')
+        quantity.append('teff')
         unit.append('K')
+        label.append(r'$T_\mathregular{eff}$')
 
     if 'logg' in param:
-        quantity.append(r'$\log\,g$')
+        quantity.append('logg')
         unit.append('dex')
+        label.append(r'$\log\,g$')
 
     if 'feh' in param:
-        quantity.append(r'[Fe/H]')
+        quantity.append('feh')
         unit.append('dex')
+        label.append(r'[Fe/H]')
 
     if 'fsed' in param:
-        quantity.append(r'f$_\mathregular{sed}$')
+        quantity.append('fsed')
         unit.append(None)
+        label.append(r'f$_\mathregular{sed}$')
 
     if 'co' in param:
-        quantity.append(r'C/O')
+        quantity.append('co')
         unit.append(None)
+        label.append(r'C/O')
 
     if 'radius' in param:
-        quantity.append(r'$R$')
+        quantity.append('radius')
 
         if object_type == 'planet':
             unit.append(r'$R_\mathregular{Jup}}$')
         elif object_type == 'star':
             unit.append(r'$R_\mathregular{\odot}}$')
 
+        label.append(r'$R$')
+
     if 'distance' in param:
-        quantity.append(r'$d$')
+        quantity.append('distance')
         unit.append('pc')
+        label.append(r'$d$')
 
     if 'mass' in param:
-        quantity.append(r'$M$')
+        quantity.append('mass')
 
         if object_type == 'planet':
             unit.append(r'$M_\mathregular{Jup}$')
         elif object_type == 'star':
             unit.append(r'$M_\mathregular{\odot}$')
 
-    if 'luminosity' in param:
-        quantity.append(r'$L$')
-        unit.append(r'$L_\odot$')
+        label.append(r'$M$')
 
-    return quantity, unit
+    if 'luminosity' in param:
+        quantity.append('luminosity')
+        unit.append(r'$L_\odot$')
+        label.append(r'$L$')
+
+    return quantity, unit, label
 
 
 def field_bounds_ticks(field_range):

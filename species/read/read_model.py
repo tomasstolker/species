@@ -332,21 +332,28 @@ class ReadModel:
 
         grid_bounds = self.get_bounds()
 
-        for key, value in model_param.items():
-            if key not in ['radius', 'distance', 'mass', 'luminosity']:
-                if key not in self.get_parameters():
-                    raise ValueError(f'The \'{key}\' parameter is not required by \'{self.model}\''
-                                     f'. The mandatory parameters are {self.get_parameters()}.')
+        extra_param = ['radius', 'distance', 'mass', 'luminosity']
 
-                if value < grid_bounds[key][0]:
-                    raise ValueError(f'The input value of \'{key}\' is smaller than the lower '
-                                     f'boundary of the model grid ({value} < '
-                                     f'{grid_bounds[key][0]}).')
+        for key in self.get_parameters():
+            if key not in model_param.keys():
+                raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
+                                 f'The mandatory parameters are {self.get_parameters()}.')
 
-                if value > grid_bounds[key][1]:
-                    raise ValueError(f'The input value of \'{key}\' is larger than the upper '
-                                     f'boundary of the model grid ({value} > '
-                                     f'{grid_bounds[key][1]}).')
+            if model_param[key] < grid_bounds[key][0]:
+                raise ValueError(f'The input value of \'{key}\' is smaller than the lower '
+                                 f'boundary of the model grid ({model_param[key]} < '
+                                 f'{grid_bounds[key][0]}).')
+
+            if model_param[key] > grid_bounds[key][1]:
+                raise ValueError(f'The input value of \'{key}\' is larger than the upper '
+                                 f'boundary of the model grid ({model_param[key]} > '
+                                 f'{grid_bounds[key][1]}).')
+
+        for key in model_param.keys():
+            if key not in self.get_parameters() and key not in extra_param:
+                warnings.warn(f'The \'{key}\' parameter is not required by \'{self.model}\' so '
+                              f'the parameter will be ignored. The mandatory parameters are '
+                              f'{self.get_parameters()}.')
 
         if 'mass' in model_param:
             mass = 1e3 * model_param['mass'] * constants.M_JUP  # [g]
@@ -491,11 +498,18 @@ class ReadModel:
             Box with the model spectrum.
         """
 
-        for key in model_param:
-            if key not in ['radius', 'distance', 'mass', 'luminosity']:
-                if key not in self.get_parameters():
-                    raise ValueError(f'The \'{key}\' parameter is not required by \'{self.model}\''
-                                     f'. The mandatory parameters are {self.get_parameters()}.')
+        for key in self.get_parameters():
+            if key not in model_param.keys():
+                raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
+                                 f'The mandatory parameters are {self.get_parameters()}.')
+
+        extra_param = ['radius', 'distance', 'mass', 'luminosity']
+
+        for key in model_param.keys():
+            if key not in self.get_parameters() and key not in extra_param:
+                warnings.warn(f'The \'{key}\' parameter is not required by \'{self.model}\' so '
+                              f'the parameter will be ignored. The mandatory parameters are '
+                              f'{self.get_parameters()}.')
 
         h5_file = self.open_database()
 

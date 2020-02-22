@@ -54,6 +54,8 @@ def add_luminosity(modelbox):
         The input box with the luminosity added in the parameter dictionary.
     """
 
+    print('Calculating the luminosity...', end='', flush=True)
+
     if modelbox.model == 'planck':
         readmodel = read_planck.ReadPlanck(wavel_range=(1e-1, 1e3))
         fullspec = readmodel.get_spectrum(model_param=modelbox.parameters, spec_res=1000.)
@@ -70,6 +72,13 @@ def add_luminosity(modelbox):
         luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # [W]
 
     modelbox.parameters['luminosity'] = luminosity/constants.L_SUN  # [Lsun]
+
+    print(' [DONE]')
+
+    print(f'Wavelength range [micron]: {fullspec.wavelength[0]:.2e} - '
+          f'{fullspec.wavelength[-1]:.2e}')
+
+    print(f'Luminosity [Lsun]: {luminosity/constants.L_SUN:.2e}')
 
     return modelbox
 

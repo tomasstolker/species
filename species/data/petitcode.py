@@ -444,7 +444,7 @@ def add_petitcode_hot_cloudy(input_path,
             logg_val = float(filename[19:23])
             feh_val = float(filename[28:32])
             co_ratio_val = float(filename[36:40])
-            fsed_vale = float(filename[46:50])
+            fsed_val = float(filename[46:50])
 
             if teff_range is not None:
                 if teff_val < teff_range[0] or teff_val > teff_range[1]:

@@ -70,10 +70,10 @@ def lnprior(param,
 
 def lnlike(param,
            modelpar,
-           modelphot,
            objphot,
            distance,
            spectrum,
+           modelphot,
            modelspec):
     """
     Internal function for the likelihood probability.
@@ -84,15 +84,18 @@ def lnlike(param,
         Parameter values.
     modelpar : list(str, )
         Parameter names.
-    modelphot : list(species.read.read_model.ReadModel, )
     objphot : list(tuple(float, float), )
+        List with the fluxes and uncertainties of the object.
     distance : float
         Distance (pc).
     spectrum : dict
         Dictionary with the spectrum stored as wavelength (micron), flux (W m-2 micron-1),
         and error (W m-2 micron-1), and optionally the covariance matrix and the inverse of
         the covariance matrix.
+    modelphot : list(species.read.read_model.ReadModel, )
+        List with the interpolated synthetic photometry.
     modelspec : list(species.read.read_model.ReadModel, )
+        List with the interpolated synthetic spectra.
 
     Returns
     -------
@@ -101,9 +104,13 @@ def lnlike(param,
     """
 
     paramdict = {}
+    spec_scaling = {}
+
     for i, item in enumerate(modelpar):
         if item == 'radius':
             radius = param[i]
+        elif item in spectrum:
+            spec_scaling[item] = param[i]
         else:
             paramdict[item] = param[i]
 
@@ -118,7 +125,12 @@ def lnlike(param,
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
-            flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
+            if item in spec_scaling:
+                scaling_new = scaling * spec_scaling[item]
+                flux = scaling_new * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
+
+            else:
+                flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
 
             if spectrum[item][2] is not None:
                 spec_diff = spectrum[item][0][:, 1] - flux
@@ -134,11 +146,11 @@ def lnlike(param,
 def lnprob(param,
            bounds,
            modelpar,
-           modelphot,
            objphot,
            distance,
            prior,
            spectrum,
+           modelphot,
            modelspec):
     """
     Internal function for the posterior probability.
@@ -151,8 +163,8 @@ def lnprob(param,
         Parameter boundaries.
     modelpar : list(str, )
         Parameter names.
-    modelphot : list('species.read.read_model.ReadModel, )
     objphot : list(tuple(float, float), )
+        List with the fluxes and uncertainties of the object.
     distance : float
         Distance (pc).
     prior : tuple(str, float, float)
@@ -161,7 +173,10 @@ def lnprob(param,
         used if set to None.
     spectrum : dict
         Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+    modelphot : list(species.read.read_model.ReadModel, )
+        List with the interpolated synthetic fluxes.
     modelspec : list(species.read.read_model.ReadModel, )
+        List with the interpolated synthetic spectra.
 
     Returns
     -------
@@ -177,10 +192,10 @@ def lnprob(param,
     else:
         ln_prob = ln_prior + lnlike(param,
                                     modelpar,
-                                    modelphot,
                                     objphot,
                                     distance,
                                     spectrum,
+                                    modelphot,
                                     modelspec)
 
     if np.isnan(ln_prob):
@@ -224,7 +239,10 @@ class FitModel:
             case, the radius range is set to 0-5 Rjup. It is also possible to specify the bounds
             for a subset of the parameters, for example, ``{'radius': (0.5, 10.)}``. Restricting
             the boundaries will decrease the computation time with the interpolation prior to the
-            MCMC sampling.
+            MCMC sampling. An additional scaling parameter can be fitted for each spectrum in which
+            case, the boundaries have to be provided with the database tag of the spectrum.
+            For example, ``{'sphere_ifs': (0.5, 2.)}`` if the spectrum is stored as ``sphere_ifs``
+            with :func:`~species.data.database.Database.add_object`.
         inc_phot : bool
             Include photometric data in the fit.
         inc_spec : bool
@@ -314,6 +332,11 @@ class FitModel:
         self.modelpar = readmodel.get_parameters()
         self.modelpar.append('radius')
 
+        if self.spectrum is not None:
+            for item in self.spectrum.keys():
+                if item in self.bounds:
+                    self.modelpar.append(item)
+
     def run_mcmc(self,
                  nwalkers,
                  nsteps,
@@ -347,6 +370,11 @@ class FitModel:
 
         sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'fsed': 0.01, 'co': 0.01, 'radius': 0.01}
 
+        if self.spectrum is not None:
+            for item in self.spectrum.keys():
+                if item in self.bounds:
+                    sigma[item] = 0.01
+
         print('Running MCMC...')
 
         ndim = len(self.bounds)
@@ -367,19 +395,30 @@ class FitModel:
                                             lnprob,
                                             args=([self.bounds,
                                                    self.modelpar,
-                                                   self.modelphot,
                                                    self.objphot,
                                                    self.distance[0],
                                                    prior,
                                                    self.spectrum,
+                                                   self.modelphot,
                                                    self.modelspec]))
 
             sampler.run_mcmc(initial, nsteps, progress=True)
 
         species_db = database.Database()
 
+        spec_labels = []
+
+        if self.spectrum is not None:
+            for item in self.spectrum.keys():
+                if item in self.bounds:
+                    spec_labels.append(item)
+
+        else:
+            spec_labels = None
+
         species_db.add_samples(sampler=sampler,
                                spectrum=('model', self.model),
                                tag=tag,
                                modelpar=self.modelpar,
-                               distance=self.distance[0])
+                               distance=self.distance[0],
+                               spec_labels=spec_labels)

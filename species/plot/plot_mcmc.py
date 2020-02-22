@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from matplotlib.ticker import ScalarFormatter
+
 from species.data import database
 from species.util import plot_util
 
@@ -144,10 +146,14 @@ def plot_posterior(tag,
     for key, value in box.median_sample.items():
         print(f'   - {key} = {value:.2f}')
 
-    print(f'Plotting the posterior: {output}...', end='', flush=True)
-
     samples = box.samples
     par_val = tuple(box.prob_sample.values())
+
+    print(f'Maximum posterior sample:')
+    for key, value in box.prob_sample.items():
+        print(f'   - {key} = {value:.2f}')
+
+    print(f'Plotting the posterior: {output}...', end='', flush=True)
 
     labels = plot_util.update_labels(box.parameters)
 
@@ -165,13 +171,28 @@ def plot_posterior(tag,
             if i >= j:
                 ax = axes[i, j]
 
+                ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+                ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
+
+                if j == 0 and i != 0:
+                    labelleft = True
+                else:
+                    labelleft = False
+
+                if i == ndim-1:
+                    labelbottom = True
+                else:
+                    labelbottom = False
+
                 ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                                direction='in', width=1, length=5, labelsize=12, top=True,
-                               bottom=True, left=True, right=True)
+                               bottom=True, left=True, right=True, labelleft=labelleft,
+                               labelbottom=labelbottom, labelright=False, labeltop=False)
 
                 ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
                                direction='in', width=1, length=3, labelsize=12, top=True,
-                               bottom=True, left=True, right=True)
+                               bottom=True, left=True, right=True, labelleft=labelleft,
+                               labelbottom=labelbottom, labelright=False, labeltop=False)
 
                 if limits is not None:
                     ax.set_xlim(limits[j])
@@ -256,7 +277,7 @@ def plot_photometry(tag,
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
-    plt.savefig(f'{os.getcwd()}/{output}', bbox_inches='tight')
+    plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
     plt.close()
 
