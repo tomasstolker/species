@@ -159,7 +159,7 @@ class Database:
             Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
         filename : str
             Filename with the filter profile. The first column should contain the wavelength
-            (micron) and the second column the transmission (no units). The profile is downloaded
+            (um) and the second column the transmission (no units). The profile is downloaded
             from the SVO Filter Profile Service if set to None.
 
         Returns
@@ -252,7 +252,7 @@ class Database:
             'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear', or
             'petitcode-hot-cloudy').
         wavel_range : tuple(float, float), None
-            Wavelength range (micron). Optional for the DRIFT-PHOENIX and petitCODE models. For
+            Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to None.
             which case the argument can be set to None.
         spec_res : float, None
@@ -405,7 +405,7 @@ class Database:
         spectrum : dict
             Dictionary with spectra and covariance matrices. Multiple spectra can be included and
             the files have to be in the FITS or ASCII format. The spectra should have 3 columns
-            with wavelength (micron), flux density (W m-2 micron-1), and error (W m-2 micron-1).
+            with wavelength (um), flux density (W m-2 um-1), and error (W m-2 um-1).
             The covariance matrix should be 2D with the same number of wavelength points as the
             spectrum. For example, {'sphere_ifs': ('ifs_spectrum.dat', 'ifs_covariance.fits')}.
             No covariance data is stored if set to None, for example, {'sphere_ifs':
@@ -460,7 +460,7 @@ class Database:
                                    flux[item],
                                    error[item]])
 
-                # [mag], [mag], [W m-2 micron-1], [W m-2 micron-1]
+                # [mag], [mag], [W m-2 um-1], [W m-2 um-1]
                 h5_file.create_dataset(f'objects/{object_name}/'+item,
                                        data=data)
 
@@ -613,14 +613,14 @@ class Database:
             Tag name in the database.
         filename : str, None
             Filename with the calibration spectrum. The first column should contain the wavelength
-            (micron), the second column the flux density (W m-2 micron-1), and the third column
-            the error (W m-2 micron-1). The `data` argument is used if set to None.
+            (um), the second column the flux density (W m-2 um-1), and the third column
+            the error (W m-2 um-1). The `data` argument is used if set to None.
         data : numpy.ndarray, None
             Spectrum stored as 3D array with shape (n_wavelength, 3). The first column should
-            contain the wavelength (micron), the second column the flux density (W m-2 micron-1),
-            and the third column the error (W m-2 micron-1).
+            contain the wavelength (um), the second column the flux density (W m-2 um-1),
+            and the third column the error (W m-2 um-1).
         units : dict, None
-            Dictionary with the wavelength and flux units. Default (micron and W m-2 micron-1) is
+            Dictionary with the wavelength and flux units. Default (um and W m-2 um-1) is
             used if set to None.
         scaling : tuple(float, float)
             Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux). Not used if
@@ -650,29 +650,29 @@ class Database:
             data = np.loadtxt(filename)
 
         if units is None:
-            wavelength = scaling[0]*data[:, 0]  # [micron]
-            flux = scaling[1]*data[:, 1]  # [W m-2 micron-1]
+            wavelength = scaling[0]*data[:, 0]  # [um]
+            flux = scaling[1]*data[:, 1]  # [W m-2 um-1]
 
         else:
-            if units['wavelength'] == 'micron':
-                wavelength = scaling[0]*data[:, 0]  # [micron]
+            if units['wavelength'] == 'um':
+                wavelength = scaling[0]*data[:, 0]  # [um]
 
-            if units['flux'] == 'w m-2 micron-1':
-                flux = scaling[1]*data[:, 1]  # [W m-2 micron-1]
+            if units['flux'] == 'w m-2 um-1':
+                flux = scaling[1]*data[:, 1]  # [W m-2 um-1]
             elif units['flux'] == 'w m-2':
-                if units['wavelength'] == 'micron':
-                    flux = scaling[1]*data[:, 1]/wavelength  # [W m-2 micron-1]
+                if units['wavelength'] == 'um':
+                    flux = scaling[1]*data[:, 1]/wavelength  # [W m-2 um-1]
 
         if data.shape[1] == 3:
             if units is None:
-                error = scaling[1]*data[:, 2]  # [W m-2 micron-1]
+                error = scaling[1]*data[:, 2]  # [W m-2 um-1]
 
             else:
-                if units['flux'] == 'w m-2 micron-1':
-                    error = scaling[1]*data[:, 2]  # [W m-2 micron-1]
+                if units['flux'] == 'w m-2 um-1':
+                    error = scaling[1]*data[:, 2]  # [W m-2 um-1]
                 elif units['flux'] == 'w m-2':
-                    if units['wavelength'] == 'micron':
-                        error = scaling[1]*data[:, 2]/wavelength  # [W m-2 micron-1]
+                    if units['wavelength'] == 'um':
+                        error = scaling[1]*data[:, 2]/wavelength  # [W m-2 um-1]
 
         else:
             error = np.repeat(0., wavelength.size)
@@ -921,7 +921,7 @@ class Database:
         random : int
             Number of random samples.
         wavel_range : tuple(float, float) or str
-            Wavelength range (micron) or filter name. Full spectrum if set to None.
+            Wavelength range (um) or filter name. Full spectrum if set to None.
         spec_res : float
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
             wavelength points are used if set to None. Note that this requires equally-spaced

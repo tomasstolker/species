@@ -29,7 +29,7 @@ def add_ames_dusty(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float)
-        Wavelength range (micron).
+        Wavelength range (um).
     teff_range : tuple(float, float), None
         Effective temperature range (K).
     spec_res : float
@@ -120,10 +120,10 @@ def add_ames_dusty(input_path,
                                 data_flux.append(float(line[25:35]))
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_wavel = np.asarray(data_wavel)*1e-4  # [Angstrom] -> [micron]
+                data_wavel = np.asarray(data_wavel)*1e-4  # [Angstrom] -> [um]
                 data_flux = 10.**(np.asarray(data_flux)-8.)  # [erg s-1 cm-2 Angstrom-1]
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
                 data = np.stack((data_wavel, data_flux), axis=1)
@@ -143,9 +143,9 @@ def add_ames_dusty(input_path,
                     flux.append(np.zeros(wavelength.shape[0]))
 
                     warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
-                                  f' micron) should fall within the range of the original '
+                                  f' um) should fall within the range of the original '
                                   f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
-                                  f'micron). Storing zeros for the flux of Teff={teff_val} '
+                                  f'um). Storing zeros for the flux of Teff={teff_val} '
                                   f'and log(g)={logg_val}, which will be corrected by the '
                                   f'\'write_data\' function afterwards.')
 

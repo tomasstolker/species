@@ -29,7 +29,7 @@ def add_btnextgen(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float)
-        Wavelength range (micron).
+        Wavelength range (um).
     teff_range : tuple(float, float), None
         Effective temperature range (K).
     spec_res : float
@@ -113,13 +113,13 @@ def add_btnextgen(input_path,
                 dataf = dataf.apply(pd.to_numeric)
                 data = dataf.values
 
-                # [Angstrom] -> [micron]
+                # [Angstrom] -> [um]
                 data_wavel = data[:, 0]*1e-4
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
                 data_flux = 10.**(data[:, 1]-8.)  # [erg s-1 cm-2 Angstrom-1]
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
                 data = np.stack([data_wavel, data_flux], axis=1)

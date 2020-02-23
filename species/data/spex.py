@@ -84,7 +84,7 @@ def add_spex(input_path, database):
     transmission.get_filter()
 
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
-    h_zp = 1.133e-9  # [W m-2 micron-1]
+    h_zp = 1.133e-9  # [W m-2 um-1]
 
     for votable in os.listdir(data_path):
         if votable.endswith('.xml'):
@@ -95,7 +95,7 @@ def add_spex(input_path, database):
             wavelength = table.array['wavelength']  # [Angstrom]
             flux = table.array['flux']  # Normalized units
 
-            wavelength = np.array(wavelength*1e-4)  # [micron]
+            wavelength = np.array(wavelength*1e-4)  # [um]
             flux = np.array(flux)
             error = np.full(flux.shape[0], np.nan)
 
@@ -146,7 +146,7 @@ def add_spex(input_path, database):
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None, zp_flux=h_zp)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
-            flux *= h_flux/phot[0]  # [W m-2 micron-1]
+            flux *= h_flux/phot[0]  # [W m-2 um-1]
 
             spdata = np.vstack([wavelength, flux, error])
 

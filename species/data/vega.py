@@ -49,10 +49,10 @@ def add_vega(input_path, database):
     error_sys = data['SYSERROR']  # [erg s-1 cm-2 A-1]
     hdu.close()
 
-    wavelength *= 1e-4  # [Angstrom] -> [micron]
-    flux *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
-    error_stat *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
-    error_sys *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 micron-1]
+    wavelength *= 1e-4  # [Angstrom] -> [um]
+    flux *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 um-1]
+    error_stat *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 um-1]
+    error_sys *= 1.e-3*1e4  # [erg s-1 cm-2 A-1] -> [W m-2 um-1]
 
     print('Adding Vega spectrum...', end='', flush=True)
 

@@ -75,7 +75,7 @@ def add_luminosity(modelbox):
 
     print(' [DONE]')
 
-    print(f'Wavelength range [micron]: {fullspec.wavelength[0]:.2e} - '
+    print(f'Wavelength range [um]: {fullspec.wavelength[0]:.2e} - '
           f'{fullspec.wavelength[-1]:.2e}')
 
     print(f'Luminosity [Lsun]: {luminosity/constants.L_SUN:.2e}')
@@ -97,9 +97,9 @@ def smooth_spectrum(wavelength,
     Parameters
     ----------
     wavelength : numpy.ndarray
-        Wavelength points (micron). Should be uniformly spaced.
+        Wavelength points (um). Should be uniformly spaced.
     flux : numpy.ndarray
-        Flux density (W m-2 micron-1).
+        Flux density (W m-2 um-1).
     spec_res : float
         Spectral resolution
     size : int
@@ -108,7 +108,7 @@ def smooth_spectrum(wavelength,
     Returns
     -------
     numpy.ndarray
-        Smoothed spectrum (W m-2 micron-1) at the same wavelength points as the input spectrum.
+        Smoothed spectrum (W m-2 um-1) at the same wavelength points as the input spectrum.
     """
 
     def _gaussian(size, sigma):
@@ -121,12 +121,12 @@ def smooth_spectrum(wavelength,
 
     test_diff = np.diff(wavelength)
 
-    spacing = np.mean(np.diff(wavelength))  # [micron]
-    flux_smooth = np.zeros(flux.shape)  # [W m-2 micron-1]
+    spacing = np.mean(np.diff(wavelength))  # [um]
+    flux_smooth = np.zeros(flux.shape)  # [W m-2 um-1]
 
     for i, item in enumerate(wavelength):
-        fwhm = item/spec_res  # [micron]
-        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # [micron]
+        fwhm = item/spec_res  # [um]
+        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # [um]
 
         size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
         if size % 2 == 0:

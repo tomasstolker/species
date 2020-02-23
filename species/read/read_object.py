@@ -58,8 +58,8 @@ class ReadObject:
         Returns
         -------
         numpy.ndarray
-            Apparent magnitude (mag), magnitude error (error), flux (W m-2 micron-1),
-            flux error (W m-2 micron-1).
+            Apparent magnitude (mag), magnitude error (error), flux (W m-2 um-1),
+            flux error (W m-2 um-1).
         """
 
         with h5py.File(self.database, 'r') as h5_file:

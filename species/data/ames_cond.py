@@ -29,7 +29,7 @@ def add_ames_cond(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float)
-        Wavelength range (micron).
+        Wavelength range (um).
     teff_range : tuple(float, float), None
         Effective temperature range (K).
     spec_res : float
@@ -150,10 +150,10 @@ def add_ames_cond(input_path,
                         # See https://phoenix.ens-lyon.fr/Grids/FORMAT
                         data_flux = np.asarray(data_flux)*10.**-8.  # [erg s-1 cm-2 Angstrom-1]
 
-                # [Angstrom] -> [micron]
+                # [Angstrom] -> [um]
                 data_wavel = np.asarray(data_wavel)*1e-4
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
                 data_flux = data_flux*1e-7*1e4*1e4
 
                 data = np.stack((data_wavel, data_flux), axis=1)

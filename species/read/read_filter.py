@@ -94,9 +94,9 @@ class ReadFilter:
         Returns
         -------
         float
-            Minimum wavelength (micron).
+            Minimum wavelength (um).
         float
-            Maximum wavelength (micron).
+            Maximum wavelength (um).
         """
 
         data = self.get_filter()
@@ -110,7 +110,7 @@ class ReadFilter:
         Returns
         -------
         float
-            Mean wavelength (micron).
+            Mean wavelength (um).
         """
 
         data = self.get_filter()
@@ -124,7 +124,7 @@ class ReadFilter:
         Returns
         -------
         float
-            Filter full width at half maximum (micron).
+            Filter full width at half maximum (um).
         """
 
         data = self.get_filter()

@@ -29,7 +29,7 @@ def add_petitcode_cool_clear(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (micron). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
         Effective temperature range (K). All temperatures are selected if set to None.
     spec_res : float, None
@@ -101,20 +101,20 @@ def add_petitcode_cool_clear(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [micron]
+                    # [cm] -> [um]
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [micron]
+                # [cm] -> [um]
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -157,7 +157,7 @@ def add_petitcode_cool_cloudy(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (micron). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
         Effective temperature range (K). All temperatures are selected if set to None.
     spec_res : float, None
@@ -232,20 +232,20 @@ def add_petitcode_cool_cloudy(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [micron]
+                    # [cm] -> [um]
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [micron]
+                # [cm] -> [um]
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -291,7 +291,7 @@ def add_petitcode_hot_clear(input_path,
     data_folder : str
         Path with input data.
     wavel_range : tuple(float, float), None
-        Wavelength range (micron). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
         Effective temperature range (K). All temperatures are selected if set to None.
     spec_res : float, None
@@ -346,20 +346,20 @@ def add_petitcode_hot_clear(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [micron]
+                    # [cm] -> [um]
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [micron]
+                # [cm] -> [um]
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -405,7 +405,7 @@ def add_petitcode_hot_cloudy(input_path,
     data_folder : str
         Path with input data.
     wavel_range : tuple(float, float), None
-        Wavelength range (micron). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
         Effective temperature range (K). All temperatures are selected if set to None.
     spec_res : float, None
@@ -463,20 +463,20 @@ def add_petitcode_hot_cloudy(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [micron]
+                    # [cm] -> [um]
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [micron]
+                # [cm] -> [um]
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 micron-1]
+                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:

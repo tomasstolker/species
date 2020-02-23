@@ -35,7 +35,7 @@ class ReadModel:
         model : str
             Name of the atmospheric model.
         wavel_range : tuple(float, float), None
-            Wavelength range (micron). Full spectrum is selected if set to None. Not used if
+            Wavelength range (um). Full spectrum is selected if set to None. Not used if
             ``filter_name`` is not None.
         filter_name : str, None
             Filter ID that is used for the wavelength range. The ``wavel_range`` is used if set
@@ -107,7 +107,7 @@ class ReadModel:
         Returns
         -------
         numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         numpy.ndarray
             Array with the size of the original wavelength grid. The booleans indicate if a
             wavelength point was used.
@@ -305,7 +305,7 @@ class ReadModel:
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
             wavelength points are used if both ``spec_res`` and ``wavel_resample`` are set to None.
         wavel_resample : numpy.ndarray
-            Wavelength points (micron) to which the spectrum is resampled. Only used if
+            Wavelength points (um) to which the spectrum is resampled. Only used if
             ``spec_res`` is set to None.
         magnitude : bool
             Normalize the spectrum with a flux calibrated spectrum of Vega and return the magnitude
@@ -586,9 +586,9 @@ class ReadModel:
         Returns
         -------
         float
-            Average flux (W m-2 micron-1).
+            Average flux (W m-2 um-1).
         float, None
-            Uncertainty (W m-2 micron-1), which is set to None.
+            Uncertainty (W m-2 um-1), which is set to None.
         """
 
         if self.spectrum_interp is None:
@@ -678,7 +678,7 @@ class ReadModel:
         Returns
         -------
         numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         """
 
         with self.open_database() as h5_file:

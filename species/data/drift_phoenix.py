@@ -27,7 +27,7 @@ def add_drift_phoenix(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (micron). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
         Effective temperature range (K). All temperatures are selected if set to None.
     spec_res : float, None
@@ -97,20 +97,20 @@ def add_drift_phoenix(input_path,
 
                 if wavel_range is None:
                     if wavelength is None:
-                        # [Angstrom] -> [micron]
+                        # [Angstrom] -> [um]
                         wavelength = data[:, 0]*1e-4
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                    # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                    # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
                     flux.append(data[:, 1]*1e-7*1e4*1e4)
 
                 else:
-                        # [Angstrom] -> [micron]
+                        # [Angstrom] -> [um]
                     data_wavel = data[:, 0]*1e-4
 
-                    # [erg s-1 cm-2 Angstrom-1] -> [W m-2 micron-1]
+                    # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
                     data_flux = data[:, 1]*1e-7*1e4*1e4
 
                     try:

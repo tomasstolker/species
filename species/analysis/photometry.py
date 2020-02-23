@@ -55,7 +55,7 @@ class SyntheticPhotometry:
         Returns
         -------
         float
-            Zero-point flux (W m-2 micron-1).
+            Zero-point flux (W m-2 um-1).
         """
 
         if self.wavel_range is None:
@@ -101,11 +101,11 @@ class SyntheticPhotometry:
         Parameters
         ----------
         wavelength : numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         flux : numpy.ndarray
-            Flux (W m-2 micron-1).
+            Flux (W m-2 um-1).
         error : numpy.ndarray
-            Uncertainty (W m-2 micron-1). Not used if set to None.
+            Uncertainty (W m-2 um-1). Not used if set to None.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
@@ -115,9 +115,9 @@ class SyntheticPhotometry:
         Returns
         -------
         float
-            Average flux (W m-2 micron-1).
+            Average flux (W m-2 um-1).
         float, None
-            Uncertainty (W m-2 micron-1).
+            Uncertainty (W m-2 um-1).
         """
 
         if self.filter_interp is None:
@@ -236,11 +236,11 @@ class SyntheticPhotometry:
         Parameters
         ----------
         wavelength : numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         flux : numpy.ndarray
-            Flux (W m-2 micron-1).
+            Flux (W m-2 um-1).
         error : numpy.ndarray, list(numpy.ndarray), None
-            Uncertainty (W m-2 micron-1).
+            Uncertainty (W m-2 um-1).
         distance : tuple(float, float), None
             Distance and uncertainty (pc). No absolute magnitude is calculated if set to None.
             No error on the absolute magnitude is calculated if the uncertainty is set to None.
@@ -317,14 +317,14 @@ class SyntheticPhotometry:
         error : float, None
             Error (mag). Not used if set to None.
         zp_flux : float
-            Zero-point flux (W m-2 micron-1). The value is calculated if set to None.
+            Zero-point flux (W m-2 um-1). The value is calculated if set to None.
 
         Returns
         -------
         float
-            Flux (W m-2 micron-1).
+            Flux (W m-2 um-1).
         float
-            Error (W m-2 micron-1).
+            Error (W m-2 um-1).
         """
 
         if zp_flux is None:
@@ -352,9 +352,9 @@ class SyntheticPhotometry:
         Parameters
         ----------
         flux : float, numpy.ndarray
-            Flux (W m-2 micron-1).
+            Flux (W m-2 um-1).
         error : float, numpy.ndarray, None
-            Uncertainty (W m-2 micron-1). Not used if set to None.
+            Uncertainty (W m-2 um-1). Not used if set to None.
         distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
             Distance and uncertainty (pc). The returned absolute magnitude is set to None in case
             ``distance`` is set to None. The error is not propagated into the error on the absolute

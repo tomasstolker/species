@@ -65,7 +65,7 @@ class ReadCalibration:
         Parameters
         ----------
         wavel_points : numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         model_param : dict, None
             Model parameters. Should contain the 'scaling' value. Not used if set to None.
         apply_mask : bool
@@ -122,7 +122,7 @@ class ReadCalibration:
         spec_res : float, None
             Spectral resolution. Original wavelength points are used if set to None.
         extrapolate : bool
-            Extrapolate to 6 micron by fitting a power law function.
+            Extrapolate to 6 um by fitting a power law function.
         min_wavelength : float, None
             Minimum wavelength used for fitting the power law function. All data is used if set
             to None.
@@ -250,7 +250,7 @@ class ReadCalibration:
         Returns
         -------
         float
-            Average flux density (W m-2 micron-1).
+            Average flux density (W m-2 um-1).
         """
 
         specbox = self.get_spectrum(model_param=model_param)

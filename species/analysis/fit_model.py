@@ -86,11 +86,11 @@ def lnlike(param,
         Parameter names.
     objphot : list(tuple(float, float), )
         List with the fluxes and uncertainties of the object.
-    distance : float
-        Distance (pc).
+    distance : tuple(float, float)
+        Distance and uncertainty (pc).
     spectrum : dict
-        Dictionary with the spectrum stored as wavelength (micron), flux (W m-2 micron-1),
-        and error (W m-2 micron-1), and optionally the covariance matrix and the inverse of
+        Dictionary with the spectrum stored as wavelength (um), flux (W m-2 um-1),
+        and error (W m-2 um-1), and optionally the covariance matrix and the inverse of
         the covariance matrix.
     modelphot : list(species.read.read_model.ReadModel, )
         List with the interpolated synthetic photometry.
@@ -114,7 +114,7 @@ def lnlike(param,
         else:
             paramdict[item] = param[i]
 
-    scaling = (radius*constants.R_JUP)**2 / (distance*constants.PARSEC)**2
+    scaling = (radius*constants.R_JUP)**2 / (distance[0]*constants.PARSEC)**2
 
     chisq = 0.
 
@@ -165,14 +165,14 @@ def lnprob(param,
         Parameter names.
     objphot : list(tuple(float, float), )
         List with the fluxes and uncertainties of the object.
-    distance : float
-        Distance (pc).
+    distance : tuple(float, float)
+        Distance and uncertainty (pc).
     prior : tuple(str, float, float)
         Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
         ('mass', 13., 3.) for an expected mass of 13 Mjup with an uncertainty of 3 Mjup. Not
         used if set to None.
     spectrum : dict
-        Wavelength (micron), apparent flux (W m-2 micron-1), and flux error (W m-2 micron-1).
+        Wavelength (um), apparent flux (W m-2 um-1), and flux error (W m-2 um-1).
     modelphot : list(species.read.read_model.ReadModel, )
         List with the interpolated synthetic fluxes.
     modelspec : list(species.read.read_model.ReadModel, )
@@ -396,7 +396,7 @@ class FitModel:
                                             args=([self.bounds,
                                                    self.modelpar,
                                                    self.objphot,
-                                                   self.distance[0],
+                                                   self.distance,
                                                    prior,
                                                    self.spectrum,
                                                    self.modelphot,

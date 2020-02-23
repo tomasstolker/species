@@ -114,10 +114,10 @@ def add_leggett(input_path,
         mag[3] = float(item[115:121])  # MKO K
         mag[4] = float(item[122:128])  # MKO L'
         mag[5] = float(item[129:135])  # MKO M'
-        mag[6] = float(item[136:142])  # Spitzer/IRAC 3.6 micron
-        mag[7] = float(item[143:149])  # Spitzer/IRAC 4.5 micron
-        mag[8] = float(item[150:156])  # Spitzer/IRAC 5.8 micron
-        mag[9] = float(item[157:163])  # Spitzer/IRAC 8.0 micron
+        mag[6] = float(item[136:142])  # Spitzer/IRAC 3.6 um
+        mag[7] = float(item[143:149])  # Spitzer/IRAC 4.5 um
+        mag[8] = float(item[150:156])  # Spitzer/IRAC 5.8 um
+        mag[9] = float(item[157:163])  # Spitzer/IRAC 8.0 um
         mag[10] = float(item[164:170])  # WISE W1
         mag[11] = float(item[171:176])  # WISE W2
         mag[12] = float(item[177:183])  # WISE W3

@@ -113,6 +113,7 @@ def plot_posterior(tag,
                    offset=None,
                    title_fmt='.2f',
                    limits=None,
+                   max_posterior=False,
                    output='posterior.pdf'):
     """
     Function to plot the posterior distribution.
@@ -131,6 +132,8 @@ def plot_posterior(tag,
         Format of the median and error values.
     limits : tuple(tuple(float, float), ), None
         Axis limits of all parameters. Automatically set if set to None.
+    max_posterior : bool
+        Plot the position of the sample with the maximum posterior probability.
     output : str
         Output filename.
 
@@ -197,11 +200,13 @@ def plot_posterior(tag,
                 if limits is not None:
                     ax.set_xlim(limits[j])
 
-                ax.axvline(par_val[j], color='tomato')
+                if max_posterior:
+                    ax.axvline(par_val[j], color='tomato')
 
                 if i > j:
-                    ax.axhline(par_val[i], color='tomato')
-                    ax.plot(par_val[j], par_val[i], 's', color='tomato')
+                    if max_posterior:
+                        ax.axhline(par_val[i], color='tomato')
+                        ax.plot(par_val[j], par_val[i], 's', color='tomato')
 
                     if limits is not None:
                         ax.set_ylim(limits[i])

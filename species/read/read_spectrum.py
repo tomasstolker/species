@@ -95,9 +95,9 @@ class ReadSpectrum:
         for item in h5_file[f'spectra/{self.spec_library}']:
             data = h5_file[f'spectra/{self.spec_library}/{item}']
 
-            wavelength = data[0, :]  # [micron]
-            flux = data[1, :]  # [W m-2 micron-1]
-            error = data[2, :]  # [W m-2 micron-1]
+            wavelength = data[0, :]  # [um]
+            flux = data[1, :]  # [W m-2 um-1]
+            error = data[2, :]  # [W m-2 um-1]
 
             if exclude_nan:
                 indices = np.isnan(flux)

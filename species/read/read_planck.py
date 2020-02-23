@@ -25,7 +25,7 @@ class ReadPlanck:
         Parameters
         ----------
         wavel_range : tuple(float, float), None
-            Wavelength range (micron). A wavelength range of 0.1-1000 micron is used if set to
+            Wavelength range (um). A wavelength range of 0.1-1000 um is used if set to
             None. Not used if ``filter_name`` is not None.
         filter_name : str, None
             Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
@@ -68,7 +68,7 @@ class ReadPlanck:
         Parameters
         ----------
         wavel_points : numpy.ndarray
-            Wavelength points (micron).
+            Wavelength points (um).
         temperature : float
             Temperature (K).
         scaling : float
@@ -77,7 +77,7 @@ class ReadPlanck:
         Returns
         -------
         numpy.ndarray
-            Flux density (W m-2 micron-1).
+            Flux density (W m-2 um-1).
         """
 
         planck_1 = 2.*constants.PLANCK*constants.LIGHT**2/(1e-6*wavel_points)**5
@@ -85,7 +85,7 @@ class ReadPlanck:
         planck_2 = np.exp(constants.PLANCK*constants.LIGHT /
                           (1e-6*wavel_points*constants.BOLTZMANN*temperature)) - 1.
 
-        return 1e-6 * math.pi * scaling * planck_1/planck_2  # [W m-2 micron-1]
+        return 1e-6 * math.pi * scaling * planck_1/planck_2  # [W m-2 um-1]
 
     @staticmethod
     def update_parameters(model_param):
@@ -146,7 +146,7 @@ class ReadPlanck:
         while wavel_points[-1] <= self.wavel_range[1]:
             wavel_points.append(wavel_points[-1] + wavel_points[-1]/spec_res)
 
-        wavel_points = np.asarray(wavel_points)  # [micron]
+        wavel_points = np.asarray(wavel_points)  # [um]
 
         n_planck = (len(model_param)-1) // 2
 
@@ -156,7 +156,7 @@ class ReadPlanck:
 
             flux = self.planck(np.copy(wavel_points),
                                model_param['teff'],
-                               scaling)  # [W m-2 micron-1]
+                               scaling)  # [W m-2 um-1]
 
         else:
             flux = np.zeros(wavel_points.shape)
@@ -167,7 +167,7 @@ class ReadPlanck:
 
                 flux += self.planck(np.copy(wavel_points),
                                     model_param[f'teff_{i}'],
-                                    scaling)  # [W m-2 micron-1]
+                                    scaling)  # [W m-2 um-1]
 
         return box.create_box(boxtype='model',
                               model='planck',
@@ -192,7 +192,7 @@ class ReadPlanck:
         Returns
         -------
         float
-            Average flux density (W m-2 micron-1).
+            Average flux density (W m-2 um-1).
         """
 
         if 'teff' in model_param and isinstance(model_param['teff'], list):

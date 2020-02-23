@@ -73,8 +73,8 @@ def lnlike(param,
     distance : float
         Distance (pc).
     spectrum : numpy.ndarray, None
-        Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
-        (W m-2 micron-1). Not used if set to None.
+        Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
+        (W m-2 um-1). Not used if set to None.
 
     Returns
     -------
@@ -147,8 +147,8 @@ def lnprob(param,
     distance : float
         Distance (pc).
     spectrum : numpy.ndarray, None
-        Spectrum array with the wavelength (micron), flux (W m-2 micron-1), and error
-        (W m-2 micron-1). Not used if set to None.
+        Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
+        (W m-2 um-1). Not used if set to None.
 
     Returns
     -------

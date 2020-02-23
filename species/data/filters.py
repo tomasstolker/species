@@ -18,7 +18,7 @@ def download_filter(filter_id):
     Returns
     -------
     numpy.ndarray
-        Wavelength (micron).
+        Wavelength (um).
     numpy.ndarray
         Transmission.
     """
@@ -45,7 +45,7 @@ def download_filter(filter_id):
                              f'Service.')
 
         wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
-        wavelength *= 1e-4  # [micron]
+        wavelength *= 1e-4  # [um]
 
         os.remove('filter.dat')
 

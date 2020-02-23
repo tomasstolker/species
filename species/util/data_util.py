@@ -208,8 +208,8 @@ def write_data(model,
     database: h5py._hl.files.File
         Database.
     data_sorted : list(numpy.ndarray, )
-        Sorted model data with the parameter values, wavelength points (micron), and flux
-        densities (W m-2 micron-1).
+        Sorted model data with the parameter values, wavelength points (um), and flux
+        densities (W m-2 um-1).
 
     Returns
     -------
@@ -340,7 +340,7 @@ def correlation_to_covariance(cor_matrix,
     cor_matrix : numpy.ndarray
         Correlation matrix of the spectrum.
     spec_sigma : numpy.ndarray
-        Uncertainties (W m-2 micron-1).
+        Uncertainties (W m-2 um-1).
 
     Returns
     -------
