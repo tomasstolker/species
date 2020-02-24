@@ -109,8 +109,10 @@ def lnlike(param,
     for i, item in enumerate(modelpar):
         if item == 'radius':
             radius = param[i]
-        elif item in spectrum:
+
+        elif spectrum is not None and item in spectrum:
             spec_scaling[item] = param[i]
+
         else:
             paramdict[item] = param[i]
 
