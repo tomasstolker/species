@@ -174,6 +174,12 @@ def model_name(key):
     elif key == 'bt-nextgen':
         name = 'BT-NextGen'
 
+    elif key == 'planck':
+        name = 'Planck radiation'
+
+    elif key == 'zhu2015':
+        name = 'Zhu (2015)'
+
     return name
 
 

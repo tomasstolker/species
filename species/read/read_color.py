@@ -147,8 +147,8 @@ class ReadColorMagnitude:
                                           object_type=object_type,
                                           filters_color=self.filters_color,
                                           filter_mag=self.filter_mag,
-                                          color=phot_box_0.app_mag-phot_box_1.app_mag,
-                                          magnitude=phot_box_2.abs_mag,
+                                          color=phot_box_0.app_mag[:, 0]-phot_box_1.app_mag[:, 0],
+                                          magnitude=phot_box_2.abs_mag[:, 0],
                                           sptype=phot_box_0.sptype)
 
         h5_file.close()

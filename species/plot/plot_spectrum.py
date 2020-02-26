@@ -18,7 +18,7 @@ from species.util import plot_util
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
-plt.rc('axes', edgecolor='black', linewidth=2)
+plt.rc('axes', edgecolor='black', linewidth=2.2)
 plt.rcParams['axes.axisbelow'] = False
 
 
@@ -371,24 +371,30 @@ def plot_spectrum(boxes,
                     wavelength = transmission.mean_wavelength()
                     fwhm = transmission.filter_fwhm()
 
-                    color_obj_phot = colors[j][0]
+                    if colors is None:
+                        ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
+                                     yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
+                                     markerfacecolor=color_obj_phot)
 
-                    ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                 yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
-                                 color=color_obj_phot, markerfacecolor=color_obj_phot)
+                    else:
+                        color_obj_phot = colors[j][0]
+
+                        ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
+                                     yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
+                                     color=color_obj_phot, markerfacecolor=color_obj_phot)
 
             if boxitem.spectrum is not None:
                 for key, value in boxitem.spectrum.items():
                     masked = np.ma.array(boxitem.spectrum[key][0],
                                          mask=np.isnan(boxitem.spectrum[key][0]))
 
-                    color_obj_spec = colors[j][1]
-
                     if colors is None:
                         ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
                                      ms=2, marker='s', zorder=2.5, ls='none')
 
                     else:
+                        color_obj_spec = colors[j][1]
+
                         ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
                                      marker='o', ms=2, zorder=2.5, color=color_obj_spec,
                                      markerfacecolor=color_obj_spec, ls='none')
@@ -421,8 +427,13 @@ def plot_spectrum(boxes,
 
         if residuals.spectrum is not None:
             for key, value in residuals.spectrum.items():
-                ax3.plot(value[:, 0], value[:, 1], marker='o',
-                         ms=2, linestyle='none', color=color_obj_spec, zorder=1)
+                if colors is None:
+                    ax3.plot(value[:, 0], value[:, 1], marker='o', ms=2,
+                             linestyle='none', zorder=1)
+
+                else:
+                    ax3.plot(value[:, 0], value[:, 1], marker='o',
+                             ms=2, linestyle='none', color=color_obj_spec, zorder=1)
 
                 max_tmp = np.nanmax(np.abs(value[:, 1]))
 
@@ -455,7 +466,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles and legend:
-        ax1.legend(loc=legend, fontsize=9, frameon=False)
+        ax1.legend(loc=legend, fontsize=12, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

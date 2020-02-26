@@ -204,3 +204,87 @@ class ReadPlanck:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+
+    def get_magnitude(self,
+                      model_param,
+                      synphot=None):
+        """
+        Function for calculating the magnitude for the ``filter_name``.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
+        synphot : species.analysis.photometry.SyntheticPhotometry, None
+            Synthetic photometry object. The object is created if set to None.
+
+        Returns
+        -------
+        float
+            Apparent magnitude (mag).
+        float
+            Absolute magnitude (mag)
+        """
+
+        if 'teff' in model_param and isinstance(model_param['teff'], list):
+            model_param = self.update_parameters(model_param)
+
+        spectrum = self.get_spectrum(model_param, 100.)
+
+        if synphot is None:
+            synphot = photometry.SyntheticPhotometry(self.filter_name)
+
+        return synphot.spectrum_to_magnitude(spectrum.wavelength,
+                                             spectrum.flux,
+                                             distance=(model_param['distance'], None))
+
+    def get_color_magnitude(self,
+                            temperatures,
+                            radius,
+                            filters_color,
+                            filter_mag):
+        """
+        Function for calculating the colors and magnitudes in the range of 100-10000 K.
+
+        Parameters
+        ----------
+        temperatures : numpy.ndarray
+            Temperatures (K) for which the colors and magnitude are calculated.
+        radius : float
+            Radius t
+        filters_color : tuple(str, str)
+            Filter names for the color.
+        filter_mag : str
+            Filter name for the absolute magnitudes.
+
+        Returns
+        -------
+        species.core.box.ColorMagBox
+            Box with the colors and magnitudes.
+        """
+
+        list_color = []
+        list_mag = []
+
+        for item in temperatures:
+            model_param = {'teff': item, 'radius': radius, 'distance': 10.}
+
+            read_planck_0 = ReadPlanck(filter_name=filters_color[0])
+            read_planck_1 = ReadPlanck(filter_name=filters_color[1])
+            read_planck_2 = ReadPlanck(filter_name=filter_mag)
+
+            app_mag_0, abs_mag_0 = read_planck_0.get_magnitude(model_param)
+            app_mag_1, abs_mag_1 = read_planck_1.get_magnitude(model_param)
+            app_mag_2, abs_mag_2 = read_planck_2.get_magnitude(model_param)
+
+            list_color.append(app_mag_0[0]-app_mag_1[0])
+            list_mag.append(abs_mag_2[0])
+
+        return box.create_box(boxtype='colormag',
+                              library='planck',
+                              object_type=None,
+                              filters_color=filters_color,
+                              filter_mag=filter_mag,
+                              color=list_color,
+                              magnitude=list_mag,
+                              sptype=temperatures)

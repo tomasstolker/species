@@ -134,15 +134,32 @@ class ReadSpectrum:
 
                 if 'name' in attrs:
                     list_name.append(data.attrs['name'].decode('utf-8'))
+                else:
+                    list_name.append('')
 
                 if 'simbad' in attrs:
                     list_simbad.append(data.attrs['simbad'].decode('utf-8'))
+                else:
+                    list_simbad.append('')
 
                 if 'sptype' in attrs:
                     list_sptype.append(data.attrs['sptype'].decode('utf-8'))
+                else:
+                    list_sptype.append('None')
 
                 if 'distance' in attrs:
                     list_distance.append((data.attrs['distance'], data.attrs['distance_error']))
+                else:
+                    list_distance.append(np.nan)
+
+            else:
+                list_wavelength.append(np.array([]))
+                list_flux.append(np.array([]))
+                list_error.append(np.array([]))
+                list_name.append('')
+                list_simbad.append('')
+                list_sptype.append('None')
+                list_distance.append(np.nan)
 
         specbox = box.SpectrumBox()
 
@@ -150,18 +167,10 @@ class ReadSpectrum:
         specbox.wavelength = np.asarray(list_wavelength)
         specbox.flux = np.asarray(list_flux)
         specbox.error = np.asarray(list_error)
-
-        if list_name:
-            specbox.name = np.asarray(list_name)
-
-        if list_simbad:
-            specbox.simbad = np.asarray(list_simbad)
-
-        if list_sptype:
-            specbox.sptype = np.asarray(list_sptype)
-
-        if list_distance:
-            specbox.distance = np.asarray(list_distance)
+        specbox.name = np.asarray(list_name)
+        specbox.simbad = np.asarray(list_simbad)
+        specbox.sptype = np.asarray(list_sptype)
+        specbox.distance = np.asarray(list_distance)
 
         if sptypes is not None:
             indices = None
@@ -268,10 +277,14 @@ class ReadSpectrum:
         abs_mag = []
 
         for i in range(n_spectra):
-            app_tmp, abs_tmp = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength[i],
-                                                             flux=specbox.flux[i],
-                                                             error=specbox.error[i],
-                                                             distance=specbox.distance[i])
+            try:
+                app_tmp, abs_tmp = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength[i],
+                                                                 flux=specbox.flux[i],
+                                                                 error=specbox.error[i],
+                                                                 distance=specbox.distance[i])
+            except ValueError:
+                app_tmp = (np.nan, np.nan)
+                abs_tmp = (np.nan, np.nan)
 
             app_mag.append(app_tmp)
             abs_mag.append(abs_tmp)

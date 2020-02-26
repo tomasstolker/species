@@ -20,12 +20,13 @@ from species.util import plot_util
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
-plt.rc('axes', edgecolor='black', linewidth=2.5)
+plt.rc('axes', edgecolor='black', linewidth=2.2)
 
 
 def plot_color_magnitude(boxes,
                          objects=None,
                          mass_labels=None,
+                         teff_labels=None,
                          companion_labels=False,
                          field_range=None,
                          label_x='Color [mag]',
@@ -58,6 +59,11 @@ def plot_color_magnitude(boxes,
         to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
         the planet mass and position of the label ('left' or 'right), for example
         ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
+    teff_labels : list(float, ), list(tuple(float, str), ), None
+        Plot labels with temperatures (K) next to the synthetic Planck photometry. Alternatively,
+        a list of tuples can be provided with the planet mass and position of the label ('left' or
+        'right), for example ``[(1000., 'left'), (1200., 'right')]``. No labels are shown if set
+        to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     field_range : tuple(str, str), None
@@ -92,6 +98,7 @@ def plot_color_magnitude(boxes,
     model_linestyle = ('-', '--', ':', '-.')
 
     isochrones = []
+    planck = []
     models = []
     empirical = []
 
@@ -102,6 +109,10 @@ def plot_color_magnitude(boxes,
         elif isinstance(item, box.ColorMagBox):
             if item.object_type == 'model':
                 models.append(item)
+
+            elif item.library == 'planck':
+                planck.append(item)
+
             else:
                 empirical.append(item)
 
@@ -152,21 +163,6 @@ def plot_color_magnitude(boxes,
         ax1.set_ylim(ylim[0], ylim[1])
 
     if models is not None:
-        cmap_teff = plt.cm.afmhot
-
-        teff_min = np.inf
-        teff_max = -np.inf
-
-        for item in models:
-
-            if np.amin(item.sptype) < teff_min:
-                teff_min = np.amin(item.sptype)
-
-            if np.amax(item.sptype) > teff_max:
-                teff_max = np.amax(item.sptype)
-
-        norm_teff = mpl.colors.Normalize(vmin=teff_min, vmax=teff_max)
-
         count = 0
 
         model_dict = {}
@@ -189,7 +185,7 @@ def plot_color_magnitude(boxes,
                 label = plot_util.model_name(item.library)
 
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=1.2, color=model_color[model_count[0]], label=label, zorder=0)
+                         linewidth=1., color=model_color[model_count[0]], label=label, zorder=0)
 
                 if mass_labels is not None:
                     interp_magnitude = interp1d(item.sptype, item.magnitude)
@@ -235,6 +231,63 @@ def plot_color_magnitude(boxes,
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, color=model_color[model_count[0]], zorder=0)
 
+    if planck is not None:
+        planck_count = 0
+
+        for j, item in enumerate(planck):
+
+            if planck_count == 0:
+                label = plot_util.model_name(item.library)
+
+                ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[planck_count],
+                         linewidth=0.6, color='black', label=label, zorder=0)
+
+                if teff_labels is not None:
+                    interp_magnitude = interp1d(item.sptype, item.magnitude)
+                    interp_color = interp1d(item.sptype, item.color)
+
+                    for i, teff_item in enumerate(teff_labels):
+                        if isinstance(teff_item, tuple):
+                            teff_val = teff_item[0]
+                            teff_pos = teff_item[1]
+
+                        else:
+                            teff_val = teff_item
+                            teff_pos = 'right'
+
+                        if j == 0 or (j > 0 and teff_val < 20.):
+                            pos_color = interp_color(teff_val)
+                            pos_mag = interp_magnitude(teff_val)
+
+                            if teff_pos == 'left':
+                                teff_ha = 'right'
+                                teff_xytext = (pos_color-0.05, pos_mag)
+
+                            else:
+                                teff_ha = 'left'
+                                teff_xytext = (pos_color+0.05, pos_mag)
+
+                            teff_label = f'{int(teff_val)} K'
+
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
+
+                            if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
+                                    ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
+
+                                ax1.scatter(pos_color, pos_mag, c='black', s=15,
+                                            edgecolor='none', zorder=0)
+
+                                ax1.annotate(teff_label, (pos_color, pos_mag),
+                                             color='black', fontsize=9,
+                                             xytext=teff_xytext, zorder=3, ha=teff_ha, va='center')
+
+            else:
+                ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[planck_count],
+                         linewidth=0.6, color='black', zorder=0)
+
+            planck_count += 1
+
     if empirical:
         cmap = plt.cm.viridis
 
@@ -279,7 +332,7 @@ def plot_color_magnitude(boxes,
 
     if isochrones:
         for item in isochrones:
-            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1.2, color='black')
+            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1, color='black')
 
     if objects is not None:
         for i, item in enumerate(objects):
@@ -458,21 +511,6 @@ def plot_color_color(boxes,
         ax1.set_ylim(ylim[0], ylim[1])
 
     if models is not None:
-        cmap_teff = plt.cm.afmhot
-
-        teff_min = np.inf
-        teff_max = -np.inf
-
-        for item in models:
-
-            if np.amin(item.sptype) < teff_min:
-                teff_min = np.amin(item.sptype)
-
-            if np.amax(item.sptype) > teff_max:
-                teff_max = np.amax(item.sptype)
-
-        norm_teff = mpl.colors.Normalize(vmin=teff_min, vmax=teff_max)
-
         count = 0
 
         model_dict = {}
@@ -581,7 +619,7 @@ def plot_color_color(boxes,
 
     if isochrones:
         for item in isochrones:
-            ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1.2, color='black')
+            ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1, color='black')
 
     if objects is not None:
         for i, item in enumerate(objects):

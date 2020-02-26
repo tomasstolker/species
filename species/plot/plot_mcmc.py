@@ -18,7 +18,7 @@ from species.util import plot_util
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
 mpl.rcParams['font.family'] = 'serif'
 
-plt.rc('axes', edgecolor='black', linewidth=2.5)
+plt.rc('axes', edgecolor='black', linewidth=2.2)
 
 
 def plot_walkers(tag,

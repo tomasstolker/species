@@ -185,8 +185,8 @@ def add_petitcode_cool_cloudy(input_path,
 
     print('Unpacking petitCODE cool cloudy model spectra...', end='', flush=True)
 
-    # with zipfile.ZipFile(data_file, 'r') as zip_ref:
-    #     zip_ref.extractall(input_path)
+    with zipfile.ZipFile(data_file, 'r') as zip_ref:
+        zip_ref.extractall(input_path)
 
     print(' [DONE]')
 

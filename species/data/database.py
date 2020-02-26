@@ -515,7 +515,7 @@ class Database:
                                     if data.shape[0] == read_spec[key].shape[0]:
                                         if np.all(np.diag(data) == 1.):
                                             warnings.warn(f'The covariance matrix from {value[1]} '
-                                                          f'contains ones on the diagonal. '
+                                                          f'contains ones along the diagonal. '
                                                           f'Converting this correlation matrix '
                                                           f'into a covariance matrix.')
 
