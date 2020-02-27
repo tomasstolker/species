@@ -129,17 +129,17 @@ def lnlike(param,
         for i, item in enumerate(spectrum.keys()):
             flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
 
-            if spectrum[item][2] is not None:
-                if item in spec_scaling:
-                    spec_diff = spec_scaling[item]*spectrum[item][0][:, 1] - flux
-                else:
-                    spec_diff = spectrum[item][0][:, 1] - flux
+            if item in spec_scaling:
+                flux_obs = spec_scaling[item]*spectrum[item][0][:, 1]
+            else:
+                flux_obs = spectrum[item][0][:, 1]
 
+            if spectrum[item][2] is not None:
+                spec_diff = flux_obs - flux
                 chisq += np.dot(spec_diff, np.dot(spectrum[item][2], spec_diff))
 
             else:
-                chisq += np.nansum((spectrum[item][0][:, 1] - flux)**2 /
-                                   spectrum[item][0][:, 2]**2)
+                chisq += np.nansum((flux_obs-flux)**2 / spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
 

@@ -3,10 +3,15 @@ Module for BT-Settl atmospheric model spectra.
 """
 
 import os
-import lzma
 import tarfile
 import warnings
 import urllib.request
+
+try:
+    import lzma
+except ModuleNotFoundError:
+    warnings.warn('Could not import the lzma module. Attempting to use lzma compression will '
+                  ' result in a RuntimeError.')
 
 import spectres
 import numpy as np
