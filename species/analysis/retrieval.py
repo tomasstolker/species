@@ -143,8 +143,6 @@ class AtmosphericRetrieval:
                                   test_ck_shuffle_comp=True,
                                   do_scat_emis=True)
 
-        print(self.rt_object.__dict__)
-
         # Create the RT arrays of appropriate lengths
 
         self.rt_object.setup_opa_structure(self.pressure[::3])
@@ -164,9 +162,18 @@ class AtmosphericRetrieval:
         import rebin_give_width as rgw
         from petitRADTRANS_ck_test_speed import nat_cst as nc
 
+        count_scale = 0
+        count_error = 0
+
         for item in self.spectrum.keys():
             if item in bounds:
-                self.parameters.append(f'{item}')
+                if bounds[item][0] is not None:
+                    self.parameters.append(f'scale_{item}')
+                    count_scale += 1
+
+                if bounds[item][1] is not None:
+                    self.parameters.append(f'error_{item}')
+                    count_error += 1
 
         def prior(cube, ndim, nparams):
             # tint from 500 to 3000 K
@@ -270,13 +277,17 @@ class AtmosphericRetrieval:
 
             for i, item in enumerate(self.spectrum.keys()):
                 if item in bounds:
-                    cube[16+i] = bounds[f'{item}'][0] + (bounds[f'{item}'][1]-bounds[f'{item}'][0])*cube[16+i]
+                    if bounds[item][0] is not None:
+                        cube[16+i] = bounds[item][0][0] + \
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[16+i]
+
+                    if bounds[item][1] is not None:
+                        cube[16+count_scale+i] = bounds[item][1][0] + \
+                            (bounds[item][1][1]-bounds[item][1][0])*cube[16+count_scale+i]
 
             # Width of the permitted alpha value
             # log_sigma_alpha = 1.-5.*cube[16]
             # cube[16] = log_sigma_alpha
-
-            return
 
         def loglike(cube, ndim, nparams):
             t1, t2, t3, log_delta, alpha, tint = cube[:6]
@@ -297,10 +308,17 @@ class AtmosphericRetrieval:
 
             scaling = {}
             for i, item in enumerate(self.spectrum.keys()):
-                if item in bounds:
+                if item in bounds and bounds[item][0] is not None:
                     scaling[item] = cube[16+i]
                 else:
                     scaling[item] = 1.
+
+            err_offset = {}
+            for i, item in enumerate(self.spectrum.keys()):
+                if item in bounds and bounds[item][1] is not None:
+                    err_offset[item] = cube[16+count_scale+i]
+                else:
+                    err_offset[item] = 0.
 
             # log_sigma_alpha = cube[16]
 
@@ -358,9 +376,9 @@ class AtmosphericRetrieval:
             # Convert to observation
             flux_lambda = flux_lambda * (radius*nc.r_jup_mean/self.distance)**2.
 
-            for instrument, value in self.spectrum.items():
+            for key, value in self.spectrum.items():
                 # convolve with Gaussian LSF
-                # flux_take = retrieval_util.convolve(wlen_micron, flux_lambda, data_resolution[instrument])
+                # flux_take = retrieval_util.convolve(wlen_micron, flux_lambda, data_resolution[key])
 
                 data_wavel = value[0][:, 0]
                 data_flux = value[0][:, 1]
@@ -373,16 +391,16 @@ class AtmosphericRetrieval:
                 flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_lambda, data_wavel, data_wavel_bins)
 
                 if plotting:
-                    plt.errorbar(data_wavel, scaling[instrument]*data_flux/1e-16, data_error/1e-16, fmt='o', zorder=-20, color='red')
-                    plt.plot(data_wavel, flux_rebinned/1e-16, 's', zorder=-20, color='blue')
+                    plt.errorbar(data_wavel, scaling[key]*data_flux/1e-16, data_error/1e-16, fmt='o', zorder=-20, color='tab:blue')
+                    plt.plot(data_wavel, flux_rebinned/1e-16, 's', zorder=-20, color='tab:orange')
 
                 # Calculate log-likelihood
-                diff = flux_rebinned - scaling[instrument]*data_flux
+                diff = flux_rebinned - scaling[key]*data_flux
 
                 if data_cov_inv is not None:
                     log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
                 else:
-                    log_likelihood += -np.sum((diff/data_error)**2.)/2.
+                    log_likelihood += -np.sum((diff**2/(data_error**2.+10.**err_offset[key])))/2.
 
             if plotting:
                 plt.plot(wlen_micron, flux_lambda/1e-16, color = 'black')
