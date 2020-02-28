@@ -29,6 +29,7 @@ class AtmosphericRetrieval:
                  object_name,
                  line_species,
                  cloud_species,
+                 scattering,
                  output_name,
                  pm_path,
                  radtrans_path,
@@ -56,6 +57,7 @@ class AtmosphericRetrieval:
         self.radtrans_path = radtrans_path
         self.line_species = line_species
         self.cloud_species = cloud_species
+        self.scattering = scattering
 
         self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()[0]*nc.pc  # [cm]
@@ -142,7 +144,7 @@ class AtmosphericRetrieval:
                                   mode='c-k',
                                   wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
                                   test_ck_shuffle_comp=True,
-                                  do_scat_emis=True)
+                                  do_scat_emis=self.scattering)
 
         # Create the RT arrays of appropriate lengths
 
