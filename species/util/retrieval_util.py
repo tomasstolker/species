@@ -8,168 +8,6 @@ from scipy.interpolate import interp1d, CubicSpline
 from scipy.ndimage.filters import gaussian_filter
 
 
-def calc_emission_spectrum(rt_object,
-                           press,
-                           temp,
-                           CO,
-                           FeH,
-                           log_p_quench,
-                           log_X_cloud_base_Fe,
-                           log_X_cloud_base_MgSiO3,
-                           fsed_Fe,
-                           fsed_MgSiO3,
-                           Kzz,
-                           logg,
-                           sigma_lnorm,
-                           half=False,
-                           plotting=False,
-                           pm_path=None,
-                           radtrans_path=None):
-
-    if 'pm' not in sys.modules:
-        sys.path.append(pm_path)
-        from poor_mans_nonequ_chem_FeH import poor_mans_nonequ_chem as pm
-
-    if 'nc' not in sys.modules:
-        sys.path.append(radtrans_path)
-        from petitRADTRANS_ck_test_speed import nat_cst as nc
-
-    COs = CO * np.ones_like(press)
-    FeHs = FeH * np.ones_like(press)
-
-    abundances_interp = pm.interpol_abundances(COs, FeHs, temp, press, Pquench_carbon=1e1**log_p_quench)
-
-    MMW = abundances_interp['MMW']
-
-    P_base_Fe = simple_cdf_Fe(press, temp, FeH, CO, np.mean(MMW), plotting)
-    P_base_MgSiO3 = simple_cdf_MgSiO3(press, temp, FeH, CO, np.mean(MMW), plotting=plotting)
-
-    abundances = {}
-
-    abundances['Fe(c)'] = np.zeros_like(temp)
-    abundances['Fe(c)'][press < P_base_Fe] = \
-          1e1**log_X_cloud_base_Fe * (press[press <= P_base_Fe]/P_base_Fe)**fsed_Fe
-    abundances['MgSiO3(c)'] = np.zeros_like(temp)
-    abundances['MgSiO3(c)'][press < P_base_MgSiO3] = \
-          1e1**log_X_cloud_base_MgSiO3 * (press[press <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
-
-    if half:
-        abundances['Fe(c)'] = abundances['Fe(c)'][::3]
-        abundances['MgSiO3(c)'] = abundances['MgSiO3(c)'][::3]
-
-    if half:
-        for species in rt_object.line_species:
-            if species != 'FeH':
-                abundances[species] = abundances_interp[species.replace('_all_iso', '')][::3]
-        abundances['H2'] = abundances_interp['H2'][::3]
-        abundances['He'] = abundances_interp['He'][::3]
-
-    else:
-        for species in rt_object.line_species:
-            if species != 'FeH':
-                abundances[species] = abundances_interp[species.replace('_all_iso', '')]
-
-        abundances['H2'] = abundances_interp['H2']
-        abundances['He'] = abundances_interp['He']
-
-    Kzz_use = (1e1**Kzz) * np.ones_like(press)
-
-    if half:
-        temp = temp[::3]
-        press = press[::3]
-        MMW = MMW[::3]
-        Kzz_use = Kzz_use[::3]
-
-    fseds = {}
-    fseds['Fe(c)'] = fsed_Fe
-    fseds['MgSiO3(c)'] = fsed_MgSiO3
-
-    if plotting:
-        plt.plot(abundances['CO_all_iso'], press, label='CO')
-        plt.plot(abundances['CH4'], press, label='CH4')
-        plt.plot(abundances['H2O'], press, label='H2O')
-        plt.xlim([1e-10, 1.])
-        plt.ylim([press[-1], press[0]])
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.xlabel('Mass fraction')
-        plt.ylabel('Pressure (bar)')
-        plt.axhline(1e1**log_p_quench)
-        plt.legend(loc='best')
-        plt.savefig('abundances.pdf', bbox_inches='tight')
-        plt.clf()
-
-        plt.plot(temp, press)
-        plt.axhline(P_base_Fe, label='Cloud deck Fe')
-        plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
-        plt.yscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([0., 4000.])
-        plt.savefig('pt_cloud_deck.pdf', bbox_inches='tight')
-        plt.clf()
-
-        plt.plot(abundances['Fe(c)'], press)
-        plt.axhline(P_base_Fe)
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([1e-10, 1.])
-        plt.title('fsed_Fe = '+str(fsed_Fe)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_Fe))
-        plt.savefig('fe_clouds.pdf', bbox_inches='tight')
-        plt.clf()
-
-        plt.plot(abundances['MgSiO3(c)'], press)
-        plt.axhline(P_base_MgSiO3)
-        plt.yscale('log')
-        plt.xscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([1e-10, 1.])
-        plt.title('fsed_MgSiO3 = '+str(fsed_MgSiO3)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_MgSiO3))
-        plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
-        plt.clf()
-
-    # Turn off clouds
-    # abundances['MgSiO3(c)'] = np.zeros_like(press)
-    # abundances['Fe(c)'] = np.zeros_like(press)
-
-    rt_object.calc_flux(temp, abundances, 1e1**logg, MMW, Kzz=Kzz_use, fsed=fseds, sigma_lnorm=sigma_lnorm)
-
-    wlen_micron = nc.c/rt_object.freq/1e-4
-    wlen = nc.c/rt_object.freq
-    flux = rt_object.flux
-
-    # convert flux f_nu to f_lambda
-    f_lambda = flux*nc.c/wlen**2.
-    # convert to flux per m^2 (from flux per cm^2) cancels with step below
-    # f_lambda = f_lambda * 1e4
-    # convert to flux per micron (from flux per cm) cancels with step above
-    # f_lambda = f_lambda * 1e-4
-    # convert from ergs to Joule
-    f_lambda = f_lambda * 1e-7
-
-    # plt.yscale('log')
-    # plt.xscale('log')
-    # plt.ylim([1e2,1e-6])
-    # plt.ylabel('P (bar)')
-    # plt.xlabel('Average particle size of MgSiO3 particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('MgSiO3(c)')]/1e-4, press)
-    # plt.savefig('mgsio3_size.png')
-    # plt.show()
-    # plt.clf()
-
-    # plt.yscale('log')
-    # plt.xscale('log')
-    # plt.ylim([1e2,1e-6])
-    # plt.ylabel('P (bar)')
-    # plt.xlabel('Average particle size of Fe particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('Fe(c)')]/1e-4, press)
-    # plt.savefig('fe_size.png')
-    # plt.show()
-    # plt.clf()
-
-    return wlen_micron, f_lambda, rt_object.pphot, rt_object.tau_pow, np.mean(rt_object.tau_cloud)
-
-
 def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True):
     """
     Self-luminous retrieval P-T model.
@@ -199,9 +37,9 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True
     conv: enforce convective adiabat yes/no
     """
 
-    if 'pm' not in sys.modules:
-        sys.path.append(pm_path)
-        from poor_mans_nonequ_chem_FeH import poor_mans_nonequ_chem as pm
+    # if 'poor_mans_nonequ_chem_FeH' not in sys.modules:
+    sys.path.append(pm_path)
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
     # Go grom bar to cgs
     press_cgs = press*1e6
@@ -212,10 +50,7 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True
     # This is the eddington temperature
     tedd = (3./4.*tint**4.*(2./3.+tau))**0.25
 
-    ab = pm.interpol_abundances(CO*np.ones_like(tedd),
-                                FeH*np.ones_like(tedd),
-                                tedd,
-                                press)
+    ab = interpol_abundances(CO*np.ones_like(tedd), FeH*np.ones_like(tedd), tedd, press)
 
     nabla_ad = ab['nabla_ad']
 
@@ -240,10 +75,7 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True
             else:
                 t_take = copy.copy(tfinal)
 
-            ab = pm.interpol_abundances(CO*np.ones_like(t_take),
-                                        FeH*np.ones_like(t_take),
-                                        t_take,
-                                        press)
+            ab = interpol_abundances(CO*np.ones_like(t_take), FeH*np.ones_like(t_take), t_take, press)
 
             nabla_ad = ab['nabla_ad']
 
@@ -348,6 +180,202 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True
     # Return the temperature, the pressure at tau = 1, and the temperature at the connection point.
     # The last two are needed for the priors on the P-T profile.
     return tret, press_tau(1.)/1e6, tfintp(p_bot_spline)
+
+
+def calc_spectrum_clear(rt_object,
+                        press,
+                        temp,
+                        logg,
+                        co,
+                        feh,
+                        log_p_quench,
+                        pm_path=None,
+                        radtrans_path=None):
+
+    # if 'poor_mans_nonequ_chem_FeH' not in sys.modules:
+    sys.path.append(pm_path)
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+
+    sys.path.append(radtrans_path)
+    from petitRADTRANS_ck_test_speed import nat_cst as nc
+
+    co_list = co * np.ones_like(press)
+    feh_list = feh * np.ones_like(press)
+
+    abundances = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=1e1**log_p_quench)
+
+    rt_object.calc_flux(temp, abundances, 10.**logg, abundances['MMW'])
+
+    wlen = nc.c/rt_object.freq
+
+    return 1e4*wlen, 1e-7*rt_object.flux*nc.c/wlen**2.
+
+
+def calc_spectrum_clouds(rt_object,
+                         press,
+                         temp,
+                         CO,
+                         FeH,
+                         log_p_quench,
+                         log_X_cloud_base_Fe,
+                         log_X_cloud_base_MgSiO3,
+                         fsed_Fe,
+                         fsed_MgSiO3,
+                         Kzz,
+                         logg,
+                         sigma_lnorm,
+                         half=False,
+                         plotting=False,
+                         pm_path=None,
+                         radtrans_path=None):
+
+    sys.path.append(pm_path)
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+
+    sys.path.append(radtrans_path)
+    from petitRADTRANS_ck_test_speed import nat_cst as nc
+
+    COs = CO * np.ones_like(press)
+    FeHs = FeH * np.ones_like(press)
+
+    abundances_interp = interpol_abundances(COs, FeHs, temp, press, Pquench_carbon=1e1**log_p_quench)
+
+    MMW = abundances_interp['MMW']
+
+    P_base_Fe = simple_cdf_Fe(press, temp, FeH, CO, np.mean(MMW), plotting)
+    P_base_MgSiO3 = simple_cdf_MgSiO3(press, temp, FeH, CO, np.mean(MMW), plotting=plotting)
+
+    abundances = {}
+
+    abundances['Fe(c)'] = np.zeros_like(temp)
+
+    abundances['Fe(c)'][press < P_base_Fe] = \
+          1e1**log_X_cloud_base_Fe * (press[press <= P_base_Fe]/P_base_Fe)**fsed_Fe
+
+    abundances['MgSiO3(c)'] = np.zeros_like(temp)
+
+    abundances['MgSiO3(c)'][press < P_base_MgSiO3] = \
+          1e1**log_X_cloud_base_MgSiO3 * (press[press <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
+
+    if half:
+        abundances['Fe(c)'] = abundances['Fe(c)'][::3]
+        abundances['MgSiO3(c)'] = abundances['MgSiO3(c)'][::3]
+
+    if half:
+        for species in rt_object.line_species:
+            if species != 'FeH':
+                abundances[species] = abundances_interp[species.replace('_all_iso', '')][::3]
+
+        abundances['H2'] = abundances_interp['H2'][::3]
+        abundances['He'] = abundances_interp['He'][::3]
+
+    else:
+        for species in rt_object.line_species:
+            if species != 'FeH':
+                abundances[species] = abundances_interp[species.replace('_all_iso', '')]
+
+        abundances['H2'] = abundances_interp['H2']
+        abundances['He'] = abundances_interp['He']
+
+    Kzz_use = (1e1**Kzz) * np.ones_like(press)
+
+    if half:
+        temp = temp[::3]
+        press = press[::3]
+        MMW = MMW[::3]
+        Kzz_use = Kzz_use[::3]
+
+    fseds = {}
+    fseds['Fe(c)'] = fsed_Fe
+    fseds['MgSiO3(c)'] = fsed_MgSiO3
+
+    if plotting:
+        plt.plot(abundances['CO_all_iso'], press, label='CO')
+        plt.plot(abundances['CH4'], press, label='CH4')
+        plt.plot(abundances['H2O'], press, label='H2O')
+        plt.xlim([1e-10, 1.])
+        plt.ylim([press[-1], press[0]])
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.xlabel('Mass fraction')
+        plt.ylabel('Pressure (bar)')
+        plt.axhline(1e1**log_p_quench)
+        plt.legend(loc='best')
+        plt.savefig('abundances.pdf', bbox_inches='tight')
+        plt.clf()
+
+        plt.plot(temp, press)
+        plt.axhline(P_base_Fe, label='Cloud deck Fe')
+        plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
+        plt.yscale('log')
+        plt.ylim([1e3, 1e-6])
+        plt.xlim([0., 4000.])
+        plt.savefig('pt_cloud_deck.pdf', bbox_inches='tight')
+        plt.clf()
+
+        plt.plot(abundances['Fe(c)'], press)
+        plt.axhline(P_base_Fe)
+        plt.yscale('log')
+        if np.count_nonzero(abundances['Fe(c)']) > 0:
+            plt.xscale('log')
+        plt.ylim([1e3, 1e-6])
+        plt.xlim([1e-10, 1.])
+        plt.title('fsed_Fe = '+str(fsed_Fe)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_Fe))
+        plt.savefig('fe_clouds.pdf', bbox_inches='tight')
+        plt.clf()
+
+        plt.plot(abundances['MgSiO3(c)'], press)
+        plt.axhline(P_base_MgSiO3)
+        if np.count_nonzero(abundances['MgSiO3(c)']) > 0:
+            plt.yscale('log')
+        plt.xscale('log')
+        plt.ylim([1e3, 1e-6])
+        plt.xlim([1e-10, 1.])
+        plt.title('fsed_MgSiO3 = '+str(fsed_MgSiO3)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_MgSiO3))
+        plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
+        plt.clf()
+
+    # Turn off clouds
+    # abundances['MgSiO3(c)'] = np.zeros_like(press)
+    # abundances['Fe(c)'] = np.zeros_like(press)
+
+    rt_object.calc_flux(temp, abundances, 1e1**logg, MMW, Kzz=Kzz_use, fsed=fseds, sigma_lnorm=sigma_lnorm)
+
+    wlen_micron = nc.c/rt_object.freq/1e-4
+    wlen = nc.c/rt_object.freq
+    flux = rt_object.flux
+
+    # convert flux f_nu to f_lambda
+    f_lambda = flux*nc.c/wlen**2.
+    # convert to flux per m^2 (from flux per cm^2) cancels with step below
+    # f_lambda = f_lambda * 1e4
+    # convert to flux per micron (from flux per cm) cancels with step above
+    # f_lambda = f_lambda * 1e-4
+    # convert from ergs to Joule
+    f_lambda = f_lambda * 1e-7
+
+    # plt.yscale('log')
+    # plt.xscale('log')
+    # plt.ylim([1e2,1e-6])
+    # plt.ylabel('P (bar)')
+    # plt.xlabel('Average particle size of MgSiO3 particles (microns)')
+    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('MgSiO3(c)')]/1e-4, press)
+    # plt.savefig('mgsio3_size.png')
+    # plt.show()
+    # plt.clf()
+
+    # plt.yscale('log')
+    # plt.xscale('log')
+    # plt.ylim([1e2,1e-6])
+    # plt.ylabel('P (bar)')
+    # plt.xlabel('Average particle size of Fe particles (microns)')
+    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('Fe(c)')]/1e-4, press)
+    # plt.savefig('fe_size.png')
+    # plt.show()rt_object
+    # plt.clf()
+
+    # return wlen_micron, f_lambda, rt_object.pphot, rt_object.tau_pow, np.mean(rt_object.tau_cloud)
+    return wlen_micron, f_lambda
 
 
 #############################################################

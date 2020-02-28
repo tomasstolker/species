@@ -105,22 +105,32 @@ class AtmosphericRetrieval:
             wavel_max.append(wavel_data[-1])
 
         self.parameters = []
+
+        # spectrum
+        self.parameters.append('logg')
+        self.parameters.append('radius')
+
+        # p-t profile
+        self.parameters.append('tint')
         self.parameters.append('t1')
         self.parameters.append('t2')
         self.parameters.append('t3')
-        self.parameters.append('log_delta')
         self.parameters.append('alpha')
-        self.parameters.append('tint')
-        self.parameters.append('CO')
-        self.parameters.append('FeH')
+        self.parameters.append('log_delta')
+
+        # abundances
+        self.parameters.append('feh')
+        self.parameters.append('co')
         self.parameters.append('log_p_quench')
-        self.parameters.append('log_X_cloud_base_Fe_fraction')
-        self.parameters.append('log_X_cloud_base_MgSiO3_fraction')
-        self.parameters.append('fsed')
-        self.parameters.append('Kzz')
-        self.parameters.append('logg')
-        self.parameters.append('radius')
-        self.parameters.append('sigma_lnorm')
+
+        # clouds
+        if len(cloud_species) > 0:
+            self.parameters.append('fe_fraction')
+            self.parameters.append('mgsio3_fraction')
+            self.parameters.append('fsed')
+            self.parameters.append('kzz')
+            self.parameters.append('sigma_lnorm')
+
         # self.parameters.append('log_sigma_alpha')
 
         # Create mock PT profile for Radtrans object
@@ -143,7 +153,7 @@ class AtmosphericRetrieval:
                                   cloud_species=self.cloud_species,
                                   mode='c-k',
                                   wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
-                                  test_ck_shuffle_comp=True,
+                                  test_ck_shuffle_comp=self.scattering,
                                   do_scat_emis=self.scattering)
 
         # Create the RT arrays of appropriate lengths
@@ -155,15 +165,20 @@ class AtmosphericRetrieval:
         # else:
         #     rt_object.setup_opa_structure(self.pressure)
 
-    def run_mcmc(self,
-                 bounds,
-                 live_points=2000,
-                 efficiency=0.05,
-                 resume=False,
-                 plotting=False):
+    def run_multinest(self,
+                      bounds,
+                      live_points=2000,
+                      efficiency=0.05,
+                      resume=False,
+                      plotting=False):
 
         import rebin_give_width as rgw
         from petitRADTRANS_ck_test_speed import nat_cst as nc
+
+        if len(self.cloud_species) == 0:
+            self.n_param = 11
+        else:
+            self.n_param = 16
 
         count_scale = 0
         count_error = 0
@@ -178,105 +193,125 @@ class AtmosphericRetrieval:
                     self.parameters.append(f'error_{item}')
                     count_error += 1
 
+        if len(self.cloud_species) == 0:
+            if 'fe_fraction' in bounds:
+                del bounds['fe_fraction']
+
+            if 'mgsio3_fraction' in bounds:
+                del bounds['mgsio3_fraction']
+
+            if 'fsed' in bounds:
+                del bounds['fsed']
+
+            if 'kzz' in bounds:
+                del bounds['kzz']
+
+            if 'sigma_lnorm' in bounds:
+                del bounds['sigma_lnorm']
+
         def prior(cube, ndim, nparams):
-            # tint from 500 to 3000 K
-            if 'tint' in bounds:
-                tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[5]
+            if 'logg' in bounds:
+                logg = bounds['logg'][0] + (bounds['logg'][1]-bounds['logg'][0])*cube[0]
             else:
-                tint = 500.+2500.*cube[5]
+                # log(g) between 2 and 5.5
+                logg = 2. + 3.5*cube[0]
+
+            if 'radius' in bounds:
+                radius = bounds['radius'][0] + (bounds['radius'][1]-bounds['radius'][0])*cube[1]
+            else:
+                # radius between 0.8 and 2 Rjup
+                radius = 0.8 + 1.2*cube[1]
+
+            if 'tint' in bounds:
+                tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[2]
+            else:
+                # tint between 500 and 3000 K
+                tint = 500.+2500.*cube[2]
 
             # analytically calculate the connection temperature
             t_connect_calc = (3./4.*tint**4.*(0.1+2./3.))**0.25
 
-            # Scale to temperatures below that for t3
-            t3 = t_connect_calc*(1-cube[2])
+            # scale to temperatures below that for t3
+            t3 = t_connect_calc*(1-cube[5])
 
-            # Scale to temperatures below that for t2
-            t2 = t3*(1-cube[1])
+            # scale to temperatures below that for t2
+            t2 = t3*(1-cube[4])
 
-            # Scale to temperatures below that for t1
-            t1 = t2*(1-cube[0])
+            # scale to temperatures below that for t1
+            t1 = t2*(1-cube[3])
 
-            # [Fe/H] between -1.5 and 1.5
-            if 'feh' in bounds:
-                feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[7]
-            else:
-                feh = -1.5 + 3.*cube[7]
-
-            # C/O between 0.1 and 1.6
-            if 'co' in bounds:
-                co = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[6]
-            else:
-                co = 0.1 + 1.5*cube[6]
-
-            # log(g) between 2 and 5.5
-            if 'logg' in bounds:
-                logg = bounds['logg'][0] + (bounds['logg'][1]-bounds['logg'][0])*cube[13]
-            else:
-                logg = 2. + 3.5*cube[13]
-
-            # alpha between 1 and 2
             if 'alpha' in bounds:
-                alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[4]
+                alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[6]
             else:
-                alpha = 1. + cube[4]
+                # alpha between 1 and 2
+                alpha = 1. + cube[6]
 
             # Photospheric pressure between 1e-3 and 100 bar
-            Pphot_bar = 1e1**(-3. + 5.*cube[3])
+            Pphot_bar = 1e1**(-3. + 5.*cube[7])
 
             # Use this to calculate delta, and from this log(delta)
             delta = (Pphot_bar*1e6)**(-alpha)
             log_delta = np.log10(delta)
 
+            if 'feh' in bounds:
+                feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[8]
+            else:
+                # [Fe/H] between -1.5 and 1.5
+                feh = -1.5 + 3.*cube[8]
+
+            if 'co' in bounds:
+                co = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[9]
+            else:
+                # C/O between 0.1 and 1.6
+                co = 0.1 + 1.5*cube[9]
+
             # Quench pressure between 1e-6 and 1e3 bar
-            log_p_quench = -6. + 9.*cube[8]
+            log_p_quench = -6. + 9.*cube[10]
 
-            # Cloud base mass fractions equal to maximum values allowed from elemental abundances
-            # times 0.05 to 1.
-            log_X_cloud_base_Fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[9]
-            log_X_cloud_base_MgSiO3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[10]
+            if len(self.cloud_species) > 0:
+                # Cloud base mass fractions equal to maximum values allowed from elemental abundances
+                # times 0.05 to 1.
+                log_X_cloud_base_Fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[11]
+                log_X_cloud_base_MgSiO3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[12]
 
-            # fseds between 0 and 10
-            if 'fsed' in bounds:
-                fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[11]
-            else:
-                fsed = 10.*cube[11]
+                # fseds between 0 and 10
+                if 'fsed' in bounds:
+                    fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[13]
+                else:
+                    fsed = 10.*cube[13]
 
-            # logg(Kzz)s between 5 and 13
-            if 'kzz' in bounds:
-                kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[12]
-            else:
-                kzz = 5. + 8.*cube[12]
+                # logg(kzz)s between 5 and 13
+                if 'kzz' in bounds:
+                    kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[14]
+                else:
+                    kzz = 5. + 8.*cube[14]
 
-            # Planetary radius between 0.8 and 2 Rjup
-            if 'radius' in bounds:
-                radius = bounds['radius'][0] + (bounds['radius'][1]-bounds['radius'][0])*cube[14]
-            else:
-                radius = 0.8 + 1.2*cube[14]
-
-            # Width of the log-normal particle size distribution allowed to vary between 1.05 and 3.
-            if 'sigma_lnorm' in bounds:
-                sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1]-bounds['sigma_lnorm'][0])*cube[15]
-            else:
-                sigma_lnorm = 1.05 + 1.95*cube[15]
+                # Width of the log-normal particle size distribution allowed to vary between 1.05 and 3.
+                if 'sigma_lnorm' in bounds:
+                    sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1]-bounds['sigma_lnorm'][0])*cube[15]
+                else:
+                    sigma_lnorm = 1.05 + 1.95*cube[15]
 
             # Put the new parameter values back into the cube
-            cube[0] = t1
-            cube[1] = t2
-            cube[2] = t3
-            cube[3] = log_delta
-            cube[4] = alpha
-            cube[5] = tint
-            cube[6] = co
-            cube[7] = feh
-            cube[8] = log_p_quench
-            cube[9] = log_X_cloud_base_Fe_fraction
-            cube[10] = log_X_cloud_base_MgSiO3_fraction
-            cube[11] = fsed
-            cube[12] = kzz
-            cube[13] = logg
-            cube[14] = radius
-            cube[15] = sigma_lnorm
+
+            cube[0] = logg
+            cube[1] = radius
+            cube[2] = tint
+            cube[3] = t1
+            cube[4] = t2
+            cube[5] = t3
+            cube[6] = alpha
+            cube[7] = log_delta
+            cube[8] = feh
+            cube[9] = co
+            cube[10] = log_p_quench
+
+            if len(self.cloud_species) > 0:
+                cube[11] = log_X_cloud_base_Fe_fraction
+                cube[12] = log_X_cloud_base_MgSiO3_fraction
+                cube[13] = fsed
+                cube[14] = kzz
+                cube[15] = sigma_lnorm
 
             # flux scaling parameter
 
@@ -285,8 +320,8 @@ class AtmosphericRetrieval:
             for item in self.spectrum.keys():
                 if item in bounds:
                     if bounds[item][0] is not None:
-                        cube[16+count] = bounds[item][0][0] + \
-                            (bounds[item][0][1]-bounds[item][0][0])*cube[16+count]
+                        cube[self.n_param+count] = bounds[item][0][0] + \
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[self.n_param+count]
 
                         count += 1
 
@@ -297,8 +332,8 @@ class AtmosphericRetrieval:
             for item in self.spectrum.keys():
                 if item in bounds:
                     if bounds[item][1] is not None:
-                        cube[16+count_scale+count] = bounds[item][1][0] + \
-                            (bounds[item][1][1]-bounds[item][1][0])*cube[16+count_scale+count]
+                        cube[self.n_param+count_scale+count] = bounds[item][1][0] + \
+                            (bounds[item][1][1]-bounds[item][1][0])*cube[self.n_param+count_scale+count]
 
                         count += 1
 
@@ -307,27 +342,16 @@ class AtmosphericRetrieval:
             # cube[16] = log_sigma_alpha
 
         def loglike(cube, ndim, nparams):
-            t1, t2, t3, log_delta, alpha, tint = cube[:6]
-            co = cube[6]
-            feh = cube[7]
-            log_p_quench = cube[8]
-            log_X_cloud_base_Fe_fraction = cube[9]
-            log_X_cloud_base_MgSiO3_fraction = cube[10]
+            logg, radius, tint, t1, t2, t3, alpha, log_delta, feh, co, log_p_quench = cube[:11]
 
-            # Retrieve only one fsed
-            fsed_Fe = cube[11]
-            fsed_MgSiO3 = cube[11]
-
-            kzz = cube[12]
-            logg = cube[13]
-            radius = cube[14]
-            sigma_lnorm = cube[15]
+            if len(self.cloud_species) > 0:
+                log_X_cloud_base_Fe_fraction, log_X_cloud_base_MgSiO3_fraction, fsed, kzz, sigma_lnorm = cube[11:16]
 
             scaling = {}
             for i, item in enumerate(self.spectrum.keys()):
                 count = 0
                 if item in bounds and bounds[item][0] is not None:
-                    scaling[item] = cube[16+count]
+                    scaling[item] = cube[self.n_param+count]
                     count += 1
                 else:
                     scaling[item] = 1.
@@ -336,7 +360,7 @@ class AtmosphericRetrieval:
             for i, item in enumerate(self.spectrum.keys()):
                 count = 0
                 if item in bounds and bounds[item][1] is not None:
-                    err_offset[item] = cube[16+count_scale+count]
+                    err_offset[item] = cube[self.n_param+count_scale+count]
                     count += 1
                 else:
                     err_offset[item] = 0.
@@ -346,31 +370,42 @@ class AtmosphericRetrieval:
             # Prior check all input params
             log_prior = 0.
 
-            XFe = retrieval_util.return_XFe(feh, co)
-            log_X_cloud_base_Fe = np.log10(1e1**log_X_cloud_base_Fe_fraction*XFe)
-
-            XMgSiO3 = retrieval_util.return_XMgSiO3(feh, co)
-            log_X_cloud_base_MgSiO3 = np.log10(1e1**log_X_cloud_base_MgSiO3_fraction*XMgSiO3)
-
             # Calculate the log-likelihood
             log_likelihood = 0.
 
-            try:
-                temp, pphot, t_connect = retrieval_util.pt_ret_model(
-                    np.array([t1,t2,t3]), 1e1**log_delta, alpha, tint, self.pressure, feh, co, pm_path=self.pm_path)
-
-            except:
-                return -np.inf
+            # try:
+            temp, pphot, t_connect = retrieval_util.pt_ret_model(np.array([t1, t2, t3]),
+                1e1**log_delta, alpha, tint, self.pressure, feh, co, pm_path=self.pm_path)
+            #
+            # except:
+            #     return -np.inf
 
             if np.min(temp) < 0.:
                 return -np.inf
 
             try:
-                wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
-                    retrieval_util.calc_emission_spectrum(self.rt_object, self.pressure, temp, co, feh,
-                    log_p_quench, log_X_cloud_base_Fe, log_X_cloud_base_MgSiO3, fsed_Fe,
-                    fsed_MgSiO3, kzz, logg, sigma_lnorm, half=True, plotting=plotting,
-                    pm_path=self.pm_path, radtrans_path=self.radtrans_path)
+                if len(self.cloud_species) > 0:
+                    XFe = retrieval_util.return_XFe(feh, co)
+                    log_X_cloud_base_Fe = np.log10(1e1**log_X_cloud_base_Fe_fraction*XFe)
+
+                    XMgSiO3 = retrieval_util.return_XMgSiO3(feh, co)
+                    log_X_cloud_base_MgSiO3 = np.log10(1e1**log_X_cloud_base_MgSiO3_fraction*XMgSiO3)
+
+                    # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
+                        self.pressure, temp, co, feh, log_p_quench, log_X_cloud_base_Fe,
+                        log_X_cloud_base_MgSiO3, fsed, fsed, kzz, logg, sigma_lnorm, half=True,
+                        plotting=plotting, pm_path=self.pm_path, radtrans_path=self.radtrans_path)
+
+                else:
+                    # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
+                    self.pressure, temp, co, feh, log_p_quench, 10., 10., 10., 10., 10., logg, 10.,
+                    half=True, plotting=plotting, pm_path=self.pm_path,
+                    radtrans_path=self.radtrans_path)
+
+                # wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(self.rt_object, self.pressure,
+                #     temp, logg, co, feh, log_p_quench, pm_path=self.pm_path, radtrans_path=self.radtrans_path)
 
                 # if (pphot/Pphot_esti) > 5.:
                 #     return -np.inf
