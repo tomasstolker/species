@@ -170,10 +170,13 @@ def get_residuals(datatype,
 
             if key in parameters:
                 print(f'Scaling the flux of {key} by {parameters[key]:.2e}...', end='', flush=True)
-                flux_new *= parameters[key]
+                flux_obs = parameters[key]*objectbox.spectrum[key][0][:, 1]
                 print(' [DONE]')
 
-            res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
+            else:
+                flux_obs = objectbox.spectrum[key][0][:, 1]
+
+            res_tmp = (flux_obs-flux_new)/objectbox.spectrum[key][0][:, 2]
 
             res_spec[key] = np.column_stack([wl_new, res_tmp])
 

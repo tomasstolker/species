@@ -11,7 +11,7 @@ try:
     import lzma
 except ModuleNotFoundError:
     warnings.warn('Could not import the lzma module. Attempting to use lzma compression will '
-                  ' result in a RuntimeError.')
+                  'result in a RuntimeError.')
 
 import spectres
 import numpy as np

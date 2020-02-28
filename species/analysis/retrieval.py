@@ -3,6 +3,7 @@ Module with functionalities for atmospheric retrieval with petitRADTRANS.
 """
 
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 
 import sys
@@ -275,15 +276,29 @@ class AtmosphericRetrieval:
             cube[14] = radius
             cube[15] = sigma_lnorm
 
-            for i, item in enumerate(self.spectrum.keys()):
+            # flux scaling parameter
+
+            count = 0
+
+            for item in self.spectrum.keys():
                 if item in bounds:
                     if bounds[item][0] is not None:
-                        cube[16+i] = bounds[item][0][0] + \
-                            (bounds[item][0][1]-bounds[item][0][0])*cube[16+i]
+                        cube[16+count] = bounds[item][0][0] + \
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[16+count]
 
+                        count += 1
+
+            # error inflation parameter
+
+            count = 0
+
+            for item in self.spectrum.keys():
+                if item in bounds:
                     if bounds[item][1] is not None:
-                        cube[16+count_scale+i] = bounds[item][1][0] + \
-                            (bounds[item][1][1]-bounds[item][1][0])*cube[16+count_scale+i]
+                        cube[16+count_scale+count] = bounds[item][1][0] + \
+                            (bounds[item][1][1]-bounds[item][1][0])*cube[16+count_scale+count]
+
+                        count += 1
 
             # Width of the permitted alpha value
             # log_sigma_alpha = 1.-5.*cube[16]
@@ -308,15 +323,19 @@ class AtmosphericRetrieval:
 
             scaling = {}
             for i, item in enumerate(self.spectrum.keys()):
+                count = 0
                 if item in bounds and bounds[item][0] is not None:
-                    scaling[item] = cube[16+i]
+                    scaling[item] = cube[16+count]
+                    count += 1
                 else:
                     scaling[item] = 1.
 
             err_offset = {}
             for i, item in enumerate(self.spectrum.keys()):
+                count = 0
                 if item in bounds and bounds[item][1] is not None:
-                    err_offset[item] = cube[16+count_scale+i]
+                    err_offset[item] = cube[16+count_scale+count]
+                    count += 1
                 else:
                     err_offset[item] = 0.
 
@@ -391,8 +410,10 @@ class AtmosphericRetrieval:
                 flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_lambda, data_wavel, data_wavel_bins)
 
                 if plotting:
-                    plt.errorbar(data_wavel, scaling[key]*data_flux/1e-16, data_error/1e-16, fmt='o', zorder=-20, color='tab:blue')
-                    plt.plot(data_wavel, flux_rebinned/1e-16, 's', zorder=-20, color='tab:orange')
+                    plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+10.**err_offset[key],
+                                 marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue')
+
+                    plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange')
 
                 # Calculate log-likelihood
                 diff = flux_rebinned - scaling[key]*data_flux
@@ -400,11 +421,12 @@ class AtmosphericRetrieval:
                 if data_cov_inv is not None:
                     log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
                 else:
-                    log_likelihood += -np.sum((diff**2/(data_error**2.+10.**err_offset[key])))/2.
+                    log_likelihood += -np.sum((diff**2/(data_error**2.+(10.**err_offset[key])**2)))/2.
 
             if plotting:
-                plt.plot(wlen_micron, flux_lambda/1e-16, color = 'black')
-                plt.xscale('log')
+                plt.plot(wlen_micron, flux_lambda, color='black', zorder=-20)
+                plt.xlabel('Wavelength [$\mu$m]')
+                plt.ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
                 plt.savefig('spectrum.pdf', bbox_inches='tight')
                 plt.clf()
 
