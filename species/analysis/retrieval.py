@@ -373,12 +373,12 @@ class AtmosphericRetrieval:
             # Calculate the log-likelihood
             log_likelihood = 0.
 
-            # try:
-            temp, pphot, t_connect = retrieval_util.pt_ret_model(np.array([t1, t2, t3]),
-                1e1**log_delta, alpha, tint, self.pressure, feh, co, pm_path=self.pm_path)
-            #
-            # except:
-            #     return -np.inf
+            try:
+                temp, pphot, t_connect = retrieval_util.pt_ret_model(np.array([t1, t2, t3]),
+                    1e1**log_delta, alpha, tint, self.pressure, feh, co, pm_path=self.pm_path)
+
+            except:
+                return -np.inf
 
             if np.min(temp) < 0.:
                 return -np.inf
