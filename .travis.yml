@@ -10,6 +10,7 @@ install:
   - sudo apt-get install pandoc
   - sudo apt-get install cmake
   - sudo apt-get install gfortran
+  - sudo apt-get install libblas-dev
   - pip install -r requirements.txt
   - pip install pytest-cov
   - pip install coveralls
