@@ -6,13 +6,23 @@ python:
   - 3.6
   - 3.7
 
-install:
+before_install:
   - sudo apt-get install pandoc
   - sudo apt-get install cmake
   - sudo apt-get install gfortran
   - sudo apt-get install libblas-dev
   - sudo apt-get install liblapack-dev
   - sudo apt-get install libatlas-base-dev 
+  - git clone https://github.com/JohannesBuchner/MultiNest
+  - cd MultiNest/build
+  - pwd
+  - echo $HOME
+  - cmake ..
+  - make
+  - cd ../..
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build/tomasstolker/species/MultiNest/lib
+
+install:
   - pip install -r requirements.txt
   - pip install pytest-cov
   - pip install coveralls
@@ -20,13 +30,6 @@ install:
   - pip install sphinx_rtd_theme
   - pip install nbsphinx
   - pip install jupyter
-  - git clone https://github.com/JohannesBuchner/MultiNest
-  - cd MultiNest/build
-  - pwd
-  - echo $HOME
-  - cmake ..
-  - make
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/tomasstolker/species/MultiNest/lib
 
 script:
   - make docs
