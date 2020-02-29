@@ -1,6 +1,6 @@
 """
 Module with functionalities for atmospheric retrieval with petitRADTRANS (Mollière et al. 2019).
-More details on the retrieval code are also available at https://petitradtrans.readthedocs.io.
+More details on the retrieval code are available at https://petitradtrans.readthedocs.io.
 """
 
 import os
@@ -27,7 +27,7 @@ from species.util import retrieval_util
 
 class AtmosphericRetrieval:
     """
-    Text
+    Class for atmospheric retrieval with petitRADTRANS.
     """
 
     def __init__(self,
@@ -42,9 +42,13 @@ class AtmosphericRetrieval:
         object_name : str
             Object name in the database.
         line_species : list
+            List with the line species.
         cloud_species : list
+            List with the cloud species. No clouds are used if an empty list is provided.
         scattering : bool
+            Account for scattering in the radiative transfer.
         output_name : str
+            Output name that is used for the output files from MultiNest.
 
         Returns
         -------
@@ -211,15 +215,20 @@ class AtmosphericRetrieval:
                       resume=False,
                       plotting=False):
         """
-        Function to sample the posterior distribution with MultiNest.
+        Function to sample the posterior distribution with MultiNest. See also
+        https://github.com/farhanferoz/MultiNest.
 
         Parameters
         ----------
         bounds : dict
         live_points : int
+            Number of live points.
         efficiency : float
+            Sampling efficiency.
         resume : bool
+            Resume from a previous run.
         plotting : bool
+            Plot sample results for testing.
 
         Returns
         -------
@@ -447,7 +456,7 @@ class AtmosphericRetrieval:
             Returns
             -------
             float
-                Logarithm of the likelihood probability.
+                Logarithm of the likelihood function.
             """
 
             # mandatory parameters
@@ -548,18 +557,18 @@ class AtmosphericRetrieval:
             flux_lambda = flux_lambda * (radius*nc.r_jup_mean/(self.distance*nc.pc))**2.
 
             for key, value in self.spectrum.items():
-                # convolve with Gaussian LSF
-                # flux_take = retrieval_util.convolve(wlen_micron, flux_lambda, data_resolution[key])
-
                 data_wavel = value[0][:, 0]
                 data_flux = value[0][:, 1]
                 data_error = value[0][:, 2]
                 data_cov_inv = value[2]
-                data_wavel_bins = value[3]
+                spec_res = value[3]
+                data_wavel_bins = value[4]
 
-                # Rebin to observation
-                # flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_take, data_wavel, data_wavel_bins)
-                flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_lambda, data_wavel, data_wavel_bins)
+                # convolve with Gaussian LSF
+                flux_smooth = retrieval_util.convolve(wlen_micron, flux_lambda, spec_res)
+
+                # resample to observation
+                flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_smooth, data_wavel, data_wavel_bins)
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+10.**err_offset[key],
@@ -576,7 +585,7 @@ class AtmosphericRetrieval:
                     log_likelihood += -np.sum((diff**2/(data_error**2.+(10.**err_offset[key])**2)))/2.
 
             if plotting:
-                plt.plot(wlen_micron, flux_lambda, color='black', zorder=-20)
+                plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)
                 plt.xlabel('Wavelength [$\mu$m]')
                 plt.ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
                 plt.savefig('spectrum.pdf', bbox_inches='tight')

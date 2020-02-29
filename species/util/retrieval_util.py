@@ -611,7 +611,7 @@ def simple_cdf_MgSiO3(press, temp, FeH, CO, MMW=2.33, plotting=False):
 def convolve(input_wavelength, input_flux, instrument_res):
     # From talking to Ignas: delta lambda of resolution element
     # is FWHM of the LSF's standard deviation, hence:
-    sigma_LSF = 1./instrument_res/(2.*np.sqrt(2.*np.log(2.)))
+    sigma_lsf = 1./instrument_res/(2.*np.sqrt(2.*np.log(2.)))
 
     # The input spacing of petitRADTRANS is 1e3, but just compute
     # it to be sure, or more versatile in the future.
@@ -621,6 +621,6 @@ def convolve(input_wavelength, input_flux, instrument_res):
 
     # Calculate the sigma to be used in the gauss filter in units
     # of input wavelength bins
-    sigma_LSF_gauss_filter = sigma_LSF/spacing
+    sigma_lsf_gauss_filter = sigma_lsf/spacing
 
-    return gaussian_filter(input_flux, sigma=sigma_LSF_gauss_filter, mode='nearest')
+    return gaussian_filter(input_flux, sigma=sigma_lsf_gauss_filter, mode='nearest')

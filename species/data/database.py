@@ -554,6 +554,12 @@ class Database:
                         read_cov[key] = data
 
             for key, value in read_spec.items():
+                wavelength = read_spec[key][:, 0]
+                spec_res = np.zeros(wavelength.shape[0]-1)
+
+                for i in range(spec_res.shape[0]):
+                    spec_res[i] = wavelength[i] / (wavelength[i+1]-wavelength[i])
+
                 h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
                                        data=read_spec[key])
 
@@ -563,6 +569,9 @@ class Database:
 
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
                                            data=np.linalg.inv(read_cov[key]))
+
+                dset = h5_file[f'objects/{object_name}/spectrum/{key}']
+                dset.attrs['specres'] = np.mean(spec_res)
 
         print(' [DONE]')
 
