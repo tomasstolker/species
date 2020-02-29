@@ -8,6 +8,7 @@ python:
 
 install:
   - sudo apt-get install pandoc
+  - sudo apt-get install cmake
   - pip install -r requirements.txt
   - pip install pytest-cov
   - pip install coveralls
@@ -17,8 +18,10 @@ install:
   - pip install jupyter
   - git clone https://github.com/JohannesBuchner/MultiNest
   - cd MultiNest/build
+  - pwd
   - cmake ..
   - make
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/MultiNest/lib
 
 script:
   - make docs
