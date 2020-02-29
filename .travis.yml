@@ -23,9 +23,10 @@ install:
   - git clone https://github.com/JohannesBuchner/MultiNest
   - cd MultiNest/build
   - pwd
+  - echo $HOME
   - cmake ..
   - make
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/MultiNest/lib
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/tomasstolker/species/MultiNest/lib
 
 script:
   - make docs
