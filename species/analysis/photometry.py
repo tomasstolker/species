@@ -175,8 +175,8 @@ class SyntheticPhotometry:
 
                 transmission = self.filter_interp(wavelength)
 
-                if threshold is not None and (transmission[0] > threshold or transmission[-1] > 
-                        threshold) and (wavelength[0] < self.wavel_range[0] or wavelength[-1] > 
+                if threshold is not None and (transmission[0] > threshold or transmission[-1] >
+                        threshold) and (wavelength[0] < self.wavel_range[0] or wavelength[-1] >
                         self.wavel_range[-1]):
 
                     warnings.warn(f'The filter profile of {self.filter_name} '

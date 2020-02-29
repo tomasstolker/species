@@ -6,13 +6,17 @@ import os
 
 os.environ['OMP_NUM_THREADS'] = '1'
 
-import sys
 import json
 import warnings
 
 import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
+
+import rebin_give_width as rgw
+
+from petitRADTRANS_ck_test_speed import Radtrans
+from petitRADTRANS_ck_test_speed import nat_cst as nc
 
 from species.analysis import photometry
 from species.data import database
@@ -30,15 +34,16 @@ class AtmosphericRetrieval:
                  line_species,
                  cloud_species,
                  scattering,
-                 output_name,
-                 pm_path,
-                 radtrans_path,
-                 rebin_path):
+                 output_name):
         """
         Parameters
         ----------
         object_name : str
             Object name in the database.
+        line_species : list
+        cloud_species : list
+        scattering : bool
+        output_name : str
 
         Returns
         -------
@@ -46,25 +51,24 @@ class AtmosphericRetrieval:
             None
         """
 
-        sys.path.append(radtrans_path)
-        sys.path.append(rebin_path)
+        # input parameters
 
-        from petitRADTRANS_ck_test_speed import Radtrans
-        from petitRADTRANS_ck_test_speed import nat_cst as nc
-
-        self.output_name = output_name
-        self.pm_path = pm_path
-        self.radtrans_path = radtrans_path
+        self.object_name = object_name
         self.line_species = line_species
         self.cloud_species = cloud_species
         self.scattering = scattering
+        self.output_name = output_name
 
-        self.object = read_object.ReadObject(object_name)
+        # get object data
+
+        self.object = read_object.ReadObject(self.object_name)
         self.distance = self.object.get_distance()[0]*nc.pc  # [cm]
 
         species_db = database.Database()
         objectbox = species_db.get_object(object_name, None)
         filters = objectbox.filters
+
+        # get photometric data
 
         self.objphot = []
         self.synphot = []
@@ -82,10 +86,14 @@ class AtmosphericRetrieval:
         if not self.synphot:
             self.synphot = None
 
+        # get spectroscopic data
+
         self.spectrum = self.object.get_spectrum()
 
         if self.spectrum is None:
             raise ValueError('A spectrum is required for the atmospheric retrieval.')
+
+        # set wavelength bins and add to spectrum dictionary
 
         wavel_min = []
         wavel_max = []
@@ -101,39 +109,12 @@ class AtmosphericRetrieval:
             dict_val.append(wavel_bins)
             self.spectrum[key] = dict_val
 
+            # min and max wavelength for Radtrans object
+
             wavel_min.append(wavel_data[0])
             wavel_max.append(wavel_data[-1])
 
-        self.parameters = []
-
-        # spectrum
-        self.parameters.append('logg')
-        self.parameters.append('radius')
-
-        # p-t profile
-        self.parameters.append('tint')
-        self.parameters.append('t1')
-        self.parameters.append('t2')
-        self.parameters.append('t3')
-        self.parameters.append('alpha')
-        self.parameters.append('log_delta')
-
-        # abundances
-        self.parameters.append('feh')
-        self.parameters.append('co')
-        self.parameters.append('log_p_quench')
-
-        # clouds
-        if len(cloud_species) > 0:
-            self.parameters.append('fe_fraction')
-            self.parameters.append('mgsio3_fraction')
-            self.parameters.append('fsed')
-            self.parameters.append('kzz')
-            self.parameters.append('sigma_lnorm')
-
-        # self.parameters.append('log_sigma_alpha')
-
-        # Create mock PT profile for Radtrans object
+        # mock pt profile for Radtrans object
 
         temp_params = {}
         temp_params['log_delta'] = -6.
@@ -145,25 +126,79 @@ class AtmosphericRetrieval:
 
         self.pressure, _ = nc.make_press_temp(temp_params)
 
-        # Create Ratrans object
+        # Ratrans object
 
         self.rt_object = Radtrans(line_species=self.line_species,
                                   rayleigh_species=['H2', 'He'],
-                                  continuum_opacities=['H2-H2', 'H2-He'],
                                   cloud_species=self.cloud_species,
-                                  mode='c-k',
+                                  continuum_opacities=['H2-H2', 'H2-He'],
                                   wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
+                                  mode='c-k',
                                   test_ck_shuffle_comp=self.scattering,
                                   do_scat_emis=self.scattering)
 
-        # Create the RT arrays of appropriate lengths
+        # create RT arrays of appropriate lengths by using every three pressure points
 
         self.rt_object.setup_opa_structure(self.pressure[::3])
 
-        # if half:
-        #     rt_object.setup_opa_structure(self.pressure[::3])
-        # else:
-        #     rt_object.setup_opa_structure(self.pressure)
+    def set_parameters(self,
+                       bounds):
+        """
+        Parameters
+        ----------
+        bounds : dict
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.parameters = []
+
+        # generic parameters
+
+        self.parameters.append('logg')
+        self.parameters.append('radius')
+
+        # pt profile parameters
+
+        self.parameters.append('tint')
+        self.parameters.append('t1')
+        self.parameters.append('t2')
+        self.parameters.append('t3')
+        self.parameters.append('alpha')
+        self.parameters.append('log_delta')
+
+        # abundance parameters
+
+        self.parameters.append('co')
+        self.parameters.append('feh')
+        self.parameters.append('log_p_quench')
+
+        # cloud parameters
+
+        if len(self.cloud_species) > 0:
+            self.parameters.append('fe_fraction')
+            self.parameters.append('mgsio3_fraction')
+            self.parameters.append('fsed')
+            self.parameters.append('kzz')
+            self.parameters.append('sigma_lnorm')
+
+        # add the flux scaling and error offset parameters
+
+        self.count_scale = 0
+        self.count_error = 0
+
+        for item in self.spectrum.keys():
+            if item in bounds:
+                if bounds[item][0] is not None:
+                    self.parameters.append(f'scale_{item}')
+                    self.count_scale += 1
+
+                if bounds[item][1] is not None:
+                    self.parameters.append(f'error_{item}')
+                    self.count_error += 1
 
     def run_multinest(self,
                       bounds,
@@ -171,27 +206,33 @@ class AtmosphericRetrieval:
                       efficiency=0.05,
                       resume=False,
                       plotting=False):
+        """
+        Parameters
+        ----------
+        bounds : dict
+        live_points : int
+        efficiency : float
+        resume : bool
+        plotting : bool
 
-        import rebin_give_width as rgw
-        from petitRADTRANS_ck_test_speed import nat_cst as nc
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        # set initial number of parameters
 
         if len(self.cloud_species) == 0:
             self.n_param = 11
         else:
             self.n_param = 16
 
-        count_scale = 0
-        count_error = 0
+        # create list with parameters for MultiNest
 
-        for item in self.spectrum.keys():
-            if item in bounds:
-                if bounds[item][0] is not None:
-                    self.parameters.append(f'scale_{item}')
-                    count_scale += 1
+        self.set_parameters(bounds)
 
-                if bounds[item][1] is not None:
-                    self.parameters.append(f'error_{item}')
-                    count_error += 1
+        # delete the cloud parameters from the boundaries dictionary without cloud species
 
         if len(self.cloud_species) == 0:
             if 'fe_fraction' in bounds:
@@ -332,14 +373,10 @@ class AtmosphericRetrieval:
             for item in self.spectrum.keys():
                 if item in bounds:
                     if bounds[item][1] is not None:
-                        cube[self.n_param+count_scale+count] = bounds[item][1][0] + \
-                            (bounds[item][1][1]-bounds[item][1][0])*cube[self.n_param+count_scale+count]
+                        cube[self.n_param+self.count_scale+count] = bounds[item][1][0] + \
+                            (bounds[item][1][1]-bounds[item][1][0])*cube[self.n_param+self.count_scale+count]
 
                         count += 1
-
-            # Width of the permitted alpha value
-            # log_sigma_alpha = 1.-5.*cube[16]
-            # cube[16] = log_sigma_alpha
 
         def loglike(cube, ndim, nparams):
             logg, radius, tint, t1, t2, t3, alpha, log_delta, feh, co, log_p_quench = cube[:11]
@@ -347,25 +384,27 @@ class AtmosphericRetrieval:
             if len(self.cloud_species) > 0:
                 log_X_cloud_base_Fe_fraction, log_X_cloud_base_MgSiO3_fraction, fsed, kzz, sigma_lnorm = cube[11:16]
 
+            count = 0
             scaling = {}
+
             for i, item in enumerate(self.spectrum.keys()):
-                count = 0
                 if item in bounds and bounds[item][0] is not None:
                     scaling[item] = cube[self.n_param+count]
                     count += 1
+
                 else:
                     scaling[item] = 1.
 
+            count = 0
             err_offset = {}
+
             for i, item in enumerate(self.spectrum.keys()):
-                count = 0
                 if item in bounds and bounds[item][1] is not None:
-                    err_offset[item] = cube[self.n_param+count_scale+count]
+                    err_offset[item] = cube[self.n_param+self.count_scale+count]
                     count += 1
+
                 else:
                     err_offset[item] = 0.
-
-            # log_sigma_alpha = cube[16]
 
             # Prior check all input params
             log_prior = 0.
@@ -375,7 +414,7 @@ class AtmosphericRetrieval:
 
             try:
                 temp, pphot, t_connect = retrieval_util.pt_ret_model(np.array([t1, t2, t3]),
-                    1e1**log_delta, alpha, tint, self.pressure, feh, co, pm_path=self.pm_path)
+                    1e1**log_delta, alpha, tint, self.pressure, feh, co)
 
             except:
                 return -np.inf
@@ -395,29 +434,13 @@ class AtmosphericRetrieval:
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
                         self.pressure, temp, co, feh, log_p_quench, log_X_cloud_base_Fe,
                         log_X_cloud_base_MgSiO3, fsed, fsed, kzz, logg, sigma_lnorm, half=True,
-                        plotting=plotting, pm_path=self.pm_path, radtrans_path=self.radtrans_path)
+                        plotting=plotting)
 
                 else:
                     # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
-                    self.pressure, temp, co, feh, log_p_quench, 10., 10., 10., 10., 10., logg, 10.,
-                    half=True, plotting=plotting, pm_path=self.pm_path,
-                    radtrans_path=self.radtrans_path)
-
-                # wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(self.rt_object, self.pressure,
-                #     temp, logg, co, feh, log_p_quench, pm_path=self.pm_path, radtrans_path=self.radtrans_path)
-
-                # if (pphot/Pphot_esti) > 5.:
-                #     return -np.inf
-
-                # if np.abs(alpha-tau_pow) > 0.12:
-                #     return -np.inf
-
-                # if (pphot/Pphot_esti) > 5.:
-                #     return -np.inf
-
-                # sigma_alpha = 1e1**log_sigma_alpha
-                # log_prior += -(alpha-tau_pow)**2./(sigma_alpha)**2/2. - 0.5*np.log(2.*np.pi*sigma_alpha**2.)
+                        self.pressure, temp, co, feh, log_p_quench, 10., 10., 10., 10., 10., logg, 10.,
+                        half=True, plotting=plotting)
 
             except:
                 return -np.inf

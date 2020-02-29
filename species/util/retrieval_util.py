@@ -1,4 +1,3 @@
-import sys
 import copy
 
 import numpy as np
@@ -7,8 +6,11 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d, CubicSpline
 from scipy.ndimage.filters import gaussian_filter
 
+from petitRADTRANS_ck_test_speed import nat_cst as nc
+from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
-def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True):
+
+def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     """
     Self-luminous retrieval P-T model.
 
@@ -32,14 +34,8 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, pm_path=None, conv=True
 
     CO: C/O for the nabla_ad interpolation
 
-    pm_path: path of the pm library
-
     conv: enforce convective adiabat yes/no
     """
-
-    # if 'poor_mans_nonequ_chem_FeH' not in sys.modules:
-    sys.path.append(pm_path)
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
     # Go grom bar to cgs
     press_cgs = press*1e6
@@ -188,16 +184,7 @@ def calc_spectrum_clear(rt_object,
                         logg,
                         co,
                         feh,
-                        log_p_quench,
-                        pm_path=None,
-                        radtrans_path=None):
-
-    # if 'poor_mans_nonequ_chem_FeH' not in sys.modules:
-    sys.path.append(pm_path)
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-
-    sys.path.append(radtrans_path)
-    from petitRADTRANS_ck_test_speed import nat_cst as nc
+                        log_p_quench):
 
     co_list = co * np.ones_like(press)
     feh_list = feh * np.ones_like(press)
@@ -225,15 +212,7 @@ def calc_spectrum_clouds(rt_object,
                          logg,
                          sigma_lnorm,
                          half=False,
-                         plotting=False,
-                         pm_path=None,
-                         radtrans_path=None):
-
-    sys.path.append(pm_path)
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-
-    sys.path.append(radtrans_path)
-    from petitRADTRANS_ck_test_speed import nat_cst as nc
+                         plotting=False):
 
     COs = CO * np.ones_like(press)
     FeHs = FeH * np.ones_like(press)
@@ -326,9 +305,9 @@ def calc_spectrum_clouds(rt_object,
 
         plt.plot(abundances['MgSiO3(c)'], press)
         plt.axhline(P_base_MgSiO3)
+        plt.yscale('log')
         if np.count_nonzero(abundances['MgSiO3(c)']) > 0:
-            plt.yscale('log')
-        plt.xscale('log')
+            plt.xscale('log')
         plt.ylim([1e3, 1e-6])
         plt.xlim([1e-10, 1.])
         plt.title('fsed_MgSiO3 = '+str(fsed_MgSiO3)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_MgSiO3))
