@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 
 import rebin_give_width as rgw
 
-from petitRADTRANS_ck_test_speed import Radtrans
+from petitRADTRANS import Radtrans
+from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
 from petitRADTRANS_ck_test_speed import nat_cst as nc
 
 from species.analysis import photometry
@@ -133,14 +134,23 @@ class AtmosphericRetrieval:
 
         # Ratrans object
 
-        self.rt_object = Radtrans(line_species=self.line_species,
-                                  rayleigh_species=['H2', 'He'],
-                                  cloud_species=self.cloud_species,
-                                  continuum_opacities=['H2-H2', 'H2-He'],
-                                  wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
-                                  mode='c-k',
-                                  test_ck_shuffle_comp=self.scattering,
-                                  do_scat_emis=self.scattering)
+        if scattering:
+            self.rt_object = RadtransScatter(line_species=self.line_species,
+                                             rayleigh_species=['H2', 'He'],
+                                             cloud_species=self.cloud_species,
+                                             continuum_opacities=['H2-H2', 'H2-He'],
+                                             wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
+                                             mode='c-k',
+                                             test_ck_shuffle_comp=self.scattering,
+                                             do_scat_emis=self.scattering)
+
+        else:
+            self.rt_object = Radtrans(line_species=self.line_species,
+                                      rayleigh_species=['H2', 'He'],
+                                      cloud_species=self.cloud_species,
+                                      continuum_opacities=['H2-H2', 'H2-He'],
+                                      wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
+                                      mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
 
@@ -335,7 +345,6 @@ class AtmosphericRetrieval:
 
             # delta: proportionality factor in tau = delta * press_cgs**alpha
             # see Eq. 1 in Mollière et al. in prep.
-
             delta = (p_phot*1e6)**(-alpha)
             log_delta = np.log10(delta)
 
@@ -527,20 +536,23 @@ class AtmosphericRetrieval:
                     # logarithm of the cloud base mass fraction of MgSiO3
                     log_X_cloud_base_MgSiO3 = np.log10(1e1**mgsio3_fraction*XMgSiO3)
 
+                    # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
+                        self.pressure, temp, co, feh, log_p_quench, log_X_cloud_base_Fe,
+                        log_X_cloud_base_MgSiO3, fsed, fsed, kzz, logg, sigma_lnorm, half=True,
+                        plotting=plotting)
+
                 else:
                     # clear atmosphere
 
-                    log_X_cloud_base_Fe = -1e10
-                    log_X_cloud_base_MgSiO3 = -1e10
-                    fsed = 1e10
-                    kzz = -1e10
-                    sigma_lnorm = 10.
+                    # log_X_cloud_base_Fe = -1e10
+                    # log_X_cloud_base_MgSiO3 = -1e10
+                    # fsed = 1e10
+                    # kzz = -1e10
+                    # sigma_lnorm = 10.
 
-                # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
-                wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
-                    self.pressure, temp, co, feh, log_p_quench, log_X_cloud_base_Fe,
-                    log_X_cloud_base_MgSiO3, fsed, fsed, kzz, logg, sigma_lnorm, half=True,
-                    plotting=plotting)
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(self.rt_object,
+                        self.pressure, temp, logg, co, feh, log_p_quench, half=True)
 
             except:
                 return -np.inf

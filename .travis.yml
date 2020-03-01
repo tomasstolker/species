@@ -15,12 +15,10 @@ before_install:
   - sudo apt-get install libatlas-base-dev 
   - git clone https://github.com/JohannesBuchner/MultiNest
   - cd MultiNest/build
-  - pwd
-  - echo $HOME
   - cmake ..
   - make
-  - cd ../..
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build/tomasstolker/species/MultiNest/lib
+  - cd ../..
 
 install:
   - pip install -r requirements.txt

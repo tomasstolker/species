@@ -184,14 +184,59 @@ def calc_spectrum_clear(rt_object,
                         logg,
                         co,
                         feh,
-                        log_p_quench):
+                        log_p_quench,
+                        half=False):
 
     co_list = co * np.ones_like(press)
     feh_list = feh * np.ones_like(press)
 
-    abundances = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=1e1**log_p_quench)
+    abundances_interp = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=1e1**log_p_quench)
 
-    rt_object.calc_flux(temp, abundances, 10.**logg, abundances['MMW'])
+    mmw = abundances_interp['MMW']
+
+    if half:
+        temp = temp[::3]
+        press = press[::3]
+        mmw = mmw[::3]
+
+    abundances = {}
+
+    if 'Fe(c)' in abundances_interp:
+        abundances['Fe(c)'] = np.zeros_like(temp)
+
+        abundances['Fe(c)'][press < P_base_Fe] = \
+              1e1**log_X_cloud_base_Fe * (press[press <= P_base_Fe]/P_base_Fe)**fsed_Fe
+
+        if half:
+            abundances['Fe(c)'] = abundances['Fe(c)'][::3]
+
+    if 'MgSiO3(c)' in abundances_interp:
+
+        abundances['MgSiO3(c)'] = np.zeros_like(temp)
+
+        abundances['MgSiO3(c)'][press < P_base_MgSiO3] = \
+              1e1**log_X_cloud_base_MgSiO3 * (press[press <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
+
+        if half:
+            abundances['MgSiO3(c)'] = abundances['MgSiO3(c)'][::3]
+
+    if half:
+        for species in rt_object.line_species:
+            if species != 'FeH':
+                abundances[species] = abundances_interp[species.replace('_all_iso', '')][::3]
+
+        abundances['H2'] = abundances_interp['H2'][::3]
+        abundances['He'] = abundances_interp['He'][::3]
+
+    else:
+        for species in rt_object.line_species:
+            if species != 'FeH':
+                abundances[species] = abundances_interp[species.replace('_all_iso', '')]
+
+        abundances['H2'] = abundances_interp['H2']
+        abundances['He'] = abundances_interp['He']
+
+    rt_object.calc_flux(temp, abundances, 10.**logg, mmw)
 
     wlen = nc.c/rt_object.freq
 
