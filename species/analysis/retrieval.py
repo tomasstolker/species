@@ -4,9 +4,6 @@ More details on the retrieval code are available at https://petitradtrans.readth
 """
 
 import os
-
-os.environ['OMP_NUM_THREADS'] = '1'
-
 import json
 import warnings
 
@@ -14,7 +11,7 @@ import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
 
-import rebin_give_width as rgw
+from rebin_give_width import rebin_give_width
 
 from petitRADTRANS import Radtrans
 from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
@@ -24,6 +21,9 @@ from species.analysis import photometry
 from species.data import database
 from species.read import read_object
 from species.util import retrieval_util
+
+
+os.environ['OMP_NUM_THREADS'] = '1'
 
 
 class AtmosphericRetrieval:
@@ -139,7 +139,8 @@ class AtmosphericRetrieval:
                                              rayleigh_species=['H2', 'He'],
                                              cloud_species=self.cloud_species,
                                              continuum_opacities=['H2-H2', 'H2-He'],
-                                             wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
+                                             wlen_bords_micron=(0.99*min(wavel_min),
+                                                                1.01*max(wavel_max)),
                                              mode='c-k',
                                              test_ck_shuffle_comp=self.scattering,
                                              do_scat_emis=self.scattering)
@@ -149,12 +150,19 @@ class AtmosphericRetrieval:
                                       rayleigh_species=['H2', 'He'],
                                       cloud_species=self.cloud_species,
                                       continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=(0.99*min(wavel_min), 1.01*max(wavel_max)),
+                                      wlen_bords_micron=(0.99*min(wavel_min),
+                                                         1.01*max(wavel_max)),
                                       mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
 
         self.rt_object.setup_opa_structure(self.pressure[::3])
+
+        # initiate parameter list and counters
+
+        self.parameters = []
+        self.count_scale = 0
+        self.count_error = 0
 
     def set_parameters(self,
                        bounds):
@@ -171,8 +179,6 @@ class AtmosphericRetrieval:
         NoneType
             None
         """
-
-        self.parameters = []
 
         # generic parameters
 
@@ -205,10 +211,7 @@ class AtmosphericRetrieval:
 
         # add the flux scaling and error offset parameters
 
-        self.count_scale = 0
-        self.count_error = 0
-
-        for item in self.spectrum.keys():
+        for item in self.spectrum:
             if item in bounds:
                 if bounds[item][0] is not None:
                     self.parameters.append(f'scale_{item}')
@@ -249,9 +252,9 @@ class AtmosphericRetrieval:
         # set initial number of parameters (not including the flux scaling and error offeset)
 
         if len(self.cloud_species) == 0:
-            self.n_param = 11
+            n_param = 11
         else:
-            self.n_param = 16
+            n_param = 16
 
         # create list with parameters for MultiNest
 
@@ -294,6 +297,9 @@ class AtmosphericRetrieval:
                 The logarithm of the prior probability.
             """
 
+            if ndim != nparams:
+                raise ValueError('The number of dimensions and parameters should be equal.')
+
             # initiate the logarithm of the prior
             log_prior = 0
 
@@ -322,14 +328,14 @@ class AtmosphericRetrieval:
             # connection temperature (K)
             t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
 
-            # the temperature (K) at t3 is scaled down from t_connect
-            t3 = t_connect*(1-cube[5])
+            # the temperature (K) at temp_3 is scaled down from t_connect
+            temp_3 = t_connect*(1-cube[5])
 
-            # the temperature (K) at t2 is scaled down from t3
-            t2 = t3*(1-cube[4])
+            # the temperature (K) at temp_2 is scaled down from temp_3
+            temp_2 = temp_3*(1-cube[4])
 
-            # the temperature (K) at t1 is scaled down from t2
-            t1 = t2*(1-cube[3])
+            # the temperature (K) at temp_1 is scaled down from temp_2
+            temp_1 = temp_2*(1-cube[3])
 
             # alpha: power law index in tau = delta * press_cgs**alpha
             # see Eq. 1 in Mollière et al. in prep.
@@ -357,10 +363,10 @@ class AtmosphericRetrieval:
 
             # carbon-to-oxygen ratio for the nabla_ad interpolation
             if 'co' in bounds:
-                co = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[9]
+                co_ratio = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[9]
             else:
                 # default: 0.1-1.6
-                co = 0.1 + 1.5*cube[9]
+                co_ratio = 0.1 + 1.5*cube[9]
 
             # quench pressure (bar)
             # default: 1e-6-1e3 bar
@@ -397,7 +403,8 @@ class AtmosphericRetrieval:
 
                 # width of the log-normal particle size distribution TODO (um?)
                 if 'sigma_lnorm' in bounds:
-                    sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1]-bounds['sigma_lnorm'][0])*cube[15]
+                    sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
+                                                              bounds['sigma_lnorm'][0])*cube[15]
                 else:
                     # default: 1.05-3. TODO um (?)
                     sigma_lnorm = 1.05 + 1.95*cube[15]
@@ -407,13 +414,13 @@ class AtmosphericRetrieval:
             cube[0] = logg
             cube[1] = radius
             cube[2] = tint
-            cube[3] = t1
-            cube[4] = t2
-            cube[5] = t3
+            cube[3] = temp_1
+            cube[4] = temp_2
+            cube[5] = temp_3
             cube[6] = alpha
             cube[7] = log_delta
             cube[8] = feh
-            cube[9] = co
+            cube[9] = co_ratio
             cube[10] = log_p_quench
 
             if len(self.cloud_species) > 0:
@@ -427,11 +434,11 @@ class AtmosphericRetrieval:
 
             count = 0
 
-            for item in self.spectrum.keys():
+            for item in self.spectrum:
                 if item in bounds:
                     if bounds[item][0] is not None:
-                        cube[self.n_param+count] = bounds[item][0][0] + \
-                            (bounds[item][0][1]-bounds[item][0][0])*cube[self.n_param+count]
+                        cube[n_param+count] = bounds[item][0][0] + \
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[n_param+count]
 
                         count += 1
 
@@ -439,11 +446,12 @@ class AtmosphericRetrieval:
 
             count = 0
 
-            for item in self.spectrum.keys():
+            for item in self.spectrum:
                 if item in bounds:
                     if bounds[item][1] is not None:
-                        cube[self.n_param+self.count_scale+count] = bounds[item][1][0] + \
-                            (bounds[item][1][1]-bounds[item][1][0])*cube[self.n_param+self.count_scale+count]
+                        cube[n_param+self.count_scale+count] = bounds[item][1][0] + \
+                            (bounds[item][1][1]-bounds[item][1][0]) * \
+                            cube[n_param+self.count_scale+count]
 
                         count += 1
 
@@ -468,8 +476,13 @@ class AtmosphericRetrieval:
                 Logarithm of the likelihood function.
             """
 
+            if ndim != nparams:
+                raise ValueError('The number of dimensions and parameters should be equal.')
+
             # mandatory parameters
-            logg, radius, tint, t1, t2, t3, alpha, log_delta, feh, co, log_p_quench = cube[:11]
+            logg, radius = cube[0:2]
+            tint, temp_1, temp_2, temp_3, alpha, log_delta = cube[2:8]
+            feh, co_ratio, log_p_quench = cube[8:11]
 
             if len(self.cloud_species) > 0:
                 # optional cloud parameters
@@ -480,9 +493,9 @@ class AtmosphericRetrieval:
             count = 0
             scaling = {}
 
-            for i, item in enumerate(self.spectrum.keys()):
+            for item in self.spectrum:
                 if item in bounds and bounds[item][0] is not None:
-                    scaling[item] = cube[self.n_param+count]
+                    scaling[item] = cube[n_param+count]
                     count += 1
 
                 else:
@@ -493,9 +506,9 @@ class AtmosphericRetrieval:
             count = 0
             err_offset = {}
 
-            for i, item in enumerate(self.spectrum.keys()):
+            for item in self.spectrum:
                 if item in bounds and bounds[item][1] is not None:
-                    err_offset[item] = cube[self.n_param+self.count_scale+count]
+                    err_offset[item] = cube[n_param+self.count_scale+count]
                     count += 1
 
                 else:
@@ -507,10 +520,15 @@ class AtmosphericRetrieval:
             # create a p-t profile
 
             try:
-                temp, pphot, t_connect = retrieval_util.pt_ret_model(np.array([t1, t2, t3]),
-                    1e1**log_delta, alpha, tint, self.pressure, feh, co)
+                temp, _, _ = retrieval_util.pt_ret_model(np.array([temp_1, temp_2, temp_3]),
+                                                         1e1**log_delta,
+                                                         alpha,
+                                                         tint,
+                                                         self.pressure,
+                                                         feh,
+                                                         co_ratio)
 
-            except:
+            except ValueError:
                 return -np.inf
 
             # return zero probability if the minimum temperature is negative
@@ -525,36 +543,37 @@ class AtmosphericRetrieval:
                     # cloudy atmosphere
 
                     # mass fraction of Fe
-                    XFe = retrieval_util.return_XFe(feh, co)
+                    x_fe = retrieval_util.return_XFe(feh, co_ratio)
 
                     # logarithm of the cloud base mass fraction of Fe
-                    log_X_cloud_base_Fe = np.log10(1e1**fe_fraction*XFe)
+                    log_x_base_fe = np.log10(1e1**fe_fraction*x_fe)
 
                     # mass fraction of MgSiO3
-                    XMgSiO3 = retrieval_util.return_XMgSiO3(feh, co)
+                    x_mgsio3 = retrieval_util.return_XMgSiO3(feh, co_ratio)
 
                     # logarithm of the cloud base mass fraction of MgSiO3
-                    log_X_cloud_base_MgSiO3 = np.log10(1e1**mgsio3_fraction*XMgSiO3)
+                    log_x_base_mgsio3 = np.log10(1e1**mgsio3_fraction*x_mgsio3)
 
                     # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(self.rt_object,
-                        self.pressure, temp, co, feh, log_p_quench, log_X_cloud_base_Fe,
-                        log_X_cloud_base_MgSiO3, fsed, fsed, kzz, logg, sigma_lnorm, half=True,
-                        plotting=plotting)
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(
+                        self.rt_object, self.pressure, temp, co_ratio, feh, log_p_quench,
+                        log_x_base_fe, log_x_base_mgsio3, fsed, fsed, kzz,
+                        logg, sigma_lnorm, half=True, plotting=plotting)
 
                 else:
                     # clear atmosphere
 
-                    # log_X_cloud_base_Fe = -1e10
-                    # log_X_cloud_base_MgSiO3 = -1e10
+                    # log_x_base_fe = -1e10
+                    # log_x_base_mgsio3 = -1e10
                     # fsed = 1e10
                     # kzz = -1e10
                     # sigma_lnorm = 10.
 
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(self.rt_object,
-                        self.pressure, temp, logg, co, feh, log_p_quench, half=True)
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                        self.rt_object, self.pressure, temp, logg, co_ratio, feh, log_p_quench,
+                        half=True)
 
-            except:
+            except ValueError:
                 return -np.inf
 
             # return zero probability if the spectrum contains NaN values
@@ -569,37 +588,55 @@ class AtmosphericRetrieval:
             flux_lambda = flux_lambda * (radius*nc.r_jup_mean/(self.distance*nc.pc))**2.
 
             for key, value in self.spectrum.items():
+                # get spectrum
                 data_wavel = value[0][:, 0]
                 data_flux = value[0][:, 1]
                 data_error = value[0][:, 2]
+
+                # get inverted covariance matrix
                 data_cov_inv = value[2]
+
+                # get spectral resolution
                 spec_res = value[3]
+
+                # get wavelength binds
                 data_wavel_bins = value[4]
 
-                # convolve with Gaussian LSF
-                flux_smooth = retrieval_util.convolve(wlen_micron, flux_lambda, spec_res)
+                # fitted error component
+                err_fit = 10.**err_offset[key]
 
-                # resample to observation
-                flux_rebinned = rgw.rebin_give_width(wlen_micron, flux_smooth, data_wavel, data_wavel_bins)
+                # convolve with Gaussian LSF
+                flux_smooth = retrieval_util.convolve(wlen_micron,
+                                                      flux_lambda,
+                                                      spec_res)
+
+                # resample to the observation
+                flux_rebinned = rebin_give_width(wlen_micron,
+                                                 flux_smooth,
+                                                 data_wavel,
+                                                 data_wavel_bins)
+
+                # difference between the observed and modeled spectrum
+                diff = flux_rebinned - scaling[key]*data_flux
+
+                if data_cov_inv is not None:
+                    # calculate the log-likelihood with the covariance matrix
+                    # TODO include err_fit in the covariance matrix
+                    log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
+                else:
+                    # calculate the log-likelihood without the covariance matrix
+                    log_likelihood += -np.sum(diff**2/(data_error**2.+err_fit**2))/2.
 
                 if plotting:
-                    plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+10.**err_offset[key],
+                    plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+err_fit,
                                  marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue')
 
                     plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange')
 
-                # Calculate log-likelihood
-                diff = flux_rebinned - scaling[key]*data_flux
-
-                if data_cov_inv is not None:
-                    log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
-                else:
-                    log_likelihood += -np.sum((diff**2/(data_error**2.+(10.**err_offset[key])**2)))/2.
-
             if plotting:
                 plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)
-                plt.xlabel('Wavelength [$\mu$m]')
-                plt.ylabel('Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+                plt.xlabel(r'Wavelength [$\mu$m]')
+                plt.ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
                 plt.savefig('spectrum.pdf', bbox_inches='tight')
                 plt.clf()
 
