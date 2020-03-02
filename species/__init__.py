@@ -18,6 +18,8 @@ from species.read.read_model import ReadModel
 
 from species.read.read_planck import ReadPlanck
 
+from species.read.read_radtrans import ReadRadtrans
+
 from species.read.read_spectrum import ReadSpectrum
 
 from species.read.read_color import ReadColorMagnitude, \

@@ -466,7 +466,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles and legend:
-        ax1.legend(loc=legend, fontsize=12, frameon=False)
+        ax1.legend(loc=legend, fontsize=10, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

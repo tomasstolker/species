@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 from petitRADTRANS_ck_test_speed import nat_cst as nc
 
 from species.data import database
-from species.util.retrieval_util import pt_ret_model
+from species.util import retrieval_util
 
 
 def plot_pt_profile(tag,
-                    n_random=100,
+                    random=100,
                     xlim=None,
                     ylim=None,
                     offset=None,
@@ -21,7 +21,7 @@ def plot_pt_profile(tag,
     ----------
     tag : str
         Database tag with the MCMC samples.
-    n_random : int
+    random : int
         Number of randomly selected samples from the posterior.
     xlim : tuple(float, float)
         Limits of the wavelength axis.
@@ -44,7 +44,7 @@ def plot_pt_profile(tag,
     samples = box.samples
     median = box.median_sample
 
-    indices = np.random.randint(samples.shape[0], size=n_random)
+    indices = np.random.randint(samples.shape[0], size=random)
     samples = samples[indices, ]
 
     mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -111,27 +111,16 @@ def plot_pt_profile(tag,
     co_index = np.argwhere(parameters == 'co')[0]
 
     for item in samples:
-        temp, _, _ = pt_ret_model(np.array([item[t1_index][0],
-                                            item[t2_index][0],
-                                            item[t3_index][0]]),
-                                  10.**item[log_delta_index][0],
-                                  item[alpha_index][0],
-                                  item[tint_index][0],
-                                  pressure,
-                                  item[feh_index][0],
-                                  item[co_index][0])
+        temp, _, _ = retrieval_util.pt_ret_model(
+            np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
+            10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
+            item[feh_index][0], item[co_index][0])
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
 
-    temp, _, _ = pt_ret_model(np.array([median['t1'],
-                                        median['t2'],
-                                        median['t3']]),
-                              10.**median['log_delta'],
-                              median['alpha'],
-                              median['tint'],
-                              pressure,
-                              median['feh'],
-                              median['co'])
+    temp, _, _ = retrieval_util.pt_ret_model(
+        np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
+        median['alpha'], median['tint'], pressure, median['feh'], median['co'])
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 

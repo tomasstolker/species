@@ -6,8 +6,10 @@ More details on the retrieval code are available at https://petitradtrans.readth
 import os
 import json
 import warnings
+import configparser
 
 import h5py
+import tqdm
 import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,11 +17,12 @@ import matplotlib.pyplot as plt
 from rebin_give_width import rebin_give_width
 
 from petitRADTRANS import Radtrans
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
 from petitRADTRANS_ck_test_speed import nat_cst as nc
+from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
 
 from species.analysis import photometry
 from species.data import database
+from species.core import box, constants
 from species.read import read_object
 from species.util import retrieval_util
 
@@ -48,7 +51,7 @@ class AtmosphericRetrieval:
         cloud_species : list
             List with the cloud species. No clouds are used if an empty list is provided.
         scattering : bool
-            Account for scattering in the radiative transfer.
+            Include scattering in the radiative transfer.
         output_name : str
             Output name that is used for the output files from MultiNest.
 
@@ -262,6 +265,8 @@ class AtmosphericRetrieval:
                 del bounds['sigma_lnorm']
 
         # create Ratrans object
+
+        print('Setting up petitRADTRANS...')
 
         if self.scattering:
             self.rt_object = RadtransScatter(line_species=self.line_species,
@@ -594,7 +599,7 @@ class AtmosphericRetrieval:
                 return -np.inf
 
             # scale the emitted spectrum to the observation
-            flux_lambda = flux_lambda * (radius*nc.r_jup_mean/(self.distance*nc.pc))**2.
+            flux_lambda *= (radius*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
             for key, value in self.spectrum.items():
                 # get spectrum
@@ -632,9 +637,12 @@ class AtmosphericRetrieval:
                     # calculate the log-likelihood with the covariance matrix
                     # TODO include err_fit in the covariance matrix
                     log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
+
                 else:
                     # calculate the log-likelihood without the covariance matrix
-                    log_likelihood += -np.sum(diff**2/(data_error**2.+err_fit**2))/2.
+                    # TODO check 0.5 factor
+                    var_infl = data_error**2.+err_fit**2
+                    log_likelihood += -0.5*np.sum(diff**2/var_infl - np.log(2.*np.pi*var_infl))
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+err_fit,
@@ -653,84 +661,31 @@ class AtmosphericRetrieval:
 
         # store the model parameters in a JSON file
 
-        json.dump(self.parameters, open(f'{self.output_name}_params.json', 'w'))
+        with open(f'{self.output_name}_params.json', 'w') as json_file:
+            json.dump(self.parameters, json_file)
+
+        # store the Radtrans arguments in a JSON file
+
+        radtrans_dict = {}
+        radtrans_dict['line_species'] = self.line_species
+        radtrans_dict['cloud_species'] = self.cloud_species
+        radtrans_dict['scattering'] = self.scattering
+        radtrans_dict['distance'] = self.distance
+
+        with open(f'{self.output_name}_radtrans.json', 'w', encoding='utf-8') as json_file:
+            json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
         # run the nested sampling with MultiNest
 
-        # pymultinest.run(loglike,
-        #                 prior,
-        #                 len(self.parameters),
-        #                 outputfiles_basename=f'{self.output_name}_',
-        #                 resume=resume,
-        #                 verbose=True,
-        #                 const_efficiency_mode=True,
-        #                 sampling_efficiency=efficiency,
-        #                 n_live_points=live_points,
-        #                 evidence_tolerance=0.5)
+        print('Sampling the posterior distribution with MultiNest...')
 
-    def store_results(self,
-                      tag):
-        """
-        Parameters
-        ----------
-        tag : str
-            Database tag.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        print('Storing samples in the database...', end='', flush=True)
-
-        species_db = database.Database()
-
-        with open(f'{self.output_name}_params.json') as json_file:
-            parameters = json.load(json_file)
-
-        samples = np.loadtxt(f'{self.output_name}_post_equal_weights.dat')
-
-        with h5py.File(species_db.database, 'a') as h5_file:
-
-            if 'results' not in h5_file:
-                h5_file.create_group('results')
-
-            if 'results/mcmc' not in h5_file:
-                h5_file.create_group('results/mcmc')
-
-            if f'results/mcmc/{tag}' in h5_file:
-                del h5_file[f'results/mcmc/{tag}']
-
-            # remove the column with the log-likelihood value
-            samples = samples[:, :-1]
-
-            if samples.shape[1] != len(parameters):
-                raise ValueError('The number of parameters is not equal to the parameter size '
-                                 'of the samples array.')
-
-            dset = h5_file.create_dataset(f'results/mcmc/{tag}/samples', data=samples)
-
-            dset.attrs['type'] = 'model'
-            dset.attrs['spectrum'] = 'petitradtrans'
-            dset.attrs['nparam'] = int(len(parameters))
-            dset.attrs['distance'] = float(self.distance)
-
-            count_scale = 0
-            count_error = 0
-
-            for i, item in enumerate(parameters):
-                dset.attrs[f'parameter{i}'] = item
-
-                if item[0:6] == 'scale_':
-                    dset.attrs[f'scaling{count_scale}'] = item
-                    count_scale += 1
-
-                elif item[0:6] == 'error_':
-                    dset.attrs[f'error{count_error}'] = item
-                    count_error += 1
-
-            dset.attrs['nscaling'] = int(count_scale)
-            dset.attrs['nerror'] = int(count_error)
-
-        print(' [DONE]')
+        pymultinest.run(loglike,
+                        prior,
+                        len(self.parameters),
+                        outputfiles_basename=f'{self.output_name}_',
+                        resume=resume,
+                        verbose=True,
+                        const_efficiency_mode=True,
+                        sampling_efficiency=efficiency,
+                        n_live_points=live_points,
+                        evidence_tolerance=0.5)
