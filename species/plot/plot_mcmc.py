@@ -150,11 +150,13 @@ def plot_posterior(tag,
         print(f'   - {key} = {value:.2f}')
 
     samples = box.samples
-    par_val = tuple(box.prob_sample.values())
 
-    print(f'Maximum posterior sample:')
-    for key, value in box.prob_sample.items():
-        print(f'   - {key} = {value:.2f}')
+    if box.prob_sample is not None:
+        par_val = tuple(box.prob_sample.values())
+
+        print(f'Maximum posterior sample:')
+        for key, value in box.prob_sample.items():
+            print(f'   - {key} = {value:.2f}')
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 

@@ -145,6 +145,47 @@ def update_labels(param):
         index = param.index('offset')
         param[index] = 'Offset'
 
+    if 'teff' in param:
+        index = param.index('teff')
+        param[index] = r'$T_\mathregular{eff}$ [K]'
+
+    if 'tint' in param:
+        index = param.index('tint')
+        param[index] = r'$T_\mathregular{int}$ [K]'
+
+    if 't1' in param:
+        index = param.index('t1')
+        param[index] = r'$T_\mathregular{1}$ [K]'
+
+    if 't2' in param:
+        index = param.index('t2')
+        param[index] = r'$T_\mathregular{2}$ [K]'
+
+    if 't3' in param:
+        index = param.index('t3')
+        param[index] = r'$T_\mathregular{3}$ [K]'
+
+    if 'alpha' in param:
+        index = param.index('alpha')
+        param[index] = r'$\alpha$'
+
+    if 'log_delta' in param:
+        index = param.index('log_delta')
+        param[index] = r'$\log\,\delta$ [dex]'
+
+    if 'log_p_quench' in param:
+        index = param.index('log_p_quench')
+        param[index] = r'$\log\,P_\mathregular{quench}$ [dex]'
+
+    for i, item in enumerate(param):
+        if item[0:6] == 'scale_':
+            spec_name = item[6:]
+            param[i] = rf'$a_\mathregular{ {spec_name} }$'
+
+        elif item[0:6] == 'error_':
+            spec_name = item[6:]
+            param[i] = rf'$b_\mathregular{ {spec_name} }$'
+
     return param
 
 

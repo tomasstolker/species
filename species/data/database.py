@@ -886,31 +886,36 @@ class Database:
             Parameters and values for the sample with the maximum posterior probability.
         """
 
-        h5_file = h5py.File(self.database, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        with h5py.File(self.database, 'r') as h5_file:
+            dset = h5_file[f'results/mcmc/{tag}/samples']
 
-        nparam = dset.attrs['nparam']
-        nscaling = dset.attrs['nscaling']
+            nparam = dset.attrs['nparam']
+            nscaling = dset.attrs['nscaling']
+            nerror = dset.attrs['nerror']
 
-        scaling = []
-        for i in range(nscaling):
-            scaling.append(dset.attrs[f'scaling{i}'])
+            scaling = []
+            for i in range(nscaling):
+                scaling.append(dset.attrs[f'scaling{i}'])
 
-        samples = np.asarray(dset)
-        samples = samples[:, burnin:, :]
-        samples = np.reshape(samples, (-1, nparam))
+            error = []
+            for i in range(nerror):
+                error.append(dset.attrs[f'error{i}'])
 
-        median_sample = {}
+            samples = np.asarray(dset)
 
-        for i in range(nparam):
-            par_key = dset.attrs[f'parameter{i}']
-            par_value = np.percentile(samples[:, i], 50.)
-            median_sample[par_key] = par_value
+            if samples.ndim == 3:
+                samples = samples[:, burnin:, :]
+                samples = np.reshape(samples, (-1, nparam))
 
-        if dset.attrs.__contains__('distance'):
-            median_sample['distance'] = dset.attrs['distance']
+            median_sample = {}
 
-        h5_file.close()
+            for i in range(nparam):
+                par_key = dset.attrs[f'parameter{i}']
+                par_value = np.percentile(samples[:, i], 50.)
+                median_sample[par_key] = par_value
+
+            if dset.attrs.__contains__('distance'):
+                median_sample['distance'] = dset.attrs['distance']
 
         return median_sample
 
@@ -1199,12 +1204,14 @@ class Database:
         nparam = dset.attrs['nparam']
 
         samples = np.asarray(dset)
-        samples = samples[:, burnin:, :]
 
-        if random:
-            ran_walker = np.random.randint(samples.shape[0], size=random)
-            ran_step = np.random.randint(samples.shape[1], size=random)
-            samples = samples[ran_walker, ran_step, :]
+        if samples.ndim == 3:
+            samples = samples[:, burnin:, :]
+
+            if random:
+                ran_walker = np.random.randint(samples.shape[0], size=random)
+                ran_step = np.random.randint(samples.shape[1], size=random)
+                samples = samples[ran_walker, ran_step, :]
 
         param = []
         for i in range(nparam):
@@ -1212,7 +1219,11 @@ class Database:
 
         h5_file.close()
 
-        prob_sample = self.get_probable_sample(tag, burnin)
+        if samples.ndim == 3:
+            prob_sample = self.get_probable_sample(tag, burnin)
+        else:
+            prob_sample = None
+
         median_sample = self.get_median_sample(tag, burnin)
 
         return box.create_box('samples',

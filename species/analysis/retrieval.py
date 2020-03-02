@@ -7,6 +7,7 @@ import os
 import json
 import warnings
 
+import h5py
 import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -101,8 +102,8 @@ class AtmosphericRetrieval:
 
         # set wavelength bins and add to spectrum dictionary
 
-        wavel_min = []
-        wavel_max = []
+        self.wavel_min = []
+        self.wavel_max = []
 
         for key, value in self.spectrum.items():
             dict_val = list(value)
@@ -117,8 +118,8 @@ class AtmosphericRetrieval:
 
             # min and max wavelength for Radtrans object
 
-            wavel_min.append(wavel_data[0])
-            wavel_max.append(wavel_data[-1])
+            self.wavel_min.append(wavel_data[0])
+            self.wavel_max.append(wavel_data[-1])
 
         # mock p-t profile for Radtrans object
 
@@ -131,32 +132,6 @@ class AtmosphericRetrieval:
         temp_params['alpha'] = 0.
 
         self.pressure, _ = nc.make_press_temp(temp_params)
-
-        # Ratrans object
-
-        if scattering:
-            self.rt_object = RadtransScatter(line_species=self.line_species,
-                                             rayleigh_species=['H2', 'He'],
-                                             cloud_species=self.cloud_species,
-                                             continuum_opacities=['H2-H2', 'H2-He'],
-                                             wlen_bords_micron=(0.99*min(wavel_min),
-                                                                1.01*max(wavel_max)),
-                                             mode='c-k',
-                                             test_ck_shuffle_comp=self.scattering,
-                                             do_scat_emis=self.scattering)
-
-        else:
-            self.rt_object = Radtrans(line_species=self.line_species,
-                                      rayleigh_species=['H2', 'He'],
-                                      cloud_species=self.cloud_species,
-                                      continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=(0.99*min(wavel_min),
-                                                         1.01*max(wavel_max)),
-                                      mode='c-k')
-
-        # create RT arrays of appropriate lengths by using every three pressure points
-
-        self.rt_object.setup_opa_structure(self.pressure[::3])
 
         # initiate parameter list and counters
 
@@ -196,8 +171,8 @@ class AtmosphericRetrieval:
 
         # abundance parameters
 
-        self.parameters.append('co')
         self.parameters.append('feh')
+        self.parameters.append('co')
         self.parameters.append('log_p_quench')
 
         # cloud parameters
@@ -209,7 +184,7 @@ class AtmosphericRetrieval:
             self.parameters.append('kzz')
             self.parameters.append('sigma_lnorm')
 
-        # add the flux scaling and error offset parameters
+        # add the flux scaling parameters
 
         for item in self.spectrum:
             if item in bounds:
@@ -217,11 +192,16 @@ class AtmosphericRetrieval:
                     self.parameters.append(f'scale_{item}')
                     self.count_scale += 1
 
+        # add the error offset parameters
+
+        for item in self.spectrum:
+            if item in bounds:
                 if bounds[item][1] is not None:
                     self.parameters.append(f'error_{item}')
                     self.count_error += 1
 
     def run_multinest(self,
+                      tag,
                       bounds,
                       live_points=2000,
                       efficiency=0.05,
@@ -233,7 +213,10 @@ class AtmosphericRetrieval:
 
         Parameters
         ----------
+        tag : str
+            Database tag where the results will be stored.
         bounds : dict
+            Dictionary with the prior boundaries.
         live_points : int
             Number of live points.
         efficiency : float
@@ -278,6 +261,32 @@ class AtmosphericRetrieval:
             if 'sigma_lnorm' in bounds:
                 del bounds['sigma_lnorm']
 
+        # create Ratrans object
+
+        if self.scattering:
+            self.rt_object = RadtransScatter(line_species=self.line_species,
+                                             rayleigh_species=['H2', 'He'],
+                                             cloud_species=self.cloud_species,
+                                             continuum_opacities=['H2-H2', 'H2-He'],
+                                             wlen_bords_micron=(0.99*min(self.wavel_min),
+                                                                1.01*max(self.wavel_max)),
+                                             mode='c-k',
+                                             test_ck_shuffle_comp=self.scattering,
+                                             do_scat_emis=self.scattering)
+
+        else:
+            self.rt_object = Radtrans(line_species=self.line_species,
+                                      rayleigh_species=['H2', 'He'],
+                                      cloud_species=self.cloud_species,
+                                      continuum_opacities=['H2-H2', 'H2-He'],
+                                      wlen_bords_micron=(0.99*min(self.wavel_min),
+                                                         1.01*max(self.wavel_max)),
+                                      mode='c-k')
+
+        # create RT arrays of appropriate lengths by using every three pressure points
+
+        self.rt_object.setup_opa_structure(self.pressure[::3])
+
         def prior(cube, ndim, nparams):
             """
             Function to transform the unit cube into the parameter cube.
@@ -297,8 +306,8 @@ class AtmosphericRetrieval:
                 The logarithm of the prior probability.
             """
 
-            if ndim != nparams:
-                raise ValueError('The number of dimensions and parameters should be equal.')
+            # if ndim != nparams:
+            #     raise ValueError('The number of dimensions and parameters should be equal.')
 
             # initiate the logarithm of the prior
             log_prior = 0
@@ -476,8 +485,8 @@ class AtmosphericRetrieval:
                 Logarithm of the likelihood function.
             """
 
-            if ndim != nparams:
-                raise ValueError('The number of dimensions and parameters should be equal.')
+            # if ndim != nparams:
+            #     raise ValueError('The number of dimensions and parameters should be equal.')
 
             # mandatory parameters
             logg, radius = cube[0:2]
@@ -519,17 +528,17 @@ class AtmosphericRetrieval:
 
             # create a p-t profile
 
-            try:
-                temp, _, _ = retrieval_util.pt_ret_model(np.array([temp_1, temp_2, temp_3]),
-                                                         1e1**log_delta,
-                                                         alpha,
-                                                         tint,
-                                                         self.pressure,
-                                                         feh,
-                                                         co_ratio)
+            # try:
+            temp, _, _ = retrieval_util.pt_ret_model(np.array([temp_1, temp_2, temp_3]),
+                                                     10.**log_delta,
+                                                     alpha,
+                                                     tint,
+                                                     self.pressure,
+                                                     feh,
+                                                     co_ratio)
 
-            except ValueError:
-                return -np.inf
+            # except:
+            #     return -np.inf
 
             # return zero probability if the minimum temperature is negative
 
@@ -538,43 +547,43 @@ class AtmosphericRetrieval:
 
             # calculate the emission spectrum
 
-            try:
-                if len(self.cloud_species) > 0:
-                    # cloudy atmosphere
+            # try:
+            if len(self.cloud_species) > 0:
+                # cloudy atmosphere
 
-                    # mass fraction of Fe
-                    x_fe = retrieval_util.return_XFe(feh, co_ratio)
+                # mass fraction of Fe
+                x_fe = retrieval_util.return_XFe(feh, co_ratio)
 
-                    # logarithm of the cloud base mass fraction of Fe
-                    log_x_base_fe = np.log10(1e1**fe_fraction*x_fe)
+                # logarithm of the cloud base mass fraction of Fe
+                log_x_base_fe = np.log10(1e1**fe_fraction*x_fe)
 
-                    # mass fraction of MgSiO3
-                    x_mgsio3 = retrieval_util.return_XMgSiO3(feh, co_ratio)
+                # mass fraction of MgSiO3
+                x_mgsio3 = retrieval_util.return_XMgSiO3(feh, co_ratio)
 
-                    # logarithm of the cloud base mass fraction of MgSiO3
-                    log_x_base_mgsio3 = np.log10(1e1**mgsio3_fraction*x_mgsio3)
+                # logarithm of the cloud base mass fraction of MgSiO3
+                log_x_base_mgsio3 = np.log10(1e1**mgsio3_fraction*x_mgsio3)
 
-                    # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(
-                        self.rt_object, self.pressure, temp, co_ratio, feh, log_p_quench,
-                        log_x_base_fe, log_x_base_mgsio3, fsed, fsed, kzz,
-                        logg, sigma_lnorm, half=True, plotting=plotting)
+                # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
+                wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object, self.pressure, temp, co_ratio, feh, log_p_quench,
+                    log_x_base_fe, log_x_base_mgsio3, fsed, fsed, kzz,
+                    logg, sigma_lnorm, half=True, plotting=plotting)
 
-                else:
-                    # clear atmosphere
+            else:
+                # clear atmosphere
 
-                    # log_x_base_fe = -1e10
-                    # log_x_base_mgsio3 = -1e10
-                    # fsed = 1e10
-                    # kzz = -1e10
-                    # sigma_lnorm = 10.
+                # log_x_base_fe = -1e10
+                # log_x_base_mgsio3 = -1e10
+                # fsed = 1e10
+                # kzz = -1e10
+                # sigma_lnorm = 10.
 
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
-                        self.rt_object, self.pressure, temp, logg, co_ratio, feh, log_p_quench,
-                        half=True)
+                wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                    self.rt_object, self.pressure, temp, logg, co_ratio, feh, log_p_quench,
+                    half=True)
 
-            except ValueError:
-                return -np.inf
+            # except:
+            #     return -np.inf
 
             # return zero probability if the spectrum contains NaN values
 
@@ -648,13 +657,80 @@ class AtmosphericRetrieval:
 
         # run the nested sampling with MultiNest
 
-        pymultinest.run(loglike,
-                        prior,
-                        len(self.parameters),
-                        outputfiles_basename=f'{self.output_name}_',
-                        resume=resume,
-                        verbose=True,
-                        const_efficiency_mode=True,
-                        sampling_efficiency=efficiency,
-                        n_live_points=live_points,
-                        evidence_tolerance=0.5)
+        # pymultinest.run(loglike,
+        #                 prior,
+        #                 len(self.parameters),
+        #                 outputfiles_basename=f'{self.output_name}_',
+        #                 resume=resume,
+        #                 verbose=True,
+        #                 const_efficiency_mode=True,
+        #                 sampling_efficiency=efficiency,
+        #                 n_live_points=live_points,
+        #                 evidence_tolerance=0.5)
+
+    def store_results(self,
+                      tag):
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print('Storing samples in the database...', end='', flush=True)
+
+        species_db = database.Database()
+
+        with open(f'{self.output_name}_params.json') as json_file:
+            parameters = json.load(json_file)
+
+        samples = np.loadtxt(f'{self.output_name}_post_equal_weights.dat')
+
+        with h5py.File(species_db.database, 'a') as h5_file:
+
+            if 'results' not in h5_file:
+                h5_file.create_group('results')
+
+            if 'results/mcmc' not in h5_file:
+                h5_file.create_group('results/mcmc')
+
+            if f'results/mcmc/{tag}' in h5_file:
+                del h5_file[f'results/mcmc/{tag}']
+
+            # remove the column with the log-likelihood value
+            samples = samples[:, :-1]
+
+            if samples.shape[1] != len(parameters):
+                raise ValueError('The number of parameters is not equal to the parameter size '
+                                 'of the samples array.')
+
+            dset = h5_file.create_dataset(f'results/mcmc/{tag}/samples', data=samples)
+
+            dset.attrs['type'] = 'model'
+            dset.attrs['spectrum'] = 'petitradtrans'
+            dset.attrs['nparam'] = int(len(parameters))
+            dset.attrs['distance'] = float(self.distance)
+
+            count_scale = 0
+            count_error = 0
+
+            for i, item in enumerate(parameters):
+                dset.attrs[f'parameter{i}'] = item
+
+                if item[0:6] == 'scale_':
+                    dset.attrs[f'scaling{count_scale}'] = item
+                    count_scale += 1
+
+                elif item[0:6] == 'error_':
+                    dset.attrs[f'error{count_error}'] = item
+                    count_error += 1
+
+            dset.attrs['nscaling'] = int(count_scale)
+            dset.attrs['nerror'] = int(count_error)
+
+        print(' [DONE]')

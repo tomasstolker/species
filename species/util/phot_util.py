@@ -95,6 +95,32 @@ def apparent_to_absolute(app_mag,
     return abs_mag, abs_err
 
 
+def absolute_to_apparent(abs_mag,
+                         distance):
+    """
+    Function for converting an absolute magnitude into an apparent magnitude.
+
+    Parameters
+    ----------
+    abs_mag : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Absolute magnitude and uncertainty (mag). The same uncertainty is used for the
+        apparent magnitude.
+    distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Distance and uncertainty (pc).
+
+    Returns
+    -------
+    float, numpy.ndarray
+        Apparent magnitude (mag).
+    float, numpy.ndarray, None
+        Uncertainty (mag).
+    """
+
+    app_mag = abs_mag[0] + 5.*np.log10(distance[0]) - 5.
+
+    return app_mag, abs_mag[1]
+
+
 def get_residuals(datatype,
                   spectrum,
                   parameters,
@@ -193,7 +219,8 @@ def get_residuals(datatype,
 
     if res_spec is not None:
         for key in objectbox.spectrum:
-            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, max: {np.amax(res_spec[key]):.2f}')
+            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
+                  f'max: {np.amax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

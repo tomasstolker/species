@@ -35,16 +35,19 @@ from species.data.companions import get_data
 
 from species.data.database import Database
 
+from species.plot.plot_color import plot_color_magnitude, \
+                                    plot_color_color
+
 from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers, \
                                    plot_photometry
 
-from species.plot.plot_color import plot_color_magnitude, \
-                                    plot_color_color
+from species.plot.plot_retrieval import plot_pt_profile
 
 from species.plot.plot_spectrum import plot_spectrum
 
 from species.util.phot_util import apparent_to_absolute, \
+                                   absolute_to_apparent, \
                                    multi_photometry, \
                                    get_residuals
 
