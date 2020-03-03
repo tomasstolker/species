@@ -74,6 +74,27 @@ class AtmosphericRetrieval:
         self.object = read_object.ReadObject(self.object_name)
         self.distance = self.object.get_distance()[0]  # [pc]
 
+        print(f'Object: {self.object_name}')
+        print(f'Distance: {self.distance}')
+
+        if len(self.line_species) == 0:
+            print(f'Line species: None')
+
+        else:
+            print(f'Line species:')
+            for item in self.line_species:
+                print(f'   - {item}')
+
+        if len(self.cloud_species) == 0:
+            print(f'Cloud species: None')
+
+        else:
+            print(f'Cloud species:')
+            for item in self.cloud_species:
+                print(f'   - {item}')
+
+        print(f'Scattering: {self.scattering}')
+
         species_db = database.Database()
         objectbox = species_db.get_object(object_name, None)
         filters = objectbox.filters
@@ -83,9 +104,18 @@ class AtmosphericRetrieval:
         self.objphot = []
         self.synphot = []
 
+        if filters is None:
+            print('No photometric data available in the database.')
+
+        else:
+            warnings.warn('Support for photometric data is not yet implemented.')
+            print('Photometric data:')
+
         for item in filters:
             obj_phot = self.object.get_photometry(item)
             self.objphot.append((obj_phot[2], obj_phot[3]))
+
+            print(f'   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]}')
 
             sphot = photometry.SyntheticPhotometry(item)
             self.synphot.append(sphot)
@@ -101,12 +131,14 @@ class AtmosphericRetrieval:
         self.spectrum = self.object.get_spectrum()
 
         if self.spectrum is None:
-            raise ValueError('A spectrum is required for the atmospheric retrieval.')
+            raise ValueError('A spectrum is required for atmospheric retrieval.')
 
         # set wavelength bins and add to spectrum dictionary
 
         self.wavel_min = []
         self.wavel_max = []
+
+        print('Spectroscopic data:')
 
         for key, value in self.spectrum.items():
             dict_val = list(value)
@@ -124,6 +156,10 @@ class AtmosphericRetrieval:
             self.wavel_min.append(wavel_data[0])
             self.wavel_max.append(wavel_data[-1])
 
+            print(f'   - {key}')
+            print(f'     Wavelength range (um) = {wavel_data[0]:.2f} - {wavel_data[-1]:.2f}')
+            print(f'     Spectral resolution = {self.spectrum[key][3]:.2f}')
+
         # mock p-t profile for Radtrans object
 
         temp_params = {}
@@ -135,6 +171,8 @@ class AtmosphericRetrieval:
         temp_params['alpha'] = 0.
 
         self.pressure, _ = nc.make_press_temp(temp_params)
+
+        print(f'Initiating {self.pressure.size} pressure levels (bar): {self.pressure[0]:.2e} - {self.pressure[-1]:.2e}')
 
         # initiate parameter list and counters
 
@@ -202,6 +240,11 @@ class AtmosphericRetrieval:
                 if bounds[item][1] is not None:
                     self.parameters.append(f'error_{item}')
                     self.count_error += 1
+
+        print(f'Fitting {len(self.parameters)} parameters:')
+
+        for item in self.parameters:
+            print(f'   - {item}')
 
     def run_multinest(self,
                       tag,
@@ -289,6 +332,9 @@ class AtmosphericRetrieval:
                                       mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
+
+        print(f'Decreasing the number of pressure levels from {self.pressure.size} to '
+              f'{self.pressure[::3].size}.')
 
         self.rt_object.setup_opa_structure(self.pressure[::3])
 
@@ -660,10 +706,14 @@ class AtmosphericRetrieval:
 
         # store the model parameters in a JSON file
 
+        print(f'Storing the model parameters: {self.output_name}_params.json')
+
         with open(f'{self.output_name}_params.json', 'w') as json_file:
             json.dump(self.parameters, json_file)
 
         # store the Radtrans arguments in a JSON file
+
+        print(f'Storing the Radtrans arguments: {self.output_name}_radtrans.json')
 
         radtrans_dict = {}
         radtrans_dict['line_species'] = self.line_species
