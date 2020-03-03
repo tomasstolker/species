@@ -896,7 +896,11 @@ class Database:
 
             nparam = dset.attrs['nparam']
             nscaling = dset.attrs['nscaling']
-            nerror = dset.attrs['nerror']
+
+            if 'nerror' in dset.attrs:
+                nerror = dset.attrs['nerror']
+            else:
+                nerror = 0
 
             scaling = []
             for i in range(nscaling):
@@ -957,10 +961,28 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
-        nparam = dset.attrs['nparam']
-
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
+
+        nparam = dset.attrs['nparam']
+
+        if 'nscaling' in dset.attrs:
+            nscaling = dset.attrs['nscaling']
+        else:
+            nscaling = 0
+
+        if 'nerror' in dset.attrs:
+            nerror = dset.attrs['nerror']
+        else:
+            nerror = 0
+
+        scaling = []
+        for i in range(nscaling):
+            scaling.append(dset.attrs[f'scaling{i}'])
+
+        error = []
+        for i in range(nerror):
+            error.append(dset.attrs[f'error{i}'])
 
         if spec_res is not None and spectrum_type == 'calibration':
             warnings.warn('Smoothing of the spectral resolution is not implemented for calibration '
@@ -996,7 +1018,7 @@ class Database:
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC spectra'):
             model_param = {}
             for j in range(samples.shape[1]):
-                if param[j] not in scaling:
+                if param[j] not in scaling and param[j] not in error:
                     model_param[param[j]] = samples[i, j]
 
             if distance:

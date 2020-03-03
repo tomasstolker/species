@@ -273,8 +273,8 @@ class AtmosphericRetrieval:
                                              rayleigh_species=['H2', 'He'],
                                              cloud_species=self.cloud_species,
                                              continuum_opacities=['H2-H2', 'H2-He'],
-                                             wlen_bords_micron=(0.99*min(self.wavel_min),
-                                                                1.01*max(self.wavel_max)),
+                                             wlen_bords_micron=(0.95*min(self.wavel_min),
+                                                                1.05*max(self.wavel_max)),
                                              mode='c-k',
                                              test_ck_shuffle_comp=self.scattering,
                                              do_scat_emis=self.scattering)
@@ -284,8 +284,8 @@ class AtmosphericRetrieval:
                                       rayleigh_species=['H2', 'He'],
                                       cloud_species=self.cloud_species,
                                       continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=(0.99*min(self.wavel_min),
-                                                         1.01*max(self.wavel_max)),
+                                      wlen_bords_micron=(0.95*min(self.wavel_min),
+                                                         1.05*max(self.wavel_max)),
                                       mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
