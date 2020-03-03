@@ -225,6 +225,11 @@ def calc_spectrum_clear(rt_object,
         abundances['H2'] = abundances_interp['H2']
         abundances['He'] = abundances_interp['He']
 
+    # Corretion for the nuclear spin degeneracy that was not included in the partition function
+    # See Charnay et al. (2018)
+
+    abundances['FeH'] = abundances['FeH']/2.
+
     # calculate the emission spectrum
 
     rt_object.calc_flux(temp, abundances, 10.**logg, mmw)
@@ -293,6 +298,11 @@ def calc_spectrum_clouds(rt_object,
 
         abundances['H2'] = abundances_interp['H2']
         abundances['He'] = abundances_interp['He']
+
+    # Corretion for the nuclear spin degeneracy that was not included in the partition function
+    # See Charnay et al. (2018)
+
+    abundances['FeH'] = abundances['FeH']/2.
 
     Kzz_use = (1e1**Kzz) * np.ones_like(press)
 
