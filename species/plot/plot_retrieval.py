@@ -37,6 +37,8 @@ def plot_pt_profile(tag,
     None
     """
 
+    print(f'Plotting the P-T profiles: {output}...', end='', flush=True)
+
     species_db = database.Database()
     box = species_db.get_samples(tag, burnin=0)
 
@@ -125,3 +127,5 @@ def plot_pt_profile(tag,
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 
     plt.savefig(output, bbox_inches='tight')
+
+    print(' [DONE]')

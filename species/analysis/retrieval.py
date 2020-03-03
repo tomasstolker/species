@@ -640,9 +640,8 @@ class AtmosphericRetrieval:
 
                 else:
                     # calculate the log-likelihood without the covariance matrix
-                    # TODO check 0.5 factor
                     var_infl = data_error**2.+err_fit**2
-                    log_likelihood += -0.5*np.sum(diff**2/var_infl - np.log(2.*np.pi*var_infl))
+                    log_likelihood += -0.5*np.sum(diff**2/var_infl + np.log(2.*np.pi*var_infl))
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+err_fit,
