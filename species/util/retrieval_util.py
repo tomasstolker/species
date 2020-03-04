@@ -228,7 +228,8 @@ def calc_spectrum_clear(rt_object,
     # Corretion for the nuclear spin degeneracy that was not included in the partition function
     # See Charnay et al. (2018)
 
-    abundances['FeH'] = abundances['FeH']/2.
+    if 'FeH' in abundances:
+        abundances['FeH'] = abundances['FeH']/2.
 
     # calculate the emission spectrum
 
@@ -302,7 +303,8 @@ def calc_spectrum_clouds(rt_object,
     # Corretion for the nuclear spin degeneracy that was not included in the partition function
     # See Charnay et al. (2018)
 
-    abundances['FeH'] = abundances['FeH']/2.
+    if 'FeH' in abundances:
+        abundances['FeH'] = abundances['FeH']/2.
 
     Kzz_use = (1e1**Kzz) * np.ones_like(press)
 

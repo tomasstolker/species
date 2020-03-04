@@ -356,9 +356,9 @@ class ReadModel:
                               f'{self.get_parameters()}.')
 
         if 'mass' in model_param:
-            mass = 1e3 * model_param['mass'] * constants.M_JUP  # [g]
-            radius = math.sqrt(1e3 * constants.GRAVITY * mass / (10.**model_param['logg']))  # [cm]
-            model_param['radius'] = 1e-2 * radius / constants.R_JUP  # [Rjup]
+            mass = 1e3 * model_param['mass'] * constants.M_JUP  # (g)
+            radius = math.sqrt(1e3 * constants.GRAVITY * mass / (10.**model_param['logg']))  # (cm)
+            model_param['radius'] = 1e-2 * radius / constants.R_JUP  # (Rjup)
 
         if self.spectrum_interp is None:
             self.interpolate_model()
@@ -725,10 +725,10 @@ class ReadModel:
         h5_file = self.open_database()
 
         dset = h5_file[f'models/{self.model}']
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
 
         param = []
-        for i in range(nparam):
+        for i in range(n_param):
             param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()

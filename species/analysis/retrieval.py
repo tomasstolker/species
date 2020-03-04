@@ -338,7 +338,7 @@ class AtmosphericRetrieval:
 
         self.rt_object.setup_opa_structure(self.pressure[::3])
 
-        def prior(cube, ndim, nparams):
+        def prior(cube, n_dim, n_param):
             """
             Function to transform the unit cube into the parameter cube.
 
@@ -346,9 +346,9 @@ class AtmosphericRetrieval:
             ----------
             cube : pymultinest.run.LP_c_double
                 Unit cube.
-            ndim : int
+            n_dim : int
                 Number of dimensions.
-            nparams : int
+            n_param : int
                 Number of parameters.
 
             Returns
@@ -357,7 +357,7 @@ class AtmosphericRetrieval:
                 The logarithm of the prior probability.
             """
 
-            # if ndim != nparams:
+            # if n_dim != n_param:
             #     raise ValueError('The number of dimensions and parameters should be equal.')
 
             # initiate the logarithm of the prior
@@ -517,7 +517,7 @@ class AtmosphericRetrieval:
 
             return log_prior
 
-        def loglike(cube, ndim, nparams):
+        def loglike(cube, n_dim, n_param):
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
 
@@ -525,9 +525,9 @@ class AtmosphericRetrieval:
             ----------
             cube : pymultinest.run.LP_c_double
                 Unit cube.
-            ndim : int
+            n_dim : int
                 Number of dimensions.
-            nparams : int
+            n_param : int
                 Number of parameters.
 
             Returns
@@ -536,7 +536,7 @@ class AtmosphericRetrieval:
                 Logarithm of the likelihood function.
             """
 
-            # if ndim != nparams:
+            # if n_dim != n_param:
             #     raise ValueError('The number of dimensions and parameters should be equal.')
 
             # mandatory parameters

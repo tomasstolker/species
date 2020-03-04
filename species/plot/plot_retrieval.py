@@ -68,8 +68,8 @@ def plot_pt_profile(tag,
                    direction='in', width=1, length=3, labelsize=12, top=True,
                    bottom=True, left=True, right=True)
 
-    ax.set_xlabel('Temperature [K]', fontsize=13)
-    ax.set_ylabel('Pressure [bar]', fontsize=13)
+    ax.set_xlabel('Temperature (K)', fontsize=13)
+    ax.set_ylabel('Pressure (bar)', fontsize=13)
 
     if xlim:
         ax.set_xlim(xlim[0], xlim[1])

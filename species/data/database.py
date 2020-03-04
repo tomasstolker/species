@@ -98,10 +98,10 @@ class Database:
             app_mag = planet_dict['app_mag']
 
             print(f'Object name = {planet_name}')
-            print(f'Distance [pc] = {distance[0]} +/- {distance[1]}')
+            print(f'Distance (pc) = {distance[0]} +/- {distance[1]}')
 
             for mag_name, mag_dict in app_mag.items():
-                print(f'{mag_name} [mag] = {mag_dict[0]} +/- {mag_dict[1]}')
+                print(f'{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}')
 
             print()
 
@@ -435,7 +435,7 @@ class Database:
                 del h5_file[f'objects/{object_name}/distance']
 
             h5_file.create_dataset(f'objects/{object_name}/distance',
-                                   data=distance)  # [pc]
+                                   data=distance)  # (pc)
 
         if app_mag is not None:
             flux = {}
@@ -465,7 +465,7 @@ class Database:
                                    flux[item],
                                    error[item]])
 
-                # [mag], [mag], [W m-2 um-1], [W m-2 um-1]
+                # (mag), (mag), (W m-2 um-1), (W m-2 um-1)
                 h5_file.create_dataset(f'objects/{object_name}/'+item,
                                        data=data)
 
@@ -664,36 +664,36 @@ class Database:
             data = np.loadtxt(filename)
 
         if units is None:
-            wavelength = scaling[0]*data[:, 0]  # [um]
-            flux = scaling[1]*data[:, 1]  # [W m-2 um-1]
+            wavelength = scaling[0]*data[:, 0]  # (um)
+            flux = scaling[1]*data[:, 1]  # (W m-2 um-1)
 
         else:
             if units['wavelength'] == 'um':
-                wavelength = scaling[0]*data[:, 0]  # [um]
+                wavelength = scaling[0]*data[:, 0]  # (um)
 
             if units['flux'] == 'w m-2 um-1':
-                flux = scaling[1]*data[:, 1]  # [W m-2 um-1]
+                flux = scaling[1]*data[:, 1]  # (W m-2 um-1)
             elif units['flux'] == 'w m-2':
                 if units['wavelength'] == 'um':
-                    flux = scaling[1]*data[:, 1]/wavelength  # [W m-2 um-1]
+                    flux = scaling[1]*data[:, 1]/wavelength  # (W m-2 um-1)
 
         if data.shape[1] == 3:
             if units is None:
-                error = scaling[1]*data[:, 2]  # [W m-2 um-1]
+                error = scaling[1]*data[:, 2]  # (W m-2 um-1)
 
             else:
                 if units['flux'] == 'w m-2 um-1':
-                    error = scaling[1]*data[:, 2]  # [W m-2 um-1]
+                    error = scaling[1]*data[:, 2]  # (W m-2 um-1)
                 elif units['flux'] == 'w m-2':
                     if units['wavelength'] == 'um':
-                        error = scaling[1]*data[:, 2]/wavelength  # [W m-2 um-1]
+                        error = scaling[1]*data[:, 2]/wavelength  # (W m-2 um-1)
 
         else:
             error = np.repeat(0., wavelength.size)
 
         print(f'Adding calibration spectrum: {tag}...', end='', flush=True)
 
-        h5_file.create_dataset('spectra/calibration/'+tag,
+        h5_file.create_dataset(f'spectra/calibration/{tag}',
                                data=np.vstack((wavelength, flux, error)))
 
         h5_file.close()
@@ -786,7 +786,7 @@ class Database:
 
         dset.attrs['type'] = str(spectrum[0])
         dset.attrs['spectrum'] = str(spectrum[1])
-        dset.attrs['nparam'] = int(len(modelpar))
+        dset.attrs['n_param'] = int(len(modelpar))
 
         if distance:
             dset.attrs['distance'] = float(distance)
@@ -800,7 +800,7 @@ class Database:
                 dset.attrs[f'scaling{count_scaling}'] = str(item)
                 count_scaling += 1
 
-        dset.attrs['nscaling'] = int(count_scaling)
+        dset.attrs['n_scaling'] = int(count_scaling)
 
         mean_accep = np.mean(sampler.acceptance_fraction)
         dset.attrs['acceptance'] = float(mean_accep)
@@ -850,7 +850,7 @@ class Database:
         probability = np.asarray(h5_file[f'results/mcmc/{tag}/probability'])
         probability = probability[:, burnin:]
 
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
 
         index_max = np.unravel_index(probability.argmax(), probability.shape)
 
@@ -859,7 +859,7 @@ class Database:
 
         prob_sample = {}
 
-        for i in range(nparam):
+        for i in range(n_param):
             par_key = dset.attrs[f'parameter{i}']
             par_value = max_sample[i]
 
@@ -894,20 +894,20 @@ class Database:
         with h5py.File(self.database, 'r') as h5_file:
             dset = h5_file[f'results/mcmc/{tag}/samples']
 
-            nparam = dset.attrs['nparam']
-            nscaling = dset.attrs['nscaling']
+            n_param = dset.attrs['n_param']
+            n_scaling = dset.attrs['n_scaling']
 
-            if 'nerror' in dset.attrs:
-                nerror = dset.attrs['nerror']
+            if 'n_error' in dset.attrs:
+                n_error = dset.attrs['n_error']
             else:
-                nerror = 0
+                n_error = 0
 
             scaling = []
-            for i in range(nscaling):
+            for i in range(n_scaling):
                 scaling.append(dset.attrs[f'scaling{i}'])
 
             error = []
-            for i in range(nerror):
+            for i in range(n_error):
                 error.append(dset.attrs[f'error{i}'])
 
             samples = np.asarray(dset)
@@ -916,11 +916,11 @@ class Database:
                 if burnin is not None:
                     samples = samples[:, burnin:, :]
 
-                samples = np.reshape(samples, (-1, nparam))
+                samples = np.reshape(samples, (-1, n_param))
 
             median_sample = {}
 
-            for i in range(nparam):
+            for i in range(n_param):
                 par_key = dset.attrs[f'parameter{i}']
                 par_value = np.percentile(samples[:, i], 50.)
                 median_sample[par_key] = par_value
@@ -964,24 +964,24 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
 
-        if 'nscaling' in dset.attrs:
-            nscaling = dset.attrs['nscaling']
+        if 'n_scaling' in dset.attrs:
+            n_scaling = dset.attrs['n_scaling']
         else:
-            nscaling = 0
+            n_scaling = 0
 
-        if 'nerror' in dset.attrs:
-            nerror = dset.attrs['nerror']
+        if 'n_error' in dset.attrs:
+            n_error = dset.attrs['n_error']
         else:
-            nerror = 0
+            n_error = 0
 
         scaling = []
-        for i in range(nscaling):
+        for i in range(n_scaling):
             scaling.append(dset.attrs[f'scaling{i}'])
 
         error = []
-        for i in range(nerror):
+        for i in range(n_error):
             error.append(dset.attrs[f'error{i}'])
 
         if spec_res is not None and spectrum_type == 'calibration':
@@ -1001,7 +1001,7 @@ class Database:
         samples = samples[ran_walker, ran_step, :]
 
         param = []
-        for i in range(nparam):
+        for i in range(n_param):
             param.append(dset.attrs[f'parameter{i}'])
 
         if spectrum_type == 'model':
@@ -1064,7 +1064,7 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
         spectrum_type = dset.attrs['type'].decode('utf-8')
         spectrum_name = dset.attrs['spectrum'].decode('utf-8')
 
@@ -1075,10 +1075,10 @@ class Database:
 
         samples = np.asarray(dset)
         samples = samples[:, burnin:, :]
-        samples = samples.reshape((samples.shape[0]*samples.shape[1], nparam))
+        samples = samples.reshape((samples.shape[0]*samples.shape[1], n_param))
 
         param = []
-        for i in range(nparam):
+        for i in range(n_param):
             param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()
@@ -1092,7 +1092,7 @@ class Database:
 
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC photometry'):
             model_param = {}
-            for j in range(nparam):
+            for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
             if distance is not None:
@@ -1225,7 +1225,7 @@ class Database:
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
         spectrum = dset.attrs['spectrum']
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
 
         samples = np.asarray(dset)
 
@@ -1238,7 +1238,7 @@ class Database:
                 samples = samples[ran_walker, ran_step, :]
 
         param = []
-        for i in range(nparam):
+        for i in range(n_param):
             param.append(dset.attrs[f'parameter{i}'])
 
         h5_file.close()
@@ -1306,7 +1306,7 @@ class Database:
 
             dset.attrs['type'] = 'model'
             dset.attrs['spectrum'] = 'petitradtrans'
-            dset.attrs['nparam'] = len(parameters)
+            dset.attrs['n_param'] = len(parameters)
             dset.attrs['distance'] = radtrans['distance']
 
             count_scale = 0
@@ -1325,8 +1325,8 @@ class Database:
                     dset.attrs[f'error{count_error}'] = item
                     count_error += 1
 
-            dset.attrs['nscaling'] = count_scale
-            dset.attrs['nerror'] = count_error
+            dset.attrs['n_scaling'] = count_scale
+            dset.attrs['n_error'] = count_error
 
             for i, item in enumerate(radtrans['line_species']):
                 dset.attrs[f'line_species{i}'] = item
@@ -1379,7 +1379,7 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        nparam = dset.attrs['nparam']
+        n_param = dset.attrs['n_param']
         n_line_species = dset.attrs['n_line_species']
         n_cloud_species = dset.attrs['n_cloud_species']
 
@@ -1396,7 +1396,7 @@ class Database:
         samples = samples[random_indices, :]
 
         parameters = []
-        for i in range(nparam):
+        for i in range(n_param):
             parameters.append(dset.attrs[f'parameter{i}'])
 
         parameters = np.asarray(parameters)

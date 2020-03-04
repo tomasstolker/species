@@ -115,15 +115,15 @@ def update_labels(param):
 
     if 'teff' in param:
         index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ [K]'
+        param[index] = r'$T_\mathregular{eff}$ (K)'
 
     if 'logg' in param:
         index = param.index('logg')
-        param[index] = r'$\log\,g$ [dex]'
+        param[index] = r'$\log\,g$ (dex)'
 
     if 'feh' in param:
         index = param.index('feh')
-        param[index] = r'Fe/H [dex]'
+        param[index] = r'Fe/H (dex)'
 
     if 'fsed' in param:
         index = param.index('fsed')
@@ -135,7 +135,7 @@ def update_labels(param):
 
     if 'radius' in param:
         index = param.index('radius')
-        param[index] = r'$R$ [$\mathregular{R_{Jup}}$]'
+        param[index] = r'$R$ ($\mathregular{R_{Jup}}$)'
 
     if 'scaling' in param:
         index = param.index('scaling')
@@ -147,23 +147,23 @@ def update_labels(param):
 
     if 'teff' in param:
         index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ [K]'
+        param[index] = r'$T_\mathregular{eff}$ (K)'
 
     if 'tint' in param:
         index = param.index('tint')
-        param[index] = r'$T_\mathregular{int}$ [K]'
+        param[index] = r'$T_\mathregular{int}$ (K)'
 
     if 't1' in param:
         index = param.index('t1')
-        param[index] = r'$T_\mathregular{1}$ [K]'
+        param[index] = r'$T_\mathregular{1}$ (K)'
 
     if 't2' in param:
         index = param.index('t2')
-        param[index] = r'$T_\mathregular{2}$ [K]'
+        param[index] = r'$T_\mathregular{2}$ (K)'
 
     if 't3' in param:
         index = param.index('t3')
-        param[index] = r'$T_\mathregular{3}$ [K]'
+        param[index] = r'$T_\mathregular{3}$ (K)'
 
     if 'alpha' in param:
         index = param.index('alpha')
@@ -171,11 +171,11 @@ def update_labels(param):
 
     if 'log_delta' in param:
         index = param.index('log_delta')
-        param[index] = r'$\log\,\delta$ [dex]'
+        param[index] = r'$\log\,\delta$ (dex)'
 
     if 'log_p_quench' in param:
         index = param.index('log_p_quench')
-        param[index] = r'$\log\,P_\mathregular{quench}$ [dex]'
+        param[index] = r'$\log\,P_\mathregular{quench}$ (dex)'
 
     for i, item in enumerate(param):
         if item[0:6] == 'scale_':

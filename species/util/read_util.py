@@ -26,13 +26,13 @@ def get_mass(model_param):
         Mass (Mjup).
     """
 
-    logg = 1e-2 * 10.**model_param['logg']  # [m s-1]
+    logg = 1e-2 * 10.**model_param['logg']  # (m s-1)
 
-    radius = model_param['radius']  # [Rjup]
-    radius *= constants.R_JUP  # [m]
+    radius = model_param['radius']  # (Rjup)
+    radius *= constants.R_JUP  # (m)
 
-    mass = logg*radius**2/constants.GRAVITY  # [kg]
-    mass /= constants.M_JUP  # [Mjup]
+    mass = logg*radius**2/constants.GRAVITY  # (kg)
+    mass /= constants.M_JUP  # (Mjup)
 
     return mass
 
@@ -67,18 +67,18 @@ def add_luminosity(modelbox):
     flux = simps(fullspec.flux, fullspec.wavelength)
 
     if 'distance' in modelbox.parameters:
-        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # [W]
+        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # (W)
     else:
-        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # [W]
+        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # (W)
 
-    modelbox.parameters['luminosity'] = luminosity/constants.L_SUN  # [Lsun]
+    modelbox.parameters['luminosity'] = luminosity/constants.L_SUN  # (Lsun)
 
     print(' [DONE]')
 
-    print(f'Wavelength range [um]: {fullspec.wavelength[0]:.2e} - '
+    print(f'Wavelength range (um): {fullspec.wavelength[0]:.2e} - '
           f'{fullspec.wavelength[-1]:.2e}')
 
-    print(f'Luminosity [Lsun]: {luminosity/constants.L_SUN:.2e}')
+    print(f'Luminosity (Lsun): {luminosity/constants.L_SUN:.2e}')
 
     return modelbox
 
@@ -121,12 +121,12 @@ def smooth_spectrum(wavelength,
 
     test_diff = np.diff(wavelength)
 
-    spacing = np.mean(np.diff(wavelength))  # [um]
-    flux_smooth = np.zeros(flux.shape)  # [W m-2 um-1]
+    spacing = np.mean(np.diff(wavelength))  # (um)
+    flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
 
     for i, item in enumerate(wavelength):
-        fwhm = item/spec_res  # [um]
-        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # [um]
+        fwhm = item/spec_res  # (um)
+        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # (um)
 
         size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
         if size % 2 == 0:

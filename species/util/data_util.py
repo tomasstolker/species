@@ -222,7 +222,7 @@ def write_data(model,
 
     dset = database.create_group(f'models/{model}')
 
-    dset.attrs['nparam'] = len(parameters)
+    dset.attrs['n_param'] = len(parameters)
 
     for i, item in enumerate(parameters):
         dset.attrs[f'parameter{i}'] = item

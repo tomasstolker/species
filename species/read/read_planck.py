@@ -85,7 +85,7 @@ class ReadPlanck:
         planck_2 = np.exp(constants.PLANCK*constants.LIGHT /
                           (1e-6*wavel_points*constants.BOLTZMANN*temperature)) - 1.
 
-        return 1e-6 * math.pi * scaling * planck_1/planck_2  # [W m-2 um-1]
+        return 1e-6 * math.pi * scaling * planck_1/planck_2  # (W m-2 um-1)
 
     @staticmethod
     def update_parameters(model_param):
@@ -146,7 +146,7 @@ class ReadPlanck:
         while wavel_points[-1] <= self.wavel_range[1]:
             wavel_points.append(wavel_points[-1] + wavel_points[-1]/spec_res)
 
-        wavel_points = np.asarray(wavel_points)  # [um]
+        wavel_points = np.asarray(wavel_points)  #(um)
 
         n_planck = (len(model_param)-1) // 2
 
@@ -156,7 +156,7 @@ class ReadPlanck:
 
             flux = self.planck(np.copy(wavel_points),
                                model_param['teff'],
-                               scaling)  # [W m-2 um-1]
+                               scaling)  # (W m-2 um-1)
 
         else:
             flux = np.zeros(wavel_points.shape)
@@ -167,7 +167,7 @@ class ReadPlanck:
 
                 flux += self.planck(np.copy(wavel_points),
                                     model_param[f'teff_{i}'],
-                                    scaling)  # [W m-2 um-1]
+                                    scaling)  # (W m-2 um-1)
 
         return box.create_box(boxtype='model',
                               model='planck',
