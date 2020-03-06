@@ -127,5 +127,7 @@ def plot_pt_profile(tag,
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 
     plt.savefig(output, bbox_inches='tight')
+    plt.clf()
+    plt.close()
 
     print(' [DONE]')
