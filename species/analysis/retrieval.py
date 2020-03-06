@@ -96,22 +96,22 @@ class AtmosphericRetrieval:
         print(f'Scattering: {self.scattering}')
 
         species_db = database.Database()
-        objectbox = species_db.get_object(object_name, None)
-        filters = objectbox.filters
+
+        objectbox = species_db.get_object(object_name,
+                                          filters=None,
+                                          inc_phot=True,
+                                          inc_spec=True)
 
         # get photometric data
 
         self.objphot = []
         self.synphot = []
 
-        if filters is None:
-            print('No photometric data available in the database.')
-
-        else:
+        if len(objectbox.filters) != 0:
             warnings.warn('Support for photometric data is not yet implemented.')
             print('Photometric data:')
 
-        for item in filters:
+        for item in objectbox.filters:
             obj_phot = self.object.get_photometry(item)
             self.objphot.append((obj_phot[2], obj_phot[3]))
 

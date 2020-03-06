@@ -68,6 +68,8 @@ def add_luminosity(modelbox):
 
     if 'distance' in modelbox.parameters:
         luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # (W)
+
+        # Analytical solution for a single-component Planck function
         # luminosity = 4.*math.pi*(modelbox.parameters['radius']*constants.R_JUP)**2* \
         #     constants.SIGMA_SB*modelbox.parameters['teff']**4.
 
