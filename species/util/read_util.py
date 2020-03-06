@@ -88,6 +88,47 @@ def add_luminosity(modelbox):
     return modelbox
 
 
+def update_spectra(objectbox,
+                   model_param):
+    """
+    Function for applying a best-fit scaling and/or error inflation to the spectra of an object.
+
+    Parameters
+    ----------
+    objectbox : species.core.box.ObjectBox
+        Box with the object's data, including the spectra.
+    model_param : dict
+        Model parameter values. Should contain the scaling and/or error inflation values.
+
+    Returns
+    -------
+    species.core.box.ObjectBox
+        The input box with the scaled and/or error inflated spectra.
+    """
+
+    for key, value in objectbox.spectrum.items():
+        spec_tmp = value[0]
+
+        if f'scale_{key}' in model_param:
+            scaling = model_param[f'scale_{key}']
+
+            print(f'Scaling {key} by {scaling:.2f}...', end='', flush=True)
+            spec_tmp[:, 1] *= model_param[f'scale_{key}']
+            spec_tmp[:, 2] *= model_param[f'scale_{key}']
+            print(' [DONE]')
+
+        if f'error_{key}' in model_param:
+            error = 10.**model_param[f'error_{key}']
+
+            print(f'Inflating the error of {key} by {error:.2e}...', end='', flush=True)
+            spec_tmp[:, 2] += error
+            print(' [DONE]')
+
+        objectbox.spectrum[key] = (spec_tmp, value[1], value[2])
+
+    return objectbox
+
+
 def smooth_spectrum(wavelength,
                     flux,
                     spec_res,
