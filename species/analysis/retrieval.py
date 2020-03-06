@@ -347,7 +347,7 @@ class AtmosphericRetrieval:
 
         rt_object.setup_opa_structure(self.pressure[::3])
 
-        def prior(cube):
+        def prior(cube, n_dim, n_param):
             """
             Function to transform the unit cube into the parameter cube.
 
@@ -517,7 +517,7 @@ class AtmosphericRetrieval:
 
             return log_prior
 
-        def loglike(cube):
+        def loglike(cube, n_dim, n_param):
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
 
