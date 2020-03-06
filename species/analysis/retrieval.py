@@ -504,16 +504,16 @@ class AtmosphericRetrieval:
                 if item in bounds:
                     if bounds[item][0] is not None:
                         cube[cube_index[f'scale_{item}']] = bounds[item][0][0] + \
-                            (bounds[item][0][1]-bounds[item][0][0])*cube[f'scale_{item}']
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[cube_index[f'scale_{item}']]
 
             # add error inflation parameter if the boundaries are provided
 
             for item in self.spectrum:
                 if item in bounds:
                     if bounds[item][1] is not None:
-                        cube[f'error_{item}'] = bounds[item][1][0] + \
+                        cube[cube_index[f'error_{item}']] = bounds[item][1][0] + \
                             (bounds[item][1][1]-bounds[item][1][0]) * \
-                            cube[f'error_{item}']
+                            cube[cube_index[f'error_{item}']]
 
             return log_prior
 
@@ -534,27 +534,21 @@ class AtmosphericRetrieval:
 
             # create dictionary with flux scaling parameters
 
-            count = 0
             scaling = {}
 
             for item in self.spectrum:
                 if item in bounds and bounds[item][0] is not None:
-                    scaling[item] = cube[n_param+count]
-                    count += 1
-
+                    scaling[item] = cube[cube_index[f'scale_{item}']]
                 else:
                     scaling[item] = 1.
 
             # create dictionary with error offset parameters
 
-            count = 0
             err_offset = {}
 
             for item in self.spectrum:
                 if item in bounds and bounds[item][1] is not None:
-                    err_offset[item] = cube[n_param+self.count_scale+count]
-                    count += 1
-
+                    err_offset[item] = cube[cube_index[f'error_{item}']]
                 else:
                     err_offset[item] = 0.
 
@@ -564,9 +558,9 @@ class AtmosphericRetrieval:
             # create a p-t profile
 
             # try:
-            temp, _, _ = retrieval_util.pt_ret_model(np.array([cube[cube_index['temp_1']],
-                                                               cube[cube_index['temp_2']],
-                                                               cube[cube_index['temp_3']]]),
+            temp, _, _ = retrieval_util.pt_ret_model(np.array([cube[cube_index['t1']],
+                                                               cube[cube_index['t2']],
+                                                               cube[cube_index['t3']]]),
                                                      10.**cube[cube_index['log_delta']],
                                                      cube[cube_index['alpha']],
                                                      cube[cube_index['tint']],
@@ -682,8 +676,8 @@ class AtmosphericRetrieval:
 
             if plotting:
                 plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)
-                plt.xlabel(r'Wavelength [$\mu$m]')
-                plt.ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]')
+                plt.xlabel(r'Wavelength ($\mu$m)')
+                plt.ylabel(r'Flux (W m$^{-2}$ $\mu$m$^{-1}$)')
                 plt.savefig('spectrum.pdf', bbox_inches='tight')
                 plt.clf()
 
@@ -704,6 +698,7 @@ class AtmosphericRetrieval:
         radtrans_dict['line_species'] = self.line_species
         radtrans_dict['cloud_species'] = self.cloud_species
         radtrans_dict['scattering'] = self.scattering
+        radtrans_dict['quenching'] = quenching
         radtrans_dict['distance'] = self.distance
 
         with open(f'{self.output_name}_radtrans.json', 'w', encoding='utf-8') as json_file:
