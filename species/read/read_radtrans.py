@@ -141,13 +141,18 @@ class ReadRadtrans:
             10.**model_param['log_delta'], model_param['alpha'], model_param['tint'], self.pressure,
             model_param['feh'], model_param['co'])
 
+        if 'log_p_quench' in model_param:
+            log_p_quench = model_param['log_p_quench']
+        else:
+            log_p_quench = -10.
+
         if self.scattering:
             pass
 
         else:
             wavelength, flux = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'], model_param['co'],
-                model_param['feh'], model_param['log_p_quench'], half=True)
+                model_param['feh'], log_p_quench, half=True)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param)

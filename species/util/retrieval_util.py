@@ -178,6 +178,15 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     return tret, press_tau(1.)/1e6, tfintp(p_bot_spline)
 
 
+def pt_spline_interp(knot_press,
+                     knot_temp,
+                     pressure):
+
+    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
+
+    return pt_interp(np.log10(pressure))
+
+
 def calc_spectrum_clear(rt_object,
                         press,
                         temp,

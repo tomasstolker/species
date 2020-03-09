@@ -180,7 +180,8 @@ class AtmosphericRetrieval:
 
     def set_parameters(self,
                        bounds,
-                       quenching):
+                       quenching,
+                       pt_profile):
         """
         Function to set the list with parameters.
 
@@ -190,6 +191,8 @@ class AtmosphericRetrieval:
             Dictionary with the parameter boundaries.
         quenching : bool
             Fitting a quenching pressure.
+        pt_profile : str
+            The parametrization for the pressure-temperature profile ('molliere' or 'line').
 
         Returns
         -------
@@ -204,12 +207,17 @@ class AtmosphericRetrieval:
 
         # p-t profile parameters
 
-        self.parameters.append('tint')
-        self.parameters.append('t1')
-        self.parameters.append('t2')
-        self.parameters.append('t3')
-        self.parameters.append('alpha')
-        self.parameters.append('log_delta')
+        if pt_profile == 'molliere':
+            self.parameters.append('tint')
+            self.parameters.append('t1')
+            self.parameters.append('t2')
+            self.parameters.append('t3')
+            self.parameters.append('alpha')
+            self.parameters.append('log_delta')
+
+        elif pt_profile == 'line':
+            for i in range(15):
+                self.parameters.append(f't{i}')
 
         # abundance parameters
 
@@ -252,6 +260,7 @@ class AtmosphericRetrieval:
     def run_multinest(self,
                       bounds,
                       quenching=True,
+                      pt_profile='molliere',
                       live_points=2000,
                       efficiency=0.05,
                       resume=False,
@@ -266,6 +275,8 @@ class AtmosphericRetrieval:
             Dictionary with the prior boundaries.
         quenching : bool
             Fitting a quenching pressure.
+        pt_profile : str
+            The parametrization for the pressure-temperature profile ('molliere' or 'line').
         live_points : int
             Number of live points.
         efficiency : float
@@ -290,7 +301,7 @@ class AtmosphericRetrieval:
 
         # create list with parameters for MultiNest
 
-        self.set_parameters(bounds, quenching=quenching)
+        self.set_parameters(bounds, quenching, pt_profile)
 
         # create a dictionary with the cube indices of the parameters
 
@@ -347,6 +358,9 @@ class AtmosphericRetrieval:
 
         rt_object.setup_opa_structure(self.pressure[::3])
 
+        if pt_profile == 'line':
+            knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
+
         def prior(cube, n_dim, n_param):
             """
             Function to transform the unit cube into the parameter cube.
@@ -369,7 +383,7 @@ class AtmosphericRetrieval:
             if 'logg' in bounds:
                 logg = bounds['logg'][0] + (bounds['logg'][1]-bounds['logg'][0])*cube[cube_index['logg']]
             else:
-                # default: 2-5.5 dex
+                # default: 2 - 5.5 dex
                 logg = 2. + 3.5*cube[cube_index['logg']]
 
             cube[cube_index['logg']] = logg
@@ -383,57 +397,65 @@ class AtmosphericRetrieval:
 
             cube[cube_index['radius']] = radius
 
-            # internal temperature (K) of the Eddington model
-            # see Eq. 2 in Mollière et al. in prep.
-            if 'tint' in bounds:
-                tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[cube_index['tint']]
-            else:
-                # default: 500-3000 K
-                tint = 500. + 2500.*cube[cube_index['tint']]
+            if pt_profile == 'molliere':
 
-            cube[cube_index['tint']] = tint
+                # internal temperature (K) of the Eddington model
+                # see Eq. 2 in Mollière et al. in prep.
+                if 'tint' in bounds:
+                    tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[cube_index['tint']]
+                else:
+                    # default: 500 - 3000 K
+                    tint = 500. + 2500.*cube[cube_index['tint']]
 
-            # connection temperature (K)
-            t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
+                cube[cube_index['tint']] = tint
 
-            # the temperature (K) at temp_3 is scaled down from t_connect
-            temp_3 = t_connect*(1-cube[cube_index['t3']])
-            cube[cube_index['t3']] = temp_3
+                # connection temperature (K)
+                t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
 
-            # the temperature (K) at temp_2 is scaled down from temp_3
-            temp_2 = temp_3*(1-cube[cube_index['t2']])
-            cube[cube_index['t2']] = temp_2
+                # the temperature (K) at temp_3 is scaled down from t_connect
+                temp_3 = t_connect*(1-cube[cube_index['t3']])
+                cube[cube_index['t3']] = temp_3
 
-            # the temperature (K) at temp_1 is scaled down from temp_2
-            temp_1 = temp_2*(1-cube[cube_index['t1']])
-            cube[cube_index['t1']] = temp_1
+                # the temperature (K) at temp_2 is scaled down from temp_3
+                temp_2 = temp_3*(1-cube[cube_index['t2']])
+                cube[cube_index['t2']] = temp_2
 
-            # alpha: power law index in tau = delta * press_cgs**alpha
-            # see Eq. 1 in Mollière et al. in prep.
-            if 'alpha' in bounds:
-                alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[cube_index['alpha']]
-            else:
-                # default: 1-2
-                alpha = 1. + cube[cube_index['alpha']]
+                # the temperature (K) at temp_1 is scaled down from temp_2
+                temp_1 = temp_2*(1-cube[cube_index['t1']])
+                cube[cube_index['t1']] = temp_1
 
-            cube[cube_index['alpha']] = alpha
+                # alpha: power law index in tau = delta * press_cgs**alpha
+                # see Eq. 1 in Mollière et al. in prep.
+                if 'alpha' in bounds:
+                    alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[cube_index['alpha']]
+                else:
+                    # default: 1 - 2
+                    alpha = 1. + cube[cube_index['alpha']]
 
-            # photospheric pressure (bar)
-            # default: 1e-3-1e2 bar
-            p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
+                cube[cube_index['alpha']] = alpha
 
-            # delta: proportionality factor in tau = delta * press_cgs**alpha
-            # see Eq. 1 in Mollière et al. in prep.
-            delta = (p_phot*1e6)**(-alpha)
-            log_delta = np.log10(delta)
+                # photospheric pressure (bar)
+                # default: 1e-3 - 1e2 bar
+                p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
 
-            cube[cube_index['log_delta']] = log_delta
+                # delta: proportionality factor in tau = delta * press_cgs**alpha
+                # see Eq. 1 in Mollière et al. in prep.
+                delta = (p_phot*1e6)**(-alpha)
+                log_delta = np.log10(delta)
+
+                cube[cube_index['log_delta']] = log_delta
+
+            elif pt_profile == 'line':
+                # 15 temperature (K) knots
+                for i in range(15):
+                    # default: 0 - 4000 K
+                    cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
 
             # metallicity (dex) for the nabla_ad interpolation
             if 'feh' in bounds:
                 feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[cube_index['feh']]
             else:
-                # default: -1.5-1.5 dex
+                # default: -1.5 - 1.5 dex
                 feh = -1.5 + 3.*cube[cube_index['feh']]
 
             cube[cube_index['feh']] = feh
@@ -442,29 +464,34 @@ class AtmosphericRetrieval:
             if 'co' in bounds:
                 co_ratio = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[cube_index['co']]
             else:
-                # default: 0.1-1.6
+                # default: 0.1 - 1.6
                 co_ratio = 0.1 + 1.5*cube[cube_index['co']]
 
             cube[cube_index['co']] = co_ratio
 
             # quench pressure (bar)
-            # default: 1e-6-1e3 bar
+            # default: 1e-6 - 1e3 bar
             if quenching:
-                log_p_quench = -6. + 9.*cube[cube_index['log_p_quench']]
+                if 'log_p_quench' in bounds:
+                    log_p_quench = bounds['log_p_quench'][0] + (bounds['log_p_quench'][1]-bounds['log_p_quench'][0])*cube[cube_index['log_p_quench']]
+                else:
+                    # default: -6 - 3.
+                    log_p_quench = -6. + 9.*cube[cube_index['log_p_quench']]
+
                 cube[cube_index['log_p_quench']] = log_p_quench
 
             if len(self.cloud_species) > 0:
                 # cloud base mass fractions of Fe (iron)
                 # relative to the maximum values allowed from elemental abundances
                 # see Eq. 3 in Mollière et al. in prep.
-                # default: 0.05-1.
+                # default: 0.05 - 1.
                 fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['fe_fraction']]
                 cube[cube_index['fe_fraction']] = fe_fraction
 
                 # cloud base mass fractions of MgSiO3 (enstatite)
                 # relative to the maximum values allowed from elemental abundances
                 # see Eq. 3 in Mollière et al. in prep.
-                # default: 0.05-1.
+                # default: 0.05 - 1.
                 mgsio3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['mgsio3_fraction']]
                 cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
 
@@ -474,7 +501,7 @@ class AtmosphericRetrieval:
                 if 'fsed' in bounds:
                     fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
                 else:
-                    # default: 0-10
+                    # default: 0 - 10
                     fsed = 10.*cube[cube_index['fsed']]
 
                 cube[cube_index['fsed']] = fsed
@@ -483,7 +510,7 @@ class AtmosphericRetrieval:
                 if 'kzz' in bounds:
                     kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[cube_index['kzz']]
                 else:
-                    # default: 5-13
+                    # default: 5 - 13
                     kzz = 5. + 8.*cube[cube_index['kzz']]
 
                 cube[cube_index['kzz']] = kzz
@@ -493,7 +520,7 @@ class AtmosphericRetrieval:
                     sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
                                                               bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
                 else:
-                    # default: 1.05-3. TODO um (?)
+                    # default: 1.05 - 3. TODO um (?)
                     sigma_lnorm = 1.05 + 1.95*cube[cube_index['sigma_lnorm']]
 
                 cube[cube_index['sigma_lnorm']] = sigma_lnorm
@@ -557,19 +584,23 @@ class AtmosphericRetrieval:
 
             # create a p-t profile
 
-            # try:
-            temp, _, _ = retrieval_util.pt_ret_model(np.array([cube[cube_index['t1']],
-                                                               cube[cube_index['t2']],
-                                                               cube[cube_index['t3']]]),
-                                                     10.**cube[cube_index['log_delta']],
-                                                     cube[cube_index['alpha']],
-                                                     cube[cube_index['tint']],
-                                                     self.pressure,
-                                                     cube[cube_index['feh']],
-                                                     cube[cube_index['co']])
+            if pt_profile == 'molliere':
+                temp, _, _ = retrieval_util.pt_ret_model(np.array([cube[cube_index['t1']],
+                                                                   cube[cube_index['t2']],
+                                                                   cube[cube_index['t3']]]),
+                                                         10.**cube[cube_index['log_delta']],
+                                                         cube[cube_index['alpha']],
+                                                         cube[cube_index['tint']],
+                                                         self.pressure,
+                                                         cube[cube_index['feh']],
+                                                         cube[cube_index['co']])
 
-            # except:
-            #     return -np.inf
+            elif pt_profile == 'line':
+                knot_temp = []
+                for i in range(15):
+                    knot_temp.append(cube[cube_index[f't{i}']])
+
+                temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
             # return zero probability if the minimum temperature is negative
 
@@ -584,7 +615,6 @@ class AtmosphericRetrieval:
 
             # calculate the emission spectrum
 
-            # try:
             if len(self.cloud_species) > 0:
                 # cloudy atmosphere
 
@@ -611,9 +641,6 @@ class AtmosphericRetrieval:
                 wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                     rt_object, self.pressure, temp, cube[cube_index['logg']],
                     cube[cube_index['co']], cube[cube_index['feh']], log_p_quench, half=True)
-
-            # except:
-            #     return -np.inf
 
             # return zero probability if the spectrum contains NaN values
 
@@ -697,9 +724,10 @@ class AtmosphericRetrieval:
         radtrans_dict = {}
         radtrans_dict['line_species'] = self.line_species
         radtrans_dict['cloud_species'] = self.cloud_species
+        radtrans_dict['distance'] = self.distance
         radtrans_dict['scattering'] = self.scattering
         radtrans_dict['quenching'] = quenching
-        radtrans_dict['distance'] = self.distance
+        radtrans_dict['pt_profile'] = pt_profile
 
         with open(f'{self.output_name}_radtrans.json', 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)

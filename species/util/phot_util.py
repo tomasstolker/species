@@ -211,7 +211,7 @@ def get_residuals(datatype,
 
     print('Calculating residuals... [DONE]')
 
-    print('Residuals [sigma]:')
+    print('Residuals (sigma):')
 
     if res_phot is not None:
         for i, item in enumerate(filters):
