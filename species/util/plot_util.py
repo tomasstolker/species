@@ -178,7 +178,7 @@ def update_labels(param):
         param[index] = r'$\log\,P_\mathregular{quench}$ (dex)'
 
     for i, item in enumerate(param):
-        if item[0:6] == 'scale_':
+        if item[0:6] == 'scaling_':
             spec_name = item[6:]
             param[i] = rf'$a_\mathregular{ {spec_name} }$'
 

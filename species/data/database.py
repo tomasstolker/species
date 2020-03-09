@@ -1316,7 +1316,7 @@ class Database:
                 dset.attrs[f'parameter{i}'] = item
 
             for i, item in enumerate(parameters):
-                if item[0:6] == 'scale_':
+                if item[0:6] == 'scaling_':
                     dset.attrs[f'scaling{count_scale}'] = item
                     count_scale += 1
 

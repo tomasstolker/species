@@ -109,12 +109,12 @@ def update_spectra(objectbox,
     for key, value in objectbox.spectrum.items():
         spec_tmp = value[0]
 
-        if f'scale_{key}' in model_param:
-            scaling = model_param[f'scale_{key}']
+        if f'scaling_{key}' in model_param:
+            scaling = model_param[f'scaling_{key}']
 
             print(f'Scaling {key} by {scaling:.2f}...', end='', flush=True)
-            spec_tmp[:, 1] *= model_param[f'scale_{key}']
-            spec_tmp[:, 2] *= model_param[f'scale_{key}']
+            spec_tmp[:, 1] *= model_param[f'scaling_{key}']
+            spec_tmp[:, 2] *= model_param[f'scaling_{key}']
             print(' [DONE]')
 
         if f'error_{key}' in model_param:

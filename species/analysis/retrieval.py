@@ -241,7 +241,7 @@ class AtmosphericRetrieval:
         for item in self.spectrum:
             if item in bounds:
                 if bounds[item][0] is not None:
-                    self.parameters.append(f'scale_{item}')
+                    self.parameters.append(f'scaling_{item}')
                     self.count_scale += 1
 
         # add the error offset parameters
@@ -530,8 +530,8 @@ class AtmosphericRetrieval:
             for item in self.spectrum:
                 if item in bounds:
                     if bounds[item][0] is not None:
-                        cube[cube_index[f'scale_{item}']] = bounds[item][0][0] + \
-                            (bounds[item][0][1]-bounds[item][0][0])*cube[cube_index[f'scale_{item}']]
+                        cube[cube_index[f'scaling_{item}']] = bounds[item][0][0] + \
+                            (bounds[item][0][1]-bounds[item][0][0])*cube[cube_index[f'scaling_{item}']]
 
             # add error inflation parameter if the boundaries are provided
 
@@ -565,7 +565,7 @@ class AtmosphericRetrieval:
 
             for item in self.spectrum:
                 if item in bounds and bounds[item][0] is not None:
-                    scaling[item] = cube[cube_index[f'scale_{item}']]
+                    scaling[item] = cube[cube_index[f'scaling_{item}']]
                 else:
                     scaling[item] = 1.
 
