@@ -8,7 +8,7 @@ import spectres
 import numpy as np
 
 from species.core import box
-from species.read import read_model, read_calibration, read_filter, read_planck
+from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
 def multi_photometry(datatype,
@@ -127,7 +127,8 @@ def get_residuals(datatype,
                   filters,
                   objectbox,
                   inc_phot=True,
-                  inc_spec=False):
+                  inc_spec=False,
+                  **kwargs_radtrans):
     """
     Parameters
     ----------
@@ -145,6 +146,12 @@ def get_residuals(datatype,
         Include photometry.
     inc_spec : bool
         Include spectrum.
+
+    Keyword arguments
+    -----------------
+    kwargs_radtrans : dict
+        Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
+        ``line_species``, ``cloud_species``, and ``scattering``.
 
     Returns
     -------
@@ -175,6 +182,8 @@ def get_residuals(datatype,
     if inc_spec:
         res_spec = {}
 
+        readmodel = None
+
         for key in objectbox.spectrum:
             wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                            1.1*objectbox.spectrum[key][0][-1, 0])
@@ -184,8 +193,18 @@ def get_residuals(datatype,
                 model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
             else:
-                readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-                model = readmodel.get_model(parameters, spec_res=None)
+                if spectrum == 'petitradtrans':
+                    radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
+                                                          cloud_species=kwargs_radtrans['cloud_species'],
+                                                          scattering=kwargs_radtrans['scattering'],
+                                                          wavel_range=wavel_range)
+
+                    model = radtrans.get_model(parameters, spec_res=None)
+
+                else:
+                    readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
+
+                    model = readmodel.get_model(parameters, spec_res=None)
 
             wl_new = objectbox.spectrum[key][0][:, 0]
 

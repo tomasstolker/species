@@ -11,6 +11,7 @@ import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scipy.stats import invgamma
 from rebin_give_width import rebin_give_width
 
 from petitRADTRANS import Radtrans
@@ -218,6 +219,8 @@ class AtmosphericRetrieval:
         elif pt_profile == 'line':
             for i in range(15):
                 self.parameters.append(f't{i}')
+
+            self.parameters.append('gamma_r')
 
         # abundance parameters
 
@@ -451,6 +454,11 @@ class AtmosphericRetrieval:
                     # default: 0 - 4000 K
                     cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
 
+                # penalization of wiggles in the P-T profile
+                # inverse Gamma: a=1, b=5e-5
+                gamma_r = invgamma.cdf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                cube[cube_index['gamma_r']] = gamma_r
+
             # metallicity (dex) for the nabla_ad interpolation
             if 'feh' in bounds:
                 feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[cube_index['feh']]
@@ -579,7 +587,8 @@ class AtmosphericRetrieval:
                 else:
                     err_offset[item] = 0.
 
-            # initiate the logarithm of the likelihood
+            # initiate the logarithm of the prior and likelihood
+            log_prior = 0.
             log_likelihood = 0.
 
             # create a p-t profile
@@ -601,6 +610,11 @@ class AtmosphericRetrieval:
                     knot_temp.append(cube[cube_index[f't{i}']])
 
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
+
+                temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
+
+                log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                    0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
             # return zero probability if the minimum temperature is negative
 
@@ -708,7 +722,7 @@ class AtmosphericRetrieval:
                 plt.savefig('spectrum.pdf', bbox_inches='tight')
                 plt.clf()
 
-            return log_likelihood
+            return log_prior + log_likelihood
 
         # store the model parameters in a JSON file
 

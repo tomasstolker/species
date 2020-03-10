@@ -1,11 +1,11 @@
 """
-Module with reading functionalities for atmospheric models from petitRADTRANS (Mollière et al. 2019).
+Module with reading functionalities for atmospheric models from petitRADTRANS. See
+Mollière et al. 2019 for details about the retrieval code.
 """
 
 import os
 import configparser
 
-import h5py
 import numpy as np
 
 from petitRADTRANS import Radtrans
@@ -38,7 +38,7 @@ class ReadRadtrans:
         scattering : bool
             Include scattering in the radiative transfer.
         wavel_range : tuple(float, float), None
-            Wavelength range (um).  The wavelength range is set to 0.8-10 um if set to None or
+            Wavelength range (um). The wavelength range is set to 0.8-10 um if set to None or
             not used if ``filter_name`` is not None.
         filter_name : str, None
             Filter name that is used for the wavelength range. The ``wavel_range`` is used if
@@ -136,10 +136,20 @@ class ReadRadtrans:
             raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
                              'simultaneously. Please set one of them to None.')
 
-        temp, _, _ = retrieval_util.pt_ret_model(
-            np.array([model_param['t1'], model_param['t2'], model_param['t3']]),
-            10.**model_param['log_delta'], model_param['alpha'], model_param['tint'], self.pressure,
-            model_param['feh'], model_param['co'])
+        if 'tint' in model_param:
+            temp, _, _ = retrieval_util.pt_ret_model(
+                np.array([model_param['t1'], model_param['t2'], model_param['t3']]),
+                10.**model_param['log_delta'], model_param['alpha'], model_param['tint'],
+                self.pressure, model_param['feh'], model_param['co'])
+
+        else:
+            knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
+
+            knot_temp = []
+            for i in range(15):
+                knot_temp.append(model_param[f't{i}'])
+
+            temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
         if 'log_p_quench' in model_param:
             log_p_quench = model_param['log_p_quench']

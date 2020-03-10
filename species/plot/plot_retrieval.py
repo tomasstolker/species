@@ -103,26 +103,55 @@ def plot_pt_profile(tag,
 
     pressure, _ = nc.make_press_temp(temp_params)
 
-    tint_index = np.argwhere(parameters == 'tint')[0]
-    t1_index = np.argwhere(parameters == 't1')[0]
-    t2_index = np.argwhere(parameters == 't2')[0]
-    t3_index = np.argwhere(parameters == 't3')[0]
-    alpha_index = np.argwhere(parameters == 'alpha')[0]
-    log_delta_index = np.argwhere(parameters == 'log_delta')[0]
+    if 'tint' in parameters:
+        pt_profile = 'molliere'
+
+        tint_index = np.argwhere(parameters == 'tint')[0]
+        t1_index = np.argwhere(parameters == 't1')[0]
+        t2_index = np.argwhere(parameters == 't2')[0]
+        t3_index = np.argwhere(parameters == 't3')[0]
+        alpha_index = np.argwhere(parameters == 'alpha')[0]
+        log_delta_index = np.argwhere(parameters == 'log_delta')[0]
+
+    else:
+        pt_profile = 'line'
+
+        temp_index = []
+        for i in range(15):
+            temp_index.append(np.argwhere(parameters == f't{i}')[0])
+
+        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+
     feh_index = np.argwhere(parameters == 'feh')[0]
     co_index = np.argwhere(parameters == 'co')[0]
 
     for item in samples:
-        temp, _, _ = retrieval_util.pt_ret_model(
-            np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
-            10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-            item[feh_index][0], item[co_index][0])
+        if pt_profile == 'molliere':
+            temp, _, _ = retrieval_util.pt_ret_model(
+                np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
+                10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
+                item[feh_index][0], item[co_index][0])
+
+        elif pt_profile == 'line':
+            knot_temp = []
+            for i in range(15):
+                knot_temp.append(item[temp_index[i]][0])
+
+            temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
 
-    temp, _, _ = retrieval_util.pt_ret_model(
-        np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
-        median['alpha'], median['tint'], pressure, median['feh'], median['co'])
+    if pt_profile == 'molliere':
+        temp, _, _ = retrieval_util.pt_ret_model(
+            np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
+            median['alpha'], median['tint'], pressure, median['feh'], median['co'])
+
+    elif pt_profile == 'line':
+        knot_temp = []
+        for i in range(15):
+            knot_temp.append(median[f't{i}'])
+
+        temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 

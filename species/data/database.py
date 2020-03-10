@@ -1339,6 +1339,7 @@ class Database:
 
             dset.attrs['scattering'] = radtrans['scattering']
             dset.attrs['quenching'] = radtrans['quenching']
+            dset.attrs['pt_profile'] = radtrans['pt_profile']
 
         print(' [DONE]')
 
@@ -1386,6 +1387,7 @@ class Database:
 
         scattering = dset.attrs['scattering']
         quenching = dset.attrs['quenching']
+        pt_profile = dset.attrs['pt_profile']
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
@@ -1429,17 +1431,26 @@ class Database:
 
         logg_index = np.argwhere(parameters == 'logg')[0]
         radius_index = np.argwhere(parameters == 'radius')[0]
-        tint_index = np.argwhere(parameters == 'tint')[0]
-        t1_index = np.argwhere(parameters == 't1')[0]
-        t2_index = np.argwhere(parameters == 't2')[0]
-        t3_index = np.argwhere(parameters == 't3')[0]
-        alpha_index = np.argwhere(parameters == 'alpha')[0]
-        log_delta_index = np.argwhere(parameters == 'log_delta')[0]
         feh_index = np.argwhere(parameters == 'feh')[0]
         co_index = np.argwhere(parameters == 'co')[0]
 
         if quenching:
             log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0]
+
+        if pt_profile == 'molliere':
+            tint_index = np.argwhere(parameters == 'tint')[0]
+            t1_index = np.argwhere(parameters == 't1')[0]
+            t2_index = np.argwhere(parameters == 't2')[0]
+            t3_index = np.argwhere(parameters == 't3')[0]
+            alpha_index = np.argwhere(parameters == 'alpha')[0]
+            log_delta_index = np.argwhere(parameters == 'log_delta')[0]
+            
+        elif pt_profile == 'line':
+            temp_index = []
+            for i in range(15):
+                temp_index.append(np.argwhere(parameters == f't{i}')[0])
+
+            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
         if scattering:
             rt_object = RadtransScatter(line_species=line_species,
@@ -1466,10 +1477,18 @@ class Database:
 
         for i, item in tqdm.tqdm(enumerate(samples), desc='Getting MCMC spectra'):
 
-            temp, _, _ = retrieval_util.pt_ret_model(
-                np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
-                10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-                item[feh_index][0], item[co_index][0])
+            if pt_profile == 'molliere':
+                temp, _, _ = retrieval_util.pt_ret_model(
+                    np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
+                    10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
+                    item[feh_index][0], item[co_index][0])
+
+            elif pt_profile == 'line':
+                knot_temp = []
+                for i in range(15):
+                    knot_temp.append(item[temp_index[i]][0])
+
+                temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
             if quenching:
                 log_p_quench = item[log_p_quench_index][0]

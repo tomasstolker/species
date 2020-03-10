@@ -153,17 +153,10 @@ def update_labels(param):
         index = param.index('tint')
         param[index] = r'$T_\mathregular{int}$ (K)'
 
-    if 't1' in param:
-        index = param.index('t1')
-        param[index] = r'$T_\mathregular{1}$ (K)'
-
-    if 't2' in param:
-        index = param.index('t2')
-        param[index] = r'$T_\mathregular{2}$ (K)'
-
-    if 't3' in param:
-        index = param.index('t3')
-        param[index] = r'$T_\mathregular{3}$ (K)'
+    for i in range(15):
+        if f't{i}' in param:
+            index = param.index(f't{i}')
+            param[index] = rf'$T_\mathregular{ {i} }$ (K)'
 
     if 'alpha' in param:
         index = param.index('alpha')
