@@ -456,7 +456,7 @@ class AtmosphericRetrieval:
 
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
-                gamma_r = invgamma.cdf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
                 cube[cube_index['gamma_r']] = gamma_r
 
             # metallicity (dex) for the nabla_ad interpolation
@@ -585,7 +585,7 @@ class AtmosphericRetrieval:
                 if item in bounds and bounds[item][1] is not None:
                     err_offset[item] = cube[cube_index[f'error_{item}']]
                 else:
-                    err_offset[item] = 0.
+                    err_offset[item] = -100.
 
             # initiate the logarithm of the prior and likelihood
             log_prior = 0.
@@ -679,7 +679,7 @@ class AtmosphericRetrieval:
                 # get spectral resolution
                 spec_res = value[3]
 
-                # get wavelength binds
+                # get wavelength bins
                 data_wavel_bins = value[4]
 
                 # fitted error component

@@ -472,6 +472,11 @@ class ReadModel:
         else:
             wavelength = wavel_resample[is_finite]
 
+        if wavelength.shape[0] == 0:
+            raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
+                             f'interpolated at {model_param} because NaNs are stored in the '
+                             f'database.')
+
         return box.create_box(boxtype='model',
                               model=self.model,
                               wavelength=wavelength,
@@ -725,7 +730,11 @@ class ReadModel:
         h5_file = self.open_database()
 
         dset = h5_file[f'models/{self.model}']
-        n_param = dset.attrs['n_param']
+
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
 
         param = []
         for i in range(n_param):

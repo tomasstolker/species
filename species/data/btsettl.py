@@ -127,13 +127,13 @@ def add_btsettl(input_path,
                             wavel_tmp = line[0]
                             flux_tmp = line[1]
 
-                        # [Angstrom] -> [um]
+                        # (Angstrom) -> (um)
                         data_wavel.append(float(wavel_tmp)*1e-4)
 
                         # See https://phoenix.ens-lyon.fr/Grids/FORMAT
                         flux_cgs = 10.**(float(flux_tmp.replace('D', 'E'))-8.)
 
-                        # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
+                        # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
                         data_flux.append(flux_cgs*1e-7*1e4*1e4)
 
                 data = np.stack((data_wavel, data_flux), axis=1)

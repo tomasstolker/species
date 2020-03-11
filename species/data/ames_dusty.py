@@ -120,10 +120,10 @@ def add_ames_dusty(input_path,
                                 data_flux.append(float(line[25:35]))
 
                 # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_wavel = np.asarray(data_wavel)*1e-4  # [Angstrom] -> [um]
-                data_flux = 10.**(np.asarray(data_flux)-8.)  # [erg s-1 cm-2 Angstrom-1]
+                data_wavel = np.asarray(data_wavel)*1e-4  # (Angstrom) -> (um)
+                data_flux = 10.**(np.asarray(data_flux)-8.)  # (erg s-1 cm-2 Angstrom-1)
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
                 data_flux = data_flux*1e-7*1e4*1e4
 
                 data = np.stack((data_wavel, data_flux), axis=1)

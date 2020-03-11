@@ -1,24 +1,27 @@
 """
-Module for DRIFT-PHOENIX atmospheric model spectra.
+Module for Exo-REM atmospheric model spectra.
 """
 
 import os
-import tarfile
+import zipfile
+import warnings
 import urllib.request
 
 import spectres
 import numpy as np
 
+from species.core import constants
 from species.util import data_util
 
 
-def add_drift_phoenix(input_path,
-                      database,
-                      wavel_range=None,
-                      teff_range=None,
-                      spec_res=1000.):
+def add_exo_rem(input_path,
+                database,
+                data_folder,
+                wavel_range=None,
+                teff_range=None,
+                spec_res=1000.):
     """
-    Function for adding the DRIFT-PHOENIX atmospheric models to the database.
+    Function for adding the Exo-REM atmospheric models to the database.
 
     Parameters
     ----------
@@ -26,6 +29,8 @@ def add_drift_phoenix(input_path,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
+    data_folder : str
+        Path with input data.
     wavel_range : tuple(float, float), None
         Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
@@ -42,25 +47,16 @@ def add_drift_phoenix(input_path,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    data_file = os.path.join(input_path, 'drift-phoenix.tgz')
-    data_folder = os.path.join(input_path, 'drift-phoenix/')
+    param_file = os.path.join(data_folder, 'input_data_CO2.txt')
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/drift-phoenix.tgz'
+    par_teff, par_gravity, par_feh, par_co = np.loadtxt(param_file, unpack=True)
 
-    if not os.path.isfile(data_file):
-        print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='', flush=True)
-        urllib.request.urlretrieve(url, data_file)
-        print(' [DONE]')
-
-    print('Unpacking DRIFT-PHOENIX model spectra...', end='', flush=True)
-    tar = tarfile.open(data_file)
-    tar.extractall(input_path)
-    tar.close()
-    print(' [DONE]')
+    par_logg = np.log10(par_gravity)  # log10(cm s-2)
 
     teff = []
     logg = []
     feh = []
+    co_ratio = []
     flux = []
 
     if wavel_range is not None:
@@ -74,44 +70,54 @@ def add_drift_phoenix(input_path,
     else:
         wavelength = None
 
-    for _, _, file_list in os.walk(data_folder):
-        for filename in sorted(file_list):
+    for _, _, files in os.walk(data_folder):
+        for filename in files:
+            if filename[:8] == 'spectre_':
+                param_index = int(filename[8:].split('.')[0]) - 1
 
-            if filename.startswith('lte_'):
-                teff_val = float(filename[4:8])
-                logg_val = float(filename[9:12])
-                feh_val = float(filename[12:16])
+                teff_val = par_teff[param_index]
+                logg_val = par_logg[param_index]
+                feh_val = np.log10(par_feh[param_index])
+                co_val = par_co[param_index]
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                print_message = f'Adding DRIFT-PHOENIX model spectra... {filename}'
-                print(f'\r{print_message:<65}', end='')
+                print_message = f'Adding Exo-REM model spectra... {filename}'
+                print(f'\r{print_message:<50}', end='')
 
-                data = np.loadtxt(data_folder+filename)
+                data = np.loadtxt(os.path.join(data_folder, filename))
+
+                if data.shape[0] == 34979:
+                    data = data[:-1, :]
 
                 teff.append(teff_val)
                 logg.append(logg_val)
                 feh.append(feh_val)
+                co_ratio.append(co_val)
 
                 if wavel_range is None:
                     if wavelength is None:
-                        # (Angstrom) -> (um)
-                        wavelength = data[:, 0]*1e-4
+                        # (cm-1) -> (um)
+                        wavel_orig = 1e4/data[:, 0]
+                        wavelength = np.flipud(wavel_orig)
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                    # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                    flux.append(data[:, 1]*1e-7*1e4*1e4)
+                    # (erg s-1 m-2 cm) -> (W m-2 um-1)
+                    # TODO check units
+                    flux.append(np.flipud(data[:, 1]*1e-7*1e4/wavel_orig**2))
 
                 else:
-                    # (Angstrom) -> (um)
-                    data_wavel = data[:, 0]*1e-4
+                    # (cm-1) -> (um)
+                    data_wavel = 1e4/data[:, 0]
+                    data_wavel = np.flipud(data_wavel)
 
-                    # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                    data_flux = data[:, 1]*1e-7*1e4*1e4
+                    # (erg s-1 m-2 cm) -> (W m-2 um-1)
+                    # TODO check units
+                    data_flux = np.flipud(data[:, 1]*1e-7*1e4/wavel_orig**2)
 
                     try:
                         flux.append(spectres.spectres(wavelength, data_wavel, data_flux))
@@ -124,12 +130,15 @@ def add_drift_phoenix(input_path,
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
-                                      None,
+                                      np.asarray(co_ratio),
                                       None,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('drift-phoenix', ('teff', 'logg', 'feh'), database, data_sorted)
+    data_util.write_data('exo-rem',
+                         ['teff', 'logg', 'feh', 'co'],
+                         database,
+                         data_sorted)
 
-    print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
-    print(f'\r{print_message:<65}')
+    print_message = 'Adding Exo-REM model spectra... [DONE]'
+    print(f'\r{print_message:<50}')

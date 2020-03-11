@@ -55,12 +55,12 @@ def add_leggett(input_path,
     dataframe = pd.pandas.read_excel(data_file1)
     dataframe.columns = dataframe.columns.str.replace('\'', '')
 
-    modulus = np.asarray(dataframe['M-m'])  # M-m [mag]
-    modulus_error = np.asarray(dataframe['Mmerr'])  # M-m [mag]
+    modulus = np.asarray(dataframe['M-m'])  # M-m (mag)
+    modulus_error = np.asarray(dataframe['Mmerr'])  # M-m (mag)
 
-    distance = 10.**(-modulus/5.+1.)  # [pc]
-    distance_lower = distance - 10.**(-(modulus+modulus_error)/5.+1.)  # [pc]
-    distance_upper = 10.**(-(modulus-modulus_error)/5.+1.) - distance  # [pc]
+    distance = 10.**(-modulus/5.+1.)  # (pc)
+    distance_lower = distance - 10.**(-(modulus+modulus_error)/5.+1.)  # (pc)
+    distance_upper = 10.**(-(modulus-modulus_error)/5.+1.) - distance  # (pc)
     distance_error = (distance_lower+distance_upper)/2.
 
     name = np.asarray(dataframe['Name'])
@@ -100,11 +100,11 @@ def add_leggett(input_path,
 
         sptype = np.append(sptype, spt_tmp)
 
-        modulus = float(item[67:73])  # M-m [mag]
+        modulus = float(item[67:73])  # M-m (mag)
         if modulus == 999.:
             modulus = np.nan
 
-        distance = np.append(distance, 10.**(-modulus/5.+1.))  # [pc]
+        distance = np.append(distance, 10.**(-modulus/5.+1.))  # (pc)
 
         mag = np.zeros(14)
 

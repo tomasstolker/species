@@ -41,7 +41,8 @@ def plot_walkers(tag,
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     print(f'Plotting walkers: {output}...', end='', flush=True)
@@ -139,7 +140,8 @@ def plot_posterior(tag,
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     species_db = database.Database()
@@ -254,7 +256,8 @@ def plot_photometry(tag,
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     species_db = database.Database()

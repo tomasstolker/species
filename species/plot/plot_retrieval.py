@@ -34,7 +34,8 @@ def plot_pt_profile(tag,
 
     Returns
     -------
-    None
+    NoneType
+        None
     """
 
     print(f'Plotting the P-T profiles: {output}...', end='', flush=True)

@@ -22,7 +22,7 @@ from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, btsettl, ames_dusty, ames_cond, \
-                         isochrones, petitcode
+                         isochrones, petitcode, exo_rem
 from species.read import read_model, read_calibration, read_planck
 from species.util import data_util, retrieval_util
 
@@ -254,8 +254,8 @@ class Database:
         ----------
         model : str
             Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-nextgen', 'drift-phoenix',
-            'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear', or
-            'petitcode-hot-cloudy').
+            'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear',
+            'petitcode-hot-cloudy', or 'exo-rem').
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to None.
@@ -267,8 +267,8 @@ class Database:
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
         data_folder : str, None
-            Folder with input data. Only required for the petitCODE hot models which are not
-            publically available.
+            Folder with input data. Only required for the Exo-REM and petitCODE hot models which
+            are not publicly available.
 
         Returns
         -------
@@ -276,10 +276,11 @@ class Database:
             None
         """
 
-        if model in ['petitcode-hot-clear', 'petitcode-hot-cloudy'] and data_folder is None:
-            raise ValueError('The petitCODE hot models are not publicly available and should '
-                             'be imported by setting the \'data_folder\' parameter. Please '
-                             'contact Paul Mollière (molliere@mpia.de) for the model spectra.')
+        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem']
+
+        if model in proprietary and data_folder is None:
+            raise ValueError(f'The {model} model is not publicly available and needs to '
+                             f'be imported by setting the \'data_folder\' parameter.')
 
         if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and wavel_range is None:
             raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
@@ -382,12 +383,22 @@ class Database:
 
             data_util.add_missing(model, ['teff', 'logg', 'feh', 'co', 'fsed'], h5_file)
 
+        elif model == 'exo-rem':
+            exo_rem.add_exo_rem(self.input_path,
+                                h5_file,
+                                data_folder,
+                                wavel_range,
+                                teff_range,
+                                spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co'], h5_file)
+
         else:
             raise ValueError(f'The {model} atmospheric model is not available. Please choose from '
                              f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
                              f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
-                             f'\'petitcode-hot-cloudy\'.')
+                             f'\'petitcode-hot-cloudy\', \'exo-rem\'.')
 
         h5_file.close()
 
@@ -850,7 +861,10 @@ class Database:
         probability = np.asarray(h5_file[f'results/mcmc/{tag}/probability'])
         probability = probability[:, burnin:]
 
-        n_param = dset.attrs['n_param']
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
 
         index_max = np.unravel_index(probability.argmax(), probability.shape)
 
@@ -894,7 +908,11 @@ class Database:
         with h5py.File(self.database, 'r') as h5_file:
             dset = h5_file[f'results/mcmc/{tag}/samples']
 
-            n_param = dset.attrs['n_param']
+            if 'n_param' in dset.attrs:
+                n_param = dset.attrs['n_param']
+            elif 'nparam' in dset.attrs:
+                n_param = dset.attrs['nparam']
+
             n_scaling = dset.attrs['n_scaling']
 
             if 'n_error' in dset.attrs:
@@ -964,7 +982,10 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        n_param = dset.attrs['n_param']
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
 
         if 'n_scaling' in dset.attrs:
             n_scaling = dset.attrs['n_scaling']
@@ -1064,7 +1085,11 @@ class Database:
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
-        n_param = dset.attrs['n_param']
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
+
         spectrum_type = dset.attrs['type'].decode('utf-8')
         spectrum_name = dset.attrs['spectrum'].decode('utf-8')
 
@@ -1225,7 +1250,11 @@ class Database:
         dset = h5_file[f'results/mcmc/{tag}/samples']
 
         spectrum = dset.attrs['spectrum']
-        n_param = dset.attrs['n_param']
+
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
 
         samples = np.asarray(dset)
 
@@ -1381,7 +1410,11 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        n_param = dset.attrs['n_param']
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
+
         n_line_species = dset.attrs['n_line_species']
         n_cloud_species = dset.attrs['n_cloud_species']
 

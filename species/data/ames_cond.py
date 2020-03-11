@@ -117,7 +117,7 @@ def add_ames_cond(input_path,
                                     data_flux.append(float(line[25:35].replace('D', 'E')))
 
                         # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                        data_flux = 10.**(np.asarray(data_flux)-8.)  # [erg s-1 cm-2 Angstrom-1]
+                        data_flux = 10.**(np.asarray(data_flux)-8.)  # (erg s-1 cm-2 Angstrom-1)
 
                     elif filename.endswith('.spec.gz'):
 
@@ -148,12 +148,12 @@ def add_ames_cond(input_path,
                                             break
 
                         # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                        data_flux = np.asarray(data_flux)*10.**-8.  # [erg s-1 cm-2 Angstrom-1]
+                        data_flux = np.asarray(data_flux)*10.**-8.  # (erg s-1 cm-2 Angstrom-1)
 
-                # [Angstrom] -> [um]
+                # (Angstrom) -> (um)
                 data_wavel = np.asarray(data_wavel)*1e-4
 
-                # [erg s-1 cm-2 Angstrom-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
                 data_flux = data_flux*1e-7*1e4*1e4
 
                 data = np.stack((data_wavel, data_flux), axis=1)

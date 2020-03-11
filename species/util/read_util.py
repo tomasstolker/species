@@ -134,10 +134,10 @@ def smooth_spectrum(wavelength,
                     spec_res,
                     size=11):
     """
-    Function to convolve a spectrum with a Gaussian kernel to a fixed spectral resolution. The
+    Function to smooth a spectrum with a Gaussian kernel to a fixed spectral resolution. The
     kernel size is set to 5 times the FWHM of the Gaussian. The FWHM of the Gaussian is equal
-    to the the wavelength divided by the spectral resolution. If the kernel does not fit within
-    the available wavelength grid (i.e., at the edge of the array) then the flux values are set
+    to the ratio of the wavelength and the spectral resolution. If the kernel does not fit within
+    the available wavelength grid (i.e. at the edge of the array) then the flux values are set
     to NaN.
 
     Parameters
@@ -145,11 +145,11 @@ def smooth_spectrum(wavelength,
     wavelength : numpy.ndarray
         Wavelength points (um). Should be uniformly spaced.
     flux : numpy.ndarray
-        Flux density (W m-2 um-1).
+        Flux (W m-2 um-1).
     spec_res : float
-        Spectral resolution
+        Spectral resolution.
     size : int
-        Kernel size (odd number).
+        Kernel size (odd integer).
 
     Returns
     -------
@@ -169,6 +169,11 @@ def smooth_spectrum(wavelength,
 
     spacing = np.mean(np.diff(wavelength))  # (um)
     flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
+
+    # spacing = np.mean(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
+    # spacing_std = np.std(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
+    # print(spacing, spacing_std)
+    # exit()
 
     for i, item in enumerate(wavelength):
         fwhm = item/spec_res  # (um)

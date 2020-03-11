@@ -49,13 +49,13 @@ def add_vlm_plx(input_path,
         header = hdulist[1].header
         photdata = hdulist[1].data
 
-    parallax = photdata['PLX']  # [mas]
-    parallax_error = photdata['EPLX']  # [mas]
-    distance = 1./(parallax*1e-3)  # [pc]
+    parallax = photdata['PLX']  # (mas)
+    parallax_error = photdata['EPLX']  # (mas)
+    distance = 1./(parallax*1e-3)  # (pc)
 
-    distance_minus = distance - 1./((parallax+parallax_error)*1e-3)  # [pc]
-    distance_plus = 1./((parallax-parallax_error)*1e-3) - distance  # [pc]
-    distance_error = (distance_plus+distance_minus)/2.  # [pc]
+    distance_minus = distance - 1./((parallax+parallax_error)*1e-3)  # (pc)
+    distance_plus = 1./((parallax-parallax_error)*1e-3) - distance  # (pc)
+    distance_error = (distance_plus+distance_minus)/2.  # (pc)
 
     name = photdata['NAME']
     name = np.core.defchararray.strip(name)
@@ -86,8 +86,8 @@ def add_vlm_plx(input_path,
     dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
     dset[...] = flag
 
-    database.create_dataset(group+'/ra', data=photdata['RA'])  # [deg]
-    database.create_dataset(group+'/dec', data=photdata['DEC'])  # [deg]
+    database.create_dataset(group+'/ra', data=photdata['RA'])  # (deg)
+    database.create_dataset(group+'/dec', data=photdata['DEC'])  # (deg)
     database.create_dataset(group+'/distance', data=distance)
     database.create_dataset(group+'/distance_error', data=distance_error)
     database.create_dataset(group+'/MKO/NSFCam.Y', data=photdata['YMAG'])

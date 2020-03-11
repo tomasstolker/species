@@ -45,7 +45,7 @@ def download_filter(filter_id):
                              f'Service.')
 
         wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
-        wavelength *= 1e-4  # [um]
+        wavelength *= 1e-4  # (um)
 
         os.remove('filter.dat')
 

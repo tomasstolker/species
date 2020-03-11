@@ -3,6 +3,7 @@ Utility functions for photometry.
 """
 
 import math
+import warnings
 
 import spectres
 import numpy as np
@@ -44,7 +45,13 @@ def multi_photometry(datatype,
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            flux[item] = readmodel.get_flux(parameters)[0]
+            try:
+                flux[item] = readmodel.get_flux(parameters)[0]
+            except IndexError:
+                flux[item] = np.nan
+
+                warnings.warn(f'The wavelength range of the {item} filter does not match with '
+                              f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
 
     elif datatype == 'calibration':
         for item in filters:
