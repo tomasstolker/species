@@ -69,7 +69,7 @@ class ReadIsochrone:
             Box with the isochrone.
         """
 
-        age_points = np.repeat(age, masses.shape[0])  # [Myr]
+        age_points = np.repeat(age, masses.shape[0])  # (Myr)
 
         color = None
         mag_abs = None

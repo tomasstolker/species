@@ -87,12 +87,14 @@ class ReadObject:
                     if f'{data_group}/covariance' not in h5_file:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
                                           None,
-                                          None)
+                                          None,
+                                          h5_file[f'{data_group}'].attrs['specres'])
 
                     else:
                         spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
                                           np.asarray(h5_file[f'{data_group}/covariance']),
-                                          np.asarray(h5_file[f'{data_group}/inv_covariance']))
+                                          np.asarray(h5_file[f'{data_group}/inv_covariance']),
+                                          h5_file[f'{data_group}'].attrs['specres'])
 
             else:
                 spectrum = None

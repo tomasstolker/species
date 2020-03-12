@@ -3,12 +3,16 @@ Utility functions for photometry.
 """
 
 import math
+import warnings
+
+import matplotlib.pyplot as plt
 
 import spectres
 import numpy as np
 
 from species.core import box
 from species.read import read_model, read_calibration, read_filter, read_planck
+# from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
 def multi_photometry(datatype,
@@ -44,7 +48,13 @@ def multi_photometry(datatype,
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            flux[item] = readmodel.get_flux(parameters)[0]
+            try:
+                flux[item] = readmodel.get_flux(parameters)[0]
+            except IndexError:
+                flux[item] = np.nan
+
+                warnings.warn(f'The wavelength range of the {item} filter does not match with '
+                              f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
 
     elif datatype == 'calibration':
         for item in filters:
@@ -95,13 +105,40 @@ def apparent_to_absolute(app_mag,
     return abs_mag, abs_err
 
 
+def absolute_to_apparent(abs_mag,
+                         distance):
+    """
+    Function for converting an absolute magnitude into an apparent magnitude.
+
+    Parameters
+    ----------
+    abs_mag : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Absolute magnitude and uncertainty (mag). The same uncertainty is used for the
+        apparent magnitude.
+    distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        Distance and uncertainty (pc).
+
+    Returns
+    -------
+    float, numpy.ndarray
+        Apparent magnitude (mag).
+    float, numpy.ndarray, None
+        Uncertainty (mag).
+    """
+
+    app_mag = abs_mag[0] + 5.*np.log10(distance[0]) - 5.
+
+    return app_mag, abs_mag[1]
+
+
 def get_residuals(datatype,
                   spectrum,
                   parameters,
                   filters,
                   objectbox,
                   inc_phot=True,
-                  inc_spec=False):
+                  inc_spec=False,
+                  **kwargs_radtrans):
     """
     Parameters
     ----------
@@ -114,11 +151,19 @@ def get_residuals(datatype,
     filters : tuple(str, )
         Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
-        Box with the photometry and/or spectrum of an object.
+        Box with the photometry and/or spectra of an object. A scaling and/or error inflation of
+        the spectra should be applied with :func:`~species.util.phot_util.update_spectra`
+        beforehand.
     inc_phot : bool
         Include photometry.
     inc_spec : bool
         Include spectrum.
+
+    Keyword arguments
+    -----------------
+    kwargs_radtrans : dict
+        Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
+        ``line_species``, ``cloud_species``, and ``scattering``.
 
     Returns
     -------
@@ -149,29 +194,48 @@ def get_residuals(datatype,
     if inc_spec:
         res_spec = {}
 
+        readmodel = None
+
         for key in objectbox.spectrum:
             wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                            1.1*objectbox.spectrum[key][0][-1, 0])
+
+            wl_new = objectbox.spectrum[key][0][:, 0]
+            spec_res = objectbox.spectrum[key][3]
 
             if spectrum == 'planck':
                 readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
                 model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
             else:
-                readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-                model = readmodel.get_model(parameters, spec_res=None)
+                if spectrum == 'petitradtrans':
+                    # TODO change back
+                    pass
 
-            wl_new = objectbox.spectrum[key][0][:, 0]
+                    # radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
+                    #                                       cloud_species=kwargs_radtrans['cloud_species'],
+                    #                                       scattering=kwargs_radtrans['scattering'],
+                    #                                       wavel_range=wavel_range)
+                    #
+                    # model = radtrans.get_model(parameters, spec_res=None)
+                    #
+                    # # separate resampling to the new wavelength points
+                    #
+                    # flux_new = spectres.spectres(new_spec_wavs=wl_new,
+                    #                              old_spec_wavs=model.wavelength,
+                    #                              spec_fluxes=model.flux)
 
-            flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                                         old_spec_wavs=model.wavelength,
-                                         spec_fluxes=model.flux,
-                                         spec_errs=None)
+                else:
+                    readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
-            if key in parameters:
-                print(f'Scaling the flux of {key} by {parameters[key]:.2e}...', end='', flush=True)
-                flux_new *= parameters[key]
-                print(' [DONE]')
+                    # resampling to the new wavelength points is done in teh get_model function
+
+                    model = readmodel.get_model(parameters,
+                                                spec_res=spec_res,
+                                                wavel_resample=wl_new,
+                                                smooth=True)
+
+                    flux_new = model.flux
 
             res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
 
@@ -182,7 +246,7 @@ def get_residuals(datatype,
 
     print('Calculating residuals... [DONE]')
 
-    print('Residuals [sigma]:')
+    print('Residuals (sigma):')
 
     if res_phot is not None:
         for i, item in enumerate(filters):
@@ -190,7 +254,8 @@ def get_residuals(datatype,
 
     if res_spec is not None:
         for key in objectbox.spectrum:
-            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, max: {np.amax(res_spec[key]):.2f}')
+            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
+                  f'max: {np.amax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

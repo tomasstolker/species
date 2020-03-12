@@ -87,7 +87,7 @@ def plot_spectrum(boxes,
         raise ValueError(f'The number of \'boxes\' ({len(boxes)}) should be equal to the '
                          f'number of \'colors\' ({len(colors)}).')
 
-    if residuals and filters:
+    if residuals is not None and filters is not None:
         plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
@@ -96,7 +96,7 @@ def plot_spectrum(boxes,
         ax2 = plt.subplot(gridsp[0, 0])
         ax3 = plt.subplot(gridsp[2, 0])
 
-    elif residuals:
+    elif residuals is not None:
         plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
@@ -104,7 +104,7 @@ def plot_spectrum(boxes,
         ax1 = plt.subplot(gridsp[0, 0])
         ax3 = plt.subplot(gridsp[1, 0])
 
-    elif filters:
+    elif filters is not None:
         plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
@@ -119,7 +119,7 @@ def plot_spectrum(boxes,
 
         ax1 = plt.subplot(gridsp[0, 0])
 
-    if residuals:
+    if residuals is not None:
         labelbottom = False
     else:
         labelbottom = True
@@ -132,7 +132,7 @@ def plot_spectrum(boxes,
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True, labelbottom=labelbottom)
 
-    if filters:
+    if filters is not None:
         ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                         direction='in', width=1, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True, labelbottom=False)
@@ -141,7 +141,7 @@ def plot_spectrum(boxes,
                         direction='in', width=1, length=3, labelsize=12, top=True,
                         bottom=True, left=True, right=True, labelbottom=False)
 
-    if residuals:
+    if residuals is not None:
         ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                         direction='in', width=1, length=5, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
@@ -150,36 +150,36 @@ def plot_spectrum(boxes,
                         direction='in', width=1, length=3, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
 
-    if residuals and filters:
+    if residuals is not None and filters is not None:
         ax1.set_xlabel('', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
-        ax3.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
+        ax3.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
 
-    elif residuals:
+    elif residuals is not None:
         ax1.set_xlabel('', fontsize=13)
-        ax3.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
+        ax3.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
 
-    elif filters:
-        ax1.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
+    elif filters is not None:
+        ax1.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
 
     else:
-        ax1.set_xlabel('Wavelength [$\mu$m]', fontsize=13)
+        ax1.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
 
-    if filters:
+    if filters is not None:
         ax2.set_ylabel('Transmission', fontsize=13)
 
-    if residuals:
-        ax3.set_ylabel(r'Residual [$\sigma$]', fontsize=13)
+    if residuals is not None:
+        ax3.set_ylabel(r'Residual ($\sigma$)', fontsize=13)
 
-    if xlim:
+    if xlim is not None:
         ax1.set_xlim(xlim[0], xlim[1])
     else:
         ax1.set_xlim(0.6, 6.)
 
     if quantity == 'magnitude':
         scaling = 1.
-        ax1.set_ylabel('Flux contrast [mag]', fontsize=13)
+        ax1.set_ylabel('Flux contrast (mag)', fontsize=13)
 
         if ylim:
             ax1.set_ylim(ylim[0], ylim[1])
@@ -193,7 +193,7 @@ def plot_spectrum(boxes,
             exponent = math.floor(math.log10(ylim[1]))
             scaling = 10.**exponent
 
-            ylabel = r'Flux [10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$]'
+            ylabel = r'Flux (10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$)'
 
             ax1.set_ylabel(ylabel, fontsize=13)
             ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
@@ -202,40 +202,40 @@ def plot_spectrum(boxes,
                 ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
 
         else:
-            ax1.set_ylabel(r'Flux [W m$^{-2}$ $\mu$m$^{-1}$]', fontsize=13)
+            ax1.set_ylabel(r'Flux (W m$^{-2}$ $\mu$m$^{-1}$)', fontsize=13)
             scaling = 1.
 
-    if filters:
+    if filters is not None:
         ax2.set_ylim(0., 1.)
 
     xlim = ax1.get_xlim()
 
-    if filters:
+    if filters is not None:
         ax2.set_xlim(xlim[0], xlim[1])
 
-    if residuals:
+    if residuals is not None:
         ax3.set_xlim(xlim[0], xlim[1])
 
-    if offset and residuals and filters:
+    if offset is not None and residuals is not None and filters is not None:
         ax3.get_xaxis().set_label_coords(0.5, offset[0])
 
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
         ax2.get_yaxis().set_label_coords(offset[1], 0.5)
         ax3.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    elif offset and filters:
+    elif offset is not None and filters is not None:
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
 
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
         ax2.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    elif offset and residuals:
+    elif offset is not None and residuals is not None:
         ax3.get_xaxis().set_label_coords(0.5, offset[0])
 
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
         ax3.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    elif offset:
+    elif offset is not None:
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
 
@@ -246,10 +246,10 @@ def plot_spectrum(boxes,
     ax1.set_xscale(scale[0])
     ax1.set_yscale(scale[1])
 
-    if filters:
+    if filters is not None:
         ax2.set_xscale(scale[0])
 
-    if residuals:
+    if residuals is not None:
         ax3.set_xscale(scale[0])
 
     color_obj_phot = None
@@ -409,14 +409,14 @@ def plot_spectrum(boxes,
                              alpha=0.7, marker='s', ms=5, zorder=4, color=colors[j],
                              markerfacecolor='white')
 
-    if filters:
+    if filters is not None:
         for i, item in enumerate(filters):
             transmission = read_filter.ReadFilter(item)
             data = transmission.get_filter()
 
             ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black', zorder=1)
 
-    if residuals:
+    if residuals is not None:
         res_max = 0.
 
         if residuals.photometry is not None:
@@ -452,12 +452,12 @@ def plot_spectrum(boxes,
         else:
             ax3.set_ylim(ylim_res[0], ylim_res[1])
 
-    if filters:
+    if filters is not None:
         ax2.set_ylim(0., 1.1)
 
     print(f'Plotting spectrum: {output}...', end='', flush=True)
 
-    if title:
+    if title is not None:
         if filters:
             ax2.set_title(title, y=1.02, fontsize=15)
         else:
@@ -466,7 +466,7 @@ def plot_spectrum(boxes,
     handles, _ = ax1.get_legend_handles_labels()
 
     if handles and legend:
-        ax1.legend(loc=legend, fontsize=12, frameon=False)
+        ax1.legend(loc=legend, fontsize=10, frameon=False)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

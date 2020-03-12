@@ -222,7 +222,7 @@ def write_data(model,
 
     dset = database.create_group(f'models/{model}')
 
-    dset.attrs['nparam'] = len(parameters)
+    dset.attrs['n_param'] = len(parameters)
 
     for i, item in enumerate(parameters):
         dset.attrs[f'parameter{i}'] = item
@@ -314,7 +314,7 @@ def add_missing(model,
                                 try:
                                     scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
                                     flux[i, j, k, m, n] = scaling*flux[i+1, j, k, m, n] + \
-                                        (1.-scaling)*flux[i-1, j, k, mm ]
+                                        (1.-scaling)*flux[i-1, j, k, mm]
 
                                 except IndexError:
                                     flux[i, j, k, m, n] = np.nan

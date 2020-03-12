@@ -84,7 +84,7 @@ def add_spex(input_path, database):
     transmission.get_filter()
 
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
-    h_zp = 1.133e-9  # [W m-2 um-1]
+    h_zp = 1.133e-9  # (W m-2 um-1)
 
     for votable in os.listdir(data_path):
         if votable.endswith('.xml'):
@@ -95,7 +95,7 @@ def add_spex(input_path, database):
             wavelength = table.array['wavelength']  # [Angstrom]
             flux = table.array['flux']  # Normalized units
 
-            wavelength = np.array(wavelength*1e-4)  # [um]
+            wavelength = np.array(wavelength*1e-4)  # (um)
             flux = np.array(flux)
             error = np.full(flux.shape[0], np.nan)
 
@@ -146,11 +146,11 @@ def add_spex(input_path, database):
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None, zp_flux=h_zp)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
-            flux *= h_flux/phot[0]  # [W m-2 um-1]
+            flux *= h_flux/phot[0]  # (W m-2 um-1)
 
             spdata = np.vstack([wavelength, flux, error])
 
-            simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')  # [pc]
+            simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')  # (pc)
 
             # simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
             # simbad_id = simbad_id.decode('utf-8')
@@ -167,8 +167,8 @@ def add_spex(input_path, database):
                 dset.attrs['2MASS/2MASS.J'] = j_mag
                 dset.attrs['2MASS/2MASS.H'] = h_mag
                 dset.attrs['2MASS/2MASS.Ks'] = ks_mag
-                dset.attrs['distance'] = distance[0]  # [pc]
-                dset.attrs['distance_error'] = distance[1]  # [pc]
+                dset.attrs['distance'] = distance[0]  # (pc)
+                dset.attrs['distance_error'] = distance[1]  # (pc)
 
     print_message = 'Adding SpeX Prism Spectral Library... [DONE]'
     print(f'\r{print_message:<72}')

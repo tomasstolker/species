@@ -43,36 +43,36 @@ class TestModel:
                                          magnitude=False,
                                          smooth=True)
 
-        assert np.sum(model_box.wavelength) == pytest.approx( 45.969308588797304, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(8.523746906754028e-13, rel=self.limit, abs=0.)
+        assert np.sum(model_box.wavelength) == pytest.approx(39.36850660634572, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(7.549674442955264e-13, rel=self.limit, abs=0.)
 
         model_box = read_model.get_model(self.model_param,
                                          spec_res=100.,
                                          magnitude=True,
                                          smooth=True)
 
-        assert np.sum(model_box.wavelength) == pytest.approx(45.969308588797304, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(324.13066887417983, rel=self.limit, abs=0.)
+        assert np.sum(model_box.wavelength) == pytest.approx(39.36850660634572, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(275.6061491339208, rel=self.limit, abs=0.)
 
     def test_get_data(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         model_box = read_model.get_data(self.model_param)
 
         assert np.sum(model_box.wavelength) == pytest.approx(47.859770458276856, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(8.65388169807849e-13, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(8.275363683007199e-13, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         flux = read_model.get_flux(self.model_param)
 
-        assert flux[0] == pytest.approx(3.4895271009175577e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(3.3368963026400554e-14, rel=self.limit, abs=0.)
 
     def test_get_magnitude(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         magnitude = read_model.get_magnitude(self.model_param)
 
-        assert magnitude[0] == pytest.approx(11.30856476397497, rel=self.limit, abs=0.)
-        assert magnitude[1] == pytest.approx(11.30856476397497, rel=self.limit, abs=0.)
+        assert magnitude[0] == pytest.approx(11.357124426046317, rel=self.limit, abs=0.)
+        assert magnitude[1] == pytest.approx(11.357124426046317, rel=self.limit, abs=0.)
 
     def test_get_bounds(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')

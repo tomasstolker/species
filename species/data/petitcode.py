@@ -101,20 +101,20 @@ def add_petitcode_cool_clear(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [um]
+                    # (cm) -> (um)
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [um]
+                # (cm) -> (um)
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -232,20 +232,20 @@ def add_petitcode_cool_cloudy(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [um]
+                    # (cm) -> (um)
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [um]
+                # (cm) -> (um)
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -346,20 +346,20 @@ def add_petitcode_hot_clear(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [um]
+                    # (cm) -> (um)
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [um]
+                # (cm) -> (um)
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:
@@ -463,20 +463,20 @@ def add_petitcode_hot_cloudy(input_path,
 
             if wavel_range is None:
                 if wavelength is None:
-                    # [cm] -> [um]
+                    # (cm) -> (um)
                     wavelength = data[:, 0]*1e4
 
                 if np.all(np.diff(wavelength) < 0):
                     raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 flux.append(data[:, 1]*1e-9*constants.LIGHT/(wavelength*1e-6)**2)
 
             else:
-                # [cm] -> [um]
+                # (cm) -> (um)
                 data_wavel = data[:, 0]*1e4
 
-                # [erg s-1 cm-2 Hz-1] -> [W m-2 um-1]
+                # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                 data_flux = data[:, 1]*1e-9*constants.LIGHT/(data_wavel*1e-6)**2
 
                 try:

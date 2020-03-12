@@ -57,8 +57,8 @@ def add_baraffe(database,
     header = np.asarray(header, dtype=str)
     isochrones = np.asarray(isochrones, dtype=float)
 
-    isochrones[:, 0] *= 1e3  # [Myr]
-    isochrones[:, 1] *= constants.M_SUN/constants.M_JUP  # [Mjup]
+    isochrones[:, 0] *= 1e3  # (Myr)
+    isochrones[:, 1] *= constants.M_SUN/constants.M_JUP  # (Mjup)
 
     index_sort = np.argsort(isochrones[:, 0])
     isochrones = isochrones[index_sort, :]
@@ -112,11 +112,11 @@ def add_marleau(database,
     # (M_J)  (Gyr)   (k_B/baryon)    (L_sol)    (k_B/baryon)    (R_J)    (K)
     mass, age, _, luminosity, _, radius, teff = np.loadtxt(filename, unpack=True)
 
-    age *= 1e3  # [Myr]
+    age *= 1e3  # (Myr)
     luminosity = np.log10(luminosity)
 
-    mass_cgs = 1e3 * mass * constants.M_JUP  # [g]
-    radius_cgs = 1e2 * radius * constants.R_JUP  # [cm]
+    mass_cgs = 1e3 * mass * constants.M_JUP  # (g)
+    radius_cgs = 1e2 * radius * constants.R_JUP  # (cm)
 
     logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
 

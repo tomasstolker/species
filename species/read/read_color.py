@@ -85,8 +85,8 @@ class ReadColorMagnitude:
 
         if self.lib_type == 'phot_lib':
             sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
-            dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # [pc]
-            dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])  # [pc]
+            dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # (pc)
+            dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])  # (pc)
             flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
 
             if object_type is None:

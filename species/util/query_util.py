@@ -50,6 +50,7 @@ class NoStdStreams:
 with NoStdStreams():
     from astroquery.gaia import Gaia
 
+
 def get_parallax():
     species_db = database.Database()
     species_db.add_photometry('vlm-plx')
@@ -90,12 +91,15 @@ def get_parallax():
 
         dtype = h5py.special_dtype(vlen=str)
 
-        dset = hdf_file.create_dataset('photometry/vlm-plx/simbad', (np.size(simbad_id), ), dtype=dtype)
+        dset = hdf_file.create_dataset('photometry/vlm-plx/simbad',
+                                       (np.size(simbad_id), ),
+                                       dtype=dtype)
+
         dset[...] = simbad_id
 
         np.savetxt('parallax.dat',
                    np.column_stack([name, simbad_id, distance, distance_error]),
-                   header='VLM-PLX name - SIMBAD name - Distance [pc] - Error [pc]',
+                   header='VLM-PLX name - SIMBAD name - Distance (pc) - Error (pc)',
                    fmt='%35s, %35s, %8.2f, %8.2f')
 
 
@@ -198,8 +202,8 @@ def get_distance(target):
     # query SIMBAD
     if simbad_result is not None:
         simbad_id = simbad_result['MAIN_ID'][0].decode('utf-8')
-        parallax = simbad_result['PLX_VALUE'][0]  # [mas]
-        parallax_error = simbad_result['PLX_ERROR'][0]  # [mas]
+        parallax = simbad_result['PLX_VALUE'][0]  # (mas)
+        parallax_error = simbad_result['PLX_ERROR'][0]  # (mas)
         if ma.is_masked(parallax):
             parallax = None
 
@@ -223,19 +227,19 @@ def get_distance(target):
             if result.keys():
 
                 if 'plx' in result[0].keys():
-                    parallax = result[0]['plx'][0]  # [mas]
+                    parallax = result[0]['plx'][0]  # (mas)
                     distance = None
                     if ma.is_masked(parallax):
                         parallax = None
 
                 elif 'Plx' in result[0].keys():
-                    parallax = result[0]['Plx'][0]  # [mas]
+                    parallax = result[0]['Plx'][0]  # (mas)
                     distance = None
                     if ma.is_masked(parallax):
                         parallax = None
 
                 elif 'Dist' in result[0].keys():
-                    distance = result[0]['Dist'][0]  # [pc]
+                    distance = result[0]['Dist'][0]  # (pc)
                     parallax = None
                     if ma.is_masked(distance):
                         distance = None
@@ -245,19 +249,19 @@ def get_distance(target):
                     distance = None
 
                 if 'e_plx' in result[0].keys():
-                    parallax_error = result[0]['e_plx'][0]  # [mas]
+                    parallax_error = result[0]['e_plx'][0]  # (mas)
                     distance_error = None
                     if ma.is_masked(parallax_error):
                         parallax_error = None
 
                 elif 'e_Plx' in result[0].keys():
-                    parallax_error = result[0]['e_Plx'][0]  # [mas]
+                    parallax_error = result[0]['e_Plx'][0]  # (mas)
                     distance_error = None
                     if ma.is_masked(parallax_error):
                         parallax_error = None
 
                 elif 'e_Dist' in result[0].keys():
-                    distance_error = result[0]['e_Dist'][0]  # [pc]
+                    distance_error = result[0]['e_Dist'][0]  # (pc)
                     parallax_error = None
                     if ma.is_masked(distance_error):
                         distance_error = None
@@ -268,7 +272,7 @@ def get_distance(target):
 
             if parallax is not None or distance is not None:
                 break
-                
+
     # query Gaia catalog
     # if ma.is_masked(parallax):
     #
@@ -280,15 +284,15 @@ def get_distance(target):
     #         result = Gaia.query_object(coordinate=coord, width=1.*u.arcsec, height=1.*u.arcsec)
     #
     #         if result:
-    #             parallax = result['parallax'][0]  # [mas]
+    #             parallax = result['parallax'][0]  # (mas)
 
     if parallax is not None:
-        distance = 1./(parallax*1e-3)  # [pc]
+        distance = 1./(parallax*1e-3)  # (pc)
 
     if parallax is not None and parallax_error is not None:
-        distance_minus = distance - 1./((parallax+parallax_error)*1e-3)  # [pc]
-        distance_plus = 1./((parallax-parallax_error)*1e-3) - distance  # [pc]
-        distance_error = (distance_plus+distance_minus)/2.  # [pc]
+        distance_minus = distance - 1./((parallax+parallax_error)*1e-3)  # (pc)
+        distance_plus = 1./((parallax-parallax_error)*1e-3) - distance  # (pc)
+        distance_error = (distance_plus+distance_minus)/2.  # (pc)
 
     if parallax is None:
         parallax = np.nan

@@ -109,7 +109,7 @@ def add_irtf(input_path,
                         print_message = f'Adding IRTF Spectral Library... {name}'
                         print(f'\r{print_message:<70}', end='')
 
-                        simbad_id, distance = query_util.get_distance(name)  # [pc]
+                        simbad_id, distance = query_util.get_distance(name)  # (pc)
 
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 

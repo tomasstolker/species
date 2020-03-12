@@ -9,7 +9,6 @@ from multiprocessing import Pool, cpu_count
 import emcee
 import numpy as np
 
-from species.analysis import photometry
 from species.core import constants
 from species.data import database
 from species.read import read_model, read_object
@@ -76,7 +75,7 @@ def lnlike(param,
            modelphot,
            modelspec):
     """
-    Internal function for the likelihood probability.
+    Internal function for the likelihood function.
 
     Parameters
     ----------
@@ -110,8 +109,8 @@ def lnlike(param,
         if item == 'radius':
             radius = param[i]
 
-        elif spectrum is not None and item in spectrum:
-            spec_scaling[item] = param[i]
+        elif item[:8] == 'scaling_' and item[8:] in spectrum:
+            spec_scaling[item[8:]] = param[i]
 
         else:
             paramdict[item] = param[i]
@@ -127,20 +126,19 @@ def lnlike(param,
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
-            if item in spec_scaling:
-                scaling_new = scaling * spec_scaling[item]
-                flux = scaling_new * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
+            flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
 
+            if item in spec_scaling:
+                flux_obs = spec_scaling[item]*spectrum[item][0][:, 1]
             else:
-                flux = scaling * modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
+                flux_obs = spectrum[item][0][:, 1]
 
             if spectrum[item][2] is not None:
-                spec_diff = spectrum[item][0][:, 1] - flux
+                spec_diff = flux_obs - flux
                 chisq += np.dot(spec_diff, np.dot(spectrum[item][2], spec_diff))
 
             else:
-                chisq += np.nansum((spectrum[item][0][:, 1] - flux)**2 /
-                                   spectrum[item][0][:, 2]**2)
+                chisq += np.nansum((flux_obs-flux)**2 / spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
 
@@ -297,7 +295,7 @@ class FitModel:
                 print(f'Interpolating {item}...', end='', flush=True)
 
                 readmodel = read_model.ReadModel(self.model, filter_name=item)
-                readmodel.interpolate_grid(bounds=self.bounds)
+                readmodel.interpolate_grid(self.bounds)
                 self.modelphot.append(readmodel)
 
                 print(f' [DONE]')
@@ -320,8 +318,9 @@ class FitModel:
 
                 readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
 
-                readmodel.interpolate_grid(bounds=self.bounds,
-                                           wavel_resample=self.spectrum[key][0][:, 0])
+                readmodel.interpolate_grid(self.bounds,
+                                           wavel_resample=self.spectrum[key][0][:, 0],
+                                           smooth=True)
 
                 self.modelspec.append(readmodel)
 
@@ -335,9 +334,11 @@ class FitModel:
         self.modelpar.append('radius')
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
-                if item in self.bounds:
-                    self.modelpar.append(item)
+            for item in self.spectrum:
+                if item in bounds:
+                    self.modelpar.append(f'scaling_{item}')
+                    self.bounds[f'scaling_{item}'] = (bounds[item][0], bounds[item][1])
+                    del self.bounds[item]
 
     def run_mcmc(self,
                  nwalkers,
@@ -346,7 +347,7 @@ class FitModel:
                  tag,
                  prior=None):
         """
-        Function to run the MCMC sampler
+        Function to run the MCMC sampler.
 
         Parameters
         ----------
@@ -373,9 +374,11 @@ class FitModel:
         sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'fsed': 0.01, 'co': 0.01, 'radius': 0.01}
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
-                if item in self.bounds:
-                    sigma[item] = 0.01
+            for item in self.spectrum:
+                if f'scaling_{item}' in self.bounds:
+                    sigma[f'scaling_{item}'] = 0.01
+                    guess[f'scaling_{item}'] = guess[item]
+                    del guess[item]
 
         print('Running MCMC...')
 
@@ -411,7 +414,7 @@ class FitModel:
         spec_labels = []
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
+            for item in self.spectrum:
                 if item in self.bounds:
                     spec_labels.append(item)
 

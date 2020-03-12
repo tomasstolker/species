@@ -93,6 +93,7 @@ class ReadCalibration:
 
         if model_param is not None:
             flux_new = model_param['scaling']*flux_new
+            error_new = model_param['scaling']*error_new
 
         return box.create_box(boxtype='spectrum',
                               spectrum='calibration',
@@ -149,6 +150,7 @@ class ReadCalibration:
 
         if model_param is not None:
             flux = model_param['scaling']*flux
+            error = model_param['scaling']*error
 
         if self.wavel_range is None:
             wl_index = np.ones(wavelength.size, dtype=bool)
