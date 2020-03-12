@@ -443,14 +443,19 @@ class AtmosphericRetrieval:
 
             elif pt_profile == 'line':
                 # 15 temperature (K) knots
-                for i in range(15):
-                    # default: 0 - 4000 K
-                    cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
+                # for i in range(15):
+                #     # default: 0 - 4000 K
+                #     cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
 
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
-                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
-                cube[cube_index['gamma_r']] = gamma_r
+                # gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                # cube[cube_index['gamma_r']] = gamma_r
+
+                cube[cube_index['t14']] = 5000.*cube[cube_index['t14']]
+
+                for i in range(13, -1, -1):
+                    cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
 
             # metallicity (dex) for the nabla_ad interpolation
             if 'feh' in bounds:
