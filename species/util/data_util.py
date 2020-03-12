@@ -314,7 +314,7 @@ def add_missing(model,
                                 try:
                                     scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
                                     flux[i, j, k, m, n] = scaling*flux[i+1, j, k, m, n] + \
-                                        (1.-scaling)*flux[i-1, j, k, mm ]
+                                        (1.-scaling)*flux[i-1, j, k, mm]
 
                                 except IndexError:
                                     flux[i, j, k, m, n] = np.nan

@@ -146,7 +146,7 @@ class ReadPlanck:
         while wavel_points[-1] <= self.wavel_range[1]:
             wavel_points.append(wavel_points[-1] + wavel_points[-1]/spec_res)
 
-        wavel_points = np.asarray(wavel_points)  #(um)
+        wavel_points = np.asarray(wavel_points)  # (um)
 
         n_planck = (len(model_param)-1) // 2
 
@@ -273,12 +273,12 @@ class ReadPlanck:
             read_planck_1 = ReadPlanck(filter_name=filters_color[1])
             read_planck_2 = ReadPlanck(filter_name=filter_mag)
 
-            app_mag_0, abs_mag_0 = read_planck_0.get_magnitude(model_param)
-            app_mag_1, abs_mag_1 = read_planck_1.get_magnitude(model_param)
-            app_mag_2, abs_mag_2 = read_planck_2.get_magnitude(model_param)
+            app_mag_0, _ = read_planck_0.get_magnitude(model_param)
+            app_mag_1, _ = read_planck_1.get_magnitude(model_param)
+            app_mag_2, _ = read_planck_2.get_magnitude(model_param)
 
             list_color.append(app_mag_0[0]-app_mag_1[0])
-            list_mag.append(abs_mag_2[0])
+            list_mag.append(app_mag_2[0])
 
         return box.create_box(boxtype='colormag',
                               library='planck',

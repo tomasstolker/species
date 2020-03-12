@@ -9,7 +9,6 @@ from multiprocessing import Pool, cpu_count
 import emcee
 import numpy as np
 
-from species.analysis import photometry
 from species.core import constants
 from species.data import database
 from species.read import read_model, read_object
@@ -76,7 +75,7 @@ def lnlike(param,
            modelphot,
            modelspec):
     """
-    Internal function for the likelihood probability.
+    Internal function for the likelihood function.
 
     Parameters
     ----------
@@ -348,7 +347,7 @@ class FitModel:
                  tag,
                  prior=None):
         """
-        Function to run the MCMC sampler
+        Function to run the MCMC sampler.
 
         Parameters
         ----------
@@ -415,7 +414,7 @@ class FitModel:
         spec_labels = []
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
+            for item in self.spectrum:
                 if item in self.bounds:
                     spec_labels.append(item)
 

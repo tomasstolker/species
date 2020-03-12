@@ -213,18 +213,23 @@ def get_residuals(datatype,
 
                     model = radtrans.get_model(parameters, spec_res=None)
 
+                    # separate resampling to the new wavelength points
+
+                    flux_new = spectres.spectres(new_spec_wavs=wl_new,
+                                                 old_spec_wavs=model.wavelength,
+                                                 spec_fluxes=model.flux)
+
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-                    
+
+                    # resampling to the new wavelength points is done in teh get_model function
+
                     model = readmodel.get_model(parameters,
                                                 spec_res=spec_res,
                                                 wavel_resample=wl_new,
                                                 smooth=True)
 
-            flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                                         old_spec_wavs=model.wavelength,
-                                         spec_fluxes=model.flux,
-                                         spec_errs=None)
+                    flux_new = model.flux
 
             if key in parameters:
                 print(f'Scaling the flux of {key}: {parameters[key]:.2e}...', end='', flush=True)
@@ -233,10 +238,6 @@ def get_residuals(datatype,
 
             else:
                 flux_obs = objectbox.spectrum[key][0][:, 1]
-
-            print(flux_obs.shape)
-            print(flux_new.shape)
-            print(objectbox.spectrum[key][0][:, 2].shape)
 
             res_tmp = (flux_obs-flux_new)/objectbox.spectrum[key][0][:, 2]
 

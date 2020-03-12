@@ -50,6 +50,7 @@ class NoStdStreams:
 with NoStdStreams():
     from astroquery.gaia import Gaia
 
+
 def get_parallax():
     species_db = database.Database()
     species_db.add_photometry('vlm-plx')
@@ -90,7 +91,10 @@ def get_parallax():
 
         dtype = h5py.special_dtype(vlen=str)
 
-        dset = hdf_file.create_dataset('photometry/vlm-plx/simbad', (np.size(simbad_id), ), dtype=dtype)
+        dset = hdf_file.create_dataset('photometry/vlm-plx/simbad',
+                                       (np.size(simbad_id), ),
+                                       dtype=dtype)
+
         dset[...] = simbad_id
 
         np.savetxt('parallax.dat',
@@ -268,7 +272,7 @@ def get_distance(target):
 
             if parallax is not None or distance is not None:
                 break
-                
+
     # query Gaia catalog
     # if ma.is_masked(parallax):
     #

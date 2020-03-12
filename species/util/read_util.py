@@ -2,7 +2,6 @@
 Utility functions for reading data.
 """
 
-import math
 import warnings
 
 import numpy as np
@@ -67,14 +66,14 @@ def add_luminosity(modelbox):
     flux = simps(fullspec.flux, fullspec.wavelength)
 
     if 'distance' in modelbox.parameters:
-        luminosity = 4.*math.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # (W)
+        luminosity = 4.*np.pi*(fullspec.parameters['distance']*constants.PARSEC)**2*flux  # (W)
 
         # Analytical solution for a single-component Planck function
-        # luminosity = 4.*math.pi*(modelbox.parameters['radius']*constants.R_JUP)**2* \
+        # luminosity = 4.*np.pi*(modelbox.parameters['radius']*constants.R_JUP)**2* \
         #     constants.SIGMA_SB*modelbox.parameters['teff']**4.
 
     else:
-        luminosity = 4.*math.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # (W)
+        luminosity = 4.*np.pi*(fullspec.parameters['radius']*constants.R_JUP)**2*flux  # (W)
 
     modelbox.parameters['luminosity'] = luminosity/constants.L_SUN  # (Lsun)
 
@@ -160,14 +159,14 @@ def smooth_spectrum(wavelength,
 
     def _gaussian(size, sigma):
         pos = range(-(size-1)//2, (size-1)//2+1)
-        kernel = [math.exp(-float(x)**2/(2.*sigma**2))/(sigma*math.sqrt(2.*math.pi)) for x in pos]
+        kernel = [np.exp(-float(x)**2/(2.*sigma**2))/(sigma*np.sqrt(2.*np.pi)) for x in pos]
 
         return np.asarray(kernel/sum(kernel))
 
     spacing = np.mean(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
     spacing_std = np.std(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
 
-    if spacing_std < 1e-2:
+    if spacing_std/spacing < 1e-2:
         # see retrieval_util.convolve
         sigma_lsf = 2.*np.sqrt(2.*np.log(2.))/spec_res
 
@@ -177,15 +176,21 @@ def smooth_spectrum(wavelength,
         if size % 2 == 0:
             raise ValueError('The kernel size should be an odd number.')
 
-        # TODO test for wavelength diff
         flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
+
         spacing = np.mean(np.diff(wavelength))  # (um)
+        spacing_std = np.std(np.diff(wavelength))  # (um)
+
+        if spacing_std/spacing > 1e-2:
+            warnings.warn(f'The wavelength spacing is not uniform ({spacing} +/- {spacing_std}). '
+                          f'The smoothing with the Gaussian kernel requires either the spectral '
+                          f'resolution or the wavelength spacing to be uniformly sampled.')
 
         for i, item in enumerate(wavelength):
             fwhm = item/spec_res  # (um)
-            sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # (um)
+            sigma = fwhm/(2.*np.sqrt(2.*np.log(2.)))  # (um)
 
-            size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
+            size = int(5.*sigma/spacing)  # Kernel size 5 times the width of the LSF
             if size % 2 == 0:
                 size += 1
 
