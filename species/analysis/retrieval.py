@@ -176,8 +176,6 @@ class AtmosphericRetrieval:
         # initiate parameter list and counters
 
         self.parameters = []
-        self.count_scale = 0
-        self.count_error = 0
 
     def set_parameters(self,
                        bounds,
@@ -245,7 +243,6 @@ class AtmosphericRetrieval:
             if item in bounds:
                 if bounds[item][0] is not None:
                     self.parameters.append(f'scaling_{item}')
-                    self.count_scale += 1
 
         # add the error offset parameters
 
@@ -253,7 +250,6 @@ class AtmosphericRetrieval:
             if item in bounds:
                 if bounds[item][1] is not None:
                     self.parameters.append(f'error_{item}')
-                    self.count_error += 1
 
         print(f'Fitting {len(self.parameters)} parameters:')
 
@@ -375,12 +371,9 @@ class AtmosphericRetrieval:
 
             Returns
             -------
-            float
-                The logarithm of the prior probability.
+            NoneType
+                None
             """
-
-            # initiate the logarithm of the prior
-            log_prior = 0
 
             # surface gravity (dex)
             if 'logg' in bounds:
@@ -550,8 +543,6 @@ class AtmosphericRetrieval:
                             (bounds[item][1][1]-bounds[item][1][0]) * \
                             cube[cube_index[f'error_{item}']]
 
-            return log_prior
-
         def loglike(cube, n_dim, n_param):
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
@@ -564,8 +555,13 @@ class AtmosphericRetrieval:
             Returns
             -------
             float
-                Logarithm of the likelihood function.
+                Sum of the logarithm of the prior and likelihood.
             """
+
+            # initiate the logarithm of the prior and likelihood
+
+            log_prior = 0.
+            log_likelihood = 0.
 
             # create dictionary with flux scaling parameters
 
@@ -587,10 +583,6 @@ class AtmosphericRetrieval:
                 else:
                     err_offset[item] = -100.
 
-            # initiate the logarithm of the prior and likelihood
-            log_prior = 0.
-            log_likelihood = 0.
-
             # create a p-t profile
 
             if pt_profile == 'molliere':
@@ -611,7 +603,11 @@ class AtmosphericRetrieval:
 
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
-                temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
+                knot_temp = np.asarray(knot_temp)
+
+                temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
+
+                # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
                 log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                     0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])

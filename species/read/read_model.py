@@ -159,16 +159,20 @@ class ReadModel:
                                                        fill_value=np.nan)
 
     def interpolate_grid(self,
-                         bounds=None,
-                         wavel_resample=None):
+                         bounds,
+                         wavel_resample=None,
+                         smooth=False):
         """
         Internal function for linearly interpolating the grid of model spectra.
 
-        bounds : dict, None
-
+        bounds : dict
+            Dictionary with the parameter boundaries. 
         wavel_resample : numpy.array, None
             Wavelength points for the resampling of the spectrum. The ``filter_name`` is used
             if set to None.
+        smooth : bool
+            Smooth the spectrum with a Gaussian LSF. Only recommended in case the input wavelength
+            sampling has a uniform spectral resolution.
 
         Returns
         -------
@@ -177,6 +181,11 @@ class ReadModel:
         """
 
         self.interpolate_model()
+
+        if smooth:
+            spec_res = np.mean(0.5*(wavel_resample[1:]+wavel_resample[:-1])/np.diff(wavel_resample))
+        else:
+            spec_res = None
 
         points = []
         for key, value in self.get_points().items():
@@ -213,8 +222,9 @@ class ReadModel:
                     if self.filter_name is not None:
                         flux_new[i, j] = self.get_flux(model_param)[0]
                     else:
-                        flux_new[i, j, :] = self.get_model(model_param,
-                            wavel_resample=wavel_resample).flux
+                        flux_new[i, j, :] = self.get_model(
+                            model_param, spec_res=spec_res, wavel_resample=wavel_resample,
+                            smooth=smooth).flux
 
         elif n_param == 3:
             model_param = {}
@@ -229,8 +239,9 @@ class ReadModel:
                         if self.filter_name is not None:
                             flux_new[i, j, k] = self.get_flux(model_param)[0]
                         else:
-                            flux_new[i, j, k, :] = self.get_model(model_param,
-                                wavel_resample=wavel_resample).flux
+                            flux_new[i, j, k, :] = self.get_model(
+                                model_param, spec_res=spec_res, wavel_resample=wavel_resample,
+                                smooth=smooth).flux
 
         elif n_param == 4:
             model_param = {}
@@ -247,8 +258,9 @@ class ReadModel:
                             if self.filter_name is not None:
                                 flux_new[i, j, k, l] = self.get_flux(model_param)[0]
                             else:
-                                flux_new[i, j, k, l, :] = self.get_model(model_param,
-                                    wavel_resample=wavel_resample).flux
+                                flux_new[i, j, k, l, :] = self.get_model(
+                                    model_param, spec_res=spec_res, wavel_resample=wavel_resample,
+                                    smooth=smooth).flux
 
         elif n_param == 5:
             model_param = {}
@@ -267,8 +279,9 @@ class ReadModel:
                                 if self.filter_name is not None:
                                     flux_new[i, j, k, l, m] = self.get_flux(model_param)[0]
                                 else:
-                                    flux_new[i, j, k, l, m, :] = self.get_model(model_param,
-                                        wavel_resample=wavel_resample).flux
+                                    flux_new[i, j, k, l, m, :] = self.get_model(
+                                        model_param, spec_res=spec_res,
+                                        wavel_resample=wavel_resample, smooth=smooth).flux
 
         if self.filter_name is not None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -322,13 +335,13 @@ class ReadModel:
             Box with the model spectrum.
         """
 
-        if spec_res is not None and wavel_resample is not None:
-            raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
-                             'simultaneously. Please set one of them to None.')
+        # if spec_res is not None and wavel_resample is not None:
+        #     raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
+        #                      'simultaneously. Please set one of them to None.')
 
-        if smooth and wavel_resample is not None:
-            warnings.warn('The \'smooth\' parameter is ignored because it can only be used in '
-                          'combination with \'spec_res\'.')
+        # if smooth and wavel_resample is not None:
+        #     warnings.warn('The \'smooth\' parameter is ignored because it can only be used in '
+        #                   'combination with \'spec_res\'.')
 
         grid_bounds = self.get_bounds()
 
@@ -395,7 +408,12 @@ class ReadModel:
 
                 flux *= scaling
 
-        if spec_res is None and wavel_resample is not None:
+        if smooth:
+            flux = read_util.smooth_spectrum(wavelength=self.wl_points,
+                                             flux=flux,
+                                             spec_res=spec_res)
+
+        if wavel_resample is not None:
             flux = spectres.spectres(new_spec_wavs=wavel_resample,
                                      old_spec_wavs=self.wl_points,
                                      spec_fluxes=flux)
@@ -408,14 +426,9 @@ class ReadModel:
                                  'the parameter values and the wavelength range are within '
                                  'the grid boundaries as stored in the database.')
 
-            if smooth:
-                flux = read_util.smooth_spectrum(wavelength=self.wl_points,
-                                                 flux=flux,
-                                                 spec_res=spec_res,
-                                                 size=11)
-
             else:
                 wavel_resample = [self.wl_points[0]]
+
                 while wavel_resample[-1] <= self.wl_points[-1]:
                     wavel_resample.append(wavel_resample[-1] + wavel_resample[-1]/spec_res)
 
@@ -599,7 +612,7 @@ class ReadModel:
         if self.spectrum_interp is None:
             self.interpolate_model()
 
-        spectrum = self.get_model(model_param, None)
+        spectrum = self.get_model(model_param)
 
         if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
@@ -628,7 +641,7 @@ class ReadModel:
             self.interpolate_model()
 
         try:
-            spectrum = self.get_model(model_param, None)
+            spectrum = self.get_model(model_param)
         except ValueError:
             warnings.warn(f'The set of model parameters {model_param} is outside the grid range '
                           f'{self.get_bounds()} so returning a NaN.')

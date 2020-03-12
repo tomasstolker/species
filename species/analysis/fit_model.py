@@ -110,8 +110,8 @@ def lnlike(param,
         if item == 'radius':
             radius = param[i]
 
-        elif spectrum is not None and item in spectrum:
-            spec_scaling[item] = param[i]
+        elif item[:8] == 'scaling_' and item[8:] in spectrum:
+            spec_scaling[item[8:]] = param[i]
 
         else:
             paramdict[item] = param[i]
@@ -296,7 +296,7 @@ class FitModel:
                 print(f'Interpolating {item}...', end='', flush=True)
 
                 readmodel = read_model.ReadModel(self.model, filter_name=item)
-                readmodel.interpolate_grid(bounds=self.bounds)
+                readmodel.interpolate_grid(self.bounds)
                 self.modelphot.append(readmodel)
 
                 print(f' [DONE]')
@@ -319,8 +319,9 @@ class FitModel:
 
                 readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
 
-                readmodel.interpolate_grid(bounds=self.bounds,
-                                           wavel_resample=self.spectrum[key][0][:, 0])
+                readmodel.interpolate_grid(self.bounds,
+                                           wavel_resample=self.spectrum[key][0][:, 0],
+                                           smooth=True)
 
                 self.modelspec.append(readmodel)
 
@@ -334,9 +335,11 @@ class FitModel:
         self.modelpar.append('radius')
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
-                if item in self.bounds:
-                    self.modelpar.append(item)
+            for item in self.spectrum:
+                if item in bounds:
+                    self.modelpar.append(f'scaling_{item}')
+                    self.bounds[f'scaling_{item}'] = (bounds[item][0], bounds[item][1])
+                    del self.bounds[item]
 
     def run_mcmc(self,
                  nwalkers,
@@ -372,9 +375,11 @@ class FitModel:
         sigma = {'teff': 5., 'logg': 0.01, 'feh': 0.01, 'fsed': 0.01, 'co': 0.01, 'radius': 0.01}
 
         if self.spectrum is not None:
-            for item in self.spectrum.keys():
-                if item in self.bounds:
-                    sigma[item] = 0.01
+            for item in self.spectrum:
+                if f'scaling_{item}' in self.bounds:
+                    sigma[f'scaling_{item}'] = 0.01
+                    guess[f'scaling_{item}'] = guess[item]
+                    del guess[item]
 
         print('Running MCMC...')
 

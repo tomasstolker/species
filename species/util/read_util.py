@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 
 from scipy.integrate import simps
+from scipy.ndimage.filters import gaussian_filter
 
 from species.core import constants
 from species.read import read_model, read_planck
@@ -39,8 +40,7 @@ def get_mass(model_param):
 
 def add_luminosity(modelbox):
     """
-    Function to add the luminosity of a model spectrum to the parameter dictionary of the box. The
-    luminosity is by default calculated at a spectral resolution of 1000.
+    Function to add the luminosity of a model spectrum to the parameter dictionary of the box.
 
     Parameters
     ----------
@@ -112,7 +112,7 @@ def update_spectra(objectbox,
         if f'scaling_{key}' in model_param:
             scaling = model_param[f'scaling_{key}']
 
-            print(f'Scaling {key} by {scaling:.2f}...', end='', flush=True)
+            print(f'Scaling the flux of {key}: {scaling:.2f}...', end='', flush=True)
             spec_tmp[:, 1] *= model_param[f'scaling_{key}']
             spec_tmp[:, 2] *= model_param[f'scaling_{key}']
             print(' [DONE]')
@@ -120,11 +120,11 @@ def update_spectra(objectbox,
         if f'error_{key}' in model_param:
             error = 10.**model_param[f'error_{key}']
 
-            print(f'Inflating the error of {key} by {error:.2e}...', end='', flush=True)
+            print(f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...', end='', flush=True)
             spec_tmp[:, 2] += error
             print(' [DONE]')
 
-        objectbox.spectrum[key] = (spec_tmp, value[1], value[2])
+        objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
 
     return objectbox
 
@@ -143,7 +143,8 @@ def smooth_spectrum(wavelength,
     Parameters
     ----------
     wavelength : numpy.ndarray
-        Wavelength points (um). Should be uniformly spaced.
+        Wavelength points (um). Should be sampled with a uniform spectral resolution or a uniform
+        wavelength spacing (slow).
     flux : numpy.ndarray
         Flux (W m-2 um-1).
     spec_res : float
@@ -160,35 +161,40 @@ def smooth_spectrum(wavelength,
     def _gaussian(size, sigma):
         pos = range(-(size-1)//2, (size-1)//2+1)
         kernel = [math.exp(-float(x)**2/(2.*sigma**2))/(sigma*math.sqrt(2.*math.pi)) for x in pos]
+
         return np.asarray(kernel/sum(kernel))
 
-    if size % 2 == 0:
-        raise ValueError('The kernel size should be an odd number.')
+    spacing = np.mean(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
+    spacing_std = np.std(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
 
-    test_diff = np.diff(wavelength)
+    if spacing_std < 1e-2:
+        # see retrieval_util.convolve
+        sigma_lsf = 2.*np.sqrt(2.*np.log(2.))/spec_res
 
-    spacing = np.mean(np.diff(wavelength))  # (um)
-    flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
+        flux_smooth = gaussian_filter(flux, sigma=sigma_lsf/spacing, mode='nearest')
 
-    # spacing = np.mean(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
-    # spacing_std = np.std(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
-    # print(spacing, spacing_std)
-    # exit()
-
-    for i, item in enumerate(wavelength):
-        fwhm = item/spec_res  # (um)
-        sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # (um)
-
-        size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
+    else:
         if size % 2 == 0:
-            size += 1
+            raise ValueError('The kernel size should be an odd number.')
 
-        gaussian = _gaussian(size, sigma/spacing)
+        # TODO test for wavelength diff
+        flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
+        spacing = np.mean(np.diff(wavelength))  # (um)
 
-        try:
-            flux_smooth[i] = np.sum(gaussian * flux[i-(size-1)//2:i+(size-1)//2+1])
+        for i, item in enumerate(wavelength):
+            fwhm = item/spec_res  # (um)
+            sigma = fwhm/(2.*math.sqrt(2.*math.log(2.)))  # (um)
 
-        except ValueError:
-            flux_smooth[i] = np.nan
+            size = int(5.*sigma/spacing)  # Kernel size 5 times the FWHM
+            if size % 2 == 0:
+                size += 1
+
+            gaussian = _gaussian(size, sigma/spacing)
+
+            try:
+                flux_smooth[i] = np.sum(gaussian * flux[i-(size-1)//2:i+(size-1)//2+1])
+
+            except ValueError:
+                flux_smooth[i] = np.nan
 
     return flux_smooth

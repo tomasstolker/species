@@ -92,6 +92,9 @@ def add_exo_rem(input_path,
                 if data.shape[0] == 34979:
                     data = data[:-1, :]
 
+                # change the order because of the conversion from wavenumber to wavelength
+                data = data[::-1, :]
+
                 teff.append(teff_val)
                 logg.append(logg_val)
                 feh.append(feh_val)
@@ -100,24 +103,20 @@ def add_exo_rem(input_path,
                 if wavel_range is None:
                     if wavelength is None:
                         # (cm-1) -> (um)
-                        wavel_orig = 1e4/data[:, 0]
-                        wavelength = np.flipud(wavel_orig)
+                        wavelength = 1e4/data[:, 0]
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                    # (erg s-1 m-2 cm) -> (W m-2 um-1)
-                    # TODO check units
-                    flux.append(np.flipud(data[:, 1]*1e-7*1e4/wavel_orig**2))
+                    # (erg s-1 cm-2 cm) -> (W m-2 um-1) and include a factor pi
+                    flux.append(np.pi*data[:, 1]*1e-7*1e8/wavelength**2)
 
                 else:
                     # (cm-1) -> (um)
                     data_wavel = 1e4/data[:, 0]
-                    data_wavel = np.flipud(data_wavel)
 
-                    # (erg s-1 m-2 cm) -> (W m-2 um-1)
-                    # TODO check units
-                    data_flux = np.flipud(data[:, 1]*1e-7*1e4/wavel_orig**2)
+                    # (erg s-1 cm-2 cm) -> (W m-2 um-1) and include a factor pi
+                    data_flux = np.pi*data[:, 1]*1e-7*1e8/data_wavel**2
 
                     try:
                         flux.append(spectres.spectres(wavelength, data_wavel, data_flux))

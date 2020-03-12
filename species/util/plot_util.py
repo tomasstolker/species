@@ -123,7 +123,7 @@ def update_labels(param):
 
     if 'feh' in param:
         index = param.index('feh')
-        param[index] = r'Fe/H (dex)'
+        param[index] = r'[Fe/H] (dex)'
 
     if 'fsed' in param:
         index = param.index('fsed')
@@ -156,7 +156,7 @@ def update_labels(param):
     for i in range(15):
         if f't{i}' in param:
             index = param.index(f't{i}')
-            param[index] = rf'$T_\mathregular{ {i} }$ (K)'
+            param[index] = rf'$T_\mathregular{{{i}}}$ (K)'
 
     if 'alpha' in param:
         index = param.index('alpha')
@@ -171,13 +171,11 @@ def update_labels(param):
         param[index] = r'$\log\,P_\mathregular{quench}$ (dex)'
 
     for i, item in enumerate(param):
-        if item[0:6] == 'scaling_':
-            spec_name = item[6:]
-            param[i] = rf'$a_\mathregular{ {spec_name} }$'
+        if item[0:8] == 'scaling_':
+            param[i] = rf'$a_\mathregular{{{item[8:]}}}$'
 
-        elif item[0:6] == 'error_':
-            spec_name = item[6:]
-            param[i] = rf'$b_\mathregular{ {spec_name} }$'
+        elif item[0:8] == 'error_':
+            param[i] = rf'$b_\mathregular{{{item[8:]}}}$'
 
     return param
 

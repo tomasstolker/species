@@ -5,6 +5,8 @@ Utility functions for photometry.
 import math
 import warnings
 
+import matplotlib.pyplot as plt
+
 import spectres
 import numpy as np
 
@@ -195,6 +197,9 @@ def get_residuals(datatype,
             wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                            1.1*objectbox.spectrum[key][0][-1, 0])
 
+            wl_new = objectbox.spectrum[key][0][:, 0]
+            spec_res = objectbox.spectrum[key][3]
+
             if spectrum == 'planck':
                 readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
                 model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
@@ -210,10 +215,11 @@ def get_residuals(datatype,
 
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
-
-                    model = readmodel.get_model(parameters, spec_res=None)
-
-            wl_new = objectbox.spectrum[key][0][:, 0]
+                    
+                    model = readmodel.get_model(parameters,
+                                                spec_res=spec_res,
+                                                wavel_resample=wl_new,
+                                                smooth=True)
 
             flux_new = spectres.spectres(new_spec_wavs=wl_new,
                                          old_spec_wavs=model.wavelength,
@@ -221,12 +227,16 @@ def get_residuals(datatype,
                                          spec_errs=None)
 
             if key in parameters:
-                print(f'Scaling the flux of {key} by {parameters[key]:.2e}...', end='', flush=True)
+                print(f'Scaling the flux of {key}: {parameters[key]:.2e}...', end='', flush=True)
                 flux_obs = parameters[key]*objectbox.spectrum[key][0][:, 1]
                 print(' [DONE]')
 
             else:
                 flux_obs = objectbox.spectrum[key][0][:, 1]
+
+            print(flux_obs.shape)
+            print(flux_new.shape)
+            print(objectbox.spectrum[key][0][:, 2].shape)
 
             res_tmp = (flux_obs-flux_new)/objectbox.spectrum[key][0][:, 2]
 

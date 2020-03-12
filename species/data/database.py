@@ -913,7 +913,12 @@ class Database:
             elif 'nparam' in dset.attrs:
                 n_param = dset.attrs['nparam']
 
-            n_scaling = dset.attrs['n_scaling']
+            if 'n_scaling' in dset.attrs:
+                n_scaling = dset.attrs['n_scaling']
+            elif 'nscaling' in dset.attrs:
+                n_scaling = dset.attrs['nscaling']
+            else:
+                n_scaling = 0
 
             if 'n_error' in dset.attrs:
                 n_error = dset.attrs['n_error']
@@ -963,12 +968,11 @@ class Database:
             Number of burnin steps.
         random : int
             Number of random samples.
-        wavel_range : tuple(float, float) or str
+        wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. Full spectrum if set to None.
         spec_res : float
-            Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None. Note that this requires equally-spaced
-            wavelength bins.
+            Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
+            is applied if set to None.
 
         Returns
         -------
@@ -989,6 +993,8 @@ class Database:
 
         if 'n_scaling' in dset.attrs:
             n_scaling = dset.attrs['n_scaling']
+        elif 'nscaling' in dset.attrs:
+            n_scaling = dset.attrs['nscaling']
         else:
             n_scaling = 0
 
@@ -1029,7 +1035,7 @@ class Database:
             if spectrum_name == 'planck':
                 readmodel = read_planck.ReadPlanck(wavel_range)
             else:
-                readmodel = read_model.ReadModel(spectrum_name, wavel_range)
+                readmodel = read_model.ReadModel(spectrum_name, wavel_range=wavel_range)
 
         elif spectrum_type == 'calibration':
             readcalib = read_calibration.ReadCalibration(spectrum_name, filter_name=None)
@@ -1109,7 +1115,7 @@ class Database:
         h5_file.close()
 
         if spectrum_type == 'model':
-            readmodel = read_model.ReadModel(spectrum_name, filter_name)
+            readmodel = read_model.ReadModel(spectrum_name, filter_name=filter_name)
         # elif spectrum_type == 'calibration':
         #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
 
@@ -1200,12 +1206,16 @@ class Database:
                 data_group = f'objects/{object_name}/spectrum/{item}'
 
                 if f'{data_group}/covariance' not in h5_file:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']), None, None)
+                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                      None,
+                                      None,
+                                      h5_file[f'{data_group}'].attrs['specres'])
 
                 else:
                     spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
                                       np.asarray(h5_file[f'{data_group}/covariance']),
-                                      np.asarray(h5_file[f'{data_group}/inv_covariance']))
+                                      np.asarray(h5_file[f'{data_group}/inv_covariance']),
+                                      h5_file[f'{data_group}'].attrs['specres'])
 
         else:
             spectrum = None
@@ -1387,9 +1397,8 @@ class Database:
         wavel_range : tuple(float, float) or str
             Wavelength range (um) or filter name.
         spec_res : float
-            Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if set to None. Note that this requires equally-spaced
-            wavelength bins.
+            Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
+            is applied if set to None.
 
         Returns
         -------
@@ -1535,7 +1544,7 @@ class Database:
             flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
 
             if spec_res is not None:
-                # convolve with Gaussian LSF
+                # convolve with a Gaussian line spread function
                 flux = retrieval_util.convolve(wavelength, flux, spec_res)
 
             model_box = box.create_box(boxtype='model',
