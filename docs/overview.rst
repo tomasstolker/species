@@ -21,6 +21,7 @@ The following data are currently supported by *species* (support for other data 
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric models
 - `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA/>`_ atmospheric models
 - `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_ atmospheric models
+- Exo-REM atmospheric models
 - All filter profiles from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
 - Spectra from the `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - Spectra from the `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_
