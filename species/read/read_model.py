@@ -470,7 +470,12 @@ class ReadModel:
             readcalib = read_calibration.ReadCalibration('vega', filter_name=None)
             calibbox = readcalib.get_spectrum()
 
-            flux_vega, _ = spectres.spectres(new_spec_wavs=self.wl_points,
+            if wavel_resample is not None:
+                new_spec_wavs = wavel_resample
+            else:
+                new_spec_wavs = self.wl_points
+
+            flux_vega, _ = spectres.spectres(new_spec_wavs=new_spec_wavs,
                                              old_spec_wavs=calibbox.wavelength,
                                              spec_fluxes=calibbox.flux,
                                              spec_errs=calibbox.error)
