@@ -6,7 +6,7 @@ from species.analysis.fit_spectrum import FitSpectrum
 
 from species.analysis.photometry import SyntheticPhotometry
 
-# from species.analysis.retrieval import AtmosphericRetrieval
+from species.analysis.retrieval import AtmosphericRetrieval
 
 from species.read.read_calibration import ReadCalibration
 
@@ -18,7 +18,7 @@ from species.read.read_model import ReadModel
 
 from species.read.read_planck import ReadPlanck
 
-# from species.read.read_radtrans import ReadRadtrans
+from species.read.read_radtrans import ReadRadtrans
 
 from species.read.read_spectrum import ReadSpectrum
 
@@ -44,7 +44,7 @@ from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers, \
                                    plot_photometry
 
-# from species.plot.plot_retrieval import plot_pt_profile
+from species.plot.plot_retrieval import plot_pt_profile
 
 from species.plot.plot_spectrum import plot_spectrum
 

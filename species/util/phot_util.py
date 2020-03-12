@@ -12,7 +12,7 @@ import numpy as np
 
 from species.core import box
 from species.read import read_model, read_calibration, read_filter, read_planck
-# from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
+from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
 def multi_photometry(datatype,
@@ -209,21 +209,18 @@ def get_residuals(datatype,
 
             else:
                 if spectrum == 'petitradtrans':
-                    # TODO change back
-                    pass
+                    radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
+                                                          cloud_species=kwargs_radtrans['cloud_species'],
+                                                          scattering=kwargs_radtrans['scattering'],
+                                                          wavel_range=wavel_range)
 
-                    # radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
-                    #                                       cloud_species=kwargs_radtrans['cloud_species'],
-                    #                                       scattering=kwargs_radtrans['scattering'],
-                    #                                       wavel_range=wavel_range)
-                    #
-                    # model = radtrans.get_model(parameters, spec_res=None)
-                    #
-                    # # separate resampling to the new wavelength points
-                    #
-                    # flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                    #                              old_spec_wavs=model.wavelength,
-                    #                              spec_fluxes=model.flux)
+                    model = radtrans.get_model(parameters, spec_res=None)
+
+                    # separate resampling to the new wavelength points
+
+                    flux_new = spectres.spectres(new_spec_wavs=wl_new,
+                                                 old_spec_wavs=model.wavelength,
+                                                 spec_fluxes=model.flux)
 
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
