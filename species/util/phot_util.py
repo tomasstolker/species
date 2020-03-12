@@ -151,7 +151,9 @@ def get_residuals(datatype,
     filters : tuple(str, )
         Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
-        Box with the photometry and/or spectrum of an object.
+        Box with the photometry and/or spectra of an object. A scaling and/or error inflation of
+        the spectra should be applied with :func:`~species.util.phot_util.update_spectra`
+        beforehand.
     inc_phot : bool
         Include photometry.
     inc_spec : bool
@@ -235,15 +237,7 @@ def get_residuals(datatype,
 
                     flux_new = model.flux
 
-            if key in parameters:
-                print(f'Scaling the flux of {key}: {parameters[key]:.2e}...', end='', flush=True)
-                flux_obs = parameters[key]*objectbox.spectrum[key][0][:, 1]
-                print(' [DONE]')
-
-            else:
-                flux_obs = objectbox.spectrum[key][0][:, 1]
-
-            res_tmp = (flux_obs-flux_new)/objectbox.spectrum[key][0][:, 2]
+            res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
 
             res_spec[key] = np.column_stack([wl_new, res_tmp])
 

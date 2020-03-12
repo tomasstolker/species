@@ -12,7 +12,7 @@ before_install:
   - sudo apt-get install gfortran
   - sudo apt-get install libblas-dev
   - sudo apt-get install liblapack-dev
-  - sudo apt-get install libatlas-base-dev 
+  - sudo apt-get install libatlas-base-dev
   - git clone https://github.com/JohannesBuchner/MultiNest
   - cd MultiNest/build
   - cmake ..

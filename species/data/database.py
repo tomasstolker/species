@@ -572,10 +572,7 @@ class Database:
 
             for key, value in read_spec.items():
                 wavelength = read_spec[key][:, 0]
-                spec_res = np.zeros(wavelength.shape[0]-1)
-
-                for i in range(spec_res.shape[0]):
-                    spec_res[i] = wavelength[i] / (wavelength[i+1]-wavelength[i])
+                spec_res = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength))
 
                 h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
                                        data=read_spec[key])
@@ -588,7 +585,7 @@ class Database:
                                            data=np.linalg.inv(read_cov[key]))
 
                 dset = h5_file[f'objects/{object_name}/spectrum/{key}']
-                dset.attrs['specres'] = np.mean(spec_res)
+                dset.attrs['specres'] = spec_res
 
         print(' [DONE]')
 
@@ -913,26 +910,6 @@ class Database:
                 n_param = dset.attrs['n_param']
             elif 'nparam' in dset.attrs:
                 n_param = dset.attrs['nparam']
-
-            if 'n_scaling' in dset.attrs:
-                n_scaling = dset.attrs['n_scaling']
-            elif 'nscaling' in dset.attrs:
-                n_scaling = dset.attrs['nscaling']
-            else:
-                n_scaling = 0
-
-            if 'n_error' in dset.attrs:
-                n_error = dset.attrs['n_error']
-            else:
-                n_error = 0
-
-            scaling = []
-            for i in range(n_scaling):
-                scaling.append(dset.attrs[f'scaling{i}'])
-
-            error = []
-            for i in range(n_error):
-                error.append(dset.attrs[f'error{i}'])
 
             samples = np.asarray(dset)
 
