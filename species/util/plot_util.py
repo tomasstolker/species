@@ -166,8 +166,8 @@ def update_labels(param):
         if item[0:8] == 'scaling_':
             param[i] = rf'$a_\mathregular{{{item[8:]}}}$'
 
-        elif item[0:8] == 'error_':
-            param[i] = rf'$b_\mathregular{{{item[8:]}}}$'
+        elif item[0:6] == 'error_':
+            param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
 
     return param
 
