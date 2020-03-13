@@ -32,7 +32,7 @@ def plot_spectrum(boxes,
                   scale=('linear', 'linear'),
                   title=None,
                   offset=None,
-                  legend='upper left',
+                  legend=None,
                   figsize=(7., 5.),
                   object_type='planet',
                   quantity='flux',
@@ -63,8 +63,9 @@ def plot_spectrum(boxes,
         Title.
     offset : tuple(float, float)
         Offset for the label of the x- and y-axis.
-    legend : str, None
-        Location of the legend.
+    legend : str, tuple, dict, None
+        Location of the legend (str, tuple) or a dictionary with the ``**kwargs`` of
+        ``matplotlib.pyplot.legend``, e.g. ``{'loc': 'upper left', 'fontsize: 12.}``.
     figsize : tuple(float, float)
         Figure size.
     object_type : str
@@ -465,8 +466,11 @@ def plot_spectrum(boxes,
 
     handles, _ = ax1.get_legend_handles_labels()
 
-    if handles and legend:
-        ax1.legend(loc=legend, fontsize=10, frameon=False)
+    if handles and legend is not None:
+        if isinstance(legend, (str, tuple)):
+            ax1.legend(loc=legend, fontsize=8, frameon=False)
+        else:
+            ax1.legend(**legend)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

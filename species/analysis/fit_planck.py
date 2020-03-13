@@ -55,7 +55,7 @@ def lnlike(param,
            distance,
            spectrum):
     """
-    Internal function for the likelihood probability.
+    Internal function for the likelihood function.
 
     Parameters
     ----------
@@ -177,7 +177,7 @@ def lnprob(param,
 
 class FitPlanck:
     """
-    Class for fitting Planck spectra to spectral and photometric data.
+    Class for fitting Planck spectra to photometric and/or spectroscopic data.
     """
 
     def __init__(self,
@@ -192,16 +192,16 @@ class FitPlanck:
         object_name : str
             Object name in the database.
         filters : tuple(str, )
-            Filter names for which the photometry is selected. All available photometry of the
-            object are used if set to None.
+            Filter names for which the photometry is selected. All available photometric data of
+            the object are used if set to None.
         bounds : dict
             Parameter boundaries for 'teff' and 'radius'. The values should be provided either as
             float or as list of floats such that multiple Planck functions can be combined,
             e.g. ``{'teff': [(1000., 2000.), (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
         inc_phot : bool
-            Include photometry data with the fit.
+            Include photometric data with the fit.
         inc_spec : bool
-            Include spectral data with the fit.
+            Include spectroscopic data with the fit.
 
         Returns
         -------
@@ -210,7 +210,7 @@ class FitPlanck:
         """
 
         if not inc_phot and not inc_spec:
-            raise ValueError('No photometric or spectral data has been selected.')
+            raise ValueError('No photometric or spectroscopic data has been selected.')
 
         if 'teff' not in bounds or 'radius' not in bounds:
             raise ValueError('The \'bounds\' dictionary should contain \'teff\' and \'radius\'.')

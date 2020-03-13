@@ -101,7 +101,10 @@ def get_data():
                          'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (17.94, 0.24),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (17.95, 0.17),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (16.65, 0.06),  # Müller et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.44, 0.05)}},  # Müller et al. 2018
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.44, 0.05),  # Müller et al. 2018
+                                     'Paranal/NACO.Lp': (14.08, 0.33),  # Stolker et al. in prep.
+                                     'Paranal/NACO.NB405': (13.91, 0.34),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Mp': (13.64, 0.22)}},  # Stolker et al. in prep.
 
             'PDS 70 c': {'distance': (113.43, 0.52),
                          'app_mag': {'Paranal/NACO.NB405': (15.05, 0.59)}},  # Stolker et al. in prep.

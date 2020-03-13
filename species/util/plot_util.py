@@ -137,14 +137,6 @@ def update_labels(param):
         index = param.index('radius')
         param[index] = r'$R$ ($\mathregular{R_{Jup}}$)'
 
-    if 'scaling' in param:
-        index = param.index('scaling')
-        param[index] = 'Scaling'
-
-    if 'offset' in param:
-        index = param.index('offset')
-        param[index] = 'Offset'
-
     if 'teff' in param:
         index = param.index('teff')
         param[index] = r'$T_\mathregular{eff}$ (K)'
