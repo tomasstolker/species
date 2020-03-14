@@ -443,19 +443,19 @@ class AtmosphericRetrieval:
 
             elif pt_profile == 'line':
                 # 15 temperature (K) knots
-                # for i in range(15):
-                #     # default: 0 - 4000 K
-                #     cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
+                for i in range(15):
+                    # default: 0 - 4000 K
+                    cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
 
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
-                # gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
-                # cube[cube_index['gamma_r']] = gamma_r
+                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                cube[cube_index['gamma_r']] = gamma_r
 
-                cube[cube_index['t14']] = 5000.*cube[cube_index['t14']]
+                # cube[cube_index['t14']] = 5000.*cube[cube_index['t14']]
 
-                for i in range(13, -1, -1):
-                    cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
+                # for i in range(13, -1, -1):
+                #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
 
             # metallicity (dex) for the nabla_ad interpolation
             if 'feh' in bounds:
@@ -608,14 +608,18 @@ class AtmosphericRetrieval:
 
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
-                # knot_temp = np.asarray(knot_temp)
-
-                # temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
-
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
-                # log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
-                #     0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+                knot_temp = np.asarray(knot_temp)
+
+                temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
+
+                if cube[cube_index['gamma_r']] < 5000.
+                    log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                        0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+
+                else:
+                    log_prior += -np.inf
 
             # return zero probability if the minimum temperature is negative
 
