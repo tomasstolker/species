@@ -614,7 +614,7 @@ class AtmosphericRetrieval:
 
                 temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
 
-                if cube[cube_index['gamma_r']] < 5000.
+                if cube[cube_index['gamma_r']] < 5000.:
                     log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                         0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
