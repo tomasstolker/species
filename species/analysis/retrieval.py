@@ -218,7 +218,7 @@ class AtmosphericRetrieval:
             for i in range(15):
                 self.parameters.append(f't{i}')
 
-            # self.parameters.append('gamma_r')
+            self.parameters.append('gamma_r')
 
         # abundance parameters
 
