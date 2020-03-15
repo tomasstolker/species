@@ -251,7 +251,7 @@ class ReadPlanck:
         temperatures : numpy.ndarray
             Temperatures (K) for which the colors and magnitude are calculated.
         radius : float
-            Radius t
+            Radius (Rjup).
         filters_color : tuple(str, str)
             Filter names for the color.
         filter_mag : str
@@ -287,4 +287,53 @@ class ReadPlanck:
                               filter_mag=filter_mag,
                               color=list_color,
                               magnitude=list_mag,
+                              sptype=temperatures)
+
+    def get_color_color(self,
+                        temperatures,
+                        radius,
+                        filters_colors):
+        """
+        Function for calculating two colors in the range of 100-10000 K.
+
+        Parameters
+        ----------
+        temperatures : numpy.ndarray
+            Temperatures (K) for which the colors are calculated.
+        radius : float
+            Radius (Rjup).
+        filters_colors : tuple(tuple(str, str), tuple(str, str))
+            Two tuples with the filter names for the colors.
+
+        Returns
+        -------
+        species.core.box.ColorColorBox
+            Box with the colors.
+        """
+
+        list_color_1 = []
+        list_color_2 = []
+
+        for item in temperatures:
+            model_param = {'teff': item, 'radius': radius, 'distance': 10.}
+
+            read_planck_0 = ReadPlanck(filter_name=filters_colors[0][0])
+            read_planck_1 = ReadPlanck(filter_name=filters_colors[0][1])
+            read_planck_2 = ReadPlanck(filter_name=filters_colors[1][0])
+            read_planck_3 = ReadPlanck(filter_name=filters_colors[1][1])
+
+            app_mag_0, _ = read_planck_0.get_magnitude(model_param)
+            app_mag_1, _ = read_planck_1.get_magnitude(model_param)
+            app_mag_2, _ = read_planck_2.get_magnitude(model_param)
+            app_mag_3, _ = read_planck_3.get_magnitude(model_param)
+
+            list_color_1.append(app_mag_0[0]-app_mag_1[0])
+            list_color_2.append(app_mag_2[0]-app_mag_3[0])
+
+        return box.create_box(boxtype='colorcolor',
+                              library='planck',
+                              object_type=None,
+                              filters=filters_colors,
+                              color1=list_color_1,
+                              color2=list_color_2,
                               sptype=temperatures)

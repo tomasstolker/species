@@ -41,14 +41,14 @@ class ReadObject:
         self.database = config['species']['database']
 
         with h5py.File(self.database, 'r') as h5_file:
-            if 'objects/'+self.object_name not in h5_file:
+            if f'objects/{self.object_name}' not in h5_file:
                 raise ValueError(f'The object \'{self.object_name}\' is not present in the '
                                  f'database.')
 
     def get_photometry(self,
                        filter_name):
         """
-        Function for extracting the photometry of the object.
+        Function for reading the photometry of the object.
 
         Parameters
         ----------
@@ -63,13 +63,17 @@ class ReadObject:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
+            if filter_name in h5_file[f'objects/{self.object_name}']:
+                obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
+            else:
+                raise ValueError(f'There is no photometric data of {self.object_name} ' 
+                                 f'available with the {filter_name} filter.')
 
         return obj_phot
 
     def get_spectrum(self):
         """
-        Function for extracting the spectra and covariance matrices of the object.
+        Function for reading the spectra and covariance matrices of the object.
 
         Returns
         -------
@@ -103,7 +107,7 @@ class ReadObject:
 
     def get_distance(self):
         """
-        Function for extracting the distance to the object.
+        Function for reading the distance to the object.
 
         Returns
         -------
@@ -138,6 +142,12 @@ class ReadObject:
 
         with h5py.File(self.database, 'r') as h5_file:
             obj_distance = np.asarray(h5_file[f'objects/{self.object_name}/distance'])
-            obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
+
+            if filter_name in h5_file[f'objects/{self.object_name}']:
+                obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
+
+            else:
+                raise ValueError(f'There is no photometric data of \'{self.object_name}\' '
+                                 f'available with the {filter_name}.')
 
         return phot_util.apparent_to_absolute(obj_phot[0:2], obj_distance)
