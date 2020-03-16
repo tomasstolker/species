@@ -60,6 +60,14 @@ species.data.drift\_phoenix module
     :undoc-members:
     :show-inheritance:
 
+species.data.exo\_rem module
+----------------------------
+
+.. automodule:: species.data.exo_rem
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 species.data.filters module
 ---------------------------
 
