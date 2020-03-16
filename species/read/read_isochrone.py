@@ -236,7 +236,7 @@ class ReadIsochrone:
                         age,
                         masses,
                         model,
-                        filters):
+                        filters_colors):
         """
         Function for calculating color-magnitude combinations from a selected isochrone.
 
@@ -248,7 +248,7 @@ class ReadIsochrone:
             Masses (Mjup) at which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
-        filters : tuple(tuple(str, str), tuple(str, str))
+        filters_colors : tuple(tuple(str, str), tuple(str, str))
             Filter IDs for the colors as listed in the file with the isochrone data. The filter IDs
             should be provided in the format of the SVO Filter Profile Service.
 
@@ -263,10 +263,10 @@ class ReadIsochrone:
                                        filters_color=None,
                                        filter_mag=None)
 
-        model1 = read_model.ReadModel(model=model, filter_name=filters[0][0])
-        model2 = read_model.ReadModel(model=model, filter_name=filters[0][1])
-        model3 = read_model.ReadModel(model=model, filter_name=filters[1][0])
-        model4 = read_model.ReadModel(model=model, filter_name=filters[1][1])
+        model1 = read_model.ReadModel(model=model, filter_name=filters_colors[0][0])
+        model2 = read_model.ReadModel(model=model, filter_name=filters_colors[0][1])
+        model3 = read_model.ReadModel(model=model, filter_name=filters_colors[1][0])
+        model4 = read_model.ReadModel(model=model, filter_name=filters_colors[1][1])
 
         if model1.get_parameters() != ['teff', 'logg']:
             raise ValueError('Creating synthetic colors and magnitudes from isochrones is '
@@ -308,7 +308,7 @@ class ReadIsochrone:
         return box.create_box(boxtype='colorcolor',
                               library=model,
                               object_type='model',
-                              filters=filters,
+                              filters=filters_colors,
                               color1=mag1-mag2,
                               color2=mag3-mag4,
                               sptype=masses)

@@ -281,8 +281,8 @@ class ReadColorColor:
                                       library=self.library,
                                       object_type=object_type,
                                       filters=self.filters_colors,
-                                      color1=phot_box_0.app_mag-phot_box_1.app_mag,
-                                      color2=phot_box_2.app_mag-phot_box_3.app_mag,
+                                      color1=phot_box_0.app_mag[:, 0]-phot_box_1.app_mag[:, 0],
+                                      color2=phot_box_2.app_mag[:, 0]-phot_box_3.app_mag[:, 0],
                                       sptype=phot_box_0.sptype)
 
         h5_file.close()
