@@ -131,10 +131,14 @@ class Database:
     def add_companion(self,
                       name=None):
         """
+        Function for adding the magnitudes of directly imaged planets and brown dwarfs from
+        :class:`~species.data.companions.get_data` to the database.
+
         Parameters
         ----------
-        name : list(str, )
-            Companion name. All companions are added if set to None.
+        name : list(str, ), None
+            List with names of the directly imaged planets and brown dwarfs (e.g. ``['HR 8799 b',
+            '51 Eri b', 'PZ Tel B']``). All the available companion data are added if set to None.
 
         Returns
         -------
@@ -159,20 +163,25 @@ class Database:
                    filter_name,
                    filename=None):
         """
+        Function for adding a filter profile to the database, either from the SVO Filter profile
+        Service or input file.
+
         Parameters
         ----------
         filter_name : str
             Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
         filename : str
-            Filename with the filter profile. The first column should contain the wavelength
-            (um) and the second column the transmission (no units). The profile is downloaded
-            from the SVO Filter Profile Service if set to None.
+            Filename of the filter profile. The first column should contain the wavelength
+            (um) and the second column the transmission. The profile is downloaded from the SVO
+            Filter Profile Service if set to None.
 
         Returns
         -------
         NoneType
             None
         """
+
+        print(f'Adding filter: {filter_name}...', end='', flush=True)
 
         filter_split = filter_name.split('/')
 
@@ -181,13 +190,11 @@ class Database:
         if 'filters' not in h5_file:
             h5_file.create_group('filters')
 
-        if 'filters/'+filter_split[0] not in h5_file:
+        if f'filters/{filter_split[0]}' not in h5_file:
             h5_file.create_group(f'filters/{filter_split[0]}')
 
-        if 'filters/'+filter_name in h5_file:
+        if f'filters/{filter_name}' in h5_file:
             del h5_file[f'filters/{filter_name}']
-
-        print(f'Adding filter: {filter_name}...', end='', flush=True)
 
         if filename:
             data = np.loadtxt(filename)
@@ -200,9 +207,9 @@ class Database:
         h5_file.create_dataset(f'filters/{filter_name}',
                                data=np.vstack((wavelength, transmission)))
 
-        print(' [DONE]')
-
         h5_file.close()
+
+        print(' [DONE]')
 
     def add_isochrones(self,
                        filename,
@@ -414,19 +421,22 @@ class Database:
         Parameters
         ----------
         object_name: str
-            Object name.
+            Object name that will be used as label in the database.
         distance : tuple(float, float), None
-            Distance and uncertainty (pc). Not written if set to None.
-        app_mag : dict
-            Apparent magnitudes. Not written if set to None.
-        spectrum : dict
-            Dictionary with spectra and covariance matrices. Multiple spectra can be included and
-            the files have to be in the FITS or ASCII format. The spectra should have 3 columns
-            with wavelength (um), flux density (W m-2 um-1), and error (W m-2 um-1).
-            The covariance matrix should be 2D with the same number of wavelength points as the
-            spectrum. For example, {'sphere_ifs': ('ifs_spectrum.dat', 'ifs_covariance.fits')}.
-            No covariance data is stored if set to None, for example, {'sphere_ifs':
-            ('ifs_spectrum.dat', None)}. The ``spectrum`` parameter is ignored if set to None.
+            Distance and uncertainty (pc). Not stored if set to None.
+        app_mag : dict, None
+            Dictionary with the filter names, apparent magnitudes, and uncertainties. For example,
+            ``{'Paranal/NACO.Lp': (15., 0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. Not stored if set
+            to None.
+        spectrum : dict, None
+            Dictionary with the spectra and optional covariance matrices. The input data can either
+            have a FITS or ASCII format. The spectra should have 3 columns with wavelength (um),
+            flux (W m-2 um-1), and uncertainty (W m-2 um-1). The covariance matrix should be 2D
+            with the same number of wavelength points as the spectrum. For example,
+            ``{'SPHERE': ('spectrum.dat', 'covariance.fits')}``. No covariance data is stored if
+            set to None, for example, ``{'SPHERE': ('spectrum.dat', None)}``. The ``spectrum``
+            parameter is ignored if set to None. For GRAVITY data, the same FITS file can be
+            provided as spectrum and covariance matrix.
 
         Returns
         -------
@@ -436,6 +446,16 @@ class Database:
 
         h5_file = h5py.File(self.database, 'a')
 
+        if app_mag is not None:
+            if 'spectra/calibration/vega' not in h5_file:
+                self.add_spectrum('vega')
+
+            for item in app_mag:
+                if f'filters/{item}' not in h5_file:
+                    self.add_filter(item)
+
+        print(f'Adding object: {object_name}')
+
         if 'objects' not in h5_file:
             h5_file.create_group('objects')
 
@@ -443,16 +463,18 @@ class Database:
             h5_file.create_group(f'objects/{object_name}')
 
         if distance is not None:
+            print(f'   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}')
+
             if f'objects/{object_name}/distance' in h5_file:
                 del h5_file[f'objects/{object_name}/distance']
 
             h5_file.create_dataset(f'objects/{object_name}/distance',
                                    data=distance)  # (pc)
 
-        if app_mag is not None:
-            flux = {}
-            error = {}
+        flux = {}
+        error = {}
 
+        if app_mag is not None:
             for item in app_mag:
                 try:
                     synphot = photometry.SyntheticPhotometry(item)
@@ -470,7 +492,11 @@ class Database:
 
             for item in app_mag:
                 if f'objects/{object_name}/{item}' in h5_file:
-                    del h5_file[f'objects/{object_name}/'+item]
+                    del h5_file[f'objects/{object_name}/{item}']
+
+                print(f'   - {item}:')
+                print(f'      - Apparent magnitude = {app_mag[item][0]:.2f} +/- {app_mag[item][1]:.2f}')
+                print(f'      - Flux (W m-2 um-1) = {flux[item]:.2e} +/- {error[item]:.2e}')
 
                 data = np.asarray([app_mag[item][0],
                                    app_mag[item][1],
@@ -480,8 +506,6 @@ class Database:
                 # (mag), (mag), (W m-2 um-1), (W m-2 um-1)
                 h5_file.create_dataset(f'objects/{object_name}/'+item,
                                        data=data)
-
-        print(f'Adding object: {object_name}...', end='', flush=True)
 
         if spectrum is not None:
             read_spec = {}
@@ -495,15 +519,35 @@ class Database:
             for key, value in spectrum.items():
                 if value[0].endswith('.fits'):
                     with fits.open(value[0]) as hdulist:
-                        for i, hdu_item in enumerate(hdulist):
-                            data = np.asarray(hdu_item.data)
+                        if 'INSTRU' in hdulist[0].header and \
+                                hdulist[0].header['INSTRU'] == 'GRAVITY':
+                            # Read data from a FITS file with the GRAVITY format
+                            print('   - GRAVITY spectrum:')
 
-                            if data.ndim == 2 and 3 in data.shape and key not in read_spec:
-                                read_spec[key] = data
+                            gravity_object = hdulist[0].header['OBJECT']
+                            print(f'      - Object: {gravity_object}')
 
-                        if key not in read_spec:
-                            raise ValueError(f'The spectrum data from {value[0]} can not be read. '
-                                             f'The data format should be 2D with 3 columns.')
+                            wavelength = hdulist[1].data['WAVELENGTH']  # (um)
+                            flux = hdulist[1].data['FLUX']  # (W m-2 um-1)
+                            covariance = hdulist[1].data['COVARIANCE']  # (W m-2 um-1)^2
+                            error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
+
+                            read_spec[key] = np.column_stack([wavelength, flux, error])
+
+                        else:
+                            # Otherwise try to read a 2D dataset with 3 columns
+                            print('   - Spectrum:')
+
+                            for i, hdu_item in enumerate(hdulist):
+                                data = np.asarray(hdu_item.data)
+
+                                if data.ndim == 2 and 3 in data.shape and key not in read_spec:
+                                    read_spec[key] = data
+
+                            if key not in read_spec:
+                                raise ValueError(f'The spectrum data from {value[0]} can not be '
+                                                 f'read. The data format should be 2D with 3 '
+                                                 f'columns.')
 
                 else:
                     try:
@@ -515,7 +559,20 @@ class Database:
                     if data.ndim != 2 or 3 not in data.shape:
                         raise ValueError(f'The spectrum data from {value[0]} can not be read. The '
                                          f'data format should be 2D with 3 columns.')
+
+                    print('   - Spectrum:')
                     read_spec[key] = data
+
+                wavelength = read_spec[key][:, 0]
+                flux = read_spec[key][:, 1]
+                error = read_spec[key][:, 2]
+
+                print(f'      - Database tag: {key}')
+                print(f'      - Filename: {value[0]}')
+                print(f'      - Data shape: {read_spec[key].shape}')
+                print(f'      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}')
+                print(f'      - Mean flux (W m-2 um-1): {np.mean(flux):.2e}')
+                print(f'      - Mean error (W m-2 um-1): {np.mean(error):.2e}')
 
             # Read covariance matrix
 
@@ -525,27 +582,44 @@ class Database:
 
                 elif value[1].endswith('.fits'):
                     with fits.open(value[1]) as hdulist:
-                        for i, hdu_item in enumerate(hdulist):
-                            data = np.asarray(hdu_item.data)
-                            if data.ndim == 2 and data.shape[0] == data.shape[1]:
-                                if key not in read_cov:
-                                    if data.shape[0] == read_spec[key].shape[0]:
-                                        if np.all(np.diag(data) == 1.):
-                                            warnings.warn(f'The covariance matrix from {value[1]} '
-                                                          f'contains ones along the diagonal. '
-                                                          f'Converting this correlation matrix '
-                                                          f'into a covariance matrix.')
+                        if 'INSTRU' in hdulist[0].header and \
+                                hdulist[0].header['INSTRU'] == 'GRAVITY':
+                            # Read data from a FITS file with the GRAVITY format
+                            print('   - GRAVITY covariance matrix:')
 
-                                            read_cov[key] = data_util.correlation_to_covariance(
-                                                data, read_spec[key][:, 2])
+                            gravity_object = hdulist[0].header['OBJECT']
+                            print(f'      - Object: {gravity_object}')
 
-                                        else:
-                                            read_cov[key] = data
+                            read_cov[key] = hdulist[1].data['COVARIANCE']  # (W m-2 um-1)^2
 
-                        if key not in read_cov:
-                            raise ValueError(f'The covariance matrix from {value[1]} can not be '
-                                             f'read. The data format should be 2D with the same '
-                                             f'number of wavelength points as the spectrum.')
+                        else:
+                            # Otherwise try to read a square, 2D dataset
+                            print('   - Covariance matrix:')
+
+                            for i, hdu_item in enumerate(hdulist):
+                                data = np.asarray(hdu_item.data)
+
+                                corr_warn = f'The covariance matrix from {value[1]} contains ' \
+                                            f'ones along the diagonal. Converting this ' \
+                                            f'correlation  matrix into a covariance matrix.'
+
+                                if data.ndim == 2 and data.shape[0] == data.shape[1]:
+                                    if key not in read_cov:
+                                        if data.shape[0] == read_spec[key].shape[0]:
+                                            if np.all(np.diag(data) == 1.):
+                                                warnings.warn(corr_warn)
+
+                                                read_cov[key] = data_util.correlation_to_covariance(
+                                                    data, read_spec[key][:, 2])
+
+                                            else:
+                                                read_cov[key] = data
+
+                            if key not in read_cov:
+                                raise ValueError(f'The covariance matrix from {value[1]} can not '
+                                                 f'be read. The data format should be 2D with the '
+                                                 f'same number of wavelength points as the '
+                                                 f'spectrum.')
 
                 else:
                     try:
@@ -559,6 +633,8 @@ class Database:
                                          f'The data format should be 2D with the same number of '
                                          f'wavelength points as the spectrum.')
 
+                    print('   - Covariance matrix:')
+
                     if np.all(np.diag(data) == 1.):
                         warnings.warn(f'The covariance matrix from {value[1]} contains ones on '
                                       f'the diagonal. Converting this correlation matrix into a '
@@ -570,7 +646,15 @@ class Database:
                     else:
                         read_cov[key] = data
 
-            for key, value in read_spec.items():
+                if read_cov[key] is not None:
+                    print(f'      - Database tag: {key}')
+                    print(f'      - Filename: {value[1]}')
+                    print(f'      - Data shape: {read_cov[key].shape}')
+
+            print('   - Spectral resolution:')
+
+            for key in read_spec:
+
                 wavelength = read_spec[key][:, 0]
                 spec_res = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength))
 
@@ -584,10 +668,10 @@ class Database:
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
                                            data=np.linalg.inv(read_cov[key]))
 
+                print(f'      - {key}: {spec_res:.2f}')
+
                 dset = h5_file[f'objects/{object_name}/spectrum/{key}']
                 dset.attrs['specres'] = spec_res
-
-        print(' [DONE]')
 
         h5_file.close()
 

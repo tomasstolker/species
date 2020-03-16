@@ -10,9 +10,10 @@ import numpy as np
 from astropy.io import fits
 
 
-def add_vega(input_path, database):
+def add_vega(input_path,
+             database):
     """
-    Function for adding a Vega spectrum to the database.
+    Function for adding a flux-calibrated spectrum of Vega to the database.
 
     Parameters
     ----------
