@@ -471,8 +471,8 @@ class Database:
             h5_file.create_dataset(f'objects/{object_name}/distance',
                                    data=distance)  # (pc)
 
-            flux = {}
-            error = {}
+        flux = {}
+        error = {}
 
         if app_mag is not None:
             for item in app_mag:
