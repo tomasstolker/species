@@ -436,7 +436,9 @@ class Database:
             ``{'SPHERE': ('spectrum.dat', 'covariance.fits')}``. No covariance data is stored if
             set to None, for example, ``{'SPHERE': ('spectrum.dat', None)}``. The ``spectrum``
             parameter is ignored if set to None. For GRAVITY data, the same FITS file can be
-            provided as spectrum and covariance matrix.
+            provided as spectrum and covariance matrix. The spectral resolution is calculated from
+            the wavelength points or can alternatively provided as third elements of the tuple,
+            for example ``{'SPHERE': ('spectrum.dat', 'covariance.fits', 50.)}``.
 
         Returns
         -------
@@ -653,10 +655,14 @@ class Database:
 
             print('   - Spectral resolution:')
 
-            for key in read_spec:
+            for key, value in spectrum.items():
 
-                wavelength = read_spec[key][:, 0]
-                spec_res = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength))
+                if len(value) == 2:
+                    wavelength = read_spec[key][:, 0]
+                    spec_res = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength))
+
+                else:
+                    spec_res = value[2]
 
                 h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
                                        data=read_spec[key])
