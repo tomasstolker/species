@@ -447,7 +447,7 @@ class AtmosphericRetrieval:
                 #     # default: 0 - 4000 K
                 #     cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
 
-                cube[cube_index['t14']] = 5000.*cube[cube_index['t14']]
+                cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
 
                 for i in range(13, -1, -1):
                     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
