@@ -314,7 +314,7 @@ def plot_color_magnitude(boxes,
             magnitude = magnitude[unique]
             spt_disc = spt_disc[unique]
 
-            if item.object_type == 'field' or item.object_type is None:
+            if item.object_type in ['field', None]:
                 scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
@@ -395,6 +395,7 @@ def plot_color_magnitude(boxes,
 def plot_color_color(boxes,
                      objects=None,
                      mass_labels=None,
+                     teff_labels=None,
                      companion_labels=False,
                      field_range=None,
                      label_x='Color (mag)',
@@ -427,6 +428,11 @@ def plot_color_color(boxes,
         to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
         the planet mass and position of the label ('left' or 'right), for example
         ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
+    teff_labels : list(float, ), list(tuple(float, str), ), None
+        Plot labels with temperatures (K) next to the synthetic Planck photometry. Alternatively,
+        a list of tuples can be provided with the planet mass and position of the label ('left' or
+        'right), for example ``[(1000., 'left'), (1200., 'right')]``. No labels are shown if set
+        to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     field_range : tuple(str, str), None
@@ -456,10 +462,11 @@ def plot_color_color(boxes,
 
     print(f'Plotting color-color diagram: {output}...', end='', flush=True)
 
-    model_color = ('#234398', '#f6a432')
+    model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
 
     isochrones = []
+    planck = []
     models = []
     empirical = []
 
@@ -470,6 +477,10 @@ def plot_color_color(boxes,
         elif isinstance(item, box.ColorColorBox):
             if item.object_type == 'model':
                 models.append(item)
+
+            elif item.library == 'planck':
+                planck.append(item)
+
             else:
                 empirical.append(item)
 
@@ -529,35 +540,107 @@ def plot_color_color(boxes,
             if model_count[1] == 0:
                 label = plot_util.model_name(item.library)
 
+                if item.library == 'zhu2015':
+                    ax1.plot(item.color1, item.color2, marker='x', ms=5, linestyle=model_linestyle[model_count[1]],
+                             linewidth=0.6, color='gray', label=label, zorder=0)
+
+                    xlim = ax1.get_xlim()
+                    ylim = ax1.get_ylim()
+
+                    for i, teff_item in enumerate(item.sptype):
+                        teff_label = rf'{teff_item:.0e} $M_\mathregular{{Jup}}^{2}$ yr$^{{-1}}$'
+
+                        if item.color2[i] < ylim[1]:
+                            ax1.annotate(teff_label, (item.color1[i], item.color2[i]),
+                                         color='gray', fontsize=8, ha='left', va='center',
+                                         xytext=(item.color1[i]+0.1, item.color2[i]-0.05), zorder=3)
+
+                else:
+                    ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
+                             linewidth=0.6, color=model_color[model_count[0]], label=label, zorder=0)
+
+                    if mass_labels is not None:
+                        interp_color1 = interp1d(item.sptype, item.color1)
+                        interp_color2 = interp1d(item.sptype, item.color2)
+
+                        for i, mass_item in enumerate(mass_labels):
+                            if isinstance(mass_item, tuple):
+                                mass_val = mass_item[0]
+                                mass_pos = mass_item[1]
+
+                            else:
+                                mass_val = mass_item
+                                mass_pos = 'right'
+
+                            if j == 0:
+                            # if j == 0 or (j > 0 and mass_val < 20.):
+                                pos_color1 = interp_color1(mass_val)
+                                pos_color2 = interp_color2(mass_val)
+
+                                if mass_pos == 'left':
+                                    mass_ha = 'right'
+                                    mass_xytext = (pos_color1-0.05, pos_color2)
+
+                                else:
+                                    mass_ha = 'left'
+                                    mass_xytext = (pos_color1+0.05, pos_color2)
+
+                                mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
+
+                                xlim = ax1.get_xlim()
+                                ylim = ax1.get_ylim()
+
+                                if xlim[0]+0.2 < pos_color1 < xlim[1]-0.2 and \
+                                        ylim[0]+0.2 < pos_color2 < ylim[1]-0.2:
+
+                                    ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]],
+                                                s=15, edgecolor='none', zorder=0)
+
+                                    ax1.annotate(mass_label, (pos_color1, pos_color2),
+                                                 color=model_color[model_count[0]], fontsize=9,
+                                                 xytext=mass_xytext, ha=mass_ha, va='center', zorder=3)
+
+            else:
                 ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
                          linewidth=0.6, color=model_color[model_count[0]], label=label, zorder=0)
 
-                if mass_labels is not None:
+    if planck is not None:
+        planck_count = 0
+
+        for j, item in enumerate(planck):
+
+            if planck_count == 0:
+                label = plot_util.model_name(item.library)
+
+                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[planck_count],
+                         linewidth=0.6, color='black', label=label, zorder=0)
+
+                if teff_labels is not None:
                     interp_color1 = interp1d(item.sptype, item.color1)
                     interp_color2 = interp1d(item.sptype, item.color2)
 
-                    for i, mass_item in enumerate(mass_labels):
-                        if isinstance(mass_item, tuple):
-                            mass_val = mass_item[0]
-                            mass_pos = mass_item[1]
+                    for i, teff_item in enumerate(teff_labels):
+                        if isinstance(teff_item, tuple):
+                            teff_val = teff_item[0]
+                            teff_pos = teff_item[1]
 
                         else:
-                            mass_val = mass_item
-                            mass_pos = 'right'
+                            teff_val = teff_item
+                            teff_pos = 'right'
 
-                        if j == 0 or (j > 0 and mass_val < 20.):
-                            pos_color1 = interp_color1(mass_val)
-                            pos_color2 = interp_color2(mass_val)
+                        if j == 0 or (j > 0 and teff_val < 20.):
+                            pos_color1 = interp_color1(teff_val)
+                            pos_color2 = interp_color2(teff_val)
 
-                            if mass_pos == 'left':
-                                mass_ha = 'right'
-                                mass_xytext = (pos_color1-0.05, pos_color2)
+                            if teff_pos == 'left':
+                                teff_ha = 'right'
+                                teff_xytext = (pos_color1-0.05, pos_color2)
 
                             else:
-                                mass_ha = 'left'
-                                mass_xytext = (pos_color1+0.05, pos_color2)
+                                teff_ha = 'left'
+                                teff_xytext = (pos_color1+0.05, pos_color2)
 
-                            mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
+                            teff_label = f'{int(teff_val)} K'
 
                             xlim = ax1.get_xlim()
                             ylim = ax1.get_ylim()
@@ -565,16 +648,18 @@ def plot_color_color(boxes,
                             if xlim[0]+0.2 < pos_color1 < xlim[1]-0.2 and \
                                     ylim[0]+0.2 < pos_color2 < ylim[1]-0.2:
 
-                                ax1.scatter(pos_color1, pos_color2, c=model_color[model_count[0]],
-                                            s=15, edgecolor='none', zorder=0)
+                                ax1.scatter(pos_color1, pos_color2, c='black', s=15,
+                                            edgecolor='none', zorder=0)
 
-                                ax1.annotate(mass_label, (pos_color1, pos_color2),
-                                             color=model_color[model_count[0]], fontsize=9,
-                                             xytext=mass_xytext, ha=mass_ha, va='center', zorder=3)
+                                ax1.annotate(teff_label, (pos_color1, pos_color2),
+                                             color='black', fontsize=9,
+                                             xytext=teff_xytext, zorder=3, ha=teff_ha, va='center')
 
             else:
-                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
-                         linewidth=0.6, color=model_color[model_count[0]], zorder=0)
+                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[planck_count],
+                         linewidth=0.6, color='black', zorder=0)
+
+            planck_count += 1
 
     if empirical:
         cmap = plt.cm.viridis
@@ -601,7 +686,7 @@ def plot_color_color(boxes,
             color2 = color2[unique]
             spt_disc = spt_disc[unique]
 
-            if item.object_type == 'field':
+            if item.object_type in ['field', None]:
                 scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
