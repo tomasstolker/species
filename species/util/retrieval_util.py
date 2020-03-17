@@ -194,20 +194,45 @@ def calc_spectrum_clear(rt_object,
                         co,
                         feh,
                         log_p_quench,
+                        abund_in=None,
                         half=False):
 
-    # create arrays for constant values of C/O and Fe/H
+    if abund_in is None:
+        # chemical equilibrium
 
-    co_list = np.full(press.shape, co)
-    feh_list = np.full(press.shape, feh)
+        # create arrays for constant values of C/O and Fe/H
+        co_list = np.full(press.shape, co)
+        feh_list = np.full(press.shape, feh)
 
-    # interpolate the abundances, following chemical equilibrium
+        # interpolate the abundances, following chemical equilibrium
+        abund_out = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=10.**log_p_quench)
 
-    abundances_interp = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=10.**log_p_quench)
+        # extract the mean molecular weight
+        mmw = abund_in['MMW']
 
-    # extract the mean molecular weight
+    else:
+        # free abundances
 
-    mmw = abundances_interp['MMW']
+        # initiate abundance dictionary and total abundance of metals
+        abund_out = {}
+        metal_sum = 0.
+
+        for item in abund_in:
+            # add abundance to dictionary
+            abund_out[item] = np.ones_like(press)*10.**abund_in[item]
+
+            # update total metal abundance
+            metal_sum += 10.**abund_in[item]
+
+        # abundance of H2 and He
+        ab_h2_he = 1. - metal_sum
+
+        # add H2 and He abundances to the dictionary
+        abund_out['H2'] = np.ones_like(press)*ab_h2_he*0.75
+        abund_out['He'] = np.ones_like(press)*ab_h2_he*0.25
+
+        # calculate the mean moleculair weight
+        mmw = return_mmw(abund_out)
 
     # extract every three levels if half=True
 
@@ -221,35 +246,34 @@ def calc_spectrum_clear(rt_object,
     abundances = {}
 
     if half:
-        for species in rt_object.line_species:
-            abundances[species] = abundances_interp[species.replace('_all_iso', '')][::3]
+        for item in rt_object.line_species:
+            # abundances[item] = abund_out[item.replace('_all_iso', '')][::3]
+            abundances[item] = abund_out[item][::3]
 
-        abundances['H2'] = abundances_interp['H2'][::3]
-        abundances['He'] = abundances_interp['He'][::3]
+        abundances['H2'] = abund_out['H2'][::3]
+        abundances['He'] = abund_out['He'][::3]
 
     else:
-        for species in rt_object.line_species:
-            abundances[species] = abundances_interp[species.replace('_all_iso', '')]
+        for item in rt_object.line_species:
+            # abundances[item] = abund_out[item.replace('_all_iso', '')]
+            abundances[item] = abund_out[item]
 
-        abundances['H2'] = abundances_interp['H2']
-        abundances['He'] = abundances_interp['He']
+        abundances['H2'] = abund_out['H2']
+        abundances['He'] = abund_out['He']
 
     # Corretion for the nuclear spin degeneracy that was not included in the partition function
     # See Charnay et al. (2018)
 
-    if 'FeH' in abundances:
+    if abund_in is None and 'FeH' in abundances:
         abundances['FeH'] = abundances['FeH']/2.
 
     # calculate the emission spectrum
-
     rt_object.calc_flux(temp, abundances, 10.**logg, mmw)
 
     # convert frequency (Hz) to wavelength (cm)
-
     wlen = nc.c/rt_object.freq
 
     # return wavelength (micron) and flux (W m-2 um-1)
-
     return 1e4*wlen, 1e-7*rt_object.flux*nc.c/wlen**2.
 
 
@@ -414,6 +438,36 @@ def calc_spectrum_clouds(rt_object,
 
     # return wlen_micron, f_lambda, rt_object.pphot, rt_object.tau_pow, np.mean(rt_object.tau_cloud)
     return wlen_micron, f_lambda
+
+
+def return_mmw(abundances):
+
+    mol_weight = {}
+    mol_weight['H2'] = 2.
+    mol_weight['He'] = 4.
+    mol_weight['H2O'] = 18.
+    mol_weight['CH4'] = 16.
+    mol_weight['CO2'] = 44.
+    mol_weight['CO'] = 28.
+    mol_weight['Na'] = 23.
+    mol_weight['K'] = 39.
+    mol_weight['NH3'] = 17.
+    mol_weight['HCN'] = 27.
+    mol_weight['C2H2,acetylene'] = 26.
+    mol_weight['PH3'] = 34.
+    mol_weight['H2S'] = 34.
+    mol_weight['VO'] = 67.
+    mol_weight['TiO'] = 64.
+
+    mmw = 0.
+
+    for key in abundances:
+        if key == 'CO_all_iso':
+            mmw += abundances[key]/mol_weight['CO']
+        else:
+            mmw += abundances[key]/mol_weight[key]
+
+    return 1./mmw
 
 
 #############################################################

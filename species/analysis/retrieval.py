@@ -179,6 +179,7 @@ class AtmosphericRetrieval:
 
     def set_parameters(self,
                        bounds,
+                       chemistry,
                        quenching,
                        pt_profile):
         """
@@ -188,6 +189,9 @@ class AtmosphericRetrieval:
         ----------
         bounds : dict
             Dictionary with the parameter boundaries.
+        chemistry : str
+            The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
+            of free abundances (but constant with altitude).
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
@@ -222,8 +226,13 @@ class AtmosphericRetrieval:
 
         # abundance parameters
 
-        self.parameters.append('feh')
-        self.parameters.append('co')
+        if chemistry == 'equilibrium':
+            self.parameters.append('feh')
+            self.parameters.append('co')
+
+        elif chemistry == 'free':
+            for item in self.line_species:
+                self.parameters.append(item)
 
         if quenching:
             self.parameters.append('log_p_quench')
@@ -258,6 +267,7 @@ class AtmosphericRetrieval:
 
     def run_multinest(self,
                       bounds,
+                      chemistry='equilibrium',
                       quenching=True,
                       pt_profile='molliere',
                       live_points=2000,
@@ -272,6 +282,9 @@ class AtmosphericRetrieval:
         ----------
         bounds : dict
             Dictionary with the prior boundaries.
+        chemistry : str
+            The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
+            of free abundances (but constant with altitude).
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
@@ -300,7 +313,11 @@ class AtmosphericRetrieval:
 
         # create list with parameters for MultiNest
 
-        self.set_parameters(bounds, quenching, pt_profile)
+        if quenching and chemistry != 'equilibrium':
+            raise ValueError('The \'quenching\' parameter can only be used in combination with '
+                             'chemistry=\'equilibrium\'.')
+
+        self.set_parameters(bounds, chemistry, quenching, pt_profile)
 
         # create a dictionary with the cube indices of the parameters
 
@@ -443,37 +460,44 @@ class AtmosphericRetrieval:
 
             elif pt_profile == 'line':
                 # 15 temperature (K) knots
-                # for i in range(15):
-                #     # default: 0 - 4000 K
-                #     cube[cube_index[f't{i}']] = 4000.*cube[cube_index[f't{i}']]
+                for i in range(15):
+                    # default: 0 - 5000 K
+                    cube[cube_index[f't{i}']] = 5000.*cube[cube_index[f't{i}']]
 
-                cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
-
-                for i in range(13, -1, -1):
-                    cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
+                # cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
+                #
+                # for i in range(13, -1, -1):
+                #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
 
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
                 gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
                 cube[cube_index['gamma_r']] = gamma_r
 
-            # metallicity (dex) for the nabla_ad interpolation
-            if 'feh' in bounds:
-                feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[cube_index['feh']]
-            else:
-                # default: -1.5 - 1.5 dex
-                feh = -1.5 + 3.*cube[cube_index['feh']]
+            if chemistry == 'equilibrium':
+                # metallicity (dex) for the nabla_ad interpolation
+                if 'feh' in bounds:
+                    feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[cube_index['feh']]
+                else:
+                    # default: -1.5 - 1.5 dex
+                    feh = -1.5 + 3.*cube[cube_index['feh']]
 
-            cube[cube_index['feh']] = feh
+                cube[cube_index['feh']] = feh
 
-            # carbon-to-oxygen ratio for the nabla_ad interpolation
-            if 'co' in bounds:
-                co_ratio = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[cube_index['co']]
-            else:
-                # default: 0.1 - 1.6
-                co_ratio = 0.1 + 1.5*cube[cube_index['co']]
+                # carbon-to-oxygen ratio for the nabla_ad interpolation
+                if 'co' in bounds:
+                    co_ratio = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[cube_index['co']]
+                else:
+                    # default: 0.1 - 1.6
+                    co_ratio = 0.1 + 1.5*cube[cube_index['co']]
 
-            cube[cube_index['co']] = co_ratio
+                cube[cube_index['co']] = co_ratio
+
+            elif chemistry == 'free':
+                # log10 abundances of the line species
+                for item in self.line_species:
+                    # default: -10. - 0. dex
+                    cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
             # quench pressure (bar)
             # default: 1e-6 - 1e3 bar
@@ -657,9 +681,21 @@ class AtmosphericRetrieval:
 
             else:
                 # clear atmosphere
-                wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
-                    rt_object, self.pressure, temp, cube[cube_index['logg']],
-                    cube[cube_index['co']], cube[cube_index['feh']], log_p_quench, half=True)
+
+                if chemistry == 'equilibrium':
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                        rt_object, self.pressure, temp, cube[cube_index['logg']],
+                        cube[cube_index['co']], cube[cube_index['feh']], log_p_quench,
+                        None, half=True)
+
+                elif chemistry == 'free':
+                    abund = {}
+                    for item in self.line_species:
+                        abund[item] = cube[cube_index[item]]
+
+                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                        rt_object, self.pressure, temp, cube[cube_index['logg']],
+                        None, None, None, abund, half=True)
 
             # return zero probability if the spectrum contains NaN values
 
@@ -745,6 +781,7 @@ class AtmosphericRetrieval:
         radtrans_dict['cloud_species'] = self.cloud_species
         radtrans_dict['distance'] = self.distance
         radtrans_dict['scattering'] = self.scattering
+        radtrans_dict['chemistry'] = chemistry
         radtrans_dict['quenching'] = quenching
         radtrans_dict['pt_profile'] = pt_profile
 
