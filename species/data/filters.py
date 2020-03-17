@@ -44,7 +44,16 @@ def download_filter(filter_id):
             raise ValueError(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
                              f'Service.')
 
-        wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
+        try:
+            wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
+        except:
+            os.remove('filter.dat')
+
+            raise ValueError(f'The filter data of \'{filter_id}\' could not be downloaded. '
+                             f'Perhaps the website of the SVO Filter Profile Service '
+                             f'(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not '
+                             f'available?')
+
         wavelength *= 1e-4  # (um)
 
         os.remove('filter.dat')
