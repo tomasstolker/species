@@ -208,7 +208,7 @@ def calc_spectrum_clear(rt_object,
         abund_out = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=10.**log_p_quench)
 
         # extract the mean molecular weight
-        mmw = abund_in['MMW']
+        mmw = abund_out['MMW']
 
     else:
         # free abundances
