@@ -196,7 +196,7 @@ class Database:
         if f'filters/{filter_name}' in h5_file:
             del h5_file[f'filters/{filter_name}']
 
-        if filename:
+        if filename is not None:
             data = np.loadtxt(filename)
             wavelength = data[:, 0]
             transmission = data[:, 1]
