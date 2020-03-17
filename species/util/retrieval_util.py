@@ -247,16 +247,20 @@ def calc_spectrum_clear(rt_object,
 
     if half:
         for item in rt_object.line_species:
-            # abundances[item] = abund_out[item.replace('_all_iso', '')][::3]
-            abundances[item] = abund_out[item][::3]
+            if abund_in is None:
+                abundances[item] = abund_out[item.replace('_all_iso', '')][::3]
+            else:
+                abundances[item] = abund_out[item][::3]
 
         abundances['H2'] = abund_out['H2'][::3]
         abundances['He'] = abund_out['He'][::3]
 
     else:
         for item in rt_object.line_species:
-            # abundances[item] = abund_out[item.replace('_all_iso', '')]
-            abundances[item] = abund_out[item]
+            if abund_in is None:
+                abundances[item] = abund_out[item.replace('_all_iso', '')]
+            else:
+                abundances[item] = abund_out[item]
 
         abundances['H2'] = abund_out['H2']
         abundances['He'] = abund_out['He']
