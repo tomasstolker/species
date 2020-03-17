@@ -461,8 +461,8 @@ class AtmosphericRetrieval:
             elif pt_profile == 'line':
                 # 15 temperature (K) knots
                 for i in range(15):
-                    # default: 0 - 5000 K
-                    cube[cube_index[f't{i}']] = 5000.*cube[cube_index[f't{i}']]
+                    # default: 0 - 8000 K
+                    cube[cube_index[f't{i}']] = 8000.*cube[cube_index[f't{i}']]
 
                 # cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
                 #
@@ -638,12 +638,12 @@ class AtmosphericRetrieval:
 
                 temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
 
-                if cube[cube_index['gamma_r']] < 5000.:
-                    log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
-                        0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+                # if cube[cube_index['gamma_r']] < 5000.:
+                log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                    0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
-                else:
-                    log_prior += -np.inf
+                # else:
+                #     log_prior += -np.inf
 
             # return zero probability if the minimum temperature is negative
 
