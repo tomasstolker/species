@@ -496,8 +496,8 @@ class AtmosphericRetrieval:
             elif chemistry == 'free':
                 # log10 abundances of the line species
                 for item in self.line_species:
-                    # default: -10. - 0. dex
-                    cube[cube_index[item]] = -10.*cube[cube_index[item]]
+                    # default: -10. - -3. dex
+                    cube[cube_index[item]] = -3. - 7.*cube[cube_index[item]]
 
             # quench pressure (bar)
             # default: 1e-6 - 1e3 bar

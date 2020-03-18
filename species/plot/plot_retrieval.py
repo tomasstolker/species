@@ -123,11 +123,11 @@ def plot_pt_profile(tag,
 
         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
-    feh_index = np.argwhere(parameters == 'feh')[0]
-    co_index = np.argwhere(parameters == 'co')[0]
-
     for item in samples:
         if pt_profile == 'molliere':
+            feh_index = np.argwhere(parameters == 'feh')[0]
+            co_index = np.argwhere(parameters == 'co')[0]
+
             temp, _, _ = retrieval_util.pt_ret_model(
                 np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,

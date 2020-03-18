@@ -160,9 +160,19 @@ class ReadRadtrans:
             pass
 
         else:
-            wavelength, flux = retrieval_util.calc_spectrum_clear(
-                self.rt_object, self.pressure, temp, model_param['logg'], model_param['co'],
-                model_param['feh'], log_p_quench, half=True)
+            if 'co' in model_param and 'feh' in model_param:
+                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                    self.rt_object, self.pressure, temp, model_param['logg'], model_param['co'],
+                    model_param['feh'], log_p_quench, None, half=True)
+
+            else:
+                abund = {}
+                for ab_item in self.rt_object.line_species:
+                    abund[ab_item] = model_param[ab_item]
+
+                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                    self.rt_object, self.pressure, temp, model_param['logg'], None,
+                    None, None, abund, half=True)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param)

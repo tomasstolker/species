@@ -1447,6 +1447,7 @@ class Database:
             dset.attrs['scattering'] = radtrans['scattering']
             dset.attrs['quenching'] = radtrans['quenching']
             dset.attrs['pt_profile'] = radtrans['pt_profile']
+            dset.attrs['chemistry'] = radtrans['chemistry']
 
         print(' [DONE]')
 
@@ -1498,6 +1499,7 @@ class Database:
         scattering = dset.attrs['scattering']
         quenching = dset.attrs['quenching']
         pt_profile = dset.attrs['pt_profile']
+        chemistry = dset.attrs['chemistry']
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
@@ -1541,8 +1543,10 @@ class Database:
 
         logg_index = np.argwhere(parameters == 'logg')[0]
         radius_index = np.argwhere(parameters == 'radius')[0]
-        feh_index = np.argwhere(parameters == 'feh')[0]
-        co_index = np.argwhere(parameters == 'co')[0]
+
+        if chemistry == 'equilibrium':
+            feh_index = np.argwhere(parameters == 'feh')[0]
+            co_index = np.argwhere(parameters == 'co')[0]
 
         if quenching:
             log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0]
@@ -1605,9 +1609,20 @@ class Database:
             else:
                 log_p_quench = -10.
 
-            wavelength, flux = retrieval_util.calc_spectrum_clear(
-                rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
-                item[feh_index][0], log_p_quench, half=True)
+            if chemistry == 'equilibrium':
+                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                    rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
+                    item[feh_index][0], log_p_quench, None, half=True)
+
+            elif chemistry == 'free':
+                abund = {}
+                for ab_item in line_species:
+                    ab_index = np.argwhere(parameters == ab_item)[0]
+                    abund[ab_item] = item[ab_index]
+
+                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                    rt_object, pressure, temp, item[logg_index][0],
+                    None, None, None, abund, half=True)
 
             flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
 
