@@ -248,7 +248,11 @@ def calc_spectrum_clear(rt_object,
     if half:
         for item in rt_object.line_species:
             if abund_in is None:
-                abundances[item] = abund_out[item.replace('_all_iso', '')][::3]
+                item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_lor_cut', '')
+
+                abundances[item] = abund_out[item_replace][::3]
+
             else:
                 abundances[item] = abund_out[item][::3]
 
@@ -258,7 +262,11 @@ def calc_spectrum_clear(rt_object,
     else:
         for item in rt_object.line_species:
             if abund_in is None:
-                abundances[item] = abund_out[item.replace('_all_iso', '')]
+                item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_lor_cut', '')
+
+                abundances[item] = abund_out[item_replace]
+
             else:
                 abundances[item] = abund_out[item]
 
@@ -468,6 +476,10 @@ def return_mmw(abundances):
     for key in abundances:
         if key == 'CO_all_iso':
             mmw += abundances[key]/mol_weight['CO']
+        elif key == 'Na_lor_cut':
+            mmw += abundances[key]/mol_weight['Na']
+        elif key == 'K_lor_cut':
+            mmw += abundances[key]/mol_weight['K']
         else:
             mmw += abundances[key]/mol_weight[key]
 

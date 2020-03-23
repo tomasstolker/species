@@ -234,10 +234,11 @@ class AtmosphericRetrieval:
         elif chemistry == 'free':
 
             for item in self.line_species:
-                if item not in ['Na', 'K']:
+                if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
                     self.parameters.append(item)
 
-            if 'Na' and 'K' in self.line_species:
+            if 'Na' and 'K' in self.line_species or \
+                    'Na_lor_cut' and 'K_lor_cut' in self.line_species:
                 self.parameters.append('alkali')
 
         if quenching:
@@ -502,7 +503,7 @@ class AtmosphericRetrieval:
             elif chemistry == 'free':
                 # log10 abundances of the line species
                 for item in self.line_species:
-                    if item not in ['Na', 'K']:
+                    if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
                         # default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
@@ -702,15 +703,20 @@ class AtmosphericRetrieval:
                 elif chemistry == 'free':                    
                     abund = {}
                     for item in self.line_species:
-                        if item not in ['Na', 'K']:
+                        if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
                             abund[item] = cube[cube_index[item]]
 
                     # solar abundances (Asplund+ 2009)
                     na_solar = 1.60008694353205e-06
                     k_solar = 9.86605611925677e-08
 
-                    abund['Na'] = np.log10(10.**cube[cube_index['alkali']] * na_solar)
-                    abund['K'] = np.log10(10.**cube[cube_index['alkali']] * k_solar)
+                    if 'Na' and 'K' in self.line_species:
+                        abund['Na'] = np.log10(10.**cube[cube_index['alkali']] * na_solar)
+                        abund['K'] = np.log10(10.**cube[cube_index['alkali']] * k_solar)
+
+                    elif 'Na_lor_cut' and 'K_lor_cut' in self.line_species:
+                        abund['Na_lor_cut'] = np.log10(10.**cube[cube_index['alkali']] * na_solar)
+                        abund['K_lor_cut'] = np.log10(10.**cube[cube_index['alkali']] * k_solar)
 
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
