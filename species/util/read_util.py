@@ -168,8 +168,7 @@ def smooth_spectrum(wavelength,
 
     if spacing_std/spacing < 1e-2:
         # see retrieval_util.convolve
-        sigma_lsf = 2.*np.sqrt(2.*np.log(2.))/spec_res
-
+        sigma_lsf = 1./spec_res/(2.*np.sqrt(2.*np.log(2.)))
         flux_smooth = gaussian_filter(flux, sigma=sigma_lsf/spacing, mode='nearest')
 
     else:

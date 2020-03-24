@@ -80,7 +80,7 @@ def add_btnextgen(input_path,
     wavelength = [wavel_range[0]]
 
     while wavelength[-1] <= wavel_range[1]:
-        wavelength.append(wavelength[-1] + wavelength[-1]/spec_res)
+        wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
 
     wavelength = np.asarray(wavelength[:-1])
 

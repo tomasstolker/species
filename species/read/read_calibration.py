@@ -206,7 +206,7 @@ class ReadCalibration:
             wavelength_new = [wavelength[0]]
 
             while wavelength_new[-1] < wavelength[-1]:
-                wavelength_new.append(wavelength_new[-1] + wavelength_new[-1]/spec_res)
+                wavelength_new.append(wavelength_new[-1] + wavelength_new[-1]/(2.*spec_res))
 
             wavelength_new = np.asarray(wavelength_new[:-1])
 

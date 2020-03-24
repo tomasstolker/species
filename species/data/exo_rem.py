@@ -63,7 +63,10 @@ def add_exo_rem(input_path,
         wavelength = [wavel_range[0]]
 
         while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/spec_res)
+            # resolution = lambda / (resolution element of the spectrograph)
+            # R = lambda / delta_lambda / 2, because twice as many points as R to actually resolve
+            # two features that are lambda / R apart
+            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
 
         wavelength = np.asarray(wavelength[:-1])
 

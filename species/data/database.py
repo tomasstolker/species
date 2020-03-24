@@ -429,16 +429,14 @@ class Database:
             ``{'Paranal/NACO.Lp': (15., 0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. Not stored if set
             to None.
         spectrum : dict, None
-            Dictionary with the spectra and optional covariance matrices. The input data can either
-            have a FITS or ASCII format. The spectra should have 3 columns with wavelength (um),
-            flux (W m-2 um-1), and uncertainty (W m-2 um-1). The covariance matrix should be 2D
-            with the same number of wavelength points as the spectrum. For example,
-            ``{'SPHERE': ('spectrum.dat', 'covariance.fits')}``. No covariance data is stored if
-            set to None, for example, ``{'SPHERE': ('spectrum.dat', None)}``. The ``spectrum``
-            parameter is ignored if set to None. For GRAVITY data, the same FITS file can be
-            provided as spectrum and covariance matrix. The spectral resolution is calculated from
-            the wavelength points or can alternatively provided as third elements of the tuple,
-            for example ``{'SPHERE': ('spectrum.dat', 'covariance.fits', 50.)}``.
+            Dictionary with the spectrum, optional covariance matrix, and spectral resolution for
+            each instrument. The input data can either have a FITS or ASCII format. The spectra
+            should have 3 columns with wavelength (um), flux (W m-2 um-1), and uncertainty
+            (W m-2 um-1). The covariance matrix should be 2D with the same number of wavelength
+            points as the spectrum. For example, ``{'SPHERE': ('spectrum.dat', 'covariance.fits',
+            50.)}``. No covariance data is stored if set to None, for example, ``{'SPHERE':
+            ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter is ignored if set to None.
+            For GRAVITY data, the same FITS file can be provided as spectrum and covariance matrix.
 
         Returns
         -------
@@ -657,13 +655,6 @@ class Database:
 
             for key, value in spectrum.items():
 
-                if len(value) == 2:
-                    wavelength = read_spec[key][:, 0]
-                    spec_res = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength))
-
-                else:
-                    spec_res = value[2]
-
                 h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/spectrum',
                                        data=read_spec[key])
 
@@ -674,10 +665,10 @@ class Database:
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
                                            data=np.linalg.inv(read_cov[key]))
 
-                print(f'      - {key}: {spec_res:.2f}')
+                print(f'      - {key}: {value[2]:.2f}')
 
                 dset = h5_file[f'objects/{object_name}/spectrum/{key}']
-                dset.attrs['specres'] = spec_res
+                dset.attrs['specres'] = value[2]
 
         h5_file.close()
 
