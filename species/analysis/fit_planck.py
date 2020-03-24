@@ -110,10 +110,10 @@ def lnlike(param,
                                          spec_errs=None)
 
             if spectrum[item][1] is not None:
-                spec_res = spectrum[item][0][:, 1] - flux_new
+                spec_diff = spectrum[item][0][:, 1] - flux_new
 
-                dot_tmp = np.dot(np.transpose(spec_res), np.linalg.inv(spectrum[item][1]))
-                chisq += np.dot(dot_tmp, spec_res)
+                dot_tmp = np.dot(np.transpose(spec_diff), np.linalg.inv(spectrum[item][1]))
+                chisq += np.dot(dot_tmp, spec_diff)
 
             else:
                 chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /

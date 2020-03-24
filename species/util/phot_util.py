@@ -152,7 +152,7 @@ def get_residuals(datatype,
         Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
         Box with the photometry and/or spectra of an object. A scaling and/or error inflation of
-        the spectra should be applied with :func:`~species.util.phot_util.update_spectra`
+        the spectra should be applied with :func:`~species.util.read_util.update_spectra`
         beforehand.
     inc_phot : bool
         Include photometry.

@@ -161,7 +161,8 @@ class ReadModel:
     def interpolate_grid(self,
                          bounds,
                          wavel_resample=None,
-                         smooth=False):
+                         smooth=False,
+                         spec_res=None):
         """
         Internal function for linearly interpolating the grid of model spectra for a given
         filter or wavelength sampling, and grid boundaries.
@@ -174,6 +175,8 @@ class ReadModel:
         smooth : bool
             Smooth the spectrum with a Gaussian line spread function. Only recommended in case the
             input wavelength sampling has a uniform spectral resolution.
+        spec_res : float
+            Spectral resolution that is used for the Gaussian filter when ``smooth=True``.
 
         Returns
         -------
@@ -187,12 +190,6 @@ class ReadModel:
             raise ValueError('Smoothing is only required if the spectra are resampled to a new '
                              'wavelength grid, therefore requiring the \'wavel_resample\' '
                              'argument.')
-
-        if smooth:
-            # calculate the mean spectral resolution from the new wavelength points
-            spec_res = np.mean(0.5*(wavel_resample[1:]+wavel_resample[:-1])/np.diff(wavel_resample))
-        else:
-            spec_res = None
 
         points = []
         for key, value in self.get_points().items():
@@ -432,7 +429,7 @@ class ReadModel:
             wavel_resample = [self.wl_points[0]]
 
             while wavel_resample[-1] <= self.wl_points[-1]:
-                wavel_resample.append(wavel_resample[-1] + wavel_resample[-1]/spec_res)
+                wavel_resample.append(wavel_resample[-1] + wavel_resample[-1]/(2.*spec_res))
 
             wavel_resample = np.asarray(wavel_resample[:-1])
 

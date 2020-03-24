@@ -320,7 +320,8 @@ class FitModel:
 
                 readmodel.interpolate_grid(self.bounds,
                                            wavel_resample=self.spectrum[key][0][:, 0],
-                                           smooth=True)
+                                           smooth=True,
+                                           spec_res=self.spectrum[key][3])
 
                 self.modelspec.append(readmodel)
 

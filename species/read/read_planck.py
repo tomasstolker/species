@@ -144,7 +144,7 @@ class ReadPlanck:
         wavel_points = [self.wavel_range[0]]
 
         while wavel_points[-1] <= self.wavel_range[1]:
-            wavel_points.append(wavel_points[-1] + wavel_points[-1]/spec_res)
+            wavel_points.append(wavel_points[-1] + wavel_points[-1]/(2.*spec_res))
 
         wavel_points = np.asarray(wavel_points)  # (um)
 
