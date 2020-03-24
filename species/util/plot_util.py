@@ -169,6 +169,10 @@ def update_labels(param):
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
 
+    if 'alkali' in param:
+        index = param.index('alkali')
+        param[index] = r'[Na/K] (dex)'
+
     return param
 
 

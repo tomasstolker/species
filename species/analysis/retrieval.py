@@ -234,12 +234,7 @@ class AtmosphericRetrieval:
         elif chemistry == 'free':
 
             for item in self.line_species:
-                if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
-                    self.parameters.append(item)
-
-            if 'Na' and 'K' in self.line_species or \
-                    'Na_lor_cut' and 'K_lor_cut' in self.line_species:
-                self.parameters.append('alkali')
+                self.parameters.append(item)
 
         if quenching:
             self.parameters.append('log_p_quench')
@@ -503,13 +498,20 @@ class AtmosphericRetrieval:
             elif chemistry == 'free':
                 # log10 abundances of the line species
                 for item in self.line_species:
-                    if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
-                        # default: -10. - 0. dex
+                    # default: -10. - 0. dex
+                    if item not in  ['K', 'K_lor_cut']:
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
-                if 'alkali' in self.parameters:
-                    # default: -3. - 3. dex
-                    cube[cube_index['alkali']] = -3. + 6.*cube[cube_index['alkali']]
+                # solar abundances (Asplund+ 2009)
+                na_solar = 1.60008694353205e-06
+                k_solar = 9.86605611925677e-08
+
+                if 'K' in self.line_species:
+                    cube[cube_index['K']] = np.log10(10.**cube[cube_index['Na']]/(na_solar/k_solar))
+
+                elif 'K_lor_cut' in self.line_species:
+                    cube[cube_index['K_lor_cut']] = np.log10(10.**cube[cube_index['Na_lor_cut']] /
+                                                             (na_solar/k_solar))
 
             # quench pressure (bar)
             # default: 1e-6 - 1e3 bar
@@ -703,7 +705,7 @@ class AtmosphericRetrieval:
                 elif chemistry == 'free':                    
                     abund = {}
                     for item in self.line_species:
-                        if item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
+                        if item not in ['K', 'K_lor_cut']:
                             abund[item] = cube[cube_index[item]]
 
                     # solar abundances (Asplund+ 2009)
@@ -711,12 +713,10 @@ class AtmosphericRetrieval:
                     k_solar = 9.86605611925677e-08
 
                     if 'Na' and 'K' in self.line_species:
-                        abund['Na'] = np.log10(10.**cube[cube_index['alkali']] * na_solar)
-                        abund['K'] = np.log10(10.**cube[cube_index['alkali']] * k_solar)
+                        abund['K'] = np.log10(10.**cube[cube_index['Na']] / (na_solar/k_solar))
 
                     elif 'Na_lor_cut' and 'K_lor_cut' in self.line_species:
-                        abund['Na_lor_cut'] = np.log10(10.**cube[cube_index['alkali']] * na_solar)
-                        abund['K_lor_cut'] = np.log10(10.**cube[cube_index['alkali']] * k_solar)
+                        abund['K_lor_cut'] = np.log10(10.**cube[cube_index['Na_lor_cut']] / (na_solar/k_solar))
 
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],

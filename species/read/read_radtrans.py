@@ -168,7 +168,20 @@ class ReadRadtrans:
             else:
                 abund = {}
                 for ab_item in self.rt_object.line_species:
-                    abund[ab_item] = model_param[ab_item]
+                    if ab_item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
+                        abund[ab_item] = model_param[ab_item]
+
+                # solar abundances (Asplund+ 2009)
+                na_solar = 1.60008694353205e-06
+                k_solar = 9.86605611925677e-08
+
+                if 'Na' and 'K' in self.rt_object.line_species:
+                    abund['Na'] = np.log10(10.**model_param['alkali'] * na_solar)
+                    abund['K'] = np.log10(10.**model_param['alkali'] * k_solar)
+
+                elif 'Na_lor_cut' and 'K_lor_cut' in self.rt_object.line_species:
+                    abund['Na_lor_cut'] = np.log10(10.**model_param['alkali'] * na_solar)
+                    abund['K_lor_cut'] = np.log10(10.**model_param['alkali'] * k_solar)
 
                 wavelength, flux = retrieval_util.calc_spectrum_clear(
                     self.rt_object, self.pressure, temp, model_param['logg'], None,

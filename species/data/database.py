@@ -1608,8 +1608,23 @@ class Database:
             elif chemistry == 'free':
                 abund = {}
                 for ab_item in line_species:
-                    ab_index = np.argwhere(parameters == ab_item)[0]
-                    abund[ab_item] = item[ab_index]
+                    if ab_item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
+                        ab_index = np.argwhere(parameters == ab_item)[0]
+                        abund[ab_item] = item[ab_index]
+
+                # solar abundances (Asplund+ 2009)
+                na_solar = 1.60008694353205e-06
+                k_solar = 9.86605611925677e-08
+
+                if 'Na' and 'K' in line_species:
+                    index = np.argwhere(parameters == 'alkali')[0]
+                    abund['Na'] = np.log10(10.**item[index] * na_solar)
+                    abund['K'] = np.log10(10.**item[index] * k_solar)
+
+                elif 'Na_lor_cut' and 'K_lor_cut' in line_species:
+                    index = np.argwhere(parameters == 'alkali')[0]
+                    abund['Na_lor_cut'] = np.log10(10.**item[index] * na_solar)
+                    abund['K_lor_cut'] = np.log10(10.**item[index] * k_solar)
 
                 wavelength, flux = retrieval_util.calc_spectrum_clear(
                     rt_object, pressure, temp, item[logg_index][0],
