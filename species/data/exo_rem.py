@@ -129,6 +129,9 @@ def add_exo_rem(input_path,
                         warnings.warn('The wavelength range should fall within the range of the '
                                       'original wavelength sampling. Storing zeros instead.')
 
+    # required for the older Exo-REM grid
+    flux = np.nan_to_num(flux)
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),

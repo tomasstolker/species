@@ -236,7 +236,7 @@ class FitModel:
             Atmospheric model (e.g. 'drift-phoenix', 'petitcode-cool-cloudy', or 'bt-settl').
         bounds : dict, None
             Parameter boundaries. The full range is used for each parameter if set to None. In that
-            case, the radius range is set to 0-5 Rjup. It is also possible to specify the bounds
+            case, the radius range is set to 0.8-1.5 Rjup. It is also possible to specify the bounds
             for a subset of the parameters, for example, ``{'radius': (0.5, 10.)}``. Restricting
             the boundaries will decrease the computation time with the interpolation prior to the
             MCMC sampling. An additional scaling parameter can be fitted for each spectrum in which
@@ -276,7 +276,7 @@ class FitModel:
             self.bounds = readmodel.get_bounds()
 
         if 'radius' not in self.bounds:
-            self.bounds['radius'] = (0., 5.)
+            self.bounds['radius'] = (0.8, 1.5)
 
         print('Prior and interpolation boundaries:')
         for key, value in self.bounds.items():
