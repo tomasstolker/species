@@ -345,6 +345,15 @@ class AtmosphericRetrieval:
             if 'sigma_lnorm' in bounds:
                 del bounds['sigma_lnorm']
 
+        # delete C/H and O/H boundaries if the chemistry is not free
+
+        if chemistry != 'free':
+            if 'c_h_ratio' in bounds:
+                del bounds['c_h_ratio']
+
+            if 'o_h_ratio' in bounds:
+                del bounds['o_h_ratio']
+
         # create Ratrans object
 
         print('Setting up petitRADTRANS...')
@@ -717,6 +726,32 @@ class AtmosphericRetrieval:
 
                     elif 'Na_lor_cut' and 'K_lor_cut' in self.line_species:
                         abund['K_lor_cut'] = np.log10(10.**cube[cube_index['Na_lor_cut']] / (na_solar/k_solar))
+
+                    # check if the sum of fractional abundances is smaller than unity
+
+                    abund_list = list(abund.values())
+                    for i, item in enumerate(abund_list):
+                        abund_list[i] = 10.**item
+
+                    if sum(abund_list) > 1.:
+                        return -np.inf
+
+                    # check if the C/H and O/H ratios are within the prior boundaries
+
+                    if 'c_h_ratio' or 'o_h_ratio' in bounds:
+                        c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(abund)
+
+                    if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or \
+                                                  c_h_ratio > bounds['c_h_ratio'][1]):
+
+                        return -np.inf
+
+                    if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or \
+                                                  o_h_ratio > bounds['o_h_ratio'][1]):
+
+                        return -np.inf
+
+                    # calculate the emission spectrum
 
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],

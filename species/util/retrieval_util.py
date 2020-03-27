@@ -10,6 +10,76 @@ from petitRADTRANS_ck_test_speed import nat_cst as nc
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
 
+def calc_metal_ratio(abund):
+    # Solar C/H - Asplund et al. (2009)
+    c_h_solar = 10.**(8.43-12.)
+
+    # Solar O/H - Asplund et al. (2009)
+    o_h_solar = 10.**(8.69-12.)
+
+    # initiate total abundance of metals
+    metal_sum = 0.
+
+    for item in abund:
+        # calculate abundance from log10 value
+        abund[item] = 10.**abund[item]
+
+        # update the total amount of metals
+        metal_sum += abund[item]
+
+    # abundance of H2 and He
+    ab_h2_he = 1. - metal_sum
+
+    # add H2 and He abundances to the dictionary
+    abund['H2'] = ab_h2_he*0.75
+    abund['He'] = ab_h2_he*0.25
+
+    # initiate the C, H, and O abundance
+    c_abund = 0.
+    o_abund = 0.
+    h_abund = 0.
+
+    # calculate the total C abundance
+
+    if 'CO' in abund:
+        c_abund += abund['CO']
+
+    if 'CO_all_iso' in abund:
+        c_abund += abund['CO_all_iso']
+
+    if 'CO2' in abund:
+        c_abund += abund['CO2']
+
+    if 'CH4' in abund:
+        c_abund += abund['CH4']
+
+    # calculate the total O abundance
+
+    if 'CO' in abund:
+        o_abund += abund['CO']
+
+    if 'CO_all_iso' in abund:
+        o_abund += abund['CO_all_iso']
+
+    if 'CO2' in abund:
+        o_abund += 2.*abund['CO2']
+
+    if 'H2O' in abund:
+        o_abund += abund['H2O']
+
+    # calculate the total H abundance
+
+    h_abund += 2.*abund['H2']
+
+    if 'CH4' in abund:
+        h_abund += 4.*abund['CH4']
+
+    if 'H2O' in abund:
+        h_abund += 2.*abund['H2O']
+
+    return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
+
+
 def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     """
     Self-luminous retrieval P-T model.
