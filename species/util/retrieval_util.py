@@ -10,7 +10,7 @@ from petitRADTRANS_ck_test_speed import nat_cst as nc
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
 
-def calc_metal_ratio(abund):
+def calc_metal_ratio(abund_in):
     # Solar C/H - Asplund et al. (2009)
     c_h_solar = 10.**(8.43-12.)
 
@@ -18,17 +18,20 @@ def calc_metal_ratio(abund):
     o_h_solar = 10.**(8.69-12.)
 
     # initiate total abundance of metals
-    metal_sum = 0.
+    metal_abund = 0.
 
-    for item in abund:
+    # initiate the abundance dictionary
+    abund = {}
+
+    for item in abund_in:
         # calculate abundance from log10 value
-        abund[item] = 10.**abund[item]
+        abund[item] = 10.**abund_in[item]
 
         # update the total amount of metals
-        metal_sum += abund[item]
+        metal_abund += abund[item]
 
     # abundance of H2 and He
-    ab_h2_he = 1. - metal_sum
+    ab_h2_he = 1. - metal_abund
 
     # add H2 and He abundances to the dictionary
     abund['H2'] = ab_h2_he*0.75
