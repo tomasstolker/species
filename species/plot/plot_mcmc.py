@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 
 from species.data import database
-from species.util import plot_util
+from species.util import plot_util, retrieval_util
 
 
 mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
@@ -145,13 +145,13 @@ def plot_posterior(tag,
     """
 
     species_db = database.Database()
+
     box = species_db.get_samples(tag, burnin=burnin)
+    samples = box.samples
 
     print(f'Median sample:')
     for key, value in box.median_sample.items():
         print(f'   - {key} = {value:.2f}')
-
-    samples = box.samples
 
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
@@ -162,9 +162,67 @@ def plot_posterior(tag,
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
+    if 'CO' or 'CO_all_iso' in box.parameters:
+        box.parameters.append('c_h_ratio')
+        box.parameters.append('o_h_ratio')
+
+        abund_index = {}
+        for i, item in enumerate(box.parameters):
+            if item == 'CO':
+                abund_index['CO'] = i
+
+            elif item == 'CO_all_iso':
+                abund_index['CO_all_iso'] = i
+
+            elif item == 'CO2':
+                abund_index['CO2'] = i
+
+            elif item == 'CH4':
+                abund_index['CH4'] = i
+
+            elif item == 'H2O':
+                abund_index['H2O'] = i
+
+            elif item == 'NH3':
+                abund_index['NH3'] = i
+
+            elif item == 'H2S':
+                abund_index['H2S'] = i
+
+        c_h_ratio = np.zeros(samples.shape[0])
+        o_h_ratio = np.zeros(samples.shape[0])
+
+        for i, item in enumerate(samples):
+            abund = {}
+
+            if 'CO' in box.parameters:
+                abund['CO'] = item[abund_index['CO']]
+
+            if 'CO_all_iso' in box.parameters:
+                abund['CO_all_iso'] = item[abund_index['CO_all_iso']]
+
+            if 'CO2' in box.parameters:
+                abund['CO2'] = item[abund_index['CO2']]
+
+            if 'CH4' in box.parameters:
+                abund['CH4'] = item[abund_index['CH4']]
+
+            if 'H2O' in box.parameters:
+                abund['H2O'] = item[abund_index['H2O']]
+
+            if 'NH3' in box.parameters:
+                abund['NH3'] = item[abund_index['NH3']]
+
+            if 'H2S' in box.parameters:
+                abund['H2S'] = item[abund_index['H2S']]
+
+            c_h_ratio[i], o_h_ratio[i] = retrieval_util.calc_metal_ratio(abund)
+
     labels = plot_util.update_labels(box.parameters)
 
-    ndim = samples.shape[-1]
+    ndim = len(box.parameters)
+
+    samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
     samples = samples.reshape((-1, ndim))
 
     fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],

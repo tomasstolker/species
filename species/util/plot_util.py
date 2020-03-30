@@ -104,13 +104,17 @@ def sptype_stellar(sptype,
 
 def update_labels(param):
     """
+    Function for formatting the model parameters to use them as labels in the posterior plot.
+
     Parameters
     ----------
     param : list
+        List with the model parameters that will be plotted in the corner diagram.
 
     Returns
     -------
     list
+        List with the formatted model parameters.
     """
 
     if 'teff' in param:
@@ -172,6 +176,14 @@ def update_labels(param):
     if 'alkali' in param:
         index = param.index('alkali')
         param[index] = r'[Na/K] (dex)'
+
+    if 'c_h_ratio' in param:
+        index = param.index('c_h_ratio')
+        param[index] = r'[C/H] (dex)'
+
+    if 'o_h_ratio' in param:
+        index = param.index('o_h_ratio')
+        param[index] = r'[O/H] (dex)'
 
     return param
 

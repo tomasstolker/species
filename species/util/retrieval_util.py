@@ -80,6 +80,12 @@ def calc_metal_ratio(abund_in):
     if 'H2O' in abund:
         h_abund += 2.*abund['H2O']
 
+    if 'NH3' in abund:
+        h_abund += 3.*abund['NH3']
+
+    if 'H2S' in abund:
+        h_abund += 2.*abund['H2S']
+
     return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
 
 
