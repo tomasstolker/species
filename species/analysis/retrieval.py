@@ -224,6 +224,10 @@ class AtmosphericRetrieval:
 
             self.parameters.append('gamma_r')
 
+        elif pt_profile == 'monotonic':
+            for i in range(15):
+                self.parameters.append(f't{i}')
+
         # abundance parameters
 
         if chemistry == 'equilibrium':
@@ -290,7 +294,8 @@ class AtmosphericRetrieval:
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere' or 'line').
+            The parametrization for the pressure-temperature profile ('molliere', 'line', or
+            'monotonic').
         live_points : int
             Number of live points.
         efficiency : float
@@ -385,7 +390,7 @@ class AtmosphericRetrieval:
 
         rt_object.setup_opa_structure(self.pressure[::3])
 
-        if pt_profile == 'line':
+        if pt_profile in ['line', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
 
         def prior(cube, n_dim, n_param):
@@ -475,15 +480,17 @@ class AtmosphericRetrieval:
                     # default: 0 - 8000 K
                     cube[cube_index[f't{i}']] = 8000.*cube[cube_index[f't{i}']]
 
-                # cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
-                #
-                # for i in range(13, -1, -1):
-                #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
-
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
                 gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
                 cube[cube_index['gamma_r']] = gamma_r
+
+            elif pt_profile == 'monotonic':
+                # 15 temperature (K) knots
+                cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
+
+                for i in range(13, -1, -1):
+                    cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
 
             if chemistry == 'equilibrium':
                 # metallicity (dex) for the nabla_ad interpolation
@@ -648,7 +655,7 @@ class AtmosphericRetrieval:
                                                          cube[cube_index['feh']],
                                                          cube[cube_index['co']])
 
-            elif pt_profile == 'line':
+            elif pt_profile in ['line', 'monotonic']:
                 knot_temp = []
                 for i in range(15):
                     knot_temp.append(cube[cube_index[f't{i}']])
@@ -657,16 +664,13 @@ class AtmosphericRetrieval:
 
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
-                knot_temp = np.asarray(knot_temp)
+                if pt_profile == 'line':
+                    knot_temp = np.asarray(knot_temp)
 
-                temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
+                    temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
 
-                # if cube[cube_index['gamma_r']] < 5000.:
-                log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
-                    0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
-
-                # else:
-                #     log_prior += -np.inf
+                    log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                        0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
             # return zero probability if the minimum temperature is negative
 
