@@ -555,9 +555,9 @@ def return_mmw(abundances):
     for key in abundances:
         if key == 'CO_all_iso':
             mmw += abundances[key]/mol_weight['CO']
-        elif key == 'Na_lor_cut':
+        elif key in ['Na_lor_cut', 'Na_burrows']:
             mmw += abundances[key]/mol_weight['Na']
-        elif key == 'K_lor_cut':
+        elif key in ['K_lor_cut', 'K_burrows']:
             mmw += abundances[key]/mol_weight['K']
         else:
             mmw += abundances[key]/mol_weight[key]

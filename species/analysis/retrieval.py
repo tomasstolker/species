@@ -529,6 +529,10 @@ class AtmosphericRetrieval:
                     cube[cube_index['K_lor_cut']] = np.log10(10.**cube[cube_index['Na_lor_cut']] /
                                                              (na_solar/k_solar))
 
+                elif 'K_burrows' in self.line_species:
+                    cube[cube_index['K_burrows']] = np.log10(10.**cube[cube_index['Na_burrows']] /
+                                                             (na_solar/k_solar))
+
             # quench pressure (bar)
             # default: 1e-6 - 1e3 bar
             if quenching:
@@ -730,6 +734,9 @@ class AtmosphericRetrieval:
 
                     elif 'Na_lor_cut' and 'K_lor_cut' in self.line_species:
                         abund['K_lor_cut'] = np.log10(10.**cube[cube_index['Na_lor_cut']] / (na_solar/k_solar))
+
+                    elif 'Na_burrows' and 'K_burrows' in self.line_species:
+                        abund['K_burrows'] = np.log10(10.**cube[cube_index['Na_burrows']] / (na_solar/k_solar))
 
                     # check if the sum of fractional abundances is smaller than unity
 
