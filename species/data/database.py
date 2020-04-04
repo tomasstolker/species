@@ -1550,7 +1550,7 @@ class Database:
             alpha_index = np.argwhere(parameters == 'alpha')[0]
             log_delta_index = np.argwhere(parameters == 'log_delta')[0]
 
-        elif pt_profile == 'line':
+        elif pt_profile in ['line', 'monotonic']:
             temp_index = []
             for i in range(15):
                 temp_index.append(np.argwhere(parameters == f't{i}')[0])
@@ -1588,7 +1588,7 @@ class Database:
                     10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
                     item[feh_index][0], item[co_index][0])
 
-            elif pt_profile == 'line':
+            elif pt_profile in ['line', 'monotonic']:
                 knot_temp = []
                 for i in range(15):
                     knot_temp.append(item[temp_index[i]][0])
