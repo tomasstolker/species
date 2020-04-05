@@ -514,8 +514,10 @@ class AtmosphericRetrieval:
             elif chemistry == 'free':
                 # log10 abundances of the line species
                 for item in self.line_species:
-                    # default: -10. - 0. dex
-                    if item not in  ['K', 'K_lor_cut']:
+                    if item in bounds:
+                        cube[cube_index[item]] = bounds[item][0] + (bounds[item][1]-bounds[item][0])*cube[cube_index[item]]
+                    elif item not in  ['K', 'K_lor_cut', 'K_burrows']:
+                        # default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
                 # solar abundances (Asplund+ 2009)
@@ -722,7 +724,7 @@ class AtmosphericRetrieval:
                 elif chemistry == 'free':                    
                     abund = {}
                     for item in self.line_species:
-                        if item not in ['K', 'K_lor_cut']:
+                        if item not in ['K', 'K_lor_cut', 'K_burrows']:
                             abund[item] = cube[cube_index[item]]
 
                     # solar abundances (Asplund+ 2009)
