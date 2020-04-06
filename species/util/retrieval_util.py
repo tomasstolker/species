@@ -543,7 +543,7 @@ def mean_molecular_weight(abundances):
     Returns
     -------
     float
-        Mean molecular weight
+        Mean molecular weight in atomic mass units.
     """
 
     mol_weight = {}
@@ -576,6 +576,46 @@ def mean_molecular_weight(abundances):
             mmw += abundances[key]/mol_weight[key]
 
     return 1./mmw
+
+
+def potassium_abundance(abundances):
+    """
+    Function to calculate the mass fraction of potassium (K) at a solar ratio of the sodium and
+    potassium abundances.
+
+    Parameters
+    ----------
+    abundances : dict
+        Dictionary with the mass fraction abundances.
+
+    Returns
+    -------
+    float
+        Log10 of the mass fraction abundance of potassium.
+    """
+
+    # solar volume mixing ratios (Asplund et al. 2009)
+    n_na_solar = 1.60008694353205e-06
+    n_k_solar = 9.86605611925677e-08
+
+    # get the atomic masses
+    masses = atomic_masses()
+
+    # calculate the mean molecular weight from the input mass fractions
+    mmw = mean_molecular_weight(abundances)
+
+    # volume mixing ratio of sodium
+    if 'Na' in abundances:
+        n_na_abund = abundances['Na'] * mmw/masses['Na']
+    elif 'Na_lor_cut' in abundances:
+        n_na_abund = abundances['Na_lor_cut'] * mmw/masses['Na']
+    elif 'Na_burrows' in abundances:
+        n_na_abund = abundances['Na_burrows'] * mmw/masses['Na']
+
+    # volume mixing ratio of potassium
+    n_k_abund = n_na_abund * n_k_solar/n_na_solar
+
+    return np.log10(n_k_abund * masses['Na']/mmw)
 
 
 #############################################################

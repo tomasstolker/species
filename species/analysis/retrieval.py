@@ -513,36 +513,29 @@ class AtmosphericRetrieval:
 
             elif chemistry == 'free':
                 # log10 abundances of the line species
+
+                abundances = {}
+
                 for item in self.line_species:
                     if item in bounds:
                         cube[cube_index[item]] = bounds[item][0] + (bounds[item][1]-bounds[item][0])*cube[cube_index[item]]
-                    # elif item not in  ['K', 'K_lor_cut', 'K_burrows']:
-                    else:
+                    elif item not in ['K', 'K_lor_cut', 'K_burrows']:
                         # default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
-                # abund_sample = {}
-                # for item in self.line_species:
-                #     if item in
-                # n_solar = retrieval_util.solar_mixing_ratios()
-                # print(n_solar)
-                # mmw_solar = retrieval_util.return_mmw()
-                # exit()
+                        # add the mass fraction to the abundace dictionary
+                        abundances[item] = 10.**cube[cube_index[item]]
 
-                # solar abundances (Asplund+ 2009)
-                # na_solar = 1.60008694353205e-06
-                # k_solar = 9.86605611925677e-08
+                log_x_k_abund = retrieval_util.potassium_abundance(abundances)
 
-                # if 'K' in self.line_species:
-                #     cube[cube_index['K']] = np.log10(10.**cube[cube_index['Na']]/(na_solar/k_solar))
-                #
-                # elif 'K_lor_cut' in self.line_species:
-                #     cube[cube_index['K_lor_cut']] = np.log10(10.**cube[cube_index['Na_lor_cut']] /
-                #                                              (na_solar/k_solar))
-                #
-                # elif 'K_burrows' in self.line_species:
-                #     cube[cube_index['K_burrows']] = np.log10(10.**cube[cube_index['Na_burrows']] /
-                #                                              (na_solar/k_solar))
+                if 'K' in self.line_species:
+                    cube[cube_index['K']] = log_x_k_abund
+
+                elif 'K_lor_cut' in self.line_species:
+                    cube[cube_index['K_lor_cut']] = log_x_k_abund
+
+                elif 'K_burrows' in self.line_species:
+                    cube[cube_index['K_burrows']] = log_x_k_abund
 
             # quench pressure (bar)
             # default: 1e-6 - 1e3 bar
