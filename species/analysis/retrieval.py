@@ -513,8 +513,7 @@ class AtmosphericRetrieval:
 
             elif chemistry == 'free':
                 # log10 abundances of the line species
-
-                abundances = {}
+                log_x_abund = {}
 
                 for item in self.line_species:
                     if item in bounds:
@@ -523,10 +522,10 @@ class AtmosphericRetrieval:
                         # default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
-                        # add the mass fraction to the abundace dictionary
-                        abundances[item] = 10.**cube[cube_index[item]]
+                        # add the log10 of the mass fraction to the abundace dictionary
+                        log_x_abund[item] = cube[cube_index[item]]
 
-                log_x_k_abund = retrieval_util.potassium_abundance(abundances)
+                log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund)
 
                 if 'K' in self.line_species:
                     cube[cube_index['K']] = log_x_k_abund
@@ -723,38 +722,21 @@ class AtmosphericRetrieval:
                         cube[cube_index['co']], cube[cube_index['feh']], log_p_quench,
                         None, half=True)
 
-                elif chemistry == 'free':                    
-                    abund = {}
+                elif chemistry == 'free':
+                    # create a dictionary with the mass fractions
+                    log_x_abund = {}
                     for item in self.line_species:
-                        # if item not in ['K', 'K_lor_cut', 'K_burrows']:
-                        abund[item] = cube[cube_index[item]]
-
-                    # solar abundances (Asplund+ 2009)
-                    # na_solar = 1.60008694353205e-06
-                    # k_solar = 9.86605611925677e-08
-
-                    # if 'Na' and 'K' in self.line_species:
-                    #     abund['K'] = np.log10(10.**cube[cube_index['Na']] / (na_solar/k_solar))
-                    #
-                    # elif 'Na_lor_cut' and 'K_lor_cut' in self.line_species:
-                    #     abund['K_lor_cut'] = np.log10(10.**cube[cube_index['Na_lor_cut']] / (na_solar/k_solar))
-                    #
-                    # elif 'Na_burrows' and 'K_burrows' in self.line_species:
-                    #     abund['K_burrows'] = np.log10(10.**cube[cube_index['Na_burrows']] / (na_solar/k_solar))
+                        log_x_abund[item] = cube[cube_index[item]]
 
                     # check if the sum of fractional abundances is smaller than unity
 
-                    abund_list = list(abund.values())
-                    for i, item in enumerate(abund_list):
-                        abund_list[i] = 10.**item
-
-                    if sum(abund_list) > 1.:
+                    if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
                         return -np.inf
 
                     # check if the C/H and O/H ratios are within the prior boundaries
 
                     if 'c_h_ratio' or 'o_h_ratio' in bounds:
-                        c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(abund)
+                        c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
 
                     if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or \
                                                   c_h_ratio > bounds['c_h_ratio'][1]):
@@ -770,7 +752,7 @@ class AtmosphericRetrieval:
 
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
-                        None, None, None, abund, half=True)
+                        None, None, None, log_x_abund, half=True)
 
             # return zero probability if the spectrum contains NaN values
 

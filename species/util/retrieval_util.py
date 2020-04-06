@@ -10,85 +10,6 @@ from petitRADTRANS_ck_test_speed import nat_cst as nc
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
 
-def calc_metal_ratio(abund_in):
-    # Solar C/H - Asplund et al. (2009)
-    c_h_solar = 10.**(8.43-12.)
-
-    # Solar O/H - Asplund et al. (2009)
-    o_h_solar = 10.**(8.69-12.)
-
-    # initiate total abundance of metals
-    metal_abund = 0.
-
-    # initiate the abundance dictionary
-    abund = {}
-
-    for item in abund_in:
-        # calculate abundance from log10 value
-        abund[item] = 10.**abund_in[item]
-
-        # update the total amount of metals
-        metal_abund += abund[item]
-
-    # abundance of H2 and He
-    ab_h2_he = 1. - metal_abund
-
-    # add H2 and He abundances to the dictionary
-    abund['H2'] = ab_h2_he*0.75
-    abund['He'] = ab_h2_he*0.25
-
-    # initiate the C, H, and O abundance
-    c_abund = 0.
-    o_abund = 0.
-    h_abund = 0.
-
-    # calculate the total C abundance
-
-    if 'CO' in abund:
-        c_abund += abund['CO']
-
-    if 'CO_all_iso' in abund:
-        c_abund += abund['CO_all_iso']
-
-    if 'CO2' in abund:
-        c_abund += abund['CO2']
-
-    if 'CH4' in abund:
-        c_abund += abund['CH4']
-
-    # calculate the total O abundance
-
-    if 'CO' in abund:
-        o_abund += abund['CO']
-
-    if 'CO_all_iso' in abund:
-        o_abund += abund['CO_all_iso']
-
-    if 'CO2' in abund:
-        o_abund += 2.*abund['CO2']
-
-    if 'H2O' in abund:
-        o_abund += abund['H2O']
-
-    # calculate the total H abundance
-
-    h_abund += 2.*abund['H2']
-
-    if 'CH4' in abund:
-        h_abund += 4.*abund['CH4']
-
-    if 'H2O' in abund:
-        h_abund += 2.*abund['H2O']
-
-    if 'NH3' in abund:
-        h_abund += 3.*abund['NH3']
-
-    if 'H2S' in abund:
-        h_abund += 2.*abund['H2S']
-
-    return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
-
-
 def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     """
     Self-luminous retrieval P-T model.
@@ -273,10 +194,10 @@ def calc_spectrum_clear(rt_object,
                         co,
                         feh,
                         log_p_quench,
-                        abund_in=None,
+                        log_x_abund=None,
                         half=False):
 
-    if abund_in is None:
+    if log_x_abund is None:
         # chemical equilibrium
 
         # create arrays for constant values of C/O and Fe/H
@@ -292,26 +213,18 @@ def calc_spectrum_clear(rt_object,
     else:
         # free abundances
 
-        # initiate abundance dictionary and total abundance of metals
-        abund_out = {}
-        metal_sum = 0.
-
-        for item in abund_in:
-            # add abundance to dictionary
-            abund_out[item] = np.ones_like(press)*10.**abund_in[item]
-
-            # update total metal abundance
-            metal_sum += 10.**abund_in[item]
-
-        # abundance of H2 and He
-        ab_h2_he = 1. - metal_sum
-
-        # add H2 and He abundances to the dictionary
-        abund_out['H2'] = np.ones_like(press)*ab_h2_he*0.75
-        abund_out['He'] = np.ones_like(press)*ab_h2_he*0.25
+        # create a dictionary with all mass fractions
+        abund_out = mass_fractions(log_x_abund)
 
         # calculate the mean moleculair weight
         mmw = mean_molecular_weight(abund_out)
+
+        # create arrays of constant atmosphere abundance
+        for item in abund_out:
+            abund_out[item] *= np.ones_like(press)
+
+        # create an array of a constant mean molecular weight
+        mmw *= np.ones_like(press)
 
     # extract every three levels if half=True
 
@@ -326,7 +239,7 @@ def calc_spectrum_clear(rt_object,
 
     if half:
         for item in rt_object.line_species:
-            if abund_in is None:
+            if log_x_abund is None:
                 item_replace = item.replace('_all_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
 
@@ -340,7 +253,7 @@ def calc_spectrum_clear(rt_object,
 
     else:
         for item in rt_object.line_species:
-            if abund_in is None:
+            if log_x_abund is None:
                 item_replace = item.replace('_all_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
 
@@ -355,7 +268,7 @@ def calc_spectrum_clear(rt_object,
     # Corretion for the nuclear spin degeneracy that was not included in the partition function
     # See Charnay et al. (2018)
 
-    if abund_in is None and 'FeH' in abundances:
+    if log_x_abund is None and 'FeH' in abundances:
         abundances['FeH'] = abundances['FeH']/2.
 
     # calculate the emission spectrum
@@ -531,6 +444,122 @@ def calc_spectrum_clouds(rt_object,
     return wlen_micron, f_lambda
 
 
+def mass_fractions(log_x_abund):
+    """
+    Function to return a dictionary with the mass fractions of all species.
+
+    Parameters
+    ----------
+    log_x_abund : dict
+        Dictionary with the log10 of the mass fractions of metals.
+
+    Returns
+    -------
+    dict
+        Dictionary with the mass fractions of all species.
+    """
+
+    # initiate abundance dictionary
+    abund = {}
+
+    # initiate the total mass fraction of the metals
+    metal_sum = 0.
+
+    for item in log_x_abund:
+        # add the mass fraction to the dictionary
+        abund[item] = 10.**log_x_abund[item]
+
+        # update the total mass fraction of the metals
+        metal_sum += abund[item]
+
+    # mass fraction of H2 and He
+    ab_h2_he = 1. - metal_sum
+
+    # add H2 and He mass fraction to the dictionary
+    abund['H2'] = ab_h2_he*0.75
+    abund['He'] = ab_h2_he*0.25
+
+    return abund
+
+
+def calc_metal_ratio(log_x_abund):
+    """
+    Parameters
+    ----------
+    log_x_abund : dict
+        Dictionary with the log10 values of the mass fractions.
+
+    Returns
+    -------
+    """
+
+    # solar C/H from Asplund et al. (2009)
+    c_h_solar = 10.**(8.43-12.)
+
+    # solar O/H from Asplund et al. (2009)
+    o_h_solar = 10.**(8.69-12.)
+
+    # get the atomic masses
+    masses = atomic_masses()
+
+    # create a dictionary with all mass fractions
+    abund = mass_fractions(log_x_abund)
+
+    # calculate the mean molecular weight from the input mass fractions
+    mmw = mean_molecular_weight(abund)
+
+    # initiate the C, H, and O abundance
+    c_abund = 0.
+    o_abund = 0.
+    h_abund = 0.
+
+    # calculate the total C abundance
+
+    if 'CO' in abund:
+        c_abund += abund['CO'] * mmw/masses['CO']
+
+    if 'CO_all_iso' in abund:
+        c_abund += abund['CO_all_iso'] * mmw/masses['CO']
+
+    if 'CO2' in abund:
+        c_abund += abund['CO2'] * mmw/masses['CO2']
+
+    if 'CH4' in abund:
+        c_abund += abund['CH4'] * mmw/masses['CH4']
+
+    # calculate the total O abundance
+
+    if 'CO' in abund:
+        o_abund += abund['CO'] * mmw/masses['CO']
+
+    if 'CO_all_iso' in abund:
+        o_abund += abund['CO_all_iso'] * mmw/masses['CO']
+
+    if 'CO2' in abund:
+        o_abund += 2. * abund['CO2'] * mmw/masses['CO2']
+
+    if 'H2O' in abund:
+        o_abund += abund['H2O'] * mmw/masses['H2O']
+
+    # calculate the total H abundance
+
+    h_abund += 2. * abund['H2'] * mmw/masses['H2']
+
+    if 'CH4' in abund:
+        h_abund += 4. * abund['CH4'] * mmw/masses['CH4']
+
+    if 'H2O' in abund:
+        h_abund += 2. * abund['H2O'] * mmw/masses['H2O']
+
+    if 'NH3' in abund:
+        h_abund += 3. * abund['NH3'] * mmw/masses['NH3']
+
+    if 'H2S' in abund:
+        h_abund += 2. * abund['H2S'] * mmw/masses['H2S']
+
+    return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
+
+
 def mean_molecular_weight(abundances):
     """
     Function to calculate the mean molecular weight from the abundances.
@@ -546,22 +575,7 @@ def mean_molecular_weight(abundances):
         Mean molecular weight in atomic mass units.
     """
 
-    mol_weight = {}
-    mol_weight['H2'] = 2.
-    mol_weight['He'] = 4.
-    mol_weight['H2O'] = 18.
-    mol_weight['CH4'] = 16.
-    mol_weight['CO2'] = 44.
-    mol_weight['CO'] = 28.
-    mol_weight['Na'] = 23.
-    mol_weight['K'] = 39.
-    mol_weight['NH3'] = 17.
-    mol_weight['HCN'] = 27.
-    mol_weight['C2H2,acetylene'] = 26.
-    mol_weight['PH3'] = 34.
-    mol_weight['H2S'] = 34.
-    mol_weight['VO'] = 67.
-    mol_weight['TiO'] = 64.
+    mol_weight = atomic_masses()
 
     mmw = 0.
 
@@ -578,44 +592,47 @@ def mean_molecular_weight(abundances):
     return 1./mmw
 
 
-def potassium_abundance(abundances):
+def potassium_abundance(log_x_abund):
     """
-    Function to calculate the mass fraction of potassium (K) at a solar ratio of the sodium and
+    Function to calculate the mass fraction of potassium at a solar ratio of the sodium and
     potassium abundances.
 
     Parameters
     ----------
-    abundances : dict
-        Dictionary with the mass fraction abundances.
+    log_x_abund : dict
+        Dictionary with the log10 of the mass fractions.
 
     Returns
     -------
     float
-        Log10 of the mass fraction abundance of potassium.
+        Log10 of the mass fraction of potassium.
     """
 
-    # solar volume mixing ratios (Asplund et al. 2009)
+    # solar volume mixing ratios of Na and K (Asplund et al. 2009)
     n_na_solar = 1.60008694353205e-06
     n_k_solar = 9.86605611925677e-08
 
     # get the atomic masses
     masses = atomic_masses()
 
+    # create a dictionary with all mass fractions
+    x_abund = mass_fractions(log_x_abund)
+
     # calculate the mean molecular weight from the input mass fractions
-    mmw = mean_molecular_weight(abundances)
+    mmw = mean_molecular_weight(x_abund)
 
     # volume mixing ratio of sodium
-    if 'Na' in abundances:
-        n_na_abund = abundances['Na'] * mmw/masses['Na']
-    elif 'Na_lor_cut' in abundances:
-        n_na_abund = abundances['Na_lor_cut'] * mmw/masses['Na']
-    elif 'Na_burrows' in abundances:
-        n_na_abund = abundances['Na_burrows'] * mmw/masses['Na']
+    if 'Na' in log_x_abund:
+        n_na_abund = x_abund['Na'] * mmw/masses['Na']
+    elif 'Na_lor_cut' in log_x_abund:
+        n_na_abund = x_abund['Na_lor_cut'] * mmw/masses['Na']
+    elif 'Na_burrows' in log_x_abund:
+        n_na_abund = x_abund['Na_burrows'] * mmw/masses['Na']
 
     # volume mixing ratio of potassium
     n_k_abund = n_na_abund * n_k_solar/n_na_solar
 
-    return np.log10(n_k_abund * masses['Na']/mmw)
+    return np.log10(n_k_abund * masses['K']/mmw)
 
 
 #############################################################
@@ -661,15 +678,17 @@ def solar_mixing_ratios():
 
 def atomic_masses():
     """
-    Function which returns the atomic masses.
+    Function which returns the atomic and molecular masses.
 
     Returns
     -------
     dict
-        Dictionary with the atomic masses.
+        Dictionary with the atomic and molecular masses.
     """
 
     masses = {}
+
+    # atoms
     masses['H'] = 1.
     masses['He'] = 4.
     masses['C'] = 12.
@@ -689,6 +708,23 @@ def atomic_masses():
     masses['Fe'] = 55.8
     masses['Ni'] = 58.7
 
+    # molecules
+    masses['H2'] = 2.
+    masses['He'] = 4.
+    masses['H2O'] = 18.
+    masses['CH4'] = 16.
+    masses['CO2'] = 44.
+    masses['CO'] = 28.
+    masses['Na'] = 23.
+    masses['K'] = 39.
+    masses['NH3'] = 17.
+    masses['HCN'] = 27.
+    masses['C2H2,acetylene'] = 26.
+    masses['PH3'] = 34.
+    masses['H2S'] = 34.
+    masses['VO'] = 67.
+    masses['TiO'] = 64.
+
     return masses
 
 
@@ -707,6 +743,7 @@ def return_XFe(FeH, CO):
     nfracs_use['O'] = nfracs_use['C']/CO
 
     XFe = masses['Fe']*nfracs_use['Fe']
+
     add = 0.
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
@@ -735,6 +772,7 @@ def return_XMgSiO3(FeH, CO):
     masses_mgsio3 = masses['Mg'] + masses['Si'] + 3. * masses['O']
       
     Xmgsio3 = masses_mgsio3*nfracs_mgsio3
+
     add = 0.
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
@@ -763,6 +801,7 @@ def return_XNa2S(FeH, CO):
     masses_na2s = 2.*masses['Na'] + masses['S']
       
     Xna2s = masses_na2s*nfracs_na2s
+
     add = 0.
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
@@ -791,6 +830,7 @@ def return_XKCl(FeH, CO):
     masses_kcl = masses['K'] + masses['Cl']
       
     Xkcl = masses_kcl*nfracs_kcl
+
     add = 0.
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
@@ -841,6 +881,7 @@ def return_T_cond_Fe_comb(FeH, CO, MMW = 2.33):
     index = P1<P2
     retP[index] = P1[index]
     retP[~index] = P2[~index]
+
     return retP, T2
 
 
@@ -855,9 +896,8 @@ def return_T_cond_MgSiO3(FeH, CO, MMW = 2.33):
 
     Xmgsio3 = return_XMgSiO3(FeH, CO)
 
-    m_mgsio3 =  masses['Mg'] \
-      + masses['Si'] \
-      + 3. * masses['O']
+    m_mgsio3 =  masses['Mg'] + masses['Si'] + 3. * masses['O']
+
     return P_vap(T)/(Xmgsio3*MMW/m_mgsio3), T
 
 
@@ -877,8 +917,8 @@ def return_T_cond_Na2S(FeH, CO, MMW = 2.33):
 
     Xna2s = return_XNa2S(FeH, CO)
 
-    m_na2s =  2.*masses['Na'] \
-      + masses['S']
+    m_na2s =  2.*masses['Na'] + masses['S']
+
     return P_vap(T)/(Xna2s*MMW/m_na2s), T
 
 
@@ -892,8 +932,8 @@ def return_T_cond_KCl(FeH, CO, MMW = 2.33):
 
     Xkcl = return_XKCl(FeH, CO)
 
-    m_kcl =  masses['K'] \
-      + masses['Cl']
+    m_kcl =  masses['K'] + masses['Cl']
+
     return P_vap(T)/(Xkcl*MMW/m_kcl), T
 
 
