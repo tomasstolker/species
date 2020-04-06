@@ -47,12 +47,6 @@ def add_exo_rem(input_path,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    param_file = os.path.join(data_folder, 'input_data_CO2.txt')
-
-    par_teff, par_gravity, par_feh, par_co = np.loadtxt(param_file, unpack=True)
-
-    par_logg = np.log10(par_gravity)  # log10(cm s-2)
-
     teff = []
     logg = []
     feh = []
@@ -75,28 +69,28 @@ def add_exo_rem(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            if filename[:8] == 'spectre_':
-                param_index = int(filename[8:].split('.')[0]) - 1
+            if filename[:7] == 'exorem_':
+                file_split = filename.split('_')
 
-                teff_val = par_teff[param_index]
-                logg_val = par_logg[param_index]
-                feh_val = np.log10(par_feh[param_index])
-                co_val = par_co[param_index]
+                teff_val = float(file_split[2])
+                logg_val = float(file_split[4])
+                feh_val = float(file_split[6])
+                co_val = float(file_split[8])
+
+                if logg_val == 5.:
+                    continue
+
+                if co_val in [0.8, 0.85]:
+                    continue
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
                 print_message = f'Adding Exo-REM model spectra... {filename}'
-                print(f'\r{print_message:<50}', end='')
+                print(f'\r{print_message:<83}', end='')
 
-                data = np.loadtxt(os.path.join(data_folder, filename))
-
-                if data.shape[0] == 34979:
-                    data = data[:-1, :]
-
-                # change the order because of the conversion from wavenumber to wavelength
-                data = data[::-1, :]
+                data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
@@ -105,32 +99,27 @@ def add_exo_rem(input_path,
 
                 if wavel_range is None:
                     if wavelength is None:
-                        # (cm-1) -> (um)
-                        wavelength = 1e4/data[:, 0]
+                        wavelength = np.copy(data_wavel)  # (um)
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                    # (erg s-1 cm-2 cm) -> (W m-2 um-1) and include a factor pi
-                    flux.append(np.pi*data[:, 1]*1e-7*1e8/wavelength**2)
+                    flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
-                    # (cm-1) -> (um)
-                    data_wavel = 1e4/data[:, 0]
-
-                    # (erg s-1 cm-2 cm) -> (W m-2 um-1) and include a factor pi
-                    data_flux = np.pi*data[:, 1]*1e-7*1e8/data_wavel**2
-
                     try:
-                        flux.append(spectres.spectres(wavelength, data_wavel, data_flux))
+                        flux_resample = spectres.spectres(wavelength, data_wavel, data_flux)
+                        flux.append(flux_resample)  # (W m-2 um-1)
                     except ValueError:
-                        flux.append(np.zeros(wavelength.shape[0]))
+                        flux.append(np.zeros(wavelength.shape[0]))  # (um)
 
                         warnings.warn('The wavelength range should fall within the range of the '
                                       'original wavelength sampling. Storing zeros instead.')
 
-    # required for the older Exo-REM grid
-    flux = np.nan_to_num(flux)
+    print('Grid points with the following parameters having been excluded:')
+    print('   - log(g) = 5')
+    print('   - C/O = 0.8')
+    print('   - C/O = 0.85')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -146,4 +135,4 @@ def add_exo_rem(input_path,
                          data_sorted)
 
     print_message = 'Adding Exo-REM model spectra... [DONE]'
-    print(f'\r{print_message:<50}')
+    print(f'\r{print_message:<83}')

@@ -6,6 +6,8 @@ import warnings
 
 import numpy as np
 
+from scipy.interpolate import griddata
+
 
 def update_sptype(sptypes):
     """
@@ -13,12 +15,12 @@ def update_sptype(sptypes):
 
     Parameters
     ----------
-    sptypes : numpy.ndarray
+    sptypes : np.ndarray
         Input spectral types.
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
         Updated spectral types.
     """
 
@@ -74,116 +76,93 @@ def update_filter(filter_in):
     return filter_out
 
 
-def sort_data(teff,
-              logg,
-              feh,
-              co,
-              fsed,
+def sort_data(param_teff,
+              param_logg,
+              param_feh,
+              param_co,
+              param_fsed,
               wavelength,
               flux):
     """
     Parameters
     ----------
-    teff : numpy.ndarray
-    logg : numpy.ndarray
-    feh : numpy.ndarray, None
-    co : numpy.ndarray, None
-    fsed : numpy.ndarray, None
-    wavelength : numpy.ndarray
-    flux : numpy.ndarray
+    param_teff : np.ndarray
+        Array with the effective temperature (K) of each spectrum.
+    param_logg : np.ndarray
+        Array with the log10 surface gravity (cgs) of each spectrum.
+    param_feh : np.ndarray, None
+        Array with the metallicity of each spectrum. Not used if set to None.
+    param_co : np.ndarray, None
+        Array with the carbon-to-oxygen ratio of each spectrum. Not used if set to None.
+    param_fsed : np.ndarray, None
+        Array with the sedimentation parameter of each spectrum. Not used if set to None.
+    wavelength : np.ndarray
+        Array with the wavelengths (um).
+    flux : np.ndarray
+        Array with the spectra (n_spectra, n_wavelengths).
 
     Returns
     -------
-    list(numpy.ndarray, )
+    list(np.ndarray, )
+        List with the unique values of the atmosphere parameters (each in a separate array), an
+        array with the wavelengths, and a multidimensional array with the sorted spectra.
     """
 
-    teff_unique = np.unique(teff)
-    logg_unique = np.unique(logg)
+    teff_unique = np.unique(param_teff)
+    logg_unique = np.unique(param_logg)
 
-    if feh is None and co is None and fsed is None:
-        spectrum = np.zeros((teff_unique.shape[0],
-                             logg_unique.shape[0],
-                             wavelength.shape[0]))
+    spec_shape = [teff_unique.shape[0], logg_unique.shape[0]]
 
-    elif feh is not None and co is None and fsed is None:
-        feh_unique = np.unique(feh)
+    if param_feh is not None:
+        feh_unique = np.unique(param_feh)
+        spec_shape.append(feh_unique.shape[0])
 
-        spectrum = np.zeros((teff_unique.shape[0],
-                             logg_unique.shape[0],
-                             feh_unique.shape[0],
-                             wavelength.shape[0]))
+    if param_co is not None:
+        co_unique = np.unique(param_co)
+        spec_shape.append(co_unique.shape[0])
 
-    elif feh is not None and co is not None and fsed is None:
-        feh_unique = np.unique(feh)
-        co_unique = np.unique(co)
+    if param_fsed is not None:
+        fsed_unique = np.unique(param_fsed)
+        spec_shape.append(fsed_unique.shape[0])
 
-        spectrum = np.zeros((teff_unique.shape[0],
-                             logg_unique.shape[0],
-                             feh_unique.shape[0],
-                             co_unique.shape[0],
-                             wavelength.shape[0]))
+    spec_shape.append(wavelength.shape[0])
 
-    elif feh is not None and co is None and fsed is not None:
-        feh_unique = np.unique(feh)
-        fsed_unique = np.unique(fsed)
+    spectrum = np.zeros(spec_shape)
 
-        spectrum = np.zeros((teff_unique.shape[0],
-                             logg_unique.shape[0],
-                             feh_unique.shape[0],
-                             fsed_unique.shape[0],
-                             wavelength.shape[0]))
+    for i in range(param_teff.shape[0]):
+        # The parameter order: Teff, log(g), [Fe/H], C/O, f_sed
+        # Not all parameters have to be included but the order matters
 
-    else:
-        feh_unique = np.unique(feh)
-        co_unique = np.unique(co)
-        fsed_unique = np.unique(fsed)
+        index_teff = np.argwhere(teff_unique == param_teff[i])[0][0]
+        index_logg = np.argwhere(logg_unique == param_logg[i])[0][0]
 
-        spectrum = np.zeros((teff_unique.shape[0],
-                             logg_unique.shape[0],
-                             feh_unique.shape[0],
-                             co_unique.shape[0],
-                             fsed_unique.shape[0],
-                             wavelength.shape[0]))
+        spec_select = [index_teff, index_logg]
 
-    for i in range(teff.shape[0]):
-        index_teff = np.argwhere(teff_unique == teff[i])[0][0]
-        index_logg = np.argwhere(logg_unique == logg[i])[0][0]
+        if param_feh is not None:
+            index_feh = np.argwhere(feh_unique == param_feh[i])[0][0]
+            spec_select.append(index_feh)
 
-        if feh is None and co is None and fsed is None:
-            spectrum[index_teff, index_logg, :] = flux[i]
+        if param_co is not None:
+            index_co = np.argwhere(co_unique == param_co[i])[0][0]
+            spec_select.append(index_co)
 
-        elif feh is not None and co is None and fsed is None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
-            spectrum[index_teff, index_logg, index_feh, :] = flux[i]
+        if param_fsed is not None:
+            index_fsed = np.argwhere(fsed_unique == param_fsed[i])[0][0]
+            spec_select.append(index_fsed)
 
-        elif feh is not None and co is not None and fsed is None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
-            index_co = np.argwhere(co_unique == co[i])[0][0]
-            spectrum[index_teff, index_logg, index_feh, index_co, :] = flux[i]
+        spec_select.append(...)
 
-            # for j, item in enumerate(flux[i]):
-            #     spectrum[index_teff, index_logg, index_feh, index_co, j] = item
-
-        elif feh is not None and co is None and fsed is not None:
-            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
-            index_fsed = np.argwhere(fsed_unique == fsed[i])[0][0]
-            spectrum[index_teff, index_logg, index_feh, index_fsed, :] = flux[i]
-
-        else:
-            index_feh = np.argwhere(feh_unique == feh[i])[0][0]
-            index_co = np.argwhere(co_unique == co[i])[0][0]
-            index_fsed = np.argwhere(fsed_unique == fsed[i])[0][0]
-            spectrum[index_teff, index_logg, index_feh, index_co, index_fsed, :] = flux[i]
+        spectrum[tuple(spec_select)] = flux[i]
 
     sorted_data = [teff_unique, logg_unique]
 
-    if feh is not None:
+    if param_feh is not None:
         sorted_data.append(feh_unique)
 
-    if co is not None:
+    if param_co is not None:
         sorted_data.append(co_unique)
 
-    if fsed is not None:
+    if param_fsed is not None:
         sorted_data.append(fsed_unique)
 
     sorted_data.append(wavelength)
@@ -207,7 +186,7 @@ def write_data(model,
         Model parameters.
     database: h5py._hl.files.File
         Database.
-    data_sorted : list(numpy.ndarray, )
+    data_sorted : list(np.ndarray, )
         Sorted model data with the parameter values, wavelength points (um), and flux
         densities (W m-2 um-1).
 
@@ -217,7 +196,7 @@ def write_data(model,
         None
     """
 
-    if 'models/'+model in database:
+    if f'models/{model}' in database:
         del database[f'models/{model}']
 
     dset = database.create_group(f'models/{model}')
@@ -256,75 +235,165 @@ def add_missing(model,
         None
     """
 
+    print(f'Number of grid points per parameter:')
+
     grid_shape = []
-    for item in parameters:
+    param_data = []
+
+    for i, item in enumerate(parameters):
         grid_shape.append(database[f'models/{model}/{item}'].shape[0])
+        param_data.append(np.asarray(database[f'models/{model}/{item}']))
+        print(f'   - {item}: {grid_shape[i]}')
 
     teff = np.asarray(database[f'models/{model}/teff'])
+    wavelength = np.asarray(database[f'models/{model}/wavelength'])
     flux = np.asarray(database[f'models/{model}/flux'])
 
-    for i in range(grid_shape[0]):
-        for j in range(grid_shape[1]):
+    count_total = 0
+    count_missing = 0
 
-            if len(parameters) == 2:
-                if np.count_nonzero(flux[i, j]) == 0:
-                    try:
-                        scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                        flux[i, j] = scaling*flux[i+1, j] + (1.-scaling)*flux[i-1, j]
+    print('Fixing missing grid points:')
 
-                    except IndexError:
-                        flux[i, j] = np.nan
-                        warnings.warn(f'Interpolation is not possible at the edge of the '
-                                      f'parameter grid. A NaN value is stored for Teff = '
-                                      f'{teff[i]} K.')
+    if len(parameters) == 4:
+        find_missing = np.zeros(grid_shape, dtype=bool)
 
-            elif len(parameters) == 3:
-                for k in range(grid_shape[2]):
-                    if np.count_nonzero(flux[i, j, k]) == 0:
-                        try:
-                            scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                            flux[i, j, k] = scaling*flux[i+1, j, k] + (1.-scaling)*flux[i-1, j, k]
+        values = []
+        points = [[], [], [], []]
+        new_points = [[], [], [], []]        
 
-                        except IndexError:
-                            flux[i, j, k] = np.nan
-                            warnings.warn(f'Interpolation is not possible at the edge of the '
-                                          f'parameter grid. A NaN value is stored for Teff = '
-                                          f'{teff[i]} K.')
+        new_flux = np.zeros((grid_shape[0], grid_shape[1], grid_shape[2], grid_shape[3], wavelength.shape[0]))
 
-            elif len(parameters) == 4:
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
                     for m in range(grid_shape[3]):
-                        if np.count_nonzero(flux[i, j, k, m]) == 0:
-                            try:
-                                scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                                flux[i, j, k, m] = scaling*flux[i+1, j, k, m] + \
-                                    (1.-scaling)*flux[i-1, j, k, m]
+                        if np.count_nonzero(flux[i, j, k, m, ...]) == 0:
+                            find_missing[i, j, k, m] = True
 
-                            except IndexError:
-                                flux[i, j, k, m] = np.nan
-                                warnings.warn(f'Interpolation is not possible at the edge of the '
-                                              f'parameter grid. A NaN value is stored for Teff = '
-                                              f'{teff[i]} K.')
+                        else:
+                            points[0].append(param_data[0][i])
+                            points[1].append(param_data[1][j])
+                            points[2].append(param_data[2][k])
+                            points[3].append(param_data[3][m])
 
-            elif len(parameters) == 5:
+                            values.append(flux[i, j, k, m, ...])
+
+                        new_points[0].append(param_data[0][i])
+                        new_points[1].append(param_data[1][j])
+                        new_points[2].append(param_data[2][k])
+                        new_points[3].append(param_data[3][m])
+
+                        count_total += 1
+
+        values = np.asarray(values)
+        points = np.asarray(points)
+        new_points = np.asarray(new_points)
+
+        test = griddata(points.T, values, new_points.T, method='nearest')
+
+        for item in test:
+            if np.isnan(item[0]):
+                count_missing += 1
+
+        count_interp = np.sum(find_missing) - count_missing
+
+        count = 0
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
                     for m in range(grid_shape[3]):
-                        for n in range(grid_shape[4]):
-                            if np.count_nonzero(flux[i, j, k, m, n]) == 0:
-                                try:
-                                    scaling = (teff[i+1]-teff[i])/(teff[i+1]-teff[i-1])
-                                    flux[i, j, k, m, n] = scaling*flux[i+1, j, k, m, n] + \
-                                        (1.-scaling)*flux[i-1, j, k, mm]
+                        new_flux[i, j, k, m, :] = test[count, :]
+                        count += 1
 
-                                except IndexError:
-                                    flux[i, j, k, m, n] = np.nan
-                                    warnings.warn(f'Interpolation is not possible at the edge of the '
-                                                  f'parameter grid. A NaN value is stored for Teff = '
-                                                  f'{teff[i]} K.')
+    # if len(parameters) == 4:
+    #     check_constant = np.zeros(grid_shape, dtype=bool)
+    #
+    #     for z in range(5):
+    #         for i in range(grid_shape[0]):
+    #             for j in range(grid_shape[1]):
+    #                 for k in range(grid_shape[2]):
+    #                     for m in range(grid_shape[3]):
+    #                         if z == 0:
+    #                             count_total += 1
+    #
+    #                         index = (i, j, k, m, ...)
+    #
+    #                         if np.count_nonzero(flux[index]) == 0:
+    #                             for dim_index in range(len(grid_shape)):
+    #
+    #                                 if index[dim_index] > 0 and index[dim_index] < grid_shape[dim_index]-1:
+    #                                     index_low = [i, j, k, m, ...]
+    #                                     index_up = [i, j, k, m, ...]
+    #
+    #                                     index_low[dim_index] = index_low[dim_index] - 1
+    #                                     index_up[dim_index] = index_up[dim_index] + 1
+    #
+    #                                     index_low = tuple(index_low)
+    #                                     index_up = tuple(index_up)
+    #
+    #                                     if np.count_nonzero(flux[index_low]) != 0 and np.count_nonzero(flux[index_up]) != 0:
+    #                                         scaling = (param_data[dim_index][index[dim_index]] - param_data[dim_index][index_low[dim_index]]) / (param_data[dim_index][index_up[dim_index]] - param_data[dim_index][index_low[dim_index]])
+    #                                         flux[index] = flux[index_low]*(1.-scaling) + flux[index_up]*scaling
+    #                                         count_interp += 1
+    #                                         break
+    #
+    #     for z in range(2):
+    #         for i in range(grid_shape[0]):
+    #             for j in range(grid_shape[1]):
+    #                 for k in range(grid_shape[2]):
+    #                     for m in range(grid_shape[3]):
+    #                         index = (i, j, k, m, ...)
+    #
+    #                         if np.count_nonzero(flux[index]) == 0:
+    #                             for dim_index in range(len(grid_shape)):
+    #
+    #                                 if index[dim_index] > 0:
+    #                                     index_low = [i, j, k, m, ...]
+    #                                     index_low[dim_index] = index_low[dim_index] - 1
+    #                                     index_low = tuple(index_low)
+    #
+    #                                     if np.count_nonzero(flux[index_low]) != 0:
+    #                                         if z == 0 and check_constant[index_low[:-1]]:
+    #                                             continue
+    #
+    #                                         flux[index] = flux[index_low]
+    #                                         count_same += 1
+    #                                         check_constant[index] = True
+    #                                         print(param_data[0][i], param_data[1][j], param_data[2][k], param_data[3][m])
+    #                                         break
+    #
+    #                                 elif index[dim_index] < grid_shape[dim_index]-1:
+    #                                     index_up = [i, j, k, m, ...]
+    #                                     index_up[dim_index] = index_up[dim_index] + 1
+    #                                     index_up = tuple(index_up)
+    #
+    #                                     if np.count_nonzero(flux[index_up]) != 0:
+    #                                         if z == 0 and check_constant[index_up[:-1]]:
+    #                                             continue
+    #
+    #                                         flux[index] = flux[index_up]
+    #                                         count_same += 1
+    #                                         check_constant[index] = True
+    #                                         print(param_data[0][i], param_data[1][j], param_data[2][k], param_data[3][m])
+    #                                         break
+    #
+    #                         if np.count_nonzero(flux[index]) == 0:
+    #                             print(z)
+    #                             if z == 1:
+    #                                 count_missing += 1
+    #
+    #                                 warnings.warn(f'It is not possible to add the missing grid position '
+    #                                               f'at ({param_data[0][i]}, {param_data[1][j]}, '
+    #                                               f'{param_data[2][k]}, {param_data[3][m]}). '
+    #                                               f'Storing a spectrum with only zeros instead.')
+    #
+    # else:
+    #     raise ValueError(f'Interpolation of missing grid points is not implemented for '
+    #                      f'{len(parameters)} parameters.')
 
-            else:
-                raise ValueError('The interpolation of missing data is not yet been implemented '
-                                 'for 6 or more parameters.')
+    print(f'   - Number of stored grid points: {count_total}')
+    print(f'   - Number of interpolated grid points: {count_interp}')
+    print(f'   - Number of missing grid points: {count_missing}')
 
     del database[f'models/{model}/flux']
 
@@ -337,14 +406,14 @@ def correlation_to_covariance(cor_matrix,
     """
     Parameters
     ----------
-    cor_matrix : numpy.ndarray
+    cor_matrix : np.ndarray
         Correlation matrix of the spectrum.
-    spec_sigma : numpy.ndarray
+    spec_sigma : np.ndarray
         Uncertainties (W m-2 um-1).
 
     Returns
     -------
-    numpy.ndarrays
+    np.ndarrays
         Covariance matrix of the spectrum.
     """
 
