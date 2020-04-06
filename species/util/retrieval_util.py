@@ -311,7 +311,7 @@ def calc_spectrum_clear(rt_object,
         abund_out['He'] = np.ones_like(press)*ab_h2_he*0.25
 
         # calculate the mean moleculair weight
-        mmw = return_mmw(abund_out)
+        mmw = mean_molecular_weight(abund_out)
 
     # extract every three levels if half=True
 
@@ -531,7 +531,20 @@ def calc_spectrum_clouds(rt_object,
     return wlen_micron, f_lambda
 
 
-def return_mmw(abundances):
+def mean_molecular_weight(abundances):
+    """
+    Function to calculate the mean molecular weight from the abundances.
+
+    Parameters
+    ----------
+    abundances : dict
+        Dictionary with the mass fraction of each species.
+    
+    Returns
+    -------
+    float
+        Mean molecular weight
+    """
 
     mol_weight = {}
     mol_weight['H2'] = 2.
@@ -570,52 +583,79 @@ def return_mmw(abundances):
 #############################################################
 
 # metal species
-metals = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Ti', 'V', 'Fe', 'Ni']
+# metals = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Ti', 'V', 'Fe', 'Ni']
 
-# solar abundances, [Fe/H] = 0, from Asplund+ 2009
-nfracs = {}
-nfracs['H'] = 0.9207539305
-nfracs['He'] = 0.0783688694
-nfracs['C'] = 0.0002478241
-nfracs['N'] = 6.22506056949881e-05
-nfracs['O'] = 0.0004509658
-nfracs['Na'] = 1.60008694353205e-06
-nfracs['Mg'] = 3.66558742055362e-05
-nfracs['Al'] = 2.595e-06
-nfracs['Si'] = 2.9795e-05
-nfracs['P'] = 2.36670201997668e-07
-nfracs['S'] = 1.2137900734604e-05
-nfracs['Cl'] = 2.91167958499589e-07
-nfracs['K'] = 9.86605611925677e-08
-nfracs['Ca'] = 2.01439011429255e-06
-nfracs['Ti'] = 8.20622804366359e-08
-nfracs['V'] = 7.83688694089992e-09
-nfracs['Fe'] = 2.91167958499589e-05
-nfracs['Ni'] = 1.52807116806281e-06
+def solar_mixing_ratios():
+    """
+    Function which returns the volume mixing ratios of a solar elemental abundances (i.e.
+    [Fe/H] = 0), adopted from Asplund et al. (2009).
 
-# atomic masses
-masses = {}
-masses['H'] = 1.
-masses['He'] = 4.
-masses['C'] = 12.
-masses['N'] = 14.
-masses['O'] = 16.
-masses['Na'] = 23.
-masses['Mg'] = 24.3
-masses['Al'] = 27.
-masses['Si'] = 28.
-masses['P'] = 31.
-masses['S'] = 32.
-masses['Cl'] = 35.45
-masses['K'] = 39.1
-masses['Ca'] = 40.
-masses['Ti'] = 47.9
-masses['V'] = 51.
-masses['Fe'] = 55.8
-masses['Ni'] = 58.7
+    Returns
+    -------
+    dict
+        Dictionary with the solar number fractions (volume mixing ratios).
+    """
+
+    n_fracs = {}
+    n_fracs['H'] = 0.9207539305
+    n_fracs['He'] = 0.0783688694
+    n_fracs['C'] = 0.0002478241
+    n_fracs['N'] = 6.22506056949881e-05
+    n_fracs['O'] = 0.0004509658
+    n_fracs['Na'] = 1.60008694353205e-06
+    n_fracs['Mg'] = 3.66558742055362e-05
+    n_fracs['Al'] = 2.595e-06
+    n_fracs['Si'] = 2.9795e-05
+    n_fracs['P'] = 2.36670201997668e-07
+    n_fracs['S'] = 1.2137900734604e-05
+    n_fracs['Cl'] = 2.91167958499589e-07
+    n_fracs['K'] = 9.86605611925677e-08
+    n_fracs['Ca'] = 2.01439011429255e-06
+    n_fracs['Ti'] = 8.20622804366359e-08
+    n_fracs['V'] = 7.83688694089992e-09
+    n_fracs['Fe'] = 2.91167958499589e-05
+    n_fracs['Ni'] = 1.52807116806281e-06
+
+    return n_fracs
+
+
+def atomic_masses():
+    """
+    Function which returns the atomic masses.
+
+    Returns
+    -------
+    dict
+        Dictionary with the atomic masses.
+    """
+
+    masses = {}
+    masses['H'] = 1.
+    masses['He'] = 4.
+    masses['C'] = 12.
+    masses['N'] = 14.
+    masses['O'] = 16.
+    masses['Na'] = 23.
+    masses['Mg'] = 24.3
+    masses['Al'] = 27.
+    masses['Si'] = 28.
+    masses['P'] = 31.
+    masses['S'] = 32.
+    masses['Cl'] = 35.45
+    masses['K'] = 39.1
+    masses['Ca'] = 40.
+    masses['Ti'] = 47.9
+    masses['V'] = 51.
+    masses['Fe'] = 55.8
+    masses['Ni'] = 58.7
+
+    return masses
 
 
 def return_XFe(FeH, CO):
+
+    nfracs = solar_mixing_ratios()
+    masses = atomic_masses()
 
     nfracs_use = copy.copy(nfracs)
 
@@ -638,6 +678,9 @@ def return_XFe(FeH, CO):
 
 def return_XMgSiO3(FeH, CO):
 
+    nfracs = solar_mixing_ratios()
+    masses = atomic_masses()
+
     nfracs_use = copy.copy(nfracs)
 
     for spec in nfracs.keys():
@@ -647,12 +690,9 @@ def return_XMgSiO3(FeH, CO):
 
     nfracs_use['O'] = nfracs_use['C']/CO
 
-    nfracs_mgsio3 = np.min([nfracs_use['Mg'], \
-                            nfracs_use['Si'], \
-                            nfracs_use['O']/3.])
-    masses_mgsio3 = masses['Mg'] \
-      + masses['Si'] \
-      + 3. * masses['O']
+    nfracs_mgsio3 = np.min([nfracs_use['Mg'], nfracs_use['Si'], nfracs_use['O']/3.])
+
+    masses_mgsio3 = masses['Mg'] + masses['Si'] + 3. * masses['O']
       
     Xmgsio3 = masses_mgsio3*nfracs_mgsio3
     add = 0.
@@ -666,6 +706,9 @@ def return_XMgSiO3(FeH, CO):
 
 def return_XNa2S(FeH, CO):
 
+    nfracs = solar_mixing_ratios()
+    masses = atomic_masses()
+
     nfracs_use = copy.copy(nfracs)
 
     for spec in nfracs.keys():
@@ -675,10 +718,9 @@ def return_XNa2S(FeH, CO):
 
     nfracs_use['O'] = nfracs_use['C']/CO
 
-    nfracs_na2s = np.min([nfracs_use['Na']/2., \
-                            nfracs_use['S']])
-    masses_na2s = 2.*masses['Na'] \
-      + masses['S']
+    nfracs_na2s = np.min([nfracs_use['Na']/2., nfracs_use['S']])
+
+    masses_na2s = 2.*masses['Na'] + masses['S']
       
     Xna2s = masses_na2s*nfracs_na2s
     add = 0.
@@ -692,6 +734,9 @@ def return_XNa2S(FeH, CO):
 
 def return_XKCl(FeH, CO):
 
+    nfracs = solar_mixing_ratios()
+    masses = atomic_masses()
+
     nfracs_use = copy.copy(nfracs)
 
     for spec in nfracs.keys():
@@ -701,10 +746,9 @@ def return_XKCl(FeH, CO):
 
     nfracs_use['O'] = nfracs_use['C']/CO
 
-    nfracs_kcl = np.min([nfracs_use['K'], \
-                            nfracs_use['Cl']])
-    masses_kcl = masses['K'] \
-      + masses['Cl']
+    nfracs_kcl = np.min([nfracs_use['K'], nfracs_use['Cl']])
+
+    masses_kcl = masses['K'] + masses['Cl']
       
     Xkcl = masses_kcl*nfracs_kcl
     add = 0.
@@ -722,6 +766,8 @@ def return_XKCl(FeH, CO):
 
 def return_T_cond_Fe(FeH, CO, MMW = 2.33):
 
+    masses = atomic_masses()
+
     T = np.linspace(100.,10000.,1000)
     # Taken from Ackerman & Marley (2001)
     # including their erratum
@@ -733,6 +779,8 @@ def return_T_cond_Fe(FeH, CO, MMW = 2.33):
 
 
 def return_T_cond_Fe_l(FeH, CO, MMW = 2.33):
+
+    masses = atomic_masses()
 
     T = np.linspace(100.,10000.,1000)
     # Taken from Ackerman & Marley (2001)
@@ -758,6 +806,8 @@ def return_T_cond_Fe_comb(FeH, CO, MMW = 2.33):
 
 def return_T_cond_MgSiO3(FeH, CO, MMW = 2.33):
 
+    masses = atomic_masses()
+
     T = np.linspace(100.,10000.,1000)
     # Taken from Ackerman & Marley (2001)
     # including their erratum
@@ -772,6 +822,8 @@ def return_T_cond_MgSiO3(FeH, CO, MMW = 2.33):
 
 
 def return_T_cond_Na2S(FeH, CO, MMW = 2.33):
+
+    masses = atomic_masses()
 
     # Taken from Charnay+2018
     T = np.linspace(100.,10000.,1000)
@@ -791,6 +843,8 @@ def return_T_cond_Na2S(FeH, CO, MMW = 2.33):
 
 
 def return_T_cond_KCl(FeH, CO, MMW = 2.33):
+
+    masses = atomic_masses()
 
     # Taken from Charnay+2018
     T = np.linspace(100.,10000.,1000)
