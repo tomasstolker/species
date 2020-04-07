@@ -32,10 +32,10 @@ def plot_walkers(tag,
     ----------
     tag : str
         Database tag with the MCMC samples.
-    nsteps : int
-        Number of steps.
-    offset : tuple(float, float)
-        Offset of the x- and y-axis label.
+    nsteps : int, None
+        Number of steps that are plotted.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label. Not used if set to None.
     output : str
         Output filename.
 
