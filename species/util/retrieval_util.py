@@ -242,6 +242,7 @@ def calc_spectrum_clear(rt_object,
             if log_x_abund is None:
                 item_replace = item.replace('_all_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
+                item_replace = item_replace.replace('_burrows', '')
 
                 abundances[item] = abund_out[item_replace][::3]
 
@@ -256,6 +257,7 @@ def calc_spectrum_clear(rt_object,
             if log_x_abund is None:
                 item_replace = item.replace('_all_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
+                item_replace = item_replace.replace('_burrows', '')
 
                 abundances[item] = abund_out[item_replace]
 
