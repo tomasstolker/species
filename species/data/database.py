@@ -1532,28 +1532,28 @@ class Database:
 
         pressure, _ = nc.make_press_temp(temp_params)
 
-        logg_index = np.argwhere(parameters == 'logg')[0]
-        radius_index = np.argwhere(parameters == 'radius')[0]
+        logg_index = np.argwhere(parameters == 'logg')[0][0]
+        radius_index = np.argwhere(parameters == 'radius')[0][0]
 
         if chemistry == 'equilibrium':
-            feh_index = np.argwhere(parameters == 'feh')[0]
-            co_index = np.argwhere(parameters == 'co')[0]
+            feh_index = np.argwhere(parameters == 'feh')[0][0]
+            co_index = np.argwhere(parameters == 'co')[0][0]
 
         if quenching:
-            log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0]
+            log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0][0]
 
         if pt_profile == 'molliere':
-            tint_index = np.argwhere(parameters == 'tint')[0]
-            t1_index = np.argwhere(parameters == 't1')[0]
-            t2_index = np.argwhere(parameters == 't2')[0]
-            t3_index = np.argwhere(parameters == 't3')[0]
-            alpha_index = np.argwhere(parameters == 'alpha')[0]
-            log_delta_index = np.argwhere(parameters == 'log_delta')[0]
+            tint_index = np.argwhere(parameters == 'tint')[0][0]
+            t1_index = np.argwhere(parameters == 't1')[0][0]
+            t2_index = np.argwhere(parameters == 't2')[0][0]
+            t3_index = np.argwhere(parameters == 't3')[0][0]
+            alpha_index = np.argwhere(parameters == 'alpha')[0][0]
+            log_delta_index = np.argwhere(parameters == 'log_delta')[0][0]
 
         elif pt_profile in ['line', 'monotonic']:
             temp_index = []
             for i in range(15):
-                temp_index.append(np.argwhere(parameters == f't{i}')[0])
+                temp_index.append(np.argwhere(parameters == f't{i}')[0][0])
 
             knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
@@ -1584,51 +1584,36 @@ class Database:
 
             if pt_profile == 'molliere':
                 temp, _, _ = retrieval_util.pt_ret_model(
-                    np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
-                    10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-                    item[feh_index][0], item[co_index][0])
+                    np.array([item[t1_index], item[t2_index], item[t3_index]]),
+                    10.**item[log_delta_index], item[alpha_index], item[tint_index], pressure,
+                    item[feh_index], item[co_index])
 
             elif pt_profile in ['line', 'monotonic']:
                 knot_temp = []
                 for i in range(15):
-                    knot_temp.append(item[temp_index[i]][0])
+                    knot_temp.append(item[temp_index[i]])
 
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
             if quenching:
-                log_p_quench = item[log_p_quench_index][0]
+                log_p_quench = item[log_p_quench_index]
             else:
                 log_p_quench = -10.
 
             if chemistry == 'equilibrium':
                 wavelength, flux = retrieval_util.calc_spectrum_clear(
-                    rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
-                    item[feh_index][0], log_p_quench, None, half=True)
+                    rt_object, pressure, temp, item[logg_index], item[co_index],
+                    item[feh_index], log_p_quench, None, half=True)
 
             elif chemistry == 'free':
-                abund = {}
+                log_x_abund = {}
                 for ab_item in line_species:
-                    # if ab_item not in ['Na', 'K', 'Na_lor_cut', 'K_lor_cut']:
-                    ab_index = np.argwhere(parameters == ab_item)[0]
-                    abund[ab_item] = item[ab_index]
-
-                # solar abundances (Asplund+ 2009)
-                # na_solar = 1.60008694353205e-06
-                # k_solar = 9.86605611925677e-08
-
-                # if 'Na' and 'K' in line_species:
-                #     index = np.argwhere(parameters == 'alkali')[0]
-                #     abund['Na'] = np.log10(10.**item[index] * na_solar)
-                #     abund['K'] = np.log10(10.**item[index] * k_solar)
-                #
-                # elif 'Na_lor_cut' and 'K_lor_cut' in line_species:
-                #     index = np.argwhere(parameters == 'alkali')[0]
-                #     abund['Na_lor_cut'] = np.log10(10.**item[index] * na_solar)
-                #     abund['K_lor_cut'] = np.log10(10.**item[index] * k_solar)
+                    ab_index = np.argwhere(parameters == ab_item)[0][0]
+                    log_x_abund[ab_item] = item[ab_index]
 
                 wavelength, flux = retrieval_util.calc_spectrum_clear(
-                    rt_object, pressure, temp, item[logg_index][0],
-                    None, None, None, abund, half=True)
+                    rt_object, pressure, temp, item[logg_index],
+                    None, None, None, log_x_abund, half=True)
 
             flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
 

@@ -710,13 +710,10 @@ def atomic_masses():
 
     # molecules
     masses['H2'] = 2.
-    masses['He'] = 4.
     masses['H2O'] = 18.
     masses['CH4'] = 16.
     masses['CO2'] = 44.
     masses['CO'] = 28.
-    masses['Na'] = 23.
-    masses['K'] = 39.
     masses['NH3'] = 17.
     masses['HCN'] = 27.
     masses['C2H2,acetylene'] = 26.

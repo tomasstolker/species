@@ -47,6 +47,10 @@ def plot_pt_profile(tag,
     samples = box.samples
     median = box.median_sample
 
+    # indices = np.argwhere(samples[:, 0] > 4.5)
+    # indices = indices[:, 0]
+    # samples = samples[indices, ]
+
     indices = np.random.randint(samples.shape[0], size=random)
     samples = samples[indices, ]
 

@@ -104,9 +104,9 @@ def lnlike(param,
 
             model = readplanck.get_spectrum(paramdict, 100.)
 
-            flux_new = spectres.spectres(new_spec_wavs=spectrum[item][0][:, 0],
-                                         old_spec_wavs=model.wavelength,
-                                         spec_fluxes=model.flux,
+            flux_new = spectres.spectres(spectrum[item][0][:, 0],
+                                         model.wavelength,
+                                         model.flux,
                                          spec_errs=None)
 
             if spectrum[item][1] is not None:

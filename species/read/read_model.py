@@ -414,9 +414,9 @@ class ReadModel:
                                              spec_res=spec_res)
 
         if wavel_resample is not None:
-            flux = spectres.spectres(new_spec_wavs=wavel_resample,
-                                     old_spec_wavs=self.wl_points,
-                                     spec_fluxes=flux)
+            flux = spectres.spectres(wavel_resample,
+                                     self.wl_points,
+                                     flux)
 
         elif spec_res is not None:
             index = np.where(np.isnan(flux))[0]
@@ -440,9 +440,9 @@ class ReadModel:
                 try:
                     index_error = False
 
-                    flux = spectres.spectres(new_spec_wavs=wavel_resample[indices][i:-i],
-                                             old_spec_wavs=self.wl_points,
-                                             spec_fluxes=flux)
+                    flux = spectres.spectres(wavel_resample[indices][i:-i],
+                                             self.wl_points,
+                                             flux)
 
                 except ValueError:
                     index_error = True
@@ -472,9 +472,9 @@ class ReadModel:
             else:
                 new_spec_wavs = self.wl_points
 
-            flux_vega, _ = spectres.spectres(new_spec_wavs=new_spec_wavs,
-                                             old_spec_wavs=calibbox.wavelength,
-                                             spec_fluxes=calibbox.flux,
+            flux_vega, _ = spectres.spectres(new_spec_wavs,
+                                             calibbox.wavelength,
+                                             calibbox.flux,
                                              spec_errs=calibbox.error)
 
             flux = -2.5*np.log10(flux/flux_vega)

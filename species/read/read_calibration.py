@@ -86,9 +86,9 @@ class ReadCalibration:
             calibbox.flux = calibbox.flux[indices]
             calibbox.error = calibbox.error[indices]
 
-        flux_new, error_new = spectres.spectres(new_spec_wavs=wavel_points,
-                                                old_spec_wavs=calibbox.wavelength,
-                                                spec_fluxes=calibbox.flux,
+        flux_new, error_new = spectres.spectres(wavel_points,
+                                                calibbox.wavelength,
+                                                calibbox.flux,
                                                 spec_errs=calibbox.error)
 
         if model_param is not None:
@@ -214,9 +214,9 @@ class ReadCalibration:
 
             while value_error:
                 try:
-                    flux_new, error_new = spectres.spectres(new_spec_wavs=wavelength_new,
-                                                            old_spec_wavs=wavelength,
-                                                            spec_fluxes=flux,
+                    flux_new, error_new = spectres.spectres(wavelength_new,
+                                                            wavelength,
+                                                            flux,
                                                             spec_errs=error)
 
                     value_error = False
