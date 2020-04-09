@@ -829,7 +829,7 @@ class AtmosphericRetrieval:
                                                       spec_res)
 
                 # resample to the observation
-                flux_rebinned = rebin_give_widthA(wlen_micron,
+                flux_rebinned = rebin_give_width(wlen_micron,
                                                  flux_smooth,
                                                  data_wavel,
                                                  data_wavel_bins)
