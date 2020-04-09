@@ -178,21 +178,25 @@ class FitSpectrum:
                 self.bounds['scaling'+str(i)] = (0., 1e2)
 
         with Pool(processes=cpu_count()):
-            sampler = emcee.EnsembleSampler(nwalkers,
-                                            ndim,
-                                            lnprob,
-                                            args=([self.bounds,
-                                                   self.modelpar,
-                                                   self.objphot,
-                                                   self.specphot,
-                                                   bands]))
+            ens_sampler = emcee.EnsembleSampler(nwalkers,
+                                                ndim,
+                                                lnprob,
+                                                args=([self.bounds,
+                                                       self.modelpar,
+                                                       self.objphot,
+                                                       self.specphot,
+                                                       bands]))
 
-            sampler.run_mcmc(initial, nsteps, progress=True)
+            ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
         species_db = database.Database()
 
-        species_db.add_samples(sampler=sampler,
+        species_db.add_samples(sampler='emcee',
+                               samples=ens_sampler.chain,
+                               ln_prob=ens_sampler.lnprobability,
+                               mean_accept=np.mean(ens_sampler.acceptance_fraction),
                                spectrum=('calibration', self.spectrum),
                                tag=tag,
                                modelpar=self.modelpar,
-                               distance=None)
+                               distance=None,
+                               spec_labels=None)

@@ -100,8 +100,8 @@ def get_data():
             'PDS 70 b': {'distance': (113.43, 0.52),
                          'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (17.94, 0.24),  # Keppler et al. 2018
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (17.95, 0.17),  # Keppler et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.49, 0.41),  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.54, 0.52),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.78, 0.31),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.23, 0.32),  # Stolker et al. in prep.
                                      'Paranal/NACO.Lp': (14.08, 0.33),  # Stolker et al. in prep.
                                      'Paranal/NACO.NB405': (13.91, 0.34),  # Stolker et al. in prep.
                                      'Paranal/NACO.Mp': (13.64, 0.22)}},  # Stolker et al. in prep.

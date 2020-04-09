@@ -208,9 +208,7 @@ def get_residuals(datatype,
 
                 model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-                flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                                             old_spec_wavs=model.wavelength,
-                                             spec_fluxes=model.flux)
+                flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
 
             else:
                 if spectrum == 'petitradtrans':
@@ -226,9 +224,7 @@ def get_residuals(datatype,
                     #
                     # # separate resampling to the new wavelength points
                     #
-                    # flux_new = spectres.spectres(new_spec_wavs=wl_new,
-                    #                              old_spec_wavs=model.wavelength,
-                    #                              spec_fluxes=model.flux)
+                    # flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
 
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
