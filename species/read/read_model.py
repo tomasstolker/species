@@ -491,15 +491,22 @@ class ReadModel:
 
         if wavelength.shape[0] == 0:
             raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
-                             f'interpolated at {model_param} because NaNs are stored in the '
+                             f'interpolated at {model_param} because zeros are stored in the '
                              f'database.')
 
-        return box.create_box(boxtype='model',
-                              model=self.model,
-                              wavelength=wavelength,
-                              flux=flux[is_finite],
-                              parameters=model_param,
-                              quantity=quantity)
+        spec_box = box.create_box(boxtype='model',
+                                  model=self.model,
+                                  wavelength=wavelength,
+                                  flux=flux[is_finite],
+                                  parameters=model_param,
+                                  quantity=quantity)
+
+        if 'radius' in spec_box.parameters:
+            spec_box.parameters['luminosity'] = 4. * np.pi * (spec_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * spec_box.parameters['teff']**4. / \
+                constants.L_SUN  # (Lsun)
+
+        return spec_box
 
     def get_data(self,
                  model_param):
@@ -585,12 +592,19 @@ class ReadModel:
 
         h5_file.close()
 
-        return box.create_box(boxtype='model',
-                              model=self.model,
-                              wavelength=wl_points,
-                              flux=flux,
-                              parameters=model_param,
-                              quantity='flux')
+        spec_box = box.create_box(boxtype='model',
+                                  model=self.model,
+                                  wavelength=wl_points,
+                                  flux=flux,
+                                  parameters=model_param,
+                                  quantity='flux')
+
+        if 'radius' in spec_box.parameters:
+            spec_box.parameters['luminosity'] = 4. * np.pi * (spec_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * spec_box.parameters['teff']**4. / \
+                constants.L_SUN  # (Lsun)
+
+        return spec_box
 
     def get_flux(self,
                  model_param,

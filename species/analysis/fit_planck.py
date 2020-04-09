@@ -321,21 +321,25 @@ class FitPlanck:
                                                   size=nwalkers)
 
         with Pool(processes=cpu_count()):
-            sampler = emcee.EnsembleSampler(nwalkers,
-                                            ndim,
-                                            lnprob,
-                                            args=([self.bounds,
-                                                   self.objphot,
-                                                   self.synphot,
-                                                   self.distance[0],
-                                                   self.spectrum]))
+            ens_sampler = emcee.EnsembleSampler(nwalkers,
+                                                ndim,
+                                                lnprob,
+                                                args=([self.bounds,
+                                                       self.objphot,
+                                                       self.synphot,
+                                                       self.distance[0],
+                                                       self.spectrum]))
 
-            sampler.run_mcmc(initial, nsteps, progress=True)
+            ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
         species_db = database.Database()
 
-        species_db.add_samples(sampler=sampler,
+        species_db.add_samples(sampler='emcee',
+                               samples=ens_sampler.chain,
+                               ln_prob=ens_sampler.lnprobability,
+                               mean_accept=np.mean(ens_sampler.acceptance_fraction),
                                spectrum=('model', self.model),
                                tag=tag,
                                modelpar=self.modelpar,
-                               distance=self.distance[0])
+                               distance=self.distance[0],
+                               spec_labels=None)

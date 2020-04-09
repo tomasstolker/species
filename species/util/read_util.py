@@ -113,7 +113,7 @@ def update_spectra(objectbox,
 
             print(f'Scaling the flux of {key}: {scaling:.2f}...', end='', flush=True)
             spec_tmp[:, 1] *= model_param[f'scaling_{key}']
-            spec_tmp[:, 2] *= model_param[f'scaling_{key}']
+            # spec_tmp[:, 2] *= model_param[f'scaling_{key}']
             print(' [DONE]')
 
         if f'error_{key}' in model_param:

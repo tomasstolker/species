@@ -275,8 +275,8 @@ class Database:
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
         data_folder : str, None
-            Folder with input data. Only required for the Exo-REM and petitCODE hot models which
-            are not publicly available.
+            Folder with input data. Only required for the petitCODE hot models which are not
+            publicly available.
 
         Returns
         -------
@@ -284,7 +284,7 @@ class Database:
             None
         """
 
-        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem']
+        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy']
 
         if model in proprietary and data_folder is None:
             raise ValueError(f'The {model} model is not publicly available and needs to '
@@ -394,7 +394,6 @@ class Database:
         elif model == 'exo-rem':
             exo_rem.add_exo_rem(self.input_path,
                                 h5_file,
-                                data_folder,
                                 wavel_range,
                                 teff_range,
                                 spec_res)
@@ -828,6 +827,9 @@ class Database:
 
     def add_samples(self,
                     sampler,
+                    samples,
+                    ln_prob,
+                    mean_accept,
                     spectrum,
                     tag,
                     modelpar,
@@ -862,21 +864,23 @@ class Database:
         if 'results' not in h5_file:
             h5_file.create_group('results')
 
-        if 'results/mcmc' not in h5_file:
-            h5_file.create_group('results/mcmc')
+        if 'results/fit' not in h5_file:
+            h5_file.create_group('results/fit')
 
-        if f'results/mcmc/{tag}' in h5_file:
-            del h5_file[f'results/mcmc/{tag}']
+        if f'results/fit/{tag}' in h5_file:
+            del h5_file[f'results/fit/{tag}']
 
-        dset = h5_file.create_dataset(f'results/mcmc/{tag}/samples',
-                                      data=sampler.chain)
-
-        h5_file.create_dataset(f'results/mcmc/{tag}/probability',
-                               data=np.exp(sampler.lnprobability))
+        dset = h5_file.create_dataset(f'results/fit/{tag}/samples', data=samples)
+        h5_file.create_dataset(f'results/fit/{tag}/ln_prob', data=ln_prob)
 
         dset.attrs['type'] = str(spectrum[0])
         dset.attrs['spectrum'] = str(spectrum[1])
         dset.attrs['n_param'] = int(len(modelpar))
+        dset.attrs['sampler'] = str(sampler)
+
+        if mean_accept is not None:
+            dset.attrs['mean_accept'] = float(mean_accept)
+            print(f'Mean acceptance fraction: {mean_accept:.3f}')
 
         if distance:
             dset.attrs['distance'] = float(distance)
@@ -892,12 +896,8 @@ class Database:
 
         dset.attrs['n_scaling'] = int(count_scaling)
 
-        mean_accep = np.mean(sampler.acceptance_fraction)
-        dset.attrs['acceptance'] = float(mean_accep)
-        print(f'Mean acceptance fraction: {mean_accep:.3f}')
-
         try:
-            int_auto = emcee.autocorr.integrated_time(sampler.flatchain)
+            int_auto = emcee.autocorr.integrated_time(samples)
             print(f'Integrated autocorrelation time = {int_auto}')
 
         except emcee.autocorr.AutocorrError:
@@ -932,22 +932,30 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        dset = h5_file[f'results/fit/{tag}/samples']
 
         samples = np.asarray(dset)
-        samples = samples[:, burnin:, :]
-
-        probability = np.asarray(h5_file[f'results/mcmc/{tag}/probability'])
-        probability = probability[:, burnin:]
+        ln_prob = np.asarray(h5_file[f'results/fit/{tag}/ln_prob'])
 
         if 'n_param' in dset.attrs:
             n_param = dset.attrs['n_param']
         elif 'nparam' in dset.attrs:
             n_param = dset.attrs['nparam']
 
-        index_max = np.unravel_index(probability.argmax(), probability.shape)
+        if samples.ndim == 3:
+            if burnin > samples.shape[1]:
+                raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                                 f'({samples.shape[1]}) that are made by the walkers.')
 
-        # max_prob = probability[index_max]
+            samples = samples[:, burnin:, :]
+            ln_prob = ln_prob[:, burnin:]
+
+            samples = np.reshape(samples, (-1, n_param))
+            ln_prob = np.reshape(ln_prob,  -1)
+
+        index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
+
+        # max_prob = ln_prob[index_max]
         max_sample = samples[index_max]
 
         prob_sample = {}
@@ -985,7 +993,7 @@ class Database:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            dset = h5_file[f'results/mcmc/{tag}/samples']
+            dset = h5_file[f'results/fit/{tag}/samples']
 
             if 'n_param' in dset.attrs:
                 n_param = dset.attrs['n_param']
@@ -995,6 +1003,10 @@ class Database:
             samples = np.asarray(dset)
 
             if samples.ndim == 3:
+                if burnin > samples.shape[1]:
+                    raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                                     f'({samples.shape[1]}) that are made by the walkers.')
+
                 if burnin is not None:
                     samples = samples[:, burnin:, :]
 
@@ -1040,7 +1052,7 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        dset = h5_file[f'results/fit/{tag}/samples']
 
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
@@ -1080,11 +1092,21 @@ class Database:
             distance = None
 
         samples = np.asarray(dset)
-        samples = samples[:, burnin:, :]
 
-        ran_walker = np.random.randint(samples.shape[0], size=random)
-        ran_step = np.random.randint(samples.shape[1], size=random)
-        samples = samples[ran_walker, ran_step, :]
+        if samples.ndim == 2:
+            ran_index = np.random.randint(samples.shape[0], size=random)
+            samples = samples[ran_index, ]
+
+        elif samples.ndim == 3:
+            if burnin > samples.shape[1]:
+                raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                                 f'({samples.shape[1]}) that are made by the walkers.')
+
+            samples = samples[:, burnin:, :]
+
+            ran_walker = np.random.randint(samples.shape[0], size=random)
+            ran_step = np.random.randint(samples.shape[1], size=random)
+            samples = samples[ran_walker, ran_step, :]
 
         param = []
         for i in range(n_param):
@@ -1148,7 +1170,7 @@ class Database:
         """
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        dset = h5_file[f'results/fit/{tag}/samples']
 
         if 'n_param' in dset.attrs:
             n_param = dset.attrs['n_param']
@@ -1316,7 +1338,7 @@ class Database:
             burnin = 0
 
         h5_file = h5py.File(self.database, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        dset = h5_file[f'results/fit/{tag}/samples']
 
         spectrum = dset.attrs['spectrum']
 
@@ -1328,6 +1350,10 @@ class Database:
         samples = np.asarray(dset)
 
         if samples.ndim == 3:
+            if burnin > samples.shape[1]:
+                raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                                 f'({samples.shape[1]}) that are made by the walkers.')
+
             samples = samples[:, burnin:, :]
 
             if random:
@@ -1387,11 +1413,11 @@ class Database:
             if 'results' not in h5_file:
                 h5_file.create_group('results')
 
-            if 'results/mcmc' not in h5_file:
-                h5_file.create_group('results/mcmc')
+            if 'results/fit' not in h5_file:
+                h5_file.create_group('results/fit')
 
-            if f'results/mcmc/{tag}' in h5_file:
-                del h5_file[f'results/mcmc/{tag}']
+            if f'results/fit/{tag}' in h5_file:
+                del h5_file[f'results/fit/{tag}']
 
             # remove the column with the log-likelihood value
             samples = samples[:, :-1]
@@ -1400,7 +1426,7 @@ class Database:
                 raise ValueError('The number of parameters is not equal to the parameter size '
                                  'of the samples array.')
 
-            dset = h5_file.create_dataset(f'results/mcmc/{tag}/samples', data=samples)
+            dset = h5_file.create_dataset(f'results/fit/{tag}/samples', data=samples)
 
             dset.attrs['type'] = 'model'
             dset.attrs['spectrum'] = 'petitradtrans'
@@ -1474,7 +1500,7 @@ class Database:
         database_path = config['species']['database']
 
         h5_file = h5py.File(database_path, 'r')
-        dset = h5_file[f'results/mcmc/{tag}/samples']
+        dset = h5_file[f'results/fit/{tag}/samples']
 
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
@@ -1635,3 +1661,269 @@ class Database:
         h5_file.close()
 
         return boxes
+
+    # def add_retrieval(self,
+    #                   tag,
+    #                   output_name):
+    #     """
+    #     Parameters
+    #     ----------
+    #     tag : str
+    #         Database tag.
+    #     output_name : str
+    #         Output name that was used for the output files by MultiNest.
+    #
+    #     Returns
+    #     -------
+    #     NoneType
+    #         None
+    #     """
+    #
+    #     print('Storing samples in the database...', end='', flush=True)
+    #
+    #     with open(f'{output_name}_params.json') as json_file:
+    #         parameters = json.load(json_file)
+    #
+    #     with open(f'{output_name}_radtrans.json') as json_file:
+    #         radtrans = json.load(json_file)
+    #
+    #     samples = np.loadtxt(f'{output_name}_post_equal_weights.dat')
+    #
+    #     with h5py.File(self.database, 'a') as h5_file:
+    #
+    #         if 'results' not in h5_file:
+    #             h5_file.create_group('results')
+    #
+    #         if 'results/fit' not in h5_file:
+    #             h5_file.create_group('results/fit')
+    #
+    #         if f'results/fit/{tag}' in h5_file:
+    #             del h5_file[f'results/fit/{tag}']
+    #
+    #         # remove the column with the log-likelihood value
+    #         samples = samples[:, :-1]
+    #
+    #         if samples.shape[1] != len(parameters):
+    #             raise ValueError('The number of parameters is not equal to the parameter size '
+    #                              'of the samples array.')
+    #
+    #         dset = h5_file.create_dataset(f'results/fit/{tag}/samples', data=samples)
+    #
+    #         dset.attrs['type'] = 'model'
+    #         dset.attrs['spectrum'] = 'petitradtrans'
+    #         dset.attrs['n_param'] = len(parameters)
+    #         dset.attrs['distance'] = radtrans['distance']
+    #
+    #         count_scale = 0
+    #         count_error = 0
+    #
+    #         for i, item in enumerate(parameters):
+    #             dset.attrs[f'parameter{i}'] = item
+    #
+    #         for i, item in enumerate(parameters):
+    #             if item[0:6] == 'scaling_':
+    #                 dset.attrs[f'scaling{count_scale}'] = item
+    #                 count_scale += 1
+    #
+    #         for i, item in enumerate(parameters):
+    #             if item[0:6] == 'error_':
+    #                 dset.attrs[f'error{count_error}'] = item
+    #                 count_error += 1
+    #
+    #         dset.attrs['n_scaling'] = count_scale
+    #         dset.attrs['n_error'] = count_error
+    #
+    #         for i, item in enumerate(radtrans['line_species']):
+    #             dset.attrs[f'line_species{i}'] = item
+    #
+    #         for i, item in enumerate(radtrans['cloud_species']):
+    #             dset.attrs[f'cloud_species{i}'] = item
+    #
+    #         dset.attrs['n_line_species'] = len(radtrans['line_species'])
+    #         dset.attrs['n_cloud_species'] = len(radtrans['cloud_species'])
+    #
+    #         dset.attrs['scattering'] = radtrans['scattering']
+    #         dset.attrs['quenching'] = radtrans['quenching']
+    #         dset.attrs['pt_profile'] = radtrans['pt_profile']
+    #
+    #     print(' [DONE]')
+    #
+    # def get_retrieval_spectra(self,
+    #                           tag,
+    #                           random,
+    #                           wavel_range,
+    #                           spec_res=None):
+    #     """
+    #     Parameters
+    #     ----------
+    #     tag : str
+    #         Database tag with the MCMC samples.
+    #     random : int
+    #         Number of randomly selected samples.
+    #     wavel_range : tuple(float, float) or str
+    #         Wavelength range (um) or filter name.
+    #     spec_res : float
+    #         Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
+    #         is applied if set to None.
+    #
+    #     Returns
+    #     -------
+    #     list(species.core.box.ModelBox, )
+    #         Boxes with the randomly sampled spectra.
+    #     """
+    #
+    #     config_file = os.path.join(os.getcwd(), 'species_config.ini')
+    #
+    #     config = configparser.ConfigParser()
+    #     config.read_file(open(config_file))
+    #
+    #     database_path = config['species']['database']
+    #
+    #     h5_file = h5py.File(database_path, 'r')
+    #     dset = h5_file[f'results/fit/{tag}/samples']
+    #
+    #     spectrum_type = dset.attrs['type']
+    #     spectrum_name = dset.attrs['spectrum']
+    #
+    #     if 'n_param' in dset.attrs:
+    #         n_param = dset.attrs['n_param']
+    #     elif 'nparam' in dset.attrs:
+    #         n_param = dset.attrs['nparam']
+    #
+    #     n_line_species = dset.attrs['n_line_species']
+    #     n_cloud_species = dset.attrs['n_cloud_species']
+    #
+    #     scattering = dset.attrs['scattering']
+    #     quenching = dset.attrs['quenching']
+    #     pt_profile = dset.attrs['pt_profile']
+    #
+    #     if dset.attrs.__contains__('distance'):
+    #         distance = dset.attrs['distance']
+    #     else:
+    #         distance = None
+    #
+    #     samples = np.asarray(dset)
+    #
+    #     random_indices = np.random.randint(samples.shape[0], size=random)
+    #     samples = samples[random_indices, :]
+    #
+    #     parameters = []
+    #     for i in range(n_param):
+    #         parameters.append(dset.attrs[f'parameter{i}'])
+    #
+    #     parameters = np.asarray(parameters)
+    #
+    #     line_species = []
+    #     for i in range(n_line_species):
+    #         line_species.append(dset.attrs[f'line_species{i}'])
+    #
+    #     line_species = np.asarray(line_species)
+    #
+    #     cloud_species = []
+    #     for i in range(n_cloud_species):
+    #         cloud_species.append(dset.attrs[f'cloud_species{i}'])
+    #
+    #     cloud_species = np.asarray(cloud_species)
+    #
+    #     # create mock p-t profile
+    #
+    #     temp_params = {}
+    #     temp_params['log_delta'] = -6.
+    #     temp_params['log_gamma'] = 1.
+    #     temp_params['t_int'] = 750.
+    #     temp_params['t_equ'] = 0.
+    #     temp_params['log_p_trans'] = -3.
+    #     temp_params['alpha'] = 0.
+    #
+    #     pressure, _ = nc.make_press_temp(temp_params)
+    #
+    #     logg_index = np.argwhere(parameters == 'logg')[0]
+    #     radius_index = np.argwhere(parameters == 'radius')[0]
+    #     feh_index = np.argwhere(parameters == 'feh')[0]
+    #     co_index = np.argwhere(parameters == 'co')[0]
+    #
+    #     if quenching:
+    #         log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0]
+    #
+    #     if pt_profile == 'molliere':
+    #         tint_index = np.argwhere(parameters == 'tint')[0]
+    #         t1_index = np.argwhere(parameters == 't1')[0]
+    #         t2_index = np.argwhere(parameters == 't2')[0]
+    #         t3_index = np.argwhere(parameters == 't3')[0]
+    #         alpha_index = np.argwhere(parameters == 'alpha')[0]
+    #         log_delta_index = np.argwhere(parameters == 'log_delta')[0]
+    #
+    #     elif pt_profile == 'line':
+    #         temp_index = []
+    #         for i in range(15):
+    #             temp_index.append(np.argwhere(parameters == f't{i}')[0])
+    #
+    #         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+    #
+    #     if scattering:
+    #         rt_object = RadtransScatter(line_species=line_species,
+    #                                     rayleigh_species=['H2', 'He'],
+    #                                     cloud_species=cloud_species,
+    #                                     continuum_opacities=['H2-H2', 'H2-He'],
+    #                                     wlen_bords_micron=wavel_range,
+    #                                     mode='c-k',
+    #                                     test_ck_shuffle_comp=scattering,
+    #                                     do_scat_emis=scattering)
+    #
+    #     else:
+    #         rt_object = Radtrans(line_species=line_species,
+    #                              rayleigh_species=['H2', 'He'],
+    #                              cloud_species=cloud_species,
+    #                              continuum_opacities=['H2-H2', 'H2-He'],
+    #                              wlen_bords_micron=wavel_range,
+    #                              mode='c-k')
+    #
+    #     # create RT arrays of appropriate lengths by using every three pressure points
+    #     rt_object.setup_opa_structure(pressure[::3])
+    #
+    #     boxes = []
+    #
+    #     for i, item in tqdm.tqdm(enumerate(samples), desc='Getting MCMC spectra'):
+    #
+    #         if pt_profile == 'molliere':
+    #             temp, _, _ = retrieval_util.pt_ret_model(
+    #                 np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
+    #                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
+    #                 item[feh_index][0], item[co_index][0])
+    #
+    #         elif pt_profile == 'line':
+    #             knot_temp = []
+    #             for i in range(15):
+    #                 knot_temp.append(item[temp_index[i]][0])
+    #
+    #             temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+    #
+    #         if quenching:
+    #             log_p_quench = item[log_p_quench_index][0]
+    #         else:
+    #             log_p_quench = -10.
+    #
+    #         wavelength, flux = retrieval_util.calc_spectrum_clear(
+    #             rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
+    #             item[feh_index][0], log_p_quench, half=True)
+    #
+    #         flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
+    #
+    #         if spec_res is not None:
+    #             # convolve with a Gaussian line spread function
+    #             flux = retrieval_util.convolve(wavelength, flux, spec_res)
+    #
+    #         model_box = box.create_box(boxtype='model',
+    #                                    model='petitradtrans',
+    #                                    wavelength=wavelength,
+    #                                    flux=flux,
+    #                                    parameters=None,
+    #                                    quantity='flux')
+    #
+    #         model_box.type = 'mcmc'
+    #
+    #         boxes.append(model_box)
+    #
+    #     h5_file.close()
+    #
+    #     return boxes
