@@ -266,6 +266,13 @@ class AtmosphericRetrieval:
                 if bounds[item][1] is not None:
                     self.parameters.append(f'error_{item}')
 
+        # add the wavelength calibration parameters
+
+        for item in self.spectrum:
+            if item in bounds:
+                if bounds[item][2] is not None:
+                    self.parameters.append(f'wavelength_{item}')
+
         print(f'Fitting {len(self.parameters)} parameters:')
 
         for item in self.parameters:
@@ -381,8 +388,8 @@ class AtmosphericRetrieval:
                                         rayleigh_species=['H2', 'He'],
                                         cloud_species=self.cloud_species,
                                         continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=(0.95*min(self.wavel_min),
-                                                           1.05*max(self.wavel_max)),
+                                        wlen_bords_micron=(0.9*min(self.wavel_min),
+                                                           1.1*max(self.wavel_max)),
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
                                         do_scat_emis=self.scattering)
@@ -392,8 +399,8 @@ class AtmosphericRetrieval:
                                  rayleigh_species=['H2', 'He'],
                                  cloud_species=self.cloud_species,
                                  continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=(0.95*min(self.wavel_min),
-                                                    1.05*max(self.wavel_max)),
+                                 wlen_bords_micron=(0.9*min(self.wavel_min),
+                                                    1.1*max(self.wavel_max)),
                                  mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
@@ -622,6 +629,15 @@ class AtmosphericRetrieval:
                             (bounds[item][1][1]-bounds[item][1][0]) * \
                             cube[cube_index[f'error_{item}']]
 
+            # add wavelength calibration parameter if the boundaries are provided
+
+            for item in self.spectrum:
+                if item in bounds:
+                    if bounds[item][2] is not None:
+                        cube[cube_index[f'wavelength_{item}']] = bounds[item][2][0] + \
+                            (bounds[item][2][1]-bounds[item][2][0]) * \
+                            cube[cube_index[f'wavelength_{item}']]
+
         def loglike(cube, n_dim, n_param):
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
@@ -661,6 +677,16 @@ class AtmosphericRetrieval:
                     err_offset[item] = cube[cube_index[f'error_{item}']]
                 else:
                     err_offset[item] = -100.
+
+            # create dictionary with wavelength calibration parameters
+
+            wavel_cal = {}
+
+            for item in self.spectrum:
+                if item in bounds and bounds[item][2] is not None:
+                    wavel_cal[item] = cube[cube_index[f'wavelength_{item}']]
+                else:
+                    wavel_cal[item] = 0.
 
             # create a p-t profile
 
@@ -795,6 +821,10 @@ class AtmosphericRetrieval:
 
                 # fitted error component
                 err_fit = 10.**err_offset[key]
+
+                # shift the wavelengths of the data with the fitted calibration parameter
+                data_wavel += wavel_cal[key]
+                data_wavel_bins += wavel_cal[key]
 
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
