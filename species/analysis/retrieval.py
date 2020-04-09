@@ -388,8 +388,8 @@ class AtmosphericRetrieval:
                                         rayleigh_species=['H2', 'He'],
                                         cloud_species=self.cloud_species,
                                         continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=(0.9*min(self.wavel_min),
-                                                           1.1*max(self.wavel_max)),
+                                        wlen_bords_micron=(0.95*min(self.wavel_min),
+                                                           1.15*max(self.wavel_max)),
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
                                         do_scat_emis=self.scattering)
@@ -399,8 +399,8 @@ class AtmosphericRetrieval:
                                  rayleigh_species=['H2', 'He'],
                                  cloud_species=self.cloud_species,
                                  continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=(0.9*min(self.wavel_min),
-                                                    1.1*max(self.wavel_max)),
+                                 wlen_bords_micron=(0.95*min(self.wavel_min),
+                                                    1.15*max(self.wavel_max)),
                                  mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
@@ -806,7 +806,8 @@ class AtmosphericRetrieval:
 
             for key, value in self.spectrum.items():
                 # get spectrum
-                data_wavel = value[0][:, 0]
+                # shift the wavelengths of the data with the fitted calibration parameter
+                data_wavel = value[0][:, 0] + wavel_cal[key]
                 data_flux = value[0][:, 1]
                 data_error = value[0][:, 2]
 
@@ -822,16 +823,13 @@ class AtmosphericRetrieval:
                 # fitted error component
                 err_fit = 10.**err_offset[key]
 
-                # shift the wavelengths of the data with the fitted calibration parameter
-                data_wavel += wavel_cal[key]
-
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
                                                       flux_lambda,
                                                       spec_res)
 
                 # resample to the observation
-                flux_rebinned = rebin_give_width(wlen_micron,
+                flux_rebinned = rebin_give_widthA(wlen_micron,
                                                  flux_smooth,
                                                  data_wavel,
                                                  data_wavel_bins)
