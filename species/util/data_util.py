@@ -289,7 +289,7 @@ def add_missing(model,
         points = np.asarray(points)
         new_points = np.asarray(new_points)
 
-        test = griddata(points.T, values, new_points.T, method='nearest')
+        test = griddata(points.T, values, new_points.T, method='linear')
 
         for item in test:
             if np.isnan(item[0]):
