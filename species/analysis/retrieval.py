@@ -867,7 +867,7 @@ class AtmosphericRetrieval:
         pymultinest.run(loglike,
                         prior,
                         len(self.parameters),
-                        outputfiles_basename=self.output_folder,
+                        outputfiles_basename=os.path.join(self.output_folder, ''),
                         resume=resume,
                         verbose=True,
                         const_efficiency_mode=True,
