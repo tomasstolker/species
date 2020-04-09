@@ -388,8 +388,8 @@ class AtmosphericRetrieval:
                                         rayleigh_species=['H2', 'He'],
                                         cloud_species=self.cloud_species,
                                         continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=(min(self.wavel_min)-0.1,
-                                                           max(self.wavel_max)+0.1),
+                                        wlen_bords_micron=(0.9*min(self.wavel_min),
+                                                           1.1*max(self.wavel_max)),
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
                                         do_scat_emis=self.scattering)
@@ -399,8 +399,8 @@ class AtmosphericRetrieval:
                                  rayleigh_species=['H2', 'He'],
                                  cloud_species=self.cloud_species,
                                  continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=(min(self.wavel_min)-0.1,
-                                                    max(self.wavel_max)+0.1),
+                                 wlen_bords_micron=(0.9*min(self.wavel_min),
+                                                    1.1*max(self.wavel_max)),
                                  mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
@@ -824,7 +824,6 @@ class AtmosphericRetrieval:
 
                 # shift the wavelengths of the data with the fitted calibration parameter
                 data_wavel += wavel_cal[key]
-                data_wavel_bins += wavel_cal[key]
 
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
