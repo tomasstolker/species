@@ -220,6 +220,8 @@ def add_missing(model,
                 parameters,
                 database):
     """
+    Function for adding missing grid points by linearly interpolating the available grid points.
+
     Parameters
     ----------
     model : str
@@ -254,12 +256,102 @@ def add_missing(model,
 
     print('Fixing missing grid points:')
 
-    if len(parameters) == 4:
+    if len(parameters) == 2:
+        find_missing = np.zeros(grid_shape, dtype=bool)
+
+        values = []
+        points = [[], []]
+        new_points = [[], []]
+
+        new_flux = np.zeros((grid_shape[0], grid_shape[1], wavelength.shape[0]))
+
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                if np.count_nonzero(flux[i, j, ...]) == 0:
+                    find_missing[i, j] = True
+
+                else:
+                    points[0].append(param_data[0][i])
+                    points[1].append(param_data[1][j])
+
+                    values.append(flux[i, j, ...])
+
+                new_points[0].append(param_data[0][i])
+                new_points[1].append(param_data[1][j])
+
+                count_total += 1
+
+        values = np.asarray(values)
+        points = np.asarray(points)
+        new_points = np.asarray(new_points)
+
+        test = griddata(points.T, values, new_points.T, method='linear')
+
+        for item in test:
+            if np.isnan(item[0]):
+                count_missing += 1
+
+        count_interp = np.sum(find_missing) - count_missing
+
+        count = 0
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                new_flux[i, j, :] = test[count, :]
+                count += 1
+
+    elif len(parameters) == 3:
+        find_missing = np.zeros(grid_shape, dtype=bool)
+
+        values = []
+        points = [[], [], []]
+        new_points = [[], [], []]
+
+        new_flux = np.zeros((grid_shape[0], grid_shape[1], grid_shape[2],  wavelength.shape[0]))
+
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
+                    if np.count_nonzero(flux[i, j, k, ...]) == 0:
+                        find_missing[i, j, k] = True
+
+                    else:
+                        points[0].append(param_data[0][i])
+                        points[1].append(param_data[1][j])
+                        points[2].append(param_data[2][k])
+
+                        values.append(flux[i, j, k, ...])
+
+                    new_points[0].append(param_data[0][i])
+                    new_points[1].append(param_data[1][j])
+                    new_points[2].append(param_data[2][k])
+
+                    count_total += 1
+
+        values = np.asarray(values)
+        points = np.asarray(points)
+        new_points = np.asarray(new_points)
+
+        test = griddata(points.T, values, new_points.T, method='linear')
+
+        for item in test:
+            if np.isnan(item[0]):
+                count_missing += 1
+
+        count_interp = np.sum(find_missing) - count_missing
+
+        count = 0
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
+                    new_flux[i, j, k, :] = test[count, :]
+                    count += 1
+
+    elif len(parameters) == 4:
         find_missing = np.zeros(grid_shape, dtype=bool)
 
         values = []
         points = [[], [], [], []]
-        new_points = [[], [], [], []]        
+        new_points = [[], [], [], []]
 
         new_flux = np.zeros((grid_shape[0], grid_shape[1], grid_shape[2], grid_shape[3], wavelength.shape[0]))
 
@@ -304,6 +396,65 @@ def add_missing(model,
                     for m in range(grid_shape[3]):
                         new_flux[i, j, k, m, :] = test[count, :]
                         count += 1
+
+    elif len(parameters) == 5:
+        find_missing = np.zeros(grid_shape, dtype=bool)
+
+        values = []
+        points = [[], [], [], [], []]
+        new_points = [[], [], [], [], []]
+
+        new_flux = np.zeros((grid_shape[0], grid_shape[1], grid_shape[2], grid_shape[3], grid_shape[4], wavelength.shape[0]))
+
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
+                    for m in range(grid_shape[3]):
+                        for n in range(grid_shape[4]):
+                            if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0:
+                                find_missing[i, j, k, m, n] = True
+
+                            else:
+                                points[0].append(param_data[0][i])
+                                points[1].append(param_data[1][j])
+                                points[2].append(param_data[2][k])
+                                points[3].append(param_data[3][m])
+                                points[4].append(param_data[4][n])
+
+                                values.append(flux[i, j, k, m, n, ...])
+
+                            new_points[0].append(param_data[0][i])
+                            new_points[1].append(param_data[1][j])
+                            new_points[2].append(param_data[2][k])
+                            new_points[3].append(param_data[3][m])
+                            new_points[4].append(param_data[4][n])
+
+                            count_total += 1
+
+        values = np.asarray(values)
+        points = np.asarray(points)
+        new_points = np.asarray(new_points)
+
+        test = griddata(points.T, values, new_points.T, method='linear')
+
+        for item in test:
+            if np.isnan(item[0]):
+                count_missing += 1
+
+        count_interp = np.sum(find_missing) - count_missing
+
+        count = 0
+        for i in range(grid_shape[0]):
+            for j in range(grid_shape[1]):
+                for k in range(grid_shape[2]):
+                    for m in range(grid_shape[3]):
+                        for n in range(grid_shape[4]):
+                            new_flux[i, j, k, m, n, :] = test[count, :]
+                            count += 1
+
+    else:
+        raise ValueError('The add_missing function is currently not compatible with more than 5 '
+                         'parameters.')
 
     # if len(parameters) == 4:
     #     check_constant = np.zeros(grid_shape, dtype=bool)

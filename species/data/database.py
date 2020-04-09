@@ -275,8 +275,8 @@ class Database:
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
         data_folder : str, None
-            Folder with input data. Only required for the Exo-REM and petitCODE hot models which
-            are not publicly available.
+            Folder with input data. Only required for the petitCODE hot models which are not
+            publicly available.
 
         Returns
         -------
@@ -284,7 +284,7 @@ class Database:
             None
         """
 
-        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem']
+        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy']
 
         if model in proprietary and data_folder is None:
             raise ValueError(f'The {model} model is not publicly available and needs to '
@@ -394,7 +394,6 @@ class Database:
         elif model == 'exo-rem':
             exo_rem.add_exo_rem(self.input_path,
                                 h5_file,
-                                data_folder,
                                 wavel_range,
                                 teff_range,
                                 spec_res)
