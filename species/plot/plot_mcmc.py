@@ -114,10 +114,11 @@ def plot_posterior(tag,
                    offset=None,
                    title_fmt='.2f',
                    limits=None,
-                   max_posterior=False,
+                   max_prob=False,
+                   vmr=False,
                    output='posterior.pdf'):
     """
-    Function to plot the posterior distribution.
+    Function to plot the posterior distribution of the fitted parameters.
 
     Parameters
     ----------
@@ -133,8 +134,11 @@ def plot_posterior(tag,
         Format of the median and error values.
     limits : tuple(tuple(float, float), ), None
         Axis limits of all parameters. Automatically set if set to None.
-    max_posterior : bool
+    max_prob : bool
         Plot the position of the sample with the maximum posterior probability.
+    vmr : bool
+        Plot the volume mixing ratios (i.e. number fractions) instead of the mass fractions of the
+        retrieved species with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
     output : str
         Output filename.
 
@@ -146,28 +150,15 @@ def plot_posterior(tag,
 
     species_db = database.Database()
 
-    box = species_db.get_samples(tag, burnin=burnin)
-    samples = box.samples
+    samples_box = species_db.get_samples(tag, burnin=burnin)
+    samples = samples_box.samples
 
-    print(f'Median sample:')
-    for key, value in box.median_sample.items():
-        print(f'   - {key} = {value:.2f}')
-
-    if box.prob_sample is not None:
-        par_val = tuple(box.prob_sample.values())
-
-        print(f'Maximum posterior sample:')
-        for key, value in box.prob_sample.items():
-            print(f'   - {key} = {value:.2f}')
-
-    print(f'Plotting the posterior: {output}...', end='', flush=True)
-
-    if 'CO' or 'CO_all_iso' in box.parameters:
-        box.parameters.append('c_h_ratio')
-        box.parameters.append('o_h_ratio')
+    if 'CO' or 'CO_all_iso' in samples_box.parameters:
+        samples_box.parameters.append('c_h_ratio')
+        samples_box.parameters.append('o_h_ratio')
 
         abund_index = {}
-        for i, item in enumerate(box.parameters):
+        for i, item in enumerate(samples_box.parameters):
             if item == 'CO':
                 abund_index['CO'] = i
 
@@ -195,35 +186,96 @@ def plot_posterior(tag,
         for i, item in enumerate(samples):
             abund = {}
 
-            if 'CO' in box.parameters:
+            if 'CO' in samples_box.parameters:
                 abund['CO'] = item[abund_index['CO']]
 
-            if 'CO_all_iso' in box.parameters:
+            if 'CO_all_iso' in samples_box.parameters:
                 abund['CO_all_iso'] = item[abund_index['CO_all_iso']]
 
-            if 'CO2' in box.parameters:
+            if 'CO2' in samples_box.parameters:
                 abund['CO2'] = item[abund_index['CO2']]
 
-            if 'CH4' in box.parameters:
+            if 'CH4' in samples_box.parameters:
                 abund['CH4'] = item[abund_index['CH4']]
 
-            if 'H2O' in box.parameters:
+            if 'H2O' in samples_box.parameters:
                 abund['H2O'] = item[abund_index['H2O']]
 
-            if 'NH3' in box.parameters:
+            if 'NH3' in samples_box.parameters:
                 abund['NH3'] = item[abund_index['NH3']]
 
-            if 'H2S' in box.parameters:
+            if 'H2S' in samples_box.parameters:
                 abund['H2S'] = item[abund_index['H2S']]
 
             c_h_ratio[i], o_h_ratio[i] = retrieval_util.calc_metal_ratio(abund)
 
-    labels = plot_util.update_labels(box.parameters)
+    if vmr and samples_box.spectrum == 'petitradtrans':
+        print('Changing mass fractions to number fractions...', end='', flush=True)
 
-    ndim = len(box.parameters)
+        # get all available line species
+        line_species = retrieval_util.get_line_species()
+
+        # get the atommic and molecular masses
+        masses = retrieval_util.atomic_masses()
+
+        # creates array for the updated samples
+        updated_samples = np.zeros(samples.shape)
+
+        for i, samples_item in enumerate(samples_box.samples):
+            # initiate a dictionary for the log10 mass fraction of the metals
+            log_x_abund = {}
+
+            for param_item in samples_box.parameters:
+                if param_item in line_species:
+                    # get the index of the parameter
+                    param_index = samples_box.parameters.index(param_item)
+
+                    # store log10 mass fraction in the dictionary
+                    log_x_abund[param_item] = samples_item[param_index]
+
+            # create a dictionary with all mass fractions, including H2 and He
+            x_abund = retrieval_util.mass_fractions(log_x_abund)
+
+            # calculate the mean molecular weight from the input mass fractions
+            mmw = retrieval_util.mean_molecular_weight(x_abund)
+
+            for param_item in samples_box.parameters:
+                if param_item in line_species:
+                    # get the index of the parameter
+                    param_index = samples_box.parameters.index(param_item)
+
+                    # overwrite the sample with the log10 number fraction
+                    samples_item[param_index] = np.log10(10.**samples_item[param_index] * mmw/masses[param_item])
+
+            # store the updated sample to the array
+            updated_samples[i, ] = samples_item
+
+        # overwrite the samples in the SamplesBox
+        samples_box.samples = updated_samples
+
+        print(' [DONE]')
+
+    print(f'Median sample:')
+    for key, value in samples_box.median_sample.items():
+        print(f'   - {key} = {value:.2f}')
+
+    if samples_box.prob_sample is not None:
+        par_val = tuple(samples_box.prob_sample.values())
+
+        print(f'Maximum posterior sample:')
+        for key, value in samples_box.prob_sample.items():
+            print(f'   - {key} = {value:.2f}')
+
+    print(f'Plotting the posterior: {output}...', end='', flush=True)
+
+    labels = plot_util.update_labels(samples_box.parameters)
+
+    ndim = len(samples_box.parameters)
 
     samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
-    samples = samples.reshape((-1, ndim))
+
+    if samples.ndim == 3:
+        samples = samples.reshape((-1, ndim))
 
     fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],
                         label_kwargs={'fontsize': 13}, show_titles=True,
@@ -262,11 +314,11 @@ def plot_posterior(tag,
                 if limits is not None:
                     ax.set_xlim(limits[j])
 
-                if max_posterior:
+                if max_prob:
                     ax.axvline(par_val[j], color='tomato')
 
                 if i > j:
-                    if max_posterior:
+                    if max_prob:
                         ax.axhline(par_val[i], color='tomato')
                         ax.plot(par_val[j], par_val[i], 's', color='tomato')
 

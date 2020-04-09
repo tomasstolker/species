@@ -195,7 +195,7 @@ class AtmosphericRetrieval:
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere' or 'line').
+            The parametrization for the pressure-temperature profile ('molliere' or 'free').
 
         Returns
         -------
@@ -218,7 +218,7 @@ class AtmosphericRetrieval:
             self.parameters.append('alpha')
             self.parameters.append('log_delta')
 
-        elif pt_profile == 'line':
+        elif pt_profile == 'free':
             for i in range(15):
                 self.parameters.append(f't{i}')
 
@@ -294,7 +294,7 @@ class AtmosphericRetrieval:
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere', 'line', or
+            The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
         live_points : int
             Number of live points.
@@ -390,7 +390,7 @@ class AtmosphericRetrieval:
 
         rt_object.setup_opa_structure(self.pressure[::3])
 
-        if pt_profile in ['line', 'monotonic']:
+        if pt_profile in ['free', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
 
         def prior(cube, n_dim, n_param):
@@ -474,7 +474,7 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['log_delta']] = log_delta
 
-            elif pt_profile == 'line':
+            elif pt_profile == 'free':
                 # 15 temperature (K) knots
                 for i in range(15):
                     # default: 0 - 8000 K
@@ -662,7 +662,7 @@ class AtmosphericRetrieval:
                                                          cube[cube_index['feh']],
                                                          cube[cube_index['co']])
 
-            elif pt_profile in ['line', 'monotonic']:
+            elif pt_profile in ['free', 'monotonic']:
                 knot_temp = []
                 for i in range(15):
                     knot_temp.append(cube[cube_index[f't{i}']])
@@ -671,7 +671,7 @@ class AtmosphericRetrieval:
 
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
-                if pt_profile == 'line':
+                if pt_profile == 'free':
                     knot_temp = np.asarray(knot_temp)
 
                     temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)

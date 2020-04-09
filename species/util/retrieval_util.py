@@ -10,6 +10,20 @@ from petitRADTRANS_ck_test_speed import nat_cst as nc
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
 
+def get_line_species():
+    """
+    Function to get the list of the molecular and atomic line species.
+
+    Returns
+    -------
+    list
+        List with the line species.
+    """
+
+    return ['CH4', 'CO', 'CO_all_iso', 'CO2', 'H2O', 'H2S', 'HCN', 'K', 'K_lor_cut', 'K_burrows', 'NH3',
+            'Na', 'Na_lor_cut', 'Na_burrows', 'OH', 'PH3', 'TiO', 'VO', 'FeH']
+
+
 def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     """
     Self-luminous retrieval P-T model.
@@ -697,6 +711,8 @@ def atomic_masses():
     masses['N'] = 14.
     masses['O'] = 16.
     masses['Na'] = 23.
+    masses['Na_lor_cur'] = 23.
+    masses['Na_burrows'] = 23.
     masses['Mg'] = 24.3
     masses['Al'] = 27.
     masses['Si'] = 28.
@@ -704,6 +720,8 @@ def atomic_masses():
     masses['S'] = 32.
     masses['Cl'] = 35.45
     masses['K'] = 39.1
+    masses['K_lor_cut'] = 39.1
+    masses['K_burrows'] = 39.1
     masses['Ca'] = 40.
     masses['Ti'] = 47.9
     masses['V'] = 51.
