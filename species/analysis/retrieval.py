@@ -38,7 +38,7 @@ class AtmosphericRetrieval:
                  line_species,
                  cloud_species,
                  scattering,
-                 output_name):
+                 output_folder):
         """
         Parameters
         ----------
@@ -50,8 +50,8 @@ class AtmosphericRetrieval:
             List with the cloud species. No clouds are used if an empty list is provided.
         scattering : bool
             Include scattering in the radiative transfer.
-        output_name : str
-            Output name that is used for the output files from MultiNest.
+        output_folder : str
+            Folder name that is used for the output files from MultiNest.
 
         Returns
         -------
@@ -65,7 +65,7 @@ class AtmosphericRetrieval:
         self.line_species = line_species
         self.cloud_species = cloud_species
         self.scattering = scattering
-        self.output_name = output_name
+        self.output_folder = output_folder
 
         # get object data
 
@@ -277,12 +277,22 @@ class AtmosphericRetrieval:
                       quenching=True,
                       pt_profile='molliere',
                       live_points=2000,
-                      efficiency=0.05,
                       resume=False,
                       plotting=False):
         """
-        Function to sample the posterior distribution with MultiNest. See also
-        https://github.com/farhanferoz/MultiNest.
+        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
+        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
+        has to to be build manually. See the ``PyMultiNest`` documentation for details:
+        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
+        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
+        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
+        set before importing the ``species`` package, for example:
+
+        .. code-block:: python
+
+            >>> import os
+            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
+            >>> import species
 
         Parameters
         ----------
@@ -298,8 +308,6 @@ class AtmosphericRetrieval:
             'monotonic').
         live_points : int
             Number of live points.
-        efficiency : float
-            Sampling efficiency.
         resume : bool
             Resume from a previous run.
         plotting : bool
@@ -310,6 +318,11 @@ class AtmosphericRetrieval:
         NoneType
             None
         """
+
+        # create the output folder if required
+
+        if not os.path.exists(self.output_folder):
+            os.mkdir(self.output_folder)
 
         # set initial number of parameters (not including the flux scaling and error offeset)
 
@@ -824,14 +837,16 @@ class AtmosphericRetrieval:
 
         # store the model parameters in a JSON file
 
-        print(f'Storing the model parameters: {self.output_name}_params.json')
+        json_filename = os.path.join(self.output_folder, 'params.json')
+        print(f'Storing the model parameters: {json_filename}')
 
-        with open(f'{self.output_name}_params.json', 'w') as json_file:
+        with open(json_filename, 'w') as json_file:
             json.dump(self.parameters, json_file)
 
         # store the Radtrans arguments in a JSON file
 
-        print(f'Storing the Radtrans arguments: {self.output_name}_radtrans.json')
+        radtrans_filename = os.path.join(self.output_folder, 'radtrans.json')
+        print(f'Storing the Radtrans arguments: {radtrans_filename}')
 
         radtrans_dict = {}
         radtrans_dict['line_species'] = self.line_species
@@ -842,7 +857,7 @@ class AtmosphericRetrieval:
         radtrans_dict['quenching'] = quenching
         radtrans_dict['pt_profile'] = pt_profile
 
-        with open(f'{self.output_name}_radtrans.json', 'w', encoding='utf-8') as json_file:
+        with open(radtrans_filename, 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
         # run the nested sampling with MultiNest
@@ -852,10 +867,10 @@ class AtmosphericRetrieval:
         pymultinest.run(loglike,
                         prior,
                         len(self.parameters),
-                        outputfiles_basename=f'{self.output_name}_',
+                        outputfiles_basename=self.output_folder,
                         resume=resume,
                         verbose=True,
                         const_efficiency_mode=True,
-                        sampling_efficiency=efficiency,
+                        sampling_efficiency=0.05,
                         n_live_points=live_points,
                         evidence_tolerance=0.5)
