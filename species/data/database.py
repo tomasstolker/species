@@ -204,8 +204,9 @@ class Database:
         else:
             wavelength, transmission = filters.download_filter(filter_name)
 
-        h5_file.create_dataset(f'filters/{filter_name}',
-                               data=np.vstack((wavelength, transmission)))
+        if wavelength and transmission is not None:
+            h5_file.create_dataset(f'filters/{filter_name}',
+                                   data=np.vstack((wavelength, transmission)))
 
         h5_file.close()
 
@@ -480,7 +481,7 @@ class Database:
                     flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0],
                                                                         app_mag[item][1])
 
-                except ValueError:
+                except KeyError:
                     warnings.warn(f'Filter \'{item}\' is not available on the SVO Filter Profile '
                                   f'Service so a flux calibration can not be done. Please add the '
                                   f'filter manually with the \'add_filter\' function. For now, '
