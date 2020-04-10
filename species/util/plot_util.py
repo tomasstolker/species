@@ -123,18 +123,18 @@ def update_labels(param):
 
     if 'logg' in param:
         index = param.index('logg')
-        param[index] = r'$\log\,g$ (dex)'
+        param[index] = r'$\log\,g$'
 
-    if 'feh' in param:
-        index = param.index('feh')
-        param[index] = r'[Fe/H] (dex)'
+    if 'metallicity' in param:
+        index = param.index('metallicity')
+        param[index] = r'[Fe/H]'
 
     if 'fsed' in param:
         index = param.index('fsed')
         param[index] = r'f$_\mathregular{sed}$'
 
-    if 'co' in param:
-        index = param.index('co')
+    if 'c_o_ratio' in param:
+        index = param.index('c_o_ratio')
         param[index] = r'C/O'
 
     if 'radius' in param:
@@ -160,11 +160,11 @@ def update_labels(param):
 
     if 'log_delta' in param:
         index = param.index('log_delta')
-        param[index] = r'$\log\,\delta$ (dex)'
+        param[index] = r'$\log\,\delta$'
 
     if 'log_p_quench' in param:
         index = param.index('log_p_quench')
-        param[index] = r'$\log\,P_\mathregular{quench}$ (dex)'
+        param[index] = r'$\log\,P_\mathregular{quench}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
@@ -173,17 +173,16 @@ def update_labels(param):
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
 
-    if 'alkali' in param:
-        index = param.index('alkali')
-        param[index] = r'[Na/K] (dex)'
+        elif item[0:11] == 'wavelength_':
+            param[i] = rf'$c_\mathregular{{{item[11:]}}}$ (nm)'
 
     if 'c_h_ratio' in param:
         index = param.index('c_h_ratio')
-        param[index] = r'[C/H] (dex)'
+        param[index] = r'[C/H]'
 
     if 'o_h_ratio' in param:
         index = param.index('o_h_ratio')
-        param[index] = r'[O/H] (dex)'
+        param[index] = r'[O/H]'
 
     return param
 
@@ -249,12 +248,12 @@ def quantity_unit(param,
 
     if 'logg' in param:
         quantity.append('logg')
-        unit.append('dex')
+        unit.append('')
         label.append(r'$\log\,g$')
 
-    if 'feh' in param:
-        quantity.append('feh')
-        unit.append('dex')
+    if 'metallicity' in param:
+        quantity.append('metallicity')
+        unit.append('')
         label.append(r'[Fe/H]')
 
     if 'fsed' in param:
@@ -262,8 +261,8 @@ def quantity_unit(param,
         unit.append(None)
         label.append(r'f$_\mathregular{sed}$')
 
-    if 'co' in param:
-        quantity.append('co')
+    if 'c_o_ratio' in param:
+        quantity.append('c_o_ratio')
         unit.append(None)
         label.append(r'C/O')
 

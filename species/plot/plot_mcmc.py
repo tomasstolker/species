@@ -153,7 +153,7 @@ def plot_posterior(tag,
     samples_box = species_db.get_samples(tag, burnin=burnin)
     samples = samples_box.samples
 
-    if 'CO' or 'CO_all_iso' in samples_box.parameters:
+    if 'H2O' in samples_box.parameters:
         samples_box.parameters.append('c_h_ratio')
         samples_box.parameters.append('o_h_ratio')
 
@@ -209,7 +209,7 @@ def plot_posterior(tag,
 
             c_h_ratio[i], o_h_ratio[i] = retrieval_util.calc_metal_ratio(abund)
 
-    if vmr and samples_box.spectrum == 'petitradtrans':
+    if vmr and samples_box.spectrum == 'petitradtrans' and 'metallicity' not in samples_box.parameters:
         print('Changing mass fractions to number fractions...', end='', flush=True)
 
         # get all available line species
@@ -266,13 +266,21 @@ def plot_posterior(tag,
         for key, value in samples_box.prob_sample.items():
             print(f'   - {key} = {value:.2f}')
 
+    for item in samples_box.parameters:
+        if item[0:11] == 'wavelength_':
+            param_index = samples_box.parameters.index(item)
+
+            # (um) -> (nm)
+            samples_box.samples[:, param_index] *= 1e3
+
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
     labels = plot_util.update_labels(samples_box.parameters)
 
     ndim = len(samples_box.parameters)
 
-    samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
+    if 'H2O' in samples_box.parameters:
+        samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
 
     if samples.ndim == 3:
         samples = samples.reshape((-1, ndim))

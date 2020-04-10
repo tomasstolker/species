@@ -218,22 +218,18 @@ class AtmosphericRetrieval:
             self.parameters.append('alpha')
             self.parameters.append('log_delta')
 
-        elif pt_profile == 'free':
+        elif pt_profile in ['free', 'monotonic']:
             for i in range(15):
                 self.parameters.append(f't{i}')
 
             self.parameters.append('gamma_r')
 
-        elif pt_profile == 'monotonic':
-            for i in range(15):
-                self.parameters.append(f't{i}')
-
         # abundance parameters
 
         if chemistry == 'equilibrium':
 
-            self.parameters.append('feh')
-            self.parameters.append('co')
+            self.parameters.append('metallicity')
+            self.parameters.append('c_o_ratio')
 
         elif chemistry == 'free':
 
@@ -500,11 +496,6 @@ class AtmosphericRetrieval:
                     # default: 0 - 8000 K
                     cube[cube_index[f't{i}']] = 8000.*cube[cube_index[f't{i}']]
 
-                # penalization of wiggles in the P-T profile
-                # inverse Gamma: a=1, b=5e-5
-                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
-                cube[cube_index['gamma_r']] = gamma_r
-
             elif pt_profile == 'monotonic':
                 # 15 temperature (K) knots
                 cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
@@ -512,24 +503,30 @@ class AtmosphericRetrieval:
                 for i in range(13, -1, -1):
                     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * (1.-cube[cube_index[f't{i}']])
 
+            if pt_profile in ['free', 'monotonic']:
+                # penalization of wiggles in the P-T profile
+                # inverse Gamma: a=1, b=5e-5
+                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                cube[cube_index['gamma_r']] = gamma_r
+
             if chemistry == 'equilibrium':
                 # metallicity (dex) for the nabla_ad interpolation
-                if 'feh' in bounds:
-                    feh = bounds['feh'][0] + (bounds['feh'][1]-bounds['feh'][0])*cube[cube_index['feh']]
+                if 'metallicity' in bounds:
+                    metallicity = bounds['metallicity'][0] + (bounds['metallicity'][1]-bounds['metallicity'][0])*cube[cube_index['metallicity']]
                 else:
                     # default: -1.5 - 1.5 dex
-                    feh = -1.5 + 3.*cube[cube_index['feh']]
+                    metallicity = -1.5 + 3.*cube[cube_index['metallicity']]
 
-                cube[cube_index['feh']] = feh
+                cube[cube_index['metallicity']] = metallicity
 
                 # carbon-to-oxygen ratio for the nabla_ad interpolation
-                if 'co' in bounds:
-                    co_ratio = bounds['co'][0] + (bounds['co'][1]-bounds['co'][0])*cube[cube_index['co']]
+                if 'c_o_ratio' in bounds:
+                    c_o_ratio = bounds['c_o_ratio'][0] + (bounds['c_o_ratio'][1]-bounds['c_o_ratio'][0])*cube[cube_index['c_o_ratio']]
                 else:
                     # default: 0.1 - 1.6
-                    co_ratio = 0.1 + 1.5*cube[cube_index['co']]
+                    c_o_ratio = 0.1 + 1.5*cube[cube_index['c_o_ratio']]
 
-                cube[cube_index['co']] = co_ratio
+                cube[cube_index['c_o_ratio']] = c_o_ratio
 
             elif chemistry == 'free':
                 # log10 abundances of the line species
@@ -698,8 +695,8 @@ class AtmosphericRetrieval:
                                                          cube[cube_index['alpha']],
                                                          cube[cube_index['tint']],
                                                          self.pressure,
-                                                         cube[cube_index['feh']],
-                                                         cube[cube_index['co']])
+                                                         cube[cube_index['metallicity']],
+                                                         cube[cube_index['c_o_ratio']])
 
             elif pt_profile in ['free', 'monotonic']:
                 knot_temp = []
@@ -710,13 +707,12 @@ class AtmosphericRetrieval:
 
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
-                if pt_profile == 'free':
-                    knot_temp = np.asarray(knot_temp)
+                knot_temp = np.asarray(knot_temp)
 
-                    temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
+                temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
 
-                    log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
-                        0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+                log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                    0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
             # return zero probability if the minimum temperature is negative
 
@@ -735,21 +731,21 @@ class AtmosphericRetrieval:
                 # cloudy atmosphere
 
                 # mass fraction of Fe
-                x_fe = retrieval_util.return_XFe(cube[cube_index['feh']], cube[cube_index['co']])
+                x_fe = retrieval_util.return_XFe(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
 
                 # logarithm of the cloud base mass fraction of Fe
                 log_x_base_fe = np.log10(1e1**cube[cube_index['fe_fraction']]*x_fe)
 
                 # mass fraction of MgSiO3
-                x_mgsio3 = retrieval_util.return_XMgSiO3(cube[cube_index['feh']], cube[cube_index['co']])
+                x_mgsio3 = retrieval_util.return_XMgSiO3(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
 
                 # logarithm of the cloud base mass fraction of MgSiO3
                 log_x_base_mgsio3 = np.log10(1e1**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
 
                 # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
                 wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(
-                    rt_object, self.pressure, temp, cube[cube_index['co']], cube[cube_index['feh']], log_p_quench,
-                    log_x_base_fe, log_x_base_mgsio3, cube[cube_index['fsed']], cube[cube_index['feh']], cube[cube_index['kzz']],
+                    rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
+                    log_x_base_fe, log_x_base_mgsio3, cube[cube_index['fsed']], cube[cube_index['metallicity']], cube[cube_index['kzz']],
                     cube[cube_index['logg']], cube[cube_index['sigma_lnorm']], half=True, plotting=plotting)
 
             else:
@@ -758,7 +754,7 @@ class AtmosphericRetrieval:
                 if chemistry == 'equilibrium':
                     wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
-                        cube[cube_index['co']], cube[cube_index['feh']], log_p_quench,
+                        cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
                         None, half=True)
 
                 elif chemistry == 'free':

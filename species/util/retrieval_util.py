@@ -205,8 +205,8 @@ def calc_spectrum_clear(rt_object,
                         press,
                         temp,
                         logg,
-                        co,
-                        feh,
+                        c_o_ratio,
+                        metallicity,
                         log_p_quench,
                         log_x_abund=None,
                         half=False):
@@ -215,11 +215,15 @@ def calc_spectrum_clear(rt_object,
         # chemical equilibrium
 
         # create arrays for constant values of C/O and Fe/H
-        co_list = np.full(press.shape, co)
-        feh_list = np.full(press.shape, feh)
+        c_o_ratio_list = np.full(press.shape, c_o_ratio)
+        metallicity_list = np.full(press.shape, metallicity)
 
         # interpolate the abundances, following chemical equilibrium
-        abund_out = interpol_abundances(co_list, feh_list, temp, press, Pquench_carbon=10.**log_p_quench)
+        abund_out = interpol_abundances(c_o_ratio_list,
+                                        metallicity_list,
+                                        temp,
+                                        press,
+                                        Pquench_carbon=10.**log_p_quench)
 
         # extract the mean molecular weight
         mmw = abund_out['MMW']

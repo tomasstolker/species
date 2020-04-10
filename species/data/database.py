@@ -1383,14 +1383,14 @@ class Database:
 
     def add_retrieval(self,
                       tag,
-                      output_name):
+                      output_folder):
         """
         Parameters
         ----------
         tag : str
             Database tag.
-        output_name : str
-            Output name that was used for the output files by MultiNest.
+        output_folder : str
+            Output folder that was used for the output files by MultiNest.
 
         Returns
         -------
@@ -1400,13 +1400,17 @@ class Database:
 
         print('Storing samples in the database...', end='', flush=True)
 
-        with open(f'{output_name}_params.json') as json_file:
+        json_filename = os.path.join(output_folder, 'params.json')
+
+        with open(json_filename) as json_file:
             parameters = json.load(json_file)
 
-        with open(f'{output_name}_radtrans.json') as json_file:
+        radtrans_filename = os.path.join(output_folder, 'radtrans.json')
+
+        with open(radtrans_filename) as json_file:
             radtrans = json.load(json_file)
 
-        samples = np.loadtxt(f'{output_name}_post_equal_weights.dat')
+        samples = np.loadtxt(os.path.join(output_folder, 'post_equal_weights.dat'))
 
         with h5py.File(self.database, 'a') as h5_file:
 
@@ -1562,8 +1566,8 @@ class Database:
         radius_index = np.argwhere(parameters == 'radius')[0][0]
 
         if chemistry == 'equilibrium':
-            feh_index = np.argwhere(parameters == 'feh')[0][0]
-            co_index = np.argwhere(parameters == 'co')[0][0]
+            metallicity_index = np.argwhere(parameters == 'metallicity')[0][0]
+            c_o_ratio_index = np.argwhere(parameters == 'c_o_ratio')[0][0]
 
         if quenching:
             log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0][0]
@@ -1612,7 +1616,7 @@ class Database:
                 temp, _, _ = retrieval_util.pt_ret_model(
                     np.array([item[t1_index], item[t2_index], item[t3_index]]),
                     10.**item[log_delta_index], item[alpha_index], item[tint_index], pressure,
-                    item[feh_index], item[co_index])
+                    item[metallicity_index], item[c_o_ratio_index])
 
             elif pt_profile in ['free', 'monotonic']:
                 knot_temp = []
@@ -1628,8 +1632,8 @@ class Database:
 
             if chemistry == 'equilibrium':
                 wavelength, flux = retrieval_util.calc_spectrum_clear(
-                    rt_object, pressure, temp, item[logg_index], item[co_index],
-                    item[feh_index], log_p_quench, None, half=True)
+                    rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
+                    item[metallicity_index], log_p_quench, None, half=True)
 
             elif chemistry == 'free':
                 log_x_abund = {}
