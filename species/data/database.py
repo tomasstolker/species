@@ -664,10 +664,15 @@ class Database:
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
                                            data=np.linalg.inv(read_cov[key]))
 
-                print(f'      - {key}: {value[2]:.2f}')
-
                 dset = h5_file[f'objects/{object_name}/spectrum/{key}']
-                dset.attrs['specres'] = value[2]
+
+                if value[2] is None:
+                    print(f'      - {key}: None')
+                    dset.attrs['specres'] = 0.
+
+                else:
+                    print(f'      - {key}: {value[2]:.2f}')
+                    dset.attrs['specres'] = value[2]
 
         h5_file.close()
 
