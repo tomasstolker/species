@@ -204,7 +204,7 @@ class Database:
         else:
             wavelength, transmission = filters.download_filter(filter_name)
 
-        if wavelength and transmission is not None:
+        if wavelength is not None and transmission is not None:
             h5_file.create_dataset(f'filters/{filter_name}',
                                    data=np.vstack((wavelength, transmission)))
 
