@@ -195,7 +195,8 @@ class AtmosphericRetrieval:
         quenching : bool
             Fitting a quenching pressure.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere' or 'free').
+            The parametrization for the pressure-temperature profile ('molliere', 'free', or
+            'monotonic').
 
         Returns
         -------
