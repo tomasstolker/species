@@ -42,25 +42,26 @@ def add_spex(input_path, database):
     url_all = 'http://svo2.cab.inta-csic.es/vocats/v2/spex/' \
               'cs.php?RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2'
 
-    xml_file = os.path.join(data_path, 'spex.xml')
+    xml_file_spex = os.path.join(data_path, 'spex.xml')
 
-    urllib.request.urlretrieve(url_all, xml_file)
+    if not os.path.isfile(xml_file_spex):
+        urllib.request.urlretrieve(url_all, xml_file_spex)
 
-    table = parse_single_table(xml_file)
+    table = parse_single_table(xml_file_spex)
     # name = table.array['name']
     twomass = table.array['name2m']
     url = table.array['access_url']
-
-    os.remove(xml_file)
 
     unique_id = []
 
     for i, item in enumerate(url):
         if twomass[i] not in unique_id:
-            xml_file = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
-            urllib.request.urlretrieve(item.decode('utf-8'), xml_file)
+            xml_file_1 = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
 
-            table = parse_single_table(xml_file)
+            if not os.path.isfile(xml_file_1):
+                urllib.request.urlretrieve(item.decode('utf-8'), xml_file_1)
+
+            table = parse_single_table(xml_file_1)
             name = table.array['ID']
             name = name[0].decode('utf-8')
             url = table.array['access_url']
@@ -68,10 +69,10 @@ def add_spex(input_path, database):
             print_message = f'Downloading SpeX Prism Spectral Library... {name}'
             print(f'\r{print_message:<72}', end='')
 
-            os.remove(xml_file)
+            xml_file_2 = os.path.join(data_path, f'spex_{name}.xml')
 
-            xml_file = os.path.join(data_path, name+'.xml')
-            urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file)
+            if not os.path.isfile(xml_file_2):
+                urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file_2)
 
             unique_id.append(twomass[i])
 
@@ -87,12 +88,12 @@ def add_spex(input_path, database):
     h_zp = 1.133e-9  # (W m-2 um-1)
 
     for votable in os.listdir(data_path):
-        if votable.endswith('.xml'):
+        if votable.startswith('spex_') and votable.endswith('.xml'):
             xml_file = os.path.join(data_path, votable)
 
             table = parse_single_table(xml_file)
 
-            wavelength = table.array['wavelength']  # [Angstrom]
+            wavelength = table.array['wavelength']  # (Angstrom)
             flux = table.array['flux']  # Normalized units
 
             wavelength = np.array(wavelength*1e-4)  # (um)
@@ -159,7 +160,7 @@ def add_spex(input_path, database):
                 print_message = f'Adding SpeX Prism Spectral Library... {name}'
                 print(f'\r{print_message:<72}', end='')
 
-                dset = database.create_dataset('spectra/spex/'+name, data=spdata)
+                dset = database.create_dataset(f'spectra/spex/{name}', data=spdata)
 
                 dset.attrs['name'] = str(name).encode()
                 dset.attrs['sptype'] = str(sptype).encode()

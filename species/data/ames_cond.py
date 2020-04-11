@@ -168,7 +168,12 @@ def add_ames_cond(input_path,
                 logg.append(logg_val)
 
                 try:
-                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
+                    flux.append(spectres.spectres(wavelength,
+                                                  data[:, 0],
+                                                  data[:, 1],
+                                                  fill=0.,
+                                                  verbose=False))
+
                 except ValueError:
                     flux.append(np.zeros(wavelength.shape[0]))
 

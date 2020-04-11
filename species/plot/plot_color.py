@@ -354,7 +354,7 @@ def plot_color_magnitude(boxes,
                           'color': 'black',
                           'mfc': 'white',
                           'mec': 'black',
-                          'label': 'Directly imaged'}
+                          'label': 'Direct imaging'}
 
             ax1.errorbar(x_color, abs_mag, yerr=abs_err, xerr=colorerr, zorder=3, **kwargs)
 
@@ -735,7 +735,7 @@ def plot_color_color(boxes,
                           'color': 'black',
                           'mfc': 'white',
                           'mec': 'black',
-                          'label': 'Directly imaged'}
+                          'label': 'Direct imaging'}
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, zorder=3, **kwargs)
 

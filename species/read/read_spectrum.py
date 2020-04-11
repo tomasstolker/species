@@ -150,7 +150,7 @@ class ReadSpectrum:
                 if 'distance' in attrs:
                     list_distance.append((data.attrs['distance'], data.attrs['distance_error']))
                 else:
-                    list_distance.append(np.nan)
+                    list_distance.append((np.nan, np.nan))
 
             else:
                 list_wavelength.append(np.array([]))
@@ -159,7 +159,7 @@ class ReadSpectrum:
                 list_name.append('')
                 list_simbad.append('')
                 list_sptype.append('None')
-                list_distance.append(np.nan)
+                list_distance.append((np.nan, np.nan))
 
         specbox = box.SpectrumBox()
 
@@ -277,26 +277,25 @@ class ReadSpectrum:
         abs_mag = []
 
         for i in range(n_spectra):
-            try:
+
+            if np.isnan(specbox.distance[i][0]):
+                app_tmp = (np.nan, np.nan)
+                abs_tmp = (np.nan, np.nan)
+
+            else:
                 app_tmp, abs_tmp = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength[i],
                                                                  flux=specbox.flux[i],
                                                                  error=specbox.error[i],
                                                                  distance=specbox.distance[i])
-            except ValueError:
-                app_tmp = (np.nan, np.nan)
-                abs_tmp = (np.nan, np.nan)
 
             app_mag.append(app_tmp)
             abs_mag.append(abs_tmp)
-
-        app_mag = np.asarray(app_mag)
-        abs_mag = np.asarray(abs_mag)
 
         return box.create_box(boxtype='photometry',
                               name=specbox.name,
                               sptype=specbox.sptype,
                               wavelength=wavelengths,
                               flux=None,
-                              app_mag=app_mag,
-                              abs_mag=abs_mag,
+                              app_mag=np.asarray(app_mag),
+                              abs_mag=np.asarray(abs_mag),
                               filter_name=filters)

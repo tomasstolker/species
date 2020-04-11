@@ -138,8 +138,13 @@ def add_ames_dusty(input_path,
                 logg.append(logg_val)
 
                 try:
-                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
-                except ValueError:
+                    flux.append(spectres.spectres(wavelength,
+                                                  data[:, 0],
+                                                  data[:, 1],
+                                                  fill=0.,
+                                                  verbose=False))
+
+                except (ValueError, IndexError):
                     flux.append(np.zeros(wavelength.shape[0]))
 
                     warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'

@@ -300,7 +300,7 @@ class Database:
                              'resample the original spectra on a fixed wavelength grid.')
 
         if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
-            warnings.warn('The temperature range is not restricted with the \'teff_range\''
+            warnings.warn('The temperature range is not restricted with the \'teff_range\' '
                           'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
                           'will be very slow.')
 
