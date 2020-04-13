@@ -1,12 +1,12 @@
 """
-Text
+Module for adding the SpeX Prism Spectral Libraries to the database.
 """
 
 import os
-import warnings
 import urllib.request
 
 import numpy as np
+import pandas as pd
 
 from astropy.io.votable import parse_single_table
 
@@ -31,6 +31,20 @@ def add_spex(input_path, database):
     NoneType
         None
     """
+
+    distance_url = 'https://people.phys.ethz.ch/~stolkert/species/distance.dat'
+    distance_file = os.path.join(input_path, 'distance.dat')
+
+    if not os.path.isfile(distance_file):
+        urllib.request.urlretrieve(distance_url, distance_file)
+
+    distance_data = pd.pandas.read_csv(distance_file,
+                                       usecols=[0, 3, 4],
+                                       names=['object', 'distance', 'distance_error'],
+                                       delimiter=',',
+                                       dtype={'object': str,
+                                              'distance': float,
+                                              'distance_error': float})
 
     database.create_group('spectra/spex')
 
@@ -97,8 +111,8 @@ def add_spex(input_path, database):
             flux = table.array['flux']  # Normalized units
 
             wavelength = np.array(wavelength*1e-4)  # (um)
-            flux = np.array(flux)
-            error = np.full(flux.shape[0], np.nan)
+            flux = np.array(flux)  # (a.u.)
+            error = np.full(flux.size, np.nan)
 
             # 2MASS magnitudes
             j_mag = table.get_field_by_id('jmag').value
@@ -151,10 +165,21 @@ def add_spex(input_path, database):
 
             spdata = np.vstack([wavelength, flux, error])
 
-            simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')  # (pc)
+            # simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')
+            simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
 
-            # simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
-            # simbad_id = simbad_id.decode('utf-8')
+            if simbad_id is not None:
+                simbad_id = simbad_id.decode('utf-8')
+
+                dist_select = distance_data.loc[distance_data['object'] == simbad_id]
+
+                if not dist_select.empty:
+                    distance = (dist_select['distance'], dist_select['distance_error'])
+                else:
+                    distance = (np.nan, np.nan)
+
+            else:
+                distance = (np.nan, np.nan)
 
             if sptype[0] in ['M', 'L', 'T'] and len(sptype) == 2:
                 print_message = f'Adding SpeX Prism Spectral Library... {name}'

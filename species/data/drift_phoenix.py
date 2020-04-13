@@ -45,7 +45,7 @@ def add_drift_phoenix(input_path,
     data_file = os.path.join(input_path, 'drift-phoenix.tgz')
     data_folder = os.path.join(input_path, 'drift-phoenix/')
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/drift-phoenix.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/drift-phoenix.tgz'
 
     if not os.path.isfile(data_file):
         print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='', flush=True)

@@ -49,10 +49,10 @@ def add_exo_rem(input_path,
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    input_file = 'exorem.tgz'
+    input_file = 'exo-rem.tgz'
     label = '(160 MB)'
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/exorem.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/exo-rem.tgz'
 
     data_file = os.path.join(data_folder, input_file)
 

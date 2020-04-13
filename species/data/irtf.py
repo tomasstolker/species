@@ -1,5 +1,5 @@
 """
-Module for adding IRTF spectra tot the database.
+Module for adding the IRTF Spectral Library to the database.
 """
 
 import os
@@ -7,6 +7,7 @@ import tarfile
 import urllib.request
 
 import numpy as np
+import pandas as pd
 
 from astropy.io import fits
 
@@ -17,7 +18,7 @@ def add_irtf(input_path,
              database,
              sptypes):
     """
-    Function to add the IRTF Spectral Library to the database.
+    Function for adding the IRTF Spectral Library to the database.
 
     Parameters
     ----------
@@ -33,6 +34,20 @@ def add_irtf(input_path,
     NoneType
         None
     """
+
+    distance_url = 'https://people.phys.ethz.ch/~stolkert/species/distance.dat'
+    distance_file = os.path.join(input_path, 'distance.dat')
+
+    if not os.path.isfile(distance_file):
+        urllib.request.urlretrieve(distance_url, distance_file)
+
+    distance_data = pd.pandas.read_csv(distance_file,
+                                       usecols=[0, 3, 4],
+                                       names=['object', 'distance', 'distance_error'],
+                                       delimiter=',',
+                                       dtype={'object': str,
+                                              'distance': float,
+                                              'distance_error': float})
 
     datadir = os.path.join(input_path, 'irtf')
 
@@ -109,7 +124,20 @@ def add_irtf(input_path,
                         print_message = f'Adding IRTF Spectral Library... {name}'
                         print(f'\r{print_message:<70}', end='')
 
-                        simbad_id, distance = query_util.get_distance(name)  # (pc)
+                        simbad_id = query_util.get_simbad(name)
+
+                        if simbad_id is not None:
+                            simbad_id = simbad_id.decode('utf-8')
+
+                            dist_select = distance_data.loc[distance_data['object'] == simbad_id]
+
+                            if not dist_select.empty:
+                                distance = (dist_select['distance'], dist_select['distance_error'])
+                            else:
+                                simbad_id, distance = query_util.get_distance(name)
+
+                        else:
+                            distance = (np.nan, np.nan)
 
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 
