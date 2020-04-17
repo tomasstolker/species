@@ -1,5 +1,6 @@
-nbsphinx
-pandoc
-jupyter
-emcee
-h5py
+nbsphinx ~= 0.6
+pandoc ~= 1.0
+jupyter ~= 1.0
+emcee ~= 3.0
+h5py ~= 2.10
+tqdm ~= 4.45
