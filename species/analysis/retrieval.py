@@ -329,13 +329,6 @@ class AtmosphericRetrieval:
         if not os.path.exists(self.output_folder):
             os.mkdir(self.output_folder)
 
-        # set initial number of parameters (not including the flux scaling and error offeset)
-
-        if len(self.cloud_species) == 0:
-            n_param = 11
-        else:
-            n_param = 16
-
         # create list with parameters for MultiNest
 
         if quenching and chemistry != 'equilibrium':
