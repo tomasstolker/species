@@ -209,7 +209,8 @@ def calc_spectrum_clear(rt_object,
                         metallicity,
                         log_p_quench,
                         log_x_abund=None,
-                        half=False):
+                        half=False,
+                        contribution=False):
 
     if log_x_abund is None:
         # chemical equilibrium
@@ -292,13 +293,19 @@ def calc_spectrum_clear(rt_object,
         abundances['FeH'] = abundances['FeH']/2.
 
     # calculate the emission spectrum
-    rt_object.calc_flux(temp, abundances, 10.**logg, mmw)
+    rt_object.calc_flux(temp, abundances, 10.**logg, mmw, contribution=contribution)
 
     # convert frequency (Hz) to wavelength (cm)
     wlen = nc.c/rt_object.freq
 
-    # return wavelength (micron) and flux (W m-2 um-1)
-    return 1e4*wlen, 1e-7*rt_object.flux*nc.c/wlen**2.
+    # optionally return the emission contribution
+    if contribution:
+        contribution = rt_object.contr_em
+    else:
+        contribution = None
+
+    # return wavelength (micron), flux (W m-2 um-1), and emission contribution
+    return 1e4*wlen, 1e-7*rt_object.flux*nc.c/wlen**2., contribution
 
 
 def calc_spectrum_clouds(rt_object,

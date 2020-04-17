@@ -6,7 +6,13 @@ Mollière et al. 2019 for details about the retrieval code.
 import os
 import configparser
 
+from typing import List, Tuple, Optional
+
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+from typeguard import typechecked
 
 from petitRADTRANS import Radtrans
 from petitRADTRANS_ck_test_speed import nat_cst as nc
@@ -22,19 +28,20 @@ class ReadRadtrans:
     Class for reading a model spectrum from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 line_species=['H2O', 'CO', 'CH4'],
-                 cloud_species=[],
-                 scattering=False,
-                 wavel_range=None,
-                 filter_name=None):
+                 line_species: Optional[List[str]] = None,
+                 cloud_species: Optional[List[str]] = None,
+                 scattering: bool = False,
+                 wavel_range: Optional[Tuple[float, float]] = None,
+                 filter_name: Optional[str] = None) -> None:
         """
         Parameters
         ----------
-        line_species : list
-            List with the line species.
-        cloud_species : list
-            List with the cloud species. No clouds are used if an empty list is provided.
+        line_species : list, None
+            List with the line species. No line species are used if set to None.
+        cloud_species : list, None
+            List with the cloud species. No clouds are used if set to None
         scattering : bool
             Include scattering in the radiative transfer.
         wavel_range : tuple(float, float), None
@@ -67,6 +74,12 @@ class ReadRadtrans:
         config.read_file(open(config_file))
 
         self.database = config['species']['database']
+
+        if line_species is None:
+            line_species = []
+
+        if cloud_species is None:
+            cloud_species = []
 
         # create mock p-t profile
 
@@ -103,10 +116,12 @@ class ReadRadtrans:
         # create RT arrays of appropriate lengths by using every three pressure points
         self.rt_object.setup_opa_structure(self.pressure[::3])
 
+    @typechecked
     def get_model(self,
-                  model_param,
-                  spec_res=None,
-                  wavel_resample=None):
+                  model_param: dict,
+                  spec_res: Optional[float] = None,
+                  wavel_resample: Optional[np.ndarray] = None,
+                  plot_contribution: Optional[str] = None) -> box.ModelBox:
         """
         Function for extracting a model spectrum by linearly interpolating the model grid. The
         parameters values should lie within the boundaries of the grid points that are stored
@@ -125,6 +140,9 @@ class ReadRadtrans:
         wavel_resample : numpy.ndarray
             Wavelength points (um) to which the spectrum is resampled. Only used if
             ``spec_res`` is set to None.
+        plot_contribution : str, None
+            Filename for the plot of the emission contribution function. The plot is not created if
+            set to None.
 
         Returns
         -------
@@ -135,6 +153,11 @@ class ReadRadtrans:
         if spec_res is not None and wavel_resample is not None:
             raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
                              'simultaneously. Please set one of them to None.')
+
+        if plot_contribution:
+            contribution = True
+        else:
+            contribution = False
 
         if 'tint' in model_param:
             temp, _, _ = retrieval_util.pt_ret_model(
@@ -161,18 +184,19 @@ class ReadRadtrans:
 
         else:
             if 'c_o_ratio' in model_param and 'metallicity' in model_param:
-                wavelength, flux = retrieval_util.calc_spectrum_clear(
-                    self.rt_object, self.pressure, temp, model_param['logg'], model_param['c_o_ratio'],
-                    model_param['metallicity'], log_p_quench, None, half=True)
+                wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
+                    self.rt_object, self.pressure, temp, model_param['logg'],
+                    model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
+                    None, half=True, contribution=contribution)
 
             else:
                 abund = {}
                 for ab_item in self.rt_object.line_species:
                     abund[ab_item] = model_param[ab_item]
 
-                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                     self.rt_object, self.pressure, temp, model_param['logg'], None,
-                    None, None, abund, half=True)
+                    None, None, abund, half=True, contribution=contribution)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param)
@@ -186,6 +210,47 @@ class ReadRadtrans:
         if spec_res is not None:
             # convolve with Gaussian LSF
             flux = retrieval_util.convolve(wavelength, flux, spec_res)
+
+        if plot_contribution is not None:
+            mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+            mpl.rcParams['font.family'] = 'serif'
+
+            plt.rc('axes', edgecolor='black', linewidth=2.5)
+
+            plt.figure(1, figsize=(8., 4.))
+            gridsp = mpl.gridspec.GridSpec(1, 1)
+            gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+
+            ax = plt.subplot(gridsp[0, 0])
+
+            ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                           direction='in', width=1, length=5, labelsize=12, top=True,
+                           bottom=True, left=True, right=True)
+
+            ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                           direction='in', width=1, length=3, labelsize=12, top=True,
+                           bottom=True, left=True, right=True)
+
+            ax.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
+            ax.set_ylabel('Pressure (bar)', fontsize=13)
+
+            ax.get_xaxis().set_label_coords(0.5, -0.09)
+            ax.get_yaxis().set_label_coords(-0.07, 0.5)
+
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+
+            self.pressure = self.pressure[::3]
+
+            xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure)
+            ax.contourf(xx_grid, yy_grid, emission_contr, 30, cmap=plt.cm.bone_r)
+
+            ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
+            ax.set_ylim(np.amax(self.pressure), np.amin(self.pressure))
+
+            plt.savefig(plot_contribution, bbox_inches='tight')
+            plt.clf()
+            plt.close()
 
         return box.create_box(boxtype='model',
                               model='petitradtrans',

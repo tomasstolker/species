@@ -1631,7 +1631,7 @@ class Database:
                 log_p_quench = -10.
 
             if chemistry == 'equilibrium':
-                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
                     rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
                     item[metallicity_index], log_p_quench, None, half=True)
 
@@ -1641,7 +1641,7 @@ class Database:
                     ab_index = np.argwhere(parameters == ab_item)[0][0]
                     log_x_abund[ab_item] = item[ab_index]
 
-                wavelength, flux = retrieval_util.calc_spectrum_clear(
+                wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
                     rt_object, pressure, temp, item[logg_index],
                     None, None, None, log_x_abund, half=True)
 
@@ -1907,7 +1907,7 @@ class Database:
     #         else:
     #             log_p_quench = -10.
     #
-    #         wavelength, flux = retrieval_util.calc_spectrum_clear(
+    #         wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
     #             rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
     #             item[feh_index][0], log_p_quench, half=True)
     #
