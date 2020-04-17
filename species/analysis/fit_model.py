@@ -14,7 +14,7 @@ import numpy as np
 try:
     import pymultinest
 except:
-    pass
+    warnings.warn('PyMultiNest could not be imported.')
 
 from species.core import constants
 from species.data import database
