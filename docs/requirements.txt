@@ -1,6 +1,16 @@
 nbsphinx ~= 0.6
 pandoc ~= 1.0
 jupyter ~= 1.0
+
+astropy ~= 4.0
+astroquery ~= 0.4
+corner ~= 2.0
 emcee ~= 3.0
 h5py ~= 2.10
+matplotlib ~= 3.2
+numpy ~= 1.18
+pandas ~= 0.25
+scipy ~= 1.4
+spectres ~= 2.1
 tqdm ~= 4.45
+xlrd ~= 1.2
