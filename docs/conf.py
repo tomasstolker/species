@@ -17,7 +17,6 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'species'
@@ -29,10 +28,6 @@ with open('../species/__init__.py') as initfile:
     for line in initfile:
         if '__version__' in line:
             version = line.split("'")[1]
-
-# The full version, including alpha/beta/rc tags
-release = version
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -176,7 +171,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'species', 'species Documentation',
-     author, 'species', 'Toolkit for spectral and photometric analysis of planetary and substellar atmospheres',
+     author, 'species', 'Toolkit for atmospheric characterization of exoplanets and brown dwarf',
      'Miscellaneous'),
 ]
 
