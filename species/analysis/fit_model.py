@@ -9,8 +9,12 @@ import warnings
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import pymultinest
 import numpy as np
+
+try:
+    import pymultinest
+except:
+    pass
 
 from species.core import constants
 from species.data import database
