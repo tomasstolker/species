@@ -537,7 +537,8 @@ class AtmosphericRetrieval:
                         # add the log10 of the mass fraction to the abundace dictionary
                         log_x_abund[item] = cube[cube_index[item]]
 
-                if any(['Na', 'Na_lor_cut', 'Na_burrows']) in self.line_species:
+                if 'Na' in self.line_species or 'Na_lor_cut' in self.line_species or \
+                        'Na_burrows' in self.line_species:
                     log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund)
 
                 if 'K' in self.line_species:
