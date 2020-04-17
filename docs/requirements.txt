@@ -2,3 +2,4 @@ nbsphinx
 pandoc
 jupyter
 emcee
+h5py
