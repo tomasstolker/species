@@ -9,7 +9,7 @@ import warnings
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import pymultinest
+# import pymultinest
 import numpy as np
 
 from species.core import constants
@@ -435,188 +435,188 @@ class FitModel:
                                distance=self.distance[0],
                                spec_labels=spec_labels)
 
-    def run_multinest(self,
-                      tag,
-                      n_live_points=4000,
-                      output='multinest/'):
-        """
-        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
-        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
-        has to to be build manually. See the ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
-        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
-        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
-        set before importing the ``species`` package, for example:
-
-        .. code-block:: python
-
-            >>> import os
-            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
-            >>> import species
-
-        Parameters
-        ----------
-        tag : str
-            Database tag where the samples will be stored.
-        n_live_points : int
-            Number of live points.
-        output : str
-            Path that is used for the output files from MultiNest.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        print('Running nested sampling...')
-
-        # create the output folder if required
-
-        if not os.path.exists(output):
-            os.mkdir(output)
-
-        # create a dictionary with the cube indices of the parameters
-
-        cube_index = {}
-        for i, item in enumerate(self.modelpar):
-            cube_index[item] = i
-
-        def lnprior_multinest(cube, n_dim, n_param):
-            """
-            Function to transform the unit cube into the parameter cube. It is not clear how to
-            pass additional arguments to the function, therefore it is placed here.
-
-            Parameters
-            ----------
-            cube : pymultinest.run.LP_c_double
-                Unit cube.
-
-            Returns
-            -------
-            NoneType
-                None
-            """
-
-            # Effective temperature (K)
-            cube[cube_index['teff']] = self.bounds['teff'][0] + \
-                (self.bounds['teff'][1]-self.bounds['teff'][0])*cube[cube_index['teff']]
-
-            # Surface gravity (dex)
-            cube[cube_index['logg']] = self.bounds['logg'][0] + \
-                (self.bounds['logg'][1]-self.bounds['logg'][0])*cube[cube_index['logg']]
-
-            # Radius (Rjup)
-            cube[cube_index['radius']] = self.bounds['radius'][0] + \
-                (self.bounds['radius'][1]-self.bounds['radius'][0])*cube[cube_index['radius']]
-
-            # Metallicity [Fe/H]
-            if 'feh' in self.bounds:
-                cube[cube_index['feh']] = self.bounds['feh'][0] + \
-                    (self.bounds['feh'][1]-self.bounds['feh'][0])*cube[cube_index['feh']]
-
-            # C/O ratio
-            if 'co' in self.bounds:
-                cube[cube_index['co']] = self.bounds['co'][0] + \
-                    (self.bounds['co'][1]-self.bounds['co'][0])*cube[cube_index['co']]
-
-            # Sedimentation parameter
-            if 'fsed' in self.bounds:
-
-                cube[cube_index['fsed']] = self.bounds['fsed'][0] + \
-                    (self.bounds['fsed'][1]-self.bounds['fsed'][0])*cube[cube_index['fsed']]
-
-            # Spectrum scaling
-            if self.spectrum is not None:
-                for item in self.spectrum:
-                    if f'scaling_{item}' in self.bounds:
-                        cube[cube_index[f'scaling_{item}']] = self.bounds[f'scaling_{item}'][0] + \
-                            (self.bounds[f'scaling_{item}'][1]-self.bounds[f'scaling_{item}'][0]) \
-                            * cube[cube_index[f'scaling_{item}']]
-
-        def lnlike_multinest(cube, n_dim, n_param):
-            """
-            Function for the logarithm of the likelihood, computed from the parameter cube.
-
-            Parameters
-            ----------
-            cube : pymultinest.run.LP_c_double
-                Unit cube.
-
-            Returns
-            -------
-            float
-                The logarithm of the likelihood.
-            """
-
-            paramdict = {}
-            spec_scaling = {}
-
-            for i, item in enumerate(self.modelpar):
-                if item == 'radius':
-                    radius = cube[cube_index['radius']]
-
-                elif item[:8] == 'scaling_' and item[8:] in self.spectrum:
-                    spec_scaling[item[8:]] = cube[cube_index[item]]
-
-                else:
-                    paramdict[item] = cube[cube_index[item]]
-
-            scaling = (radius*constants.R_JUP)**2 / (self.distance[0]*constants.PARSEC)**2
-
-            chisq = 0.
-
-            if self.objphot is not None:
-                for i, item in enumerate(self.objphot):
-                    flux = scaling * self.modelphot[i].spectrum_interp(list(paramdict.values()))
-                    chisq += (item[0]-flux)**2 / item[1]**2
-
-            if self.spectrum is not None:
-                for i, item in enumerate(self.spectrum.keys()):
-
-                    flux = scaling * self.modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
-
-                    if item in spec_scaling:
-                        flux_obs = spec_scaling[item]*self.spectrum[item][0][:, 1]
-                    else:
-                        flux_obs = self.spectrum[item][0][:, 1]
-
-                    if self.spectrum[item][2] is not None:
-                        spec_diff = flux_obs - flux
-                        chisq += np.dot(spec_diff, np.dot(self.spectrum[item][2], spec_diff))
-
-                    else:
-                        chisq += np.nansum((flux_obs-flux)**2 / self.spectrum[item][0][:, 2]**2)
-
-            return -0.5*chisq
-
-        pymultinest.run(lnlike_multinest,
-                        lnprior_multinest,
-                        len(self.modelpar),
-                        outputfiles_basename=output,
-                        resume=False,
-                        n_live_points=n_live_points)
-
-        samples = np.loadtxt(f'{output}/post_equal_weights.dat')
-
-        species_db = database.Database()
-
-        spec_labels = []
-
-        if self.spectrum is not None:
-            for item in self.spectrum:
-                if f'scaling_{item}' in self.bounds:
-                    spec_labels.append(f'scaling_{item}')
-
-        else:
-            spec_labels = None
-
-        species_db.add_samples(sampler='multinest',
-                               samples=samples[:, :-1],
-                               ln_prob=samples[:, -1],
-                               mean_accept=None,
-                               spectrum=('model', self.model),
-                               tag=tag,
-                               modelpar=self.modelpar,
-                               distance=self.distance[0],
-                               spec_labels=spec_labels)
+    # def run_multinest(self,
+    #                   tag,
+    #                   n_live_points=4000,
+    #                   output='multinest/'):
+    #     """
+    #     Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
+    #     ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
+    #     has to to be build manually. See the ``PyMultiNest`` documentation for details:
+    #     http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
+    #     of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
+    #     Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
+    #     set before importing the ``species`` package, for example:
+    #
+    #     .. code-block:: python
+    #
+    #         >>> import os
+    #         >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
+    #         >>> import species
+    #
+    #     Parameters
+    #     ----------
+    #     tag : str
+    #         Database tag where the samples will be stored.
+    #     n_live_points : int
+    #         Number of live points.
+    #     output : str
+    #         Path that is used for the output files from MultiNest.
+    #
+    #     Returns
+    #     -------
+    #     NoneType
+    #         None
+    #     """
+    #
+    #     print('Running nested sampling...')
+    #
+    #     # create the output folder if required
+    #
+    #     if not os.path.exists(output):
+    #         os.mkdir(output)
+    #
+    #     # create a dictionary with the cube indices of the parameters
+    #
+    #     cube_index = {}
+    #     for i, item in enumerate(self.modelpar):
+    #         cube_index[item] = i
+    #
+    #     def lnprior_multinest(cube, n_dim, n_param):
+    #         """
+    #         Function to transform the unit cube into the parameter cube. It is not clear how to
+    #         pass additional arguments to the function, therefore it is placed here.
+    #
+    #         Parameters
+    #         ----------
+    #         cube : pymultinest.run.LP_c_double
+    #             Unit cube.
+    #
+    #         Returns
+    #         -------
+    #         NoneType
+    #             None
+    #         """
+    #
+    #         # Effective temperature (K)
+    #         cube[cube_index['teff']] = self.bounds['teff'][0] + \
+    #             (self.bounds['teff'][1]-self.bounds['teff'][0])*cube[cube_index['teff']]
+    #
+    #         # Surface gravity (dex)
+    #         cube[cube_index['logg']] = self.bounds['logg'][0] + \
+    #             (self.bounds['logg'][1]-self.bounds['logg'][0])*cube[cube_index['logg']]
+    #
+    #         # Radius (Rjup)
+    #         cube[cube_index['radius']] = self.bounds['radius'][0] + \
+    #             (self.bounds['radius'][1]-self.bounds['radius'][0])*cube[cube_index['radius']]
+    #
+    #         # Metallicity [Fe/H]
+    #         if 'feh' in self.bounds:
+    #             cube[cube_index['feh']] = self.bounds['feh'][0] + \
+    #                 (self.bounds['feh'][1]-self.bounds['feh'][0])*cube[cube_index['feh']]
+    #
+    #         # C/O ratio
+    #         if 'co' in self.bounds:
+    #             cube[cube_index['co']] = self.bounds['co'][0] + \
+    #                 (self.bounds['co'][1]-self.bounds['co'][0])*cube[cube_index['co']]
+    #
+    #         # Sedimentation parameter
+    #         if 'fsed' in self.bounds:
+    #
+    #             cube[cube_index['fsed']] = self.bounds['fsed'][0] + \
+    #                 (self.bounds['fsed'][1]-self.bounds['fsed'][0])*cube[cube_index['fsed']]
+    #
+    #         # Spectrum scaling
+    #         if self.spectrum is not None:
+    #             for item in self.spectrum:
+    #                 if f'scaling_{item}' in self.bounds:
+    #                     cube[cube_index[f'scaling_{item}']] = self.bounds[f'scaling_{item}'][0] + \
+    #                         (self.bounds[f'scaling_{item}'][1]-self.bounds[f'scaling_{item}'][0]) \
+    #                         * cube[cube_index[f'scaling_{item}']]
+    #
+    #     def lnlike_multinest(cube, n_dim, n_param):
+    #         """
+    #         Function for the logarithm of the likelihood, computed from the parameter cube.
+    #
+    #         Parameters
+    #         ----------
+    #         cube : pymultinest.run.LP_c_double
+    #             Unit cube.
+    #
+    #         Returns
+    #         -------
+    #         float
+    #             The logarithm of the likelihood.
+    #         """
+    #
+    #         paramdict = {}
+    #         spec_scaling = {}
+    #
+    #         for i, item in enumerate(self.modelpar):
+    #             if item == 'radius':
+    #                 radius = cube[cube_index['radius']]
+    #
+    #             elif item[:8] == 'scaling_' and item[8:] in self.spectrum:
+    #                 spec_scaling[item[8:]] = cube[cube_index[item]]
+    #
+    #             else:
+    #                 paramdict[item] = cube[cube_index[item]]
+    #
+    #         scaling = (radius*constants.R_JUP)**2 / (self.distance[0]*constants.PARSEC)**2
+    #
+    #         chisq = 0.
+    #
+    #         if self.objphot is not None:
+    #             for i, item in enumerate(self.objphot):
+    #                 flux = scaling * self.modelphot[i].spectrum_interp(list(paramdict.values()))
+    #                 chisq += (item[0]-flux)**2 / item[1]**2
+    #
+    #         if self.spectrum is not None:
+    #             for i, item in enumerate(self.spectrum.keys()):
+    #
+    #                 flux = scaling * self.modelspec[i].spectrum_interp(list(paramdict.values()))[0, :]
+    #
+    #                 if item in spec_scaling:
+    #                     flux_obs = spec_scaling[item]*self.spectrum[item][0][:, 1]
+    #                 else:
+    #                     flux_obs = self.spectrum[item][0][:, 1]
+    #
+    #                 if self.spectrum[item][2] is not None:
+    #                     spec_diff = flux_obs - flux
+    #                     chisq += np.dot(spec_diff, np.dot(self.spectrum[item][2], spec_diff))
+    #
+    #                 else:
+    #                     chisq += np.nansum((flux_obs-flux)**2 / self.spectrum[item][0][:, 2]**2)
+    #
+    #         return -0.5*chisq
+    #
+    #     pymultinest.run(lnlike_multinest,
+    #                     lnprior_multinest,
+    #                     len(self.modelpar),
+    #                     outputfiles_basename=output,
+    #                     resume=False,
+    #                     n_live_points=n_live_points)
+    #
+    #     samples = np.loadtxt(f'{output}/post_equal_weights.dat')
+    #
+    #     species_db = database.Database()
+    #
+    #     spec_labels = []
+    #
+    #     if self.spectrum is not None:
+    #         for item in self.spectrum:
+    #             if f'scaling_{item}' in self.bounds:
+    #                 spec_labels.append(f'scaling_{item}')
+    #
+    #     else:
+    #         spec_labels = None
+    #
+    #     species_db.add_samples(sampler='multinest',
+    #                            samples=samples[:, :-1],
+    #                            ln_prob=samples[:, -1],
+    #                            mean_accept=None,
+    #                            spectrum=('model', self.model),
+    #                            tag=tag,
+    #                            modelpar=self.modelpar,
+    #                            distance=self.distance[0],
+    #                            spec_labels=spec_labels)
