@@ -537,7 +537,8 @@ class AtmosphericRetrieval:
                         # add the log10 of the mass fraction to the abundace dictionary
                         log_x_abund[item] = cube[cube_index[item]]
 
-                log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund)
+                if any(['Na', 'Na_lor_cut', 'Na_burrows']) in self.line_species:
+                    log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund)
 
                 if 'K' in self.line_species:
                     cube[cube_index['K']] = log_x_k_abund
@@ -738,7 +739,7 @@ class AtmosphericRetrieval:
                 log_x_base_mgsio3 = np.log10(1e1**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
 
                 # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
-                wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clouds(
+                wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
                     log_x_base_fe, log_x_base_mgsio3, cube[cube_index['fsed']], cube[cube_index['metallicity']], cube[cube_index['kzz']],
                     cube[cube_index['logg']], cube[cube_index['sigma_lnorm']], half=True, plotting=plotting)
@@ -747,7 +748,7 @@ class AtmosphericRetrieval:
                 # clear atmosphere
 
                 if chemistry == 'equilibrium':
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                    wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
                         None, half=True)
@@ -780,7 +781,7 @@ class AtmosphericRetrieval:
 
                     # calculate the emission spectrum
 
-                    wlen_micron, flux_lambda = retrieval_util.calc_spectrum_clear(
+                    wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         None, None, None, log_x_abund, half=True)
 
