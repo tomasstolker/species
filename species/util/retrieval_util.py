@@ -1,16 +1,22 @@
 import copy
 
+from typing import Optional, Union, Tuple
+
 import numpy as np
 import matplotlib.pyplot as plt
 
+from typeguard import typechecked
 from scipy.interpolate import interp1d, CubicSpline
 from scipy.ndimage.filters import gaussian_filter
 
 from petitRADTRANS_ck_test_speed import nat_cst as nc
+from petitRADTRANS.radtrans import Radtrans as RadtransClear
+from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransCloudy
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
 
-def get_line_species():
+@typechecked
+def get_line_species() -> list:
     """
     Function to get the list of the molecular and atomic line species.
 
@@ -20,16 +26,24 @@ def get_line_species():
         List with the line species.
     """
 
-    return ['CH4', 'CO', 'CO_all_iso', 'CO2', 'H2O', 'H2S', 'HCN', 'K', 'K_lor_cut', 'K_burrows', 'NH3',
-            'Na', 'Na_lor_cut', 'Na_burrows', 'OH', 'PH3', 'TiO', 'VO', 'FeH']
+    return ['CH4', 'CO', 'CO_all_iso', 'CO2', 'H2O', 'H2S', 'HCN', 'K', 'K_lor_cut', 'K_burrows',
+            'NH3', 'Na', 'Na_lor_cut', 'Na_burrows', 'OH', 'PH3', 'TiO', 'VO', 'FeH']
 
 
-def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
+@typechecked
+def pt_ret_model(T3: np.ndarray,
+                 delta: float,
+                 alpha: float,
+                 tint: float,
+                 press: np.ndarray,
+                 FeH: float,
+                 CO: float,
+                 conv: bool = True) -> Tuple[np.ndarray, float, np.ndarray]:
     """
     Self-luminous retrieval P-T model.
 
-    It has 7 free parameters:
-
+    Parameters
+    ----------
     T3 = np.array([t1, t2, t3]): temperature points to be added on top
       of the radiative Eddington structure (above tau = 0.1).
       Use spline interpolation, t1 < t2 < t3 < tconnect as prior.
@@ -49,6 +63,12 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     CO: C/O for the nabla_ad interpolation
 
     conv: enforce convective adiabat yes/no
+
+    Returns
+    -------
+    np.ndarray
+    float
+    np.ndarray
     """
 
     # Go grom bar to cgs
@@ -115,7 +135,16 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
         tfinal = tedd
 
     # Add the three temperature-point P-T description above tau = 0.1
-    def press_tau(tau):
+    @typechecked
+    def press_tau(tau: float) -> float:
+        """
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        """
         # Returns the pressure at a given tau, in cgs
         return (tau/delta)**(1./alpha)
 
@@ -192,190 +221,294 @@ def pt_ret_model(T3, delta, alpha, tint, press, FeH, CO, conv=True):
     return tret, press_tau(1.)/1e6, tfintp(p_bot_spline)
 
 
-def pt_spline_interp(knot_press,
-                     knot_temp,
-                     pressure):
+@typechecked
+def pt_spline_interp(knot_press: np.ndarray,
+                     knot_temp: np.ndarray,
+                     pressure: np.ndarray) -> np.ndarray:
+    """
+    Parameters
+    ----------
+    knot_press : np.ndarray
+        Pressure knots.
+    knot_temp : np.ndarray
+        Temperature knots.
+    pressure : np.ndarray
+        Pressure points at which the temperatures is interpolated.
+
+    Returns
+    -------
+    np.ndarray
+        Interpolated temperature points.
+    """
 
     pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
 
     return pt_interp(np.log10(pressure))
 
 
-def calc_spectrum_clear(rt_object,
-                        press,
-                        temp,
-                        logg,
-                        c_o_ratio,
-                        metallicity,
-                        log_p_quench,
-                        log_x_abund=None,
-                        half=False,
-                        contribution=False):
+@typechecked
+def create_abund_dict(abund_in: dict,
+                      line_species: list,
+                      chemistry: str,
+                      half: bool = True) -> dict:
+    """
+    Function to update the names in the abundance dictionary.
 
-    if log_x_abund is None:
-        # chemical equilibrium
+    Parameters
+    ----------
+    abund_in : dict
+        Dictionary with the mass fractions.
+    line_species : list
+        List with the line species.
+    chemistry : str
+        Optional dictionary with the log10 mass fractions (only )
+    half : bool
+        Use every third pressure point.
 
-        # create arrays for constant values of C/O and Fe/H
-        c_o_ratio_list = np.full(press.shape, c_o_ratio)
-        metallicity_list = np.full(press.shape, metallicity)
+    Returns
+    -------
+    dict
+        Dictionary with the updated names of the abundances.
+    """
 
-        # interpolate the abundances, following chemical equilibrium
-        abund_out = interpol_abundances(c_o_ratio_list,
-                                        metallicity_list,
-                                        temp,
-                                        press,
-                                        Pquench_carbon=10.**log_p_quench)
+    # create a dictionary with the updated abundance names
 
-        # extract the mean molecular weight
-        mmw = abund_out['MMW']
+    abund_out = {}
+
+    if half:
+        for item in line_species:
+            if chemistry == 'equilibrium':
+                item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_lor_cut', '')
+                item_replace = item_replace.replace('_burrows', '')
+
+                abund_out[item] = abund_in[item_replace][::3]
+
+            elif chemistry == 'free':
+                abund_out[item] = abund_in[item][::3]
+
+        if 'Fe(c)' in abund_in:
+            abund_out['Fe(c)'] = abund_in['Fe(c)'][::3]
+
+        if 'MgSiO3(c)' in abund_in:
+            abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)'][::3]
+
+        abund_out['H2'] = abund_in['H2'][::3]
+        abund_out['He'] = abund_in['He'][::3]
 
     else:
+        for item in line_species:
+            if chemistry == 'equilibrium':
+                item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_lor_cut', '')
+                item_replace = item_replace.replace('_burrows', '')
+
+                abund_out[item] = abund_in[item_replace]
+
+            elif chemistry == 'free':
+                abund_out[item] = abund_in[item]
+
+        if 'Fe(c)' in abund_in:
+            abund_out['Fe(c)'] = abund_in['Fe(c)']
+
+        if 'MgSiO3(c)' in abund_in:
+            abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)']
+
+        abund_out['H2'] = abund_in['H2']
+        abund_out['He'] = abund_in['He']
+
+    # Corretion for the nuclear spin degeneracy that was not included in the partition function
+    # See Charnay et al. (2018)
+
+    if 'FeH' in abund_out:
+        abund_out['FeH'] = abund_out['FeH']/2.
+
+    return abund_out
+
+
+@typechecked
+def calc_spectrum_clear(rt_object: Union[RadtransClear, RadtransCloudy],
+                        pressure: np.ndarray,
+                        temperature: np.ndarray,
+                        logg: float,
+                        c_o_ratio: Optional[float],
+                        metallicity: Optional[float],
+                        log_p_quench: Optional[float],
+                        log_x_abund: Optional[dict],
+                        chemistry: str,
+                        half: bool = False,
+                        contribution: bool = False) -> Tuple[np.ndarray,
+                                                             np.ndarray,
+                                                             Optional[np.ndarray]]:
+    """
+    Function to simulate an emission spectrum of a clear atmosphere.
+
+    Parameters
+    ----------
+    rt_object : RadtransClear, RadtransCloudy
+    pressure : np.ndarrau
+    temperature : np.ndarray
+    logg : float
+    c_o_ratio : float, None
+    metallicity : float, None
+    log_p_quench : float, None
+    log_x_abund : dict, None
+    chemistry : str
+    half : bool
+    contribution : bool
+
+    Returns
+    -------
+    np.ndarray
+    np.ndarray
+    np.ndarray, None                                               
+    """
+
+    if chemistry == 'equilibrium':
+        # chemical equilibrium
+        abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
+                                       np.full(pressure.shape, metallicity),
+                                       temperature,
+                                       pressure,
+                                       Pquench_carbon=10.**log_p_quench)
+
+        # mean molecular weight
+        mmw = abund_in['MMW']
+
+    elif chemistry == 'free':
         # free abundances
 
         # create a dictionary with all mass fractions
-        abund_out = mass_fractions(log_x_abund)
+        abund_in = mass_fractions(log_x_abund)
 
-        # calculate the mean moleculair weight
-        mmw = mean_molecular_weight(abund_out)
+        # mean molecular weight
+        mmw = mean_molecular_weight(abund_in)
 
         # create arrays of constant atmosphere abundance
-        for item in abund_out:
-            abund_out[item] *= np.ones_like(press)
+        for item in abund_in:
+            abund_in[item] *= np.ones_like(pressure)
 
         # create an array of a constant mean molecular weight
-        mmw *= np.ones_like(press)
+        mmw *= np.ones_like(pressure)
 
     # extract every three levels if half=True
 
     if half:
-        temp = temp[::3]
-        press = press[::3]
+        temperature = temperature[::3]
+        pressure = pressure[::3]
         mmw = mmw[::3]
 
-    # create a dictionary with the abundances by replacing species ending with _all_iso
-
-    abundances = {}
-
-    if half:
-        for item in rt_object.line_species:
-            if log_x_abund is None:
-                item_replace = item.replace('_all_iso', '')
-                item_replace = item_replace.replace('_lor_cut', '')
-                item_replace = item_replace.replace('_burrows', '')
-
-                abundances[item] = abund_out[item_replace][::3]
-
-            else:
-                abundances[item] = abund_out[item][::3]
-
-        abundances['H2'] = abund_out['H2'][::3]
-        abundances['He'] = abund_out['He'][::3]
-
-    else:
-        for item in rt_object.line_species:
-            if log_x_abund is None:
-                item_replace = item.replace('_all_iso', '')
-                item_replace = item_replace.replace('_lor_cut', '')
-                item_replace = item_replace.replace('_burrows', '')
-
-                abundances[item] = abund_out[item_replace]
-
-            else:
-                abundances[item] = abund_out[item]
-
-        abundances['H2'] = abund_out['H2']
-        abundances['He'] = abund_out['He']
-
-    # Corretion for the nuclear spin degeneracy that was not included in the partition function
-    # See Charnay et al. (2018)
-
-    if log_x_abund is None and 'FeH' in abundances:
-        abundances['FeH'] = abundances['FeH']/2.
+    abundances = create_abund_dict(abund_in, rt_object.line_species, chemistry, half=half)
 
     # calculate the emission spectrum
-    rt_object.calc_flux(temp, abundances, 10.**logg, mmw, contribution=contribution)
+    rt_object.calc_flux(temperature, abundances, 10.**logg, mmw, contribution=contribution)
 
     # convert frequency (Hz) to wavelength (cm)
-    wlen = nc.c/rt_object.freq
+    wavel = nc.c/rt_object.freq
 
     # optionally return the emission contribution
     if contribution:
-        contribution = rt_object.contr_em
+        contr_em = rt_object.contr_em
     else:
-        contribution = None
+        contr_em = None
 
     # return wavelength (micron), flux (W m-2 um-1), and emission contribution
-    return 1e4*wlen, 1e-7*rt_object.flux*nc.c/wlen**2., contribution
+    return 1e4*wavel, 1e-7*rt_object.flux*nc.c/wavel**2., contr_em
 
 
-def calc_spectrum_clouds(rt_object,
-                         press,
-                         temp,
-                         CO,
-                         FeH,
-                         log_p_quench,
-                         log_X_cloud_base_Fe,
-                         log_X_cloud_base_MgSiO3,
-                         fsed_Fe,
-                         fsed_MgSiO3,
-                         Kzz,
-                         logg,
-                         sigma_lnorm,
-                         half=False,
-                         plotting=False):
+@typechecked
+def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
+                         pressure: np.ndarray,
+                         temperature: np.ndarray,
+                         c_o_ratio: float,
+                         metallicity: float,
+                         log_p_quench: float,
+                         log_X_cloud_base_Fe: float,
+                         log_X_cloud_base_MgSiO3: float,
+                         fsed_Fe: float,
+                         fsed_MgSiO3: float,
+                         Kzz: float,
+                         logg: float,
+                         sigma_lnorm: float,
+                         chemistry: str,
+                         half: bool = False,
+                         plotting: bool = False,
+                         contribution: bool = False) -> Tuple[np.ndarray,
+                                                              np.ndarray,
+                                                              Optional[np.ndarray]]:
+    """
+    Function to simulate an emission spectrum of a cloudy atmosphere.
 
-    COs = CO * np.ones_like(press)
-    FeHs = FeH * np.ones_like(press)
+    Parameters
+    ----------
+    rt_object : RadtransClear, RadtransCloudy
+    pressure : np.ndarray
+    temperature : np.ndarray
+    c_o_ratio : float
+    metallicity : float
+    log_p_quench : float
+    log_X_cloud_base_Fe : float
+    log_X_cloud_base_MgSiO3 : float
+    fsed_Fe : float
+    fsed_MgSiO3 : float
+    Kzz : float
+    logg : float
+    sigma_lnorm : float
+    chemistry : str
+    half: bool
+    plotting : bool
+    contribution : bool
 
-    abundances_interp = interpol_abundances(COs, FeHs, temp, press, Pquench_carbon=1e1**log_p_quench)
+    Returns
+    -------
+    np.ndarray
+    np.ndarray
+    """
 
-    MMW = abundances_interp['MMW']
+    # interpolate the abundances, following chemical equilibrium
+    abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
+                                   np.full(pressure.shape, metallicity),
+                                   temperature,
+                                   pressure,
+                                   Pquench_carbon=1e1**log_p_quench)
 
-    P_base_Fe = simple_cdf_Fe(press, temp, FeH, CO, np.mean(MMW), plotting)
-    P_base_MgSiO3 = simple_cdf_MgSiO3(press, temp, FeH, CO, np.mean(MMW), plotting=plotting)
+    # extract the mean molecular weight
+    mmw = abund_in['MMW']
 
-    abundances = {}
+    # Cloud base of Fe
+    P_base_Fe = simple_cdf_Fe(pressure,
+                              temperature,
+                              metallicity,
+                              c_o_ratio,
+                              np.mean(mmw),
+                              plotting=plotting)
 
-    abundances['Fe(c)'] = np.zeros_like(temp)
+    # Cloud base of MgSiO3
+    P_base_MgSiO3 = simple_cdf_MgSiO3(pressure,
+                                      temperature,
+                                      metallicity,
+                                      c_o_ratio,
+                                      np.mean(mmw),
+                                      plotting=plotting)
 
-    abundances['Fe(c)'][press < P_base_Fe] = \
-          1e1**log_X_cloud_base_Fe * (press[press <= P_base_Fe]/P_base_Fe)**fsed_Fe
+    abund_in['Fe(c)'] = np.zeros_like(temperature)
 
-    abundances['MgSiO3(c)'] = np.zeros_like(temp)
+    abund_in['Fe(c)'][pressure < P_base_Fe] = \
+          1e1**log_X_cloud_base_Fe * (pressure[pressure <= P_base_Fe]/P_base_Fe)**fsed_Fe
 
-    abundances['MgSiO3(c)'][press < P_base_MgSiO3] = \
-          1e1**log_X_cloud_base_MgSiO3 * (press[press <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
+    abund_in['MgSiO3(c)'] = np.zeros_like(temperature)
+
+    abund_in['MgSiO3(c)'][pressure < P_base_MgSiO3] = \
+          1e1**log_X_cloud_base_MgSiO3 * (pressure[pressure <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
+
+    abundances = create_abund_dict(abund_in, rt_object.line_species, chemistry, half=half)
+
+    Kzz_use = np.full(pressure.shape, 10.**Kzz)
 
     if half:
-        abundances['Fe(c)'] = abundances['Fe(c)'][::3]
-        abundances['MgSiO3(c)'] = abundances['MgSiO3(c)'][::3]
-
-    if half:
-        for species in rt_object.line_species:
-            abundances[species] = abundances_interp[species.replace('_all_iso', '')][::3]
-
-        abundances['H2'] = abundances_interp['H2'][::3]
-        abundances['He'] = abundances_interp['He'][::3]
-
-    else:
-        for species in rt_object.line_species:
-            abundances[species] = abundances_interp[species.replace('_all_iso', '')]
-
-        abundances['H2'] = abundances_interp['H2']
-        abundances['He'] = abundances_interp['He']
-
-    # Corretion for the nuclear spin degeneracy that was not included in the partition function
-    # See Charnay et al. (2018)
-
-    if 'FeH' in abundances:
-        abundances['FeH'] = abundances['FeH']/2.
-
-    Kzz_use = (1e1**Kzz) * np.ones_like(press)
-
-    if half:
-        temp = temp[::3]
-        press = press[::3]
-        MMW = MMW[::3]
+        temperature = temperature[::3]
+        pressure = pressure[::3]
+        mmw = mmw[::3]
         Kzz_use = Kzz_use[::3]
 
     fseds = {}
@@ -383,21 +516,24 @@ def calc_spectrum_clouds(rt_object,
     fseds['MgSiO3(c)'] = fsed_MgSiO3
 
     if plotting:
-        plt.plot(abundances['CO_all_iso'], press, label='CO')
-        plt.plot(abundances['CH4'], press, label='CH4')
-        plt.plot(abundances['H2O'], press, label='H2O')
+        if 'CO_all_iso' in abundances:
+            plt.plot(abundances['CO_all_iso'], pressure, label='CO')
+        if 'CH4' in abundances:
+            plt.plot(abundances['CH4'], pressure, label='CH4')
+        if 'H2O' in abundances:
+            plt.plot(abundances['H2O'], pressure, label='H2O')
         plt.xlim([1e-10, 1.])
-        plt.ylim([press[-1], press[0]])
+        plt.ylim([pressure[-1], pressure[0]])
         plt.yscale('log')
         plt.xscale('log')
         plt.xlabel('Mass fraction')
         plt.ylabel('Pressure (bar)')
-        plt.axhline(1e1**log_p_quench)
+        plt.axhline(10.**log_p_quench)
         plt.legend(loc='best')
         plt.savefig('abundances.pdf', bbox_inches='tight')
         plt.clf()
 
-        plt.plot(temp, press)
+        plt.plot(temperature, pressure)
         plt.axhline(P_base_Fe, label='Cloud deck Fe')
         plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
         plt.yscale('log')
@@ -406,33 +542,40 @@ def calc_spectrum_clouds(rt_object,
         plt.savefig('pt_cloud_deck.pdf', bbox_inches='tight')
         plt.clf()
 
-        plt.plot(abundances['Fe(c)'], press)
+        plt.plot(abundances['Fe(c)'], pressure)
         plt.axhline(P_base_Fe)
         plt.yscale('log')
         if np.count_nonzero(abundances['Fe(c)']) > 0:
             plt.xscale('log')
         plt.ylim([1e3, 1e-6])
         plt.xlim([1e-10, 1.])
-        plt.title('fsed_Fe = '+str(fsed_Fe)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_Fe))
+        plt.title(f'fsed_Fe = {fsed_Fe:.2f}, lgK = {Kzz:.2f}, X_b = {log_X_cloud_base_Fe:.2f}')
         plt.savefig('fe_clouds.pdf', bbox_inches='tight')
         plt.clf()
 
-        plt.plot(abundances['MgSiO3(c)'], press)
+        plt.plot(abundances['MgSiO3(c)'], pressure)
         plt.axhline(P_base_MgSiO3)
         plt.yscale('log')
         if np.count_nonzero(abundances['MgSiO3(c)']) > 0:
             plt.xscale('log')
         plt.ylim([1e3, 1e-6])
         plt.xlim([1e-10, 1.])
-        plt.title('fsed_MgSiO3 = '+str(fsed_MgSiO3)+' lgK='+str(Kzz)+' X_b = '+str(log_X_cloud_base_MgSiO3))
+        plt.title(f'fsed_MgSiO3 = {fsed_MgSiO3:.2f}, lgK = {Kzz:.2f}, X_b = {log_X_cloud_base_MgSiO3:.2f}')
         plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
         plt.clf()
 
     # Turn off clouds
-    # abundances['MgSiO3(c)'] = np.zeros_like(press)
-    # abundances['Fe(c)'] = np.zeros_like(press)
+    # abundances['MgSiO3(c)'] = np.zeros_like(pressure)
+    # abundances['Fe(c)'] = np.zeros_like(pressure)
 
-    rt_object.calc_flux(temp, abundances, 1e1**logg, MMW, Kzz=Kzz_use, fsed=fseds, sigma_lnorm=sigma_lnorm)
+    rt_object.calc_flux(temperature,
+                        abundances,
+                        10.**logg,
+                        mmw,
+                        Kzz=Kzz_use,
+                        fsed=fseds,
+                        sigma_lnorm=sigma_lnorm,
+                        contribution=contribution)
 
     wlen_micron = nc.c/rt_object.freq/1e-4
     wlen = nc.c/rt_object.freq
@@ -452,7 +595,7 @@ def calc_spectrum_clouds(rt_object,
     # plt.ylim([1e2,1e-6])
     # plt.ylabel('P (bar)')
     # plt.xlabel('Average particle size of MgSiO3 particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('MgSiO3(c)')]/1e-4, press)
+    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('MgSiO3(c)')]/1e-4, pressure)
     # plt.savefig('mgsio3_size.png')
     # plt.show()
     # plt.clf()
@@ -462,16 +605,23 @@ def calc_spectrum_clouds(rt_object,
     # plt.ylim([1e2,1e-6])
     # plt.ylabel('P (bar)')
     # plt.xlabel('Average particle size of Fe particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('Fe(c)')]/1e-4, press)
+    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('Fe(c)')]/1e-4, pressure)
     # plt.savefig('fe_size.png')
     # plt.show()rt_object
     # plt.clf()
 
+    # optionally return the emission contribution
+    if contribution:
+        contr_em = rt_object.contr_em
+    else:
+        contr_em = None
+
     # return wlen_micron, f_lambda, rt_object.pphot, rt_object.tau_pow, np.mean(rt_object.tau_cloud)
-    return wlen_micron, f_lambda
+    return wlen_micron, f_lambda, contr_em
 
 
-def mass_fractions(log_x_abund):
+@typechecked
+def mass_fractions(log_x_abund: dict) -> dict:
     """
     Function to return a dictionary with the mass fractions of all species.
 
@@ -509,7 +659,8 @@ def mass_fractions(log_x_abund):
     return abund
 
 
-def calc_metal_ratio(log_x_abund):
+@typechecked
+def calc_metal_ratio(log_x_abund: dict) -> Tuple[float, float]:
     """
     Parameters
     ----------
@@ -518,6 +669,8 @@ def calc_metal_ratio(log_x_abund):
 
     Returns
     -------
+    float
+    float
     """
 
     # solar C/H from Asplund et al. (2009)
@@ -587,7 +740,8 @@ def calc_metal_ratio(log_x_abund):
     return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
 
 
-def mean_molecular_weight(abundances):
+@typechecked
+def mean_molecular_weight(abundances: dict) -> float:
     """
     Function to calculate the mean molecular weight from the abundances.
 
@@ -619,7 +773,8 @@ def mean_molecular_weight(abundances):
     return 1./mmw
 
 
-def potassium_abundance(log_x_abund):
+@typechecked
+def potassium_abundance(log_x_abund: dict) -> float:
     """
     Function to calculate the mass fraction of potassium at a solar ratio of the sodium and
     potassium abundances.
@@ -669,7 +824,8 @@ def potassium_abundance(log_x_abund):
 # metal species
 # metals = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Ti', 'V', 'Fe', 'Ni']
 
-def solar_mixing_ratios():
+@typechecked
+def solar_mixing_ratios() -> dict:
     """
     Function which returns the volume mixing ratios of a solar elemental abundances (i.e.
     [Fe/H] = 0), adopted from Asplund et al. (2009).
@@ -703,7 +859,8 @@ def solar_mixing_ratios():
     return n_fracs
 
 
-def atomic_masses():
+@typechecked
+def atomic_masses() -> dict:
     """
     Function which returns the atomic and molecular masses.
 
@@ -756,7 +913,17 @@ def atomic_masses():
     return masses
 
 
-def return_XFe(FeH, CO):
+@typechecked
+def return_XFe(FeH: float,
+               CO: float) -> float:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     nfracs = solar_mixing_ratios()
     masses = atomic_masses()
@@ -781,7 +948,17 @@ def return_XFe(FeH, CO):
     return XFe
 
 
-def return_XMgSiO3(FeH, CO):
+@typechecked
+def return_XMgSiO3(FeH: float,
+                   CO: float) -> float:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     nfracs = solar_mixing_ratios()
     masses = atomic_masses()
@@ -810,7 +987,17 @@ def return_XMgSiO3(FeH, CO):
     return Xmgsio3
 
 
-def return_XNa2S(FeH, CO):
+@typechecked
+def return_XNa2S(FeH: float,
+                 CO: float) -> float:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     nfracs = solar_mixing_ratios()
     masses = atomic_masses()
@@ -839,7 +1026,17 @@ def return_XNa2S(FeH, CO):
     return Xna2s
 
 
-def return_XKCl(FeH, CO):
+@typechecked
+def return_XKCl(FeH: float,
+                CO: float) -> float:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     nfracs = solar_mixing_ratios()
     masses = atomic_masses()
@@ -872,7 +1069,18 @@ def return_XKCl(FeH, CO):
 # Fe saturation pressure, from Ackerman & Marley (2001), including erratum (P_vap is in bar, not cgs!)
 #############################################################
 
-def return_T_cond_Fe(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_Fe(FeH: float,
+                     CO: float,
+                     MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     masses = atomic_masses()
 
@@ -886,7 +1094,18 @@ def return_T_cond_Fe(FeH, CO, MMW = 2.33):
     return P_vap(T)/(XFe*MMW/masses['Fe']), T
 
 
-def return_T_cond_Fe_l(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_Fe_l(FeH: float,
+                       CO: float,
+                       MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     masses = atomic_masses()
 
@@ -900,7 +1119,18 @@ def return_T_cond_Fe_l(FeH, CO, MMW = 2.33):
     return P_vap(T)/(XFe*MMW/masses['Fe']), T
 
 
-def return_T_cond_Fe_comb(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_Fe_comb(FeH: float,
+                          CO: float,
+                          MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     P1, T1 = return_T_cond_Fe(FeH, CO, MMW)
     P2, T2 = return_T_cond_Fe_l(FeH, CO, MMW)
@@ -913,7 +1143,18 @@ def return_T_cond_Fe_comb(FeH, CO, MMW = 2.33):
     return retP, T2
 
 
-def return_T_cond_MgSiO3(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_MgSiO3(FeH: float,
+                         CO: float,
+                         MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     masses = atomic_masses()
 
@@ -929,7 +1170,18 @@ def return_T_cond_MgSiO3(FeH, CO, MMW = 2.33):
     return P_vap(T)/(Xmgsio3*MMW/m_mgsio3), T
 
 
-def return_T_cond_Na2S(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_Na2S(FeH: float,
+                       CO: float,
+                       MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     masses = atomic_masses()
 
@@ -950,7 +1202,18 @@ def return_T_cond_Na2S(FeH, CO, MMW = 2.33):
     return P_vap(T)/(Xna2s*MMW/m_na2s), T
 
 
-def return_T_cond_KCl(FeH, CO, MMW = 2.33):
+@typechecked
+def return_T_cond_KCl(FeH: float,
+                      CO: float,
+                      MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     masses = atomic_masses()
 
@@ -999,7 +1262,21 @@ def return_T_cond_KCl(FeH, CO, MMW = 2.33):
 #     plt.show()
 
 
-def simple_cdf_Fe(press, temp, FeH, CO, MMW = 2.33):
+@typechecked
+def simple_cdf_Fe(press: np.ndarray,
+                  temp: np.ndarray,
+                  FeH: float,
+                  CO: float,
+                  MMW: float = 2.33,
+                  plotting: bool = False) -> np.float64:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     Pc, Tc = return_T_cond_Fe_comb(FeH, CO, MMW)
     index = (Pc > 1e-8) & (Pc < 1e5)
@@ -1024,12 +1301,26 @@ def simple_cdf_Fe(press, temp, FeH, CO, MMW = 2.33):
         plt.yscale('log')
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
-        plt.show()
+        plt.savefig('fe_clouds_cdf.pdf', bbox_inches='tight')
 
     return P_cloud
 
 
-def simple_cdf_MgSiO3(press, temp, FeH, CO, MMW = 2.33):
+@typechecked
+def simple_cdf_MgSiO3(press: np.ndarray,
+                      temp: np.ndarray,
+                      FeH: float,
+                      CO: float,
+                      MMW: float = 2.33,
+                      plotting: bool = False) -> np.float64:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     Pc, Tc = return_T_cond_MgSiO3(FeH, CO, MMW)
     index = (Pc > 1e-8) & (Pc < 1e5)
@@ -1054,12 +1345,26 @@ def simple_cdf_MgSiO3(press, temp, FeH, CO, MMW = 2.33):
         plt.yscale('log')
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
-        plt.show()
+        plt.savefig('mgsio3_clouds_cdf.pdf', bbox_inches='tight')
 
     return P_cloud
 
 
-def simple_cdf_Na2S(press, temp, FeH, CO, MMW = 2.33):
+@typechecked
+def simple_cdf_Na2S(press: np.ndarray,
+                    temp: np.ndarray,
+                    FeH: float,
+                    CO: float,
+                    MMW: float = 2.33,
+                    plotting: bool = False) -> np.float64:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     Pc, Tc = return_T_cond_Na2S(FeH, CO, MMW)
     index = (Pc > 1e-8) & (Pc < 1e5)
@@ -1084,12 +1389,26 @@ def simple_cdf_Na2S(press, temp, FeH, CO, MMW = 2.33):
         plt.yscale('log')
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
-        plt.show()
+        plt.savefig('na2s_clouds_cdf.pdf', bbox_inches='tight')
 
     return P_cloud
 
 
-def simple_cdf_KCl(press, temp, FeH, CO, MMW = 2.33):
+@typechecked
+def simple_cdf_KCl(press: np.ndarray,
+                   temp: np.ndarray,
+                   FeH: float,
+                   CO: float,
+                   MMW: float = 2.33,
+                   plotting: bool = False) -> np.float64:
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     Pc, Tc = return_T_cond_KCl(FeH, CO, MMW)
     index = (Pc > 1e-8) & (Pc < 1e5)
@@ -1114,7 +1433,7 @@ def simple_cdf_KCl(press, temp, FeH, CO, MMW = 2.33):
         plt.yscale('log')
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
-        plt.show()
+        plt.savefig('kcl_clouds_cdf.pdf', bbox_inches='tight')
 
     return P_cloud
 
@@ -1144,16 +1463,37 @@ def simple_cdf_KCl(press, temp, FeH, CO, MMW = 2.33):
 #     simple_cdf_KCl(pressures, temperature, 0., 0.55)
 
 
-def convolve(input_wavelength, input_flux, instrument_res):
+@typechecked
+def convolve(input_wavel: np.ndarray,
+             input_flux: np.ndarray,
+             spec_res: float) -> np.ndarray:
+    """
+    Function to convolve a spectrum with a Gaussian filter.
+
+    Parameters
+    ----------
+    input_wavel : np.ndarray
+        Input wavelengths.
+    input_flux : np.ndarrau
+        Input flux
+    spec_res : float
+        Spectral resolution of the Gaussian filter.
+
+    Returns
+    -------
+    np.ndarray
+        Convolved spectrum.
+    """
+
     # From talking to Ignas: delta lambda of resolution element
     # is FWHM of the LSF's standard deviation, hence:
-    sigma_lsf = 1./instrument_res/(2.*np.sqrt(2.*np.log(2.)))
+    sigma_lsf = 1./spec_res/(2.*np.sqrt(2.*np.log(2.)))
 
     # The input spacing of petitRADTRANS is 1e3, but just compute
     # it to be sure, or more versatile in the future.
     # Also, we have a log-spaced grid, so the spacing is constant
     # as a function of wavelength
-    spacing = np.mean(2.*np.diff(input_wavelength)/(input_wavelength[1:]+input_wavelength[:-1]))
+    spacing = np.mean(2.*np.diff(input_wavel)/(input_wavel[1:]+input_wavel[:-1]))
 
     # Calculate the sigma to be used in the gauss filter in units
     # of input wavelength bins

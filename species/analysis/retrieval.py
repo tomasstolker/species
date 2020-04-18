@@ -83,8 +83,9 @@ class AtmosphericRetrieval:
             for item in self.line_species:
                 print(f'   - {item}')
 
-        if len(self.cloud_species) == 0:
+        if self.cloud_species is None:
             print(f'Cloud species: None')
+            self.cloud_species = []
 
         else:
             print(f'Cloud species:')
@@ -383,7 +384,7 @@ class AtmosphericRetrieval:
                                                            1.15*max(self.wavel_max)),
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
-                                        do_scat_emis=self.scattering)
+                                        do_scat_emis=True)
 
         else:
             rt_object = Radtrans(line_species=self.line_species,
@@ -496,7 +497,6 @@ class AtmosphericRetrieval:
                 gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
                 cube[cube_index['gamma_r']] = gamma_r
 
-
             elif pt_profile == 'monotonic':
                 # 15 temperature (K) knots
                 cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
@@ -530,6 +530,7 @@ class AtmosphericRetrieval:
                 for item in self.line_species:
                     if item in bounds:
                         cube[cube_index[item]] = bounds[item][0] + (bounds[item][1]-bounds[item][0])*cube[cube_index[item]]
+
                     elif item not in ['K', 'K_lor_cut', 'K_burrows']:
                         # default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
@@ -700,6 +701,8 @@ class AtmosphericRetrieval:
                 for i in range(15):
                     knot_temp.append(cube[cube_index[f't{i}']])
 
+                knot_temp = np.asarray(knot_temp)
+
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
                 if pt_profile == 'free':
@@ -739,11 +742,15 @@ class AtmosphericRetrieval:
                 # logarithm of the cloud base mass fraction of MgSiO3
                 log_x_base_mgsio3 = np.log10(1e1**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
 
-                # wlen_micron, flux_lambda, Pphot_esti, tau_pow, tau_cloud = \
+                # the try-except is required to catch numerical precision errors with the clouds
+                # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
                     log_x_base_fe, log_x_base_mgsio3, cube[cube_index['fsed']], cube[cube_index['metallicity']], cube[cube_index['kzz']],
-                    cube[cube_index['logg']], cube[cube_index['sigma_lnorm']], half=True, plotting=plotting)
+                    cube[cube_index['logg']], cube[cube_index['sigma_lnorm']], chemistry=chemistry, half=True, plotting=plotting, contribution=False)
+
+                # except:
+                #     return -np.inf
 
             else:
                 # clear atmosphere
@@ -752,7 +759,7 @@ class AtmosphericRetrieval:
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
-                        None, half=True)
+                        None, chemistry=chemistry, half=True, contribution=False)
 
                 elif chemistry == 'free':
                     # create a dictionary with the mass fractions
@@ -770,12 +777,12 @@ class AtmosphericRetrieval:
                     if 'c_h_ratio' or 'o_h_ratio' in bounds:
                         c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
 
-                    if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or \
+                    if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or
                                                   c_h_ratio > bounds['c_h_ratio'][1]):
 
                         return -np.inf
 
-                    if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or \
+                    if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or
                                                   o_h_ratio > bounds['o_h_ratio'][1]):
 
                         return -np.inf
@@ -784,7 +791,7 @@ class AtmosphericRetrieval:
 
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
-                        None, None, None, log_x_abund, half=True)
+                        None, None, None, log_x_abund, chemistry, half=True, contribution=False)
 
             # return zero probability if the spectrum contains NaN values
 
