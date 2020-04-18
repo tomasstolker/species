@@ -293,6 +293,12 @@ def create_abund_dict(abund_in: dict,
         if 'MgSiO3(c)' in abund_in:
             abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)'][::3]
 
+        if 'Na2S(c)' in abund_in:
+            abund_out['Na2S(c)'] = abund_in['Na2S(c)'][::3]
+
+        if 'KCL(c)' in abund_in:
+            abund_out['KCL(c)'] = abund_in['KCL(c)'][::3]
+
         abund_out['H2'] = abund_in['H2'][::3]
         abund_out['He'] = abund_in['He'][::3]
 
@@ -314,6 +320,12 @@ def create_abund_dict(abund_in: dict,
         if 'MgSiO3(c)' in abund_in:
             abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)']
 
+        if 'Na2S(c)' in abund_in:
+            abund_out['Na2S(c)'] = abund_in['Na2S(c)'][::3]
+
+        if 'KCL(c)' in abund_in:
+            abund_out['KCL(c)'] = abund_in['KCL(c)'][::3]
+
         abund_out['H2'] = abund_in['H2']
         abund_out['He'] = abund_in['He']
 
@@ -327,7 +339,7 @@ def create_abund_dict(abund_in: dict,
 
 
 @typechecked
-def calc_spectrum_clear(rt_object: Union[RadtransClear, RadtransCloudy],
+def calc_spectrum_clear(rt_object: RadtransClear,
                         pressure: np.ndarray,
                         temperature: np.ndarray,
                         logg: float,
@@ -417,16 +429,14 @@ def calc_spectrum_clear(rt_object: Union[RadtransClear, RadtransCloudy],
 
 
 @typechecked
-def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
+def calc_spectrum_clouds(rt_object: RadtransCloudy,
                          pressure: np.ndarray,
                          temperature: np.ndarray,
                          c_o_ratio: float,
                          metallicity: float,
                          log_p_quench: float,
-                         log_X_cloud_base_Fe: float,
-                         log_X_cloud_base_MgSiO3: float,
-                         fsed_Fe: float,
-                         fsed_MgSiO3: float,
+                         log_x_base: dict,
+                         fsed: float,
                          Kzz: float,
                          logg: float,
                          sigma_lnorm: float,
@@ -447,10 +457,8 @@ def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
     c_o_ratio : float
     metallicity : float
     log_p_quench : float
-    log_X_cloud_base_Fe : float
-    log_X_cloud_base_MgSiO3 : float
-    fsed_Fe : float
-    fsed_MgSiO3 : float
+    log_x_base : dict
+    fsed : float
     Kzz : float
     logg : float
     sigma_lnorm : float
@@ -475,31 +483,61 @@ def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
     # extract the mean molecular weight
     mmw = abund_in['MMW']
 
-    # Cloud base of Fe
-    P_base_Fe = simple_cdf_Fe(pressure,
-                              temperature,
-                              metallicity,
-                              c_o_ratio,
-                              np.mean(mmw),
-                              plotting=plotting)
+    if 'Fe' in log_x_base:
+        # Cloud base of Fe
+        P_base_Fe = simple_cdf_Fe(pressure,
+                                  temperature,
+                                  metallicity,
+                                  c_o_ratio,
+                                  np.mean(mmw),
+                                  plotting=plotting)
 
-    # Cloud base of MgSiO3
-    P_base_MgSiO3 = simple_cdf_MgSiO3(pressure,
+        abund_in['Fe(c)'] = np.zeros_like(temperature)
+
+        abund_in['Fe(c)'][pressure < P_base_Fe] = 10.**log_x_base['Fe'] * \
+            (pressure[pressure <= P_base_Fe] / P_base_Fe)**fsed
+
+    if 'MgSiO3' in log_x_base:
+        # Cloud base of MgSiO3
+        P_base_MgSiO3 = simple_cdf_MgSiO3(pressure,
+                                          temperature,
+                                          metallicity,
+                                          c_o_ratio,
+                                          np.mean(mmw),
+                                          plotting=plotting)
+
+        abund_in['MgSiO3(c)'] = np.zeros_like(temperature)
+
+        abund_in['MgSiO3(c)'][pressure < P_base_MgSiO3] = 10.**log_x_base['MgSiO3'] * \
+            (pressure[pressure <= P_base_MgSiO3] / P_base_MgSiO3)**fsed
+
+    if 'Na2S' in log_x_base:
+        # Cloud base of Na2S
+        P_base_Na2S = simple_cdf_Na2S(pressure,
                                       temperature,
                                       metallicity,
                                       c_o_ratio,
                                       np.mean(mmw),
                                       plotting=plotting)
 
-    abund_in['Fe(c)'] = np.zeros_like(temperature)
+        abund_in['Na2S(c)'] = np.zeros_like(temperature)
 
-    abund_in['Fe(c)'][pressure < P_base_Fe] = \
-          1e1**log_X_cloud_base_Fe * (pressure[pressure <= P_base_Fe]/P_base_Fe)**fsed_Fe
+        abund_in['Na2S(c)'][pressure < P_base_Na2S] = 10.**log_x_base['Na2S'] * \
+            (pressure[pressure <= P_base_Na2S] / P_base_Na2S)**fsed
 
-    abund_in['MgSiO3(c)'] = np.zeros_like(temperature)
+    if 'KCl' in log_x_base:
+        # Cloud base of Na2S
+        P_base_KCl = simple_cdf_KCl(pressure,
+                                    temperature,
+                                    metallicity,
+                                    c_o_ratio,
+                                    np.mean(mmw),
+                                    plotting=plotting)
 
-    abund_in['MgSiO3(c)'][pressure < P_base_MgSiO3] = \
-          1e1**log_X_cloud_base_MgSiO3 * (pressure[pressure <= P_base_MgSiO3]/P_base_MgSiO3)**fsed_MgSiO3
+        abund_in['KCL(c)'] = np.zeros_like(temperature)
+
+        abund_in['KCL(c)'][pressure < P_base_KCl] = 10.**log_x_base['KCl'] * \
+            (pressure[pressure <= P_base_KCl] / P_base_KCl)**fsed
 
     abundances = create_abund_dict(abund_in, rt_object.line_species, chemistry, half=half)
 
@@ -512,8 +550,14 @@ def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
         Kzz_use = Kzz_use[::3]
 
     fseds = {}
-    fseds['Fe(c)'] = fsed_Fe
-    fseds['MgSiO3(c)'] = fsed_MgSiO3
+    if 'Fe' in log_x_base:
+        fseds['Fe(c)'] = fsed
+    if 'MgSiO3' in log_x_base:
+        fseds['MgSiO3(c)'] = fsed
+    if 'Na2S' in log_x_base:
+        fseds['Na2S(c)'] = fsed
+    if 'KCl' in log_x_base:
+        fseds['KCL(c)'] = fsed
 
     if plotting:
         if 'CO_all_iso' in abundances:
@@ -522,8 +566,8 @@ def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
             plt.plot(abundances['CH4'], pressure, label='CH4')
         if 'H2O' in abundances:
             plt.plot(abundances['H2O'], pressure, label='H2O')
-        plt.xlim([1e-10, 1.])
-        plt.ylim([pressure[-1], pressure[0]])
+        plt.xlim(1e-10, 1.)
+        plt.ylim(pressure[-1], pressure[0])
         plt.yscale('log')
         plt.xscale('log')
         plt.xlabel('Mass fraction')
@@ -534,35 +578,71 @@ def calc_spectrum_clouds(rt_object: Union[RadtransClear, RadtransCloudy],
         plt.clf()
 
         plt.plot(temperature, pressure)
-        plt.axhline(P_base_Fe, label='Cloud deck Fe')
-        plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
+        if 'Fe' in log_x_base:
+            plt.axhline(P_base_Fe, label='Cloud deck Fe')
+        if 'MgSiO3' in log_x_base:
+            plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
+        if 'Na2S' in log_x_base:
+            plt.axhline(P_base_Na2S, label='Cloud deck Na2S')
+        if 'KCl' in log_x_base:
+            plt.axhline(P_base_KCl, label='Cloud deck KCl')
         plt.yscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([0., 4000.])
+        plt.ylim(1e3, 1e-6)
+        plt.xlim(0., 4000.)
         plt.savefig('pt_cloud_deck.pdf', bbox_inches='tight')
         plt.clf()
 
-        plt.plot(abundances['Fe(c)'], pressure)
-        plt.axhline(P_base_Fe)
-        plt.yscale('log')
-        if np.count_nonzero(abundances['Fe(c)']) > 0:
-            plt.xscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([1e-10, 1.])
-        plt.title(f'fsed_Fe = {fsed_Fe:.2f}, lgK = {Kzz:.2f}, X_b = {log_X_cloud_base_Fe:.2f}')
-        plt.savefig('fe_clouds.pdf', bbox_inches='tight')
-        plt.clf()
+        if 'Fe' in log_x_base:
+            plt.plot(abundances['Fe(c)'], pressure)
+            plt.axhline(P_base_Fe)
+            plt.yscale('log')
+            if np.count_nonzero(abundances['Fe(c)']) > 0:
+                plt.xscale('log')
+            plt.ylim(1e3, 1e-6)
+            plt.xlim(1e-10, 1.)
+            log_x_base_fe = log_x_base['Fe']
+            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_fe:.2f}')
+            plt.savefig('fe_clouds.pdf', bbox_inches='tight')
+            plt.clf()
 
-        plt.plot(abundances['MgSiO3(c)'], pressure)
-        plt.axhline(P_base_MgSiO3)
-        plt.yscale('log')
-        if np.count_nonzero(abundances['MgSiO3(c)']) > 0:
-            plt.xscale('log')
-        plt.ylim([1e3, 1e-6])
-        plt.xlim([1e-10, 1.])
-        plt.title(f'fsed_MgSiO3 = {fsed_MgSiO3:.2f}, lgK = {Kzz:.2f}, X_b = {log_X_cloud_base_MgSiO3:.2f}')
-        plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
-        plt.clf()
+        if 'MgSiO3' in log_x_base:
+            plt.plot(abundances['MgSiO3(c)'], pressure)
+            plt.axhline(P_base_MgSiO3)
+            plt.yscale('log')
+            if np.count_nonzero(abundances['MgSiO3(c)']) > 0:
+                plt.xscale('log')
+            plt.ylim(1e3, 1e-6)
+            plt.xlim(1e-10, 1.)
+            log_x_base_mgsio3 = log_x_base['MgSiO3']
+            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_mgsio3:.2f}')
+            plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
+            plt.clf()
+
+        if 'Na2S' in log_x_base:
+            plt.plot(abundances['Na2S(c)'], pressure)
+            plt.axhline(P_base_Na2S)
+            plt.yscale('log')
+            if np.count_nonzero(abundances['Na2S(c)']) > 0:
+                plt.xscale('log')
+            plt.ylim(1e3, 1e-6)
+            plt.xlim(1e-10, 1.)
+            log_x_base_na2s = log_x_base['Na2S']
+            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_na2s:.2f}')
+            plt.savefig('na2s_clouds.pdf', bbox_inches='tight')
+            plt.clf()
+
+        if 'KCl' in log_x_base:
+            plt.plot(abundances['KCL(c)'], pressure)
+            plt.axhline(P_base_KCl)
+            plt.yscale('log')
+            if np.count_nonzero(abundances['KCL(c)']) > 0:
+                plt.xscale('log')
+            plt.ylim(1e3, 1e-6)
+            plt.xlim(1e-10, 1.)
+            log_x_base_kcl = log_x_base['KCl']
+            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_kcl:.2f}')
+            plt.savefig('kcl_clouds.pdf', bbox_inches='tight')
+            plt.clf()
 
     # Turn off clouds
     # abundances['MgSiO3(c)'] = np.zeros_like(pressure)

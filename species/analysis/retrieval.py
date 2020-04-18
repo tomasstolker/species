@@ -245,8 +245,14 @@ class AtmosphericRetrieval:
         # cloud parameters
 
         if len(self.cloud_species) > 0:
-            self.parameters.append('fe_fraction')
-            self.parameters.append('mgsio3_fraction')
+            if 'Fe(c)_cd' in self.cloud_species:
+                self.parameters.append('fe_fraction')
+            if 'MgSiO3(c)_cd' in self.cloud_species:
+                self.parameters.append('mgsio3_fraction')
+            if 'Na2S(c)_cd' in self.cloud_species:
+                self.parameters.append('na2s_fraction')
+            if 'KCL(c)_cd' in self.cloud_species:
+                self.parameters.append('kcl_fraction')
             self.parameters.append('fsed')
             self.parameters.append('kzz')
             self.parameters.append('sigma_lnorm')
@@ -353,6 +359,12 @@ class AtmosphericRetrieval:
             if 'mgsio3_fraction' in bounds:
                 del bounds['mgsio3_fraction']
 
+            if 'na2s_fraction' in bounds:
+                del bounds['na2s_fraction']
+
+            if 'kcl_fraction' in bounds:
+                del bounds['kcl_fraction']
+
             if 'fsed' in bounds:
                 del bounds['fsed']
 
@@ -376,6 +388,7 @@ class AtmosphericRetrieval:
         print('Setting up petitRADTRANS...')
 
         if self.scattering:
+            # the names in self.cloud_species are converted
             rt_object = RadtransScatter(line_species=self.line_species,
                                         rayleigh_species=['H2', 'He'],
                                         cloud_species=self.cloud_species,
@@ -384,7 +397,7 @@ class AtmosphericRetrieval:
                                                            1.15*max(self.wavel_max)),
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
-                                        do_scat_emis=True)
+                                        do_scat_emis=self.scattering)
 
         else:
             rt_object = Radtrans(line_species=self.line_species,
@@ -441,7 +454,7 @@ class AtmosphericRetrieval:
             if pt_profile == 'molliere':
 
                 # internal temperature (K) of the Eddington model
-                # see Eq. 2 in Mollière et al. in prep.
+                # see Eq. 2 in Mollière et al. (2020)
                 if 'tint' in bounds:
                     tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[cube_index['tint']]
                 else:
@@ -466,7 +479,7 @@ class AtmosphericRetrieval:
                 cube[cube_index['t1']] = temp_1
 
                 # alpha: power law index in tau = delta * press_cgs**alpha
-                # see Eq. 1 in Mollière et al. in prep.
+                # see Eq. 1 in Mollière et al. (2020)
                 if 'alpha' in bounds:
                     alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[cube_index['alpha']]
                 else:
@@ -480,7 +493,7 @@ class AtmosphericRetrieval:
                 p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
 
                 # delta: proportionality factor in tau = delta * press_cgs**alpha
-                # see Eq. 1 in Mollière et al. in prep.
+                # see Eq. 1 in Mollière et al. (2020)
                 delta = (p_phot*1e6)**(-alpha)
                 log_delta = np.log10(delta)
 
@@ -563,23 +576,41 @@ class AtmosphericRetrieval:
                 cube[cube_index['log_p_quench']] = log_p_quench
 
             if len(self.cloud_species) > 0:
-                # cloud base mass fractions of Fe (iron)
-                # relative to the maximum values allowed from elemental abundances
-                # see Eq. 3 in Mollière et al. in prep.
-                # default: 0.05 - 1.
-                fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['fe_fraction']]
-                cube[cube_index['fe_fraction']] = fe_fraction
+                if 'Fe(c)' in self.cloud_species:
+                    # cloud base mass fractions of Fe
+                    # relative to the maximum values allowed from elemental abundances
+                    # see Eq. 3 in Mollière et al. (2020)
+                    # default: 0.05 - 1.
+                    fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['fe_fraction']]
+                    cube[cube_index['fe_fraction']] = fe_fraction
 
-                # cloud base mass fractions of MgSiO3 (enstatite)
-                # relative to the maximum values allowed from elemental abundances
-                # see Eq. 3 in Mollière et al. in prep.
-                # default: 0.05 - 1.
-                mgsio3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['mgsio3_fraction']]
-                cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+                if 'MgSiO3(c)' in self.cloud_species:
+                    # cloud base mass fractions of MgSiO3
+                    # relative to the maximum values allowed from elemental abundances
+                    # see Eq. 3 in Mollière et al. (2020)
+                    # default: 0.05 - 1.
+                    mgsio3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['mgsio3_fraction']]
+                    cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+
+                if 'Na2S(c)' in self.cloud_species:
+                    # cloud base mass fractions of Na2S
+                    # relative to the maximum values allowed from elemental abundances
+                    # see Eq. 3 in Mollière et al. (2020)
+                    # default: 0.05 - 1.
+                    na2s_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['na2s_fraction']]
+                    cube[cube_index['na2s_fraction']] = na2s_fraction
+
+                if 'KCL(c)' in self.cloud_species:
+                    # cloud base mass fractions of KCl
+                    # relative to the maximum values allowed from elemental abundances
+                    # see Eq. 3 in Mollière et al. (2020)
+                    # default: 0.05 - 1.
+                    kcl_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['kcl_fraction']]
+                    cube[cube_index['kcl_fraction']] = kcl_fraction
 
                 # sedimentation parameter
                 # ratio of the settling and mixing velocities of the cloud particles
-                # see Eq. 3 in Mollière et al. in prep.
+                # see Eq. 3 in Mollière et al. (2020)
                 if 'fsed' in bounds:
                     fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
                 else:
@@ -730,24 +761,42 @@ class AtmosphericRetrieval:
             if len(self.cloud_species) > 0:
                 # cloudy atmosphere
 
-                # mass fraction of Fe
-                x_fe = retrieval_util.return_XFe(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
+                log_x_base = {}
 
-                # logarithm of the cloud base mass fraction of Fe
-                log_x_base_fe = np.log10(1e1**cube[cube_index['fe_fraction']]*x_fe)
+                if 'Fe(c)' in self.cloud_species:
+                    # mass fraction of Fe
+                    x_fe = retrieval_util.return_XFe(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
 
-                # mass fraction of MgSiO3
-                x_mgsio3 = retrieval_util.return_XMgSiO3(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
+                    # logarithm of the cloud base mass fraction of Fe
+                    log_x_base['Fe'] = np.log10(10.**cube[cube_index['fe_fraction']]*x_fe)
 
-                # logarithm of the cloud base mass fraction of MgSiO3
-                log_x_base_mgsio3 = np.log10(1e1**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
+                if 'MgSiO3(c)' in self.cloud_species:
+                    # mass fraction of MgSiO3
+                    x_mgsio3 = retrieval_util.return_XMgSiO3(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
+
+                    # logarithm of the cloud base mass fraction of MgSiO3
+                    log_x_base['MgSiO3'] = np.log10(10.**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
+
+                if 'Na2S(c)' in self.cloud_species:
+                    # mass fraction of Na2S
+                    x_na2s = retrieval_util.return_XNa2S(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
+
+                    # logarithm of the cloud base mass fraction of Fe
+                    log_x_base['Na2S'] = np.log10(10.**cube[cube_index['na2s_fraction']]*x_na2s)
+
+                if 'KCL(c)' in self.cloud_species:
+                    # mass fraction of KCl
+                    x_kcl = retrieval_util.return_XKCl(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
+
+                    # logarithm of the cloud base mass fraction of Fe
+                    log_x_base['KCl'] = np.log10(10.**cube[cube_index['kcl_fraction']]*x_kcl)
 
                 # the try-except is required to catch numerical precision errors with the clouds
                 # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
-                    log_x_base_fe, log_x_base_mgsio3, cube[cube_index['fsed']], cube[cube_index['metallicity']], cube[cube_index['kzz']],
-                    cube[cube_index['logg']], cube[cube_index['sigma_lnorm']], chemistry=chemistry, half=True, plotting=plotting, contribution=False)
+                    log_x_base, cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
+                    cube[cube_index['sigma_lnorm']], chemistry=chemistry, half=True, plotting=plotting, contribution=False)
 
                 # except:
                 #     return -np.inf
