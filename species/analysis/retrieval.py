@@ -7,10 +7,13 @@ import os
 import json
 import warnings
 
+from typing import Optional
+
 import pymultinest
 import numpy as np
 import matplotlib.pyplot as plt
 
+from typeguard import typechecked
 from scipy.stats import invgamma
 from rebin_give_width import rebin_give_width
 
@@ -33,21 +36,22 @@ class AtmosphericRetrieval:
     Class for atmospheric retrieval with petitRADTRANS.
     """
 
+    @typechecked
     def __init__(self,
-                 object_name,
-                 line_species,
-                 cloud_species,
-                 scattering,
-                 output_folder):
+                 object_name: str,
+                 line_species: Optional[list],
+                 cloud_species: Optional[list],
+                 scattering: bool,
+                 output_folder: str) -> None:
         """
         Parameters
         ----------
         object_name : str
             Object name in the database.
-        line_species : list
-            List with the line species.
-        cloud_species : list
-            List with the cloud species. No clouds are used if an empty list is provided.
+        line_species : list, None
+            List with the line species. No line species are used if set to None.
+        cloud_species : list, None
+            List with the cloud species. No cloud species are used if set to None.
         scattering : bool
             Include scattering in the radiative transfer.
         output_folder : str
@@ -75,8 +79,9 @@ class AtmosphericRetrieval:
         print(f'Object: {self.object_name}')
         print(f'Distance: {self.distance}')
 
-        if len(self.line_species) == 0:
+        if self.line_species is None:
             print(f'Line species: None')
+            self.line_species = []
 
         else:
             print(f'Line species:')
@@ -178,11 +183,12 @@ class AtmosphericRetrieval:
 
         self.parameters = []
 
+    @typechecked
     def set_parameters(self,
-                       bounds,
-                       chemistry,
-                       quenching,
-                       pt_profile):
+                       bounds: dict,
+                       chemistry: str,
+                       quenching: bool,
+                       pt_profile: str) -> None:
         """
         Function to set the list with parameters.
 
@@ -226,6 +232,7 @@ class AtmosphericRetrieval:
 
             if pt_profile == 'free':
                 self.parameters.append('gamma_r')
+                self.parameters.append('beta_r')
 
         # abundance parameters
 
@@ -287,14 +294,15 @@ class AtmosphericRetrieval:
         for item in self.parameters:
             print(f'   - {item}')
 
+    @typechecked
     def run_multinest(self,
-                      bounds,
-                      chemistry='equilibrium',
-                      quenching=True,
-                      pt_profile='molliere',
-                      live_points=2000,
-                      resume=False,
-                      plotting=False):
+                      bounds: dict,
+                      chemistry: str = 'equilibrium',
+                      quenching: bool = True,
+                      pt_profile: str = 'molliere',
+                      live_points: int = 2000,
+                      resume: bool = False,
+                      plotting: bool = False) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -422,14 +430,21 @@ class AtmosphericRetrieval:
         if pt_profile in ['free', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
 
-        def prior(cube, n_dim, n_param):
+        @typechecked
+        def prior(cube,
+                  n_dim: int,
+                  n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter cube.
 
             Parameters
             ----------
-            cube : pymultinest.run.LP_c_double
+            cube : LP_c_double
                 Unit cube.
+            n_dim : int
+                Number of dimensions.
+            n_param : int
+                Number of parameters.
 
             Returns
             -------
@@ -511,7 +526,9 @@ class AtmosphericRetrieval:
 
                 # penalization of wiggles in the P-T profile
                 # inverse Gamma: a=1, b=5e-5
-                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=5e-5)
+                beta_r = cube[cube_index['beta_r']]
+                gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=beta_r)
+                cube[cube_index['beta_r']] = beta_r
                 cube[cube_index['gamma_r']] = gamma_r
 
             elif pt_profile == 'monotonic':
@@ -668,14 +685,21 @@ class AtmosphericRetrieval:
                             (bounds[item][2][1]-bounds[item][2][0]) * \
                             cube[cube_index[f'wavelength_{item}']]
 
-        def loglike(cube, n_dim, n_param):
+        @typechecked
+        def loglike(cube,
+                    n_dim: int,
+                    n_param: int) -> float:
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
 
             Parameters
             ----------
-            cube : pymultinest.run.LP_c_double
+            cube : LP_c_double
                 Unit cube.
+            n_dim : int
+                Number of dimensions.
+            n_param : int
+                Number of parameters.
 
             Returns
             -------
