@@ -172,6 +172,8 @@ class ReadRadtrans:
             for i in range(15):
                 knot_temp.append(model_param[f't{i}'])
 
+            knot_temp = np.asarray(knot_temp)
+
             temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
         if 'log_p_quench' in model_param:
@@ -187,7 +189,7 @@ class ReadRadtrans:
                 wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                     self.rt_object, self.pressure, temp, model_param['logg'],
                     model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
-                    None, half=True, contribution=contribution)
+                    None, half=True, chemistry='equilibrium', contribution=contribution)
 
             else:
                 abund = {}
@@ -196,7 +198,7 @@ class ReadRadtrans:
 
                 wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                     self.rt_object, self.pressure, temp, model_param['logg'], None,
-                    None, None, abund, half=True, contribution=contribution)
+                    None, None, abund, half=True, chemistry='free', contribution=contribution)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param)

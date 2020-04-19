@@ -1542,8 +1542,6 @@ class Database:
         for i in range(n_line_species):
             line_species.append(dset.attrs[f'line_species{i}'])
 
-        line_species = np.asarray(line_species)
-
         cloud_species = []
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f'cloud_species{i}'])
@@ -1623,6 +1621,8 @@ class Database:
                 for i in range(15):
                     knot_temp.append(item[temp_index[i]])
 
+                knot_temp = np.asarray(knot_temp)
+
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
             if quenching:
@@ -1633,7 +1633,7 @@ class Database:
             if chemistry == 'equilibrium':
                 wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
                     rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
-                    item[metallicity_index], log_p_quench, None, half=True)
+                    item[metallicity_index], log_p_quench, None, half=True, chemistry=chemistry)
 
             elif chemistry == 'free':
                 log_x_abund = {}
@@ -1643,7 +1643,7 @@ class Database:
 
                 wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
                     rt_object, pressure, temp, item[logg_index],
-                    None, None, None, log_x_abund, half=True)
+                    None, None, None, log_x_abund, half=True, chemistry=chemistry)
 
             flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
 

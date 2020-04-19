@@ -1382,6 +1382,7 @@ def simple_cdf_Fe(press: np.ndarray,
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
         plt.savefig('fe_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
 
     return P_cloud
 
@@ -1426,6 +1427,7 @@ def simple_cdf_MgSiO3(press: np.ndarray,
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
         plt.savefig('mgsio3_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
 
     return P_cloud
 
@@ -1470,6 +1472,7 @@ def simple_cdf_Na2S(press: np.ndarray,
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
         plt.savefig('na2s_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
 
     return P_cloud
 
@@ -1514,6 +1517,7 @@ def simple_cdf_KCl(press: np.ndarray,
         plt.xlim([0., 3000.])
         plt.ylim([1e2,1e-6])
         plt.savefig('kcl_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
 
     return P_cloud
 

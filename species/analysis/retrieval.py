@@ -247,12 +247,16 @@ class AtmosphericRetrieval:
         if len(self.cloud_species) > 0:
             if 'Fe(c)_cd' in self.cloud_species:
                 self.parameters.append('fe_fraction')
+
             if 'MgSiO3(c)_cd' in self.cloud_species:
                 self.parameters.append('mgsio3_fraction')
+
             if 'Na2S(c)_cd' in self.cloud_species:
                 self.parameters.append('na2s_fraction')
+
             if 'KCL(c)_cd' in self.cloud_species:
                 self.parameters.append('kcl_fraction')
+
             self.parameters.append('fsed')
             self.parameters.append('kzz')
             self.parameters.append('sigma_lnorm')
@@ -737,8 +741,6 @@ class AtmosphericRetrieval:
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
                 if pt_profile == 'free':
-                    knot_temp = np.asarray(knot_temp)
-
                     temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
                     # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 

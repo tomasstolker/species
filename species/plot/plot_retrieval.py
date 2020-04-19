@@ -142,6 +142,8 @@ def plot_pt_profile(tag,
             for i in range(15):
                 knot_temp.append(item[temp_index[i]][0])
 
+            knot_temp = np.asarray(knot_temp)
+
             temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
@@ -155,6 +157,8 @@ def plot_pt_profile(tag,
         knot_temp = []
         for i in range(15):
             knot_temp.append(median[f't{i}'])
+
+        knot_temp = np.asarray(knot_temp)
 
         temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
