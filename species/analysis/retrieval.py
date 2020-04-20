@@ -18,7 +18,6 @@ from scipy.stats import invgamma
 from rebin_give_width import rebin_give_width
 
 from petitRADTRANS import Radtrans
-from petitRADTRANS_ck_test_speed import nat_cst as nc
 from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
 
 from species.analysis import photometry
@@ -164,17 +163,17 @@ class AtmosphericRetrieval:
             print(f'     Wavelength range (um) = {wavel_data[0]:.2f} - {wavel_data[-1]:.2f}')
             print(f'     Spectral resolution = {self.spectrum[key][3]:.2f}')
 
-        # mock p-t profile for Radtrans object
+        # create the pressure layers for the Radtrans object
 
-        temp_params = {}
-        temp_params['log_delta'] = -6.
-        temp_params['log_gamma'] = 1.
-        temp_params['t_int'] = 750.
-        temp_params['t_equ'] = 0.
-        temp_params['log_p_trans'] = -3.
-        temp_params['alpha'] = 0.
+        if len(self.cloud_species) > 0:
+            # initiate many pressure layers for the refinement around the cloud decks
+            n_pressure = 1440
 
-        self.pressure, _ = nc.make_press_temp(temp_params)
+        else:
+            # initiate fewer pressure layers for a cloudless atmosphere
+            n_pressure = 180
+
+        self.pressure = np.logspace(-6, 3, n_pressure)
 
         print(f'Initiating {self.pressure.size} pressure levels (bar): '
               f'{self.pressure[0]:.2e} - {self.pressure[-1]:.2e}')
@@ -420,12 +419,16 @@ class AtmosphericRetrieval:
                                                     1.15*max(self.wavel_max)),
                                  mode='c-k')
 
-        # create RT arrays of appropriate lengths by using every three pressure points
+        # create RT arrays of 60 pressure layers
 
-        print(f'Decreasing the number of pressure levels: {self.pressure.size} -> '
-              f'{self.pressure[::3].size}.')
+        if len(self.cloud_species) > 0:
+            rt_object.setup_opa_structure(self.pressure[::24])
 
-        rt_object.setup_opa_structure(self.pressure[::3])
+        else:
+            rt_object.setup_opa_structure(self.pressure[::3])
+
+            print(f'Decreasing the number of pressure levels: {self.pressure.size} -> '
+                  f'{self.pressure[::3].size}.')
 
         if pt_profile in ['free', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
