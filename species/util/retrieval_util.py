@@ -1,6 +1,6 @@
 import copy
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -631,7 +631,9 @@ def calc_spectrum_clouds(rt_object: RadtransCloudy,
         p_base['KCl(c)'] = P_base_KCl
 
     # adaptive pressure refinement around the cloud base
+    print(pressure)
     _, small_index = make_half_pressure_better(p_base, pressure)
+    small_index = None
 
     abundances = create_abund_dict(abund_in,
                                    rt_object.line_species,
@@ -642,10 +644,10 @@ def calc_spectrum_clouds(rt_object: RadtransCloudy,
     Kzz_use = np.full(pressure.shape, 10.**Kzz)
 
     if half:
-        temperature = temperature[small_index]
-        pressure = pressure[small_index]
-        mmw = mmw[small_index]
-        Kzz_use = Kzz_use[small_index]
+        temperature = temperature[::3]
+        pressure = pressure[::3]
+        mmw = mmw[::3]
+        Kzz_use = Kzz_use[::3]
 
     fseds = {}
     if 'Fe' in log_x_base:
@@ -996,6 +998,63 @@ def potassium_abundance(log_x_abund: dict) -> float:
     n_k_abund = n_na_abund * n_k_solar/n_na_solar
 
     return np.log10(n_k_abund * masses['K']/mmw)
+
+
+@typechecked
+def log_x_cloud_base(c_o_ratio: float,
+                     metallicity: float,
+                     cloud_fractions: dict) -> dict:
+    """
+    Function for returning a dictionary with the log10 mass fractions at the cloud base.
+
+    Parameters
+    ----------
+    c_o_ratio : float
+        C/O ratio.
+    metallicity : float
+        Metallicity, [Fe/H].
+    cloud_fractions : dict
+        Dictionary with mass fractions at the cloud base, relative to the maximum values allowed
+        from elemental abundances. The dictionary keys are the cloud species without the structure
+        and shape index (e.g. Na2S(c) instead of Na2S(c)_cd).
+
+    Returns
+    -------
+    dict
+        Dictionary with the log10 mass fractions at the cloud base.
+    """
+
+    log_x_base = {}
+
+    if 'Fe(c)' in cloud_fractions:
+        # mass fraction of Fe
+        x_fe = return_XFe(metallicity, c_o_ratio)
+
+        # logarithm of the cloud base mass fraction of Fe
+        log_x_base['Fe'] = np.log10(10.**cloud_fractions['Fe(c)']*x_fe)
+
+    if 'MgSiO3(c)' in cloud_fractions:
+        # mass fraction of MgSiO3
+        x_mgsio3 = return_XMgSiO3(metallicity, c_o_ratio)
+
+        # logarithm of the cloud base mass fraction of MgSiO3
+        log_x_base['MgSiO3'] = np.log10(10.**cloud_fractions['MgSiO3(c)']*x_mgsio3)
+
+    if 'Na2S(c)' in cloud_fractions:
+        # mass fraction of Na2S
+        x_na2s = return_XNa2S(metallicity, c_o_ratio)
+
+        # logarithm of the cloud base mass fraction of Fe
+        log_x_base['Na2S'] = np.log10(10.**cloud_fractions['Na2S(c)']*x_na2s)
+
+    if 'KCL(c)' in cloud_fractions:
+        # mass fraction of KCl
+        x_kcl = return_XKCl(metallicity, c_o_ratio)
+
+        # logarithm of the cloud base mass fraction of Fe
+        log_x_base['KCl'] = np.log10(10.**cloud_fractions['KCL(c)']*x_kcl)
+
+    return log_x_base
 
 
 #############################################################

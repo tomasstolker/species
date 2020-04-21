@@ -14,9 +14,9 @@ import numpy as np
 
 from astropy.io import fits
 
-from petitRADTRANS import Radtrans
+from petitRADTRANS import Radtrans as RadtransClear
 from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
+from petitRADTRANS_ck_test_speed import Radtrans as RadtransCloudy
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -1544,9 +1544,7 @@ class Database:
 
         cloud_species = []
         for i in range(n_cloud_species):
-            cloud_species.append(dset.attrs[f'cloud_species{i}'])
-
-        cloud_species = np.asarray(cloud_species)
+            cloud_species.append(dset.attrs[f'cloud_species{i}']+'_cd')
 
         # create mock p-t profile
 
@@ -1585,23 +1583,28 @@ class Database:
 
             knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
+        if len(cloud_species) > 0:
+            fsed_index = np.argwhere(parameters == 'fsed')[0][0]
+            kzz_index = np.argwhere(parameters == 'kzz')[0][0]
+            sigma_lnorm_index = np.argwhere(parameters == 'sigma_lnorm')[0][0]
+
         if scattering:
-            rt_object = RadtransScatter(line_species=line_species,
-                                        rayleigh_species=['H2', 'He'],
-                                        cloud_species=cloud_species,
-                                        continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=wavel_range,
-                                        mode='c-k',
-                                        test_ck_shuffle_comp=scattering,
-                                        do_scat_emis=scattering)
+            rt_object = RadtransCloudy(line_species=line_species,
+                                       rayleigh_species=['H2', 'He'],
+                                       cloud_species=cloud_species,
+                                       continuum_opacities=['H2-H2', 'H2-He'],
+                                       wlen_bords_micron=wavel_range,
+                                       mode='c-k',
+                                       test_ck_shuffle_comp=scattering,
+                                       do_scat_emis=scattering)
 
         else:
-            rt_object = Radtrans(line_species=line_species,
-                                 rayleigh_species=['H2', 'He'],
-                                 cloud_species=cloud_species,
-                                 continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=wavel_range,
-                                 mode='c-k')
+            rt_object = RadtransClear(line_species=line_species,
+                                      rayleigh_species=['H2', 'He'],
+                                      cloud_species=cloud_species,
+                                      continuum_opacities=['H2-H2', 'H2-He'],
+                                      wlen_bords_micron=wavel_range,
+                                      mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
         rt_object.setup_opa_structure(pressure[::3])
@@ -1631,9 +1634,28 @@ class Database:
                 log_p_quench = -10.
 
             if chemistry == 'equilibrium':
-                wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
-                    rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
-                    item[metallicity_index], log_p_quench, None, half=True, chemistry=chemistry)
+                if len(cloud_species) == 0:
+                    wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
+                        rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
+                        item[metallicity_index], log_p_quench, None, half=True, chemistry=chemistry)
+
+                else:
+                    cloud_fractions = {}
+
+                    for cloud_item in cloud_species:
+                        cloud_str = f'{cloud_item[:-3].lower()}_fraction'
+                        cloud_index = np.argwhere(parameters == cloud_str)[0][0]
+                        cloud_fractions[cloud_item] = item[cloud_index]
+
+                    log_x_base = retrieval_util.log_x_cloud_base(item[c_o_ratio_index],
+                                                                 item[metallicity_index],
+                                                                 cloud_fractions)
+
+                    wavelength, flux, _ = retrieval_util.calc_spectrum_clouds(
+                        rt_object, pressure, temp, item[c_o_ratio_index], item[metallicity_index],
+                        log_p_quench, log_x_base, item[fsed_index], item[kzz_index],
+                        item[logg_index], item[sigma_lnorm_index], chemistry=chemistry, half=True,
+                        plotting=False, contribution=False)
 
             elif chemistry == 'free':
                 log_x_abund = {}

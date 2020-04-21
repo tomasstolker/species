@@ -14,9 +14,8 @@ import matplotlib.pyplot as plt
 
 from typeguard import typechecked
 
-from petitRADTRANS import Radtrans
-from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
+from petitRADTRANS import Radtrans as RadtransClear
+from petitRADTRANS_ck_test_speed import Radtrans as RadtransCloudy
 
 from species.core import box, constants
 from species.read import read_filter
@@ -76,42 +75,40 @@ class ReadRadtrans:
         self.database = config['species']['database']
 
         if line_species is None:
-            line_species = []
+            self.line_species = []
+        else:
+            self.line_species = line_species
 
         if cloud_species is None:
-            cloud_species = []
+            self.cloud_species = []
+            n_pressure = 180
+        else:
+            self.cloud_species = cloud_species
+            # n_pressure = 1440
+            n_pressure = 180
 
-        # create mock p-t profile
-
-        temp_params = {}
-        temp_params['log_delta'] = -6.
-        temp_params['log_gamma'] = 1.
-        temp_params['t_int'] = 750.
-        temp_params['t_equ'] = 0.
-        temp_params['log_p_trans'] = -3.
-        temp_params['alpha'] = 0.
-
-        self.pressure, _ = nc.make_press_temp(temp_params)
+        # create 180 pressure layers in log space
+        self.pressure = np.logspace(-6, 3, n_pressure)
 
         # create Radtrans object
 
         if self.scattering:
-            self.rt_object = RadtransScatter(line_species=line_species,
-                                             rayleigh_species=['H2', 'He'],
-                                             cloud_species=cloud_species,
-                                             continuum_opacities=['H2-H2', 'H2-He'],
-                                             wlen_bords_micron=wavel_range,
-                                             mode='c-k',
-                                             test_ck_shuffle_comp=self.scattering,
-                                             do_scat_emis=self.scattering)
+            self.rt_object = RadtransCloudy(line_species=self.line_species,
+                                            rayleigh_species=['H2', 'He'],
+                                            cloud_species=self.cloud_species,
+                                            continuum_opacities=['H2-H2', 'H2-He'],
+                                            wlen_bords_micron=wavel_range,
+                                            mode='c-k',
+                                            test_ck_shuffle_comp=self.scattering,
+                                            do_scat_emis=self.scattering)
 
         else:
-            self.rt_object = Radtrans(line_species=line_species,
-                                      rayleigh_species=['H2', 'He'],
-                                      cloud_species=cloud_species,
-                                      continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=wavel_range,
-                                      mode='c-k')
+            self.rt_object = RadtransClear(line_species=self.line_species,
+                                           rayleigh_species=['H2', 'He'],
+                                           cloud_species=self.cloud_species,
+                                           continuum_opacities=['H2-H2', 'H2-He'],
+                                           wlen_bords_micron=wavel_range,
+                                           mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
         self.rt_object.setup_opa_structure(self.pressure[::3])
@@ -181,24 +178,35 @@ class ReadRadtrans:
         else:
             log_p_quench = -10.
 
-        if self.scattering:
-            pass
+        if len(self.cloud_species) > 0:
+            cloud_fractions = {}
+            for item in self.cloud_species:
+                cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
+
+            log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
+                                                         model_param['metallicity'],
+                                                         cloud_fractions)
+
+            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
+                self.rt_object, self.pressure, temp, model_param['c_o_ratio'],
+                model_param['metallicity'], log_p_quench, log_x_base, model_param['fsed'],
+                model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
+                chemistry='equilibrium', half=True, plotting=False, contribution=contribution)
+
+        elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
+            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
+                self.rt_object, self.pressure, temp, model_param['logg'],
+                model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
+                None, half=True, chemistry='equilibrium', contribution=contribution)
 
         else:
-            if 'c_o_ratio' in model_param and 'metallicity' in model_param:
-                wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
-                    self.rt_object, self.pressure, temp, model_param['logg'],
-                    model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
-                    None, half=True, chemistry='equilibrium', contribution=contribution)
+            abund = {}
+            for ab_item in self.rt_object.line_species:
+                abund[ab_item] = model_param[ab_item]
 
-            else:
-                abund = {}
-                for ab_item in self.rt_object.line_species:
-                    abund[ab_item] = model_param[ab_item]
-
-                wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
-                    self.rt_object, self.pressure, temp, model_param['logg'], None,
-                    None, None, abund, half=True, chemistry='free', contribution=contribution)
+            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
+                self.rt_object, self.pressure, temp, model_param['logg'], None,
+                None, None, abund, half=True, chemistry='free', contribution=contribution)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param)

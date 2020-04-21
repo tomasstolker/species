@@ -96,6 +96,10 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 print(f'   - {item}')
 
+            if chemistry != 'equilibrium':
+                raise ValueError('Clouds are currently only implemented in combination with '
+                                 'equilibrium chemistry.')
+
         print(f'Scattering: {self.scattering}')
 
         species_db = database.Database()
@@ -790,35 +794,13 @@ class AtmosphericRetrieval:
             if len(self.cloud_species) > 0:
                 # cloudy atmosphere
 
-                log_x_base = {}
+                cloud_fractions = {}
+                for item in self.cloud_species:
+                    cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
 
-                if 'Fe(c)' in self.cloud_species:
-                    # mass fraction of Fe
-                    x_fe = retrieval_util.return_XFe(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
-
-                    # logarithm of the cloud base mass fraction of Fe
-                    log_x_base['Fe'] = np.log10(10.**cube[cube_index['fe_fraction']]*x_fe)
-
-                if 'MgSiO3(c)' in self.cloud_species:
-                    # mass fraction of MgSiO3
-                    x_mgsio3 = retrieval_util.return_XMgSiO3(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
-
-                    # logarithm of the cloud base mass fraction of MgSiO3
-                    log_x_base['MgSiO3'] = np.log10(10.**cube[cube_index['mgsio3_fraction']]*x_mgsio3)
-
-                if 'Na2S(c)' in self.cloud_species:
-                    # mass fraction of Na2S
-                    x_na2s = retrieval_util.return_XNa2S(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
-
-                    # logarithm of the cloud base mass fraction of Fe
-                    log_x_base['Na2S'] = np.log10(10.**cube[cube_index['na2s_fraction']]*x_na2s)
-
-                if 'KCL(c)' in self.cloud_species:
-                    # mass fraction of KCl
-                    x_kcl = retrieval_util.return_XKCl(cube[cube_index['metallicity']], cube[cube_index['c_o_ratio']])
-
-                    # logarithm of the cloud base mass fraction of Fe
-                    log_x_base['KCl'] = np.log10(10.**cube[cube_index['kcl_fraction']]*x_kcl)
+                log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
+                                                                  cube[cube_index['metallicity']],
+                                                                  cloud_fractions)
 
                 # the try-except is required to catch numerical precision errors with the clouds
                 # try:
