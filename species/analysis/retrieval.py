@@ -479,7 +479,7 @@ class AtmosphericRetrieval:
 
             if pt_profile == 'molliere':
 
-                # internal temperature (K) of the Eddington model
+                # internal temperature (K) of the Eddington approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
                 if 'tint' in bounds:
                     tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[cube_index['tint']]
