@@ -426,12 +426,8 @@ class ReadModel:
                                  'the parameter values and the wavelength range are within '
                                  'the grid boundaries as stored in the database.')
 
-            wavel_resample = [self.wl_points[0]]
-
-            while wavel_resample[-1] <= self.wl_points[-1]:
-                wavel_resample.append(wavel_resample[-1] + wavel_resample[-1]/(2.*spec_res))
-
-            wavel_resample = np.asarray(wavel_resample[:-1])
+            wavel_resample = read_util.create_wavelengths(
+                (self.wl_points[0], self.wl_points[-1]), spec_res)
 
             indices = np.where((wavel_resample > self.wl_points[0]) &
                                (wavel_resample < self.wl_points[-2]))[0]

@@ -11,6 +11,7 @@ from multiprocessing import Pool, cpu_count
 import emcee
 import numpy as np
 
+# installation of MultiNest is not possible on readthedocs 
 try:
     import pymultinest
 except:

@@ -3,6 +3,7 @@ Module for AMES-Cond atmospheric model spectra.
 """
 
 import os
+import math
 import gzip
 import tarfile
 import warnings
@@ -11,7 +12,7 @@ import urllib.request
 import spectres
 import numpy as np
 
-from species.util import data_util
+from species.util import data_util, read_util
 
 
 def add_ames_cond(input_path,
@@ -73,12 +74,7 @@ def add_ames_cond(input_path,
     logg = []
     flux = []
 
-    wavelength = [wavel_range[0]]
-
-    while wavelength[-1] <= wavel_range[1]:
-        wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-    wavelength = np.asarray(wavelength[:-1])
+    wavelength = read_util.create_wavelengths(wavel_range, spec_res)
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
@@ -168,12 +164,7 @@ def add_ames_cond(input_path,
                 logg.append(logg_val)
 
                 try:
-                    flux.append(spectres.spectres(wavelength,
-                                                  data[:, 0],
-                                                  data[:, 1],
-                                                  fill=0.,
-                                                  verbose=False))
-
+                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
                 except ValueError:
                     flux.append(np.zeros(wavelength.shape[0]))
 

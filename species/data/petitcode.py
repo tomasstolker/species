@@ -11,7 +11,7 @@ import spectres
 import numpy as np
 
 from species.core import constants
-from species.util import data_util
+from species.util import data_util, read_util
 
 
 def add_petitcode_cool_clear(input_path,
@@ -68,13 +68,7 @@ def add_petitcode_cool_clear(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 
@@ -197,13 +191,7 @@ def add_petitcode_cool_cloudy(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 
@@ -313,13 +301,7 @@ def add_petitcode_hot_clear(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 
@@ -428,13 +410,7 @@ def add_petitcode_hot_cloudy(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 

@@ -277,7 +277,7 @@ def plot_spectrum(boxes,
                     for i, item in enumerate(par_key):
 
                         if item == 'teff':
-                            value = f'{param[item]:.1f}'
+                            value = f'{param[item]:.0f}'
 
                         elif item in ['logg', 'feh', 'co', 'fsed']:
                             value = f'{param[item]:.2f}'
@@ -285,10 +285,10 @@ def plot_spectrum(boxes,
                         elif item == 'radius':
 
                             if object_type == 'planet':
-                                value = f'{param[item]:.2f}'
+                                value = f'{param[item]:.1f}'
 
                             elif object_type == 'star':
-                                value = f'{param[item]*constants.R_JUP/constants.R_SUN:.2f}'
+                                value = f'{param[item]*constants.R_JUP/constants.R_SUN:.1f}'
 
                         elif item == 'mass':
                             if object_type == 'planet':
@@ -297,7 +297,7 @@ def plot_spectrum(boxes,
                                 value = f'{param[item]*constants.M_JUP/constants.M_SUN:.2f}'
 
                         elif item == 'luminosity':
-                            value = f'{param[item]:.1e}'
+                            value = f'{np.log10(param[item]):.1f}'
 
                         else:
                             continue
@@ -406,9 +406,14 @@ def plot_spectrum(boxes,
                 wavelength = transmission.mean_wavelength()
                 fwhm = transmission.filter_fwhm()
 
-                ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                             alpha=0.7, marker='s', ms=5, zorder=4, color=colors[j],
-                             markerfacecolor='white')
+                if colors is None:
+                    ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
+                                 alpha=0.7, marker='s', ms=5, zorder=4, markerfacecolor='white')
+
+                else:
+                    ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
+                                 alpha=0.7, marker='s', ms=5, zorder=4, color=colors[j],
+                                 markerfacecolor='white')
 
     if filters is not None:
         for i, item in enumerate(filters):
