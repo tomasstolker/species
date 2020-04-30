@@ -5,8 +5,6 @@ Utility functions for photometry.
 import math
 import warnings
 
-import matplotlib.pyplot as plt
-
 import spectres
 import numpy as np
 
@@ -180,13 +178,22 @@ def get_residuals(datatype,
                                       filters=filters,
                                       parameters=parameters)
 
-        res_phot = np.zeros((2, len(objectbox.flux)))
+        res_phot = {}
 
-        for i, item in enumerate(filters):
+        for item in filters:
             transmission = read_filter.ReadFilter(item)
+            res_phot[item] = np.zeros(objectbox.flux[item].shape)
 
-            res_phot[0, i] = transmission.mean_wavelength()
-            res_phot[1, i] = (objectbox.flux[item][0]-model_phot.flux[item])/objectbox.flux[item][1]
+            if objectbox.flux[item].ndim == 1:
+                res_phot[item][0] = transmission.mean_wavelength()
+                res_phot[item][1] = (objectbox.flux[item][0]-model_phot.flux[item]) / \
+                    objectbox.flux[item][1]
+
+            elif objectbox.flux[item].ndim == 2:
+                for j in range(objectbox.flux[item].shape[1]):
+                    res_phot[item][0, j] = transmission.mean_wavelength()
+                    res_phot[item][1, j] = (objectbox.flux[item][0, j]-model_phot.flux[item]) / \
+                        objectbox.flux[item][1, j]
 
     else:
         res_phot = None
@@ -250,8 +257,13 @@ def get_residuals(datatype,
     print('Residuals (sigma):')
 
     if res_phot is not None:
-        for i, item in enumerate(filters):
-            print(f'   - {item}: {res_phot[1, i]:.2f}')
+        for item in filters:
+            if res_phot[item].ndim == 1:
+                print(f'   - {item}: {res_phot[item][1]:.2f}')
+
+            elif res_phot[item].ndim == 2:
+                for j in range(res_phot[item].shape[1]):
+                    print(f'   - {item}: {res_phot[item][1, j]:.2f}')
 
     if res_spec is not None:
         for key in objectbox.spectrum:

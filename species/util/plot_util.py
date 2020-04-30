@@ -119,11 +119,11 @@ def update_labels(param):
 
     if 'logg' in param:
         index = param.index('logg')
-        param[index] = r'$\log\,g$ (dex)'
+        param[index] = r'$\log\,g$'
 
     if 'feh' in param:
         index = param.index('feh')
-        param[index] = r'[Fe/H] (dex)'
+        param[index] = r'[Fe/H]'
 
     if 'fsed' in param:
         index = param.index('fsed')
@@ -137,9 +137,9 @@ def update_labels(param):
         index = param.index('radius')
         param[index] = r'$R$ ($\mathregular{R_{Jup}}$)'
 
-    if 'teff' in param:
-        index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ (K)'
+    if 'luminosity' in param:
+        index = param.index('luminosity')
+        param[index] = r'$\log\,L$/L$_\odot$'
 
     if 'tint' in param:
         index = param.index('tint')
@@ -156,11 +156,11 @@ def update_labels(param):
 
     if 'log_delta' in param:
         index = param.index('log_delta')
-        param[index] = r'$\log\,\delta$ (dex)'
+        param[index] = r'$\log\,\delta$'
 
     if 'log_p_quench' in param:
         index = param.index('log_p_quench')
-        param[index] = r'$\log\,P_\mathregular{quench}$ (dex)'
+        param[index] = r'$\log\,P_\mathregular{quench}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
@@ -233,12 +233,12 @@ def quantity_unit(param,
 
     if 'logg' in param:
         quantity.append('logg')
-        unit.append('dex')
+        unit.append('')
         label.append(r'$\log\,g$')
 
     if 'feh' in param:
         quantity.append('feh')
-        unit.append('dex')
+        unit.append('')
         label.append(r'[Fe/H]')
 
     if 'fsed' in param:
@@ -278,8 +278,8 @@ def quantity_unit(param,
 
     if 'luminosity' in param:
         quantity.append('luminosity')
-        unit.append(r'$L_\odot$')
-        label.append(r'$L$')
+        unit.append('')
+        label.append(r'$\log\,L$/L$_\odot$')
 
     return quantity, unit, label
 

@@ -11,7 +11,7 @@ import spectres
 import numpy as np
 
 from species.core import constants
-from species.util import data_util
+from species.util import data_util, read_util
 
 
 def add_exo_rem(input_path,
@@ -74,17 +74,7 @@ def add_exo_rem(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            # From Paul Mollière:
-            # resolution = lambda / (resolution element of the spectrograph)
-            # R = lambda / delta_lambda / 2, because twice as many points as R to actually resolve
-            # two features that are lambda / R apart
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 

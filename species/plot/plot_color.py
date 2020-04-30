@@ -184,48 +184,64 @@ def plot_color_magnitude(boxes,
             if model_count[1] == 0:
                 label = plot_util.model_name(item.library)
 
-                ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
-                         linewidth=1., color=model_color[model_count[0]], label=label, zorder=0)
+                if item.library == 'zhu2015':
+                    ax1.plot(item.color, item.magnitude, marker='x', ms=5, linestyle=model_linestyle[model_count[1]],
+                             linewidth=0.6, color='gray', label=label, zorder=0)
 
-                if mass_labels is not None:
-                    interp_magnitude = interp1d(item.sptype, item.magnitude)
-                    interp_color = interp1d(item.sptype, item.color)
+                    xlim = ax1.get_xlim()
+                    ylim = ax1.get_ylim()
 
-                    for i, mass_item in enumerate(mass_labels):
-                        if isinstance(mass_item, tuple):
-                            mass_val = mass_item[0]
-                            mass_pos = mass_item[1]
+                    for i, teff_item in enumerate(item.sptype):
+                        teff_label = rf'{teff_item:.0e} $M_\mathregular{{Jup}}^{2}$ yr$^{{-1}}$'
 
-                        else:
-                            mass_val = mass_item
-                            mass_pos = 'right'
+                        if item.magnitude[i] > ylim[1]:
+                            ax1.annotate(teff_label, (item.color[i], item.magnitude[i]),
+                                         color='gray', fontsize=8, ha='left', va='center',
+                                         xytext=(item.color[i]+0.1, item.magnitude[i]+0.05), zorder=3)
 
-                        if j == 0 or (j > 0 and mass_val < 20.):
-                            pos_color = interp_color(mass_val)
-                            pos_mag = interp_magnitude(mass_val)
+                else:
+                    ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],
+                             linewidth=1., color=model_color[model_count[0]], label=label, zorder=0)
 
-                            if mass_pos == 'left':
-                                mass_ha = 'right'
-                                mass_xytext = (pos_color-0.05, pos_mag)
+                    if mass_labels is not None:
+                        interp_magnitude = interp1d(item.sptype, item.magnitude)
+                        interp_color = interp1d(item.sptype, item.color)
+
+                        for i, mass_item in enumerate(mass_labels):
+                            if isinstance(mass_item, tuple):
+                                mass_val = mass_item[0]
+                                mass_pos = mass_item[1]
 
                             else:
-                                mass_ha = 'left'
-                                mass_xytext = (pos_color+0.05, pos_mag)
+                                mass_val = mass_item
+                                mass_pos = 'right'
 
-                            mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
+                            if j == 0 or (j > 0 and mass_val < 20.):
+                                pos_color = interp_color(mass_val)
+                                pos_mag = interp_magnitude(mass_val)
 
-                            xlim = ax1.get_xlim()
-                            ylim = ax1.get_ylim()
+                                if mass_pos == 'left':
+                                    mass_ha = 'right'
+                                    mass_xytext = (pos_color-0.05, pos_mag)
 
-                            if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
-                                    ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
+                                else:
+                                    mass_ha = 'left'
+                                    mass_xytext = (pos_color+0.05, pos_mag)
 
-                                ax1.scatter(pos_color, pos_mag, c=model_color[model_count[0]], s=15,
-                                            edgecolor='none', zorder=0)
+                                mass_label = str(int(mass_val))+r' M$_\mathregular{J}$'
 
-                                ax1.annotate(mass_label, (pos_color, pos_mag),
-                                             color=model_color[model_count[0]], fontsize=9,
-                                             xytext=mass_xytext, zorder=3, ha=mass_ha, va='center')
+                                xlim = ax1.get_xlim()
+                                ylim = ax1.get_ylim()
+
+                                if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
+                                        ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
+
+                                    ax1.scatter(pos_color, pos_mag, c=model_color[model_count[0]], s=15,
+                                                edgecolor='none', zorder=0)
+
+                                    ax1.annotate(mass_label, (pos_color, pos_mag),
+                                                 color=model_color[model_count[0]], fontsize=9,
+                                                 xytext=mass_xytext, zorder=3, ha=mass_ha, va='center')
 
             else:
                 ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[model_count[1]],

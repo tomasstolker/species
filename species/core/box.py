@@ -60,13 +60,20 @@ def create_box(boxtype,
 
     elif boxtype == 'photometry':
         box = PhotometryBox()
-        box.name = kwargs['name']
-        box.sptype = kwargs['sptype']
-        box.wavelength = kwargs['wavelength']
-        box.flux = kwargs['flux']
-        box.app_mag = kwargs['app_mag']
-        box.abs_mag = kwargs['abs_mag']
-        box.filter_name = kwargs['filter_name']
+        if 'name' in kwargs:
+            box.name = kwargs['name']
+        if 'sptype' in kwargs:
+            box.sptype = kwargs['sptype']
+        if 'wavelength' in kwargs:
+            box.wavelength = kwargs['wavelength']
+        if 'flux' in kwargs:
+            box.flux = kwargs['flux']
+        if 'app_mag' in kwargs:
+            box.app_mag = kwargs['app_mag']
+        if 'abs_mag' in kwargs:
+            box.abs_mag = kwargs['abs_mag']
+        if 'filter_name' in kwargs:
+            box.filter_name = kwargs['filter_name']
 
     elif boxtype == 'residuals':
         box = ResidualsBox()

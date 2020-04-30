@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import ScalarFormatter
 
+from species.core import constants
 from species.data import database
 from species.util import plot_util
 
@@ -115,6 +116,7 @@ def plot_posterior(tag,
                    title_fmt='.2f',
                    limits=None,
                    max_posterior=False,
+                   inc_luminosity=False,
                    output='posterior.pdf'):
     """
     Function to plot the posterior distribution.
@@ -135,6 +137,9 @@ def plot_posterior(tag,
         Axis limits of all parameters. Automatically set if set to None.
     max_posterior : bool
         Plot the position of the sample with the maximum posterior probability.
+    inc_luminosity : bool
+        Include the log10 of the luminosity in the posterior plot as calculated from the
+        effective temperature and radius.
     output : str
         Output filename.
 
@@ -152,6 +157,7 @@ def plot_posterior(tag,
         print(f'   - {key} = {value:.2f}')
 
     samples = box.samples
+    ndim = samples.shape[-1]
 
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
@@ -162,9 +168,20 @@ def plot_posterior(tag,
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
+    if inc_luminosity and 'teff' in box.parameters and 'radius' in box.parameters:
+        ndim += 1
+
+        teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
+        radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+
+        luminosity = 4. * np.pi * (samples[:, :, radius_index]*constants.R_JUP)**2 * \
+            constants.SIGMA_SB * samples[:, :, teff_index]**4. / constants.L_SUN
+
+        samples = np.append(samples, np.log10(luminosity), axis=2)
+        box.parameters.append('luminosity')
+
     labels = plot_util.update_labels(box.parameters)
 
-    ndim = samples.shape[-1]
     samples = samples.reshape((-1, ndim))
 
     fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],

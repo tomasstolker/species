@@ -11,6 +11,7 @@ import numpy as np
 from species.analysis import photometry
 from species.core import box, constants
 from species.read import read_filter
+from species.util import read_util
 
 
 class ReadPlanck:
@@ -141,12 +142,7 @@ class ReadPlanck:
         if 'teff' in model_param and isinstance(model_param['teff'], list):
             model_param = self.update_parameters(model_param)
 
-        wavel_points = [self.wavel_range[0]]
-
-        while wavel_points[-1] <= self.wavel_range[1]:
-            wavel_points.append(wavel_points[-1] + wavel_points[-1]/(2.*spec_res))
-
-        wavel_points = np.asarray(wavel_points)  # (um)
+        wavel_points = read_util.create_wavelengths(self.wavel_range, spec_res)
 
         n_planck = (len(model_param)-1) // 2
 
