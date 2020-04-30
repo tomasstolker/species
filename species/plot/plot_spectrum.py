@@ -348,7 +348,7 @@ def plot_spectrum(boxes,
                 if plot_kwargs[j]:
                     ax1.plot(wavelength, masked/scaling, zorder=1, **plot_kwargs[j])
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=1)
+                    ax1.plot(wavelength, masked/scaling, color='gray', lw=0.2, alpha=0.5, zorder=1)
 
         elif isinstance(boxitem, box.PhotometryBox):
             for i, item in enumerate(boxitem.wavelength):
@@ -409,8 +409,12 @@ def plot_spectrum(boxes,
                                          mask=np.isnan(boxitem.spectrum[key][0]))
 
                     if not plot_kwargs[j] or key not in plot_kwargs[j]:
-                        ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                     ms=2, marker='s', zorder=2.5, ls='none')
+                        plot_obj = ax1.errorbar(masked[:, 0], masked[:, 1]/scaling,
+                                                yerr=masked[:, 2]/scaling, ms=2, marker='s',
+                                                zorder=2.5, ls='none')
+
+                        plot_kwargs[j][key] = {'marker': 's', 'ms': 2., 'ls': 'none',
+                                               'color': plot_obj[0].get_color()}
 
                     else:
                         ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
@@ -470,8 +474,13 @@ def plot_spectrum(boxes,
 
                     elif residuals.photometry[item].ndim == 2:
                         for i in range(residuals.photometry[item].shape[1]):
-                            ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
-                                     **plot_kwargs[obj_index][item][i])
+                            if isinstance(plot_kwargs[obj_index][item], list):
+                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
+                                         **plot_kwargs[obj_index][item][i])
+
+                            else:
+                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
+                                         **plot_kwargs[obj_index][item])
 
                 res_max = np.nanmax(np.abs(residuals.photometry[item][1]))
 
