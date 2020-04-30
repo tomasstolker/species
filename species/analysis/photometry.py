@@ -131,19 +131,6 @@ class SyntheticPhotometry:
             raise ValueError('Calculation of the mean flux is not possible because the '
                              'wavelength array is empty.')
 
-        indices = np.where((wavelength > self.wavel_range[0]) &
-                           (wavelength < self.wavel_range[1]))[0]
-
-        if indices.size == 1:
-            raise ValueError('Calculating synthetic photometry requires more than one '
-                             'wavelength point.')
-
-        wavelength = wavelength[indices]
-        flux = flux[indices]
-
-        if error is not None:
-            error = error[indices]
-
         indices = np.where((self.wavel_range[0] <= wavelength) &
                            (wavelength <= self.wavel_range[1]))[0]
 
@@ -160,7 +147,7 @@ class SyntheticPhotometry:
 
                 warnings.warn(f'The filter profile of {self.filter_name} '
                               f'({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) extends '
-                              f' beyond the wavelength range of the spectrum ({wavelength[0]:.4f} '
+                              f'beyond the wavelength range of the spectrum ({wavelength[0]:.4f} '
                               f'-{wavelength[-1]:.4f}). The flux is set to NaN. Setting the '
                               f'\'threshold\' parameter will loosen the wavelength constraints.')
 
@@ -202,21 +189,19 @@ class SyntheticPhotometry:
                     syn_flux = integral1/integral2
 
         if error is not None and not np.any(np.isnan(error)):
-            error_flux = np.zeros(200)
+            phot_random = np.zeros(200)
 
             for i in range(200):
-                spec_random = flux+np.random.normal(loc=0.,
-                                                    scale=1.,
-                                                    size=wavelength.shape[0])*error
+                spec_random = flux + np.random.normal(loc=0.,
+                                                      scale=1.,
+                                                      size=wavelength.shape[0])*error
 
-                spec_tmp = self.spectrum_to_flux(wavelength,
-                                                 spec_random,
-                                                 error=None,
-                                                 threshold=threshold)[0]
+                phot_random[i] = self.spectrum_to_flux(wavelength,
+                                                       spec_random,
+                                                       error=None,
+                                                       threshold=threshold)[0]
 
-                error_flux[i] = spec_tmp
-
-            error_flux = np.std(error_flux)
+            error_flux = np.std(phot_random)
 
         else:
             error_flux = None
@@ -269,21 +254,21 @@ class SyntheticPhotometry:
         app_mag = self.vega_mag - 2.5*math.log10(syn_flux[0]/zp_flux)
 
         if error is not None and not np.any(np.isnan(error)):
-            error_app_mag = np.zeros(200)
+            mag_random = np.zeros(200)
 
             for i in range(200):
-                spec_random = flux+np.random.normal(loc=0.,
-                                                    scale=1.,
-                                                    size=wavelength.shape[0])*error
+                spec_random = flux + np.random.normal(loc=0.,
+                                                      scale=1.,
+                                                      size=wavelength.shape[0])*error
 
                 flux_random = self.spectrum_to_flux(wavelength,
                                                     spec_random,
                                                     error=None,
                                                     threshold=threshold)
 
-                error_app_mag[i] = self.vega_mag - 2.5*np.log10(flux_random[0]/zp_flux)
+                mag_random[i] = self.vega_mag - 2.5*np.log10(flux_random[0]/zp_flux)
 
-            error_app_mag = np.std(error_app_mag)
+            error_app_mag = np.std(mag_random)
 
         else:
             error_app_mag = None
