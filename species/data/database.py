@@ -1217,8 +1217,6 @@ class Database:
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_param)
 
-            box.type = 'mcmc'
-
             boxes.append(specbox)
 
         h5_file.close()
@@ -1711,8 +1709,6 @@ class Database:
     #                                    flux=flux,
     #                                    parameters=None,
     #                                    quantity='flux')
-    #
-    #         model_box.type = 'mcmc'
     #
     #         boxes.append(model_box)
     #
