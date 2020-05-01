@@ -165,12 +165,19 @@ class ReadPlanck:
                                     model_param[f'teff_{i}'],
                                     scaling)  # (W m-2 um-1)
 
-        return box.create_box(boxtype='model',
-                              model='planck',
-                              wavelength=wavel_points,
-                              flux=flux,
-                              parameters=model_param,
-                              quantity='flux')
+        model_box = box.create_box(boxtype='model',
+                                   model='planck',
+                                   wavelength=wavel_points,
+                                   flux=flux,
+                                   parameters=model_param,
+                                   quantity='flux')
+
+        if 'radius' in model_box.parameters:
+            model_box.parameters['luminosity'] = 4. * np.pi * (model_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * model_box.parameters['teff']**4. / \
+                constants.L_SUN  # (Lsun)
+
+        return model_box
 
     def get_flux(self,
                  model_param,

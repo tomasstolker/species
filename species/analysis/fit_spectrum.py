@@ -61,8 +61,8 @@ def lnprob(param,
                 chisq += (obj_item[0] - param[0]*specphot[i])**2 / obj_item[1]**2
 
             else:
-                for i in range(obj_item.shape[1]):
-                    chisq += (obj_item[0, i] - param[0]*specphot[i])**2 / obj_item[1, i]**2
+                for j in range(obj_item.shape[1]):
+                    chisq += (obj_item[0, j] - param[0]*specphot[i])**2 / obj_item[1, j]**2
 
         ln_prob = ln_prior - 0.5*chisq
 

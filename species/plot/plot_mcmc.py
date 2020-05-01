@@ -168,17 +168,35 @@ def plot_posterior(tag,
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
-    if inc_luminosity and 'teff' in box.parameters and 'radius' in box.parameters:
+    if inc_luminosity:
         ndim += 1
 
-        teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
-        radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+        if 'teff' in box.parameters and 'radius' in box.parameters:
+            teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
+            radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
 
-        luminosity = 4. * np.pi * (samples[:, :, radius_index]*constants.R_JUP)**2 * \
-            constants.SIGMA_SB * samples[:, :, teff_index]**4. / constants.L_SUN
+            luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+                constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
-        samples = np.append(samples, np.log10(luminosity), axis=2)
-        box.parameters.append('luminosity')
+            samples = np.append(samples, np.log10(luminosity), axis=-1)
+            box.parameters.append('luminosity')
+
+        elif 'teff_0' in box.parameters and 'radius_0' in box.parameters:
+            luminosity = 0.
+
+            for i in range(100):
+                teff_index = np.argwhere(np.array(box.parameters) == f'teff_{i}')
+                radius_index = np.argwhere(np.array(box.parameters) == f'radius_{i}')
+
+                if len(teff_index) > 0 and len(radius_index) > 0:
+                    luminosity += 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
+                        * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
+
+                else:
+                    break
+
+            samples = np.append(samples, np.log10(luminosity), axis=-1)
+            box.parameters.append('luminosity')
 
     labels = plot_util.update_labels(box.parameters)
 
