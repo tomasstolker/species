@@ -233,12 +233,12 @@ def quantity_unit(param,
 
     if 'logg' in param:
         quantity.append('logg')
-        unit.append('')
+        unit.append(None)
         label.append(r'$\log\,g$')
 
     if 'feh' in param:
         quantity.append('feh')
-        unit.append('')
+        unit.append(None)
         label.append(r'[Fe/H]')
 
     if 'fsed' in param:
@@ -278,7 +278,7 @@ def quantity_unit(param,
 
     if 'luminosity' in param:
         quantity.append('luminosity')
-        unit.append('')
+        unit.append(None)
         label.append(r'$\log\,L$/L$_\odot$')
 
     return quantity, unit, label

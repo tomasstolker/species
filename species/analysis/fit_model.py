@@ -11,7 +11,7 @@ from multiprocessing import Pool, cpu_count
 import emcee
 import numpy as np
 
-# installation of MultiNest is not possible on readthedocs 
+# installation of MultiNest is not possible on readthedocs
 try:
     import pymultinest
 except:
@@ -63,7 +63,7 @@ def lnprior(param,
 
             if prior is not None and prior[0] == 'mass' and item == 'logg':
                 mass = read_util.get_mass(modeldict)
-                ln_prior += -0.5*(mass-prior[1])**2/prior[2]**2
+                ln_prior += -0.5*(mass - prior[1])**2 / prior[2]**2
 
             else:
                 ln_prior += 0.
@@ -135,8 +135,8 @@ def lnlike(param,
                 chisq += (obj_item[0] - flux)**2 / obj_item[1]**2
 
             else:
-                for i in range(obj_item.shape[1]):
-                    chisq += (obj_item[0, i] - flux)**2 / obj_item[1, i]**2
+                for j in range(obj_item.shape[1]):
+                    chisq += (obj_item[0, j] - flux)**2 / obj_item[1, j]**2
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
@@ -585,8 +585,8 @@ class FitModel:
                         chisq += (obj_item[0] - flux)**2 / obj_item[1]**2
 
                     else:
-                        for i in range(obj_item.shape[1]):
-                            chisq += (obj_item[0, i] - flux)**2 / obj_item[1, i]**2
+                        for j in range(obj_item.shape[1]):
+                            chisq += (obj_item[0, j] - flux)**2 / obj_item[1, j]**2
 
             if self.spectrum is not None:
                 for i, item in enumerate(self.spectrum.keys()):

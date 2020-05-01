@@ -174,10 +174,10 @@ def plot_posterior(tag,
         teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
         radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
 
-        luminosity = 4. * np.pi * (samples[:, :, radius_index]*constants.R_JUP)**2 * \
-            constants.SIGMA_SB * samples[:, :, teff_index]**4. / constants.L_SUN
+        luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+            constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
-        samples = np.append(samples, np.log10(luminosity), axis=2)
+        samples = np.append(samples, np.log10(luminosity), axis=-1)
         box.parameters.append('luminosity')
 
     labels = plot_util.update_labels(box.parameters)

@@ -2,13 +2,21 @@
 Module with functionalities for fitting a Planck spectrum.
 """
 
+import os
 import math
+import warnings
 
 from multiprocessing import Pool, cpu_count
 
 import emcee
 import spectres
 import numpy as np
+
+# installation of MultiNest is not possible on readthedocs
+try:
+    import pymultinest
+except:
+    warnings.warn('PyMultiNest could not be imported.')
 
 from species.analysis import photometry
 from species.data import database
@@ -53,7 +61,8 @@ def lnlike(param,
            objphot,
            synphot,
            distance,
-           spectrum):
+           spectrum,
+           n_planck):
     """
     Internal function for the likelihood function.
 
@@ -75,6 +84,8 @@ def lnlike(param,
     spectrum : numpy.ndarray, None
         Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
         (W m-2 um-1). Not used if set to None.
+    n_planck : int
+        Number of Planck components.
 
     Returns
     -------
@@ -88,6 +99,14 @@ def lnlike(param,
 
     paramdict['distance'] = distance
 
+    if n_planck > 1:
+        for i in range(n_planck-1):
+            if paramdict[f'teff_{i+1}'] > paramdict[f'teff_{i}']:
+                return -np.inf
+
+            if paramdict[f'radius_{i}'] > paramdict[f'radius_{i+1}']:
+                return -np.inf
+
     chisq = 0.
 
     if objphot is not None:
@@ -99,8 +118,8 @@ def lnlike(param,
                 chisq += (obj_item[0]-flux)**2 / obj_item[1]**2
 
             else:
-                for i in range(obj_item.shape[1]):
-                    chisq += (obj_item[0, i]-flux)**2 / obj_item[1, i]**2
+                for j in range(obj_item.shape[1]):
+                    chisq += (obj_item[0, j]-flux)**2 / obj_item[1, j]**2
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
@@ -132,7 +151,8 @@ def lnprob(param,
            objphot,
            synphot,
            distance,
-           spectrum):
+           spectrum,
+           n_planck):
     """
     Internal function for the posterior probability.
 
@@ -154,6 +174,8 @@ def lnprob(param,
     spectrum : numpy.ndarray, None
         Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
         (W m-2 um-1). Not used if set to None.
+    n_planck : int
+        Number of Planck components.
 
     Returns
     -------
@@ -172,7 +194,8 @@ def lnprob(param,
                                     objphot,
                                     synphot,
                                     distance,
-                                    spectrum)
+                                    spectrum,
+                                    n_planck)
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -182,7 +205,9 @@ def lnprob(param,
 
 class FitPlanck:
     """
-    Class for fitting Planck spectra to photometric and/or spectroscopic data.
+    Class for fitting Planck spectra to photometric and/or spectroscopic data. The Planck spectra
+    can consist of one or multiple components. In the latter case, a prior is used to enforce the
+    temperatures and radii to decrease and increase, respectively.
     """
 
     def __init__(self,
@@ -226,6 +251,7 @@ class FitPlanck:
         self.distance = self.object.get_distance()
 
         if isinstance(bounds['teff'], list) and isinstance(bounds['radius'], list):
+            self.n_planck = len(bounds['teff'])
             self.modelpar = []
             self.bounds = {}
 
@@ -237,6 +263,7 @@ class FitPlanck:
                 self.bounds[f'radius_{i}'] = bounds['radius'][i]
 
         else:
+            self.n_planck = 1
             self.modelpar = ['teff', 'radius']
             self.bounds = bounds
 
@@ -266,26 +293,26 @@ class FitPlanck:
             self.spectrum = None
 
     def run_mcmc(self,
-                 nwalkers,
-                 nsteps,
+                 tag,
                  guess,
-                 tag):
+                 nwalkers=200,
+                 nsteps=1000):
         """
         Function to run the MCMC sampler.
 
         Parameters
         ----------
-        nwalkers : int
-            Number of walkers.
-        nsteps : int
-            Number of steps per walker.
+        tag : str
+            Database tag where the MCMC samples are stored.
         guess : dict, None
             Guess for the 'teff' and 'radius'. Random values between the boundary values are used
             if a value is set to None. The values should be provided either as float or in a list
             of floats such that multiple Planck functions can be combined, e.g.
             ``{'teff': [1500., 1000.], 'radius': [1., 2.]``.
-        tag : str
-            Database tag where the MCMC samples are stored.
+        nwalkers : int
+            Number of walkers.
+        nsteps : int
+            Number of steps per walker.
 
         Returns
         -------
@@ -333,7 +360,8 @@ class FitPlanck:
                                                        self.objphot,
                                                        self.synphot,
                                                        self.distance[0],
-                                                       self.spectrum]))
+                                                       self.spectrum,
+                                                       self.n_planck]))
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
@@ -343,6 +371,182 @@ class FitPlanck:
                                samples=ens_sampler.chain,
                                ln_prob=ens_sampler.lnprobability,
                                mean_accept=np.mean(ens_sampler.acceptance_fraction),
+                               spectrum=('model', self.model),
+                               tag=tag,
+                               modelpar=self.modelpar,
+                               distance=self.distance[0],
+                               spec_labels=None)
+
+    def run_multinest(self,
+                      tag,
+                      n_live_points=4000,
+                      output='multinest/'):
+        """
+        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
+        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
+        has to to be build manually. See the ``PyMultiNest`` documentation for details:
+        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
+        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
+        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
+        set before importing the ``species`` package, for example:
+
+        .. code-block:: python
+
+            >>> import os
+            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
+            >>> import species
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the samples will be stored.
+        n_live_points : int
+            Number of live points.
+        output : str
+            Path that is used for the output files from MultiNest.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print('Running nested sampling...')
+
+        # create the output folder if required
+
+        if not os.path.exists(output):
+            os.mkdir(output)
+
+        # create a dictionary with the cube indices of the parameters
+
+        cube_index = {}
+        for i, item in enumerate(self.modelpar):
+            cube_index[item] = i
+
+        def lnprior_multinest(cube, n_dim, n_param):
+            """
+            Function to transform the unit cube into the parameter cube. It is not clear how to
+            pass additional arguments to the function, therefore it is placed here.
+
+            Parameters
+            ----------
+            cube : pymultinest.run.LP_c_double
+                Unit cube.
+
+            Returns
+            -------
+            NoneType
+                None
+            """
+
+            if len(self.modelpar) == 2:
+
+                # Effective temperature (K)
+                cube[cube_index['teff']] = self.bounds['teff'][0] + \
+                    (self.bounds['teff'][1]-self.bounds['teff'][0])*cube[cube_index['teff']]
+
+                # Radius (Rjup)
+                cube[cube_index['radius']] = self.bounds['radius'][0] + \
+                    (self.bounds['radius'][1]-self.bounds['radius'][0])*cube[cube_index['radius']]
+
+            else:
+                for i in range(self.n_planck):
+                    # Effective temperature (K)
+                    cube[cube_index[f'teff_{i}']] = self.bounds[f'teff_{i}'][0] + \
+                        (self.bounds[f'teff_{i}'][1]-self.bounds[f'teff_{i}'][0]) * \
+                        cube[cube_index[f'teff_{i}']]
+
+                    # Radius (Rjup)
+                    cube[cube_index[f'radius_{i}']] = self.bounds[f'radius_{i}'][0] + \
+                        (self.bounds[f'radius_{i}'][1]-self.bounds[f'radius_{i}'][0]) * \
+                        cube[cube_index[f'radius_{i}']]
+
+        def lnlike_multinest(cube, n_dim, n_param):
+            """
+            Function for the logarithm of the likelihood, computed from the parameter cube.
+
+            Parameters
+            ----------
+            cube : pymultinest.run.LP_c_double
+                Unit cube.
+
+            Returns
+            -------
+            float
+                The logarithm of the likelihood.
+            """
+
+            paramdict = {}
+
+            for i, item in enumerate(self.modelpar):
+                paramdict[item] = cube[cube_index[item]]
+
+            paramdict['distance'] = self.distance[0]
+
+            if self.n_planck > 1:
+                for i in range(self.n_planck-1):
+                    if paramdict[f'teff_{i+1}'] > paramdict[f'teff_{i}']:
+                        return -np.inf
+
+                    if paramdict[f'radius_{i}'] > paramdict[f'radius_{i+1}']:
+                        return -np.inf
+
+            chisq = 0.
+
+            if self.objphot is not None:
+                for i, obj_item in enumerate(self.objphot):
+                    readplanck = read_planck.ReadPlanck(filter_name=self.synphot[i].filter_name)
+                    flux = readplanck.get_flux(paramdict, synphot=self.synphot[i])[0]
+
+                    if obj_item.ndim == 1:
+                        chisq += (obj_item[0]-flux)**2 / obj_item[1]**2
+
+                    else:
+                        for j in range(obj_item.shape[1]):
+                            chisq += (obj_item[0, j]-flux)**2 / obj_item[1, j]**2
+
+            if self.spectrum is not None:
+                for i, item in enumerate(self.spectrum.keys()):
+                    readplanck = read_planck.ReadPlanck((0.9*self.spectrum[item][0][0, 0],
+                                                         1.1*self.spectrum[item][0][-1, 0]))
+
+                    model = readplanck.get_spectrum(paramdict, 100.)
+
+                    flux_new = spectres.spectres(self.spectrum[item][0][:, 0],
+                                                 model.wavelength,
+                                                 model.flux,
+                                                 spec_errs=None)
+
+                    if self.spectrum[item][1] is not None:
+                        spec_diff = self.spectrum[item][0][:, 1] - flux_new
+
+                        dot_tmp = np.dot(np.transpose(spec_diff),
+                                         np.linalg.inv(self.spectrum[item][1]))
+
+                        chisq += np.dot(dot_tmp, spec_diff)
+
+                    else:
+                        chisq += np.nansum((self.spectrum[item][0][:, 1] - flux_new)**2 /
+                                           self.spectrum[item][0][:, 2]**2)
+
+            return -0.5*chisq
+
+        pymultinest.run(lnlike_multinest,
+                        lnprior_multinest,
+                        len(self.modelpar),
+                        outputfiles_basename=output,
+                        resume=False,
+                        n_live_points=n_live_points)
+
+        samples = np.loadtxt(f'{output}/post_equal_weights.dat')
+
+        species_db = database.Database()
+
+        species_db.add_samples(sampler='multinest',
+                               samples=samples[:, :-1],
+                               ln_prob=samples[:, -1],
+                               mean_accept=None,
                                spectrum=('model', self.model),
                                tag=tag,
                                modelpar=self.modelpar,
