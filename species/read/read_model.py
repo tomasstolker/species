@@ -490,19 +490,19 @@ class ReadModel:
                              f'interpolated at {model_param} because zeros are stored in the '
                              f'database.')
 
-        spec_box = box.create_box(boxtype='model',
-                                  model=self.model,
-                                  wavelength=wavelength,
-                                  flux=flux[is_finite],
-                                  parameters=model_param,
-                                  quantity=quantity)
+        model_box = box.create_box(boxtype='model',
+                                   model=self.model,
+                                   wavelength=wavelength,
+                                   flux=flux[is_finite],
+                                   parameters=model_param,
+                                   quantity=quantity)
 
-        if 'radius' in spec_box.parameters:
-            spec_box.parameters['luminosity'] = 4. * np.pi * (spec_box.parameters['radius'] * \
-                constants.R_JUP)**2 * constants.SIGMA_SB * spec_box.parameters['teff']**4. / \
+        if 'radius' in model_box.parameters:
+            model_box.parameters['luminosity'] = 4. * np.pi * (model_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * model_box.parameters['teff']**4. / \
                 constants.L_SUN  # (Lsun)
 
-        return spec_box
+        return model_box
 
     def get_data(self,
                  model_param):
@@ -588,19 +588,19 @@ class ReadModel:
 
         h5_file.close()
 
-        spec_box = box.create_box(boxtype='model',
-                                  model=self.model,
-                                  wavelength=wl_points,
-                                  flux=flux,
-                                  parameters=model_param,
-                                  quantity='flux')
+        model_box = box.create_box(boxtype='model',
+                                   model=self.model,
+                                   wavelength=wl_points,
+                                   flux=flux,
+                                   parameters=model_param,
+                                   quantity='flux')
 
-        if 'radius' in spec_box.parameters:
-            spec_box.parameters['luminosity'] = 4. * np.pi * (spec_box.parameters['radius'] * \
-                constants.R_JUP)**2 * constants.SIGMA_SB * spec_box.parameters['teff']**4. / \
+        if 'radius' in model_box.parameters:
+            model_box.parameters['luminosity'] = 4. * np.pi * (model_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * model_box.parameters['teff']**4. / \
                 constants.L_SUN  # (Lsun)
 
-        return spec_box
+        return model_box
 
     def get_flux(self,
                  model_param,

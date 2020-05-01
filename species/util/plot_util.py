@@ -135,7 +135,7 @@ def update_labels(param):
 
     if 'radius' in param:
         index = param.index('radius')
-        param[index] = r'$R$ ($\mathregular{R_{Jup}}$)'
+        param[index] = r'$R$ ($\mathregular{R_{J}}$)'
 
     if 'luminosity' in param:
         index = param.index('luminosity')
@@ -168,6 +168,22 @@ def update_labels(param):
 
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
+
+    for i in range(100):
+        if f'teff_{i}' in param:
+            index = param.index(f'teff_{i}')
+            param[index] = rf'$T_\mathregular{{{i+1}}}$ (K)'
+
+        else:
+            break
+
+    for i in range(100):
+        if f'radius_{i}' in param:
+            index = param.index(f'radius_{i}')
+            param[index] = rf'$R_\mathregular{{{i+1}}}$ ' + r'($\mathregular{R_{J}}$)'
+
+        else:
+            break
 
     return param
 
@@ -255,7 +271,7 @@ def quantity_unit(param,
         quantity.append('radius')
 
         if object_type == 'planet':
-            unit.append(r'$R_\mathregular{Jup}}$')
+            unit.append(r'$R_\mathregular{J}}$')
         elif object_type == 'star':
             unit.append(r'$R_\mathregular{\odot}}$')
 
@@ -270,7 +286,7 @@ def quantity_unit(param,
         quantity.append('mass')
 
         if object_type == 'planet':
-            unit.append(r'$M_\mathregular{Jup}$')
+            unit.append(r'$M_\mathregular{J}$')
         elif object_type == 'star':
             unit.append(r'$M_\mathregular{\odot}$')
 

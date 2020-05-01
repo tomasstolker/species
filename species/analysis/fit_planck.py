@@ -6,6 +6,8 @@ import os
 import math
 import warnings
 
+from typing import Optional, Union, List, Tuple, Dict
+
 from multiprocessing import Pool, cpu_count
 
 import emcee
@@ -18,13 +20,16 @@ try:
 except:
     warnings.warn('PyMultiNest could not be imported.')
 
+from typeguard import typechecked
+
 from species.analysis import photometry
 from species.data import database
 from species.read import read_object, read_planck
 
 
-def lnprior(param,
-            bounds):
+@typechecked
+def lnprior(param: np.ndarray,
+            bounds: dict) -> np.float64:
     """
     Internal function for the prior probability.
 
@@ -56,13 +61,14 @@ def lnprior(param,
     return ln_prior
 
 
-def lnlike(param,
-           bounds,
-           objphot,
-           synphot,
-           distance,
-           spectrum,
-           n_planck):
+@typechecked
+def lnlike(param: np.ndarray,
+           bounds: dict,
+           objphot: list,
+           synphot: list,
+           distance: float,
+           spectrum: Optional[dict],
+           n_planck: int) -> np.float64:
     """
     Internal function for the likelihood function.
 
@@ -81,9 +87,10 @@ def lnlike(param,
         calculation of synthetic photometry from the model spectra.
     distance : float
         Distance (pc).
-    spectrum : numpy.ndarray, None
-        Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
-        (W m-2 um-1). Not used if set to None.
+    spectrum : dict, None
+        Dictionary with the spectra, covariance matrix, inverse of the covariance matrix, and the
+        spectral resolution. The spectrum contains columns with wavelength (um), flux (W m-2 um-1),
+        and error (W m-2 um-1). Not used if set to ``None``.
     n_planck : int
         Number of Planck components.
 
@@ -146,13 +153,14 @@ def lnlike(param,
     return -0.5*chisq
 
 
-def lnprob(param,
-           bounds,
-           objphot,
-           synphot,
-           distance,
-           spectrum,
-           n_planck):
+@typechecked
+def lnprob(param: np.ndarray,
+           bounds: dict,
+           objphot: list,
+           synphot: list,
+           distance: float,
+           spectrum: Optional[dict],
+           n_planck: int) -> np.float64:
     """
     Internal function for the posterior probability.
 
@@ -171,9 +179,10 @@ def lnprob(param,
         calculation of synthetic photometry from the model spectra.
     distance : float
         Distance (pc).
-    spectrum : numpy.ndarray, None
-        Spectrum array with the wavelength (um), flux (W m-2 um-1), and error
-        (W m-2 um-1). Not used if set to None.
+    spectrum : dict, None
+        Dictionary with the spectra, covariance matrix, inverse of the covariance matrix, and the
+        spectral resolution. The spectrum contains columns with wavelength (um), flux (W m-2 um-1),
+        and error (W m-2 um-1). Not used if set to ``None``.
     n_planck : int
         Number of Planck components.
 
@@ -210,24 +219,27 @@ class FitPlanck:
     temperatures and radii to decrease and increase, respectively.
     """
 
+    @typechecked
     def __init__(self,
-                 object_name,
-                 filters,
-                 bounds,
-                 inc_phot=True,
-                 inc_spec=True):
+                 object_name: str,
+                 filters: Optional[List[str]],
+                 bounds: Union[Dict[str, Tuple[float, float]],
+                               Dict[str, List[Tuple[float, float]]]],
+                 inc_phot: bool = True,
+                 inc_spec: bool = True) -> None:
         """
         Parameters
         ----------
         object_name : str
             Object name in the database.
-        filters : tuple(str, )
+        filters : tuple(str, ), None
             Filter names for which the photometry is selected. All available photometric data of
-            the object are used if set to None.
+            the object are used if set to ``None``.
         bounds : dict
             Parameter boundaries for 'teff' and 'radius'. The values should be provided either as
-            float or as list of floats such that multiple Planck functions can be combined,
-            e.g. ``{'teff': [(1000., 2000.), (500., 1500.)], 'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
+            tuple (with two float) or as list of tuples (with two floats) such that multiple Planck
+            functions can be combined, e.g. ``{'teff': [(1000., 2000.), (500., 1500.)],
+            'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
         inc_phot : bool
             Include photometric data with the fit.
         inc_spec : bool
@@ -292,11 +304,12 @@ class FitPlanck:
         else:
             self.spectrum = None
 
+    @typechecked
     def run_mcmc(self,
-                 tag,
-                 guess,
-                 nwalkers=200,
-                 nsteps=1000):
+                 tag: str,
+                 guess: Optional[Union[Dict[str, float], Dict[str, List[float]]]],
+                 nwalkers: int = 200,
+                 nsteps: int = 1000) -> None:
         """
         Function to run the MCMC sampler.
 
@@ -377,10 +390,11 @@ class FitPlanck:
                                distance=self.distance[0],
                                spec_labels=None)
 
+    @typechecked
     def run_multinest(self,
-                      tag,
-                      n_live_points=4000,
-                      output='multinest/'):
+                      tag: str,
+                      n_live_points: int = 4000,
+                      output: str = 'multinest/') -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -424,7 +438,10 @@ class FitPlanck:
         for i, item in enumerate(self.modelpar):
             cube_index[item] = i
 
-        def lnprior_multinest(cube, n_dim, n_param):
+        @typechecked
+        def lnprior_multinest(cube,
+                              n_dim: int,
+                              n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter cube. It is not clear how to
             pass additional arguments to the function, therefore it is placed here.
@@ -462,7 +479,10 @@ class FitPlanck:
                         (self.bounds[f'radius_{i}'][1]-self.bounds[f'radius_{i}'][0]) * \
                         cube[cube_index[f'radius_{i}']]
 
-        def lnlike_multinest(cube, n_dim, n_param):
+        @typechecked
+        def lnlike_multinest(cube,
+                             n_dim: int,
+                             n_param: int) -> np.float64:
             """
             Function for the logarithm of the likelihood, computed from the parameter cube.
 
