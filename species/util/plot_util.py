@@ -129,6 +129,10 @@ def update_labels(param):
         index = param.index('metallicity')
         param[index] = r'[Fe/H]'
 
+    if 'feh' in param:
+        index = param.index('feh')
+        param[index] = r'[Fe/H]'
+
     if 'fsed' in param:
         index = param.index('fsed')
         param[index] = r'f$_\mathregular{sed}$'
@@ -139,11 +143,11 @@ def update_labels(param):
 
     if 'radius' in param:
         index = param.index('radius')
-        param[index] = r'$R$ ($\mathregular{R_{Jup}}$)'
+        param[index] = r'$R$ ($\mathregular{R_{J}}$)'
 
-    if 'teff' in param:
-        index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ (K)'
+    if 'luminosity' in param:
+        index = param.index('luminosity')
+        param[index] = r'$\log\,L$/L$_\odot$'
 
     if 'tint' in param:
         index = param.index('tint')
@@ -183,6 +187,22 @@ def update_labels(param):
     if 'o_h_ratio' in param:
         index = param.index('o_h_ratio')
         param[index] = r'[O/H]'
+
+    for i in range(100):
+        if f'teff_{i}' in param:
+            index = param.index(f'teff_{i}')
+            param[index] = rf'$T_\mathregular{{{i+1}}}$ (K)'
+
+        else:
+            break
+
+    for i in range(100):
+        if f'radius_{i}' in param:
+            index = param.index(f'radius_{i}')
+            param[index] = rf'$R_\mathregular{{{i+1}}}$ ' + r'($\mathregular{R_{J}}$)'
+
+        else:
+            break
 
     return param
 
@@ -248,12 +268,17 @@ def quantity_unit(param,
 
     if 'logg' in param:
         quantity.append('logg')
-        unit.append('')
+        unit.append(None)
         label.append(r'$\log\,g$')
 
     if 'metallicity' in param:
         quantity.append('metallicity')
-        unit.append('')
+        unit.append(None)
+        label.append(r'[Fe/H]')
+
+    if 'feh' in param:
+        quantity.append('feh')
+        unit.append(None)
         label.append(r'[Fe/H]')
 
     if 'fsed' in param:
@@ -270,7 +295,7 @@ def quantity_unit(param,
         quantity.append('radius')
 
         if object_type == 'planet':
-            unit.append(r'$R_\mathregular{Jup}}$')
+            unit.append(r'$R_\mathregular{J}}$')
         elif object_type == 'star':
             unit.append(r'$R_\mathregular{\odot}}$')
 
@@ -285,7 +310,7 @@ def quantity_unit(param,
         quantity.append('mass')
 
         if object_type == 'planet':
-            unit.append(r'$M_\mathregular{Jup}$')
+            unit.append(r'$M_\mathregular{J}$')
         elif object_type == 'star':
             unit.append(r'$M_\mathregular{\odot}$')
 
@@ -293,8 +318,8 @@ def quantity_unit(param,
 
     if 'luminosity' in param:
         quantity.append('luminosity')
-        unit.append(r'$L_\odot$')
-        label.append(r'$L$')
+        unit.append(None)
+        label.append(r'$\log\,L$/L$_\odot$')
 
     return quantity, unit, label
 

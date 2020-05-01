@@ -204,6 +204,7 @@ def get_distance(target):
         simbad_id = simbad_result['MAIN_ID'][0].decode('utf-8')
         parallax = simbad_result['PLX_VALUE'][0]  # (mas)
         parallax_error = simbad_result['PLX_ERROR'][0]  # (mas)
+
         if ma.is_masked(parallax):
             parallax = None
 
@@ -308,7 +309,5 @@ def get_distance(target):
 
     if np.isnan(parallax) and np.isnan(distance):
         warnings.warn(f'No parallax was found for {target} so storing a NaN value.')
-
-    # print(parallax, parallax_error, distance, distance_error)
 
     return simbad_id, (distance, distance_error)

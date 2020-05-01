@@ -42,8 +42,8 @@ class TestCalibration:
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.Lp')
         spec_box = read_calib.get_spectrum(self.model_param, apply_mask=True, spec_res=100.)
 
-        assert np.sum(spec_box.wavelength) == pytest.approx(175.34279961519331, rel=self.limit, abs=0.)
-        assert np.sum(spec_box.flux) == pytest.approx(2.3081127325020912e-09, rel=self.limit, abs=0.)
+        assert np.sum(spec_box.wavelength) == pytest.approx(183.34793783628004, rel=self.limit, abs=0.)
+        assert np.sum(spec_box.flux) == pytest.approx(2.363239096767195e-09, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')

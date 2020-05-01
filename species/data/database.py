@@ -7,11 +7,14 @@ import json
 import warnings
 import configparser
 
+from typing import Optional, Union, List, Tuple, Dict
+
 import h5py
 import tqdm
 import emcee
 import numpy as np
 
+from typeguard import typechecked
 from astropy.io import fits
 
 from petitRADTRANS import Radtrans as RadtransClear
@@ -128,17 +131,19 @@ class Database:
             else:
                 warnings.warn(f'The dataset {dataset} is not found in {self.database}.')
 
+    @typechecked
     def add_companion(self,
-                      name=None):
+                      name: Union[Optional[str], Optional[List[str]]]) -> None:
         """
         Function for adding the magnitudes of directly imaged planets and brown dwarfs from
         :class:`~species.data.companions.get_data` to the database.
 
         Parameters
         ----------
-        name : list(str, ), None
-            List with names of the directly imaged planets and brown dwarfs (e.g. ``['HR 8799 b',
-            '51 Eri b', 'PZ Tel B']``). All the available companion data are added if set to None.
+        name : str, list(str, ), None
+            Name or list with names of the directly imaged planets and brown dwarfs (e.g.
+            ``'HR 8799 b'`` or ``['HR 8799 b', '51 Eri b', 'PZ Tel B']``). All the available
+            companion data are added if set to ``None``.
 
         Returns
         -------
@@ -204,8 +209,9 @@ class Database:
         else:
             wavelength, transmission = filters.download_filter(filter_name)
 
-        h5_file.create_dataset(f'filters/{filter_name}',
-                               data=np.vstack((wavelength, transmission)))
+        if wavelength is not None and transmission is not None:
+            h5_file.create_dataset(f'filters/{filter_name}',
+                                   data=np.vstack((wavelength, transmission)))
 
         h5_file.close()
 
@@ -299,7 +305,7 @@ class Database:
                              'resample the original spectra on a fixed wavelength grid.')
 
         if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
-            warnings.warn('The temperature range is not restricted with the \'teff_range\''
+            warnings.warn('The temperature range is not restricted with the \'teff_range\' '
                           'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
                           'will be very slow.')
 
@@ -409,11 +415,17 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_object(self,
-                   object_name,
-                   distance=None,
-                   app_mag=None,
-                   spectrum=None):
+                   object_name: str,
+                   distance: Optional[Tuple[float, float]] = None,
+                   app_mag: Optional[Dict[str,
+                                          Union[Tuple[float, float],
+                                                List[Tuple[float, float]]]]] = None,
+                   spectrum: Optional[Dict[str,
+                                           Tuple[str,
+                                                 Optional[str],
+                                                 Optional[float]]]] = None) -> None:
         """
         Function for adding the photometric and/or spectroscopic data of an object to the database.
 
@@ -425,8 +437,10 @@ class Database:
             Distance and uncertainty (pc). Not stored if set to None.
         app_mag : dict, None
             Dictionary with the filter names, apparent magnitudes, and uncertainties. For example,
-            ``{'Paranal/NACO.Lp': (15., 0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. Not stored if set
-            to None.
+            ``{'Paranal/NACO.Lp': (15., 0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. For the use of
+            duplicate filter names, the magnitudes have to be provided in a list, for example
+            ``{'Paranal/NACO.Lp': [(15., 0.2), (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``.
+            No photometric data is stored if set to ``None``.
         spectrum : dict, None
             Dictionary with the spectrum, optional covariance matrix, and spectral resolution for
             each instrument. The input data can either have a FITS or ASCII format. The spectra
@@ -474,37 +488,94 @@ class Database:
         error = {}
 
         if app_mag is not None:
-            for item in app_mag:
-                try:
-                    synphot = photometry.SyntheticPhotometry(item)
-                    flux[item], error[item] = synphot.magnitude_to_flux(app_mag[item][0],
-                                                                        app_mag[item][1])
+            for mag_item in app_mag:
+                if isinstance(app_mag[mag_item], tuple):
 
-                except ValueError:
-                    warnings.warn(f'Filter \'{item}\' is not available on the SVO Filter Profile '
-                                  f'Service so a flux calibration can not be done. Please add the '
-                                  f'filter manually with the \'add_filter\' function. For now, '
-                                  f'only the \'{item}\' magnitude of \'{object_name}\' is stored.')
+                    try:
+                        synphot = photometry.SyntheticPhotometry(mag_item)
+                        flux[mag_item], error[mag_item] = synphot.magnitude_to_flux(
+                            app_mag[mag_item][0], app_mag[mag_item][1])
 
-                    # Write NaNs if the filter is not available
-                    flux[item], error[item] = np.nan, np.nan
+                    except KeyError:
+                        warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
+                                      f'Profile Service so a flux calibration can not be done. Please '
+                                      f'add the filter manually with the \'add_filter\' function. For '
+                                      f'now, only the \'{mag_item}\' magnitude of \'{object_name}\' is '
+                                      f'stored.')
 
-            for item in app_mag:
-                if f'objects/{object_name}/{item}' in h5_file:
-                    del h5_file[f'objects/{object_name}/{item}']
+                        # Write NaNs if the filter is not available
+                        flux[mag_item], error[mag_item] = np.nan, np.nan
 
-                print(f'   - {item}:')
-                print(f'      - Apparent magnitude = {app_mag[item][0]:.2f} +/- {app_mag[item][1]:.2f}')
-                print(f'      - Flux (W m-2 um-1) = {flux[item]:.2e} +/- {error[item]:.2e}')
+                elif isinstance(app_mag[mag_item], list):
+                    flux_list = []
+                    error_list = []
 
-                data = np.asarray([app_mag[item][0],
-                                   app_mag[item][1],
-                                   flux[item],
-                                   error[item]])
+                    for i, dupl_item in enumerate(app_mag[mag_item]):
+
+                        try:
+                            synphot = photometry.SyntheticPhotometry(mag_item)
+                            flux_dupl, error_dupl = synphot.magnitude_to_flux(
+                                dupl_item[0], dupl_item[1])
+
+                        except KeyError:
+                            warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
+                                          f'Profile Service so a flux calibration can not be done. Please add the '
+                                          f'filter manually with the \'add_filter\' function. For now, '
+                                          f'only the \'{mag_item}\' magnitude of \'{object_name}\' is stored.')
+
+                            # Write NaNs if the filter is not available
+                            flux_dupl, error_dupl = np.nan, np.nan
+
+                        flux_list.append(flux_dupl)
+                        error_list.append(error_dupl)
+
+                    flux[mag_item] = flux_list
+                    error[mag_item] = error_list
+
+                else:
+                    raise ValueError('The values in the dictionary with magnitudes should be '
+                                     'tuples or a list with tuples (in case duplicate filter '
+                                     'names are required).')
+
+            for mag_item in app_mag:
+                if f'objects/{object_name}/{mag_item}' in h5_file:
+                    del h5_file[f'objects/{object_name}/{mag_item}']
+
+                if isinstance(app_mag[mag_item], tuple):
+                    n_phot = 1
+                    print(f'   - {mag_item}:')
+                    print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- {app_mag[mag_item][1]:.2f}')
+                    print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- {error[mag_item]:.2e}')
+
+                    data = np.asarray([app_mag[mag_item][0],
+                                       app_mag[mag_item][1],
+                                       flux[mag_item],
+                                       error[mag_item]])
+
+                elif isinstance(app_mag[mag_item], list):
+                    n_phot = len(app_mag[mag_item])
+                    print(f'   - {mag_item} ({n_phot} values):')
+
+                    mag_list = []
+                    mag_err_list = []
+
+                    for i, dupl_item in enumerate(app_mag[mag_item]):
+                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- {app_mag[mag_item][i][1]:.2f}')
+                        print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- {error[mag_item][i]:.2e}')
+
+                        mag_list.append(app_mag[mag_item][i][0])
+                        mag_err_list.append(app_mag[mag_item][i][1])
+
+                    data = np.asarray([mag_list,
+                                       mag_err_list,
+                                       flux[mag_item],
+                                       error[mag_item]])
 
                 # (mag), (mag), (W m-2 um-1), (W m-2 um-1)
-                h5_file.create_dataset(f'objects/{object_name}/'+item,
-                                       data=data)
+                dset = h5_file.create_dataset(f'objects/{object_name}/{mag_item}',
+                                              data=data)
+
+                dset.attrs['n_phot'] = n_phot
 
         if spectrum is not None:
             read_spec = {}
@@ -664,10 +735,15 @@ class Database:
                     h5_file.create_dataset(f'objects/{object_name}/spectrum/{key}/inv_covariance',
                                            data=np.linalg.inv(read_cov[key]))
 
-                print(f'      - {key}: {value[2]:.2f}')
-
                 dset = h5_file[f'objects/{object_name}/spectrum/{key}']
-                dset.attrs['specres'] = value[2]
+
+                if value[2] is None:
+                    print(f'      - {key}: None')
+                    dset.attrs['specres'] = 0.
+
+                else:
+                    print(f'      - {key}: {value[2]:.2f}')
+                    dset.attrs['specres'] = value[2]
 
         h5_file.close()
 
@@ -1141,8 +1217,6 @@ class Database:
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_param)
 
-            box.type = 'mcmc'
-
             boxes.append(specbox)
 
         h5_file.close()
@@ -1258,19 +1332,16 @@ class Database:
 
             if filters:
                 for item in filters:
-                    data = dset[item]
-
-                    magnitude[item] = np.asarray(data[0:2])
-                    flux[item] = np.asarray(data[2:4])
+                    magnitude[item] = dset[item][0:2]
+                    flux[item] = dset[item][2:4]
 
             else:
                 for key in dset.keys():
                     if key not in ['distance', 'spectrum']:
                         for item in dset[key]:
-                            name = key+'/'+item
-
-                            magnitude[name] = np.asarray(dset[name][0:2])
-                            flux[name] = np.asarray(dset[name][2:4])
+                            name = f'{key}/{item}'
+                            magnitude[name] = dset[name][0:2]
+                            flux[name] = dset[name][2:4]
 
             filters = list(magnitude.keys())
 
@@ -1945,8 +2016,6 @@ class Database:
     #                                    flux=flux,
     #                                    parameters=None,
     #                                    quantity='flux')
-    #
-    #         model_box.type = 'mcmc'
     #
     #         boxes.append(model_box)
     #

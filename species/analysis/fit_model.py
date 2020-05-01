@@ -9,8 +9,13 @@ import warnings
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import pymultinest
 import numpy as np
+
+# installation of MultiNest is not possible on readthedocs
+try:
+    import pymultinest
+except:
+    warnings.warn('PyMultiNest could not be imported.')
 
 from species.core import constants
 from species.data import database
@@ -58,7 +63,7 @@ def lnprior(param,
 
             if prior is not None and prior[0] == 'mass' and item == 'logg':
                 mass = read_util.get_mass(modeldict)
-                ln_prior += -0.5*(mass-prior[1])**2/prior[2]**2
+                ln_prior += -0.5*(mass - prior[1])**2 / prior[2]**2
 
             else:
                 ln_prior += 0.
@@ -123,9 +128,15 @@ def lnlike(param,
     chisq = 0.
 
     if objphot is not None:
-        for i, item in enumerate(objphot):
+        for i, obj_item in enumerate(objphot):
             flux = scaling * modelphot[i].spectrum_interp(list(paramdict.values()))
-            chisq += (item[0]-flux)**2 / item[1]**2
+
+            if obj_item.ndim == 1:
+                chisq += (obj_item[0] - flux)**2 / obj_item[1]**2
+
+            else:
+                for j in range(obj_item.shape[1]):
+                    chisq += (obj_item[0, j] - flux)**2 / obj_item[1, j]**2
 
     if spectrum is not None:
         for i, item in enumerate(spectrum.keys()):
@@ -304,7 +315,7 @@ class FitModel:
                 print(f' [DONE]')
 
                 obj_phot = self.object.get_photometry(item)
-                self.objphot.append((obj_phot[2], obj_phot[3]))
+                self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
         else:
             self.objphot = None
@@ -567,9 +578,15 @@ class FitModel:
             chisq = 0.
 
             if self.objphot is not None:
-                for i, item in enumerate(self.objphot):
+                for i, obj_item in enumerate(self.objphot):
                     flux = scaling * self.modelphot[i].spectrum_interp(list(paramdict.values()))
-                    chisq += (item[0]-flux)**2 / item[1]**2
+
+                    if obj_item.ndim == 1:
+                        chisq += (obj_item[0] - flux)**2 / obj_item[1]**2
+
+                    else:
+                        for j in range(obj_item.shape[1]):
+                            chisq += (obj_item[0, j] - flux)**2 / obj_item[1, j]**2
 
             if self.spectrum is not None:
                 for i, item in enumerate(self.spectrum.keys()):

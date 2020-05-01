@@ -3,6 +3,7 @@ Module for downloading filter data from the SVO website.
 """
 
 import os
+import warnings
 import urllib.request
 
 import numpy as np
@@ -41,22 +42,26 @@ def download_filter(filter_id):
         if os.stat('filter.dat').st_size == 0:
             os.remove('filter.dat')
 
-            raise ValueError(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
-                             f'Service.')
+            wavelength = None
+            transmission = None
 
-        try:
-            wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
-        except:
+            warnings.warn(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
+                          f'Service.')
+
+        else:
+            try:
+                wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
+            except:
+                os.remove('filter.dat')
+
+                raise ValueError(f'The filter data of \'{filter_id}\' could not be downloaded. '
+                                 f'Perhaps the website of the SVO Filter Profile Service '
+                                 f'(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not '
+                                 f'available?')
+
+            wavelength *= 1e-4  # (um)
+
             os.remove('filter.dat')
-
-            raise ValueError(f'The filter data of \'{filter_id}\' could not be downloaded. '
-                             f'Perhaps the website of the SVO Filter Profile Service '
-                             f'(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not '
-                             f'available?')
-
-        wavelength *= 1e-4  # (um)
-
-        os.remove('filter.dat')
 
     if wavelength is not None:
         indices = []

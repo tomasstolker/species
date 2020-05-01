@@ -14,6 +14,7 @@ from scipy.optimize import curve_fit
 from species.analysis import photometry
 from species.core import box
 from species.read import read_filter
+from species.util import read_util
 
 
 class ReadCalibration:
@@ -205,12 +206,8 @@ class ReadCalibration:
                 error = np.append(error, 0.)
 
         if spec_res is not None:
-            wavelength_new = [wavelength[0]]
-
-            while wavelength_new[-1] < wavelength[-1]:
-                wavelength_new.append(wavelength_new[-1] + wavelength_new[-1]/(2.*spec_res))
-
-            wavelength_new = np.asarray(wavelength_new[:-1])
+            wavelength_new = read_util.create_wavelengths((wavelength[0], wavelength[-1]),
+                                                          spec_res)
 
             value_error = True
 

@@ -55,7 +55,7 @@ class ReadFilter:
         h5_file = h5py.File(self.database, 'r')
 
         try:
-            h5_file['filters/'+self.filter_name]
+            h5_file[f'filters/{self.filter_name}']
 
         except KeyError:
             h5_file.close()

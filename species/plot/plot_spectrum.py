@@ -25,7 +25,7 @@ plt.rcParams['axes.axisbelow'] = False
 def plot_spectrum(boxes,
                   filters=None,
                   residuals=None,
-                  colors=None,
+                  plot_kwargs=None,
                   xlim=None,
                   ylim=None,
                   ylim_res=None,
@@ -46,8 +46,8 @@ def plot_spectrum(boxes,
         Filter IDs for which the transmission profile is plotted. Not plotted if set to None.
     residuals : species.core.box.ResidualsBox, None
         Box with residuals of a fit. Not plotted if set to None.
-    colors : list(str, ), None
-        Colors to be used for the different boxes. Note that a box with residuals requires a tuple
+    plot_kwargs : list(str, ), None
+        TODO Colors to be used for the different boxes. Note that a box with residuals requires a tuple
         with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
         to None.
     xlim : tuple(float, float)
@@ -84,9 +84,12 @@ def plot_spectrum(boxes,
 
     marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
-    if colors is not None and len(boxes) != len(colors):
+    if plot_kwargs is None:
+        plot_kwargs = []
+
+    elif plot_kwargs is not None and len(boxes) != len(plot_kwargs):
         raise ValueError(f'The number of \'boxes\' ({len(boxes)}) should be equal to the '
-                         f'number of \'colors\' ({len(colors)}).')
+                         f'number of items in \'plot_kwargs\' ({len(plot_kwargs)}).')
 
     if residuals is not None and filters is not None:
         plt.figure(1, figsize=figsize)
@@ -253,10 +256,10 @@ def plot_spectrum(boxes,
     if residuals is not None:
         ax3.set_xscale(scale[0])
 
-    color_obj_phot = None
-    color_obj_spec = None
-
     for j, boxitem in enumerate(boxes):
+        if j < len(boxes):
+            plot_kwargs.append(None)
+
         if isinstance(boxitem, (box.SpectrumBox, box.ModelBox)):
             wavelength = boxitem.wavelength
             flux = boxitem.flux
@@ -277,7 +280,7 @@ def plot_spectrum(boxes,
                     for i, item in enumerate(par_key):
 
                         if item == 'teff':
-                            value = f'{param[item]:.1f}'
+                            value = f'{param[item]:.0f}'
 
                         elif item in ['logg', 'feh', 'co', 'fsed']:
                             value = f'{param[item]:.2f}'
@@ -285,10 +288,10 @@ def plot_spectrum(boxes,
                         elif item == 'radius':
 
                             if object_type == 'planet':
-                                value = f'{param[item]:.2f}'
+                                value = f'{param[item]:.1f}'
 
                             elif object_type == 'star':
-                                value = f'{param[item]*constants.R_JUP/constants.R_SUN:.2f}'
+                                value = f'{param[item]*constants.R_JUP/constants.R_SUN:.1f}'
 
                         elif item == 'mass':
                             if object_type == 'planet':
@@ -297,7 +300,7 @@ def plot_spectrum(boxes,
                                 value = f'{param[item]*constants.M_JUP/constants.M_SUN:.2f}'
 
                         elif item == 'luminosity':
-                            value = f'{param[item]:.1e}'
+                            value = f'{np.log10(param[item]):.1f}'
 
                         else:
                             continue
@@ -317,9 +320,8 @@ def plot_spectrum(boxes,
                 else:
                     label = None
 
-                if colors:
-                    ax1.plot(wavelength, masked/scaling, color=colors[j], lw=0.5,
-                             label=label, zorder=2)
+                if plot_kwargs[j]:
+                    ax1.plot(wavelength, masked/scaling, zorder=2, label=label, **plot_kwargs[j])
                 else:
                     ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=2)
 
@@ -343,27 +345,23 @@ def plot_spectrum(boxes,
                 data = np.array(flux, dtype=np.float64)
                 masked = np.ma.array(data, mask=np.isnan(data))
 
-                if colors:
-                    ax1.plot(wavelength, masked/scaling, lw=0.2, color=colors[j],
-                             alpha=0.5, zorder=1)
+                if plot_kwargs[j]:
+                    ax1.plot(wavelength, masked/scaling, zorder=1, **plot_kwargs[j])
                 else:
-                    ax1.plot(wavelength, masked/scaling, lw=0.2, alpha=0.5, zorder=1)
+                    ax1.plot(wavelength, masked/scaling, color='gray', lw=0.2, alpha=0.5, zorder=1)
 
         elif isinstance(boxitem, box.PhotometryBox):
-            marker = next(marker)
-
             for i, item in enumerate(boxitem.wavelength):
                 transmission = read_filter.ReadFilter(boxitem.filter_name[i])
                 fwhm = transmission.filter_fwhm()
 
-                if colors:
+                if plot_kwargs[j]:
                     ax1.errorbar(item, boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
-                                 yerr=boxitem.flux[i][1], marker=marker, ms=6, color=colors[j],
-                                 zorder=3)
+                                 yerr=boxitem.flux[i][1]/scaling, zorder=3, **plot_kwargs[j])
                 else:
                     ax1.errorbar(item, boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
-                                yerr=boxitem.flux[i][1], marker=marker, ms=6, color='black',
-                                zorder=3)
+                                 yerr=boxitem.flux[i][1]/scaling, marker='s', ms=6, color='black',
+                                 zorder=3)
 
         elif isinstance(boxitem, box.ObjectBox):
             if boxitem.flux is not None:
@@ -372,43 +370,81 @@ def plot_spectrum(boxes,
                     wavelength = transmission.mean_wavelength()
                     fwhm = transmission.filter_fwhm()
 
-                    if colors is None:
-                        ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                     yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
-                                     markerfacecolor=color_obj_phot)
+                    if not plot_kwargs[j] or item not in plot_kwargs[j]:
+                        if not plot_kwargs[j]:
+                            plot_kwargs[j] = {}
+
+                        if isinstance(boxitem.flux[item][0], np.ndarray):
+                            for i in range(boxitem.flux[item].shape[1]):
+
+                                plot_obj = ax1.errorbar(wavelength, boxitem.flux[item][0, i]/scaling, xerr=fwhm/2.,
+                                             yerr=boxitem.flux[item][1, i]/scaling, marker='s', ms=5, zorder=3)
+
+                        else:
+                            plot_obj = ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
+                                         yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3)
+
+                        plot_kwargs[j][item] = {'marker': 's', 'ms': 5., 'color': plot_obj[0].get_color()}
 
                     else:
-                        color_obj_phot = colors[j][0]
+                        if isinstance(boxitem.flux[item][0], np.ndarray):
+                            if not isinstance(plot_kwargs[j][item], list):
+                                raise ValueError(f'A list with {boxitem.flux[item].shape[1]} '
+                                                 f'dictionaries are required because the filter '
+                                                 f'{item} has {boxitem.flux[item].shape[1]} '
+                                                 f'values.')
 
-                        ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                     yerr=boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3,
-                                     color=color_obj_phot, markerfacecolor=color_obj_phot)
+                            for i in range(boxitem.flux[item].shape[1]):
+
+                                ax1.errorbar(wavelength, boxitem.flux[item][0, i]/scaling, xerr=fwhm/2.,
+                                             yerr=boxitem.flux[item][1, i]/scaling, zorder=3, **plot_kwargs[j][item][i])
+
+                        else:
+                            ax1.errorbar(wavelength, boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
+                                         yerr=boxitem.flux[item][1]/scaling, zorder=3, **plot_kwargs[j][item])
 
             if boxitem.spectrum is not None:
                 for key, value in boxitem.spectrum.items():
                     masked = np.ma.array(boxitem.spectrum[key][0],
                                          mask=np.isnan(boxitem.spectrum[key][0]))
 
-                    if colors is None:
-                        ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                     ms=2, marker='s', zorder=2.5, ls='none')
+                    if not plot_kwargs[j] or key not in plot_kwargs[j]:
+                        plot_obj = ax1.errorbar(masked[:, 0], masked[:, 1]/scaling,
+                                                yerr=masked[:, 2]/scaling, ms=2, marker='s',
+                                                zorder=2.5, ls='none')
+
+                        plot_kwargs[j][key] = {'marker': 's', 'ms': 2., 'ls': 'none',
+                                               'color': plot_obj[0].get_color()}
 
                     else:
-                        color_obj_spec = colors[j][1]
-
                         ax1.errorbar(masked[:, 0], masked[:, 1]/scaling, yerr=masked[:, 2]/scaling,
-                                     marker='o', ms=2, zorder=2.5, color=color_obj_spec,
-                                     markerfacecolor=color_obj_spec, ls='none')
+                                     zorder=2.5, **plot_kwargs[j][key])
 
         elif isinstance(boxitem, box.SynphotBox):
+            for i, find_item in enumerate(boxes):
+                if isinstance(find_item, box.ObjectBox):
+                    obj_index = i
+                    break
+
             for item in boxitem.flux:
                 transmission = read_filter.ReadFilter(item)
                 wavelength = transmission.mean_wavelength()
                 fwhm = transmission.filter_fwhm()
 
-                ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                             alpha=0.7, marker='s', ms=5, zorder=4, color=colors[j],
-                             markerfacecolor='white')
+                if not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
+                    ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
+                                 alpha=0.7, marker='s', ms=5, zorder=4, mfc='white')
+
+                else:
+                    if isinstance(plot_kwargs[obj_index][item], list):
+                        # In case of multiple photometry values for the same filter, use the
+                        # plot_kwargs of the first data point
+                        ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
+                                     zorder=4, mfc='white', **plot_kwargs[obj_index][item][0])
+
+                    else:
+                        ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
+                                     zorder=4, mfc='white', **plot_kwargs[obj_index][item])
 
     if filters is not None:
         for i, item in enumerate(filters):
@@ -418,23 +454,43 @@ def plot_spectrum(boxes,
             ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black', zorder=1)
 
     if residuals is not None:
+        for i, find_item in enumerate(boxes):
+            if isinstance(find_item, box.ObjectBox):
+                obj_index = i
+                break
+
         res_max = 0.
 
         if residuals.photometry is not None:
-            ax3.plot(residuals.photometry[0, ], residuals.photometry[1, ], marker='s',
-                     ms=5, linestyle='none', color=color_obj_phot, zorder=2)
+            for item in residuals.photometry:
+                if not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
+                    ax3.plot(residuals.photometry[item][0], residuals.photometry[item][1], marker='s',
+                             ms=5, linestyle='none', zorder=2)
 
-            res_max = np.nanmax(np.abs(residuals.photometry[1, ]))
+                else:
+                    if residuals.photometry[item].ndim == 1:
+                        ax3.plot(residuals.photometry[item][0], residuals.photometry[item][1], zorder=2,
+                                 **plot_kwargs[obj_index][item])
+
+                    elif residuals.photometry[item].ndim == 2:
+                        for i in range(residuals.photometry[item].shape[1]):
+                            if isinstance(plot_kwargs[obj_index][item], list):
+                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
+                                         **plot_kwargs[obj_index][item][i])
+
+                            else:
+                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
+                                         **plot_kwargs[obj_index][item])
+
+                res_max = np.nanmax(np.abs(residuals.photometry[item][1]))
 
         if residuals.spectrum is not None:
             for key, value in residuals.spectrum.items():
-                if colors is None:
-                    ax3.plot(value[:, 0], value[:, 1], marker='o', ms=2,
-                             linestyle='none', zorder=1)
+                if not plot_kwargs[obj_index] or key not in plot_kwargs[obj_index]:
+                    ax3.plot(value[:, 0], value[:, 1], marker='o', ms=2, ls='none', zorder=1)
 
                 else:
-                    ax3.plot(value[:, 0], value[:, 1], marker='o',
-                             ms=2, linestyle='none', color=color_obj_spec, zorder=1)
+                    ax3.plot(value[:, 0], value[:, 1], zorder=1, **plot_kwargs[obj_index][key])
 
                 max_tmp = np.nanmax(np.abs(value[:, 1]))
 

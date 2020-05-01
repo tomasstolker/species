@@ -11,6 +11,7 @@ import numpy as np
 from species.analysis import photometry
 from species.core import box, constants
 from species.read import read_filter
+from species.util import read_util
 
 
 class ReadPlanck:
@@ -141,12 +142,7 @@ class ReadPlanck:
         if 'teff' in model_param and isinstance(model_param['teff'], list):
             model_param = self.update_parameters(model_param)
 
-        wavel_points = [self.wavel_range[0]]
-
-        while wavel_points[-1] <= self.wavel_range[1]:
-            wavel_points.append(wavel_points[-1] + wavel_points[-1]/(2.*spec_res))
-
-        wavel_points = np.asarray(wavel_points)  # (um)
+        wavel_points = read_util.create_wavelengths(self.wavel_range, spec_res)
 
         n_planck = (len(model_param)-1) // 2
 
@@ -169,12 +165,19 @@ class ReadPlanck:
                                     model_param[f'teff_{i}'],
                                     scaling)  # (W m-2 um-1)
 
-        return box.create_box(boxtype='model',
-                              model='planck',
-                              wavelength=wavel_points,
-                              flux=flux,
-                              parameters=model_param,
-                              quantity='flux')
+        model_box = box.create_box(boxtype='model',
+                                   model='planck',
+                                   wavelength=wavel_points,
+                                   flux=flux,
+                                   parameters=model_param,
+                                   quantity='flux')
+
+        if 'radius' in model_box.parameters:
+            model_box.parameters['luminosity'] = 4. * np.pi * (model_box.parameters['radius'] * \
+                constants.R_JUP)**2 * constants.SIGMA_SB * model_box.parameters['teff']**4. / \
+                constants.L_SUN  # (Lsun)
+
+        return model_box
 
     def get_flux(self,
                  model_param,

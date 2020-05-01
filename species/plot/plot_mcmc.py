@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import ScalarFormatter
 
+from species.core import constants
 from species.data import database
 from species.util import plot_util, retrieval_util
 
@@ -116,6 +117,7 @@ def plot_posterior(tag,
                    limits=None,
                    max_prob=False,
                    vmr=False,
+                   inc_luminosity=False,
                    output='posterior.pdf'):
     """
     Function to plot the posterior distribution of the fitted parameters.
@@ -139,6 +141,9 @@ def plot_posterior(tag,
     vmr : bool
         Plot the volume mixing ratios (i.e. number fractions) instead of the mass fractions of the
         retrieved species with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+    inc_luminosity : bool
+        Include the log10 of the luminosity in the posterior plot as calculated from the
+        effective temperature and radius.
     output : str
         Output filename.
 
@@ -275,15 +280,44 @@ def plot_posterior(tag,
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
-    labels = plot_util.update_labels(samples_box.parameters)
-
     ndim = len(samples_box.parameters)
 
     if 'H2O' in samples_box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
 
-    if samples.ndim == 3:
-        samples = samples.reshape((-1, ndim))
+    if inc_luminosity:
+        ndim += 1
+
+        if 'teff' in box.parameters and 'radius' in box.parameters:
+            teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
+            radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+
+            luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+                constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
+
+            samples = np.append(samples, np.log10(luminosity), axis=-1)
+            box.parameters.append('luminosity')
+
+        elif 'teff_0' in box.parameters and 'radius_0' in box.parameters:
+            luminosity = 0.
+
+            for i in range(100):
+                teff_index = np.argwhere(np.array(box.parameters) == f'teff_{i}')
+                radius_index = np.argwhere(np.array(box.parameters) == f'radius_{i}')
+
+                if len(teff_index) > 0 and len(radius_index) > 0:
+                    luminosity += 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
+                        * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
+
+                else:
+                    break
+
+            samples = np.append(samples, np.log10(luminosity), axis=-1)
+            box.parameters.append('luminosity')
+
+    labels = plot_util.update_labels(box.parameters)
+
+    samples = samples.reshape((-1, ndim))
 
     fig = corner.corner(samples, labels=labels, quantiles=[0.16, 0.5, 0.84],
                         label_kwargs={'fontsize': 13}, show_titles=True,

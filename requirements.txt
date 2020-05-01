@@ -1,14 +1,14 @@
 astropy ~= 4.0
-astroquery ~= 0.3
+astroquery ~= 0.4
 corner ~= 2.0
 emcee ~= 3.0
 h5py ~= 2.10
-matplotlib ~= 3.1
+matplotlib ~= 3.2
 numpy ~= 1.18
 pandas ~= 0.25
 pymultinest ~= 2.9
 scipy ~= 1.4
 spectres ~= 2.1
 tqdm ~= 4.45
-typeguard ~= 2.6
+typeguard ~= 2.7
 xlrd ~= 1.2

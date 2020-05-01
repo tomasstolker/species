@@ -9,7 +9,7 @@ import urllib.request
 import spectres
 import numpy as np
 
-from species.util import data_util
+from species.util import data_util, read_util
 
 
 def add_drift_phoenix(input_path,
@@ -45,7 +45,7 @@ def add_drift_phoenix(input_path,
     data_file = os.path.join(input_path, 'drift-phoenix.tgz')
     data_folder = os.path.join(input_path, 'drift-phoenix/')
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/drift-phoenix.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/drift-phoenix.tgz'
 
     if not os.path.isfile(data_file):
         print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='', flush=True)
@@ -64,13 +64,7 @@ def add_drift_phoenix(input_path,
     flux = []
 
     if wavel_range is not None:
-        wavelength = [wavel_range[0]]
-
-        while wavelength[-1] <= wavel_range[1]:
-            wavelength.append(wavelength[-1] + wavelength[-1]/(2.*spec_res))
-
-        wavelength = np.asarray(wavelength[:-1])
-
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
 

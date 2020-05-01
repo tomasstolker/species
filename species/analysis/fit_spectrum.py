@@ -18,16 +18,14 @@ def lnprob(param,
            bounds,
            modelpar,
            objphot,
-           specphot,
-           bands):
+           specphot):
     """
     Internal function for the posterior probability.
 
     Parameters
     ----------
     param : numpy.ndarray
-        Values of the main scaling parameter and optionally additional band-dependent scaling
-        parameters.
+        Value of the scaling parameter.
     bounds : dict
         Boundaries of the main scaling parameter.
     modelpar : list(str, )
@@ -37,9 +35,6 @@ def lnprob(param,
     specphot : list(float, )
         Synthetic photometry of the calibration spectrum for the same filters as the photometry
         of the object.
-    bands : bool
-        Use band-dependent scaling parameters in addition to the main scaling parameter which
-        is used for the full spectrum.
 
     Returns
     -------
@@ -61,12 +56,13 @@ def lnprob(param,
 
     else:
         chisq = 0.
-        for i, _ in enumerate(objphot):
-            if bands:
-                chisq += (objphot[i][0] - param[0]*param[i+1]*specphot[i])**2 / objphot[i][1]**2
+        for i, obj_item in enumerate(objphot):
+            if obj_item.ndim == 1:
+                chisq += (obj_item[0] - param[0]*specphot[i])**2 / obj_item[1]**2
 
             else:
-                chisq += (objphot[i][0] - param[0]*specphot[i])**2 / objphot[i][1]**2
+                for j in range(obj_item.shape[1]):
+                    chisq += (obj_item[0, j] - param[0]*specphot[i])**2 / obj_item[1, j]**2
 
         ln_prob = ln_prior - 0.5*chisq
 
@@ -128,7 +124,7 @@ class FitSpectrum:
             self.specphot.append(spec_phot[0])
 
             obj_phot = self.object.get_photometry(item)
-            self.objphot.append((obj_phot[2], obj_phot[3]))
+            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
         self.modelpar = ['scaling']
 
@@ -136,8 +132,7 @@ class FitSpectrum:
                  nwalkers,
                  nsteps,
                  guess,
-                 tag,
-                 bands=False):
+                 tag):
         """
         Function to run the MCMC sampler.
 
@@ -151,9 +146,6 @@ class FitSpectrum:
             Guess of the scaling parameter.
         tag : str
             Database tag where the MCMC samples are stored.
-        bands : bool
-            Use band-dependent scaling parameters in addition to the main scaling parameter which
-            is used for the full spectrum.
 
         Returns
         -------
@@ -161,12 +153,6 @@ class FitSpectrum:
         """
 
         print('Running MCMC...')
-
-        if bands:
-            ndim = 1 + len(self.objphot)
-
-        else:
-            ndim = 1
 
         initial = np.zeros((nwalkers, ndim))
         initial[:, 0] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)
@@ -184,8 +170,7 @@ class FitSpectrum:
                                                 args=([self.bounds,
                                                        self.modelpar,
                                                        self.objphot,
-                                                       self.specphot,
-                                                       bands]))
+                                                       self.specphot]))
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 

@@ -2,10 +2,14 @@
 Utility functions for reading data.
 """
 
+import math
 import warnings
+
+from typing import Tuple
 
 import numpy as np
 
+from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter
 
@@ -126,6 +130,45 @@ def update_spectra(objectbox,
         objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
 
     return objectbox
+
+
+@typechecked
+def create_wavelengths(wavel_range: Tuple[float, float],
+                       spec_res: float) -> np.ndarray:
+    """
+    Function for creating logarithmically-spaced wavelengths at a constant spectral resolution.
+
+    Parameters
+    ----------
+    wavel_range : tuple(float, float)
+        Wavelength range (um). Tuple with the minimum and maximum wavelength.
+    spec_res : float
+        Spectral resolution at which the wavelengths are sampled.
+
+    Returns
+    -------
+    np.ndarray
+        Array with the wavelength points and a fixed spectral resolution. Since the wavelength
+        boundaries are fixed, the output spectral resolution is slightly different from the
+        ``spec_res`` value.
+    """
+
+    n_test = 100
+
+    wavel_test = np.logspace(np.log10(wavel_range[0]), np.log10(wavel_range[1]), n_test)
+
+    res_test = 0.5*(wavel_test[1:]+wavel_test[:-1])/np.diff(wavel_test)
+
+    # R = lambda / delta_lambda / 2, because twice as many points as R are required to resolve
+    # two features that are lambda / R apart
+
+    wavelength = np.logspace(np.log10(wavel_range[0]),
+                             np.log10(wavel_range[1]),
+                             math.ceil(2.*n_test*spec_res/np.mean(res_test))+1)
+
+    res_out = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength)/2.)
+
+    return wavelength
 
 
 def smooth_spectrum(wavelength,
