@@ -288,22 +288,22 @@ def plot_posterior(tag,
     if inc_luminosity:
         ndim += 1
 
-        if 'teff' in box.parameters and 'radius' in box.parameters:
-            teff_index = np.argwhere(np.array(box.parameters) == 'teff')[0]
-            radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+        if 'teff' in samples_box.parameters and 'radius' in samples_box.parameters:
+            teff_index = np.argwhere(np.array(samples_box.parameters) == 'teff')[0]
+            radius_index = np.argwhere(np.array(samples_box.parameters) == 'radius')[0]
 
             luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
                 constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
             samples = np.append(samples, np.log10(luminosity), axis=-1)
-            box.parameters.append('luminosity')
+            samples_box.parameters.append('luminosity')
 
-        elif 'teff_0' in box.parameters and 'radius_0' in box.parameters:
+        elif 'teff_0' in samples_box.parameters and 'radius_0' in samples_box.parameters:
             luminosity = 0.
 
             for i in range(100):
-                teff_index = np.argwhere(np.array(box.parameters) == f'teff_{i}')
-                radius_index = np.argwhere(np.array(box.parameters) == f'radius_{i}')
+                teff_index = np.argwhere(np.array(samples_box.parameters) == f'teff_{i}')
+                radius_index = np.argwhere(np.array(samples_box.parameters) == f'radius_{i}')
 
                 if len(teff_index) > 0 and len(radius_index) > 0:
                     luminosity += 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
@@ -313,9 +313,9 @@ def plot_posterior(tag,
                     break
 
             samples = np.append(samples, np.log10(luminosity), axis=-1)
-            box.parameters.append('luminosity')
+            samples_box.parameters.append('luminosity')
 
-    labels = plot_util.update_labels(box.parameters)
+    labels = plot_util.update_labels(samples_box.parameters)
 
     samples = samples.reshape((-1, ndim))
 
