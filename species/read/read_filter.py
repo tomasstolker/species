@@ -5,10 +5,13 @@ Module with reading functionalities for filter profiles.
 import os
 import configparser
 
+from typing import Tuple
+
 import h5py
 import numpy as np
 
-from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
+from typeguard import typechecked
+from scipy.interpolate import interp1d, InterpolatedUnivariateSpline, interpolate
 
 from species.data import database
 
@@ -18,8 +21,9 @@ class ReadFilter:
     Class for reading a filter profile from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 filter_name):
+                 filter_name: str) -> None:
         """
         Parameters
         ----------
@@ -42,7 +46,8 @@ class ReadFilter:
 
         self.database = config['species']['database']
 
-    def get_filter(self):
+    @typechecked
+    def get_filter(self) -> np.ndarray:
         """
         Function for selecting a filter profile from the database.
 
@@ -69,7 +74,8 @@ class ReadFilter:
 
         return data
 
-    def interpolate_filter(self):
+    @typechecked
+    def interpolate_filter(self) -> interpolate.interp1d:
         """
         Function for linearly interpolating a filter profile.
 
@@ -87,7 +93,8 @@ class ReadFilter:
                         bounds_error=False,
                         fill_value=float('nan'))
 
-    def wavelength_range(self):
+    @typechecked
+    def wavelength_range(self) -> Tuple[float, float]:
         """
         Extract the wavelength range of the filter profile.
 
@@ -103,7 +110,8 @@ class ReadFilter:
 
         return np.amin(data[0, ]), np.amax(data[0, ])
 
-    def mean_wavelength(self):
+    @typechecked
+    def mean_wavelength(self) -> float:
         """
         Calculate the weighted mean wavelength of the filter profile.
 
@@ -117,7 +125,8 @@ class ReadFilter:
 
         return np.trapz(data[0, ]*data[1, ], data[0, ]) / np.trapz(data[1, ], data[0, ])
 
-    def filter_fwhm(self):
+    @typechecked
+    def filter_fwhm(self) -> float:
         """
         Calculate the full width at half maximum (FWHM) of the filter profile.
 
