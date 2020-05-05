@@ -170,6 +170,22 @@ def update_labels(param):
         index = param.index('log_p_quench')
         param[index] = r'$\log\,P_\mathregular{quench}$'
 
+    if 'sigma_lnorm' in param:
+        index = param.index('sigma_lnorm')
+        param[index] = r'$\sigma_{g}$'
+
+    if 'kzz' in param:
+        index = param.index('kzz')
+        param[index] = r'$\log\,K_{zz}$'
+
+    if 'na2s_fraction' in param:
+        index = param.index('na2s_fraction')
+        param[index] = r'$\log\,\tilde{X}_\mathregular{Na_{2}S}$'
+
+    if 'kcl_fraction' in param:
+        index = param.index('kcl_fraction')
+        param[index] = r'$\log\,\tilde{X}_\mathregular{KCl}$'
+
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
             param[i] = rf'$a_\mathregular{{{item[8:]}}}$'
