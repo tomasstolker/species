@@ -5,10 +5,14 @@ Module with functions for creating color-magnitude and color-color plot.
 import os
 import math
 
+from typing import Union, Optional, Tuple, List
+
+import PyMieScatt
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from typeguard import typechecked
 from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar
 
@@ -23,19 +27,24 @@ mpl.rcParams['font.family'] = 'serif'
 plt.rc('axes', edgecolor='black', linewidth=2.2)
 
 
-def plot_color_magnitude(boxes,
-                         objects=None,
-                         mass_labels=None,
-                         teff_labels=None,
-                         companion_labels=False,
-                         field_range=None,
-                         label_x='Color (mag)',
-                         label_y='Absolute magnitude (mag)',
-                         xlim=None,
-                         ylim=None,
-                         offset=None,
-                         legend='upper left',
-                         output='color-magnitude.pdf'):
+@typechecked
+def plot_color_magnitude(boxes: list,
+                         objects: Optional[Union[List[Tuple[str, str, str, str]],
+                                                 List[Tuple[str, str, str, str, Optional[dict],
+                                                            Optional[dict]]]]] = None,
+                         mass_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+                         teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+                         companion_labels: bool = False,
+                         reddening: Optional[List[Tuple[Tuple[str, str], Tuple[str, float], str,
+                                                        float, Tuple[float, float]]]] = None,
+                         field_range: Optional[Tuple[str, str]] = None,
+                         label_x: str = 'Color',
+                         label_y: str = 'Absolute magnitude',
+                         xlim: Optional[Tuple[float, float]] = None,
+                         ylim: Optional[Tuple[float, float]] = None,
+                         offset: Optional[Tuple[float, float]] = None,
+                         legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                         output: str = 'color-magnitude.pdf') -> None:
     """
     Function for creating a color-magnitude diagram.
 
@@ -46,8 +55,8 @@ def plot_color_magnitude(boxes,
         libraries, and/or atmospheric models. The synthetic data have to be created with
         :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`. These boxes
         contain synthetic colors and magnitudes for a given age and a range of masses.
-    objects : tuple(tuple(str, str, str, str), ),
-              tuple(tuple(str, str, str, str, str, str, dict, dict), ), None
+    objects : list(tuple(str, str, str, str), ),
+              list(tuple(str, str, str, str, dict, dict), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter names for the color, and the filter names for the absolute magnitude. Optionally, a
         dictionary with keyword arguments can be provided for the object's marker and label,
@@ -66,6 +75,12 @@ def plot_color_magnitude(boxes,
         to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
+    reddening : list(tuple(str, str, str, float, str, float, tuple(float, float)), None
+        Include reddening arrows by providing a list with tuples. Each tuple contains the filter
+        names for the color, the filter name for the magnitude, the particle radius (um), and the
+        start position (color, mag) of the arrow in the plot, so (filter_color_1, filter_color_2,
+        filter_mag, composition, radius, (x_pos, y_pos)). The composition can be either 'Fe' or
+        'MgSiO3' (both with crystalline structure). The parameter is not used if set to ``None``.
     field_range : tuple(str, str), None
         Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
         and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
@@ -80,8 +95,8 @@ def plot_color_magnitude(boxes,
         Limits for the y-axis. Not used if set to None.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
-    legend : str, None
-        Legend position. Not shown if set to None.
+    legend : str, tuple(float, float), dict, None
+        Legend position or keyword arguments. No legend is shown if set to ``None``.
     output : str
         Output filename.
 
@@ -91,8 +106,6 @@ def plot_color_magnitude(boxes,
         None
 
     """
-
-    print(f'Plotting color-magnitude diagram: {output}...', end='', flush=True)
 
     model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
@@ -350,6 +363,53 @@ def plot_color_magnitude(boxes,
         for item in isochrones:
             ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1, color='black')
 
+    if reddening is not None:
+        for item in reddening:
+            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+                                                    item[1],
+                                                    composition=item[2],
+                                                    structure='crystalline',
+                                                    radius=item[3])
+
+            delta_x = ext_1 - ext_2
+            delta_y = item[1][1]
+
+            x_pos = item[4][0] + delta_x
+            y_pos = item[4][1] + delta_y
+
+            ax1.annotate(s='', xy=(x_pos, y_pos), xytext=(item[4][0], item[4][1]),
+                         fontsize=8, arrowprops={'arrowstyle': '->'}, color='black', zorder=3.)
+
+            x_pos_text = item[4][0] + delta_x/2.
+            y_pos_text = item[4][1] + delta_y/2.
+
+            vector_len = math.sqrt(delta_x**2+delta_y**2)
+
+            if item[2] == 'MgSiO3':
+                dust_species = r'MgSiO$_{3}$'
+            elif item[2] == 'Fe':
+                dust_species = 'Fe'
+
+            if (item[3]).is_integer():
+                red_label = f'{dust_species} ({item[3]:.0f} $\mu$m)'
+            else:
+                red_label = f'{dust_species} ({item[3]:.1f} $\mu$m)'
+
+            text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
+                                xytext=(7.*delta_y/vector_len, 7.*delta_x/vector_len),
+                                textcoords='offset points', fontsize=8., color='black',
+                                ha='center', va='center')
+
+            line, = ax1.plot([item[4][0], x_pos], [item[4][1], y_pos], '-', color='white')
+
+            sp1 = ax1.transData.transform_point((item[4][0], item[4][1]))
+            sp2 = ax1.transData.transform_point((x_pos, y_pos))
+
+            angle = np.degrees(np.arctan2(sp2[1]-sp1[1], sp2[0]-sp1[0]))
+            text.set_rotation(angle)
+
+    print(f'Plotting color-magnitude diagram: {output}...', end='', flush=True)
+
     if objects is not None:
         for i, item in enumerate(objects):
             objdata = read_object.ReadObject(item[0])
@@ -408,19 +468,25 @@ def plot_color_magnitude(boxes,
     print(' [DONE]')
 
 
-def plot_color_color(boxes,
-                     objects=None,
-                     mass_labels=None,
-                     teff_labels=None,
-                     companion_labels=False,
-                     field_range=None,
-                     label_x='Color (mag)',
-                     label_y='Color (mag)',
-                     xlim=None,
-                     ylim=None,
-                     offset=None,
-                     legend='upper left',
-                     output='color-color.pdf'):
+@typechecked
+def plot_color_color(boxes: list,
+                     objects: Optional[Union[List[Tuple[str, Tuple[str, str], Tuple[str, str]]],
+                                             List[Tuple[str, Tuple[str, str], Tuple[str, str], Optional[dict],
+                                                        Optional[dict]]]]] = None,
+                     mass_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+                     teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+                     companion_labels: bool = False,
+                     reddening: Optional[List[Tuple[Tuple[str, str], Tuple[str, str],
+                                                    Tuple[str, float], str, float,
+                                                    Tuple[float, float]]]] = None,
+                     field_range: Optional[Tuple[str, str]] = None,
+                     label_x: str = 'Color',
+                     label_y: str = 'Color',
+                     xlim: Optional[Tuple[float, float]] = None,
+                     ylim: Optional[Tuple[float, float]] = None,
+                     offset: Optional[Tuple[float, float]] = None,
+                     legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                     output: str = 'color-color.pdf') -> None:
     """
     Function for creating a color-color diagram.
 
@@ -431,8 +497,8 @@ def plot_color_color(boxes,
         libraries, and/or atmospheric models. The synthetic data have to be created with
         :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`. These boxes
         contain synthetic colors for a given age and a range of masses.
-    objects : tuple(tuple(str, str, str, str), ),
-              tuple(tuple(str, str, str, str, str, str, dict, dict), ), None
+    objects : tuple(tuple(str, tuple(str, str), tuple(str, str)), ),
+              tuple(tuple(str, tuple(str, str), tuple(str, str), dict, dict), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
         filter names for the first color, and the two filter names for the second color.
         Optionally, a dictionary with keyword arguments can be provided for the object's marker and
@@ -451,6 +517,12 @@ def plot_color_color(boxes,
         to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
+    reddening : list(tuple(tuple(str, str), tuple(str, str), tuple(str, float), str, float, tuple(float, float)), None
+        Include reddening arrows by providing a list with tuples. Each tuple contains the filter
+        names for the color, the filter name for the magnitude, the particle radius (um), and the
+        start position (color, mag) of the arrow in the plot, so (filter_color_1, filter_color_2,
+        filter_mag, composition, radius, (x_pos, y_pos)). The composition can be either 'Fe' or
+        'MgSiO3' (both with crystalline structure). The parameter is not used if set to ``None``.
     field_range : tuple(str, str), None
         Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
         and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
@@ -475,8 +547,6 @@ def plot_color_color(boxes,
     NoneType
         None
     """
-
-    print(f'Plotting color-color diagram: {output}...', end='', flush=True)
 
     model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
@@ -588,8 +658,8 @@ def plot_color_color(boxes,
                                 mass_val = mass_item
                                 mass_pos = 'right'
 
-                            if j == 0:
                             # if j == 0 or (j > 0 and mass_val < 20.):
+                            if j == 0:
                                 pos_color1 = interp_color1(mass_val)
                                 pos_color2 = interp_color2(mass_val)
 
@@ -721,6 +791,61 @@ def plot_color_color(boxes,
     if isochrones:
         for item in isochrones:
             ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1, color='black')
+
+    if reddening is not None:
+        for item in reddening:
+            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+                                                    item[2],
+                                                    composition=item[3],
+                                                    structure='crystalline',
+                                                    radius=item[4])
+
+            ext_3, ext_4 = plot_util.calc_reddening(item[1],
+                                                    item[2],
+                                                    composition=item[3],
+                                                    structure='crystalline',
+                                                    radius=item[4])
+
+            delta_x = ext_1 - ext_2
+            delta_y = ext_3 - ext_4
+
+            x_pos = item[5][0] + delta_x
+            y_pos = item[5][1] + delta_y
+
+            ax1.annotate(s='', xy=(x_pos, y_pos), xytext=(item[5][0], item[5][1]),
+                         fontsize=8, arrowprops={'arrowstyle': '->'}, color='black', zorder=3.)
+
+            x_pos_text = item[5][0] + delta_x/2.
+            y_pos_text = item[5][1] + delta_y/2.
+
+            vector_len = math.sqrt(delta_x**2+delta_y**2)
+
+            if item[3] == 'MgSiO3':
+                dust_species = r'MgSiO$_{3}$'
+
+            elif item[3] == 'Fe':
+                dust_species = 'Fe'
+
+            if item[4].is_integer():
+                red_label = f'{dust_species} ({item[4]:.0f} $\mu$m)'
+
+            else:
+                red_label = f'{dust_species} ({item[4]:.1f} $\mu$m)'
+
+            text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
+                                xytext=(-7.*delta_y/vector_len, 7.*delta_x/vector_len),
+                                textcoords='offset points', fontsize=8., color='black',
+                                ha='center', va='center')
+
+            line, = ax1.plot([item[5][0], x_pos], [item[5][1], y_pos], '-', color='white')
+
+            sp1 = ax1.transData.transform_point((item[5][0], item[5][1]))
+            sp2 = ax1.transData.transform_point((x_pos, y_pos))
+
+            angle = np.degrees(np.arctan2(sp2[1]-sp1[1], sp2[0]-sp1[0]))
+            text.set_rotation(angle)
+
+    print(f'Plotting color-color diagram: {output}...', end='', flush=True)
 
     if objects is not None:
         for i, item in enumerate(objects):

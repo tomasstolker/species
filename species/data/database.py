@@ -25,7 +25,7 @@ from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, btsettl, ames_dusty, ames_cond, \
-                         isochrones, petitcode, exo_rem
+                         isochrones, petitcode, exo_rem, dust
 from species.read import read_model, read_calibration, read_planck
 from species.util import data_util
 # from species.util import data_util, retrieval_util
@@ -163,6 +163,43 @@ class Database:
             self.add_object(object_name=item,
                             distance=data[item]['distance'],
                             app_mag=data[item]['app_mag'])
+
+    @typechecked
+    def add_dust(self) -> None:
+        """
+        Function for adding optical constants of MgSiO3 and Fe to the database. The optical
+        constants have been compiled by Mollière et al. (2019) for petitRADTRANS from the
+        following sources:
+
+        - MgSiO3, crystalline
+            - Scott & Duley (1996), ApJS, 105, 401
+            - Jäger et al. (1998), A&A, 339, 904
+
+        - MgSiO3, amorphous
+            - Jäger et al. (2003), A&A, 408, 193
+
+        - Fe, crystalline
+            - Henning & Stognienko (1996), A&A, 311, 291
+
+        - Fe, amorphous
+            - Pollack et al. (1994), ApJ, 421, 615
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        h5_file = h5py.File(self.database, 'a')
+
+        if 'dust' in h5_file:
+            del h5_file['dust']
+
+        h5_file.create_group('dust')
+
+        dust.add_optical_constants(self.input_path, h5_file)
+
+        h5_file.close()
 
     def add_filter(self,
                    filter_name,

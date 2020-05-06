@@ -46,10 +46,28 @@ def plot_spectrum(boxes,
         Filter IDs for which the transmission profile is plotted. Not plotted if set to None.
     residuals : species.core.box.ResidualsBox, None
         Box with residuals of a fit. Not plotted if set to None.
-    plot_kwargs : list(str, ), None
-        TODO Colors to be used for the different boxes. Note that a box with residuals requires a tuple
-        with two colors (i.e., for the photometry and spectrum). Automatic colors are used if set
-        to None.
+    plot_kwargs : list(dict, ), None
+        List with dictionaries of keyword arguments for each box. For example, if the ``boxes``
+        are a ``ModelBox`` and ``ObjectBox``:
+
+        .. code-block:: python
+
+            plot_kwargs=[{'ls': '-', 'lw': 1., 'color': 'black'},
+                         {'spectrum_1': {'marker': 'o', 'ms': 3., 'color': 'tab:brown', 'ls': 'none'},
+                          'spectrum_2': {'marker': 'o', 'ms': 3., 'color': 'tab:blue', 'ls': 'none'},
+                          'Paranal/SPHERE.IRDIS_D_H23_3': {'marker': 's', 'ms': 4., 'color': 'tab:cyan', 'ls': 'none'},
+                          'Paranal/SPHERE.IRDIS_D_K12_1': [{'marker': 's', 'ms': 4., 'color': 'tab:orange', 'ls': 'none'},
+                                                           {'marker': 's', 'ms': 4., 'color': 'tab:red', 'ls': 'none'}],
+                          'Paranal/NACO.Lp': {'marker': 's', 'ms': 4., 'color': 'tab:green', 'ls': 'none'},
+                          'Paranal/NACO.Mp': {'marker': 's', 'ms': 4., 'color': 'tab:green', 'ls': 'none'}}]
+
+        For an ``ObjectBox``, the dictionary contains items for the different spectrum and filter
+        names stored with :func:`~species.data.database.Database.add_object`. In case both
+        and ``ObjectBox`` and a ``SynphotBox`` are provided, then the latter can be set to ``None``
+        in order to use the same (but open) symbols as the data from the ``ObjectBox``. Note that
+        if a filter name is duplicated in an ``ObjectBox`` (Paranal/SPHERE.IRDIS_D_K12_1 in the
+        example) then a list with two dictionaries should be provided. Colors are automatically
+        chosen if ``plot_kwargs`` is set to ``None``.
     xlim : tuple(float, float)
         Limits of the wavelength axis.
     ylim : tuple(float, float)
@@ -81,8 +99,6 @@ def plot_spectrum(boxes,
     NoneType
         None
     """
-
-    marker = itertools.cycle(('o', 's', '*', 'p', '<', '>', 'P', 'v', '^'))
 
     if plot_kwargs is None:
         plot_kwargs = []

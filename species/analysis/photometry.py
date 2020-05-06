@@ -39,7 +39,7 @@ class SyntheticPhotometry:
         self.filter_interp = None
         self.wavel_range = None
 
-        self.vega_mag = 0.03  # [mag]
+        self.vega_mag = 0.03  # (mag)
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
