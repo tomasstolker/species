@@ -30,6 +30,7 @@ The following data are currently supported by *species* (support for other data 
 - Photometry from `Sandy Leggett <http://www.gemini.edu/staff/sleggett>`_
 - Photometry of directly imaged planets and brown dwarfs (see dictionary in :class:`~species.data.companions`)
 - Calibration spectrum of `Vega <http://ssb.stsci.edu/cdbs/calspec/>`_
+- Optical constants compiled by `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_ (see :func:`~species.data.database.Database.add_dust`)
 
 Please give credit to the relevant authors when using these data in a publication. More information is available on the respective websites.
 

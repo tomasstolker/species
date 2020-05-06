@@ -2,7 +2,20 @@
 Utility functions for plotting data.
 """
 
+import os
+import configparser
+
+from typing import Tuple
+
+import h5py
+import PyMieScatt
 import numpy as np
+
+from typeguard import typechecked
+from scipy.interpolate import interp1d
+
+from species.data import database
+from species.read import read_filter
 
 
 def sptype_substellar(sptype,
@@ -214,8 +227,23 @@ def model_name(key):
     elif key == 'bt-nextgen':
         name = 'BT-NextGen'
 
+    elif key == 'petitcode-cool-clear':
+        name = 'petitCODE'
+
+    elif key == 'petitcode-cool-cloudy':
+        name = 'petitCODE'
+
+    elif key == 'petitcode-hot-clear':
+        name = 'petitCODE'
+
+    elif key == 'petitcode-hot-cloudy':
+        name = 'petitCODE'
+
+    elif key == 'exo-rem':
+        name = 'Exo-REM'
+
     elif key == 'planck':
-        name = 'Planck radiation'
+        name = 'Blackbody radiation'
 
     elif key == 'zhu2015':
         name = 'Zhu (2015)'
@@ -360,3 +388,143 @@ def field_bounds_ticks(field_range):
     labels = spectral_ranges[index_start:index_end]
 
     return bounds, ticks, labels
+
+
+@typechecked
+def dust_cross_section(wavelengths: np.ndarray,
+                       n_index: np.ndarray,
+                       k_index: np.ndarray,
+                       radius: float) -> np.ndarray:
+    """
+    Function for calculating the extinction cross section of a dust grain.
+
+    Parameters
+    ----------
+    wavelengths : np.ndarray
+        Wavelengths (um).
+    n_index : np.ndarray
+        Real part of the refractive index.
+    k_index : np.ndarray
+        Imaginary part of the refractive index.
+    radius : np.ndarray
+        Radius of the dust grain (um).
+
+    Returns
+    -------
+    np.ndarray
+        Extinction cross section (um2)
+    """
+
+    sigma = np.zeros(wavelengths.shape)
+
+    for i, item in enumerate(wavelengths):
+        # PyMieScatt units are in nm and the grain size is provided as the diameter
+        mie = PyMieScatt.MieQ(complex(n_index[i], k_index[i]), item*1e3, 2.*radius*1e3,
+                              asDict=True, asCrossSection=True)
+
+        if 'Cext' in mie:
+            sigma[i] = mie['Cext']  # (nm2)
+
+    return sigma*1e-6  # (um2)
+
+
+@typechecked
+def calc_reddening(filters_color: Tuple[str, str],
+                   extinction: Tuple[str, float],
+                   composition: str = 'MgSiO3',
+                   structure: str = 'crystalline',
+                   radius: float = 1.) -> Tuple[float, float]:
+    """
+    Function for calculating the reddening of a color given the extinction for a given filter.
+
+    Parameters
+    ----------
+    filters_color : tuple(str, str)
+        Filter names for which the extinction is calculated.
+    extinction : str
+        Filter name and extinction (mag).
+    composition : str
+        Dust composition ('MgSiO3' or 'Fe').
+    structure : str
+        Grain structure ('crystalline' or 'amorphous').
+    radius : float
+        Radius of the dust grain (um).
+
+    Returns
+    -------
+    float
+        Extinction (mag) for ``filters_color[0]``.
+    float
+        Extinction (mag) for ``filters_color[1]``.
+    """
+
+    config_file = os.path.join(os.getcwd(), 'species_config.ini')
+
+    config = configparser.ConfigParser()
+    config.read_file(open(config_file))
+
+    database_path = config['species']['database']
+
+    h5_file = h5py.File(database_path, 'r')
+
+    try:
+        h5_file['dust']
+
+    except KeyError:
+        h5_file.close()
+        species_db = database.Database()
+        species_db.add_dust()
+        h5_file = h5py.File(database_path, 'r')
+
+    if composition == 'MgSiO3' and structure == 'crystalline':
+        for i in range(3):
+            data = h5_file[f'dust/mgsio3/crystalline/axis_{i+1}']
+
+            # Average cross section of the three axes
+            if i == 0:
+                sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
+
+            else:
+                sigma += dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
+
+    else:
+        if composition == 'MgSiO3' and structure == 'amorphous':
+            data = h5_file[f'dust/mgsio3/amorphous/']
+
+        elif composition == 'Fe' and structure == 'crystalline':
+            data = h5_file[f'dust/fe/crystalline/']
+
+        elif composition == 'Fe' and structure == 'amorphous':
+            data = h5_file[f'dust/fe/amorphous/']
+
+        sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius)
+
+    interp_sigma = interp1d(data[:, 0], sigma, kind='linear')
+
+    h5_file.close()
+
+    read_filt = read_filter.ReadFilter(extinction[0])
+    transmission = read_filt.get_filter()
+
+    # Weighted average of the cross section for extinction[0]
+    sigma_mag = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
+                         transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+
+    read_filt = read_filter.ReadFilter(filters_color[0])
+    transmission = read_filt.get_filter()
+
+    # Weighted average of the cross section for filters_color[0]
+    sigma_color_0 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
+                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+
+    read_filt = read_filter.ReadFilter(filters_color[1])
+    transmission = read_filt.get_filter()
+
+    # Weighted average of the cross section for filters_color[1]
+    sigma_color_1 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
+                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+
+    density = extinction[1]/sigma_mag/2.5/np.log10(np.exp(1.))
+
+    return 2.5 * np.log10(np.exp(1.)) * sigma_color_0 * density, \
+        2.5 * np.log10(np.exp(1.)) * sigma_color_1 * density
