@@ -2,8 +2,14 @@
 Module for extracting data of directly imaged planets and brown dwarfs.
 """
 
+from typing import Union, Dict, Tuple, List
 
-def get_data():
+from typeguard import typechecked
+
+
+@typechecked
+def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
+                       Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]]]]]:
     """
     Function for extracting a dictionary with the distances (pc) and apparent magnitudes of
     directly imaged planets and brown dwarfs.

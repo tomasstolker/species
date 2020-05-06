@@ -5,7 +5,7 @@ Module with reading functionalities for filter profiles.
 import os
 import configparser
 
-from typing import Tuple
+from typing import Union, Tuple
 
 import h5py
 import numpy as np
@@ -94,7 +94,8 @@ class ReadFilter:
                         fill_value=float('nan'))
 
     @typechecked
-    def wavelength_range(self) -> Tuple[float, float]:
+    def wavelength_range(self) -> Tuple[Union[np.float32, np.float64],
+                                        Union[np.float32, np.float64]]:
         """
         Extract the wavelength range of the filter profile.
 
@@ -108,7 +109,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return np.amin(data[0, ]), np.amax(data[0, ])
+        return data[0, 0], data[0, -1]
 
     @typechecked
     def mean_wavelength(self) -> float:
