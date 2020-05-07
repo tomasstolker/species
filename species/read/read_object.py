@@ -6,8 +6,12 @@ import os
 import math
 import configparser
 
+from typing import Tuple
+
 import h5py
 import numpy as np
+
+from typeguard import typechecked
 
 from species.util import phot_util
 
@@ -17,8 +21,9 @@ class ReadObject:
     Class for reading data from an individual object from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 object_name):
+                 object_name: str) -> None:
         """
         Parameters
         ----------
@@ -45,8 +50,9 @@ class ReadObject:
                 raise ValueError(f'The object \'{self.object_name}\' is not present in the '
                                  f'database.')
 
+    @typechecked
     def get_photometry(self,
-                       filter_name):
+                       filter_name: str) -> np.ndarray:
         """
         Function for reading the photometry of the object.
 
@@ -57,7 +63,7 @@ class ReadObject:
 
         Returns
         -------
-        numpy.ndarray
+        np.ndarray
             Apparent magnitude (mag), magnitude error (error), flux (W m-2 um-1),
             flux error (W m-2 um-1).
         """
@@ -72,7 +78,8 @@ class ReadObject:
 
         return obj_phot
 
-    def get_spectrum(self):
+    @typechecked
+    def get_spectrum(self) -> dict:
         """
         Function for reading the spectra and covariance matrices of the object.
 
@@ -106,7 +113,8 @@ class ReadObject:
 
         return spectrum
 
-    def get_distance(self):
+    @typechecked
+    def get_distance(self) -> Tuple[float, float]:
         """
         Function for reading the distance to the object.
 
@@ -123,8 +131,9 @@ class ReadObject:
 
         return obj_distance[0], obj_distance[1]
 
+    @typechecked
     def get_absmag(self,
-                   filter_name):
+                   filter_name: str) -> Tuple[float, float]:
         """
         Function for calculating the absolute magnitudes of the object from the apparent
         magnitudes and distance. The errors on the apparent magnitude and distance are propagated
@@ -151,4 +160,10 @@ class ReadObject:
                 raise ValueError(f'There is no photometric data of \'{self.object_name}\' '
                                  f'available with the {filter_name}.')
 
-        return phot_util.apparent_to_absolute(obj_phot[0:2], obj_distance)
+        if obj_phot.ndim == 1:
+            abs_mag = phot_util.apparent_to_absolute(obj_phot[0:2], obj_distance)
+
+        elif obj_phot.ndim == 2:
+            abs_mag = phot_util.apparent_to_absolute(obj_phot[0:2, :], obj_distance)
+
+        return abs_mag

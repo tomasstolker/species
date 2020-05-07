@@ -408,14 +408,23 @@ def plot_color_magnitude(boxes: list,
             angle = np.degrees(np.arctan2(sp2[1]-sp1[1], sp2[0]-sp1[0]))
             text.set_rotation(angle)
 
-    print(f'Plotting color-magnitude diagram: {output}...', end='', flush=True)
-
     if objects is not None:
         for i, item in enumerate(objects):
             objdata = read_object.ReadObject(item[0])
 
             objcolor1 = objdata.get_photometry(item[1])
             objcolor2 = objdata.get_photometry(item[2])
+
+            if objcolor1.ndim == 2:
+                print(f'Found {objcolor1.shape[1]} values for filter {item[1]} of {item[0]}')
+                print(f'so using the first value:  {objcolor1[0, 0]} +/- {objcolor1[1, 0]} mag')
+                objcolor1 = objcolor1[:, 0]
+
+            if objcolor2.ndim == 2:
+                print(f'Found {objcolor2.shape[1]} values for filter {item[1]} of {item[0]}')
+                print(f'so using the first value:  {objcolor2[0, 0]} +/- {objcolor2[1, 0]} mag')
+                objcolor2 = objcolor2[:, 0]
+
             abs_mag, abs_err = objdata.get_absmag(item[3])
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
@@ -450,6 +459,8 @@ def plot_color_magnitude(boxes: list,
 
                 ax1.annotate(objdata.object_name, (x_color, abs_mag), zorder=3,
                              textcoords='offset points', **kwargs)
+
+    print(f'Plotting color-magnitude diagram: {output}...', end='', flush=True)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
@@ -845,27 +856,40 @@ def plot_color_color(boxes: list,
             angle = np.degrees(np.arctan2(sp2[1]-sp1[1], sp2[0]-sp1[0]))
             text.set_rotation(angle)
 
-    print(f'Plotting color-color diagram: {output}...', end='', flush=True)
-
     if objects is not None:
         for i, item in enumerate(objects):
             objdata = read_object.ReadObject(item[0])
 
-            mag1 = objdata.get_photometry(item[1][0])[0]
-            mag2 = objdata.get_photometry(item[1][1])[0]
-            mag3 = objdata.get_photometry(item[2][0])[0]
-            mag4 = objdata.get_photometry(item[2][1])[0]
+            objphot1 = objdata.get_photometry(item[1][0])
+            objphot2 = objdata.get_photometry(item[1][1])
+            objphot3 = objdata.get_photometry(item[2][0])
+            objphot4 = objdata.get_photometry(item[2][1])
 
-            err1 = objdata.get_photometry(item[1][0])[1]
-            err2 = objdata.get_photometry(item[1][1])[1]
-            err3 = objdata.get_photometry(item[2][0])[1]
-            err4 = objdata.get_photometry(item[2][1])[1]
+            if objphot1.ndim == 2:
+                print(f'Found {objphot1.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'so using the first value:  {objphot1[0, 0]} +/- {objphot1[1, 0]} mag')
+                objphot1 = objphot1[:, 0]
 
-            color1 = mag1 - mag2
-            color2 = mag3 - mag4
+            if objphot2.ndim == 2:
+                print(f'Found {objphot2.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'so using the first value:  {objphot2[0, 0]} +/- {objphot2[1, 0]} mag')
+                objphot2 = objphot2[:, 0]
 
-            error1 = math.sqrt(err1**2+err2**2)
-            error2 = math.sqrt(err3**2+err4**2)
+            if objphot3.ndim == 2:
+                print(f'Found {objphot3.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'so using the first value:  {objphot3[0, 0]} +/- {objphot3[1, 0]} mag')
+                objphot3 = objphot3[:, 0]
+
+            if objphot4.ndim == 2:
+                print(f'Found {objphot4.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'so using the first value:  {objphot4[0, 0]} +/- {objphot4[1, 0]} mag')
+                objphot4 = objphot4[:, 0]
+
+            color1 = objphot1[0] - objphot2[0]
+            color2 = objphot3[0] - objphot4[0]
+
+            error1 = math.sqrt(objphot1[1]**2+objphot2[1]**2)
+            error2 = math.sqrt(objphot3[1]**2+objphot4[1]**2)
 
             if len(item) > 3 and item[3] is not None:
                 kwargs = item[3]
@@ -896,6 +920,8 @@ def plot_color_color(boxes: list,
 
                 ax1.annotate(objdata.object_name, (color1, color2), zorder=3,
                              textcoords='offset points', **kwargs)
+
+    print(f'Plotting color-color diagram: {output}...', end='', flush=True)
 
     handles, labels = ax1.get_legend_handles_labels()
 

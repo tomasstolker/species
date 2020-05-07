@@ -286,7 +286,8 @@ class ReadSpectrum:
                 app_tmp, abs_tmp = synphot.spectrum_to_magnitude(wavelength=specbox.wavelength[i],
                                                                  flux=specbox.flux[i],
                                                                  error=specbox.error[i],
-                                                                 distance=specbox.distance[i])
+                                                                 distance=(float(specbox.distance[i][0]),
+                                                                           float(specbox.distance[i][1])))
 
             app_mag.append(app_tmp)
             abs_mag.append(abs_tmp)
