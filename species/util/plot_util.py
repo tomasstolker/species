@@ -5,7 +5,7 @@ Utility functions for plotting data.
 import os
 import configparser
 
-from typing import Tuple
+from typing import Tuple, List
 
 import h5py
 import PyMieScatt
@@ -115,15 +115,20 @@ def sptype_stellar(sptype,
     return spt_disc
 
 
-def update_labels(param):
+@typechecked
+def update_labels(param: List[str]) -> List[str]:
     """
+    Function for updating the fitted parameters to labels used in plots.
+
     Parameters
     ----------
     param : list
+        List with parameter names.
 
     Returns
     -------
     list
+        List with parameter labels for plots.
     """
 
     if 'teff' in param:
@@ -181,6 +186,12 @@ def update_labels(param):
 
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
+
+        elif item[0:9] == 'corr_len_':
+            param[i] = rf'$\log\,\ell_\mathregular{{{item[9:]}}}$'
+
+        elif item[0:9] == 'corr_amp_':
+            param[i] = rf'$f_\mathregular{{{item[9:]}}}$'
 
     for i in range(100):
         if f'teff_{i}' in param:

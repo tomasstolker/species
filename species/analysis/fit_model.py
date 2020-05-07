@@ -424,8 +424,6 @@ class FitModel:
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
-        species_db = database.Database()
-
         spec_labels = []
 
         if self.spectrum is not None:
@@ -435,6 +433,8 @@ class FitModel:
 
         else:
             spec_labels = None
+
+        species_db = database.Database()
 
         species_db.add_samples(sampler='emcee',
                                samples=ens_sampler.chain,

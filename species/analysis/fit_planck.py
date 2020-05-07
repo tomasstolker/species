@@ -7,7 +7,6 @@ import math
 import warnings
 
 from typing import Optional, Union, List, Tuple, Dict
-
 from multiprocessing import Pool, cpu_count
 
 import emcee
@@ -68,7 +67,8 @@ def lnlike(param: np.ndarray,
            synphot: list,
            distance: float,
            spectrum: Optional[dict],
-           n_planck: int) -> np.float64:
+           n_planck: int,
+           corr_dict: dict) -> np.float64:
     """
     Internal function for the likelihood function.
 
@@ -93,6 +93,8 @@ def lnlike(param: np.ndarray,
         and error (W m-2 um-1). Not used if set to ``None``.
     n_planck : int
         Number of Planck components.
+    corr_dict : dict
+        Dictionary with the 2D arrays that are used for modeling the covariances.
 
     Returns
     -------
@@ -101,8 +103,14 @@ def lnlike(param: np.ndarray,
     """
 
     paramdict = {}
+    spec_scaling = {}
+
     for i, item in enumerate(bounds.keys()):
-        paramdict[item] = param[i]
+        if item[:8] == 'scaling_' and item[8:] in spectrum:
+            spec_scaling[item[8:]] = param[i]
+
+        else:
+            paramdict[item] = param[i]
 
     paramdict['distance'] = distance
 
@@ -140,15 +148,30 @@ def lnlike(param: np.ndarray,
                                          model.flux,
                                          spec_errs=None)
 
-            if spectrum[item][1] is not None:
-                spec_diff = spectrum[item][0][:, 1] - flux_new
+            if item in spec_scaling:
+                flux_obs = spec_scaling[item]*spectrum[item][0][:, 1]
+            else:
+                flux_obs = spectrum[item][0][:, 1]
 
-                dot_tmp = np.dot(np.transpose(spec_diff), np.linalg.inv(spectrum[item][1]))
-                chisq += np.dot(dot_tmp, spec_diff)
+            if spectrum[item][1] is not None:
+                spec_diff = flux_obs - flux_new
+
+                chisq += np.dot(spec_diff, np.dot(spec_diff, np.linalg.inv(spectrum[item][1])))
 
             else:
-                chisq += np.nansum((spectrum[item][0][:, 1] - flux_new)**2 /
-                                   spectrum[item][0][:, 2]**2)
+                if item in corr_dict:
+                    corr_len = 10.**paramdict[f'corr_len_{item}']  # (um)
+                    corr_amp = paramdict[f'corr_amp_{item}']
+
+                    cov_matrix = corr_amp**2 * corr_dict[item][0] * np.exp(-corr_dict[item][1] / \
+                        (2.*corr_len**2)) + (1.-corr_amp**2) * corr_dict[item][2]
+
+                    spec_diff = flux_obs - flux_new
+
+                    chisq += np.dot(spec_diff, np.dot(spec_diff, np.linalg.inv(cov_matrix)))
+
+                else:
+                    chisq += np.nansum((flux_obs - flux_new)**2 / spectrum[item][0][:, 2]**2)
 
     return -0.5*chisq
 
@@ -160,7 +183,8 @@ def lnprob(param: np.ndarray,
            synphot: list,
            distance: float,
            spectrum: Optional[dict],
-           n_planck: int) -> np.float64:
+           n_planck: int,
+           corr_dict: dict) -> np.float64:
     """
     Internal function for the posterior probability.
 
@@ -185,6 +209,8 @@ def lnprob(param: np.ndarray,
         and error (W m-2 um-1). Not used if set to ``None``.
     n_planck : int
         Number of Planck components.
+    corr_dict : dict
+        Dictionary with the 2D arrays that are used for modeling the covariances.
 
     Returns
     -------
@@ -204,7 +230,8 @@ def lnprob(param: np.ndarray,
                                     synphot,
                                     distance,
                                     spectrum,
-                                    n_planck)
+                                    n_planck,
+                                    corr_dict)
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -226,7 +253,8 @@ class FitPlanck:
                  bounds: Union[Dict[str, Tuple[float, float]],
                                Dict[str, List[Tuple[float, float]]]],
                  inc_phot: bool = True,
-                 inc_spec: bool = True) -> None:
+                 inc_spec: bool = True,
+                 fit_corr_noise: Optional[List[str]] = None) -> None:
         """
         Parameters
         ----------
@@ -239,11 +267,17 @@ class FitPlanck:
             Parameter boundaries for 'teff' and 'radius'. The values should be provided either as
             tuple (with two float) or as list of tuples (with two floats) such that multiple Planck
             functions can be combined, e.g. ``{'teff': [(1000., 2000.), (500., 1500.)],
-            'radius': [(0.5, 1.5), (1.5, 2.0)]}``.
+            'radius': [(0.5, 1.5), (1.5, 2.0)]}``. An additional scaling parameter can be fitted
+            for each spectrum in which case, the boundaries have to be provided with the database
+            tag of the spectrum. For example, ``{'sphere_ifs': (0.5, 2.)}`` if the spectrum is
+            stored as ``sphere_ifs`` with :func:`~species.data.database.Database.add_object`.
         inc_phot : bool
             Include photometric data with the fit.
         inc_spec : bool
             Include spectroscopic data with the fit.
+        fit_corr_noise : list(sttr), None
+            List with spectrum names for which the correlation length and the fractional
+            uncertainty of the correlated noise relative to the measured uncertainty are fitted.
 
         Returns
         -------
@@ -259,11 +293,17 @@ class FitPlanck:
 
         self.model = 'planck'
 
+        if fit_corr_noise is None:
+            self.fit_corr_noise = []
+        else:
+            self.fit_corr_noise = fit_corr_noise
+
         self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()
 
         if isinstance(bounds['teff'], list) and isinstance(bounds['radius'], list):
             self.n_planck = len(bounds['teff'])
+
             self.modelpar = []
             self.bounds = {}
 
@@ -276,6 +316,7 @@ class FitPlanck:
 
         else:
             self.n_planck = 1
+
             self.modelpar = ['teff', 'radius']
             self.bounds = bounds
 
@@ -301,8 +342,42 @@ class FitPlanck:
 
         if inc_spec:
             self.spectrum = self.object.get_spectrum()
+
+            self.corr_dict = {}
+            self.n_corr_param = 0
+
+            for item in self.spectrum:
+                if item in self.fit_corr_noise:
+                    self.modelpar.append(f'corr_len_{item}')
+                    self.modelpar.append(f'corr_amp_{item}')
+
+                    self.bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len) (um)
+                    self.bounds[f'corr_amp_{item}'] = (0., 1.)
+
+                    self.n_corr_param += 2
+
+                    # create matrices for fitting the covariances (Wang et al. 2020)
+
+                    wavel = self.spectrum[item][0][:, 0]  # (um)
+                    wavel_j, wavel_i = np.meshgrid(wavel, wavel)
+
+                    error = self.spectrum[item][0][:, 2]  # (W m-2 um-1)
+                    error_j, error_i = np.meshgrid(error, error)
+
+                    self.corr_dict[item] = (error_i*error_j,
+                                            (wavel_i-wavel_j)**2,
+                                            np.eye(wavel.shape[0])*error_i**2)
+
         else:
             self.spectrum = None
+            self.n_corr_param = 0
+
+        if self.spectrum is not None:
+            for item in self.spectrum:
+                if item in bounds:
+                    self.modelpar.append(f'scaling_{item}')
+                    self.bounds[f'scaling_{item}'] = (bounds[item][0], bounds[item][1])
+                    del self.bounds[item]
 
     @typechecked
     def run_mcmc(self,
@@ -335,10 +410,12 @@ class FitPlanck:
 
         print('Running MCMC...')
 
-        ndim = len(self.bounds)
+        ndim = 0
 
-        if ndim == 2:
+        if 'teff' in self.bounds:
             sigma = {'teff': 5., 'radius': 0.01}
+
+            ndim += 2
 
         else:
             sigma = {}
@@ -347,12 +424,36 @@ class FitPlanck:
                 sigma[f'teff_{i}'] = 5.
                 guess[f'teff_{i}'] = guess['teff'][i]
 
+                ndim += 1
+
             for i, item in enumerate(guess['radius']):
                 sigma[f'radius_{i}'] = 0.01
                 guess[f'radius_{i}'] = guess['radius'][i]
 
+                ndim += 1
+
             del guess['teff']
             del guess['radius']
+
+        for item in self.spectrum:
+            if item in self.fit_corr_noise:
+                sigma[f'corr_len_{item}'] = 0.01 #  (dex)
+                guess[f'corr_len_{item}'] = None
+
+                sigma[f'corr_amp_{item}'] = 0.01
+                guess[f'corr_amp_{item}'] = None
+
+                ndim += 2
+
+        if self.spectrum is not None:
+            for item in self.spectrum:
+                if f'scaling_{item}' in self.bounds:
+                    sigma[f'scaling_{item}'] = 0.01
+                    guess[f'scaling_{item}'] = guess[item]
+
+                    ndim += 1
+
+                    del guess[item]
 
         initial = np.zeros((nwalkers, ndim))
 
@@ -374,9 +475,20 @@ class FitPlanck:
                                                        self.synphot,
                                                        self.distance[0],
                                                        self.spectrum,
-                                                       self.n_planck]))
+                                                       self.n_planck,
+                                                       self.corr_dict]))
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
+
+        spec_labels = []
+
+        if self.spectrum is not None:
+            for item in self.spectrum:
+                if f'scaling_{item}' in self.bounds:
+                    spec_labels.append(f'scaling_{item}')
+
+        else:
+            spec_labels = None
 
         species_db = database.Database()
 
@@ -388,7 +500,7 @@ class FitPlanck:
                                tag=tag,
                                modelpar=self.modelpar,
                                distance=self.distance[0],
-                               spec_labels=None)
+                               spec_labels=spec_labels)
 
     @typechecked
     def run_multinest(self,
@@ -457,7 +569,7 @@ class FitPlanck:
                 None
             """
 
-            if len(self.modelpar) == 2:
+            if len(self.modelpar) - self.n_corr_param == 2:
 
                 # Effective temperature (K)
                 cube[cube_index['teff']] = self.bounds['teff'][0] + \
@@ -468,6 +580,7 @@ class FitPlanck:
                     (self.bounds['radius'][1]-self.bounds['radius'][0])*cube[cube_index['radius']]
 
             else:
+
                 for i in range(self.n_planck):
                     # Effective temperature (K)
                     cube[cube_index[f'teff_{i}']] = self.bounds[f'teff_{i}'][0] + \
@@ -478,6 +591,16 @@ class FitPlanck:
                     cube[cube_index[f'radius_{i}']] = self.bounds[f'radius_{i}'][0] + \
                         (self.bounds[f'radius_{i}'][1]-self.bounds[f'radius_{i}'][0]) * \
                         cube[cube_index[f'radius_{i}']]
+
+            for item in self.spectrum:
+                if item in self.fit_corr_noise:
+                    cube[cube_index[f'corr_len_{item}']] = self.bounds[f'corr_len_{item}'][0] + \
+                        (self.bounds[f'corr_len_{item}'][1]-self.bounds[f'corr_len_{item}'][0]) * \
+                        cube[cube_index[f'corr_len_{item}']]
+
+                    cube[cube_index[f'corr_amp_{item}']] = self.bounds[f'corr_amp_{item}'][0] + \
+                        (self.bounds[f'corr_amp_{item}'][1]-self.bounds[f'corr_amp_{item}'][0]) * \
+                        cube[cube_index[f'corr_amp_{item}']]
 
         @typechecked
         def lnlike_multinest(cube,
@@ -515,6 +638,7 @@ class FitPlanck:
             chisq = 0.
 
             if self.objphot is not None:
+
                 for i, obj_item in enumerate(self.objphot):
                     readplanck = read_planck.ReadPlanck(filter_name=self.synphot[i].filter_name)
                     flux = readplanck.get_flux(paramdict, synphot=self.synphot[i])[0]
@@ -527,6 +651,7 @@ class FitPlanck:
                             chisq += (obj_item[0, j]-flux)**2 / obj_item[1, j]**2
 
             if self.spectrum is not None:
+
                 for i, item in enumerate(self.spectrum.keys()):
                     readplanck = read_planck.ReadPlanck((0.9*self.spectrum[item][0][0, 0],
                                                          1.1*self.spectrum[item][0][-1, 0]))
@@ -541,14 +666,24 @@ class FitPlanck:
                     if self.spectrum[item][1] is not None:
                         spec_diff = self.spectrum[item][0][:, 1] - flux_new
 
-                        dot_tmp = np.dot(np.transpose(spec_diff),
-                                         np.linalg.inv(self.spectrum[item][1]))
-
-                        chisq += np.dot(dot_tmp, spec_diff)
+                        chisq += np.dot(spec_diff, np.dot(self.spectrum[item][2], spec_diff))
 
                     else:
-                        chisq += np.nansum((self.spectrum[item][0][:, 1] - flux_new)**2 /
-                                           self.spectrum[item][0][:, 2]**2)
+                        if item in self.fit_corr_noise:
+                            corr_len = 10.**paramdict[f'corr_len_{item}']  # (um)
+                            corr_amp = paramdict[f'corr_amp_{item}']
+
+                            cov_matrix = corr_amp**2 * self.corr_dict[item][0] * \
+                                np.exp(-self.corr_dict[item][1] / (2.*corr_len**2)) + \
+                                (1.-corr_amp**2) * self.corr_dict[item][2]
+
+                            spec_diff = self.spectrum[item][0][:, 1] - flux_new
+
+                            chisq += np.dot(spec_diff, np.dot(spec_diff, np.linalg.inv(cov_matrix)))
+
+                        else:
+                            chisq += np.nansum((self.spectrum[item][0][:, 1] - flux_new)**2 /
+                                               self.spectrum[item][0][:, 2]**2)
 
             return -0.5*chisq
 

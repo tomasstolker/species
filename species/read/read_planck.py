@@ -144,7 +144,11 @@ class ReadPlanck:
 
         wavel_points = read_util.create_wavelengths(self.wavel_range, spec_res)
 
-        n_planck = (len(model_param)-1) // 2
+        n_planck = 0
+
+        for item in model_param:
+            if item[:4] == 'teff':
+                n_planck += 1
 
         if n_planck == 1:
             scaling = ((model_param['radius']*constants.R_JUP) /
