@@ -187,6 +187,9 @@ def update_labels(param: List[str]) -> List[str]:
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
 
+        elif item[0:11] == 'wavelength_':
+            param[i] = rf'$c_\mathregular{{{item[11:]}}}$ (nm)'
+
         elif item[0:9] == 'corr_len_':
             param[i] = rf'$\log\,\ell_\mathregular{{{item[9:]}}}$'
 
@@ -518,22 +521,22 @@ def calc_reddening(filters_color: Tuple[str, str],
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for extinction[0]
-    sigma_mag = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                         transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 0],
+                         transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     read_filt = read_filter.ReadFilter(filters_color[0])
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for filters_color[0]
-    sigma_color_0 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_color_0 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
+                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     read_filt = read_filter.ReadFilter(filters_color[1])
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for filters_color[1]
-    sigma_color_1 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_color_1 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
+                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     density = extinction[1]/sigma_mag/2.5/np.log10(np.exp(1.))
 

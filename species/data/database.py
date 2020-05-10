@@ -201,9 +201,10 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_filter(self,
-                   filter_name,
-                   filename=None):
+                   filter_name: str,
+                   filename: Optional[str] = None) -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
         Service or input file.
@@ -248,7 +249,7 @@ class Database:
 
         if wavelength is not None and transmission is not None:
             h5_file.create_dataset(f'filters/{filter_name}',
-                                   data=np.vstack((wavelength, transmission)))
+                                   data=np.column_stack((wavelength, transmission)))
 
         h5_file.close()
 
@@ -938,21 +939,28 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_samples(self,
-                    sampler,
-                    samples,
-                    ln_prob,
-                    mean_accept,
-                    spectrum,
-                    tag,
-                    modelpar,
-                    distance=None,
-                    spec_labels=None):
+                    sampler: str,
+                    samples: np.ndarray,
+                    ln_prob: np.ndarray,
+                    mean_accept: Optional[float],
+                    spectrum: Tuple[str, str],
+                    tag: str,
+                    modelpar: List[str],
+                    distance: float,
+                    spec_labels: List[Optional[str]]):
         """
         Parameters
         ----------
-        sampler : emcee.ensemble.EnsembleSampler
-            Ensemble sampler.
+        sampler : str
+            Sampler ('emcee' or 'multinest').
+        samples : np.ndarray
+            Samples of the posterior.
+        ln_prob : np.ndarray
+            Log posterior for each sample.
+        mean_accept : float, None
+            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'mulitinest'.
         spectrum : tuple(str, str)
             Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
             'drift-phoenix').
@@ -961,10 +969,10 @@ class Database:
         modelpar : list(str, )
             List with the model parameter names.
         distance : float
-            Distance to the object (pc). Not used if set to None.
+            Distance to the object (pc). Not used if set to ``None``.
         spec_labels : list(str, )
             List with the spectrum labels that are used for fitting an additional scaling
-            parameter.
+            parameter. Not used if an empty list is provided.
 
         Returns
         -------
@@ -995,7 +1003,7 @@ class Database:
             dset.attrs['mean_accept'] = float(mean_accept)
             print(f'Mean acceptance fraction: {mean_accept:.3f}')
 
-        if distance:
+        if distance is not None:
             dset.attrs['distance'] = float(distance)
 
         count_scaling = 0
@@ -1003,7 +1011,7 @@ class Database:
         for i, item in enumerate(modelpar):
             dset.attrs[f'parameter{i}'] = str(item)
 
-            if spec_labels is not None and item in spec_labels:
+            if item in spec_labels:
                 dset.attrs[f'scaling{count_scaling}'] = str(item)
                 count_scaling += 1
 
@@ -1044,6 +1052,9 @@ class Database:
             Parameters and values for the sample with the maximum posterior probability.
         """
 
+        if burnin is None:
+            burnin = 0
+
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
 
@@ -1064,7 +1075,7 @@ class Database:
             ln_prob = ln_prob[:, burnin:]
 
             samples = np.reshape(samples, (-1, n_param))
-            ln_prob = np.reshape(ln_prob,  -1)
+            ln_prob = np.reshape(ln_prob, -1)
 
         index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
 
@@ -1104,6 +1115,9 @@ class Database:
         dict
             Parameters and values for the sample with the maximum posterior probability.
         """
+
+        if burnin is None:
+            burnin = 0
 
         with h5py.File(self.database, 'r') as h5_file:
             dset = h5_file[f'results/fit/{tag}/samples']
@@ -1163,6 +1177,9 @@ class Database:
         list(species.core.box.ModelBox, )
             Boxes with the randomly sampled spectra.
         """
+
+        if burnin is None:
+            burnin = 0
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
@@ -1279,6 +1296,9 @@ class Database:
         numpy.ndarray
             Synthetic photometry (mag).
         """
+
+        if burnin is None:
+            burnin = 0
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']

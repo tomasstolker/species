@@ -6,7 +6,11 @@ import os
 import math
 import configparser
 
+from typing import Optional, Union, Dict, Tuple, List
+
 import numpy as np
+
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -19,18 +23,20 @@ class ReadPlanck:
     Class for reading a Planck spectrum.
     """
 
+    @typechecked
     def __init__(self,
-                 wavel_range=None,
-                 filter_name=None):
+                 wavel_range: Optional[Tuple[Union[float, np.float32],
+                                             Union[float, np.float32]]] = None,
+                 filter_name: Optional[str] = None) -> None:
         """
         Parameters
         ----------
         wavel_range : tuple(float, float), None
             Wavelength range (um). A wavelength range of 0.1-1000 um is used if set to
-            None. Not used if ``filter_name`` is not None.
+            None. Not used if ``filter_name`` is not ``None``.
         filter_name : str, None
             Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
-            to None.
+            to ``None``.
 
         Returns
         -------
@@ -60,15 +66,16 @@ class ReadPlanck:
         self.database = config['species']['database']
 
     @staticmethod
-    def planck(wavel_points,
-               temperature,
-               scaling):
+    @typechecked
+    def planck(wavel_points: np.ndarray,
+               temperature: float,
+               scaling: float) -> np.ndarray:
         """
         Internal function for calculating a Planck function.
 
         Parameters
         ----------
-        wavel_points : numpy.ndarray
+        wavel_points : np.ndarray
             Wavelength points (um).
         temperature : float
             Temperature (K).
@@ -77,7 +84,7 @@ class ReadPlanck:
 
         Returns
         -------
-        numpy.ndarray
+        np.ndarray
             Flux density (W m-2 um-1).
         """
 
@@ -89,7 +96,8 @@ class ReadPlanck:
         return 1e-6 * math.pi * scaling * planck_1/planck_2  # (W m-2 um-1)
 
     @staticmethod
-    def update_parameters(model_param):
+    @typechecked
+    def update_parameters(model_param: Dict[str, Union[float, List[float]]]) -> Dict[str, float]:
         """
         Internal function for updating the dictionary with model parameters.
 
@@ -117,9 +125,11 @@ class ReadPlanck:
 
         return updated_param
 
+    @typechecked
     def get_spectrum(self,
-                     model_param,
-                     spec_res):
+                     model_param: Dict[str, Union[float, List[float]]],
+                     spec_res: float,
+                     smooth: bool = False) -> box.ModelBox:
         """
         Function for calculating a Planck spectrum or a combination of multiple Planck spectra.
 
@@ -132,6 +142,7 @@ class ReadPlanck:
             {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
         spec_res : float
             Spectral resolution.
+        smooth : bool
 
         Returns
         -------
@@ -154,7 +165,7 @@ class ReadPlanck:
             scaling = ((model_param['radius']*constants.R_JUP) /
                        (model_param['distance']*constants.PARSEC))**2
 
-            flux = self.planck(np.copy(wavel_points),
+            flux = self.planck(wavel_points,
                                model_param['teff'],
                                scaling)  # (W m-2 um-1)
 
@@ -165,9 +176,12 @@ class ReadPlanck:
                 scaling = ((model_param[f'radius_{i}']*constants.R_JUP) /
                            (model_param['distance']*constants.PARSEC))**2
 
-                flux += self.planck(np.copy(wavel_points),
+                flux += self.planck(wavel_points,
                                     model_param[f'teff_{i}'],
                                     scaling)  # (W m-2 um-1)
+
+        if smooth:
+            flux = read_util.smooth_spectrum(wavel_points, flux, spec_res)
 
         model_box = box.create_box(boxtype='model',
                                    model='planck',
@@ -177,15 +191,16 @@ class ReadPlanck:
                                    quantity='flux')
 
         if 'radius' in model_box.parameters:
-            model_box.parameters['luminosity'] = 4. * np.pi * (model_box.parameters['radius'] * \
-                constants.R_JUP)**2 * constants.SIGMA_SB * model_box.parameters['teff']**4. / \
-                constants.L_SUN  # (Lsun)
+            model_box.parameters['luminosity'] = 4. * np.pi * (
+                model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
 
         return model_box
 
+    @typechecked
     def get_flux(self,
-                 model_param,
-                 synphot=None):
+                 model_param: Dict[str, Union[float, List[float]]],
+                 synphot=None) -> Tuple[float, None]:
         """
         Function for calculating the average flux density for the ``filter_name``.
 
@@ -200,6 +215,8 @@ class ReadPlanck:
         -------
         float
             Average flux density (W m-2 um-1).
+        NoneType
+            None
         """
 
         if 'teff' in model_param and isinstance(model_param['teff'], list):
@@ -212,9 +229,10 @@ class ReadPlanck:
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
+    @typechecked
     def get_magnitude(self,
-                      model_param,
-                      synphot=None):
+                      model_param: Dict[str, Union[float, List[float]]],
+                      synphot=None) -> Tuple[float, float]:
         """
         Function for calculating the magnitude for the ``filter_name``.
 
@@ -245,17 +263,18 @@ class ReadPlanck:
                                              spectrum.flux,
                                              distance=(model_param['distance'], None))
 
-    def get_color_magnitude(self,
-                            temperatures,
-                            radius,
-                            filters_color,
-                            filter_mag):
+    @staticmethod
+    @typechecked
+    def get_color_magnitude(temperatures: np.ndarray,
+                            radius: float,
+                            filters_color: Tuple[str, str],
+                            filter_mag: str) -> box.ColorMagBox:
         """
         Function for calculating the colors and magnitudes in the range of 100-10000 K.
 
         Parameters
         ----------
-        temperatures : numpy.ndarray
+        temperatures : np.ndarray
             Temperatures (K) for which the colors and magnitude are calculated.
         radius : float
             Radius (Rjup).
@@ -296,16 +315,18 @@ class ReadPlanck:
                               magnitude=list_mag,
                               sptype=temperatures)
 
-    def get_color_color(self,
-                        temperatures,
-                        radius,
-                        filters_colors):
+    @staticmethod
+    @typechecked
+    def get_color_color(temperatures: np.ndarray,
+                        radius: float,
+                        filters_colors: Tuple[Tuple[str, str],
+                                              Tuple[str, str]]) -> box.ColorColorBox:
         """
         Function for calculating two colors in the range of 100-10000 K.
 
         Parameters
         ----------
-        temperatures : numpy.ndarray
+        temperatures : np.ndarray
             Temperatures (K) for which the colors are calculated.
         radius : float
             Radius (Rjup).
