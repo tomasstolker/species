@@ -200,9 +200,9 @@ class ReadPlanck:
 
             for i in range(n_planck):
 
-                lum_total = 4. * np.pi * (model_box.parameters[f'radius_{i}'] * \
-                    constants.R_JUP)**2 * constants.SIGMA_SB * \
-                    model_box.parameters[f'teff_{i}']**4. / constants.L_SUN  # (Lsun)
+                # Add up the luminosity of the blackbody components (Lsun)
+                lum_total = 4.*np.pi*(model_box.parameters[f'radius_{i}']*constants.R_JUP)**2 * \
+                    constants.SIGMA_SB*model_box.parameters[f'teff_{i}']**4. / constants.L_SUN
 
             model_box.parameters['luminosity'] = lum_total
 

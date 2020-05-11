@@ -73,7 +73,7 @@ class ReadObject:
                 obj_phot = np.asarray(h5_file[f'objects/{self.object_name}/{filter_name}'])
 
             else:
-                raise ValueError(f'There is no photometric data of {self.object_name} ' 
+                raise ValueError(f'There is no photometric data of {self.object_name} '
                                  f'available with the {filter_name} filter.')
 
         return obj_phot

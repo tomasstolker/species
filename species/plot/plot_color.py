@@ -391,9 +391,9 @@ def plot_color_magnitude(boxes: list,
                 dust_species = 'Fe'
 
             if (item[3]).is_integer():
-                red_label = f'{dust_species} ({item[3]:.0f} $\mu$m)'
+                red_label = rf'{dust_species} ({item[3]:.0f} $\mu$m)'
             else:
-                red_label = f'{dust_species} ({item[3]:.1f} $\mu$m)'
+                red_label = rf'{dust_species} ({item[3]:.1f} $\mu$m)'
 
             text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
                                 xytext=(7.*delta_y/vector_len, 7.*delta_x/vector_len),
@@ -838,10 +838,10 @@ def plot_color_color(boxes: list,
                 dust_species = 'Fe'
 
             if item[4].is_integer():
-                red_label = f'{dust_species} ({item[4]:.0f} $\mu$m)'
+                red_label = rf'{dust_species} ({item[4]:.0f} $\mu$m)'
 
             else:
-                red_label = f'{dust_species} ({item[4]:.1f} $\mu$m)'
+                red_label = rf'{dust_species} ({item[4]:.1f} $\mu$m)'
 
             text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
                                 xytext=(-7.*delta_y/vector_len, 7.*delta_x/vector_len),
