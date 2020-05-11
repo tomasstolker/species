@@ -344,7 +344,7 @@ def quantity_unit(param: List[str],
     for i in range(100):
         if f'radius_{i}' in param:
             quantity.append(f'radius_{i}')
-            unit.append(rf'$R_\mathregular{J}}$')
+            unit.append(rf'$R_\mathregular{{J}}$')
             label.append(rf'$R_\mathregular{{{i+1}}}$')
 
         else:
