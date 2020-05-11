@@ -190,10 +190,21 @@ class ReadPlanck:
                                    parameters=model_param,
                                    quantity='flux')
 
-        if 'radius' in model_box.parameters:
+        if n_planck == 1:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
                 model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
+
+        else:
+            lum_total = 0.
+
+            for i in range(n_planck):
+
+                lum_total = 4. * np.pi * (model_box.parameters[f'radius_{i}'] * \
+                    constants.R_JUP)**2 * constants.SIGMA_SB * \
+                    model_box.parameters[f'teff_{i}']**4. / constants.L_SUN  # (Lsun)
+
+            model_box.parameters['luminosity'] = lum_total
 
         return model_box
 

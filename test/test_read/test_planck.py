@@ -25,7 +25,7 @@ class TestPlanck:
 
     def test_read_planck(self):
         read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
-        assert read_planck.wavel_range == pytest.approx((1.1308, 1.3812), rel=self.limit, abs=0.)
+        assert read_planck.wavel_range == pytest.approx((1.1308, 1.3812), rel=1e-6, abs=0.)
 
         read_planck = species.ReadPlanck(wavel_range=(1., 5.))
         assert read_planck.wavel_range == (1., 5.)
@@ -38,15 +38,15 @@ class TestPlanck:
         assert modelbox.wavelength.shape == (42, )
         assert modelbox.flux.shape == (42, )
 
-        assert np.sum(modelbox.wavelength) == pytest.approx(52.581085755096346, rel=self.limit, abs=0.)
-        assert np.sum(modelbox.flux) == pytest.approx(8.322089100757744e-13, rel=self.limit, abs=0.)
+        assert np.sum(modelbox.wavelength) == pytest.approx(52.581084870804, rel=self.limit, abs=0.)
+        assert np.sum(modelbox.flux) == pytest.approx(8.32208902713122e-13, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
 
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.})
-        assert flux[0] == pytest.approx(1.9888812770713738e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=self.limit, abs=0.)
 
         synphot = species.SyntheticPhotometry(filter_name='MKO/NSFCam.J')
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.}, synphot=synphot)
-        assert flux[0] == pytest.approx(1.9888812770713738e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=self.limit, abs=0.)

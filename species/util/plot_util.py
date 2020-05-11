@@ -5,7 +5,7 @@ Utility functions for plotting data.
 import os
 import configparser
 
-from typing import Tuple, List
+from typing import Optional, Tuple, List
 
 import h5py
 import PyMieScatt
@@ -215,15 +215,20 @@ def update_labels(param: List[str]) -> List[str]:
     return param
 
 
-def model_name(key):
+@typechecked
+def model_name(key) -> str:
     """
+    Function for updating a model name for use in plots.
+
     Parameters
     ----------
     key : str
+        Model name as used by species.
 
     Returns
     -------
     str
+        Updated model name for plots.
     """
 
     if key == 'drift-phoenix':
@@ -265,19 +270,27 @@ def model_name(key):
     return name
 
 
-def quantity_unit(param,
-                  object_type):
+@typechecked
+def quantity_unit(param: List[str],
+                  object_type: str) -> Tuple[List[str], List[Optional[str]], List[str]]:
     """
+    Function for creating lists with quantities, units, and labels for fitted parameter.
+
     Parameters
     ----------
     param : list
+        List with parameter names.
     object_type : str
+        Object type (``'planet'`` or ``'star'``).
 
     Returns
     -------
     list
+        List with the quantities.
     list
+        List with the units.
     list
+        List with the parameter labels for plots.
     """
 
     quantity = []
@@ -318,6 +331,24 @@ def quantity_unit(param,
             unit.append(r'$R_\mathregular{\odot}}$')
 
         label.append(r'$R$')
+
+    for i in range(100):
+        if f'teff_{i}' in param:
+            quantity.append(f'teff_{i}')
+            unit.append('K')
+            label.append(rf'$T_\mathregular{{{i+1}}}$')
+
+        else:
+            break
+
+    for i in range(100):
+        if f'radius_{i}' in param:
+            quantity.append(f'radius_{i}')
+            unit.append('$R_\mathregular{J}}$')
+            label.append(rf'$R_\mathregular{{{i+1}}}$')
+
+        else:
+            break
 
     if 'distance' in param:
         quantity.append('distance')
