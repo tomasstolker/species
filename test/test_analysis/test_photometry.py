@@ -10,7 +10,7 @@ from species.util import test_util
 class TestPhotometry:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
 
     def teardown_class(self):
         os.remove('species_database.hdf5')

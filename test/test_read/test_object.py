@@ -11,7 +11,7 @@ from species.util import test_util
 class TestObject:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
 
     def teardown_class(self):

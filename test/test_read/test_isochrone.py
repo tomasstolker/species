@@ -12,7 +12,7 @@ from species.util import test_util
 class TestIsochrone:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
 
         filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
