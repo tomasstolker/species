@@ -536,10 +536,10 @@ class Database:
 
                     except KeyError:
                         warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
-                                      f'Profile Service so a flux calibration can not be done. Please '
-                                      f'add the filter manually with the \'add_filter\' function. For '
-                                      f'now, only the \'{mag_item}\' magnitude of \'{object_name}\' is '
-                                      f'stored.')
+                                      f'Profile Service so a flux calibration can not be done. '
+                                      f'Please add the filter manually with the \'add_filter\' '
+                                      f'function. For now, only the \'{mag_item}\' magnitude of '
+                                      f'\'{object_name}\' is stored.')
 
                         # Write NaNs if the filter is not available
                         flux[mag_item], error[mag_item] = np.nan, np.nan
@@ -556,10 +556,12 @@ class Database:
                                 dupl_item[0], dupl_item[1])
 
                         except KeyError:
-                            warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
-                                          f'Profile Service so a flux calibration can not be done. Please add the '
-                                          f'filter manually with the \'add_filter\' function. For now, '
-                                          f'only the \'{mag_item}\' magnitude of \'{object_name}\' is stored.')
+                            warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO '
+                                          f'Filter Profile Service so a flux calibration can not '
+                                          f'be done. Please add the filter manually with the '
+                                          f'\'add_filter\' function. For now, only the '
+                                          f'\'{mag_item}\' magnitude of \'{object_name}\' is '
+                                          f'stored.')
 
                             # Write NaNs if the filter is not available
                             flux_dupl, error_dupl = np.nan, np.nan
@@ -581,9 +583,14 @@ class Database:
 
                 if isinstance(app_mag[mag_item], tuple):
                     n_phot = 1
+
                     print(f'   - {mag_item}:')
-                    print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- {app_mag[mag_item][1]:.2f}')
-                    print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- {error[mag_item]:.2e}')
+
+                    print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- '
+                          f'{app_mag[mag_item][1]:.2f}')
+
+                    print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- '
+                          f'{error[mag_item]:.2e}')
 
                     data = np.asarray([app_mag[mag_item][0],
                                        app_mag[mag_item][1],
@@ -598,8 +605,11 @@ class Database:
                     mag_err_list = []
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
-                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- {app_mag[mag_item][i][1]:.2f}')
-                        print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- {error[mag_item][i]:.2e}')
+                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- '
+                              f'{app_mag[mag_item][i][1]:.2f}')
+
+                        print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- '
+                              f'{error[mag_item][i]:.2e}')
 
                         mag_list.append(app_mag[mag_item][i][0])
                         mag_err_list.append(app_mag[mag_item][i][1])
@@ -1348,11 +1358,11 @@ class Database:
 
         return mcmc_phot
 
+    @typechecked
     def get_object(self,
-                   object_name,
-                   filters=None,
-                   inc_phot=True,
-                   inc_spec=True):
+                   object_name: str,
+                   inc_phot: Union[bool, List[str]] = True,
+                   inc_spec: Union[bool, List[str]] = True) -> box.ObjectBox:
         """
         Function for extracting the photometric and/or spectroscopic data of an object from the
         database. The spectroscopic data contains optionally the covariance matrix and its inverse.
@@ -1361,13 +1371,14 @@ class Database:
         ----------
         object_name : str
             Object name in the database.
-        filters : list(str, )
-            Filter names for which the photometry is selected. All available photometry of the
-            object is selected if set to None.
-        inc_phot : bool
-            Include photometry in the box.
-        inc_spec : bool
-            Include spectrum in the box.
+        inc_phot : bool, list(str)
+            Include photometric data. If a boolean, either all (``True``) or none (``False``) of
+            the data are selected. If a list, a subset of filter names (as stored in the database)
+            can be provided.
+        inc_spec : bool, list(str)
+            Include spectroscopic data. If a boolean, either all (``True``) or none (``False``) of
+            the data are selected. If a list, a subset of spectrum names (as stored in the database
+            with :func:`~species.data.database.Database.add_object`) can be provided.
 
         Returns
         -------
@@ -1387,16 +1398,12 @@ class Database:
             magnitude = {}
             flux = {}
 
-            if filters:
-                for item in filters:
-                    magnitude[item] = dset[item][0:2]
-                    flux[item] = dset[item][2:4]
+            for observatory in dset.keys():
+                if observatory not in ['distance', 'spectrum']:
+                    for filter_name in dset[observatory]:
+                        name = f'{observatory}/{filter_name}'
 
-            else:
-                for key in dset.keys():
-                    if key not in ['distance', 'spectrum']:
-                        for item in dset[key]:
-                            name = f'{key}/{item}'
+                        if isinstance(inc_phot, bool) or name in inc_phot:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
 
@@ -1414,17 +1421,19 @@ class Database:
             for item in h5_file[f'objects/{object_name}/spectrum']:
                 data_group = f'objects/{object_name}/spectrum/{item}'
 
-                if f'{data_group}/covariance' not in h5_file:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                      None,
-                                      None,
-                                      h5_file[f'{data_group}'].attrs['specres'])
+                if isinstance(inc_spec, bool) or item in inc_spec:
 
-                else:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                      np.asarray(h5_file[f'{data_group}/covariance']),
-                                      np.asarray(h5_file[f'{data_group}/inv_covariance']),
-                                      h5_file[f'{data_group}'].attrs['specres'])
+                    if f'{data_group}/covariance' not in h5_file:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                          None,
+                                          None,
+                                          h5_file[f'{data_group}'].attrs['specres'])
+
+                    else:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                          np.asarray(h5_file[f'{data_group}/covariance']),
+                                          np.asarray(h5_file[f'{data_group}/inv_covariance']),
+                                          h5_file[f'{data_group}'].attrs['specres'])
 
         else:
             spectrum = None
