@@ -45,8 +45,8 @@ class TestPlanck:
         read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
 
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.})
-        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=1e-6, abs=0.)
 
         synphot = species.SyntheticPhotometry(filter_name='MKO/NSFCam.J')
         flux = read_planck.get_flux({'teff': 2000., 'radius': 1., 'distance': 10.}, synphot=synphot)
-        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=1e-6, abs=0.)
