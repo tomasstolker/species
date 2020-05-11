@@ -243,7 +243,8 @@ class ReadPlanck:
     @typechecked
     def get_magnitude(self,
                       model_param: Dict[str, Union[float, List[float]]],
-                      synphot=None) -> Tuple[float, float]:
+                      synphot=None) -> Tuple[Tuple[float, None],
+                                             Tuple[float, None]]:
         """
         Function for calculating the magnitude for the ``filter_name``.
 

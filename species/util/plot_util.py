@@ -552,7 +552,7 @@ def calc_reddening(filters_color: Tuple[str, str],
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for extinction[0]
-    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 0],
+    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
                          transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     read_filt = read_filter.ReadFilter(filters_color[0])
