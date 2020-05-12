@@ -215,7 +215,7 @@ def get_residuals(datatype: str,
         readmodel = None
 
         for key in objectbox.spectrum:
-            if key in inc_spec:
+            if isinstance(inc_spec, bool) or key in inc_spec:
                 wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                                1.1*objectbox.spectrum[key][0][-1, 0])
 
@@ -279,7 +279,7 @@ def get_residuals(datatype: str,
 
     if res_spec is not None:
         for key in objectbox.spectrum:
-            if key in inc_spec:
+            if isinstance(inc_spec, bool) or key in inc_spec:
                 print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
                       f'max: {np.amax(res_spec[key]):.2f}')
 
