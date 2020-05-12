@@ -109,7 +109,6 @@ class FitSpectrum:
             species_db = database.Database()
 
             objectbox = species_db.get_object(object_name,
-                                              filters=None,
                                               inc_phot=True,
                                               inc_spec=False)
 

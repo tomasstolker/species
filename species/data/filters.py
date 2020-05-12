@@ -6,21 +6,29 @@ import os
 import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+from astropy.io.votable import parse_single_table
+
 import numpy as np
 
+from typeguard import typechecked
 
-def download_filter(filter_id):
+
+@typechecked
+def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
     """
+    Function for downloading filter transmission data from the SVO Filter Profile Service.
+
     Parameters
     ----------
     filter_id : str
-        Filter ID.
+        Filter name as listed on the SVO website.
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
         Wavelength (um).
-    numpy.ndarray
+    np.ndarray
         Transmission.
     """
 
@@ -36,32 +44,51 @@ def download_filter(filter_id):
         os.remove('VisAO_Ys_filter_curve.dat')
 
     else:
-        url = 'http://svo2.cab.inta-csic.es/svo/theory/fps/getdata.php?format=ascii&id='+filter_id
-        urllib.request.urlretrieve(url, 'filter.dat')
+        url = 'http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID='+filter_id
+        urllib.request.urlretrieve(url, 'filter.xml')
 
-        if os.stat('filter.dat').st_size == 0:
-            os.remove('filter.dat')
+        try:
+            table = parse_single_table('filter.xml')
 
+            wavelength = table.array['Wavelength']
+            transmission = table.array['Transmission']
+
+        except IndexError:
             wavelength = None
             transmission = None
 
             warnings.warn(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
                           f'Service.')
 
-        else:
-            try:
-                wavelength, transmission = np.loadtxt('filter.dat', unpack=True)
-            except:
-                os.remove('filter.dat')
+        except:
+            os.remove('filter.xml')
 
-                raise ValueError(f'The filter data of \'{filter_id}\' could not be downloaded. '
-                                 f'Perhaps the website of the SVO Filter Profile Service '
-                                 f'(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not '
-                                 f'available?')
+            raise ValueError(f'The filter data of \'{filter_id}\' could not be downloaded. '
+                             f'Perhaps the website of the SVO Filter Profile Service '
+                             f'(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not '
+                             f'available?')
+
+        if transmission is not None:
+            try:
+                det_type = table.get_field_by_id('DetectorType').value
+                det_type = det_type.decode('utf-8')
+
+                if int(det_type) == 1:
+                    det_type = 'photon'
+
+            except KeyError:
+                det_type = 'energy'
+
+            if det_type == 'photon':
+                raise ValueError(f'The detector of the {filter_id} filter is a photon counter, '
+                                 f'therefore the transmission profile has to be multiplied with '
+                                 f'the wavelength when calculating average fluxes. This is '
+                                 f'currently not implemented in species. Please open an issue on '
+                                 f'Github if needed.')
 
             wavelength *= 1e-4  # (um)
 
-            os.remove('filter.dat')
+        os.remove('filter.xml')
 
     if wavelength is not None:
         indices = []
@@ -78,5 +105,11 @@ def download_filter(filter_id):
 
         wavelength = np.delete(wavelength, indices)
         transmission = np.delete(transmission, indices)
+
+        if np.amin(transmission) < 0.:
+            raise ValueError('The minimum transmission value is smaller than zero.')
+
+        if np.amax(transmission) > 1.:
+            raise ValueError('The maximum transmission value is larger than one.')
 
     return wavelength, transmission

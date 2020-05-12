@@ -5,7 +5,7 @@ Utility functions for plotting data.
 import os
 import configparser
 
-from typing import Tuple
+from typing import Optional, Tuple, List
 
 import h5py
 import PyMieScatt
@@ -115,15 +115,20 @@ def sptype_stellar(sptype,
     return spt_disc
 
 
-def update_labels(param):
+@typechecked
+def update_labels(param: List[str]) -> List[str]:
     """
+    Function for updating the fitted parameters to labels used in plots.
+
     Parameters
     ----------
     param : list
+        List with parameter names.
 
     Returns
     -------
     list
+        List with parameter labels for plots.
     """
 
     if 'teff' in param:
@@ -182,6 +187,15 @@ def update_labels(param):
         elif item[0:6] == 'error_':
             param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
 
+        elif item[0:11] == 'wavelength_':
+            param[i] = rf'$c_\mathregular{{{item[11:]}}}$ (nm)'
+
+        elif item[0:9] == 'corr_len_':
+            param[i] = rf'$\log\,\ell_\mathregular{{{item[9:]}}}$'
+
+        elif item[0:9] == 'corr_amp_':
+            param[i] = rf'$f_\mathregular{{{item[9:]}}}$'
+
     for i in range(100):
         if f'teff_{i}' in param:
             index = param.index(f'teff_{i}')
@@ -201,15 +215,20 @@ def update_labels(param):
     return param
 
 
-def model_name(key):
+@typechecked
+def model_name(key) -> str:
     """
+    Function for updating a model name for use in plots.
+
     Parameters
     ----------
     key : str
+        Model name as used by species.
 
     Returns
     -------
     str
+        Updated model name for plots.
     """
 
     if key == 'drift-phoenix':
@@ -251,19 +270,27 @@ def model_name(key):
     return name
 
 
-def quantity_unit(param,
-                  object_type):
+@typechecked
+def quantity_unit(param: List[str],
+                  object_type: str) -> Tuple[List[str], List[Optional[str]], List[str]]:
     """
+    Function for creating lists with quantities, units, and labels for fitted parameter.
+
     Parameters
     ----------
     param : list
+        List with parameter names.
     object_type : str
+        Object type (``'planet'`` or ``'star'``).
 
     Returns
     -------
     list
+        List with the quantities.
     list
+        List with the units.
     list
+        List with the parameter labels for plots.
     """
 
     quantity = []
@@ -304,6 +331,24 @@ def quantity_unit(param,
             unit.append(r'$R_\mathregular{\odot}}$')
 
         label.append(r'$R$')
+
+    for i in range(100):
+        if f'teff_{i}' in param:
+            quantity.append(f'teff_{i}')
+            unit.append('K')
+            label.append(rf'$T_\mathregular{{{i+1}}}$')
+
+        else:
+            break
+
+    for i in range(100):
+        if f'radius_{i}' in param:
+            quantity.append(f'radius_{i}')
+            unit.append(rf'$R_\mathregular{{J}}$')
+            label.append(rf'$R_\mathregular{{{i+1}}}$')
+
+        else:
+            break
 
     if 'distance' in param:
         quantity.append('distance')
@@ -507,22 +552,22 @@ def calc_reddening(filters_color: Tuple[str, str],
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for extinction[0]
-    sigma_mag = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                         transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
+                         transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     read_filt = read_filter.ReadFilter(filters_color[0])
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for filters_color[0]
-    sigma_color_0 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_color_0 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
+                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     read_filt = read_filter.ReadFilter(filters_color[1])
     transmission = read_filt.get_filter()
 
     # Weighted average of the cross section for filters_color[1]
-    sigma_color_1 = np.trapz(interp_sigma(transmission[0, ])*transmission[1, ],
-                             transmission[0, ]) / np.trapz(transmission[1, ], transmission[0, ])
+    sigma_color_1 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
+                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
 
     density = extinction[1]/sigma_mag/2.5/np.log10(np.exp(1.))
 

@@ -295,13 +295,13 @@ def plot_spectrum(boxes,
 
                     for i, item in enumerate(par_key):
 
-                        if item == 'teff':
+                        if item[:4] == 'teff':
                             value = f'{param[item]:.0f}'
 
                         elif item in ['logg', 'feh', 'co', 'fsed']:
                             value = f'{param[item]:.2f}'
 
-                        elif item == 'radius':
+                        elif item[:6] == 'radius':
 
                             if object_type == 'planet':
                                 value = f'{param[item]:.1f}'
@@ -321,7 +321,7 @@ def plot_spectrum(boxes,
                         else:
                             continue
 
-                        # if len(label) > 110 and newline == False:
+                        # if len(label) > 80 and newline == False:
                         #     label += '\n'
                         #     newline = True
 
@@ -337,7 +337,18 @@ def plot_spectrum(boxes,
                     label = None
 
                 if plot_kwargs[j]:
-                    ax1.plot(wavelength, masked/scaling, zorder=2, label=label, **plot_kwargs[j])
+                    kwargs_copy = plot_kwargs[j].copy()
+
+                    if 'label' in kwargs_copy:
+                        if kwargs_copy['label'] is None:
+                            label = None
+                        else:
+                            label = kwargs_copy['label']
+
+                        del kwargs_copy['label']
+                    
+                    ax1.plot(wavelength, masked/scaling, zorder=2, label=label, **kwargs_copy)
+
                 else:
                     ax1.plot(wavelength, masked/scaling, lw=0.5, label=label, zorder=2)
 
@@ -455,19 +466,30 @@ def plot_spectrum(boxes,
                     if isinstance(plot_kwargs[obj_index][item], list):
                         # In case of multiple photometry values for the same filter, use the
                         # plot_kwargs of the first data point
+
+                        kwargs_copy = plot_kwargs[obj_index][item][0].copy()
+
+                        if 'label' in kwargs_copy:
+                            del kwargs_copy['label']
+
                         ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                                     zorder=4, mfc='white', **plot_kwargs[obj_index][item][0])
+                                     zorder=4, mfc='white', **kwargs_copy)
 
                     else:
+                        kwargs_copy = plot_kwargs[obj_index][item].copy()
+
+                        if 'label' in kwargs_copy:
+                            del kwargs_copy['label']
+
                         ax1.errorbar(wavelength, boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
-                                     zorder=4, mfc='white', **plot_kwargs[obj_index][item])
+                                     zorder=4, mfc='white', **kwargs_copy)
 
     if filters is not None:
         for i, item in enumerate(filters):
             transmission = read_filter.ReadFilter(item)
             data = transmission.get_filter()
 
-            ax2.plot(data[0, ], data[1, ], '-', lw=0.7, color='black', zorder=1)
+            ax2.plot(data[:, 0], data[:, 1], '-', lw=0.7, color='black', zorder=1)
 
     if residuals is not None:
         for i, find_item in enumerate(boxes):

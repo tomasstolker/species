@@ -137,8 +137,8 @@ class SyntheticPhotometry:
                 self.wavel_range = transmission.wavelength_range()
 
         if wavelength.size == 0:
-            raise ValueError('Calculation of the mean flux is not possible because the '
-                             'wavelength array is empty.')
+            raise ValueError(f'Calculation of the mean flux for {self.filter_name} is not '
+                             f'possible because the wavelength array is empty.')
 
         indices = np.where((self.wavel_range[0] <= wavelength) &
                            (wavelength <= self.wavel_range[1]))[0]

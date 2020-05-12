@@ -28,7 +28,7 @@ class ReadFilter:
         Parameters
         ----------
         filter_name : str
-            Filter ID as stored in the database. Filter IDs from the SVO Filter Profile Service
+            Filter name as stored in the database. Filter names from the SVO Filter Profile Service
             will be automatically downloaded, stored in the database, and read from the database.
 
         Returns
@@ -70,6 +70,10 @@ class ReadFilter:
 
         data = np.asarray(h5_file[f'filters/{self.filter_name}'])
 
+        if data.shape[0] == 2 and data.shape[1] > data.shape[0]:
+            # Required for backward compatibility
+            data = np.transpose(data)
+
         h5_file.close()
 
         return data
@@ -87,8 +91,8 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return interp1d(data[0, ],
-                        data[1, ],
+        return interp1d(data[:, 0],
+                        data[:, 1],
                         kind='linear',
                         bounds_error=False,
                         fill_value=float('nan'))
@@ -109,10 +113,10 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return data[0, 0], data[0, -1]
+        return data[0, 0], data[-1, 0]
 
     @typechecked
-    def mean_wavelength(self) -> float:
+    def mean_wavelength(self) -> Union[np.float32, np.float64]:
         """
         Calculate the weighted mean wavelength of the filter profile.
 
@@ -124,7 +128,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return np.trapz(data[0, ]*data[1, ], data[0, ]) / np.trapz(data[1, ], data[0, ])
+        return np.trapz(data[:, 0]*data[:, 1], data[:, 0]) / np.trapz(data[:, 1], data[:, 0])
 
     @typechecked
     def filter_fwhm(self) -> float:
@@ -139,12 +143,12 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        spline = InterpolatedUnivariateSpline(data[0, :], data[1, :]-np.max(data[1, :])/2.)
+        spline = InterpolatedUnivariateSpline(data[:, 0], data[:, 1] - np.max(data[:, 1])/2.)
         root = spline.roots()
 
-        diff = root-self.mean_wavelength()
+        diff = root - self.mean_wavelength()
 
         root1 = np.amax(diff[diff < 0.])
         root2 = np.amin(diff[diff > 0.])
 
-        return root2-root1
+        return root2 - root1

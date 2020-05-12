@@ -201,9 +201,10 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_filter(self,
-                   filter_name,
-                   filename=None):
+                   filter_name: str,
+                   filename: Optional[str] = None) -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
         Service or input file.
@@ -248,7 +249,7 @@ class Database:
 
         if wavelength is not None and transmission is not None:
             h5_file.create_dataset(f'filters/{filter_name}',
-                                   data=np.vstack((wavelength, transmission)))
+                                   data=np.column_stack((wavelength, transmission)))
 
         h5_file.close()
 
@@ -535,10 +536,10 @@ class Database:
 
                     except KeyError:
                         warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
-                                      f'Profile Service so a flux calibration can not be done. Please '
-                                      f'add the filter manually with the \'add_filter\' function. For '
-                                      f'now, only the \'{mag_item}\' magnitude of \'{object_name}\' is '
-                                      f'stored.')
+                                      f'Profile Service so a flux calibration can not be done. '
+                                      f'Please add the filter manually with the \'add_filter\' '
+                                      f'function. For now, only the \'{mag_item}\' magnitude of '
+                                      f'\'{object_name}\' is stored.')
 
                         # Write NaNs if the filter is not available
                         flux[mag_item], error[mag_item] = np.nan, np.nan
@@ -555,10 +556,12 @@ class Database:
                                 dupl_item[0], dupl_item[1])
 
                         except KeyError:
-                            warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
-                                          f'Profile Service so a flux calibration can not be done. Please add the '
-                                          f'filter manually with the \'add_filter\' function. For now, '
-                                          f'only the \'{mag_item}\' magnitude of \'{object_name}\' is stored.')
+                            warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO '
+                                          f'Filter Profile Service so a flux calibration can not '
+                                          f'be done. Please add the filter manually with the '
+                                          f'\'add_filter\' function. For now, only the '
+                                          f'\'{mag_item}\' magnitude of \'{object_name}\' is '
+                                          f'stored.')
 
                             # Write NaNs if the filter is not available
                             flux_dupl, error_dupl = np.nan, np.nan
@@ -580,9 +583,14 @@ class Database:
 
                 if isinstance(app_mag[mag_item], tuple):
                     n_phot = 1
+
                     print(f'   - {mag_item}:')
-                    print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- {app_mag[mag_item][1]:.2f}')
-                    print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- {error[mag_item]:.2e}')
+
+                    print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- '
+                          f'{app_mag[mag_item][1]:.2f}')
+
+                    print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- '
+                          f'{error[mag_item]:.2e}')
 
                     data = np.asarray([app_mag[mag_item][0],
                                        app_mag[mag_item][1],
@@ -597,8 +605,11 @@ class Database:
                     mag_err_list = []
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
-                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- {app_mag[mag_item][i][1]:.2f}')
-                        print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- {error[mag_item][i]:.2e}')
+                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- '
+                              f'{app_mag[mag_item][i][1]:.2f}')
+
+                        print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- '
+                              f'{error[mag_item][i]:.2e}')
 
                         mag_list.append(app_mag[mag_item][i][0])
                         mag_err_list.append(app_mag[mag_item][i][1])
@@ -938,21 +949,28 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_samples(self,
-                    sampler,
-                    samples,
-                    ln_prob,
-                    mean_accept,
-                    spectrum,
-                    tag,
-                    modelpar,
-                    distance=None,
-                    spec_labels=None):
+                    sampler: str,
+                    samples: np.ndarray,
+                    ln_prob: np.ndarray,
+                    mean_accept: Optional[float],
+                    spectrum: Tuple[str, str],
+                    tag: str,
+                    modelpar: List[str],
+                    distance: float,
+                    spec_labels: List[Optional[str]]):
         """
         Parameters
         ----------
-        sampler : emcee.ensemble.EnsembleSampler
-            Ensemble sampler.
+        sampler : str
+            Sampler ('emcee' or 'multinest').
+        samples : np.ndarray
+            Samples of the posterior.
+        ln_prob : np.ndarray
+            Log posterior for each sample.
+        mean_accept : float, None
+            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'mulitinest'.
         spectrum : tuple(str, str)
             Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
             'drift-phoenix').
@@ -961,10 +979,10 @@ class Database:
         modelpar : list(str, )
             List with the model parameter names.
         distance : float
-            Distance to the object (pc). Not used if set to None.
+            Distance to the object (pc). Not used if set to ``None``.
         spec_labels : list(str, )
             List with the spectrum labels that are used for fitting an additional scaling
-            parameter.
+            parameter. Not used if an empty list is provided.
 
         Returns
         -------
@@ -995,7 +1013,7 @@ class Database:
             dset.attrs['mean_accept'] = float(mean_accept)
             print(f'Mean acceptance fraction: {mean_accept:.3f}')
 
-        if distance:
+        if distance is not None:
             dset.attrs['distance'] = float(distance)
 
         count_scaling = 0
@@ -1003,7 +1021,7 @@ class Database:
         for i, item in enumerate(modelpar):
             dset.attrs[f'parameter{i}'] = str(item)
 
-            if spec_labels is not None and item in spec_labels:
+            if item in spec_labels:
                 dset.attrs[f'scaling{count_scaling}'] = str(item)
                 count_scaling += 1
 
@@ -1044,6 +1062,9 @@ class Database:
             Parameters and values for the sample with the maximum posterior probability.
         """
 
+        if burnin is None:
+            burnin = 0
+
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
 
@@ -1064,7 +1085,7 @@ class Database:
             ln_prob = ln_prob[:, burnin:]
 
             samples = np.reshape(samples, (-1, n_param))
-            ln_prob = np.reshape(ln_prob,  -1)
+            ln_prob = np.reshape(ln_prob, -1)
 
         index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
 
@@ -1104,6 +1125,9 @@ class Database:
         dict
             Parameters and values for the sample with the maximum posterior probability.
         """
+
+        if burnin is None:
+            burnin = 0
 
         with h5py.File(self.database, 'r') as h5_file:
             dset = h5_file[f'results/fit/{tag}/samples']
@@ -1163,6 +1187,9 @@ class Database:
         list(species.core.box.ModelBox, )
             Boxes with the randomly sampled spectra.
         """
+
+        if burnin is None:
+            burnin = 0
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
@@ -1280,6 +1307,9 @@ class Database:
             Synthetic photometry (mag).
         """
 
+        if burnin is None:
+            burnin = 0
+
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
 
@@ -1328,11 +1358,11 @@ class Database:
 
         return mcmc_phot
 
+    @typechecked
     def get_object(self,
-                   object_name,
-                   filters=None,
-                   inc_phot=True,
-                   inc_spec=True):
+                   object_name: str,
+                   inc_phot: Union[bool, List[str]] = True,
+                   inc_spec: Union[bool, List[str]] = True) -> box.ObjectBox:
         """
         Function for extracting the photometric and/or spectroscopic data of an object from the
         database. The spectroscopic data contains optionally the covariance matrix and its inverse.
@@ -1341,13 +1371,14 @@ class Database:
         ----------
         object_name : str
             Object name in the database.
-        filters : list(str, )
-            Filter names for which the photometry is selected. All available photometry of the
-            object is selected if set to None.
-        inc_phot : bool
-            Include photometry in the box.
-        inc_spec : bool
-            Include spectrum in the box.
+        inc_phot : bool, list(str)
+            Include photometric data. If a boolean, either all (``True``) or none (``False``) of
+            the data are selected. If a list, a subset of filter names (as stored in the database)
+            can be provided.
+        inc_spec : bool, list(str)
+            Include spectroscopic data. If a boolean, either all (``True``) or none (``False``) of
+            the data are selected. If a list, a subset of spectrum names (as stored in the database
+            with :func:`~species.data.database.Database.add_object`) can be provided.
 
         Returns
         -------
@@ -1367,16 +1398,12 @@ class Database:
             magnitude = {}
             flux = {}
 
-            if filters:
-                for item in filters:
-                    magnitude[item] = dset[item][0:2]
-                    flux[item] = dset[item][2:4]
+            for observatory in dset.keys():
+                if observatory not in ['distance', 'spectrum']:
+                    for filter_name in dset[observatory]:
+                        name = f'{observatory}/{filter_name}'
 
-            else:
-                for key in dset.keys():
-                    if key not in ['distance', 'spectrum']:
-                        for item in dset[key]:
-                            name = f'{key}/{item}'
+                        if isinstance(inc_phot, bool) or name in inc_phot:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
 
@@ -1394,17 +1421,19 @@ class Database:
             for item in h5_file[f'objects/{object_name}/spectrum']:
                 data_group = f'objects/{object_name}/spectrum/{item}'
 
-                if f'{data_group}/covariance' not in h5_file:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                      None,
-                                      None,
-                                      h5_file[f'{data_group}'].attrs['specres'])
+                if isinstance(inc_spec, bool) or item in inc_spec:
 
-                else:
-                    spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
-                                      np.asarray(h5_file[f'{data_group}/covariance']),
-                                      np.asarray(h5_file[f'{data_group}/inv_covariance']),
-                                      h5_file[f'{data_group}'].attrs['specres'])
+                    if f'{data_group}/covariance' not in h5_file:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                          None,
+                                          None,
+                                          h5_file[f'{data_group}'].attrs['specres'])
+
+                    else:
+                        spectrum[item] = (np.asarray(h5_file[f'{data_group}/spectrum']),
+                                          np.asarray(h5_file[f'{data_group}/covariance']),
+                                          np.asarray(h5_file[f'{data_group}/inv_covariance']),
+                                          h5_file[f'{data_group}'].attrs['specres'])
 
         else:
             spectrum = None
