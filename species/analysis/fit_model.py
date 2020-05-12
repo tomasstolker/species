@@ -514,7 +514,7 @@ class FitModel:
             if isinstance(inc_phot, bool):
                 # Select all filters if True
                 species_db = database.Database()
-                objectbox = species_db.get_object(object_name, None)
+                objectbox = species_db.get_object(object_name)
                 inc_phot = objectbox.filters
 
             self.objphot = []
