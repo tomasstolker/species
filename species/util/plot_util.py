@@ -118,29 +118,17 @@ def sptype_stellar(sptype,
 @typechecked
 def update_labels(param: List[str]) -> List[str]:
     """
-<<<<<<< HEAD
     Function for formatting the model parameters to use them as labels in the posterior plot.
-=======
-    Function for updating the fitted parameters to labels used in plots.
->>>>>>> 3e265a19f7547ed25e5dfba3362268c7c54d1765
 
     Parameters
     ----------
     param : list
-<<<<<<< HEAD
-        List with the model parameters that will be plotted in the corner diagram.
-=======
-        List with parameter names.
->>>>>>> 3e265a19f7547ed25e5dfba3362268c7c54d1765
+        List with names of the model parameters.
 
     Returns
     -------
     list
-<<<<<<< HEAD
-        List with the formatted model parameters.
-=======
         List with parameter labels for plots.
->>>>>>> 3e265a19f7547ed25e5dfba3362268c7c54d1765
     """
 
     if 'teff' in param:

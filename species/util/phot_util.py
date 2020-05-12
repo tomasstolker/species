@@ -5,7 +5,7 @@ Utility functions for photometry.
 import math
 import warnings
 
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, Dict, List, Tuple
 
 import spectres
 import numpy as np
@@ -139,7 +139,9 @@ def get_residuals(datatype: str,
                   objectbox: box.ObjectBox,
                   inc_phot: Union[bool, List[str]] = True,
                   inc_spec: Union[bool, List[str]] = True,
-                  **kwargs_radtrans: Optional[dict]) -> box.ResidualsBox:
+                  **kwargs_radtrans: Union[List[str],
+                                           Tuple[float, float],
+                                           bool]) -> box.ResidualsBox:
     """
     Parameters
     ----------
@@ -167,7 +169,7 @@ def get_residuals(datatype: str,
     -----------------
     kwargs_radtrans : dict
         Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
-        ``line_species``, ``cloud_species``, and ``scattering``.
+        ``line_species``, ``cloud_species``, ``scattering``,  and ``wavel_range``.
 
     Returns
     -------
@@ -214,7 +216,7 @@ def get_residuals(datatype: str,
         readmodel = None
 
         for key in objectbox.spectrum:
-            if key in inc_spec:
+            if isinstance(inc_spec, bool) or key in inc_spec:
                 wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                                1.1*objectbox.spectrum[key][0][-1, 0])
 
@@ -274,7 +276,7 @@ def get_residuals(datatype: str,
 
     if res_spec is not None:
         for key in objectbox.spectrum:
-            if key in inc_spec:
+            if isinstance(inc_spec, bool) or key in inc_spec:
                 print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
                       f'max: {np.amax(res_spec[key]):.2f}')
 
