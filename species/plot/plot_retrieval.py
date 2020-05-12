@@ -129,13 +129,13 @@ def plot_pt_profile(tag,
 
     for item in samples:
         if pt_profile == 'molliere':
-            feh_index = np.argwhere(parameters == 'feh')[0]
-            co_index = np.argwhere(parameters == 'co')[0]
+            metallicity_index = np.argwhere(parameters == 'metallicity')[0]
+            c_o_ratio_index = np.argwhere(parameters == 'c_o_ratio')[0]
 
             temp, _, _ = retrieval_util.pt_ret_model(
                 np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-                item[feh_index][0], item[co_index][0])
+                item[metallicity_index][0], item[c_o_ratio_index][0])
 
         elif pt_profile == 'line':
             knot_temp = []
@@ -151,7 +151,7 @@ def plot_pt_profile(tag,
     if pt_profile == 'molliere':
         temp, _, _ = retrieval_util.pt_ret_model(
             np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
-            median['alpha'], median['tint'], pressure, median['feh'], median['co'])
+            median['alpha'], median['tint'], pressure, median['metallicity'], median['c_o_ratio'])
 
     elif pt_profile == 'line':
         knot_temp = []
