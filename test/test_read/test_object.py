@@ -11,7 +11,7 @@ from species.util import test_util
 class TestObject:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
 
     def teardown_class(self):
@@ -43,8 +43,8 @@ class TestObject:
 
         assert photometry[0] == pytest.approx(11.3, rel=self.limit, abs=0.)
         assert photometry[1] == pytest.approx(0.06, rel=self.limit, abs=0.)
-        assert photometry[2] == pytest.approx(1.5898815856603153e-15, rel=self.limit, abs=0.)
-        assert photometry[3] == pytest.approx(8.790482938961674e-17, rel=self.limit, abs=0.)
+        assert photometry[2] == pytest.approx(1.5898815481080244e-15, rel=self.limit, abs=0.)
+        assert photometry[3] == pytest.approx(8.790482731334405e-17, rel=self.limit, abs=0.)
 
     def test_get_distance(self):
         read_object = species.ReadObject('beta Pic b')

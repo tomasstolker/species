@@ -4,11 +4,14 @@ Module for plotting MCMC results.
 
 import os
 
+from typing import Optional, Tuple
+
 import corner
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from typeguard import typechecked
 from matplotlib.ticker import ScalarFormatter
 
 from species.core import constants
@@ -22,10 +25,11 @@ mpl.rcParams['font.family'] = 'serif'
 plt.rc('axes', edgecolor='black', linewidth=2.2)
 
 
-def plot_walkers(tag,
-                 nsteps=None,
-                 offset=None,
-                 output='walkers.pdf'):
+@typechecked
+def plot_walkers(tag: str,
+                 nsteps: Optional[int] = None,
+                 offset: Optional[Tuple[float, float]] = None,
+                 output: str = 'walkers.pdf') -> None:
     """
     Function to plot the step history of the walkers.
 
@@ -34,9 +38,9 @@ def plot_walkers(tag,
     tag : str
         Database tag with the MCMC samples.
     nsteps : int, None
-        Number of steps that are plotted.
+        Number of steps that are plotted. All steps are plotted if set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Not used if set to None.
+        Offset of the x- and y-axis label. Default values are used if if set to ``None``.
     output : str
         Output filename.
 
@@ -109,16 +113,17 @@ def plot_walkers(tag,
     print(' [DONE]')
 
 
-def plot_posterior(tag,
-                   burnin=None,
-                   title=None,
-                   offset=None,
-                   title_fmt='.2f',
-                   limits=None,
-                   max_prob=False,
-                   vmr=False,
-                   inc_luminosity=False,
-                   output='posterior.pdf'):
+@typechecked
+def plot_posterior(tag: str,
+                   burnin: Optional[int] = None,
+                   title: Optional[str] = None,
+                   offset: Optional[Tuple[float, float]] = None,
+                   title_fmt: str = '.2f',
+                   limits: Optional[Tuple[Tuple[float, float]]] = None,
+                   max_prob: bool = False,
+                   vmr: bool = False,
+                   inc_luminosity: bool = False,
+                   output: str = 'posterior.pdf') -> None:
     """
     Function to plot the posterior distribution of the fitted parameters.
 
@@ -127,15 +132,15 @@ def plot_posterior(tag,
     tag : str
         Database tag with the MCMC samples.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to None.
+        Number of burnin steps to exclude. All samples are used if set to ``None``.
     title : str, None
-        Plot title.
+        Plot title. No title is shown if set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label.
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
     title_fmt : str
         Format of the median and error values.
     limits : tuple(tuple(float, float), ), None
-        Axis limits of all parameters. Automatically set if set to None.
+        Axis limits of all parameters. Automatically set if set to ``None``.
     max_prob : bool
         Plot the position of the sample with the maximum posterior probability.
     vmr : bool
@@ -152,6 +157,9 @@ def plot_posterior(tag,
     NoneType
         None
     """
+
+    if burnin is None:
+        burnin = 0
 
     species_db = database.Database()
 

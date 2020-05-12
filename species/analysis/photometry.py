@@ -7,8 +7,12 @@ import math
 import warnings
 import configparser
 
+from typing import Optional, Union, Tuple, List
+
 import h5py
 import numpy as np
+
+from typeguard import typechecked
 
 from species.data import database
 from species.read import read_filter, read_calibration
@@ -20,8 +24,9 @@ class SyntheticPhotometry:
     Class for calculating synthetic photometry from a spectrum.
     """
 
+    @typechecked
     def __init__(self,
-                 filter_name):
+                 filter_name: str) -> None:
         """
         Parameters
         ----------
@@ -39,7 +44,7 @@ class SyntheticPhotometry:
         self.filter_interp = None
         self.wavel_range = None
 
-        self.vega_mag = 0.03  # [mag]
+        self.vega_mag = 0.03  # (mag)
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
@@ -48,7 +53,8 @@ class SyntheticPhotometry:
 
         self.database = config['species']['database']
 
-    def zero_point(self):
+    @typechecked
+    def zero_point(self) -> np.float64:
         """
         Internal function for calculating the zero point of the provided ``filter_name``.
 
@@ -89,22 +95,25 @@ class SyntheticPhotometry:
 
         return self.spectrum_to_flux(wavelength_crop, flux_crop)[0]
 
+    @typechecked
     def spectrum_to_flux(self,
-                         wavelength,
-                         flux,
-                         error=None,
-                         threshold=0.05):
+                         wavelength: np.ndarray,
+                         flux: np.ndarray,
+                         error: Optional[np.ndarray] = None,
+                         threshold: Optional[float] = 0.05) -> Tuple[
+                             Union[np.float32, np.float64],
+                             Union[Optional[np.float32], Optional[np.float64]]]:
         """
         Function for calculating the average flux from a spectrum and a filter profile. The error
         is propagated by sampling 200 random values from the error distributions.
 
         Parameters
         ----------
-        wavelength : numpy.ndarray
+        wavelength : np.ndarray
             Wavelength points (um).
-        flux : numpy.ndarray
+        flux : np.ndarray
             Flux (W m-2 um-1).
-        error : numpy.ndarray
+        error : np.ndarray
             Uncertainty (W m-2 um-1). Not used if set to None.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
@@ -128,8 +137,8 @@ class SyntheticPhotometry:
                 self.wavel_range = transmission.wavelength_range()
 
         if wavelength.size == 0:
-            raise ValueError('Calculation of the mean flux is not possible because the '
-                             'wavelength array is empty.')
+            raise ValueError(f'Calculation of the mean flux for {self.filter_name} is not '
+                             f'possible because the wavelength array is empty.')
 
         indices = np.where((self.wavel_range[0] <= wavelength) &
                            (wavelength <= self.wavel_range[1]))[0]
@@ -208,12 +217,15 @@ class SyntheticPhotometry:
 
         return syn_flux, error_flux
 
+    @typechecked
     def spectrum_to_magnitude(self,
-                              wavelength,
-                              flux,
-                              error=None,
-                              distance=None,
-                              threshold=0.05):
+                              wavelength: np.ndarray,
+                              flux: np.ndarray,
+                              error: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
+                              distance: Optional[Tuple[float, Optional[float]]] = None,
+                              threshold: Optional[float] = 0.05) -> Tuple[
+                                  Tuple[float, Optional[float]],
+                                  Optional[Tuple[Optional[float], Optional[float]]]]:
         """
         Function for calculating the apparent and absolute magnitude from a spectrum and a
         filter profile. The error is propagated by sampling 200 random values from the error
@@ -221,11 +233,11 @@ class SyntheticPhotometry:
 
         Parameters
         ----------
-        wavelength : numpy.ndarray
+        wavelength : np.ndarray
             Wavelength points (um).
-        flux : numpy.ndarray
+        flux : np.ndarray
             Flux (W m-2 um-1).
-        error : numpy.ndarray, list(numpy.ndarray), None
+        error : np.ndarray, list(np.ndarray), None
             Uncertainty (W m-2 um-1).
         distance : tuple(float, float), None
             Distance and uncertainty (pc). No absolute magnitude is calculated if set to None.
@@ -289,10 +301,11 @@ class SyntheticPhotometry:
 
         return (app_mag, error_app_mag), (abs_mag, error_abs_mag)
 
+    @typechecked
     def magnitude_to_flux(self,
-                          magnitude,
-                          error=None,
-                          zp_flux=None):
+                          magnitude: float,
+                          error: Optional[float] = None,
+                          zp_flux: Optional[float] = None) -> Tuple[np.float64, np.float64]:
         """
         Function for converting a magnitude to a flux.
 
@@ -301,9 +314,9 @@ class SyntheticPhotometry:
         magnitude : float
             Magnitude (mag).
         error : float, None
-            Error (mag). Not used if set to None.
-        zp_flux : float
-            Zero-point flux (W m-2 um-1). The value is calculated if set to None.
+            Error (mag). Not used if set to ``None``.
+        zp_flux : float, None
+            Zero-point flux (W m-2 um-1). The value is calculated if set to ``None``.
 
         Returns
         -------
@@ -328,20 +341,26 @@ class SyntheticPhotometry:
 
         return flux, error_flux
 
+    @typechecked
     def flux_to_magnitude(self,
-                          flux,
-                          error=None,
-                          distance=None):
+                          flux: float,
+                          error: Optional[Union[float, np.ndarray]] = None,
+                          distance: Optional[Union[Tuple[float, Optional[float]],
+                                                   Tuple[np.ndarray, Optional[np.ndarray]]]] = None
+                          ) -> Tuple[Union[Tuple[float, Optional[float]],
+                                           Tuple[np.ndarray, Optional[np.ndarray]]],
+                                     Union[Tuple[float, Optional[float]],
+                                           Tuple[np.ndarray, Optional[np.ndarray]]]]:
         """
         Function for converting a flux into a magnitude.
 
         Parameters
         ----------
-        flux : float, numpy.ndarray
+        flux : float, np.ndarray
             Flux (W m-2 um-1).
-        error : float, numpy.ndarray, None
+        error : float, np.ndarray, None
             Uncertainty (W m-2 um-1). Not used if set to None.
-        distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
             Distance and uncertainty (pc). The returned absolute magnitude is set to None in case
             ``distance`` is set to None. The error is not propagated into the error on the absolute
             magnitude in case the distance uncertainty is set to None, for example
@@ -349,9 +368,9 @@ class SyntheticPhotometry:
 
         Returns
         -------
-        tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        tuple(float, float), tuple(np.ndarray, np.ndarray)
             Apparent magnitude and uncertainty (mag).
-        tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+        tuple(float, float), tuple(np.ndarray, np.ndarray)
             Absolute magnitude and uncertainty (mag).
         """
 

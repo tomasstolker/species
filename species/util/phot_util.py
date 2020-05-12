@@ -5,11 +5,14 @@ Utility functions for photometry.
 import math
 import warnings
 
+from typing import Optional, Union, Dict, List
+
 import spectres
 import numpy as np
 
+from typeguard import typechecked
+
 from species.core import box
-from species.read import read_model, read_calibration, read_filter, read_planck
 from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
@@ -129,14 +132,14 @@ def absolute_to_apparent(abs_mag,
     return app_mag, abs_mag[1]
 
 
-def get_residuals(datatype,
-                  spectrum,
-                  parameters,
-                  filters,
-                  objectbox,
-                  inc_phot=True,
-                  inc_spec=False,
-                  **kwargs_radtrans):
+@typechecked
+def get_residuals(datatype: str,
+                  spectrum: str,
+                  parameters: Dict[str, float],
+                  objectbox: box.ObjectBox,
+                  inc_phot: Union[bool, List[str]] = True,
+                  inc_spec: Union[bool, List[str]] = True,
+                  **kwargs_radtrans: Optional[dict]) -> box.ResidualsBox:
     """
     Parameters
     ----------
@@ -146,16 +149,19 @@ def get_residuals(datatype,
         Name of the atmospheric model or calibration spectrum.
     parameters : dict
         Parameters and values for the spectrum
-    filters : tuple(str, )
-        Filter IDs. All available photometry of the object is used if set to None.
     objectbox : species.core.box.ObjectBox
         Box with the photometry and/or spectra of an object. A scaling and/or error inflation of
         the spectra should be applied with :func:`~species.util.read_util.update_spectra`
         beforehand.
-    inc_phot : bool
-        Include photometry.
-    inc_spec : bool
-        Include spectrum.
+    inc_phot : bool, list(str)
+        Include photometric data in the fit. If a boolean, either all (``True``) or none
+        (``False``) of the data are selected. If a list, a subset of filter names (as stored in
+        the database) can be provided.
+    inc_spec : bool, list(str)
+        Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
+        (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
+        in the database with :func:`~species.data.database.Database.add_object`) can be
+        provided.
 
     Keyword arguments
     -----------------
@@ -166,21 +172,25 @@ def get_residuals(datatype,
     Returns
     -------
     species.core.box.ResidualsBox
-        Box with the photometry and/or spectrum residuals.
+        Box with the residuals.
     """
 
-    if filters is None:
-        filters = objectbox.filters
+    if 'filters' in kwargs_radtrans:
+        warnings.warn('The \'filters\' parameter has been deprecated. Please use the \'inc_phot\' '
+                      'parameter instead. The \'filters\' parameter is ignored.')
+
+    if isinstance(inc_phot, bool) and inc_phot:
+        inc_phot = objectbox.filters
 
     if inc_phot:
         model_phot = multi_photometry(datatype=datatype,
                                       spectrum=spectrum,
-                                      filters=filters,
+                                      filters=inc_phot,
                                       parameters=parameters)
 
         res_phot = {}
 
-        for item in filters:
+        for item in inc_phot:
             transmission = read_filter.ReadFilter(item)
             res_phot[item] = np.zeros(objectbox.flux[item].shape)
 
@@ -204,21 +214,22 @@ def get_residuals(datatype,
         readmodel = None
 
         for key in objectbox.spectrum:
-            wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
-                           1.1*objectbox.spectrum[key][0][-1, 0])
+            if key in inc_spec:
+                wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
+                               1.1*objectbox.spectrum[key][0][-1, 0])
 
-            wl_new = objectbox.spectrum[key][0][:, 0]
-            spec_res = objectbox.spectrum[key][3]
+                wl_new = objectbox.spectrum[key][0][:, 0]
+                spec_res = objectbox.spectrum[key][3]
 
-            if spectrum == 'planck':
-                readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
+                if spectrum == 'planck':
+                    readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
 
-                model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
+                    model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-                flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
+                    # separate resampling to the new wavelength points
+                    flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
 
-            else:
-                if spectrum == 'petitradtrans':
+                elif spectrum == 'petitradtrans':
                     radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
                                                           cloud_species=kwargs_radtrans['cloud_species'],
                                                           scattering=kwargs_radtrans['scattering'],
@@ -227,7 +238,6 @@ def get_residuals(datatype,
                     model = radtrans.get_model(parameters, spec_res=None)
 
                     # separate resampling to the new wavelength points
-
                     flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
 
                 else:
@@ -242,9 +252,9 @@ def get_residuals(datatype,
 
                     flux_new = model.flux
 
-            res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
+                res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
 
-            res_spec[key] = np.column_stack([wl_new, res_tmp])
+                res_spec[key] = np.column_stack([wl_new, res_tmp])
 
     else:
         res_spec = None
@@ -254,7 +264,7 @@ def get_residuals(datatype,
     print('Residuals (sigma):')
 
     if res_phot is not None:
-        for item in filters:
+        for item in inc_phot:
             if res_phot[item].ndim == 1:
                 print(f'   - {item}: {res_phot[item][1]:.2f}')
 
@@ -264,8 +274,9 @@ def get_residuals(datatype,
 
     if res_spec is not None:
         for key in objectbox.spectrum:
-            print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
-                  f'max: {np.amax(res_spec[key]):.2f}')
+            if key in inc_spec:
+                print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
+                      f'max: {np.amax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

@@ -219,9 +219,9 @@ class ReadColorColor:
             Box with the colors.
         """
 
-        h5_file = h5py.File(self.database, 'r')
-
         if self.lib_type == 'phot_lib':
+            h5_file = h5py.File(self.database, 'r')
+
             sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
             flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
 
@@ -259,6 +259,8 @@ class ReadColorColor:
                                       color2=color2[indices],
                                       sptype=sptype[indices])
 
+            h5_file.close()
+
         elif self.lib_type == 'spec_lib':
             read_spec_0 = read_spectrum.ReadSpectrum(spec_library=self.library,
                                                      filter_name=self.filters_colors[0][0])
@@ -284,7 +286,5 @@ class ReadColorColor:
                                       color1=phot_box_0.app_mag[:, 0]-phot_box_1.app_mag[:, 0],
                                       color2=phot_box_2.app_mag[:, 0]-phot_box_3.app_mag[:, 0],
                                       sptype=phot_box_0.sptype)
-
-        h5_file.close()
 
         return colorbox

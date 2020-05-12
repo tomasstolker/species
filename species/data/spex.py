@@ -95,9 +95,6 @@ def add_spex(input_path, database):
 
     h_twomass = photometry.SyntheticPhotometry('2MASS/2MASS.H')
 
-    transmission = read_filter.ReadFilter('2MASS/2MASS.H')
-    transmission.get_filter()
-
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
     h_zp = 1.133e-9  # (W m-2 um-1)
 

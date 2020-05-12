@@ -1,7 +1,5 @@
 from species.analysis.fit_model import FitModel
 
-from species.analysis.fit_planck import FitPlanck
-
 from species.analysis.fit_spectrum import FitSpectrum
 
 from species.analysis.photometry import SyntheticPhotometry

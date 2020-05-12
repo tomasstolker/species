@@ -11,7 +11,7 @@ from species.util import test_util
 class TestModel:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
         self.model_param = {'teff': 2200., 'logg': 4.5, 'radius': 1., 'distance': 10.}
 
@@ -65,14 +65,14 @@ class TestModel:
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         flux = read_model.get_flux(self.model_param)
 
-        assert flux[0] == pytest.approx(3.336845306372948e-14, rel=self.limit, abs=0.)
+        assert flux[0] == pytest.approx(3.3368451740016085e-14, rel=self.limit, abs=0.)
 
     def test_get_magnitude(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         magnitude = read_model.get_magnitude(self.model_param)
 
-        assert magnitude[0] == pytest.approx(11.357141018985255, rel=self.limit, abs=0.)
-        assert magnitude[1] == pytest.approx(11.357141018985255, rel=self.limit, abs=0.)
+        assert magnitude[0] == pytest.approx(11.357141009470052, rel=self.limit, abs=0.)
+        assert magnitude[1] == pytest.approx(11.357141009470052, rel=self.limit, abs=0.)
 
     def test_get_bounds(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')

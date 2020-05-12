@@ -11,7 +11,7 @@ from species.util import test_util
 class TestSpectrum:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
 
     def teardown_class(self):
@@ -31,7 +31,7 @@ class TestSpectrum:
             database.add_spectrum('irtf', sptypes=['L', ])
 
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')
-        assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656), rel=self.limit, abs=0.)
+        assert read_spectrum.wavel_range == pytest.approx((1.382, 1.8656), rel=1e-6, abs=0.)
 
     def test_get_spectrum(self):
         read_spectrum = species.ReadSpectrum('irtf', filter_name='MKO/NSFCam.H')

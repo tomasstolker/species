@@ -19,4 +19,9 @@ This page contains a list of tutorials which highlight some of the functionaliti
    tutorials/fitting_model_spectra.ipynb
 
 .. important::
-   A flux calibrated spectrum of Vega is used for the conversion between flux density and magnitude. The magnitude of Vega is set to 0.03 mag for all filters (see also `Stolker et al. 2020 <https://ui.adsabs.harvard.edu/abs/2019arXiv191213316S>`_).
+   A flux calibrated spectrum of Vega is used for the conversion between a flux density and magnitude. The magnitude of Vega is set to 0.03 mag for all filters. If needed, the magnitude of Vega can be changed with the ``vega_mag`` attribute of ``SyntheticPhotometry``:
+
+   .. code-block:: python
+
+       >>> synphot = species.SyntheticPhotometry('MKO/NSFCam.K')
+       >>> synphot.vega_mag = 0.01

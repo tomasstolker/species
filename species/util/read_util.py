@@ -5,7 +5,7 @@ Utility functions for reading data.
 import math
 import warnings
 
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -133,7 +133,7 @@ def update_spectra(objectbox,
 
 
 @typechecked
-def create_wavelengths(wavel_range: Tuple[float, float],
+def create_wavelengths(wavel_range: Tuple[Union[float, np.float32], Union[float, np.float32]],
                        spec_res: float) -> np.ndarray:
     """
     Function for creating logarithmically-spaced wavelengths at a constant spectral resolution.
@@ -171,12 +171,13 @@ def create_wavelengths(wavel_range: Tuple[float, float],
     return wavelength
 
 
-def smooth_spectrum(wavelength,
-                    flux,
-                    spec_res,
-                    size=11):
+@typechecked
+def smooth_spectrum(wavelength: np.ndarray,
+                    flux: np.ndarray,
+                    spec_res: float,
+                    size: int = 11) -> np.ndarray:
     """
-    Function to smooth a spectrum with a Gaussian kernel to a fixed spectral resolution. The
+    Function for smoothing a spectrum with a Gaussian kernel to a fixed spectral resolution. The
     kernel size is set to 5 times the FWHM of the Gaussian. The FWHM of the Gaussian is equal
     to the ratio of the wavelength and the spectral resolution. If the kernel does not fit within
     the available wavelength grid (i.e. at the edge of the array) then the flux values are set
@@ -184,10 +185,10 @@ def smooth_spectrum(wavelength,
 
     Parameters
     ----------
-    wavelength : numpy.ndarray
+    wavelength : np.ndarray
         Wavelength points (um). Should be sampled with a uniform spectral resolution or a uniform
         wavelength spacing (slow).
-    flux : numpy.ndarray
+    flux : np.ndarray
         Flux (W m-2 um-1).
     spec_res : float
         Spectral resolution.
@@ -196,8 +197,8 @@ def smooth_spectrum(wavelength,
 
     Returns
     -------
-    numpy.ndarray
-        Smoothed spectrum (W m-2 um-1) at the same wavelength points as the input spectrum.
+    np.ndarray
+        Smoothed spectrum (W m-2 um-1).
     """
 
     def _gaussian(size, sigma):

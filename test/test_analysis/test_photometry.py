@@ -10,7 +10,7 @@ from species.util import test_util
 class TestPhotometry:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
 
     def teardown_class(self):
         os.remove('species_database.hdf5')
@@ -28,12 +28,12 @@ class TestPhotometry:
         synphot = species.SyntheticPhotometry('MKO/NSFCam.J')
         flux, error = synphot.magnitude_to_flux(20., error=0.5)
 
-        assert flux == pytest.approx(3.104545952461071e-17, rel=self.limit, abs=0.)
-        assert error == pytest.approx(1.480768837878343e-17, rel=self.limit, abs=0.)
+        assert flux == pytest.approx(3.104545900342411e-17, rel=self.limit, abs=0.)
+        assert error == pytest.approx(1.4807688130194138e-17, rel=self.limit, abs=0.)
 
     def test_flux_to_magnitude(self):
         synphot = species.SyntheticPhotometry('MKO/NSFCam.J')
         app_mag, abs_mag = synphot.flux_to_magnitude(1e-10, error=None, distance=(50., None))
 
-        assert app_mag[0] == pytest.approx(3.7299952312816864, rel=self.limit, abs=0.)
-        assert abs_mag[0] == pytest.approx(0.23514520960159224, rel=self.limit, abs=0.)
+        assert app_mag[0] == pytest.approx(3.729995213054507, rel=self.limit, abs=0.)
+        assert abs_mag[0] == pytest.approx(0.23514519137441336, rel=self.limit, abs=0.)

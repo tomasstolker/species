@@ -12,7 +12,7 @@ from species.util import test_util
 class TestIsochrone:
 
     def setup_class(self):
-        self.limit = 1e-10
+        self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + '/'
 
         filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
@@ -80,10 +80,10 @@ class TestIsochrone:
         assert colormag_box.color.shape == (10, )
         assert colormag_box.magnitude.shape == (10, )
 
-        assert np.sum(colormag_box.color) == pytest.approx(2.496406543555395,
+        assert np.sum(colormag_box.color) == pytest.approx(2.496405871191836,
                                                            rel=self.limit, abs=0.)
 
-        assert np.sum(colormag_box.magnitude) == pytest.approx(109.59296195800431,
+        assert np.sum(colormag_box.magnitude) == pytest.approx(109.59296149616118,
                                                                rel=self.limit, abs=0.)
 
         assert np.sum(colormag_box.sptype)  == pytest.approx(400., rel=self.limit, abs=0.)
@@ -101,10 +101,10 @@ class TestIsochrone:
         assert colorcolor_box.color1.shape == (10, )
         assert colorcolor_box.color2.shape == (10, )
 
-        assert np.sum(colorcolor_box.color1) == pytest.approx(2.496406543555395,
+        assert np.sum(colorcolor_box.color1) == pytest.approx(2.496405871191836,
                                                               rel=self.limit, abs=0.)
 
-        assert np.sum(colorcolor_box.color2) == pytest.approx(3.3537987656436457,
+        assert np.sum(colorcolor_box.color2) == pytest.approx(3.3537992205004397,
                                                               rel=self.limit, abs=0.)
 
         assert np.sum(colorcolor_box.sptype) == pytest.approx(400., rel=self.limit, abs=0.)
