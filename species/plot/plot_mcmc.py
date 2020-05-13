@@ -19,12 +19,6 @@ from species.data import database
 from species.util import plot_util
 
 
-mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
-mpl.rcParams['font.family'] = 'serif'
-
-plt.rc('axes', edgecolor='black', linewidth=2.2)
-
-
 @typechecked
 def plot_walkers(tag: str,
                  nsteps: Optional[int] = None,
@@ -51,6 +45,11 @@ def plot_walkers(tag: str,
     """
 
     print(f'Plotting walkers: {output}...', end='', flush=True)
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -153,6 +152,11 @@ def plot_posterior(tag: str,
     NoneType
         None
     """
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
 
     if burnin is None:
         burnin = 0
@@ -302,6 +306,11 @@ def plot_photometry(tag,
     NoneType
         None
     """
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
 
     species_db = database.Database()
 
