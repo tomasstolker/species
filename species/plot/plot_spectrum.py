@@ -83,8 +83,12 @@ def plot_spectrum(boxes: list,
     offset : tuple(float, float)
         Offset for the label of the x- and y-axis.
     legend : str, tuple, dict, list(dict, dict), None
-        Location of the legend (str, tuple) or a dictionary with the ``**kwargs`` of
-        ``matplotlib.pyplot.legend``, for example ``{'loc': 'upper left', 'fontsize: 12.}``.
+        Location of the legend (str or tuple(float, float)) or a dictionary with the ``**kwargs``
+        of ``matplotlib.pyplot.legend``, for example ``{'loc': 'upper left', 'fontsize: 12.}``.
+        Alternatively, a list with two values can be provided to separate the model and data
+        handles in two legends. Each of these two elements can be set to ``None``. For example,
+        ``[None, {'loc': 'upper left', 'fontsize: 12.}]``, if only the data points should be
+        included in a legend.                  
     figsize : tuple(float, float)
         Figure size.
     object_type : str
