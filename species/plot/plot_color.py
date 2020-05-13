@@ -21,12 +21,6 @@ from species.read import read_object
 from species.util import plot_util
 
 
-mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
-mpl.rcParams['font.family'] = 'serif'
-
-plt.rc('axes', edgecolor='black', linewidth=2.2)
-
-
 @typechecked
 def plot_color_magnitude(boxes: list,
                          objects: Optional[Union[List[Tuple[str, str, str, str]],
@@ -106,6 +100,11 @@ def plot_color_magnitude(boxes: list,
         None
 
     """
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
 
     model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
@@ -558,6 +557,11 @@ def plot_color_color(boxes: list,
     NoneType
         None
     """
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
 
     model_color = ('#234398', '#f6a432', 'black')
     model_linestyle = ('-', '--', ':', '-.')
