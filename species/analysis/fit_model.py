@@ -666,14 +666,12 @@ class FitModel:
 
         print('Running MCMC...')
 
-        ndim = 0
+        ndim = len(self.bounds)
 
         if self.model == 'planck':
 
             if 'teff' in self.bounds:
                 sigma = {'teff': 5., 'radius': 0.01}
-
-                ndim += 2
 
             else:
                 sigma = {}
@@ -682,13 +680,9 @@ class FitModel:
                     sigma[f'teff_{i}'] = 5.
                     guess[f'teff_{i}'] = guess['teff'][i]
 
-                    ndim += 1
-
                 for i, item in enumerate(guess['radius']):
                     sigma[f'radius_{i}'] = 0.01
                     guess[f'radius_{i}'] = guess['radius'][i]
-
-                    ndim += 1
 
                 del guess['teff']
                 del guess['radius']
@@ -701,8 +695,6 @@ class FitModel:
                      'co': 0.01,
                      'radius': 0.01}
 
-            ndim += len(self.bounds)
-
         for item in self.spectrum:
             if item in self.fit_corr:
                 sigma[f'corr_len_{item}'] = 0.01  # (dex)
@@ -711,20 +703,14 @@ class FitModel:
                 sigma[f'corr_amp_{item}'] = 0.1
                 guess[f'corr_amp_{item}'] = None
 
-                ndim += 2
-
         for item in self.spectrum:
             if f'scaling_{item}' in self.bounds:
                 sigma[f'scaling_{item}'] = 0.01
                 guess[f'scaling_{item}'] = guess[item][0]
 
-                ndim += 1
-
             if f'error_{item}' in self.bounds:
                 sigma[f'error_{item}'] = 0.1  # (dex)
                 guess[f'error_{item}'] = guess[item][1]  # (dex)
-
-                ndim += 1
 
             # if f'wavelength_{item}' in self.bounds:
             #     sigma[f'wavelength_{item}'] = 1e-4  # (um)
