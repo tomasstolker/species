@@ -138,7 +138,6 @@ def lnlike(param: np.ndarray,
     param_dict = {}
     spec_scaling = {}
     err_offset = {}
-    # wavel_cal = {}
     corr_len = {}
     corr_amp = {}
 
@@ -148,9 +147,6 @@ def lnlike(param: np.ndarray,
 
         elif item[:6] == 'error_' and item[6:] in spectrum:
             err_offset[item[6:]] = param[param_index[item]]
-
-        # elif item[:11] == 'wavelength_' and item[11:] in spectrum:
-        #     wavel_cal[item[11:]] = param[param_index[item]]
 
         elif item[:9] == 'corr_len_' and item[9:] in spectrum:
             corr_len[item[9:]] = 10.**param[param_index[item]]  # (um)
@@ -177,9 +173,6 @@ def lnlike(param: np.ndarray,
 
         if item not in err_offset:
             err_offset[item] = None
-
-        # if item not in wavel_cal:
-        #     wavel_cal[item] = 0.
 
     ln_like = 0.
 
@@ -611,11 +604,6 @@ class FitModel:
                     self.modelpar.append(f'error_{item}')
                     self.bounds[f'error_{item}'] = (bounds[item][1][0], bounds[item][1][1])
 
-                # if bounds[item][2] is not None:
-                #     # Add the wavelength calibration parameters
-                #     self.modelpar.append(f'wavelength_{item}')
-                #     self.bounds[f'wavelength_{item}'] = (bounds[item][2][0], bounds[item][2][1])
-
                 if item in self.bounds:
                     del self.bounds[item]
 
@@ -711,10 +699,6 @@ class FitModel:
             if f'error_{item}' in self.bounds:
                 sigma[f'error_{item}'] = 0.1  # (dex)
                 guess[f'error_{item}'] = guess[item][1]  # (dex)
-
-            # if f'wavelength_{item}' in self.bounds:
-            #     sigma[f'wavelength_{item}'] = 1e-4  # (um)
-            #     guess[f'wavelength_{item}'] = guess[item][2]  # (um)
 
             if item in guess:
                 del guess[item]
@@ -873,7 +857,6 @@ class FitModel:
             param_dict = {}
             spec_scaling = {}
             err_offset = {}
-            # wavel_cal = {}
             corr_len = {}
             corr_amp = {}
 
@@ -883,9 +866,6 @@ class FitModel:
 
                 elif item[:6] == 'error_' and item[6:] in self.spectrum:
                     err_offset[item[6:]] = cube[cube_index[item]]  # log10(um)
-
-                # elif item[:11] == 'wavelength_' and item[11:] in self.spectrum:
-                #     wavel_cal[item[11:]] = cube[cube_index[item]]  # (um)
 
                 elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
                     corr_len[item[9:]] = 10.**cube[cube_index[item]]  # (um)
@@ -912,9 +892,6 @@ class FitModel:
 
                 if item not in err_offset:
                     err_offset[item] = None
-
-                # if item not in wavel_cal:
-                #     wavel_cal[item] = 0.
 
             ln_like = 0.
 

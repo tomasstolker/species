@@ -223,7 +223,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'MKO/NSFCam.H': (15.55, 0.04),  # Ireland et al. 2011
                                         'MKO/NSFCam.Kp': (14.95, 0.05),  # Ireland et al. 2011
                                         'MKO/NSFCam.Lp': (13.75, 0.07),  # Ireland et al. 2011
-                                        'LBT/LMIRCam.M_77K': (13.75, 0.3)}},
+                                        'LBT/LMIRCam.M_77K': (13.75, 0.3)}},  # Bailey et al. 2013
 
             'HD 72946 B': {'distance': (25.87, 0.03),
                            'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (14.56, 0.07),  # Maire et al. 2019
