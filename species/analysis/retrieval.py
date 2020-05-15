@@ -656,12 +656,12 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['kzz']] = kzz
 
-                # width of the log-normal particle size distribution TODO (um?)
+                # width of the log-normal particle size distribution
                 if 'sigma_lnorm' in bounds:
                     sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
                                                               bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
                 else:
-                    # default: 1.05 - 3. TODO um (?)
+                    # default: 1.05 - 3.
                     sigma_lnorm = 1.05 + 1.95*cube[cube_index['sigma_lnorm']]
 
                 cube[cube_index['sigma_lnorm']] = sigma_lnorm

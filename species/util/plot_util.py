@@ -186,7 +186,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'sigma_lnorm' in param:
         index = param.index('sigma_lnorm')
-        param[index] = r'$\sigma_{g}$ ($\mu$m)'
+        param[index] = r'$\sigma_{g}$'
 
     if 'kzz' in param:
         index = param.index('kzz')
