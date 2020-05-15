@@ -461,6 +461,9 @@ def plot_spectrum(boxes: list,
                                                 yerr=flux_scaling*masked[:, 2]/scaling, ms=2, marker='s',
                                                 zorder=2.5, ls='none')
 
+                        if plot_kwargs[j] is None:
+                            plot_kwargs[j] = {}
+
                         plot_kwargs[j][key] = {'marker': 's', 'ms': 2., 'ls': 'none',
                                                'color': plot_obj[0].get_color()}
 
