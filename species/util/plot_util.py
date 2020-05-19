@@ -12,7 +12,6 @@ import PyMieScatt
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d
 
 from species.data import database
 from species.read import read_filter
@@ -344,7 +343,7 @@ def quantity_unit(param: List[str],
     for i in range(100):
         if f'radius_{i}' in param:
             quantity.append(f'radius_{i}')
-            unit.append(rf'$R_\mathregular{{J}}$')
+            unit.append(r'$R_\mathregular{{J}}$')
             label.append(rf'$R_\mathregular{{{i+1}}}$')
 
         else:
@@ -436,41 +435,53 @@ def field_bounds_ticks(field_range):
 
 
 @typechecked
-def dust_cross_section(wavelengths: np.ndarray,
-                       n_index: np.ndarray,
-                       k_index: np.ndarray,
-                       radius: float) -> np.ndarray:
+def dust_cross_section(wavelength: float,
+                       n_index: float,
+                       k_index: float,
+                       radius: float) -> np.float64:
     """
-    Function for calculating the extinction cross section of a dust grain.
+    Function for calculating the extinction cross section of dust grains.
 
     Parameters
     ----------
-    wavelengths : np.ndarray
-        Wavelengths (um).
-    n_index : np.ndarray
+    wavelength : float
+        Wavelength (um).
+    n_index : float
         Real part of the refractive index.
-    k_index : np.ndarray
+    k_index : float
         Imaginary part of the refractive index.
-    radius : np.ndarray
-        Radius of the dust grain (um).
+    radius : float
+        Geometric radius of the grain size distribution (um).
 
     Returns
     -------
-    np.ndarray
+    float
         Extinction cross section (um2)
     """
 
-    sigma = np.zeros(wavelengths.shape)
+    sigma_n = 2.  # (dimensionless)
 
-    for i, item in enumerate(wavelengths):
-        # PyMieScatt units are in nm and the grain size is provided as the diameter
-        mie = PyMieScatt.MieQ(complex(n_index[i], k_index[i]), item*1e3, 2.*radius*1e3,
-                              asDict=True, asCrossSection=True)
+    r_lognorm = np.logspace(np.log10(1e-2*radius), np.log10(1e2*radius), 100)  # (um)
 
-        if 'Cext' in mie:
-            sigma[i] = mie['Cext']  # (nm2)
+    dndr = np.exp(-np.log(r_lognorm/radius)**2./(2.*np.log(sigma_n)**2.)) / \
+        (r_lognorm*np.sqrt(2.*np.pi)*np.log(sigma_n))
 
-    return sigma*1e-6  # (um2)
+    c_ext = 0.
+
+    for i in range(r_lognorm[:-1].size):
+        if dndr[i] / np.amax(dndr[i]) > 0.01:
+            mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
+
+            mie = PyMieScatt.MieQ(complex(n_index, k_index),
+                                  wavelength*1e3,  # (nm)
+                                  2.*mean_radius*1e3,  # diameter (nm)
+                                  asDict=True,
+                                  asCrossSection=True)
+
+            if 'Cext' in mie:
+                c_ext += mie['Cext']*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
+
+    return c_ext*1e-6  # (um2)
 
 
 @typechecked
@@ -480,7 +491,9 @@ def calc_reddening(filters_color: Tuple[str, str],
                    structure: str = 'crystalline',
                    radius: float = 1.) -> Tuple[float, float]:
     """
-    Function for calculating the reddening of a color given the extinction for a given filter.
+    Function for calculating the reddening of a color given the extinction for a given filter. A
+    log-normal size distribution with a geometric standard deviation of 2 is used as
+    parametrization for the grain sizes (Ackerman & Marley 2001).
 
     Parameters
     ----------
@@ -493,7 +506,7 @@ def calc_reddening(filters_color: Tuple[str, str],
     structure : str
         Grain structure ('crystalline' or 'amorphous').
     radius : float
-        Radius of the dust grain (um).
+        Geometric radius of the grain size distribution (um).
 
     Returns
     -------
@@ -521,55 +534,52 @@ def calc_reddening(filters_color: Tuple[str, str],
         species_db.add_dust()
         h5_file = h5py.File(database_path, 'r')
 
-    if composition == 'MgSiO3' and structure == 'crystalline':
-        for i in range(3):
-            data = h5_file[f'dust/mgsio3/crystalline/axis_{i+1}']
+    filters = [extinction[0], filters_color[0], filters_color[1]]
 
-            # Average cross section of the three axes
-            if i == 0:
-                sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
+    c_ext = {}
 
-            else:
-                sigma += dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
+    for item in filters:
+        read_filt = read_filter.ReadFilter(item)
+        filter_wavel = read_filt.mean_wavelength()
 
-    else:
-        if composition == 'MgSiO3' and structure == 'amorphous':
-            data = h5_file[f'dust/mgsio3/amorphous/']
+        if composition == 'MgSiO3' and structure == 'crystalline':
+            for i in range(3):
+                data = h5_file[f'dust/mgsio3/crystalline/axis_{i+1}']
 
-        elif composition == 'Fe' and structure == 'crystalline':
-            data = h5_file[f'dust/fe/crystalline/']
+                wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
 
-        elif composition == 'Fe' and structure == 'amorphous':
-            data = h5_file[f'dust/fe/amorphous/']
+                # Average cross section of the three axes
 
-        sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius)
+                if i == 0:
+                    c_ext[item] = dust_cross_section(data[wavel_index, 0],
+                                                     data[wavel_index, 1],
+                                                     data[wavel_index, 2],
+                                                     radius) / 3.
 
-    interp_sigma = interp1d(data[:, 0], sigma, kind='linear')
+                else:
+                    c_ext[item] += dust_cross_section(data[wavel_index, 0],
+                                                      data[wavel_index, 1],
+                                                      data[wavel_index, 2],
+                                                      radius) / 3.
 
-    h5_file.close()
+        else:
+            if composition == 'MgSiO3' and structure == 'amorphous':
+                data = h5_file['dust/mgsio3/amorphous/']
 
-    read_filt = read_filter.ReadFilter(extinction[0])
-    transmission = read_filt.get_filter()
+            elif composition == 'Fe' and structure == 'crystalline':
+                data = h5_file['dust/fe/crystalline/']
 
-    # Weighted average of the cross section for extinction[0]
-    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                         transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
+            elif composition == 'Fe' and structure == 'amorphous':
+                data = h5_file['dust/fe/amorphous/']
 
-    read_filt = read_filter.ReadFilter(filters_color[0])
-    transmission = read_filt.get_filter()
+            wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
 
-    # Weighted average of the cross section for filters_color[0]
-    sigma_color_0 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
+            c_ext[item] += dust_cross_section(data[wavel_index, 0],
+                                              data[wavel_index, 1],
+                                              data[wavel_index, 2],
+                                              radius)
 
-    read_filt = read_filter.ReadFilter(filters_color[1])
-    transmission = read_filt.get_filter()
+    density = extinction[1]/c_ext[extinction[0]]/2.5/np.log10(np.exp(1.))
 
-    # Weighted average of the cross section for filters_color[1]
-    sigma_color_1 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
-
-    density = extinction[1]/sigma_mag/2.5/np.log10(np.exp(1.))
-
-    return 2.5 * np.log10(np.exp(1.)) * sigma_color_0 * density, \
-        2.5 * np.log10(np.exp(1.)) * sigma_color_1 * density
+    return 2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[0]] * density, \
+        2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[1]] * density

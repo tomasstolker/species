@@ -248,7 +248,7 @@ def lnlike(param: np.ndarray,
 
                 cov_matrix = corr_amp[item]**2 * error_i * error_j * \
                     np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
-                    (1.-corr_amp[item]**2) * np.eye(wavel.shape[0])*error_i**2
+                    (1.-corr_amp[item])**2 * np.eye(wavel.shape[0])*error_i**2
 
                 dot_tmp = np.dot(data_flux-model_flux,
                                  np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))
@@ -969,7 +969,7 @@ class FitModel:
 
                         cov_matrix = corr_amp[item]**2 * error_i * error_j * \
                             np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
-                            (1.-corr_amp[item]**2) * np.eye(wavel.shape[0])*error_i**2
+                            (1.-corr_amp[item])**2 * np.eye(wavel.shape[0])*error_i**2
 
                         dot_tmp = np.dot(data_flux-model_flux,
                                          np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))

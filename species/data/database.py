@@ -36,7 +36,8 @@ class Database:
     Class for fitting atmospheric model spectra to photometric data.
     """
 
-    def __init__(self):
+    @typechecked
+    def __init__(self) -> None:
         """
         Returns
         -------
@@ -52,7 +53,8 @@ class Database:
         self.database = config['species']['database']
         self.input_path = config['species']['data_folder']
 
-    def list_content(self):
+    @typechecked
+    def list_content(self) -> None:
         """
         Returns
         -------
@@ -89,7 +91,8 @@ class Database:
             descend(hdf_file)
 
     @staticmethod
-    def list_companions():
+    @typechecked
+    def list_companions() -> None:
         """
         Returns
         -------
@@ -109,8 +112,9 @@ class Database:
 
             print()
 
+    @typechecked
     def delete_data(self,
-                    dataset):
+                    dataset: str) -> None:
         """
         Function for deleting a dataset from the HDF5 database.
 
@@ -255,17 +259,18 @@ class Database:
 
         print(' [DONE]')
 
+    @typechecked
     def add_isochrones(self,
-                       filename,
-                       tag,
-                       model='baraffe'):
+                       filename: str,
+                       tag: str,
+                       model: str = 'baraffe') -> None:
         """
-        Function for adding isochrones data to the database.
+        Function for adding isochrone data to the database.
 
         Parameters
         ----------
         filename : str
-            Filename with the isochrones data.
+            Filename with the isochrone data.
         tag : str
             Database tag name where the isochrone that will be stored.
         model : str
