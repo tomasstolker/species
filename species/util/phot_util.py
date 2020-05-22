@@ -250,14 +250,15 @@ def get_residuals(datatype: str,
 
                         # resampling to the new wavelength points is done in teh get_model function
 
-                        model = readmodel.get_model(parameters,
-                                                    spec_res=spec_res,
-                                                    wavel_resample=wl_new,
-                                                    smooth=True)
+                        model_spec = readmodel.get_model(parameters,
+                                                         spec_res=spec_res,
+                                                         wavel_resample=wl_new,
+                                                         smooth=True)
 
-                        flux_new = model.flux
+                        flux_new = model_spec.flux
 
-                res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
+                data_spec = objectbox.spectrum[key][0]
+                res_tmp = (data_spec[:, 1]-flux_new) / data_spec[:, 2]
 
                 res_spec[key] = np.column_stack([wl_new, res_tmp])
 

@@ -242,6 +242,9 @@ def model_name(key) -> str:
     elif key == 'bt-settl':
         name = 'BT-Settl'
 
+    elif key == 'bt-settl-cifist':
+        name = 'BT-Settl'
+
     elif key == 'bt-nextgen':
         name = 'BT-NextGen'
 

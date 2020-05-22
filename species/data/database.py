@@ -24,8 +24,8 @@ from astropy.io import fits
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, btsettl, ames_dusty, ames_cond, \
-                         isochrones, petitcode, exo_rem, dust
+                         companions, filters, btsettl, btsettl_cifist, ames_dusty, \
+                         ames_cond, isochrones, petitcode, exo_rem, dust
 from species.read import read_model, read_calibration, read_planck
 from species.util import data_util
 # from species.util import data_util, retrieval_util
@@ -310,9 +310,9 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-nextgen', 'drift-phoenix',
-            'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear',
-            'petitcode-hot-cloudy', or 'exo-rem').
+            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-settl-cifist', 'bt-nextgen',
+            'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', or 'exo-rem').
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to None.
@@ -339,15 +339,15 @@ class Database:
             raise ValueError(f'The {model} model is not publicly available and needs to '
                              f'be imported by setting the \'data_folder\' parameter.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and wavel_range is None:
+        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and wavel_range is None:
             raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and spec_res is None:
+        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and spec_res is None:
             raise ValueError('The \'spec_res\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
+        if model == 'bt-nextgen' and teff_range is None:
             warnings.warn('The temperature range is not restricted with the \'teff_range\' '
                           'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
                           'will be very slow.')
@@ -381,6 +381,15 @@ class Database:
                                 wavel_range,
                                 teff_range,
                                 spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'bt-settl-cifist':
+            btsettl_cifist.add_btsettl(self.input_path,
+                                       h5_file,
+                                       wavel_range,
+                                       teff_range,
+                                       spec_res)
 
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
@@ -454,7 +463,7 @@ class Database:
                              f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
                              f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
-                             f'\'petitcode-hot-cloudy\', \'exo-rem\'.')
+                             f'\'petitcode-hot-cloudy\', \'exo-rem\', \'bt-settl-cifist\'.')
 
         h5_file.close()
 

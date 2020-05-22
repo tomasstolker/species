@@ -123,7 +123,7 @@ def add_drift_phoenix(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('drift-phoenix', ('teff', 'logg', 'feh'), database, data_sorted)
+    data_util.write_data('drift-phoenix', ['teff', 'logg', 'feh'], database, data_sorted)
 
     print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
     print(f'\r{print_message:<65}')
