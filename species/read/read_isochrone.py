@@ -5,9 +5,12 @@ Module with reading functionalities for isochrones.
 import os
 import configparser
 
+from typing import Optional, Tuple
+
 import h5py
 import numpy as np
 
+from typeguard import typechecked
 from scipy.interpolate import griddata
 
 from species.core import box
@@ -19,8 +22,9 @@ class ReadIsochrone:
     Class for reading an isochrone from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 tag):
+                 tag: str) -> None:
         """
         Parameters
         ----------
@@ -42,26 +46,27 @@ class ReadIsochrone:
 
         self.database = config['species']['database']
 
+    @typechecked
     def get_isochrone(self,
-                      age,
-                      masses,
-                      filters_color,
-                      filter_mag):
+                      age: float,
+                      masses: np.ndarray,
+                      filters_color: Optional[Tuple[str, str]],
+                      filter_mag: Optional[str]) -> box.IsochroneBox:
         """
         Function for selecting an isochrone.
 
         Parameters
         ----------
-        age : str
+        age : float
             Age (Myr) at which the isochrone data is interpolated.
-        masses : numpy.ndarray
+        masses : np.ndarray
             Masses (Mjup) at which the isochrone data is interpolated.
         filters_color : tuple(str, str), None
             Filter IDs for the color as listed in the file with the isochrone data. Not selected if
-            set to None or if only evolutionary tracks are available.
+            set to ``None`` or if only evolutionary tracks are available.
         filter_mag : str, None
             Filter ID for the absolute magnitude as listed in the file with the isochrone data. Not
-            selected if set to None or if only evolutionary tracks are available.
+            selected if set to ``None`` or if only evolutionary tracks are available.
 
         Returns
         -------
@@ -142,20 +147,21 @@ class ReadIsochrone:
                               logg=logg,
                               masses=masses)
 
+    @typechecked
     def get_color_magnitude(self,
-                            age,
-                            masses,
-                            model,
-                            filters_color,
-                            filter_mag):
+                            age: float,
+                            masses: np.ndarray,
+                            model: str,
+                            filters_color: Tuple[str, str],
+                            filter_mag: str) -> box.ColorMagBox:
         """
         Function for calculating color-magnitude combinations from a selected isochrone.
 
         Parameters
         ----------
-        age : str
+        age : float
             Age (Myr) at which the isochrone data is interpolated.
-        masses : numpy.ndarray
+        masses : np.ndarray
             Masses (Mjup) at which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
@@ -210,8 +216,8 @@ class ReadIsochrone:
                         mag2[i] = np.nan
 
                 if not np.isnan(mag1[i]):
-                    mag1[i], _ = model1.get_magnitude(model_param=model_param)
-                    mag2[i], _ = model2.get_magnitude(model_param=model_param)
+                    mag1[i], _ = model1.get_magnitude(model_param)
+                    mag2[i], _ = model2.get_magnitude(model_param)
 
         if filter_mag == filters_color[0]:
             abs_mag = mag1
@@ -233,19 +239,21 @@ class ReadIsochrone:
                               sptype=masses,
                               names=None)
 
+    @typechecked
     def get_color_color(self,
-                        age,
-                        masses,
-                        model,
-                        filters_colors):
+                        age: float,
+                        masses: np.ndarray,
+                        model: str,
+                        filters_colors: Tuple[Tuple[str, str],
+                                              Tuple[str, str]]) -> box.ColorColorBox:
         """
         Function for calculating color-magnitude combinations from a selected isochrone.
 
         Parameters
         ----------
-        age : str
+        age : float
             Age (Myr) at which the isochrone data is interpolated.
-        masses : numpy.ndarray
+        masses : np.ndarray
             Masses (Mjup) at which the isochrone data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
@@ -301,10 +309,10 @@ class ReadIsochrone:
                         mag2[i] = np.nan
 
                 if not np.isnan(mag1[i]):
-                    mag1[i], _ = model1.get_magnitude(model_param=model_param)
-                    mag2[i], _ = model2.get_magnitude(model_param=model_param)
-                    mag3[i], _ = model3.get_magnitude(model_param=model_param)
-                    mag4[i], _ = model4.get_magnitude(model_param=model_param)
+                    mag1[i], _ = model1.get_magnitude(model_param)
+                    mag2[i], _ = model2.get_magnitude(model_param)
+                    mag3[i], _ = model3.get_magnitude(model_param)
+                    mag4[i], _ = model4.get_magnitude(model_param)
 
         return box.create_box(boxtype='colorcolor',
                               library=model,

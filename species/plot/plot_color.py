@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
 from species.core import box
 from species.read import read_object
@@ -153,6 +154,9 @@ def plot_color_magnitude(boxes: list,
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
+
+    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
@@ -608,6 +612,9 @@ def plot_color_color(boxes: list,
     ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
+
+    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)

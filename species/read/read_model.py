@@ -623,7 +623,7 @@ class ReadModel:
         float
             Average flux (W m-2 um-1).
         float, None
-            Uncertainty (W m-2 um-1), which is set to None.
+            Uncertainty (W m-2 um-1), which is set to ``None``.
         """
 
         if self.spectrum_interp is None:
@@ -636,8 +636,9 @@ class ReadModel:
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
+    @typechecked
     def get_magnitude(self,
-                      model_param):
+                      model_param: Dict[str, float]) -> Tuple[float, float]:
         """
         Function for calculating the apparent and absolute magnitudes for the ``filter_name``.
 
@@ -649,9 +650,9 @@ class ReadModel:
         Returns
         -------
         float
-            Apparent magnitude (mag).
+            Apparent magnitude.
         float
-            Absolute magnitude (mag).
+            Absolute magnitude.
         """
 
         if self.spectrum_interp is None:

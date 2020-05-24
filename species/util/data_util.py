@@ -319,6 +319,9 @@ def add_missing(model: str,
 
                     count += 1
 
+        else:
+            count_interp = 0
+
     elif len(parameters) == 3:
         find_missing = np.zeros(grid_shape, dtype=bool)
 
@@ -373,16 +376,19 @@ def add_missing(model: str,
                     print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
                     print(f'{parameters[2]} = {new_points[2][i]}')
 
-        count_interp = np.sum(find_missing) - count_missing
+            count_interp = np.sum(find_missing) - count_missing
 
-        count = 0
-        for i in range(grid_shape[0]):
-            for j in range(grid_shape[1]):
-                for k in range(grid_shape[2]):
-                    if np.count_nonzero(flux[i, j, k, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
-                        flux[i, j, k, :] = flux_int[count, :]
+            count = 0
+            for i in range(grid_shape[0]):
+                for j in range(grid_shape[1]):
+                    for k in range(grid_shape[2]):
+                        if np.count_nonzero(flux[i, j, k, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                            flux[i, j, k, :] = flux_int[count, :]
 
-                    count += 1
+                        count += 1
+
+        else:
+            count_interp = 0
 
     elif len(parameters) == 4:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -443,17 +449,20 @@ def add_missing(model: str,
                     print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
                     print(f'{parameters[3]} = {new_points[3][i]}')
 
-        count_interp = np.sum(find_missing) - count_missing
+            count_interp = np.sum(find_missing) - count_missing
 
-        count = 0
-        for i in range(grid_shape[0]):
-            for j in range(grid_shape[1]):
-                for k in range(grid_shape[2]):
-                    for m in range(grid_shape[3]):
-                        if np.count_nonzero(flux[i, j, k, m, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
-                            flux[i, j, k, m, :] = flux_int[count, :]
+            count = 0
+            for i in range(grid_shape[0]):
+                for j in range(grid_shape[1]):
+                    for k in range(grid_shape[2]):
+                        for m in range(grid_shape[3]):
+                            if np.count_nonzero(flux[i, j, k, m, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                                flux[i, j, k, m, :] = flux_int[count, :]
 
-                        count += 1
+                            count += 1
+
+        else:
+            count_interp = 0
 
     elif len(parameters) == 5:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -519,18 +528,21 @@ def add_missing(model: str,
                     print(f'{parameters[3]} = {new_points[3][i]}, ', end='')
                     print(f'{parameters[4]} = {new_points[4][i]}')
 
-        count_interp = np.sum(find_missing) - count_missing
+            count_interp = np.sum(find_missing) - count_missing
 
-        count = 0
-        for i in range(grid_shape[0]):
-            for j in range(grid_shape[1]):
-                for k in range(grid_shape[2]):
-                    for m in range(grid_shape[3]):
-                        for n in range(grid_shape[4]):
-                            if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
-                                flux[i, j, k, m, n, :] = flux_int[count, :]
+            count = 0
+            for i in range(grid_shape[0]):
+                for j in range(grid_shape[1]):
+                    for k in range(grid_shape[2]):
+                        for m in range(grid_shape[3]):
+                            for n in range(grid_shape[4]):
+                                if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                                    flux[i, j, k, m, n, :] = flux_int[count, :]
 
-                            count += 1
+                                count += 1
+
+        else:
+            count_interp = 0
 
     else:
         raise ValueError('The add_missing function is currently not compatible with more than 5 '
