@@ -314,7 +314,7 @@ def add_missing(model: str,
             count = 0
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
-                    if np.count_nonzero(flux[i, j, ...]) == 0:
+                    if np.count_nonzero(flux[i, j, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
                         flux[i, j, :] = flux_int[count, :]
 
                     count += 1
@@ -379,7 +379,7 @@ def add_missing(model: str,
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
-                    if np.count_nonzero(flux[i, j, k, ...]) == 0:
+                    if np.count_nonzero(flux[i, j, k, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
                         flux[i, j, k, :] = flux_int[count, :]
 
                     count += 1
@@ -450,7 +450,7 @@ def add_missing(model: str,
             for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
                     for m in range(grid_shape[3]):
-                        if np.count_nonzero(flux[i, j, k, m, ...]) == 0:
+                        if np.count_nonzero(flux[i, j, k, m, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
                             flux[i, j, k, m, :] = flux_int[count, :]
 
                         count += 1
@@ -527,7 +527,7 @@ def add_missing(model: str,
                 for k in range(grid_shape[2]):
                     for m in range(grid_shape[3]):
                         for n in range(grid_shape[4]):
-                            if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0:
+                            if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
                                 flux[i, j, k, m, n, :] = flux_int[count, :]
 
                             count += 1

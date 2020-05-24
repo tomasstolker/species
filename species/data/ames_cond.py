@@ -91,6 +91,10 @@ def add_ames_cond(input_path,
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
+                # Exclude low and high log(g) values because of many missing grid points
+                if logg_val < 2.5 or logg_val > 5.5:
+                    continue
+
                 print_message = f'Adding AMES-Cond model spectra... {filename}'
                 print(f'\r{print_message:<71}', end='')
 

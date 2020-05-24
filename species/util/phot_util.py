@@ -227,7 +227,12 @@ def get_residuals(datatype: str,
 
                     model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-                    flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
+                    flux_new = spectres.spectres(wl_new,
+                                                 model.wavelength,
+                                                 model.flux,
+                                                 spec_errs=None,
+                                                 fill=0.,
+                                                 verbose=True)
 
                 else:
                     if spectrum == 'petitradtrans':
@@ -243,7 +248,12 @@ def get_residuals(datatype: str,
                         #
                         # # separate resampling to the new wavelength points
                         #
-                        # flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
+                        # flux_new = spectres.spectres(wl_new,
+                        #                              model.wavelength,
+                        #                              model.flux,
+                        #                              spec_errs=None,
+                        #                              fill=0.,
+                        #                              verbose=True)
 
                     else:
                         readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
@@ -281,8 +291,8 @@ def get_residuals(datatype: str,
     if res_spec is not None:
         for key in objectbox.spectrum:
             if isinstance(inc_spec, bool) or key in inc_spec:
-                print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
-                      f'max: {np.amax(res_spec[key]):.2f}')
+                print(f'   - {key}: min: {np.nanmin(res_spec[key]):.2f}, '
+                      f'max: {np.nanmax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

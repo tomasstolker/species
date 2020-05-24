@@ -357,11 +357,11 @@ class FitModel:
                  inc_spec: Union[bool, List[str]] = True,
                  fit_corr: Optional[List[str]] = None) -> None:
         """
-        A grid of spectra is linearly interpolated for each photometric point and spectrum while
+        The grid of spectra is linearly interpolated for each photometric point and spectrum while
         taking into account the filter profile, spectral resolution, and wavelength sampling.
-        Therefore, when fitting spectra from a model grid, the computation time of thus initial
-        interpolation depends on the wavelength range and spectral resolution of the spectra that
-        are stored in the database, and the prior boundaries that are chosen with ``bounds``.
+        Therefore, when fitting spectra from a model grid, the computation time of the
+        interpolation will depend on the wavelength range, spectral resolution, and parameter
+        space of the spectra that are stored in the database.
 
         Parameters
         ----------
@@ -372,7 +372,7 @@ class FitModel:
         model : str
             Atmospheric model (e.g. 'bt-settl', 'exo-rem', or 'planck').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the priors and the grid interpolation.
+            The boundaries that are used for the uniform priors.
 
             Atmospheric model parameters (e.g. ``model='bt-settl``):
 
@@ -523,10 +523,10 @@ class FitModel:
                     # Or interpolate the model grid for each filter
                     print(f'Interpolating {item}...', end='', flush=True)
                     readmodel = read_model.ReadModel(self.model, filter_name=item)
-                    readmodel.interpolate_grid(self.bounds)
+                    readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
                     self.modelphot.append(readmodel)
 
-                print(f' [DONE]')
+                print(' [DONE]')
 
                 # Store the flux and uncertainty for each filter
                 obj_phot = self.object.get_photometry(item)
@@ -577,14 +577,13 @@ class FitModel:
 
                     readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
 
-                    readmodel.interpolate_grid(self.bounds,
-                                               wavel_resample=self.spectrum[key][0][:, 0],
+                    readmodel.interpolate_grid(wavel_resample=self.spectrum[key][0][:, 0],
                                                smooth=True,
                                                spec_res=self.spectrum[key][3])
 
                     self.modelspec.append(readmodel)
 
-                    print(f' [DONE]')
+                    print(' [DONE]')
 
         else:
             self.spectrum = {}
@@ -989,7 +988,40 @@ class FitModel:
                         resume=False,
                         n_live_points=n_live_points)
 
-        samples = np.loadtxt(f'{output}/post_equal_weights.dat')
+        # Create the Analyzer object
+        analyzer = pymultinest.analyse.Analyzer(len(self.modelpar), outputfiles_basename=output)
+
+        # Get a dictionary with the ln(Z) and its errors, the individual modes and their parameters
+        # quantiles of the parameter posteriors
+        stats = analyzer.get_stats()
+
+        # Global evidence
+        ln_z = stats['global evidence']
+        ln_z_error = stats['global evidence error']
+        print(f'Global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+
+        # Nested sampling global log-evidence
+        ln_z = stats['nested sampling global log-evidence']
+        ln_z_error = stats['nested sampling global log-evidence error']
+        print(f'Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+
+        # Nested sampling global log-evidence
+        ln_z = stats['nested importance sampling global log-evidence']
+        ln_z_error = stats['nested importance sampling global log-evidence error']
+        print(f'Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+
+        # Get the best-fit (highest likelihood) point
+        print('Sample with the highest likelihood:')
+        best_params = analyzer.get_best_fit()
+
+        max_lnlike = best_params['log_likelihood']
+        print(f'   - Log-likelihood = {max_lnlike:.2f}')
+
+        for i, item in enumerate(best_params['parameters']):
+            print(f'   - {self.modelpar[i]} = {item:.2f}')
+
+        # Get the posterior samples
+        samples = analyzer.get_equal_weighted_posterior()
 
         spec_labels = []
         for item in self.spectrum:

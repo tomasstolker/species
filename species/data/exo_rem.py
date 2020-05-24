@@ -44,24 +44,21 @@ def add_exo_rem(input_path,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    input_file = 'exo-rem.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/exo-rem.tgz'
+
     data_folder = os.path.join(input_path, 'exo-rem/')
+    data_file = os.path.join(data_folder, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    input_file = 'exo-rem.tgz'
-    label = '(160 MB)'
-
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/exo-rem.tgz'
-
-    data_file = os.path.join(data_folder, input_file)
-
     if not os.path.isfile(data_file):
-        print(f'Downloading Exo-REM model spectra {label}...', end='', flush=True)
+        print('Downloading Exo-REM model spectra (790 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print(f'Unpacking Exo-REM model spectra {label}...', end='', flush=True)
+    print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
@@ -80,7 +77,7 @@ def add_exo_rem(input_path,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            if filename[:7] == 'exorem_':
+            if filename[:8] == 'exo-rem_':
                 file_split = filename.split('_')
 
                 teff_val = float(file_split[2])
@@ -99,7 +96,7 @@ def add_exo_rem(input_path,
                         continue
 
                 print_message = f'Adding Exo-REM model spectra... {filename}'
-                print(f'\r{print_message:<83}', end='')
+                print(f'\r{print_message:<84}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
@@ -147,4 +144,4 @@ def add_exo_rem(input_path,
                          data_sorted)
 
     print_message = 'Adding Exo-REM model spectra... [DONE]'
-    print(f'\r{print_message:<83}')
+    print(f'\r{print_message:<84}')

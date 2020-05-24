@@ -184,28 +184,28 @@ def plot_spectrum(boxes: list,
     if residuals is not None and filters is not None:
         ax1.set_xlabel('', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
-        ax3.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
+        ax3.set_xlabel('Wavelength (µm)', fontsize=13)
 
     elif residuals is not None:
         ax1.set_xlabel('', fontsize=13)
-        ax3.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
+        ax3.set_xlabel('Wavelength (µm)', fontsize=11)
 
     elif filters is not None:
-        ax1.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
+        ax1.set_xlabel('Wavelength (µm)', fontsize=13)
         ax2.set_xlabel('', fontsize=13)
 
     else:
-        ax1.set_xlabel(r'Wavelength ($\mu$m)', fontsize=13)
+        ax1.set_xlabel('Wavelength (µm)', fontsize=13)
 
     if filters is not None:
         ax2.set_ylabel('Transmission', fontsize=13)
 
     if residuals is not None:
         if quantity == 'flux density':
-            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=13)
+            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=11)
 
         elif quantity == 'flux':
-            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=13)
+            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=11)
 
     if xlim is not None:
         ax1.set_xlim(xlim[0], xlim[1])
@@ -229,12 +229,12 @@ def plot_spectrum(boxes: list,
             scaling = 10.**exponent
 
             if quantity == 'flux density':
-                ylabel = r'$F_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$ $\mu$m$^{-1}$)'
+                ylabel = r'$F_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$ µm$^{-1}$)'
 
             elif quantity == 'flux':
                 ylabel = r'$\lambda$$F_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$)'
 
-            ax1.set_ylabel(ylabel, fontsize=13)
+            ax1.set_ylabel(ylabel, fontsize=11)
             ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
             if ylim[0] < 0.:
@@ -242,10 +242,10 @@ def plot_spectrum(boxes: list,
 
         else:
             if quantity == 'flux density':
-                ax1.set_ylabel(r'$F_\lambda$ (W m$^{-2}$ $\mu$m$^{-1}$)', fontsize=13)
+                ax1.set_ylabel(r'$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)', fontsize=11)
 
             elif quantity == 'flux':
-                ax1.set_ylabel(r'$\lambda$$F_\lambda$ (W m$^{-2}$)', fontsize=13)
+                ax1.set_ylabel(r'$\lambda$$F_\lambda$ (W m$^{-2}$)', fontsize=11)
 
             scaling = 1.
 
@@ -593,28 +593,30 @@ def plot_spectrum(boxes: list,
 
                 else:
                     if residuals.photometry[item].ndim == 1:
-                        ax3.plot(residuals.photometry[item][0], residuals.photometry[item][1], zorder=2,
-                                 **plot_kwargs[obj_index][item])
+                        ax3.errorbar(residuals.photometry[item][0], residuals.photometry[item][1],
+                                     zorder=2, **plot_kwargs[obj_index][item])
 
                     elif residuals.photometry[item].ndim == 2:
                         for i in range(residuals.photometry[item].shape[1]):
                             if isinstance(plot_kwargs[obj_index][item], list):
-                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
-                                         **plot_kwargs[obj_index][item][i])
+                                ax3.errorbar(residuals.photometry[item][0, i],
+                                             residuals.photometry[item][1, i], zorder=2,
+                                             **plot_kwargs[obj_index][item][i])
 
                             else:
-                                ax3.plot(residuals.photometry[item][0, i], residuals.photometry[item][1, i], zorder=2,
-                                         **plot_kwargs[obj_index][item])
+                                ax3.errorbar(residuals.photometry[item][0, i],
+                                             residuals.photometry[item][1, i], zorder=2,
+                                             **plot_kwargs[obj_index][item])
 
                 res_max = np.nanmax(np.abs(residuals.photometry[item][1]))
 
         if residuals.spectrum is not None:
             for key, value in residuals.spectrum.items():
                 if not plot_kwargs[obj_index] or key not in plot_kwargs[obj_index]:
-                    ax3.plot(value[:, 0], value[:, 1], marker='o', ms=2, ls='none', zorder=1)
+                    ax3.errorbar(value[:, 0], value[:, 1], marker='o', ms=2, ls='none', zorder=1)
 
                 else:
-                    ax3.plot(value[:, 0], value[:, 1], zorder=1, **plot_kwargs[obj_index][key])
+                    ax3.errorbar(value[:, 0], value[:, 1], zorder=1, **plot_kwargs[obj_index][key])
 
                 max_tmp = np.nanmax(np.abs(value[:, 1]))
 
@@ -640,9 +642,9 @@ def plot_spectrum(boxes: list,
 
     if title is not None:
         if filters:
-            ax2.set_title(title, y=1.02, fontsize=15)
+            ax2.set_title(title, y=1.02, fontsize=13)
         else:
-            ax1.set_title(title, y=1.02, fontsize=15)
+            ax1.set_title(title, y=1.02, fontsize=13)
 
     handles, labels = ax1.get_legend_handles_labels()
 

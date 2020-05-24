@@ -804,7 +804,7 @@ class Database:
                     dset.attrs['specres'] = 0.
 
                 else:
-                    print(f'      - {key}: {value[2]:.2f}')
+                    print(f'      - {key}: {value[2]:.1f}')
                     dset.attrs['specres'] = value[2]
 
         h5_file.close()

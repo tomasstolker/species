@@ -215,7 +215,7 @@ def update_labels(param: List[str]) -> List[str]:
 
 
 @typechecked
-def model_name(key) -> str:
+def model_name(key: str) -> str:
     """
     Function for updating a model name for use in plots.
 
@@ -586,3 +586,52 @@ def calc_reddening(filters_color: Tuple[str, str],
 
     return 2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[0]] * density, \
         2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[1]] * density
+
+
+@typechecked
+def remove_color_duplicates(object_names: List[str],
+                            empirical_names: np.ndarray) -> List[int]:
+    """"
+    Function for deselecting young/low-gravity objects that will already be plotted individually
+    as directly imaged objects.
+
+    Parameters
+    ----------
+    object_names : list(str)
+        List with names of directly imaged planets and brown dwarfs.
+    empirical_names : np.ndarray
+        Array with names of young/low-gravity objects.
+
+    Returns
+    -------
+    list
+        List with selected indices of the young/low-gravity objects.
+    """
+
+    indices = []
+
+    for i, item in enumerate(empirical_names):
+        if item == 'beta_Pic_b' and 'beta Pic b' in object_names:
+            continue
+
+        if item == 'HR8799b' and 'HR 8799 b' in object_names:
+            continue
+
+        if item == 'HR8799c' and 'HR 8799 c' in object_names:
+            continue
+
+        if item == 'HR8799d' and 'HR 8799 d' in object_names:
+            continue
+
+        if item == 'HR8799e' and 'HR 8799 e' in object_names:
+            continue
+
+        if item == 'kappa_And_B' and 'kappa And b' in object_names:
+            continue
+
+        if item == 'HD1160B' and 'HD 1160 B' in object_names:
+            continue
+
+        indices.append(i)
+
+    return indices
