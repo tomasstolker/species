@@ -755,10 +755,11 @@ class FitModel:
                                distance=self.distance[0],
                                spec_labels=spec_labels)
 
+    @typechecked
     def run_multinest(self,
-                      tag,
-                      n_live_points=4000,
-                      output='multinest/'):
+                      tag: str,
+                      n_live_points: int = 1000,
+                      output: str = 'multinest/') -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
