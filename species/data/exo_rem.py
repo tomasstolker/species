@@ -58,11 +58,11 @@ def add_exo_rem(input_path,
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    # print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
-    # tar = tarfile.open(data_file)
-    # tar.extractall(data_folder)
-    # tar.close()
-    # print(' [DONE]')
+    print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
+    tar = tarfile.open(data_file)
+    tar.extractall(data_folder)
+    tar.close()
+    print(' [DONE]')
 
     teff = []
     logg = []
