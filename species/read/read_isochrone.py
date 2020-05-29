@@ -50,8 +50,8 @@ class ReadIsochrone:
     def get_isochrone(self,
                       age: float,
                       masses: np.ndarray,
-                      filters_color: Optional[Tuple[str, str]],
-                      filter_mag: Optional[str]) -> box.IsochroneBox:
+                      filters_color: Optional[Tuple[str, str]] = None,
+                      filter_mag: Optional[str] = None) -> box.IsochroneBox:
         """
         Function for selecting an isochrone.
 

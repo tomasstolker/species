@@ -58,11 +58,11 @@ def add_exo_rem(input_path,
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
-    tar = tarfile.open(data_file)
-    tar.extractall(data_folder)
-    tar.close()
-    print(' [DONE]')
+    # print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
+    # tar = tarfile.open(data_file)
+    # tar.extractall(data_folder)
+    # tar.close()
+    # print(' [DONE]')
 
     teff = []
     logg = []
@@ -125,7 +125,10 @@ def add_exo_rem(input_path,
                         warnings.warn('The wavelength range should fall within the range of the '
                                       'original wavelength sampling. Storing zeros instead.')
 
-    print('\nGrid points with the following parameters having been excluded:')
+    print_message = 'Adding Exo-REM model spectra... [DONE]'
+    print(f'\r{print_message:<84}')
+
+    print('Grid points with the following parameters have been excluded:')
     print('   - log(g) = 5')
     print('   - C/O = 0.8')
     print('   - C/O = 0.85')
@@ -142,6 +145,3 @@ def add_exo_rem(input_path,
                          ['teff', 'logg', 'feh', 'co'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding Exo-REM model spectra... [DONE]'
-    print(f'\r{print_message:<84}')

@@ -112,28 +112,37 @@ def sort_data(param_teff: np.ndarray,
         array with the wavelengths, and a multidimensional array with the sorted spectra.
     """
 
+    n_spectra = param_teff.shape[0]
+
     teff_unique = np.unique(param_teff)
     logg_unique = np.unique(param_logg)
+
+    print('Grid points stored in the database:')
+    print(f'   - Teff = {teff_unique}')
+    print(f'   - log(g) = {logg_unique}')
 
     spec_shape = [teff_unique.shape[0], logg_unique.shape[0]]
 
     if param_feh is not None:
         feh_unique = np.unique(param_feh)
         spec_shape.append(feh_unique.shape[0])
+        print(f'   - [Fe/H] = {feh_unique}')
 
     if param_co is not None:
         co_unique = np.unique(param_co)
         spec_shape.append(co_unique.shape[0])
+        print(f'   - C/O = {co_unique}')
 
     if param_fsed is not None:
         fsed_unique = np.unique(param_fsed)
         spec_shape.append(fsed_unique.shape[0])
+        print(f'   - f_sed = {fsed_unique}')
 
     spec_shape.append(wavelength.shape[0])
 
     spectrum = np.zeros(spec_shape)
 
-    for i in range(param_teff.shape[0]):
+    for i in range(n_spectra):
         # The parameter order is: Teff, log(g), [Fe/H], C/O, f_sed
         # Not all parameters have to be included but the order matters
 
@@ -201,12 +210,14 @@ def write_data(model: str,
         None
     """
 
+    n_param = len(parameters)
+
     if f'models/{model}' in database:
         del database[f'models/{model}']
 
     dset = database.create_group(f'models/{model}')
 
-    dset.attrs['n_param'] = len(parameters)
+    dset.attrs['n_param'] = n_param
 
     for i, item in enumerate(parameters):
         dset.attrs[f'parameter{i}'] = item
@@ -215,10 +226,10 @@ def write_data(model: str,
                                 data=data_sorted[i])
 
     database.create_dataset(f'models/{model}/wavelength',
-                            data=data_sorted[len(parameters)])
+                            data=data_sorted[n_param])
 
     database.create_dataset(f'models/{model}/flux',
-                            data=data_sorted[len(parameters)+1])
+                            data=data_sorted[n_param+1])
 
 
 @typechecked
@@ -253,7 +264,6 @@ def add_missing(model: str,
         param_data.append(np.asarray(database[f'models/{model}/{item}']))
         print(f'   - {item}: {grid_shape[i]}')
 
-    wavelength = np.asarray(database[f'models/{model}/wavelength'])
     flux = np.asarray(database[f'models/{model}/flux'])
 
     count_total = 0
@@ -292,12 +302,21 @@ def add_missing(model: str,
         points = np.asarray(points)
         new_points = np.asarray(new_points)
 
-        if new_points.shape[1] > points.shape[1]:
+        if np.sum(find_missing) > 0:
             flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
-            for i in range(flux_int.shape[0]):
-                if np.isnan(np.sum(flux_int[i, :])):
-                    count_missing += 1
+            count = 0
+            count_missing = 0
+
+            for i in range(grid_shape[0]):
+                for j in range(grid_shape[1]):
+                    if np.isnan(np.sum(flux_int[count, :])):
+                        count_missing += 1
+
+                    elif np.count_nonzero(flux[i, j, ...]) == 0:
+                        flux[i, j, :] = flux_int[count, :]
+
+                    count += 1
 
             if count_missing > 0:
                 print(f'Could not interpolate {count_missing} grid points so storing zeros '
@@ -310,14 +329,6 @@ def add_missing(model: str,
                         print(f'{parameters[1]} = {new_points[1][i]}')
 
             count_interp = np.sum(find_missing) - count_missing
-
-            count = 0
-            for i in range(grid_shape[0]):
-                for j in range(grid_shape[1]):
-                    if np.count_nonzero(flux[i, j, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
-                        flux[i, j, :] = flux_int[count, :]
-
-                    count += 1
 
         else:
             count_interp = 0
@@ -359,33 +370,35 @@ def add_missing(model: str,
         points = np.asarray(points)
         new_points = np.asarray(new_points)
 
-        flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
-
-        for i in range(flux_int.shape[0]):
-            if np.isnan(np.sum(flux_int[i, :])):
-                count_missing += 1
-
-        if count_missing > 0:
-            print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                  f'instead. [WARNING]\nThe grid points that are missing:')
-
-            for i in range(flux_int.shape[0]):
-                if np.isnan(np.sum(flux_int[i, :])):
-                    print('   - ', end='')
-                    print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                    print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                    print(f'{parameters[2]} = {new_points[2][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
+        if np.sum(find_missing) > 0:
+            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
+            count_missing = 0
+
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
                     for k in range(grid_shape[2]):
-                        if np.count_nonzero(flux[i, j, k, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                        if np.isnan(np.sum(flux_int[count, :])):
+                            count_missing += 1
+
+                        elif np.count_nonzero(flux[i, j, k, ...]) == 0:
                             flux[i, j, k, :] = flux_int[count, :]
 
                         count += 1
+
+            if count_missing > 0:
+                print(f'Could not interpolate {count_missing} grid points so storing zeros '
+                      f'instead. [WARNING]\nThe grid points that are missing:')
+
+                for i in range(flux_int.shape[0]):
+                    if np.isnan(np.sum(flux_int[i, :])):
+                        print('   - ', end='')
+                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
+                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
+                        print(f'{parameters[2]} = {new_points[2][i]}')
+
+            count_interp = np.sum(find_missing) - count_missing
 
         else:
             count_interp = 0
@@ -431,35 +444,37 @@ def add_missing(model: str,
         points = np.asarray(points)
         new_points = np.asarray(new_points)
 
-        flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
-
-        for i in range(flux_int.shape[0]):
-            if np.isnan(np.sum(flux_int[i, :])):
-                count_missing += 1
-
-        if count_missing > 0:
-            print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                  f'instead. [WARNING]\nThe grid points that are missing:')
-
-            for i in range(flux_int.shape[0]):
-                if np.isnan(np.sum(flux_int[i, :])):
-                    print('   - ', end='')
-                    print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                    print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                    print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
-                    print(f'{parameters[3]} = {new_points[3][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
+        if np.sum(find_missing) > 0:
+            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
+            count_missing = 0
+
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
                     for k in range(grid_shape[2]):
                         for m in range(grid_shape[3]):
-                            if np.count_nonzero(flux[i, j, k, m, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                            if np.isnan(np.sum(flux_int[count, :])):
+                                count_missing += 1
+
+                            elif np.count_nonzero(flux[i, j, k, m, ...]) == 0:
                                 flux[i, j, k, m, :] = flux_int[count, :]
 
                             count += 1
+
+            if count_missing > 0:
+                print(f'Could not interpolate {count_missing} grid points so storing zeros '
+                      f'instead. [WARNING]\nThe grid points that are missing:')
+
+                for i in range(flux_int.shape[0]):
+                    if np.isnan(np.sum(flux_int[i, :])):
+                        print('   - ', end='')
+                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
+                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
+                        print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
+                        print(f'{parameters[3]} = {new_points[3][i]}')
+
+            count_interp = np.sum(find_missing) - count_missing
 
         else:
             count_interp = 0
@@ -509,37 +524,39 @@ def add_missing(model: str,
         points = np.asarray(points)
         new_points = np.asarray(new_points)
 
-        flux_int = griddata(points, values, new_points, method='linear', fill_value=np.nan)
-
-        for i in range(flux_int.shape[0]):
-            if np.isnan(np.sum(flux_int[i, :])):
-                count_missing += 1
-
-        if count_missing > 0:
-            print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                  f'instead. [WARNING]\nThe grid points that are missing:')
-
-            for i in range(flux_int.shape[0]):
-                if np.isnan(np.sum(flux_int[i, :])):
-                    print('   - ', end='')
-                    print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                    print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                    print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
-                    print(f'{parameters[3]} = {new_points[3][i]}, ', end='')
-                    print(f'{parameters[4]} = {new_points[4][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
+        if np.sum(find_missing) > 0:
+            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
+            count_missing = 0
+
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
                     for k in range(grid_shape[2]):
                         for m in range(grid_shape[3]):
                             for n in range(grid_shape[4]):
-                                if np.count_nonzero(flux[i, j, k, m, n, ...]) == 0 and not np.isnan(np.sum(flux_int[count, :])):
+                                if np.isnan(np.sum(flux_int[count, :])):
+                                    count_missing += 1
+
+                                elif np.count_nonzero(flux[i, j, k, m, n, ...]) == 0:
                                     flux[i, j, k, m, n, :] = flux_int[count, :]
 
                                 count += 1
+
+            if count_missing > 0:
+                print(f'Could not interpolate {count_missing} grid points so storing zeros '
+                      f'instead. [WARNING]\nThe grid points that are missing:')
+
+                for i in range(flux_int.shape[0]):
+                    if np.isnan(np.sum(flux_int[i, :])):
+                        print('   - ', end='')
+                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
+                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
+                        print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
+                        print(f'{parameters[3]} = {new_points[3][i]}, ', end='')
+                        print(f'{parameters[4]} = {new_points[4][i]}')
+
+            count_interp = np.sum(find_missing) - count_missing
 
         else:
             count_interp = 0
