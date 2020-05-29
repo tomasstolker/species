@@ -996,11 +996,6 @@ class FitModel:
         # quantiles of the parameter posteriors
         stats = analyzer.get_stats()
 
-        # Global evidence
-        ln_z = stats['global evidence']
-        ln_z_error = stats['global evidence error']
-        print(f'Global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
-
         # Nested sampling global log-evidence
         ln_z = stats['nested sampling global log-evidence']
         ln_z_error = stats['nested sampling global log-evidence error']

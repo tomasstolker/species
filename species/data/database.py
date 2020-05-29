@@ -234,14 +234,14 @@ class Database:
 
         h5_file = h5py.File(self.database, 'a')
 
+        if f'filters/{filter_name}' in h5_file:
+            del h5_file[f'filters/{filter_name}']
+
         if 'filters' not in h5_file:
             h5_file.create_group('filters')
 
         if f'filters/{filter_split[0]}' not in h5_file:
             h5_file.create_group(f'filters/{filter_split[0]}')
-
-        if f'filters/{filter_name}' in h5_file:
-            del h5_file[f'filters/{filter_name}']
 
         if filename is not None:
             data = np.loadtxt(filename)

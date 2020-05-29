@@ -123,6 +123,9 @@ def add_btsettl(input_path: str,
                         warnings.warn('The wavelength range should fall within the range of the '
                                       'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding BT-Settl model spectra... [DONE]'
+    print(f'\r{print_message:<76}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
@@ -135,6 +138,3 @@ def add_btsettl(input_path: str,
                          ['teff', 'logg'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding BT-Settl model spectra... [DONE]'
-    print(f'\r{print_message:<76}')

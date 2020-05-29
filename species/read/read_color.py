@@ -87,14 +87,13 @@ class ReadColorMagnitude:
             Box with the colors and magnitudes.
         """
 
-        h5_file = h5py.File(self.database, 'r')
-
         if self.lib_type == 'phot_lib':
-            sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
-            dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # (pc)
-            dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])  # (pc)
-            flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
-            obj_names = np.asarray(h5_file[f'photometry/{self.library}/name'])
+            with h5py.File(self.database, 'r') as h5_file:
+                sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
+                dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])
+                dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])
+                flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
+                obj_names = np.asarray(h5_file[f'photometry/{self.library}/name'])
 
             if object_type is None:
                 indices = np.arange(0, np.size(sptype), 1)
@@ -115,8 +114,13 @@ class ReadColorMagnitude:
                 indices = np.array(indices)
 
             if indices.size > 0:
-                mag1 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[0]}'])
-                mag2 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[1]}'])
+                with h5py.File(self.database, 'r') as h5_file:
+                    mag1 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[0]}'])
+                    mag2 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[1]}'])
+
+            else:
+                raise ValueError(f'There is not data available from \'{self.library}\' for '
+                                 f'\'{object_type}\' type objects with the chosen filters.')
 
             color = mag1 - mag2
 
@@ -169,8 +173,6 @@ class ReadColorMagnitude:
                                           magnitude=phot_box_2.abs_mag[:, 0],
                                           sptype=phot_box_0.sptype,
                                           names=None)
-
-        h5_file.close()
 
         return colormag_box
 

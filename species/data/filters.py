@@ -107,9 +107,17 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.n
         transmission = np.delete(transmission, indices)
 
         if np.amin(transmission) < 0.:
-            raise ValueError('The minimum transmission value is smaller than zero.')
+            warnings.warn(f'The minimum transmission value of {filter_id} is smaller than zero '
+                          f'({np.amin(transmission):.2e}). Wavelengths with negative transmission '
+                          f'values will be removed.')
 
-        if np.amax(transmission) > 1.:
-            raise ValueError('The maximum transmission value is larger than one.')
+            indices = []
+
+            for i, item in enumerate(transmission):
+                if item > 0.:
+                    indices.append(i)
+
+            wavelength = wavelength[indices]
+            transmission = transmission[indices]
 
     return wavelength, transmission

@@ -175,6 +175,9 @@ def add_ames_cond(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding AMES-Cond model spectra... [DONE]'
+    print(f'\r{print_message:<71}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
@@ -184,6 +187,3 @@ def add_ames_cond(input_path,
                                       np.asarray(flux))
 
     data_util.write_data('ames-cond', ['teff', 'logg'], database, data_sorted)
-
-    print_message = 'Adding AMES-Cond model spectra... [DONE]'
-    print(f'\r{print_message:<71}')

@@ -268,10 +268,12 @@ def add_missing(model: str,
     flux = np.log10(flux)
 
     count_total = 0
+    count_interp = 0
     count_missing = 0
 
     if len(parameters) == 2:
         find_missing = np.zeros(grid_shape, dtype=bool)
+
 
         values = []
         points = [[], []]
@@ -286,17 +288,22 @@ def add_missing(model: str,
                     print(f'{parameters[0]} = {param_data[0][i]}, ', end='')
                     print(f'{parameters[1]} = {param_data[1][j]}')
 
-                    check_low = np.isinf(np.sum(flux[i-1, j, ...]))
-                    check_up = np.isinf(np.sum(flux[i+1, j, ...]))
+                    if 0 < i < grid_shape[0]-1:
+                        check_low = np.isinf(np.sum(flux[i-1, j, ...]))
+                        check_up = np.isinf(np.sum(flux[i+1, j, ...]))
 
-                    # Linear scaling of the intermediate Teff point
-                    scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                              (param_data[0][i+1] - param_data[0][i-1])
+                        # Linear scaling of the intermediate Teff point
+                        scaling = (param_data[0][i] - param_data[0][i-1]) / \
+                                  (param_data[0][i+1] - param_data[0][i-1])
 
-                    if 0 < i < grid_shape[0]-1 and not check_low and not check_up:
-                        flux_low = flux[i-1, j, ...]
-                        flux_up = flux[i+1, j, ...]
-                        flux[i, j, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                        if not check_low and not check_up:
+                            flux_low = flux[i-1, j, ...]
+                            flux_up = flux[i+1, j, ...]
+                            flux[i, j, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                            count_interp += 1
+
+                        else:
+                            find_missing[i, j] = True
 
                     else:
                         find_missing[i, j] = True
@@ -320,7 +327,6 @@ def add_missing(model: str,
             flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
-            count_missing = 0
 
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
@@ -329,6 +335,7 @@ def add_missing(model: str,
 
                     elif np.isinf(np.sum(flux[i, j, ...])):
                         flux[i, j, :] = flux_int[count, :]
+                        count_interp += 1
 
                     count += 1
 
@@ -341,11 +348,6 @@ def add_missing(model: str,
                         print('   - ', end='')
                         print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
                         print(f'{parameters[1]} = {new_points[1][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
-
-        else:
-            count_interp = 0
 
     elif len(parameters) == 3:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -365,17 +367,22 @@ def add_missing(model: str,
                         print(f'{parameters[1]} = {param_data[1][j]}, ', end='')
                         print(f'{parameters[2]} = {param_data[2][k]}')
 
-                        check_low = np.isinf(np.sum(flux[i-1, j, k, ...]))
-                        check_up = np.isinf(np.sum(flux[i+1, j, k, ...]))
+                        if 0 < i < grid_shape[0]-1:
+                            check_low = np.isinf(np.sum(flux[i-1, j, k, ...]))
+                            check_up = np.isinf(np.sum(flux[i+1, j, k, ...]))
 
-                        # Linear scaling of the intermediate Teff point
-                        scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                  (param_data[0][i+1] - param_data[0][i-1])
+                            # Linear scaling of the intermediate Teff point
+                            scaling = (param_data[0][i] - param_data[0][i-1]) / \
+                                      (param_data[0][i+1] - param_data[0][i-1])
 
-                        if 0 < i < grid_shape[0]-1 and not check_low and not check_up:
-                            flux_low = flux[i-1, j, k, ...]
-                            flux_up = flux[i+1, j, k, ...]
-                            flux[i, j, k, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                            if not check_low and not check_up:
+                                flux_low = flux[i-1, j, k, ...]
+                                flux_up = flux[i+1, j, k, ...]
+                                flux[i, j, k, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                count_interp += 1
+
+                            else:
+                                find_missing[i, j, k] = True
 
                         else:
                             find_missing[i, j, k] = True
@@ -401,7 +408,6 @@ def add_missing(model: str,
             flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
-            count_missing = 0
 
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
@@ -411,6 +417,7 @@ def add_missing(model: str,
 
                         elif np.isinf(np.sum(flux[i, j, k, ...])):
                             flux[i, j, k, :] = flux_int[count, :]
+                            count_interp += 1
 
                         count += 1
 
@@ -424,11 +431,6 @@ def add_missing(model: str,
                         print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
                         print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
                         print(f'{parameters[2]} = {new_points[2][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
-
-        else:
-            count_interp = 0
 
     elif len(parameters) == 4:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -450,17 +452,22 @@ def add_missing(model: str,
                             print(f'{parameters[2]} = {param_data[2][k]}, ', end='')
                             print(f'{parameters[3]} = {param_data[3][m]}')
 
-                            check_low = np.isinf(np.sum(flux[i-1, j, k, m, ...]))
-                            check_up = np.isinf(np.sum(flux[i+1, j, k, m, ...]))
+                            if 0 < i < grid_shape[0]-1:
+                                check_low = np.isinf(np.sum(flux[i-1, j, k, m, ...]))
+                                check_up = np.isinf(np.sum(flux[i+1, j, k, m, ...]))
 
-                            # Linear scaling of the intermediate Teff point
-                            scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                      (param_data[0][i+1] - param_data[0][i-1])
+                                # Linear scaling of the intermediate Teff point
+                                scaling = (param_data[0][i] - param_data[0][i-1]) / \
+                                          (param_data[0][i+1] - param_data[0][i-1])
 
-                            if 0 < i < grid_shape[0]-1 and not check_low and not check_up:
-                                flux_low = flux[i-1, j, k, m, ...]
-                                flux_up = flux[i+1, j, k, m, ...]
-                                flux[i, j, k, m, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                if not check_low and not check_up:
+                                    flux_low = flux[i-1, j, k, m, ...]
+                                    flux_up = flux[i+1, j, k, m, ...]
+                                    flux[i, j, k, m, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                    count_interp += 1
+
+                                else:
+                                    find_missing[i, j, k, m] = True
 
                             else:
                                 find_missing[i, j, k, m] = True
@@ -488,7 +495,6 @@ def add_missing(model: str,
             flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
-            count_missing = 0
 
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
@@ -499,6 +505,7 @@ def add_missing(model: str,
 
                             elif np.isinf(np.sum(flux[i, j, k, m, ...])):
                                 flux[i, j, k, m, :] = flux_int[count, :]
+                                count_interp += 1
 
                             count += 1
 
@@ -513,11 +520,6 @@ def add_missing(model: str,
                         print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
                         print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
                         print(f'{parameters[3]} = {new_points[3][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
-
-        else:
-            count_interp = 0
 
     elif len(parameters) == 5:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -541,17 +543,22 @@ def add_missing(model: str,
                                 print(f'{parameters[3]} = {param_data[3][m]}, ', end='')
                                 print(f'{parameters[4]} = {param_data[4][n]}')
 
-                                check_low = np.isinf(np.sum(flux[i-1, j, k, m, n, ...]))
-                                check_up = np.isinf(np.sum(flux[i+1, j, k, m, n, ...]))
+                                if 0 < i < grid_shape[0]-1:
+                                    check_low = np.isinf(np.sum(flux[i-1, j, k, m, n, ...]))
+                                    check_up = np.isinf(np.sum(flux[i+1, j, k, m, n, ...]))
 
-                                # Linear scaling of the intermediate Teff point
-                                scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                          (param_data[0][i+1] - param_data[0][i-1])
+                                    # Linear scaling of the intermediate Teff point
+                                    scaling = (param_data[0][i] - param_data[0][i-1]) / \
+                                              (param_data[0][i+1] - param_data[0][i-1])
 
-                                if 0 < i < grid_shape[0]-1 and not check_low and not check_up:
-                                    flux_low = flux[i-1, j, k, m, n, ...]
-                                    flux_up = flux[i+1, j, k, m, n, ...]
-                                    flux[i, j, k, m, n, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                    if not check_low and not check_up:
+                                        flux_low = flux[i-1, j, k, m, n, ...]
+                                        flux_up = flux[i+1, j, k, m, n, ...]
+                                        flux[i, j, k, m, n, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                        count_interp += 1
+
+                                    else:
+                                        find_missing[i, j, k, m, n] = True
 
                                 else:
                                     find_missing[i, j, k, m, n] = True
@@ -581,7 +588,6 @@ def add_missing(model: str,
             flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
 
             count = 0
-            count_missing = 0
 
             for i in range(grid_shape[0]):
                 for j in range(grid_shape[1]):
@@ -593,6 +599,7 @@ def add_missing(model: str,
 
                                 elif np.isinf(np.sum(flux[i, j, k, m, n, ...])):
                                     flux[i, j, k, m, n, :] = flux_int[count, :]
+                                    count_interp += 1
 
                                 count += 1
 
@@ -608,11 +615,6 @@ def add_missing(model: str,
                         print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
                         print(f'{parameters[3]} = {new_points[3][i]}, ', end='')
                         print(f'{parameters[4]} = {new_points[4][i]}')
-
-            count_interp = np.sum(find_missing) - count_missing
-
-        else:
-            count_interp = 0
 
     else:
         raise ValueError('The add_missing function is currently not compatible with more than 5 '
