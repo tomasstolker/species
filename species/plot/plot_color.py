@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator
 
 from species.core import box
 from species.read import read_object
@@ -432,11 +432,15 @@ def plot_color_magnitude(boxes: list,
                 objcolor1 = objcolor1[:, 0]
 
             if objcolor2.ndim == 2:
-                print(f'Found {objcolor2.shape[1]} values for filter {item[1]} of {item[0]}')
+                print(f'Found {objcolor2.shape[1]} values for filter {item[2]} of {item[0]}')
                 print(f'so using the first value:  {objcolor2[0, 0]} +/- {objcolor2[1, 0]} mag')
                 objcolor2 = objcolor2[:, 0]
 
             abs_mag, abs_err = objdata.get_absmag(item[3])
+
+            if isinstance(abs_mag, np.ndarray):
+                abs_mag = abs_mag[0]
+                abs_err = abs_err[0]
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
             x_color = objcolor1[0]-objcolor2[0]
@@ -898,17 +902,17 @@ def plot_color_color(boxes: list,
                 objphot1 = objphot1[:, 0]
 
             if objphot2.ndim == 2:
-                print(f'Found {objphot2.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot2.shape[1]} values for filter {item[1][1]} of {item[0]}')
                 print(f'so using the first value:  {objphot2[0, 0]} +/- {objphot2[1, 0]} mag')
                 objphot2 = objphot2[:, 0]
 
             if objphot3.ndim == 2:
-                print(f'Found {objphot3.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot3.shape[1]} values for filter {item[2][0]} of {item[0]}')
                 print(f'so using the first value:  {objphot3[0, 0]} +/- {objphot3[1, 0]} mag')
                 objphot3 = objphot3[:, 0]
 
             if objphot4.ndim == 2:
-                print(f'Found {objphot4.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot4.shape[1]} values for filter {item[2][1]} of {item[0]}')
                 print(f'so using the first value:  {objphot4[0, 0]} +/- {objphot4[1, 0]} mag')
                 objphot4 = objphot4[:, 0]
 

@@ -137,7 +137,7 @@ class Database:
 
     @typechecked
     def add_companion(self,
-                      name: Union[Optional[str], Optional[List[str]]]) -> None:
+                      name: Union[Optional[str], Optional[List[str]]] = None) -> None:
         """
         Function for adding the magnitudes of directly imaged planets and brown dwarfs from
         :class:`~species.data.companions.get_data` to the database.
@@ -927,9 +927,10 @@ class Database:
 
         print(' [DONE]')
 
+    @typechecked
     def add_spectrum(self,
-                     spec_library,
-                     sptypes=None):
+                     spec_library: str,
+                     sptypes: Optional[List[str]] = None) -> None:
         """
         Parameters
         ----------

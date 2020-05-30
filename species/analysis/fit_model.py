@@ -32,7 +32,7 @@ from species.util import read_util
 def lnprior(param: np.ndarray,
             bounds: dict,
             param_index: Dict[str, int],
-            prior: Optional[Tuple[str, float, float]] = None):
+            prior: Optional[Dict[str, Tuple[float, float]]] = None):
     """
     Internal function for calculating the log prior.
 
@@ -44,10 +44,12 @@ def lnprior(param: np.ndarray,
         Dictionary with the parameter boundaries.
     param_index : dict(str, int)
         Dictionary with the parameter indices of ``param``.
-    prior : tuple(str, float, float), None
-        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-        ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-        The parameter is not used if set to ``None``.
+    prior : dict(str, tuple(float, float)), None
+        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+        for any of the atmosphere or calibration parameters, e.g.
+        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+        3 Mjup. The parameter is not used if set to ``None``.
 
     Returns
     -------
@@ -60,20 +62,22 @@ def lnprior(param: np.ndarray,
     for key, value in bounds.items():
 
         if value[0] <= param[param_index[key]] <= value[1]:
-
-            if prior is not None and prior[0] == 'mass' and key == 'logg':
-                modeldict = {'logg': param[param_index['logg']],
-                             'radius': param[param_index['radius']]}
-
-                mass = read_util.get_mass(modeldict)
-                ln_prior += -0.5 * (mass - prior[1])**2 / prior[2]**2
-
-            else:
-                ln_prior += 0.
+            ln_prior += 0.
 
         else:
             ln_prior = -np.inf
             break
+
+    if prior is not None:
+        for key, value in prior.items():
+            if key == 'mass':
+                mass = read_util.get_mass({'logg': param[param_index['logg']],
+                                           'radius': param[param_index['radius']]})
+
+                ln_prior += -0.5 * (mass - value[0])**2 / value[1]**2
+
+            else:
+                ln_prior += -0.5 * (param[param_index[key]] - value[0])**2 / value[1]**2
 
     return ln_prior
 
@@ -269,7 +273,7 @@ def lnprob(param: np.ndarray,
            param_index: Dict[str, int],
            objphot: List[Optional[np.ndarray]],
            distance: Tuple[float, float],
-           prior: Optional[Tuple[str, float, float]],
+           prior: Optional[Dict[str, Tuple[float, float]]],
            spectrum: dict,
            modelphot: Optional[Union[List[read_model.ReadModel],
                                      List[photometry.SyntheticPhotometry]]],
@@ -294,10 +298,12 @@ def lnprob(param: np.ndarray,
         parameter is set to ``None``.
     distance : tuple(float, float)
         Distance and uncertainty (pc).
-    prior : tuple(str, float, float), None
-        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-        ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-        The parameter is not used if set to ``None``.
+    prior : dict(str, tuple(float, float)), None
+        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+        for any of the atmosphere or calibration parameters, e.g.
+        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+        3 Mjup. The parameter is not used if set to ``None``.
     spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
         Dictionary with the spectra stored as wavelength (um), flux (W m-2 um-1),
         and error (W m-2 um-1). Optionally the covariance matrix, the inverse of
@@ -625,7 +631,7 @@ class FitModel:
                                                        Optional[float]]]]],
                  nwalkers: int = 200,
                  nsteps: int = 1000,
-                 prior: Optional[Tuple[str, float, float]] = None) -> None:
+                 prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run the MCMC sampler of ``emcee``.
 
@@ -640,10 +646,12 @@ class FitModel:
             Number of walkers.
         nsteps : int
             Number of steps per walker.
-        prior : tuple(str, float, float), None
-            Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-            ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-            The parameter is not used if set to ``None``.
+        prior : dict(str, tuple(float, float)), None
+            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+            for any of the atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -759,7 +767,8 @@ class FitModel:
     def run_multinest(self,
                       tag: str,
                       n_live_points: int = 1000,
-                      output: str = 'multinest/') -> None:
+                      output: str = 'multinest/',
+                      prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -783,6 +792,12 @@ class FitModel:
             Number of live points.
         output : str
             Path that is used for the output files from MultiNest.
+        prior : dict(str, tuple(float, float)), None
+            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+            for any of the atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -902,6 +917,17 @@ class FitModel:
 
                     if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
                         return -np.inf
+
+            if prior is not None:
+                for key, value in prior.items():
+                    if key == 'mass':
+                        mass = read_util.get_mass({'logg': cube[cube_index['logg']],
+                                                   'radius': cube[cube_index['radius']]})
+
+                        ln_like += -0.5 * (mass - value[0])**2 / value[1]**2
+
+                    else:
+                        ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
             for i, obj_item in enumerate(self.objphot):
                 if self.model == 'planck':

@@ -441,7 +441,8 @@ def field_bounds_ticks(field_range):
 def dust_cross_section(wavelength: float,
                        n_index: float,
                        k_index: float,
-                       radius: float) -> np.float64:
+                       radius: float,
+                       sigma_n: float = 2.) -> np.float64:
     """
     Function for calculating the extinction cross section of dust grains.
 
@@ -455,14 +456,14 @@ def dust_cross_section(wavelength: float,
         Imaginary part of the refractive index.
     radius : float
         Geometric radius of the grain size distribution (um).
+    sigma_n : float
+        Geometric standard deviation (dimensionless). The default value is 2.
 
     Returns
     -------
     float
         Extinction cross section (um2)
     """
-
-    sigma_n = 2.  # (dimensionless)
 
     r_lognorm = np.logspace(np.log10(1e-2*radius), np.log10(1e2*radius), 100)  # (um)
 
