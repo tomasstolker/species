@@ -325,7 +325,8 @@ class ReadPlanck:
                               filter_mag=filter_mag,
                               color=list_color,
                               magnitude=list_mag,
-                              sptype=temperatures)
+                              sptype=temperatures,
+                              names=None)
 
     @staticmethod
     @typechecked
@@ -376,4 +377,5 @@ class ReadPlanck:
                               filters=filters_colors,
                               color1=list_color_1,
                               color2=list_color_2,
-                              sptype=temperatures)
+                              sptype=temperatures,
+                              names=None)

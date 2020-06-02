@@ -209,22 +209,12 @@ class ReadCalibration:
             wavelength_new = read_util.create_wavelengths((wavelength[0], wavelength[-1]),
                                                           spec_res)
 
-            value_error = True
-
-            while value_error:
-                try:
-                    flux_new, error_new = spectres.spectres(wavelength_new,
-                                                            wavelength,
-                                                            flux,
-                                                            spec_errs=error,
-                                                            fill=0.,
-                                                            verbose=False)
-
-                    value_error = False
-
-                except ValueError:
-                    wavelength_new = wavelength_new[1:-1]
-                    value_error = True
+            flux_new, error_new = spectres.spectres(wavelength_new,
+                                                    wavelength,
+                                                    flux,
+                                                    spec_errs=error,
+                                                    fill=0.,
+                                                    verbose=True)
 
             wavelength = wavelength_new
             flux = flux_new

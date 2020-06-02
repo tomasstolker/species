@@ -25,14 +25,14 @@ from species.analysis import photometry
 from species.data import database
 from species.core import constants
 from species.read import read_model, read_object, read_planck
-from species.util import read_util
+from species.util import read_util, dust_util
 
 
 @typechecked
 def lnprior(param: np.ndarray,
             bounds: dict,
             param_index: Dict[str, int],
-            prior: Optional[Tuple[str, float, float]] = None):
+            prior: Optional[Dict[str, Tuple[float, float]]] = None):
     """
     Internal function for calculating the log prior.
 
@@ -44,10 +44,12 @@ def lnprior(param: np.ndarray,
         Dictionary with the parameter boundaries.
     param_index : dict(str, int)
         Dictionary with the parameter indices of ``param``.
-    prior : tuple(str, float, float), None
-        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-        ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-        The parameter is not used if set to ``None``.
+    prior : dict(str, tuple(float, float)), None
+        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+        for any of the atmosphere or calibration parameters, e.g.
+        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+        3 Mjup. The parameter is not used if set to ``None``.
 
     Returns
     -------
@@ -60,20 +62,22 @@ def lnprior(param: np.ndarray,
     for key, value in bounds.items():
 
         if value[0] <= param[param_index[key]] <= value[1]:
-
-            if prior is not None and prior[0] == 'mass' and key == 'logg':
-                modeldict = {'logg': param[param_index['logg']],
-                             'radius': param[param_index['radius']]}
-
-                mass = read_util.get_mass(modeldict)
-                ln_prior += -0.5 * (mass - prior[1])**2 / prior[2]**2
-
-            else:
-                ln_prior += 0.
+            ln_prior += 0.
 
         else:
             ln_prior = -np.inf
             break
+
+    if prior is not None:
+        for key, value in prior.items():
+            if key == 'mass':
+                mass = read_util.get_mass({'logg': param[param_index['logg']],
+                                           'radius': param[param_index['radius']]})
+
+                ln_prior += -0.5 * (mass - value[0])**2 / value[1]**2
+
+            else:
+                ln_prior += -0.5 * (param[param_index[key]] - value[0])**2 / value[1]**2
 
     return ln_prior
 
@@ -269,7 +273,7 @@ def lnprob(param: np.ndarray,
            param_index: Dict[str, int],
            objphot: List[Optional[np.ndarray]],
            distance: Tuple[float, float],
-           prior: Optional[Tuple[str, float, float]],
+           prior: Optional[Dict[str, Tuple[float, float]]],
            spectrum: dict,
            modelphot: Optional[Union[List[read_model.ReadModel],
                                      List[photometry.SyntheticPhotometry]]],
@@ -294,10 +298,12 @@ def lnprob(param: np.ndarray,
         parameter is set to ``None``.
     distance : tuple(float, float)
         Distance and uncertainty (pc).
-    prior : tuple(str, float, float), None
-        Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-        ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-        The parameter is not used if set to ``None``.
+    prior : dict(str, tuple(float, float)), None
+        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+        for any of the atmosphere or calibration parameters, e.g.
+        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+        3 Mjup. The parameter is not used if set to ``None``.
     spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
         Dictionary with the spectra stored as wavelength (um), flux (W m-2 um-1),
         and error (W m-2 um-1). Optionally the covariance matrix, the inverse of
@@ -357,11 +363,11 @@ class FitModel:
                  inc_spec: Union[bool, List[str]] = True,
                  fit_corr: Optional[List[str]] = None) -> None:
         """
-        A grid of spectra is linearly interpolated for each photometric point and spectrum while
+        The grid of spectra is linearly interpolated for each photometric point and spectrum while
         taking into account the filter profile, spectral resolution, and wavelength sampling.
-        Therefore, when fitting spectra from a model grid, the computation time of thus initial
-        interpolation depends on the wavelength range and spectral resolution of the spectra that
-        are stored in the database, and the prior boundaries that are chosen with ``bounds``.
+        Therefore, when fitting spectra from a model grid, the computation time of the
+        interpolation will depend on the wavelength range, spectral resolution, and parameter
+        space of the spectra that are stored in the database.
 
         Parameters
         ----------
@@ -372,7 +378,7 @@ class FitModel:
         model : str
             Atmospheric model (e.g. 'bt-settl', 'exo-rem', or 'planck').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the priors and the grid interpolation.
+            The boundaries that are used for the uniform priors.
 
             Atmospheric model parameters (e.g. ``model='bt-settl``):
 
@@ -417,6 +423,29 @@ class FitModel:
 
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
+
+            Dust extinction parameters:
+
+                 - Extinction by dust can be fitted for grains with a log-normal size distribution,
+                   a crystalline MgSiO3 composition, and a homogeneous, spherical structure.
+
+                 - The size distribution is parameterized with a mean geometric radius
+                   (``dust_radius`` in um) and a geometric standard deviation (``dust_sigma``,
+                   dimensionless).
+
+                 - The extinction (``dust_ext``) is fitted in the V band (A_V in mag) and the
+                   wavelength-dependent extinction cross sections are interpolated from a
+                   pre-tabulated grid.
+
+                 - The prior boundaries of ``dust_radius``, ``dust_sigma``, and ``dust_ext`` should
+                   be provided in the ``bounds`` dictionary, for example
+                   ``bounds={'dust_radius': (0.01, 10.), 'dust_sigma': (1.2, 10.),
+                   'dust_ext': (0., 5.)}``.
+
+                 - A uniform prior is used for ``dust_sigma`` and ``dust_ext``, and a log-uniform
+                   prior for ``dust_radius``.
+                 
+                 - Only supported by `run_multinest`.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none
@@ -501,40 +530,51 @@ class FitModel:
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append('radius')
 
-        # Include photometric data
+        # Select filters and spectra
 
-        if inc_phot:
-            if isinstance(inc_phot, bool):
+        if isinstance(inc_phot, bool):
+            if inc_phot:
                 # Select all filters if True
                 species_db = database.Database()
                 objectbox = species_db.get_object(object_name)
                 inc_phot = objectbox.filters
 
-            self.objphot = []
-            self.modelphot = []
+            else:
+                inc_phot = []
 
-            for item in inc_phot:
-                if self.model == 'planck':
-                    # Create SyntheticPhotometry objects when fitting a Planck function
-                    print(f'Creating synthetic photometry: {item}...', end='', flush=True)
-                    self.modelphot.append(photometry.SyntheticPhotometry(item))
+        if isinstance(inc_spec, bool):
+            if inc_spec:
+                # Select all filters if True
+                species_db = database.Database()
+                objectbox = species_db.get_object(object_name)
+                inc_spec = list(objectbox.spectrum.keys())
 
-                else:
-                    # Or interpolate the model grid for each filter
-                    print(f'Interpolating {item}...', end='', flush=True)
-                    readmodel = read_model.ReadModel(self.model, filter_name=item)
-                    readmodel.interpolate_grid(self.bounds)
-                    self.modelphot.append(readmodel)
+            else:
+                inc_spec = []
 
-                print(f' [DONE]')
+        # Include photometric data
 
-                # Store the flux and uncertainty for each filter
-                obj_phot = self.object.get_photometry(item)
-                self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+        self.objphot = []
+        self.modelphot = []
 
-        else:
-            self.objphot = []
-            self.modelphot = []
+        for item in inc_phot:
+            if self.model == 'planck':
+                # Create SyntheticPhotometry objects when fitting a Planck function
+                print(f'Creating synthetic photometry: {item}...', end='', flush=True)
+                self.modelphot.append(photometry.SyntheticPhotometry(item))
+
+            else:
+                # Or interpolate the model grid for each filter
+                print(f'Interpolating {item}...', end='', flush=True)
+                readmodel = read_model.ReadModel(self.model, filter_name=item)
+                readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
+                self.modelphot.append(readmodel)
+
+            print(' [DONE]')
+
+            # Store the flux and uncertainty for each filter
+            obj_phot = self.object.get_photometry(item)
+            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
         # Include spectroscopic data
 
@@ -542,17 +582,15 @@ class FitModel:
             # Select all spectra
             self.spectrum = self.object.get_spectrum()
 
-            if isinstance(inc_spec, list):
-                # Select the spectrum names that are not in inc_spec
-                spec_remove = []
+            # Select the spectrum names that are not in inc_spec
+            spec_remove = []
+            for item in self.spectrum:
+                if item not in inc_spec:
+                    spec_remove.append(item)
 
-                for item in self.spectrum:
-                    if item not in inc_spec:
-                        spec_remove.append(item)
-
-                # Remove the spectra that are not included in inc_spec
-                for item in spec_remove:
-                    del self.spectrum[item]
+            # Remove the spectra that are not included in inc_spec
+            for item in spec_remove:
+                del self.spectrum[item]
 
             self.n_corr_par = 0
 
@@ -577,14 +615,13 @@ class FitModel:
 
                     readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
 
-                    readmodel.interpolate_grid(self.bounds,
-                                               wavel_resample=self.spectrum[key][0][:, 0],
+                    readmodel.interpolate_grid(wavel_resample=self.spectrum[key][0][:, 0],
                                                smooth=True,
                                                spec_res=self.spectrum[key][3])
 
                     self.modelspec.append(readmodel)
 
-                    print(f' [DONE]')
+                    print(' [DONE]')
 
         else:
             self.spectrum = {}
@@ -607,6 +644,21 @@ class FitModel:
                 if item in self.bounds:
                     del self.bounds[item]
 
+        if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and \
+                'dust_ext' in self.bounds:
+            self.cross_sections, self.dust_radius, self.dust_sigma = \
+                dust_util.interpolate_dust(inc_phot, inc_spec, self.spectrum)
+
+            self.modelpar.append('dust_radius')
+            self.modelpar.append('dust_sigma')
+            self.modelpar.append('dust_ext')
+
+            self.bounds['dust_radius'] = (np.log10(self.bounds['dust_radius'][0]),
+                                          np.log10(self.bounds['dust_radius'][1]))
+
+        else:
+            self.cross_sections = None
+
         print(f'Fitting {len(self.modelpar)} parameters:')
 
         for item in self.modelpar:
@@ -626,7 +678,7 @@ class FitModel:
                                                        Optional[float]]]]],
                  nwalkers: int = 200,
                  nsteps: int = 1000,
-                 prior: Optional[Tuple[str, float, float]] = None) -> None:
+                 prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run the MCMC sampler of ``emcee``.
 
@@ -641,10 +693,12 @@ class FitModel:
             Number of walkers.
         nsteps : int
             Number of steps per walker.
-        prior : tuple(str, float, float), None
-            Gaussian prior on one of the parameters. Currently only possible for the mass, e.g.
-            ``('mass', 13., 3.)`` for an expected mass of 13 Mjup with an uncertainty of 3 Mjup.
-            The parameter is not used if set to ``None``.
+        prior : dict(str, tuple(float, float)), None
+            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+            for any of the atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -703,6 +757,15 @@ class FitModel:
             if item in guess:
                 del guess[item]
 
+        if 'dust_radius' in self.bounds:
+            sigma['dust_radius'] = 0.01  # (dex)
+
+        if 'dust_sigma' in self.bounds:
+            sigma['dust_sigma'] = 0.01
+
+        if 'dust_mag' in self.bounds:
+            sigma['dust_mag'] = 0.01
+
         initial = np.zeros((nwalkers, ndim))
 
         for i, item in enumerate(self.modelpar):
@@ -756,10 +819,12 @@ class FitModel:
                                distance=self.distance[0],
                                spec_labels=spec_labels)
 
+    @typechecked
     def run_multinest(self,
-                      tag,
-                      n_live_points=4000,
-                      output='multinest/'):
+                      tag: str,
+                      n_live_points: int = 1000,
+                      output: str = 'multinest/',
+                      prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -783,6 +848,12 @@ class FitModel:
             Number of live points.
         output : str
             Path that is used for the output files from MultiNest.
+        prior : dict(str, tuple(float, float)), None
+            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
+            for any of the atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
+            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -859,6 +930,7 @@ class FitModel:
             err_offset = {}
             corr_len = {}
             corr_amp = {}
+            dust_param = {}
 
             for item in self.bounds:
                 if item[:8] == 'scaling_' and item[8:] in self.spectrum:
@@ -872,6 +944,9 @@ class FitModel:
 
                 elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
                     corr_amp[item[9:]] = cube[cube_index[item]]
+
+                elif item[:5] == 'dust_':
+                    dust_param[item] = cube[cube_index[item]]
 
                 else:
                     param_dict[item] = cube[cube_index[item]]
@@ -903,6 +978,23 @@ class FitModel:
                     if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
                         return -np.inf
 
+            if prior is not None:
+                for key, value in prior.items():
+                    if key == 'mass':
+                        mass = read_util.get_mass({'logg': cube[cube_index['logg']],
+                                                   'radius': cube[cube_index['radius']]})
+
+                        ln_like += -0.5 * (mass - value[0])**2 / value[1]**2
+
+                    else:
+                        ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
+
+            if len(dust_param) == 3:
+                cross_tmp = self.cross_sections['Generic/Bessell.V'](
+                    dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+
+                n_grains = dust_param['dust_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+
             for i, obj_item in enumerate(self.objphot):
                 if self.model == 'planck':
                     readplanck = read_planck.ReadPlanck(filter_name=self.modelphot[i].filter_name)
@@ -911,6 +1003,11 @@ class FitModel:
                 else:
                     phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))
                     phot_flux *= flux_scaling
+
+                if len(dust_param) == 3:
+                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
+                        dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                    phot_flux *= np.exp(-cross_tmp*n_grains)
 
                 if obj_item.ndim == 1:
                     ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
@@ -952,6 +1049,13 @@ class FitModel:
                     model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
                     model_flux *= flux_scaling
 
+                if len(dust_param) == 3:
+                    for j, cross_item in enumerate(self.cross_sections[item]):
+                        cross_tmp = cross_item(dust_param['dust_sigma'],
+                                               10.**dust_param['dust_radius'])
+
+                        model_flux[j] *= np.exp(-cross_tmp*n_grains)
+
                 if self.spectrum[item][2] is not None:
                     dot_tmp = np.dot(data_flux-model_flux,
                                      np.dot(data_cov_inv, data_flux-model_flux))
@@ -989,7 +1093,35 @@ class FitModel:
                         resume=False,
                         n_live_points=n_live_points)
 
-        samples = np.loadtxt(f'{output}/post_equal_weights.dat')
+        # Create the Analyzer object
+        analyzer = pymultinest.analyse.Analyzer(len(self.modelpar), outputfiles_basename=output)
+
+        # Get a dictionary with the ln(Z) and its errors, the individual modes and their parameters
+        # quantiles of the parameter posteriors
+        stats = analyzer.get_stats()
+
+        # Nested sampling global log-evidence
+        ln_z = stats['nested sampling global log-evidence']
+        ln_z_error = stats['nested sampling global log-evidence error']
+        print(f'Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+
+        # Nested sampling global log-evidence
+        ln_z = stats['nested importance sampling global log-evidence']
+        ln_z_error = stats['nested importance sampling global log-evidence error']
+        print(f'Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+
+        # Get the best-fit (highest likelihood) point
+        print('Sample with the highest likelihood:')
+        best_params = analyzer.get_best_fit()
+
+        max_lnlike = best_params['log_likelihood']
+        print(f'   - Log-likelihood = {max_lnlike:.2f}')
+
+        for i, item in enumerate(best_params['parameters']):
+            print(f'   - {self.modelpar[i]} = {item:.2f}')
+
+        # Get the posterior samples
+        samples = analyzer.get_equal_weighted_posterior()
 
         spec_labels = []
         for item in self.spectrum:

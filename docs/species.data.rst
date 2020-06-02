@@ -36,6 +36,14 @@ species.data.btsettl module
    :undoc-members:
    :show-inheritance:
 
+species.data.btsettl\_cifist module
+-----------------------------------
+
+.. automodule:: species.data.btsettl_cifist
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.companions module
 ------------------------------
 

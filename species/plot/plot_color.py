@@ -7,7 +7,6 @@ import math
 
 from typing import Union, Optional, Tuple, List
 
-import PyMieScatt
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -15,10 +14,11 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar
+from matplotlib.ticker import AutoMinorLocator
 
 from species.core import box
 from species.read import read_object
-from species.util import plot_util
+from species.util import plot_util, dust_util
 
 
 @typechecked
@@ -155,6 +155,9 @@ def plot_color_magnitude(boxes: list,
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
+    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
 
@@ -263,56 +266,53 @@ def plot_color_magnitude(boxes: list,
         planck_count = 0
 
         for j, item in enumerate(planck):
-
             if planck_count == 0:
                 label = plot_util.model_name(item.library)
+            else:
+                label = None
 
-                ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[planck_count],
-                         linewidth=0.6, color='black', label=label, zorder=0)
+            ax1.plot(item.color, item.magnitude, linestyle='--', linewidth=0.5,
+                     color='black', label=label, zorder=0)
 
-                if teff_labels is not None:
-                    interp_magnitude = interp1d(item.sptype, item.magnitude)
-                    interp_color = interp1d(item.sptype, item.color)
+            if teff_labels is not None and planck_count == 0:
+                interp_magnitude = interp1d(item.sptype, item.magnitude)
+                interp_color = interp1d(item.sptype, item.color)
 
-                    for i, teff_item in enumerate(teff_labels):
-                        if isinstance(teff_item, tuple):
-                            teff_val = teff_item[0]
-                            teff_pos = teff_item[1]
+                for i, teff_item in enumerate(teff_labels):
+                    if isinstance(teff_item, tuple):
+                        teff_val = teff_item[0]
+                        teff_pos = teff_item[1]
+
+                    else:
+                        teff_val = teff_item
+                        teff_pos = 'right'
+
+                    if j == 0 or (j > 0 and teff_val < 20.):
+                        pos_color = interp_color(teff_val)
+                        pos_mag = interp_magnitude(teff_val)
+
+                        if teff_pos == 'left':
+                            teff_ha = 'right'
+                            teff_xytext = (pos_color-0.05, pos_mag)
 
                         else:
-                            teff_val = teff_item
-                            teff_pos = 'right'
+                            teff_ha = 'left'
+                            teff_xytext = (pos_color+0.05, pos_mag)
 
-                        if j == 0 or (j > 0 and teff_val < 20.):
-                            pos_color = interp_color(teff_val)
-                            pos_mag = interp_magnitude(teff_val)
+                        teff_label = f'{int(teff_val)} K'
 
-                            if teff_pos == 'left':
-                                teff_ha = 'right'
-                                teff_xytext = (pos_color-0.05, pos_mag)
+                        xlim = ax1.get_xlim()
+                        ylim = ax1.get_ylim()
 
-                            else:
-                                teff_ha = 'left'
-                                teff_xytext = (pos_color+0.05, pos_mag)
+                        if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
+                                ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
 
-                            teff_label = f'{int(teff_val)} K'
+                            ax1.scatter(pos_color, pos_mag, c='black', s=15, ec='none', zorder=0)
 
-                            xlim = ax1.get_xlim()
-                            ylim = ax1.get_ylim()
-
-                            if xlim[0]+0.2 < pos_color < xlim[1]-0.2 and \
-                                    ylim[1]+0.2 < pos_mag < ylim[0]-0.2:
-
-                                ax1.scatter(pos_color, pos_mag, c='black', s=15,
-                                            edgecolor='none', zorder=0)
-
-                                ax1.annotate(teff_label, (pos_color, pos_mag),
-                                             color='black', fontsize=9,
-                                             xytext=teff_xytext, zorder=3, ha=teff_ha, va='center')
-
-            else:
-                ax1.plot(item.color, item.magnitude, linestyle=model_linestyle[planck_count],
-                         linewidth=0.6, color='black', zorder=0)
+                            if planck_count == 0:
+                                ax1.annotate(teff_label, (pos_color, pos_mag), color='black',
+                                             fontsize=9, xytext=teff_xytext, zorder=3, ha=teff_ha,
+                                             va='center')
 
             planck_count += 1
 
@@ -326,23 +326,24 @@ def plot_color_magnitude(boxes: list,
             sptype = item.sptype
             color = item.color
             magnitude = item.magnitude
-
-            indices = np.where(sptype != 'None')[0]
-
-            sptype = sptype[indices]
-            color = color[indices]
-            magnitude = magnitude[indices]
-
-            spt_disc = plot_util.sptype_substellar(sptype, color.shape)
-
-            _, unique = np.unique(color, return_index=True)
-
-            sptype = sptype[unique]
-            color = color[unique]
-            magnitude = magnitude[unique]
-            spt_disc = spt_disc[unique]
+            names = item.names
 
             if item.object_type in ['field', None]:
+                indices = np.where(sptype != 'None')[0]
+
+                sptype = sptype[indices]
+                color = color[indices]
+                magnitude = magnitude[indices]
+
+                spt_disc = plot_util.sptype_substellar(sptype, color.shape)
+
+                _, unique = np.unique(color, return_index=True)
+
+                sptype = sptype[unique]
+                color = color[unique]
+                magnitude = magnitude[unique]
+                spt_disc = spt_disc[unique]
+
                 scat = ax1.scatter(color, magnitude, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
@@ -355,6 +356,17 @@ def plot_color_magnitude(boxes: list,
                 cb.set_ticklabels(ticklabels)
 
             elif item.object_type == 'young':
+                if objects is not None:
+                    object_names = []
+
+                    for obj_item in objects:
+                        object_names.append(obj_item[0])
+
+                    indices = plot_util.remove_color_duplicates(object_names, names)
+
+                    color = color[indices]
+                    magnitude = magnitude[indices]
+
                 ax1.plot(color, magnitude, marker='s', ms=4, linestyle='none', alpha=0.7,
                          color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
@@ -364,7 +376,7 @@ def plot_color_magnitude(boxes: list,
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+            ext_1, ext_2 = dust_util.calc_reddening(item[0],
                                                     item[1],
                                                     composition=item[2],
                                                     structure='crystalline',
@@ -390,16 +402,16 @@ def plot_color_magnitude(boxes: list,
                 dust_species = 'Fe'
 
             if (item[3]).is_integer():
-                red_label = rf'{dust_species} ({item[3]:.0f} $\mu$m)'
+                red_label = f'{dust_species} ({item[3]:.0f} µm)'
             else:
-                red_label = rf'{dust_species} ({item[3]:.1f} $\mu$m)'
+                red_label = f'{dust_species} ({item[3]:.1f} µm)'
 
             text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
                                 xytext=(7.*delta_y/vector_len, 7.*delta_x/vector_len),
                                 textcoords='offset points', fontsize=8., color='black',
                                 ha='center', va='center')
 
-            line, = ax1.plot([item[4][0], x_pos], [item[4][1], y_pos], '-', color='white')
+            ax1.plot([item[4][0], x_pos], [item[4][1], y_pos], '-', color='white')
 
             sp1 = ax1.transData.transform_point((item[4][0], item[4][1]))
             sp2 = ax1.transData.transform_point((x_pos, y_pos))
@@ -420,11 +432,15 @@ def plot_color_magnitude(boxes: list,
                 objcolor1 = objcolor1[:, 0]
 
             if objcolor2.ndim == 2:
-                print(f'Found {objcolor2.shape[1]} values for filter {item[1]} of {item[0]}')
+                print(f'Found {objcolor2.shape[1]} values for filter {item[2]} of {item[0]}')
                 print(f'so using the first value:  {objcolor2[0, 0]} +/- {objcolor2[1, 0]} mag')
                 objcolor2 = objcolor2[:, 0]
 
             abs_mag, abs_err = objdata.get_absmag(item[3])
+
+            if isinstance(abs_mag, np.ndarray):
+                abs_mag = abs_mag[0]
+                abs_err = abs_err[0]
 
             colorerr = math.sqrt(objcolor1[1]**2+objcolor2[1]**2)
             x_color = objcolor1[0]-objcolor2[0]
@@ -443,9 +459,6 @@ def plot_color_magnitude(boxes: list,
             ax1.errorbar(x_color, abs_mag, yerr=abs_err, xerr=colorerr, zorder=3, **kwargs)
 
             if companion_labels:
-                x_range = ax1.get_xlim()
-                y_range = ax1.get_ylim()
-
                 if len(item) > 4:
                     kwargs = item[5]
 
@@ -604,6 +617,9 @@ def plot_color_color(boxes: list,
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
+    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
 
@@ -713,8 +729,8 @@ def plot_color_color(boxes: list,
             if planck_count == 0:
                 label = plot_util.model_name(item.library)
 
-                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[planck_count],
-                         linewidth=0.6, color='black', label=label, zorder=0)
+                ax1.plot(item.color1, item.color2, ls='--', lw=0.6, color='black',
+                         label=label, zorder=0)
 
                 if teff_labels is not None:
                     interp_color1 = interp1d(item.sptype, item.color1)
@@ -757,8 +773,7 @@ def plot_color_color(boxes: list,
                                              xytext=teff_xytext, zorder=3, ha=teff_ha, va='center')
 
             else:
-                ax1.plot(item.color1, item.color2, linestyle=model_linestyle[planck_count],
-                         linewidth=0.6, color='black', zorder=0)
+                ax1.plot(item.color1, item.color2, ls='--', lw=0.5, color='black', zorder=0)
 
             planck_count += 1
 
@@ -770,24 +785,25 @@ def plot_color_color(boxes: list,
 
         for item in empirical:
             sptype = item.sptype
+            names = item.names
             color1 = item.color1
             color2 = item.color2
 
-            indices = np.where(sptype != 'None')[0]
-
-            sptype = sptype[indices]
-            color1 = color1[indices]
-            color2 = color2[indices]
-
-            spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
-            _, unique = np.unique(color1, return_index=True)
-
-            sptype = sptype[unique]
-            color1 = color1[unique]
-            color2 = color2[unique]
-            spt_disc = spt_disc[unique]
-
             if item.object_type in ['field', None]:
+                indices = np.where(sptype != 'None')[0]
+
+                sptype = sptype[indices]
+                color1 = color1[indices]
+                color2 = color2[indices]
+
+                spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
+                _, unique = np.unique(color1, return_index=True)
+
+                sptype = sptype[unique]
+                color1 = color1[unique]
+                color2 = color2[unique]
+                spt_disc = spt_disc[unique]
+
                 scat = ax1.scatter(color1, color2, c=spt_disc, cmap=cmap, norm=norm, s=50,
                                    alpha=0.7, edgecolor='none', zorder=2)
 
@@ -800,6 +816,17 @@ def plot_color_color(boxes: list,
                 cb.set_ticklabels(ticklabels)
 
             elif item.object_type == 'young':
+                if objects is not None:
+                    object_names = []
+
+                    for obj_item in objects:
+                        object_names.append(obj_item[0])
+
+                    indices = plot_util.remove_color_duplicates(object_names, names)
+
+                    color1 = color1[indices]
+                    color2 = color2[indices]
+
                 ax1.plot(color1, color2, marker='s', ms=4, linestyle='none', alpha=0.7,
                          color='gray', markeredgecolor='black', label='Young/low-gravity', zorder=2)
 
@@ -809,13 +836,13 @@ def plot_color_color(boxes: list,
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+            ext_1, ext_2 = dust_util.calc_reddening(item[0],
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',
                                                     radius=item[4])
 
-            ext_3, ext_4 = plot_util.calc_reddening(item[1],
+            ext_3, ext_4 = dust_util.calc_reddening(item[1],
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',
@@ -842,17 +869,17 @@ def plot_color_color(boxes: list,
                 dust_species = 'Fe'
 
             if item[4].is_integer():
-                red_label = rf'{dust_species} ({item[4]:.0f} $\mu$m)'
+                red_label = f'{dust_species} ({item[4]:.0f} µm)'
 
             else:
-                red_label = rf'{dust_species} ({item[4]:.1f} $\mu$m)'
+                red_label = f'{dust_species} ({item[4]:.1f} µm)'
 
             text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
                                 xytext=(-7.*delta_y/vector_len, 7.*delta_x/vector_len),
                                 textcoords='offset points', fontsize=8., color='black',
                                 ha='center', va='center')
 
-            line, = ax1.plot([item[5][0], x_pos], [item[5][1], y_pos], '-', color='white')
+            ax1.plot([item[5][0], x_pos], [item[5][1], y_pos], '-', color='white')
 
             sp1 = ax1.transData.transform_point((item[5][0], item[5][1]))
             sp2 = ax1.transData.transform_point((x_pos, y_pos))
@@ -875,17 +902,17 @@ def plot_color_color(boxes: list,
                 objphot1 = objphot1[:, 0]
 
             if objphot2.ndim == 2:
-                print(f'Found {objphot2.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot2.shape[1]} values for filter {item[1][1]} of {item[0]}')
                 print(f'so using the first value:  {objphot2[0, 0]} +/- {objphot2[1, 0]} mag')
                 objphot2 = objphot2[:, 0]
 
             if objphot3.ndim == 2:
-                print(f'Found {objphot3.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot3.shape[1]} values for filter {item[2][0]} of {item[0]}')
                 print(f'so using the first value:  {objphot3[0, 0]} +/- {objphot3[1, 0]} mag')
                 objphot3 = objphot3[:, 0]
 
             if objphot4.ndim == 2:
-                print(f'Found {objphot4.shape[1]} values for filter {item[1][0]} of {item[0]}')
+                print(f'Found {objphot4.shape[1]} values for filter {item[2][1]} of {item[0]}')
                 print(f'so using the first value:  {objphot4[0, 0]} +/- {objphot4[1, 0]} mag')
                 objphot4 = objphot4[:, 0]
 
@@ -909,9 +936,6 @@ def plot_color_color(boxes: list,
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, zorder=3, **kwargs)
 
             if companion_labels:
-                x_range = ax1.get_xlim()
-                y_range = ax1.get_ylim()
-
                 if len(item) > 3:
                     kwargs = item[4]
 

@@ -4,7 +4,7 @@ Module for plotting MCMC results.
 
 import os
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import corner
 import numpy as np
@@ -118,7 +118,7 @@ def plot_posterior(tag: str,
                    title: Optional[str] = None,
                    offset: Optional[Tuple[float, float]] = None,
                    title_fmt: str = '.2f',
-                   limits: Optional[Tuple[Tuple[float, float]]] = None,
+                   limits: Optional[List[Tuple[float, float]]] = None,
                    max_prob: bool = False,
                    vmr: bool = False,
                    inc_luminosity: bool = False,
@@ -138,7 +138,7 @@ def plot_posterior(tag: str,
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     title_fmt : str
         Format of the median and error values.
-    limits : tuple(tuple(float, float), ), None
+    limits : list(tuple(float, float), ), None
         Axis limits of all parameters. Automatically set if set to ``None``.
     max_prob : bool
         Plot the position of the sample with the maximum posterior probability.

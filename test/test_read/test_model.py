@@ -43,23 +43,23 @@ class TestModel:
                                          magnitude=False,
                                          smooth=True)
 
-        assert np.sum(model_box.wavelength) == pytest.approx(83.77689756715003, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(1.5697815415870652e-12, rel=self.limit, abs=0.)
+        assert np.sum(model_box.wavelength) == pytest.approx(92.26773310928259, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(1.634710686153774e-12, rel=self.limit, abs=0.)
 
         model_box = read_model.get_model(self.model_param,
                                          spec_res=100.,
                                          magnitude=True,
                                          smooth=True)
 
-        assert np.sum(model_box.wavelength) == pytest.approx(83.77689756715003, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(588.6995381002678, rel=self.limit, abs=0.)
+        assert np.sum(model_box.wavelength) == pytest.approx(92.26773310928259, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(650.054378183248, rel=self.limit, abs=0.)
 
     def test_get_data(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
         model_box = read_model.get_data(self.model_param)
 
         assert np.sum(model_box.wavelength) == pytest.approx(92.26773310928259, rel=self.limit, abs=0.)
-        assert np.sum(model_box.flux) == pytest.approx(1.6346965666899605e-12, rel=self.limit, abs=0.)
+        assert np.sum(model_box.flux) == pytest.approx(1.6346965666899607e-12, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
@@ -79,7 +79,7 @@ class TestModel:
         bounds = read_model.get_bounds()
 
         assert bounds['teff'] == (2000., 2500.)
-        assert bounds['logg'] == (0., 6.)
+        assert bounds['logg'] == (2.5, 5.5)
 
     def test_get_wavelengths(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')
@@ -92,7 +92,7 @@ class TestModel:
         points = read_model.get_points()
 
         assert np.sum(points['teff']) == 13500.
-        assert np.sum(points['logg']) == 39.
+        assert np.sum(points['logg']) == 28.
 
     def test_get_parameters(self):
         read_model = species.ReadModel('ames-cond', filter_name='Paranal/NACO.H')

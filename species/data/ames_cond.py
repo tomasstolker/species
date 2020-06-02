@@ -91,6 +91,10 @@ def add_ames_cond(input_path,
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
+                # Exclude low and high log(g) values because of many missing grid points
+                if logg_val < 2.5 or logg_val > 5.5:
+                    continue
+
                 print_message = f'Adding AMES-Cond model spectra... {filename}'
                 print(f'\r{print_message:<71}', end='')
 
@@ -171,6 +175,13 @@ def add_ames_cond(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding AMES-Cond model spectra... [DONE]'
+    print(f'\r{print_message:<71}')
+
+    print('Grid points with the following parameters have been excluded:')
+    print('   - log(g) < 2.5')
+    print('   - log(g) > 5.5')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
@@ -179,7 +190,7 @@ def add_ames_cond(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('ames-cond', ['teff', 'logg'], database, data_sorted)
-
-    print_message = 'Adding AMES-Cond model spectra... [DONE]'
-    print(f'\r{print_message:<71}')
+    data_util.write_data('ames-cond',
+                         ['teff', 'logg'],
+                         database,
+                         data_sorted)

@@ -119,6 +119,9 @@ def add_petitcode_cool_clear(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding petitCODE cool clear model spectra... [DONE]'
+    print(f'\r{print_message:<87}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
@@ -131,9 +134,6 @@ def add_petitcode_cool_clear(input_path,
                          ['teff', 'logg', 'feh'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding petitCODE cool clear model spectra... [DONE]'
-    print(f'\r{print_message:<87}')
 
 
 def add_petitcode_cool_cloudy(input_path,
@@ -244,6 +244,9 @@ def add_petitcode_cool_cloudy(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding petitCODE cool cloudy model spectra... [DONE]'
+    print(f'\r{print_message:<106}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
@@ -256,9 +259,6 @@ def add_petitcode_cool_cloudy(input_path,
                          ['teff', 'logg', 'feh', 'fsed'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding petitCODE cool cloudy model spectra... [DONE]'
-    print(f'\r{print_message:<106}')
 
 
 def add_petitcode_hot_clear(input_path,
@@ -352,6 +352,9 @@ def add_petitcode_hot_clear(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding petitCODE hot clear model spectra... [DONE]'
+    print(f'\r{print_message:<100}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
@@ -364,9 +367,6 @@ def add_petitcode_hot_clear(input_path,
                          ['teff', 'logg', 'feh', 'co'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding petitCODE hot clear model spectra... [DONE]'
-    print(f'\r{print_message:<100}')
 
 
 def add_petitcode_hot_cloudy(input_path,
@@ -463,6 +463,9 @@ def add_petitcode_hot_cloudy(input_path,
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding petitCODE hot cloudy model spectra... [DONE]'
+    print(f'\r{print_message:<112}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
@@ -475,6 +478,3 @@ def add_petitcode_hot_cloudy(input_path,
                          ['teff', 'logg', 'feh', 'co', 'fsed'],
                          database,
                          data_sorted)
-
-    print_message = 'Adding petitCODE hot cloudy model spectra... [DONE]'
-    print(f'\r{print_message:<112}')

@@ -6,8 +6,12 @@ spectral libraries.
 import os
 import configparser
 
+from typing import Optional, Tuple
+
 import h5py
 import numpy as np
+
+from typeguard import typechecked
 
 from species.core import box
 from species.read import read_spectrum
@@ -19,10 +23,11 @@ class ReadColorMagnitude:
     Class for reading color-magnitude data from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 library,
-                 filters_color,
-                 filter_mag):
+                 library: str,
+                 filters_color: Tuple[str, str],
+                 filter_mag: str) -> None:
         """
         Parameters
         ----------
@@ -63,8 +68,9 @@ class ReadColorMagnitude:
             else:
                 raise ValueError(f'The \'{self.library}\' library is not present in the database.')
 
+    @typechecked
     def get_color_magnitude(self,
-                            object_type=None):
+                            object_type: Optional[str] = None) -> box.ColorMagBox:
         """
         Function for extracting color-magnitude data from the selected library.
 
@@ -73,7 +79,7 @@ class ReadColorMagnitude:
         object_type : str, None
             Object type for which the colors and magnitudes are extracted. Either field dwarfs
             ('field') or young/low-gravity objects ('young'). All objects are selected if set
-            to None.
+            to ``None``.
 
         Returns
         -------
@@ -81,13 +87,13 @@ class ReadColorMagnitude:
             Box with the colors and magnitudes.
         """
 
-        h5_file = h5py.File(self.database, 'r')
-
         if self.lib_type == 'phot_lib':
-            sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
-            dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])  # (pc)
-            dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])  # (pc)
-            flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
+            with h5py.File(self.database, 'r') as h5_file:
+                sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
+                dist = np.asarray(h5_file[f'photometry/{self.library}/distance'])
+                dist_error = np.asarray(h5_file[f'photometry/{self.library}/distance_error'])
+                flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
+                obj_names = np.asarray(h5_file[f'photometry/{self.library}/name'])
 
             if object_type is None:
                 indices = np.arange(0, np.size(sptype), 1)
@@ -108,16 +114,31 @@ class ReadColorMagnitude:
                 indices = np.array(indices)
 
             if indices.size > 0:
-                mag1 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[0]}'])
-                mag2 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[1]}'])
+                with h5py.File(self.database, 'r') as h5_file:
+                    mag1 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[0]}'])
+                    mag2 = np.asarray(h5_file[f'photometry/{self.library}/{self.filters_color[1]}'])
+
+            else:
+                raise ValueError(f'There is not data available from \'{self.library}\' for '
+                                 f'\'{object_type}\' type objects with the chosen filters.')
 
             color = mag1 - mag2
 
             if self.filter_mag == self.filters_color[0]:
-                mag, error = phot_util.apparent_to_absolute((mag1, None), (dist, dist_error))
+                mag, _ = phot_util.apparent_to_absolute((mag1, None), (dist, dist_error))
 
             elif self.filter_mag == self.filters_color[1]:
-                mag, error = phot_util.apparent_to_absolute((mag2, None), (dist, dist_error))
+                mag, _ = phot_util.apparent_to_absolute((mag2, None), (dist, dist_error))
+
+            color = color[indices]
+            mag = mag[indices]
+            sptype = sptype[indices]
+            obj_names = obj_names[indices]
+
+            indices = []
+            for i in range(color.size):
+                if not np.isnan(color[i]) and not np.isnan(mag[i]):
+                    indices.append(i)
 
             colormag_box = box.create_box(boxtype='colormag',
                                           library=self.library,
@@ -126,7 +147,8 @@ class ReadColorMagnitude:
                                           filter_mag=self.filter_mag,
                                           color=color[indices],
                                           magnitude=mag[indices],
-                                          sptype=sptype[indices])
+                                          sptype=sptype[indices],
+                                          names=obj_names[indices])
 
         elif self.lib_type == 'spec_lib':
             read_spec_0 = read_spectrum.ReadSpectrum(spec_library=self.library,
@@ -149,9 +171,8 @@ class ReadColorMagnitude:
                                           filter_mag=self.filter_mag,
                                           color=phot_box_0.app_mag[:, 0]-phot_box_1.app_mag[:, 0],
                                           magnitude=phot_box_2.abs_mag[:, 0],
-                                          sptype=phot_box_0.sptype)
-
-        h5_file.close()
+                                          sptype=phot_box_0.sptype,
+                                          names=None)
 
         return colormag_box
 
@@ -161,9 +182,10 @@ class ReadColorColor:
     Class for reading color-color data from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 library,
-                 filters_colors):
+                 library: str,
+                 filters_colors: Tuple[Tuple[str, str], Tuple[str, str]]) -> None:
         """
         Parameters
         ----------
@@ -201,8 +223,9 @@ class ReadColorColor:
             else:
                 raise ValueError(f'The \'{self.library}\' library is not present in the database.')
 
+    @typechecked
     def get_color_color(self,
-                        object_type):
+                        object_type: Optional[str] = None) -> box.ColorColorBox:
         """
         Function for extracting color-color data from the selected library.
 
@@ -211,7 +234,7 @@ class ReadColorColor:
         object_type : str, None
             Object type for which the colors and magnitudes are extracted. Either field dwarfs
             ('field') or young/low-gravity objects ('young'). All objects are selected if set
-            to None.
+            to ``None``.
 
         Returns
         -------
@@ -224,6 +247,7 @@ class ReadColorColor:
 
             sptype = np.asarray(h5_file[f'photometry/{self.library}/sptype'])
             flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
+            obj_names = np.asarray(h5_file[f'photometry/{self.library}/name'])
 
             if object_type is None:
                 indices = np.arange(0, np.size(sptype), 1)
@@ -251,13 +275,24 @@ class ReadColorColor:
             color1 = mag1 - mag2
             color2 = mag3 - mag4
 
+            color1 = color1[indices]
+            color2 = color2[indices]
+            sptype = sptype[indices]
+            obj_names = obj_names[indices]
+
+            indices = []
+            for i in range(color1.size):
+                if not np.isnan(color1[i]) and not np.isnan(color2[i]):
+                    indices.append(i)
+
             colorbox = box.create_box(boxtype='colorcolor',
                                       library=self.library,
                                       object_type=object_type,
                                       filters=self.filters_colors,
                                       color1=color1[indices],
                                       color2=color2[indices],
-                                      sptype=sptype[indices])
+                                      sptype=sptype[indices],
+                                      names=obj_names[indices])
 
             h5_file.close()
 
@@ -285,6 +320,7 @@ class ReadColorColor:
                                       filters=self.filters_colors,
                                       color1=phot_box_0.app_mag[:, 0]-phot_box_1.app_mag[:, 0],
                                       color2=phot_box_2.app_mag[:, 0]-phot_box_3.app_mag[:, 0],
-                                      sptype=phot_box_0.sptype)
+                                      sptype=phot_box_0.sptype,
+                                      names=None)
 
         return colorbox

@@ -7,27 +7,28 @@ import tarfile
 import warnings
 import urllib.request
 
-try:
-    import lzma
-except ModuleNotFoundError:
-    warnings.warn('Could not import the lzma module. Attempting to use lzma compression will '
-                  'result in a RuntimeError.')
+from typing import Optional, Tuple
 
+import h5py
 import spectres
 import numpy as np
+
+from typeguard import typechecked
 
 from species.util import data_util, read_util
 
 
-def add_btsettl(input_path,
-                database,
-                wavel_range,
-                teff_range,
-                spec_res):
+@typechecked
+def add_btsettl(input_path: str,
+                database: h5py._hl.files.File,
+                wavel_range: Optional[Tuple[float, float]],
+                teff_range: Optional[Tuple[float, float]],
+                spec_res: Optional[float]):
     """
     Function for adding the BT-Settl atmospheric models (solar metallicity) to the database.
-    The spectra are read line-by-line because the wavelength and flux are not separated in the
-    input data.
+    The spectra had been downloaded from the Theoretical spectra web server
+    (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl) and resampled
+    to a spectral resolution of 5000 from 0.1 to 100 um.
 
     Parameters
     ----------
@@ -35,12 +36,12 @@ def add_btsettl(input_path,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    wavel_range : tuple(float, float)
-        Wavelength range (um).
+    wavel_range : tuple(float, float), None
+        Wavelength range (um). The original wavelength points are used if set to ``None``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K).
-    spec_res : float
-        Spectral resolution.
+        Effective temperature range (K). All temperatures are selected if set to ``None``.
+    spec_res : float, None
+        Spectral resolution. Not used if ``wavel_range`` is set to ``None``.
 
     Returns
     -------
@@ -51,104 +52,79 @@ def add_btsettl(input_path,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    input_file = 'bt-settl.tgz'
+    label = '(130 MB)'
+
     data_folder = os.path.join(input_path, 'bt-settl/')
+    data_file = os.path.join(data_folder, input_file)
 
-    input_file = 'SPECTRA.tar'
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
 
-    url = 'https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA.tar'
-
-    data_file = os.path.join(input_path, input_file)
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading BT-Settl model spectra (8.1 GB)...', end='', flush=True)
+        print(f'Downloading Bt-Settl model spectra {label}...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking BT-Settl model spectra (8.1 GB)...', end='', flush=True)
+    print(f'Unpacking BT-Settl model spectra {label}...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
 
-    data_folder = os.path.join(data_folder, 'SPECTRA')
-
     teff = []
     logg = []
     flux = []
 
-    wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    if wavel_range is not None:
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    else:
+        wavelength = None
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
+            if filename[:9] == 'bt-settl_':
+                file_split = filename.split('_')
 
-            if filename.startswith('lte') and filename.endswith('.7.xz'):
-                if len(filename) == 38:
-                    teff_val = float(filename[3:6])*100.
-                    logg_val = float(filename[7:10])
-                    feh_val = float(filename[11:14])
-
-                elif len(filename) == 40:
-                    teff_val = float(filename[3:8])*100.
-                    logg_val = float(filename[9:12])
-                    feh_val = float(filename[13:16])
-
-                else:
-                    raise ValueError('The length of the filename is not compatible for reading '
-                                     'the parameter values.')
+                teff_val = float(file_split[2])
+                logg_val = float(file_split[4])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                if feh_val != 0.:
-                    continue
-
                 print_message = f'Adding BT-Settl model spectra... {filename}'
-                print(f'\r{print_message:<80}', end='')
+                print(f'\r{print_message:<69}', end='')
 
-                data_wavel = []
-                data_flux = []
-
-                with lzma.open(os.path.join(data_folder, filename), mode='rt') as xz_file:
-                    for line in xz_file:
-                        line = line[:line.find('D')+4].split()
-
-                        if len(line) == 1:
-                            line = line[0]
-                            wavel_tmp = line[:line.find('-')]
-                            flux_tmp = line[line.find('-'):]
-
-                        elif len(line) == 2:
-                            wavel_tmp = line[0]
-                            flux_tmp = line[1]
-
-                        # (Angstrom) -> (um)
-                        data_wavel.append(float(wavel_tmp)*1e-4)
-
-                        # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                        flux_cgs = 10.**(float(flux_tmp.replace('D', 'E'))-8.)
-
-                        # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                        data_flux.append(flux_cgs*1e-7*1e4*1e4)
-
-                data = np.stack((data_wavel, data_flux), axis=1)
-
-                index_sort = np.argsort(data[:, 0])
-                data = data[index_sort, :]
-
-                if np.all(np.diff(data[:, 0]) < 0):
-                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+                data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                try:
-                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
-                except ValueError:
-                    flux.append(np.zeros(wavelength.shape[0]))
+                if wavel_range is None:
+                    if wavelength is None:
+                        wavelength = np.copy(data_wavel)  # (um)
 
-                    warnings.warn('The wavelength range should fall within the range of the '
-                                  'original wavelength sampling. Storing zeros instead.')
+                    if np.all(np.diff(wavelength) < 0):
+                        raise ValueError('The wavelengths are not all sorted by increasing value.')
+
+                    flux.append(data_flux)  # (W m-2 um-1)
+
+                else:
+                    try:
+                        flux_resample = spectres.spectres(wavelength, data_wavel, data_flux)
+                        flux.append(flux_resample)  # (W m-2 um-1)
+
+                    except ValueError:
+                        flux.append(np.zeros(wavelength.shape[0]))  # (um)
+
+                        warnings.warn('The wavelength range should fall within the range of the '
+                                      'original wavelength sampling. Storing zeros instead.')
+
+    print_message = 'Adding BT-Settl model spectra... [DONE]'
+    print(f'\r{print_message:<69}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -158,7 +134,7 @@ def add_btsettl(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-settl', ['teff', 'logg'], database, data_sorted)
-
-    print_message = 'Adding BT-Settl model spectra... [DONE]'
-    print(f'\r{print_message:<80}')
+    data_util.write_data('bt-settl',
+                         ['teff', 'logg'],
+                         database,
+                         data_sorted)

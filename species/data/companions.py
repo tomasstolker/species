@@ -47,7 +47,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                          'app_mag': {'MKO/NSFCam.J': (19.04, 0.40),  # Rajan et al. 2017
                                      'MKO/NSFCam.H': (18.99, 0.21),  # Rajan et al. 2017
                                      'MKO/NSFCam.K': (18.67, 0.19),  # Rajan et al. 2017
-                                     # 'Paranal/SPHERE.IRDIS_B_H': (19.45, 0.29),  # Samland et al. 2017
+                                     'Paranal/SPHERE.IRDIS_B_H': (19.45, 0.29),  # Samland et al. 2017
                                      'Paranal/SPHERE.IRDIS_D_H23_2': (18.41, 0.26),  # Samland et al. 2017
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (17.55, 0.14),  # Samland et al. 2017
                                      'Keck/NIRC2.Lp': (16.20, 0.11),  # Rajan et al. 2017
@@ -111,7 +111,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'Paranal/SPHERE.IRDIS_D_K12_1': [(16.71, 0.04), (16.96, 0.38)],  # Stolker et al. in prep.
                                      'Paranal/SPHERE.IRDIS_D_K12_2': [(16.39, 0.06), (16.43, 0.43)], # Stolker et al. in prep.
                                      'Paranal/NACO.Lp': (14.44, 0.46),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (14.73, 0.40),  # Stolker et al. in prep.
+                                     'Paranal/NACO.NB405': (14.55, 0.40),  # Stolker et al. in prep.
                                      'Paranal/NACO.Mp': (13.64, 0.23),  # Stolker et al. in prep.
                                      'Keck/NIRC2.Lp': (14.64, 0.18)}},  # Wang et al. 2020
 
@@ -120,10 +120,11 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'Keck/NIRC2.Lp': (15.5, 0.46)}},  # Wang et al. 2020
 
             '2M1207 b': {'distance': (64.42, 0.65),
-                         'app_mag': {'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006
-                                     'HST/NICMOS1.F110M': (20.61, 0.15),  # Song et al. 2006
-                                     'HST/NICMOS1.F145M': (19.05, 0.03),  # Song et al. 2006
-                                     'HST/NICMOS1.F160W': (18.27, 0.02),  # Song et al. 2006
+                         'app_mag': {
+                                     # 'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006
+                                     # 'HST/NICMOS1.F110M': (20.61, 0.15),  # Song et al. 2006
+                                     # 'HST/NICMOS1.F145M': (19.05, 0.03),  # Song et al. 2006
+                                     # 'HST/NICMOS1.F160W': (18.27, 0.02),  # Song et al. 2006
                                      'Paranal/NACO.J': (20.0, 0.2),  # Mohanty et al. 200z
                                      'Paranal/NACO.H': (18.09, 0.21),  # Chauvin et al. 2004
                                      'Paranal/NACO.Ks': (16.93, 0.11),  # Chauvin et al. 2004
@@ -142,12 +143,17 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/NACO.NB405': (13.16, 0.34),  # Stolker et al. 2020
                                         'Paranal/NACO.Mp': (12.77, 0.27)}},  # Stolker et al. 2020
 
+            'RZ Psc B': {'distance': (195.86, 4.03),
+                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14), (13.85, 0.26)],  # Kennedy et al. 2020
+                                     'Paranal/SPHERE.IRDIS_B_Ks': (13.51, 0.20)}},  # Kennedy et al. 2020
+
             'GQ Lup B': {'distance': (151.82, 1.10),
-                         'app_mag': {'HST/WFPC2.f606w': (19.19, 0.07),  # Marois et al. 2006
-                                     'HST/WFPC2.f814w': (17.67, 0.05),  # Marois et al. 2006
-                                     'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
-                                     'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
-                                     'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
+                         'app_mag': {
+                                     # 'HST/WFPC2.f606w': (19.19, 0.07),  # Marois et al. 2006
+                                     # 'HST/WFPC2.f814w': (17.67, 0.05),  # Marois et al. 2006
+                                     # 'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
+                                     # 'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
+                                     # 'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
                                      'Subaru/CIAO.CH4s': (13.76, 0.26),  # Marois et al. 2006
                                      'Subaru/CIAO.K': (13.37, 0.12),  # Marois et al. 2006
                                      'Subaru/CIAO.Lp': (12.44, 0.22)}},  # Marois et al. 2006
@@ -175,6 +181,13 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Keck/NIRC2.Lp': (13.12, 0.1),  # Bonnefoy et al. 2014
                                         'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
                                         'LBT/LMIRCam.M_77K': (13.3, 0.3)}},  # Bonnefoy et al. 2014
+
+            'HD 1160 B': {'distance': (125.9, 1.2),
+                          'app_mag': {'MKO/NSFCam.J': (14.69, 0.05),  # Victor Garcia et al. 2017
+                                      'MKO/NSFCam.H': (14.21, 0.02),  # Victor Garcia et al. 2017
+                                      'MKO/NSFCam.Ks': (14.12, 0.05),  # Nielsen et al. 2012
+                                      'Paranal/NACO.Lp': (13.60, 0.10),  # Maire et al. 2016
+                                      'Keck/NIRC2.Ms': (13.81, 0.24)}},  # Victor Garcia et al. 2017
 
             'ROXs 42 Bb': {'distance': (144.16, 1.54),
                            'app_mag': {'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
@@ -230,10 +243,10 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/SPHERE.IRDIS_D_H23_3': (14.40, 0.07)}},  # Maire et al. 2019
 
             'HIP 64892 B': {'distance': (125.20, 1.42),
-                           'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (14.21, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_H23_3': (13.94, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_K12_1': (13.77, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
-                                       'Paranal/NACO.Lp': (13.09, 0.17)}}}  # Cheetham et al. 2018
+                            'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (14.21, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_H23_3': (13.94, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_K12_1': (13.77, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
+                                        'Paranal/NACO.Lp': (13.09, 0.17)}}}  # Cheetham et al. 2018
 
     return data

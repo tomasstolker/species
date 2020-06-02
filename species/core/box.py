@@ -20,6 +20,7 @@ def create_box(boxtype,
         box.color = kwargs['color']
         box.magnitude = kwargs['magnitude']
         box.sptype = kwargs['sptype']
+        box.names = kwargs['names']
 
     if boxtype == 'colorcolor':
         box = ColorColorBox()
@@ -29,6 +30,7 @@ def create_box(boxtype,
         box.color1 = kwargs['color1']
         box.color2 = kwargs['color2']
         box.sptype = kwargs['sptype']
+        box.names = kwargs['names']
 
     elif boxtype == 'isochrone':
         box = IsochroneBox()
@@ -158,6 +160,7 @@ class ColorMagBox(Box):
         self.color = None
         self.magnitude = None
         self.sptype = None
+        self.names = None
 
 
 class ColorColorBox(Box):
@@ -179,6 +182,7 @@ class ColorColorBox(Box):
         self.color1 = None
         self.color2 = None
         self.sptype = None
+        self.names = None
 
 
 class IsochroneBox(Box):
