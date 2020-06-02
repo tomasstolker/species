@@ -9,8 +9,10 @@ import warnings
 from typing import Optional, Union, List, Tuple, Dict
 from multiprocessing import Pool, cpu_count
 
+import h5py
 import emcee
 import spectres
+import configparser
 import numpy as np
 
 # Installation of MultiNest is not possible on readthedocs
@@ -25,7 +27,7 @@ from species.analysis import photometry
 from species.data import database
 from species.core import constants
 from species.read import read_model, read_object, read_planck
-from species.util import read_util
+from species.util import read_util, dust_util
 
 
 @typechecked
@@ -424,6 +426,27 @@ class FitModel:
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
 
+            Reddening parameters:
+
+                 - Extinction by dust can be fitted for grains with a log-normal size distribution,
+                   a crystalline MgSiO3 composition, and a homogeneous, spherical structure.
+
+                 - The size distribution is parameterized with a mean geometric radius
+                   (``dust_radius`` in um) and a geometric standard deviation (``dust_sigma``,
+                   dimensionless).
+
+                 - The extinction (``dust_ext``) is fitted in the V band (A_V in mag) and the
+                   wavelength-dependent extinction cross sections are interpolated from a
+                   pre-tabulated grid.
+
+                 - The prior boundaries of ``dust_radius``, ``dust_sigma``, and ``dust_ext`` should
+                   be provided in the ``bounds`` dictionary, for example
+                   ``bounds={'dust_radius': (0.01, 10.), 'dust_sigma': (1.2, 10.),
+                   'dust_ext': (0., 5.)}``.
+
+                 - A uniform prior is used for ``dust_sigma`` and ``dust_ext``, and a log-uniform
+                   prior for ``dust_radius``.
+
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none
             (``False``) of the data are selected. If a list, a subset of filter names (as stored in
@@ -507,40 +530,51 @@ class FitModel:
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append('radius')
 
-        # Include photometric data
+        # Select filters and spectra
 
-        if inc_phot:
-            if isinstance(inc_phot, bool):
+        if isinstance(inc_phot, bool):
+            if inc_phot:
                 # Select all filters if True
                 species_db = database.Database()
                 objectbox = species_db.get_object(object_name)
                 inc_phot = objectbox.filters
 
-            self.objphot = []
-            self.modelphot = []
+            else:
+                inc_phot = []
 
-            for item in inc_phot:
-                if self.model == 'planck':
-                    # Create SyntheticPhotometry objects when fitting a Planck function
-                    print(f'Creating synthetic photometry: {item}...', end='', flush=True)
-                    self.modelphot.append(photometry.SyntheticPhotometry(item))
+        if isinstance(inc_spec, bool):
+            if inc_spec:
+                # Select all filters if True
+                species_db = database.Database()
+                objectbox = species_db.get_object(object_name)
+                inc_spec = list(objectbox.spectrum.keys())
 
-                else:
-                    # Or interpolate the model grid for each filter
-                    print(f'Interpolating {item}...', end='', flush=True)
-                    readmodel = read_model.ReadModel(self.model, filter_name=item)
-                    readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
-                    self.modelphot.append(readmodel)
+            else:
+                inc_spec = []
 
-                print(' [DONE]')
+        # Include photometric data
 
-                # Store the flux and uncertainty for each filter
-                obj_phot = self.object.get_photometry(item)
-                self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+        self.objphot = []
+        self.modelphot = []
 
-        else:
-            self.objphot = []
-            self.modelphot = []
+        for item in inc_phot:
+            if self.model == 'planck':
+                # Create SyntheticPhotometry objects when fitting a Planck function
+                print(f'Creating synthetic photometry: {item}...', end='', flush=True)
+                self.modelphot.append(photometry.SyntheticPhotometry(item))
+
+            else:
+                # Or interpolate the model grid for each filter
+                print(f'Interpolating {item}...', end='', flush=True)
+                readmodel = read_model.ReadModel(self.model, filter_name=item)
+                readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
+                self.modelphot.append(readmodel)
+
+            print(' [DONE]')
+
+            # Store the flux and uncertainty for each filter
+            obj_phot = self.object.get_photometry(item)
+            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
         # Include spectroscopic data
 
@@ -548,17 +582,15 @@ class FitModel:
             # Select all spectra
             self.spectrum = self.object.get_spectrum()
 
-            if isinstance(inc_spec, list):
-                # Select the spectrum names that are not in inc_spec
-                spec_remove = []
+            # Select the spectrum names that are not in inc_spec
+            spec_remove = []
+            for item in self.spectrum:
+                if item not in inc_spec:
+                    spec_remove.append(item)
 
-                for item in self.spectrum:
-                    if item not in inc_spec:
-                        spec_remove.append(item)
-
-                # Remove the spectra that are not included in inc_spec
-                for item in spec_remove:
-                    del self.spectrum[item]
+            # Remove the spectra that are not included in inc_spec
+            for item in spec_remove:
+                del self.spectrum[item]
 
             self.n_corr_par = 0
 
@@ -611,6 +643,20 @@ class FitModel:
 
                 if item in self.bounds:
                     del self.bounds[item]
+
+        if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and 'dust_ext' in self.bounds:
+            self.cross_sections, self.dust_radius, self.dust_sigma = \
+                dust_util.interpolate_dust(inc_phot, inc_spec, self.spectrum)
+
+            self.modelpar.append('dust_radius')
+            self.modelpar.append('dust_sigma')
+            self.modelpar.append('dust_ext')
+
+            self.bounds['dust_radius'] = (np.log10(self.bounds['dust_radius'][0]),
+                                          np.log10(self.bounds['dust_radius'][1]))
+
+        else:
+            self.cross_sections = None
 
         print(f'Fitting {len(self.modelpar)} parameters:')
 
@@ -874,6 +920,7 @@ class FitModel:
             err_offset = {}
             corr_len = {}
             corr_amp = {}
+            dust_param = {}
 
             for item in self.bounds:
                 if item[:8] == 'scaling_' and item[8:] in self.spectrum:
@@ -887,6 +934,9 @@ class FitModel:
 
                 elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
                     corr_amp[item[9:]] = cube[cube_index[item]]
+
+                elif item[:5] == 'dust_':
+                    dust_param[item] = cube[cube_index[item]]
 
                 else:
                     param_dict[item] = cube[cube_index[item]]
@@ -929,6 +979,10 @@ class FitModel:
                     else:
                         ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
+            if len(dust_param) == 3:
+                cross_tmp = self.cross_sections['Generic/Bessell.V'](dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                n_grains = dust_param['dust_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+
             for i, obj_item in enumerate(self.objphot):
                 if self.model == 'planck':
                     readplanck = read_planck.ReadPlanck(filter_name=self.modelphot[i].filter_name)
@@ -937,6 +991,10 @@ class FitModel:
                 else:
                     phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))
                     phot_flux *= flux_scaling
+
+                if len(dust_param) == 3:
+                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                    phot_flux *= np.exp(-cross_tmp*n_grains)
 
                 if obj_item.ndim == 1:
                     ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
@@ -977,6 +1035,11 @@ class FitModel:
                 else:
                     model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
                     model_flux *= flux_scaling
+
+                if len(dust_param) == 3:
+                    for j, cross_item in enumerate(self.cross_sections[item]):
+                        cross_tmp = cross_item(dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                        model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
                 if self.spectrum[item][2] is not None:
                     dot_tmp = np.dot(data_flux-model_flux,

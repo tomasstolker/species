@@ -521,6 +521,30 @@ def add_missing(model: str,
                         print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
                         print(f'{parameters[3]} = {new_points[3][i]}')
 
+        # ran_par_0 = np.random.randint(grid_shape[0], size=1000)
+        # ran_par_1 = np.random.randint(grid_shape[1], size=1000)
+        # ran_par_2 = np.random.randint(grid_shape[2], size=1000)
+        # ran_par_3 = np.random.randint(grid_shape[3], size=1000)
+        #
+        # for z in range(ran_par_0.shape[0]):
+        #     i = ran_par_0[z]
+        #     j = ran_par_1[z]
+        #     k = ran_par_2[z]
+        #     m = ran_par_3[z]
+        #
+        #     if 0 < i < grid_shape[0]-1:
+        #         check_low = np.isinf(np.sum(flux[i-1, j, k, m, ...]))
+        #         check_up = np.isinf(np.sum(flux[i+1, j, k, m, ...]))
+        #
+        #         # Linear scaling of the intermediate Teff point
+        #         scaling = (param_data[0][i] - param_data[0][i-1]) / \
+        #                   (param_data[0][i+1] - param_data[0][i-1])
+        #
+        #         if not check_low and not check_up:
+        #             flux_low = flux[i-1, j, k, m, ...]
+        #             flux_up = flux[i+1, j, k, m, ...]
+        #             flux[i, j, k, m, ...] = flux_low*(1.-scaling) + flux_up*scaling
+
     elif len(parameters) == 5:
         find_missing = np.zeros(grid_shape, dtype=bool)
 

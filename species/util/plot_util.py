@@ -2,19 +2,11 @@
 Utility functions for plotting data.
 """
 
-import os
-import configparser
-
 from typing import Optional, Tuple, List
 
-import h5py
-import PyMieScatt
 import numpy as np
 
 from typeguard import typechecked
-
-from species.data import database
-from species.read import read_filter
 
 
 def sptype_substellar(sptype,
@@ -157,6 +149,18 @@ def update_labels(param: List[str]) -> List[str]:
     if 'luminosity' in param:
         index = param.index('luminosity')
         param[index] = r'$\log\,L$/L$_\odot$'
+
+    if 'dust_radius' in param:
+        index = param.index('dust_radius')
+        param[index] = r'$\log\,r_\mathregular{g}/\mathrm{µm}$'
+
+    if 'dust_sigma' in param:
+        index = param.index('dust_sigma')
+        param[index] = r'$\sigma_\mathregular{g}$'
+
+    if 'dust_ext' in param:
+        index = param.index('dust_ext')
+        param[index] = r'$A_\mathregular{V}$ (mag)'
 
     if 'tint' in param:
         index = param.index('tint')
@@ -312,7 +316,7 @@ def quantity_unit(param: List[str],
     if 'feh' in param:
         quantity.append('feh')
         unit.append(None)
-        label.append(r'[Fe/H]')
+        label.append('[Fe/H]')
 
     if 'fsed' in param:
         quantity.append('fsed')
@@ -322,7 +326,7 @@ def quantity_unit(param: List[str],
     if 'co' in param:
         quantity.append('co')
         unit.append(None)
-        label.append(r'C/O')
+        label.append('C/O')
 
     if 'radius' in param:
         quantity.append('radius')
@@ -371,6 +375,11 @@ def quantity_unit(param: List[str],
         quantity.append('luminosity')
         unit.append(None)
         label.append(r'$\log\,L$/L$_\odot$')
+
+    if 'dust_ext' in param:
+        quantity.append('dust_ext')
+        unit.append('mag')
+        label.append('A$_\mathregular{V}$')
 
     return quantity, unit, label
 
@@ -435,158 +444,6 @@ def field_bounds_ticks(field_range):
     labels = spectral_ranges[index_start:index_end]
 
     return bounds, ticks, labels
-
-
-@typechecked
-def dust_cross_section(wavelength: float,
-                       n_index: float,
-                       k_index: float,
-                       radius: float,
-                       sigma_n: float = 2.) -> np.float64:
-    """
-    Function for calculating the extinction cross section of dust grains.
-
-    Parameters
-    ----------
-    wavelength : float
-        Wavelength (um).
-    n_index : float
-        Real part of the refractive index.
-    k_index : float
-        Imaginary part of the refractive index.
-    radius : float
-        Geometric radius of the grain size distribution (um).
-    sigma_n : float
-        Geometric standard deviation (dimensionless). The default value is 2.
-
-    Returns
-    -------
-    float
-        Extinction cross section (um2)
-    """
-
-    r_lognorm = np.logspace(np.log10(1e-2*radius), np.log10(1e2*radius), 100)  # (um)
-
-    dndr = np.exp(-np.log(r_lognorm/radius)**2./(2.*np.log(sigma_n)**2.)) / \
-        (r_lognorm*np.sqrt(2.*np.pi)*np.log(sigma_n))
-
-    c_ext = 0.
-
-    for i in range(r_lognorm[:-1].size):
-        if dndr[i] / np.amax(dndr[i]) > 0.01:
-            mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
-
-            mie = PyMieScatt.MieQ(complex(n_index, k_index),
-                                  wavelength*1e3,  # (nm)
-                                  2.*mean_radius*1e3,  # diameter (nm)
-                                  asDict=True,
-                                  asCrossSection=True)
-
-            if 'Cext' in mie:
-                c_ext += mie['Cext']*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
-
-    return c_ext*1e-6  # (um2)
-
-
-@typechecked
-def calc_reddening(filters_color: Tuple[str, str],
-                   extinction: Tuple[str, float],
-                   composition: str = 'MgSiO3',
-                   structure: str = 'crystalline',
-                   radius: float = 1.) -> Tuple[float, float]:
-    """
-    Function for calculating the reddening of a color given the extinction for a given filter. A
-    log-normal size distribution with a geometric standard deviation of 2 is used as
-    parametrization for the grain sizes (Ackerman & Marley 2001).
-
-    Parameters
-    ----------
-    filters_color : tuple(str, str)
-        Filter names for which the extinction is calculated.
-    extinction : str
-        Filter name and extinction (mag).
-    composition : str
-        Dust composition ('MgSiO3' or 'Fe').
-    structure : str
-        Grain structure ('crystalline' or 'amorphous').
-    radius : float
-        Geometric radius of the grain size distribution (um).
-
-    Returns
-    -------
-    float
-        Extinction (mag) for ``filters_color[0]``.
-    float
-        Extinction (mag) for ``filters_color[1]``.
-    """
-
-    config_file = os.path.join(os.getcwd(), 'species_config.ini')
-
-    config = configparser.ConfigParser()
-    config.read_file(open(config_file))
-
-    database_path = config['species']['database']
-
-    h5_file = h5py.File(database_path, 'r')
-
-    try:
-        h5_file['dust']
-
-    except KeyError:
-        h5_file.close()
-        species_db = database.Database()
-        species_db.add_dust()
-        h5_file = h5py.File(database_path, 'r')
-
-    filters = [extinction[0], filters_color[0], filters_color[1]]
-
-    c_ext = {}
-
-    for item in filters:
-        read_filt = read_filter.ReadFilter(item)
-        filter_wavel = read_filt.mean_wavelength()
-
-        if composition == 'MgSiO3' and structure == 'crystalline':
-            for i in range(3):
-                data = h5_file[f'dust/mgsio3/crystalline/axis_{i+1}']
-
-                wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
-
-                # Average cross section of the three axes
-
-                if i == 0:
-                    c_ext[item] = dust_cross_section(data[wavel_index, 0],
-                                                     data[wavel_index, 1],
-                                                     data[wavel_index, 2],
-                                                     radius) / 3.
-
-                else:
-                    c_ext[item] += dust_cross_section(data[wavel_index, 0],
-                                                      data[wavel_index, 1],
-                                                      data[wavel_index, 2],
-                                                      radius) / 3.
-
-        else:
-            if composition == 'MgSiO3' and structure == 'amorphous':
-                data = h5_file['dust/mgsio3/amorphous/']
-
-            elif composition == 'Fe' and structure == 'crystalline':
-                data = h5_file['dust/fe/crystalline/']
-
-            elif composition == 'Fe' and structure == 'amorphous':
-                data = h5_file['dust/fe/amorphous/']
-
-            wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
-
-            c_ext[item] += dust_cross_section(data[wavel_index, 0],
-                                              data[wavel_index, 1],
-                                              data[wavel_index, 2],
-                                              radius)
-
-    density = extinction[1]/c_ext[extinction[0]]/2.5/np.log10(np.exp(1.))
-
-    return 2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[0]] * density, \
-        2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[1]] * density
 
 
 @typechecked

@@ -18,7 +18,7 @@ from matplotlib.ticker import AutoMinorLocator
 
 from species.core import box
 from species.read import read_object
-from species.util import plot_util
+from species.util import plot_util, dust_util
 
 
 @typechecked
@@ -376,7 +376,7 @@ def plot_color_magnitude(boxes: list,
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+            ext_1, ext_2 = dust_util.calc_reddening(item[0],
                                                     item[1],
                                                     composition=item[2],
                                                     structure='crystalline',
@@ -836,13 +836,13 @@ def plot_color_color(boxes: list,
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = plot_util.calc_reddening(item[0],
+            ext_1, ext_2 = dust_util.calc_reddening(item[0],
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',
                                                     radius=item[4])
 
-            ext_3, ext_4 = plot_util.calc_reddening(item[1],
+            ext_3, ext_4 = dust_util.calc_reddening(item[1],
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',

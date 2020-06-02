@@ -7,20 +7,20 @@ import math
 import warnings
 import configparser
 
-from typing import Union, Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 import h5py
 import spectres
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
 
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import database
 from species.read import read_filter, read_calibration
-from species.util import read_util
+from species.util import read_util, dust_util
 
 
 class ReadModel:
@@ -28,21 +28,22 @@ class ReadModel:
     Class for reading a model spectrum from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 model,
-                 wavel_range=None,
-                 filter_name=None):
+                 model: str,
+                 wavel_range: Optional[Tuple[float, float]] = None,
+                 filter_name: Optional[str] = None):
         """
         Parameters
         ----------
         model : str
             Name of the atmospheric model.
         wavel_range : tuple(float, float), None
-            Wavelength range (um). Full spectrum is selected if set to None. Not used if
-            ``filter_name`` is not None.
+            Wavelength range (um). Full spectrum is selected if set to ``None``. Not used if
+            ``filter_name`` is not ``None``.
         filter_name : str, None
-            Filter ID that is used for the wavelength range. The ``wavel_range`` is used if set
-            to None.
+            Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
+            to ``None``.
 
         Returns
         -------
@@ -70,7 +71,8 @@ class ReadModel:
 
         self.database = config['species']['database']
 
-    def open_database(self):
+    @typechecked
+    def open_database(self) -> h5py._hl.files.File:
         """
         Internal function for opening the `species` database.
 
@@ -98,8 +100,9 @@ class ReadModel:
 
         return h5_file
 
+    @typechecked
     def wavelength_points(self,
-                          hdf5_file):
+                          hdf5_file: h5py._hl.files.File) -> Tuple[np.ndarray, np.ndarray]:
         """
         Internal function for extracting the wavelength points and indices that are used.
 
@@ -134,7 +137,8 @@ class ReadModel:
 
         return wl_points[wl_index], wl_index
 
-    def interpolate_model(self):
+    @typechecked
+    def interpolate_model(self) -> None:
         """
         Internal function for linearly interpolating the full grid of model spectra.
 
@@ -194,14 +198,8 @@ class ReadModel:
                              'argument.')
 
         points = []
-
-        for key, value in self.get_points().items():
-            value_new = []
-
-            for i, item in enumerate(value):
-                value_new.append(item)
-
-            points.append(value_new)
+        for item in self.get_points().values():
+            points.append(list(item))
 
         param = self.get_parameters()
         n_param = len(param)
@@ -305,6 +303,83 @@ class ReadModel:
                                                        fill_value=np.nan)
 
     @typechecked
+    def apply_extinction(self,
+                         wavelength: np.ndarray,
+                         flux: np.ndarray,
+                         radius_interp: float,
+                         sigma_interp: float,
+                         v_band_ext: float) -> np.ndarray:
+        """
+        Internal function for applying extinction by dust to a spectrum.
+
+        wavelength : np.array
+            Wavelengths (um) of the spectrum.
+        flux : np.array
+            Fluxes (W m-2 um-1) of the spectrum.
+        radius_interp : float
+            Logarithm of the mean geometric radius (um) of the log-normal size distribution.
+        sigma_interp : float
+            Geometric standard deviation (dimensionless) of the log-normal size distribution.
+        v_band_ext : float
+            The extinction (mag) in the V band.
+
+        Returns
+        -------
+        np.ndarray
+            Fluxes (W m-2 um-1) with the extinction applied.
+        """
+
+        database_path = dust_util.check_dust_database()
+
+        with h5py.File(database_path, 'r') as h5_file:
+            dust_cross = np.asarray(h5_file['dust/mgsio3/crystalline/cross_section'])
+            dust_wavel = np.asarray(h5_file['dust/mgsio3/crystalline/wavelength'])
+            dust_radius = np.asarray(h5_file['dust/mgsio3/crystalline/radius'])
+            dust_sigma = np.asarray(h5_file['dust/mgsio3/crystalline/sigma'])
+
+        dust_interp = RegularGridInterpolator((dust_wavel, dust_radius, dust_sigma),
+                                              dust_cross,
+                                              method='linear',
+                                              bounds_error=True)
+
+        read_filt = read_filter.ReadFilter('Generic/Bessell.V')
+        filt_trans = read_filt.get_filter()
+
+        cross_phot = np.zeros((dust_radius.shape[0], dust_sigma.shape[0]))
+
+        for i in range(dust_radius.shape[0]):
+            for j in range(dust_sigma.shape[0]):
+                cross_interp = interp1d(dust_wavel,
+                                        dust_cross[:, i, j],
+                                        kind='linear',
+                                        bounds_error=True)
+
+                cross_tmp = cross_interp(filt_trans[:, 0])
+
+                integral1 = np.trapz(filt_trans[:, 1]*cross_tmp, filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+
+                # Filter-weighted average of the extinction cross section
+                cross_phot[i, j] = integral1/integral2
+
+        cross_interp = interp2d(dust_sigma,
+                                dust_radius,
+                                cross_phot,
+                                kind='linear',
+                                bounds_error=True)
+
+        cross_v_band = cross_interp(sigma_interp, 10.**radius_interp)[0]
+
+        radius_full = np.full(wavelength.shape[0], 10.**radius_interp)
+        sigma_full = np.full(wavelength.shape[0], sigma_interp)
+
+        cross_new = dust_interp(np.column_stack((wavelength, radius_full, sigma_full)))
+
+        n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.))
+
+        return flux * np.exp(-cross_new*n_grains)
+
+    @typechecked
     def get_model(self,
                   model_param: Dict[str, float],
                   spec_res: Optional[float] = None,
@@ -349,7 +424,8 @@ class ReadModel:
 
         grid_bounds = self.get_bounds()
 
-        extra_param = ['radius', 'distance', 'mass', 'luminosity']
+        extra_param = ['radius', 'distance', 'mass', 'luminosity',
+                       'dust_radius', 'dust_sigma', 'dust_ext']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -500,6 +576,15 @@ class ReadModel:
                                    parameters=model_param,
                                    quantity=quantity)
 
+        if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
+                'dust_ext' in model_param:
+
+            model_box.flux = self.apply_extinction(model_box.wavelength,
+                                                   model_box.flux,
+                                                   model_param['dust_radius'],
+                                                   model_param['dust_sigma'],
+                                                   model_param['dust_ext'])
+
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
@@ -507,8 +592,9 @@ class ReadModel:
 
         return model_box
 
+    @typechecked
     def get_data(self,
-                 model_param):
+                 model_param: Dict[str, float]) -> box.ModelBox:
         """
         Function for selecting a model spectrum (without interpolation) for a set of parameter
         values that coincide with the grid points. The stored grid points can be inspected with
@@ -605,8 +691,9 @@ class ReadModel:
 
         return model_box
 
+    @typechecked
     def get_flux(self,
-                 model_param,
+                 model_param: Dict[str, float],
                  synphot=None):
         """
         Function for calculating the average flux density for the ``filter_name``.
@@ -684,7 +771,8 @@ class ReadModel:
 
         return app_mag[0], abs_mag[0]
 
-    def get_bounds(self):
+    @typechecked
+    def get_bounds(self) -> Dict[str, Tuple[float, float]]:
         """
         Function for extracting the grid boundaries.
 
@@ -708,7 +796,8 @@ class ReadModel:
 
         return bounds
 
-    def get_wavelengths(self):
+    @typechecked
+    def get_wavelengths(self) -> np.ndarray:
         """
         Function for extracting the wavelength points.
 
@@ -723,7 +812,8 @@ class ReadModel:
 
         return wavelength
 
-    def get_points(self):
+    @typechecked
+    def get_points(self) -> Dict[str, np.ndarray]:
         """
         Function for extracting the grid points.
 
@@ -749,13 +839,14 @@ class ReadModel:
 
         return points
 
-    def get_parameters(self):
+    @typechecked
+    def get_parameters(self) -> List[str]:
         """
         Function for extracting the parameter names.
 
         Returns
         -------
-        list(str, )
+        list(str)
             Model parameters.
         """
 
@@ -765,6 +856,7 @@ class ReadModel:
 
         if 'n_param' in dset.attrs:
             n_param = dset.attrs['n_param']
+
         elif 'nparam' in dset.attrs:
             n_param = dset.attrs['nparam']
 

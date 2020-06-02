@@ -202,6 +202,7 @@ class Database:
         h5_file.create_group('dust')
 
         dust.add_optical_constants(self.input_path, h5_file)
+        dust.add_cross_sections(self.input_path, h5_file)
 
         h5_file.close()
 

@@ -143,6 +143,10 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/NACO.NB405': (13.16, 0.34),  # Stolker et al. 2020
                                         'Paranal/NACO.Mp': (12.77, 0.27)}},  # Stolker et al. 2020
 
+            'RZ Psc B': {'distance': (195.86, 4.03),
+                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14), (13.85, 0.26)],  # Kennedy et al. 2020
+                                     'Paranal/SPHERE.IRDIS_B_Ks': (13.51, 0.20)}},  # Kennedy et al. 2020
+
             'GQ Lup B': {'distance': (151.82, 1.10),
                          'app_mag': {
                                      # 'HST/WFPC2.f606w': (19.19, 0.07),  # Marois et al. 2006
@@ -239,10 +243,10 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/SPHERE.IRDIS_D_H23_3': (14.40, 0.07)}},  # Maire et al. 2019
 
             'HIP 64892 B': {'distance': (125.20, 1.42),
-                           'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (14.21, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_H23_3': (13.94, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_K12_1': (13.77, 0.17),  # Cheetham et al. 2018
-                                       'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
-                                       'Paranal/NACO.Lp': (13.09, 0.17)}}}  # Cheetham et al. 2018
+                            'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (14.21, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_H23_3': (13.94, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_K12_1': (13.77, 0.17),  # Cheetham et al. 2018
+                                        'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
+                                        'Paranal/NACO.Lp': (13.09, 0.17)}}}  # Cheetham et al. 2018
 
     return data

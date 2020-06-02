@@ -12,6 +12,14 @@ species.util.data\_util module
    :undoc-members:
    :show-inheritance:
 
+species.util.dust\_util module
+------------------------------
+
+.. automodule:: species.util.dust_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.util.phot\_util module
 ------------------------------
 
