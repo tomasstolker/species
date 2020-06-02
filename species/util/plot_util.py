@@ -2,20 +2,11 @@
 Utility functions for plotting data.
 """
 
-import os
-import configparser
-
 from typing import Optional, Tuple, List
 
-import h5py
-import PyMieScatt
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d
-
-from species.data import database
-from species.read import read_filter
 
 
 def sptype_substellar(sptype,
@@ -159,6 +150,18 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('luminosity')
         param[index] = r'$\log\,L$/L$_\odot$'
 
+    if 'dust_radius' in param:
+        index = param.index('dust_radius')
+        param[index] = r'$\log\,r_\mathregular{g}/\mathrm{µm}$'
+
+    if 'dust_sigma' in param:
+        index = param.index('dust_sigma')
+        param[index] = r'$\sigma_\mathregular{g}$'
+
+    if 'dust_ext' in param:
+        index = param.index('dust_ext')
+        param[index] = r'$A_\mathregular{V}$ (mag)'
+
     if 'tint' in param:
         index = param.index('tint')
         param[index] = r'$T_\mathregular{int}$ (K)'
@@ -216,7 +219,7 @@ def update_labels(param: List[str]) -> List[str]:
 
 
 @typechecked
-def model_name(key) -> str:
+def model_name(key: str) -> str:
     """
     Function for updating a model name for use in plots.
 
@@ -241,6 +244,9 @@ def model_name(key) -> str:
         name = 'AMES-Dusty'
 
     elif key == 'bt-settl':
+        name = 'BT-Settl'
+
+    elif key == 'bt-settl-cifist':
         name = 'BT-Settl'
 
     elif key == 'bt-nextgen':
@@ -310,7 +316,7 @@ def quantity_unit(param: List[str],
     if 'feh' in param:
         quantity.append('feh')
         unit.append(None)
-        label.append(r'[Fe/H]')
+        label.append('[Fe/H]')
 
     if 'fsed' in param:
         quantity.append('fsed')
@@ -320,7 +326,7 @@ def quantity_unit(param: List[str],
     if 'co' in param:
         quantity.append('co')
         unit.append(None)
-        label.append(r'C/O')
+        label.append('C/O')
 
     if 'radius' in param:
         quantity.append('radius')
@@ -344,7 +350,7 @@ def quantity_unit(param: List[str],
     for i in range(100):
         if f'radius_{i}' in param:
             quantity.append(f'radius_{i}')
-            unit.append(rf'$R_\mathregular{{J}}$')
+            unit.append(r'$R_\mathregular{{J}}$')
             label.append(rf'$R_\mathregular{{{i+1}}}$')
 
         else:
@@ -369,6 +375,11 @@ def quantity_unit(param: List[str],
         quantity.append('luminosity')
         unit.append(None)
         label.append(r'$\log\,L$/L$_\odot$')
+
+    if 'dust_ext' in param:
+        quantity.append('dust_ext')
+        unit.append('mag')
+        label.append('A$_\mathregular{V}$')
 
     return quantity, unit, label
 
@@ -436,140 +447,49 @@ def field_bounds_ticks(field_range):
 
 
 @typechecked
-def dust_cross_section(wavelengths: np.ndarray,
-                       n_index: np.ndarray,
-                       k_index: np.ndarray,
-                       radius: float) -> np.ndarray:
-    """
-    Function for calculating the extinction cross section of a dust grain.
+def remove_color_duplicates(object_names: List[str],
+                            empirical_names: np.ndarray) -> List[int]:
+    """"
+    Function for deselecting young/low-gravity objects that will already be plotted individually
+    as directly imaged objects.
 
     Parameters
     ----------
-    wavelengths : np.ndarray
-        Wavelengths (um).
-    n_index : np.ndarray
-        Real part of the refractive index.
-    k_index : np.ndarray
-        Imaginary part of the refractive index.
-    radius : np.ndarray
-        Radius of the dust grain (um).
+    object_names : list(str)
+        List with names of directly imaged planets and brown dwarfs.
+    empirical_names : np.ndarray
+        Array with names of young/low-gravity objects.
 
     Returns
     -------
-    np.ndarray
-        Extinction cross section (um2)
+    list
+        List with selected indices of the young/low-gravity objects.
     """
 
-    sigma = np.zeros(wavelengths.shape)
+    indices = []
 
-    for i, item in enumerate(wavelengths):
-        # PyMieScatt units are in nm and the grain size is provided as the diameter
-        mie = PyMieScatt.MieQ(complex(n_index[i], k_index[i]), item*1e3, 2.*radius*1e3,
-                              asDict=True, asCrossSection=True)
+    for i, item in enumerate(empirical_names):
+        if item == 'beta_Pic_b' and 'beta Pic b' in object_names:
+            continue
 
-        if 'Cext' in mie:
-            sigma[i] = mie['Cext']  # (nm2)
+        if item == 'HR8799b' and 'HR 8799 b' in object_names:
+            continue
 
-    return sigma*1e-6  # (um2)
+        if item == 'HR8799c' and 'HR 8799 c' in object_names:
+            continue
 
+        if item == 'HR8799d' and 'HR 8799 d' in object_names:
+            continue
 
-@typechecked
-def calc_reddening(filters_color: Tuple[str, str],
-                   extinction: Tuple[str, float],
-                   composition: str = 'MgSiO3',
-                   structure: str = 'crystalline',
-                   radius: float = 1.) -> Tuple[float, float]:
-    """
-    Function for calculating the reddening of a color given the extinction for a given filter.
+        if item == 'HR8799e' and 'HR 8799 e' in object_names:
+            continue
 
-    Parameters
-    ----------
-    filters_color : tuple(str, str)
-        Filter names for which the extinction is calculated.
-    extinction : str
-        Filter name and extinction (mag).
-    composition : str
-        Dust composition ('MgSiO3' or 'Fe').
-    structure : str
-        Grain structure ('crystalline' or 'amorphous').
-    radius : float
-        Radius of the dust grain (um).
+        if item == 'kappa_And_B' and 'kappa And b' in object_names:
+            continue
 
-    Returns
-    -------
-    float
-        Extinction (mag) for ``filters_color[0]``.
-    float
-        Extinction (mag) for ``filters_color[1]``.
-    """
+        if item == 'HD1160B' and 'HD 1160 B' in object_names:
+            continue
 
-    config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        indices.append(i)
 
-    config = configparser.ConfigParser()
-    config.read_file(open(config_file))
-
-    database_path = config['species']['database']
-
-    h5_file = h5py.File(database_path, 'r')
-
-    try:
-        h5_file['dust']
-
-    except KeyError:
-        h5_file.close()
-        species_db = database.Database()
-        species_db.add_dust()
-        h5_file = h5py.File(database_path, 'r')
-
-    if composition == 'MgSiO3' and structure == 'crystalline':
-        for i in range(3):
-            data = h5_file[f'dust/mgsio3/crystalline/axis_{i+1}']
-
-            # Average cross section of the three axes
-            if i == 0:
-                sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
-
-            else:
-                sigma += dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius) / 3.
-
-    else:
-        if composition == 'MgSiO3' and structure == 'amorphous':
-            data = h5_file[f'dust/mgsio3/amorphous/']
-
-        elif composition == 'Fe' and structure == 'crystalline':
-            data = h5_file[f'dust/fe/crystalline/']
-
-        elif composition == 'Fe' and structure == 'amorphous':
-            data = h5_file[f'dust/fe/amorphous/']
-
-        sigma = dust_cross_section(data[:, 0], data[:, 1], data[:, 2], radius)
-
-    interp_sigma = interp1d(data[:, 0], sigma, kind='linear')
-
-    h5_file.close()
-
-    read_filt = read_filter.ReadFilter(extinction[0])
-    transmission = read_filt.get_filter()
-
-    # Weighted average of the cross section for extinction[0]
-    sigma_mag = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                         transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
-
-    read_filt = read_filter.ReadFilter(filters_color[0])
-    transmission = read_filt.get_filter()
-
-    # Weighted average of the cross section for filters_color[0]
-    sigma_color_0 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
-
-    read_filt = read_filter.ReadFilter(filters_color[1])
-    transmission = read_filt.get_filter()
-
-    # Weighted average of the cross section for filters_color[1]
-    sigma_color_1 = np.trapz(interp_sigma(transmission[:, 0])*transmission[:, 1],
-                             transmission[:, 0]) / np.trapz(transmission[:, 1], transmission[:, 0])
-
-    density = extinction[1]/sigma_mag/2.5/np.log10(np.exp(1.))
-
-    return 2.5 * np.log10(np.exp(1.)) * sigma_color_0 * density, \
-        2.5 * np.log10(np.exp(1.)) * sigma_color_1 * density
+    return indices

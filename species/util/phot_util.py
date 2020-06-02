@@ -5,7 +5,7 @@ Utility functions for photometry.
 import math
 import warnings
 
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, Dict, List, Tuple
 
 import spectres
 import numpy as np
@@ -68,27 +68,32 @@ def multi_photometry(datatype,
     return box.create_box('synphot', name='synphot', flux=flux)
 
 
-def apparent_to_absolute(app_mag,
-                         distance):
+@typechecked
+def apparent_to_absolute(app_mag: Union[Tuple[float, Optional[float]],
+                                        Tuple[np.ndarray, Optional[np.ndarray]]],
+                         distance: Union[Tuple[float, Optional[float]],
+                                         Tuple[np.ndarray, Optional[np.ndarray]]]) -> \
+                            Union[Tuple[float, Optional[float]],
+                                  Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
     Function for converting an apparent magnitude into an absolute magnitude. The uncertainty on
     the distance is propagated into the uncertainty on the absolute magnitude.
 
     Parameters
     ----------
-    app_mag : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+    app_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
         Apparent magnitude and uncertainty (mag). The returned error on the absolute magnitude
         is set to None if the error on the apparent magnitude is set to None, for example
         ``app_mag=(15., None)``.
-    distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
         Distance and uncertainty (pc). The error is not propagated into the error on the absolute
         magnitude if set to None, for example ``distance=(20., None)``.
 
     Returns
     -------
-    float, numpy.ndarray
+    float, np.ndarray
         Absolute magnitude (mag).
-    float, numpy.ndarray, None
+    float, np.ndarray, None
         Uncertainty (mag).
     """
 
@@ -96,7 +101,7 @@ def apparent_to_absolute(app_mag,
 
     if app_mag[1] is not None and distance[1] is not None:
         dist_err = distance[1] * (5./(distance[0]*math.log(10.)))
-        abs_err = math.sqrt(app_mag[1]**2 + dist_err**2)
+        abs_err = np.sqrt(app_mag[1]**2 + dist_err**2)
 
     elif app_mag[1] is not None and distance[1] is None:
         abs_err = app_mag[1]
@@ -114,17 +119,17 @@ def absolute_to_apparent(abs_mag,
 
     Parameters
     ----------
-    abs_mag : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+    abs_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
         Absolute magnitude and uncertainty (mag). The same uncertainty is used for the
         apparent magnitude.
-    distance : tuple(float, float), tuple(numpy.ndarray, numpy.ndarray)
+    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
         Distance and uncertainty (pc).
 
     Returns
     -------
-    float, numpy.ndarray
+    float, np.ndarray
         Apparent magnitude (mag).
-    float, numpy.ndarray, None
+    float, np.ndarray, None
         Uncertainty (mag).
     """
 
@@ -227,7 +232,12 @@ def get_residuals(datatype: str,
 
                     model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-                    flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
+                    flux_new = spectres.spectres(wl_new,
+                                                 model.wavelength,
+                                                 model.flux,
+                                                 spec_errs=None,
+                                                 fill=0.,
+                                                 verbose=True)
 
                 else:
                     if spectrum == 'petitradtrans':
@@ -243,21 +253,27 @@ def get_residuals(datatype: str,
                         #
                         # # separate resampling to the new wavelength points
                         #
-                        # flux_new = spectres.spectres(wl_new, model.wavelength, model.flux)
+                        # flux_new = spectres.spectres(wl_new,
+                        #                              model.wavelength,
+                        #                              model.flux,
+                        #                              spec_errs=None,
+                        #                              fill=0.,
+                        #                              verbose=True)
 
                     else:
                         readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
                         # resampling to the new wavelength points is done in teh get_model function
 
-                        model = readmodel.get_model(parameters,
-                                                    spec_res=spec_res,
-                                                    wavel_resample=wl_new,
-                                                    smooth=True)
+                        model_spec = readmodel.get_model(parameters,
+                                                         spec_res=spec_res,
+                                                         wavel_resample=wl_new,
+                                                         smooth=True)
 
-                        flux_new = model.flux
+                        flux_new = model_spec.flux
 
-                res_tmp = (objectbox.spectrum[key][0][:, 1]-flux_new)/objectbox.spectrum[key][0][:, 2]
+                data_spec = objectbox.spectrum[key][0]
+                res_tmp = (data_spec[:, 1]-flux_new) / data_spec[:, 2]
 
                 res_spec[key] = np.column_stack([wl_new, res_tmp])
 
@@ -280,8 +296,8 @@ def get_residuals(datatype: str,
     if res_spec is not None:
         for key in objectbox.spectrum:
             if isinstance(inc_spec, bool) or key in inc_spec:
-                print(f'   - {key}: min: {np.amin(res_spec[key]):.2f}, '
-                      f'max: {np.amax(res_spec[key]):.2f}')
+                print(f'   - {key}: min: {np.nanmin(res_spec[key]):.2f}, '
+                      f'max: {np.nanmax(res_spec[key]):.2f}')
 
     return box.create_box(boxtype='residuals',
                           name=objectbox.name,

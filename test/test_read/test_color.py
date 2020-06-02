@@ -42,7 +42,7 @@ class TestColor:
         colormag_box = read_colormag.get_color_magnitude(object_type=None)
         colormag_box.open_box()
 
-        assert np.nansum(colormag_box.color) == pytest.approx(71.96)
+        assert np.nansum(colormag_box.color) == pytest.approx(14.05)
         assert np.nansum(colormag_box.magnitude) == pytest.approx(1519.373)
 
     def test_read_color_color(self):
@@ -60,5 +60,5 @@ class TestColor:
 
         colorcolor_box = read_colorcolor.get_color_color(object_type=None)
 
-        assert np.nansum(colorcolor_box.color1) == pytest.approx(162.13107)
-        assert np.nansum(colorcolor_box.color2) == pytest.approx(141.24994)
+        assert np.nansum(colorcolor_box.color1) == pytest.approx(166.99384)
+        assert np.nansum(colorcolor_box.color2) == pytest.approx(138.5127)

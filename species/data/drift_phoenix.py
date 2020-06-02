@@ -115,6 +115,9 @@ def add_drift_phoenix(input_path,
                         warnings.warn('The wavelength range should fall within the range of the '
                                       'original wavelength sampling. Storing zeros instead.')
 
+    print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
+    print(f'\r{print_message:<65}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       np.asarray(feh),
@@ -123,7 +126,7 @@ def add_drift_phoenix(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('drift-phoenix', ('teff', 'logg', 'feh'), database, data_sorted)
-
-    print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
-    print(f'\r{print_message:<65}')
+    data_util.write_data('drift-phoenix',
+                         ['teff', 'logg', 'feh'],
+                         database,
+                         data_sorted)

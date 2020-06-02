@@ -15,13 +15,13 @@ The software profits from publicly available data such as photometric and spectr
 
 The following data are currently supported by *species* (support for other data sets can be requested):
 
-- `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov/index.php?model=drift>`_ atmospheric models
-- `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_ atmospheric models
-- `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_ atmospheric models
-- `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric models
-- `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA/>`_ atmospheric models
-- `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_ atmospheric models
-- Exo-REM atmospheric models
+- `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov/index.php?model=drift>`_ atmospheric model spectra
+- `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_ atmospheric model spectra
+- `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_ atmospheric model spectra
+- `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_ atmospheric model spectra
+- `BT-Settl <https://phoenix.ens-lyon.fr/Grids/BT-Settl/CIFIST2011c/SPECTRA/>`_ atmospheric model spectra
+- `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_ atmospheric model spectra
+- Exo-REM atmospheric model spectra (`Baudino et al. 2015 <https://ui.adsabs.harvard.edu/abs/2015A%26A...582A..83B/abstract>`_ and `Charnay et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract>`_)
 - All filter profiles from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
 - Spectra from the `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - Spectra from the `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_

@@ -9,6 +9,7 @@ import urllib.request
 import h5py
 import numpy as np
 
+from astropy.io import fits
 from typeguard import typechecked
 
 
@@ -88,5 +89,47 @@ def add_optical_constants(input_path: str,
     nk_file = os.path.join(input_path, 'optical_constants/fe/amorphous/fe_pollack_1994.dat')
     data = np.loadtxt(nk_file)
     database.create_dataset('dust/fe/amorphous', data=data)
+
+    print(' [DONE]')
+
+
+@typechecked
+def add_cross_sections(input_path: str,
+                       database: h5py._hl.files.File) -> None:
+    """
+    Function for adding the extinction cross section of crystalline MgSiO3 to the database.
+
+    Parameters
+    ----------
+    input_path : str
+        Folder where the data is located.
+    database : h5py._hl.files.File
+        Database.
+
+    Returns
+    -------
+    None
+        NoneType
+    """
+
+    if not os.path.exists(input_path):
+        os.makedirs(input_path)
+
+    url = 'https://people.phys.ethz.ch/~stolkert/species/mgsio3_crystalline_c_ext.fits'
+
+    data_file = os.path.join(input_path, 'mgsio3_crystalline_c_ext.fits')
+
+    if not os.path.isfile(data_file):
+        print('Downloading dust cross sections (23 kB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
+        print(' [DONE]')
+
+    print('Adding dust cross sections...', end='')
+
+    with fits.open(os.path.join(input_path, 'mgsio3_crystalline_c_ext.fits')) as hdu_list:
+        database.create_dataset('dust/mgsio3/crystalline/cross_section/', data=hdu_list[0].data)
+        database.create_dataset('dust/mgsio3/crystalline/wavelength/', data=hdu_list[1].data)
+        database.create_dataset('dust/mgsio3/crystalline/radius/', data=hdu_list[2].data)
+        database.create_dataset('dust/mgsio3/crystalline/sigma/', data=hdu_list[3].data)
 
     print(' [DONE]')

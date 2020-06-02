@@ -6,17 +6,22 @@ import os
 import tarfile
 import urllib.request
 
+from typing import Optional, List
+
+import h5py
 import numpy as np
 import pandas as pd
 
 from astropy.io import fits
+from typeguard import typechecked
 
 from species.util import data_util, query_util
 
 
-def add_irtf(input_path,
-             database,
-             sptypes):
+@typechecked
+def add_irtf(input_path: str,
+             database: h5py._hl.files.File,
+             sptypes: Optional[List[str]] = None) -> None:
     """
     Function for adding the IRTF Spectral Library to the database.
 
@@ -26,14 +31,18 @@ def add_irtf(input_path,
         Path of the data folder.
     database : h5py._hl.files.File
         Database.
-    sptypes : tuple(str, )
-        Spectral types ('F', 'G', 'K', 'M', 'L', 'T').
+    sptypes : list(str, ), None
+        List with the spectral types ('F', 'G', 'K', 'M', 'L', 'T'). All spectral types are
+        included if set to ``None``.
 
     Returns
     -------
     NoneType
         None
     """
+
+    if sptypes is None:
+        sptypes = ['F', 'G', 'K', 'M', 'L', 'T']
 
     distance_url = 'https://people.phys.ethz.ch/~stolkert/species/distance.dat'
     distance_file = os.path.join(input_path, 'distance.dat')

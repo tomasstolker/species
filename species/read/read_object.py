@@ -3,10 +3,9 @@ Module with reading functionalities for data from individual objects.
 """
 
 import os
-import math
 import configparser
 
-from typing import Tuple
+from typing import Optional, Union, Tuple
 
 import h5py
 import numpy as np
@@ -133,7 +132,8 @@ class ReadObject:
 
     @typechecked
     def get_absmag(self,
-                   filter_name: str) -> Tuple[float, float]:
+                   filter_name: str) -> Union[Tuple[float, Optional[float]],
+                                              Tuple[np.ndarray, Optional[np.ndarray]]]:
         """
         Function for calculating the absolute magnitudes of the object from the apparent
         magnitudes and distance. The errors on the apparent magnitude and distance are propagated
@@ -142,12 +142,14 @@ class ReadObject:
         Parameters
         ----------
         filter_name : str
-            Filter ID.
+            Filter name.
 
         Returns
         -------
-        float, float
-            Absolute magnitude (mag), uncertainty (mag).
+        float, np.ndarray
+            Absolute magnitude (mag)
+        float, np.ndarray
+            Error (mag).
         """
 
         with h5py.File(self.database, 'r') as h5_file:
@@ -161,9 +163,11 @@ class ReadObject:
                                  f'available with the {filter_name}.')
 
         if obj_phot.ndim == 1:
-            abs_mag = phot_util.apparent_to_absolute(obj_phot[0:2], obj_distance)
+            abs_mag = phot_util.apparent_to_absolute((obj_phot[0], obj_phot[1]),
+                                                     (obj_distance[0], obj_distance[1]))
 
         elif obj_phot.ndim == 2:
-            abs_mag = phot_util.apparent_to_absolute(obj_phot[0:2, :], obj_distance)
+            abs_mag = phot_util.apparent_to_absolute((obj_phot[0, :], obj_phot[1, :]),
+                                                     (obj_distance[0], obj_distance[1]))
 
         return abs_mag

@@ -149,6 +149,9 @@ def add_ames_dusty(input_path,
                                   f'and log(g)={logg_val}, which will be corrected by the '
                                   f'\'write_data\' function afterwards.')
 
+    print_message = 'Adding AMES-Dusty model spectra... [DONE]'
+    print(f'\r{print_message:<75}')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
@@ -158,6 +161,3 @@ def add_ames_dusty(input_path,
                                       np.asarray(flux))
 
     data_util.write_data('ames-dusty', ['teff', 'logg'], database, data_sorted)
-
-    print_message = 'Adding AMES-Dusty model spectra... [DONE]'
-    print(f'\r{print_message:<75}')

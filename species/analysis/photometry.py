@@ -31,7 +31,7 @@ class SyntheticPhotometry:
         Parameters
         ----------
         filter_name : str
-            Filter ID as listed in the database. Filters from the SVO Filter Profile Service are
+            Filter name as listed in the database. Filters from the SVO Filter Profile Service are
             downloaded and added to the database.
 
         Returns

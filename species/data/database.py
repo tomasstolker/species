@@ -24,8 +24,8 @@ from astropy.io import fits
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, btsettl, ames_dusty, ames_cond, \
-                         isochrones, petitcode, exo_rem, dust
+                         companions, filters, btsettl, btsettl_cifist, ames_dusty, \
+                         ames_cond, isochrones, petitcode, exo_rem, dust
 from species.read import read_model, read_calibration, read_planck
 from species.util import data_util
 # from species.util import data_util, retrieval_util
@@ -36,7 +36,8 @@ class Database:
     Class for fitting atmospheric model spectra to photometric data.
     """
 
-    def __init__(self):
+    @typechecked
+    def __init__(self) -> None:
         """
         Returns
         -------
@@ -52,7 +53,8 @@ class Database:
         self.database = config['species']['database']
         self.input_path = config['species']['data_folder']
 
-    def list_content(self):
+    @typechecked
+    def list_content(self) -> None:
         """
         Returns
         -------
@@ -89,7 +91,8 @@ class Database:
             descend(hdf_file)
 
     @staticmethod
-    def list_companions():
+    @typechecked
+    def list_companions() -> None:
         """
         Returns
         -------
@@ -109,8 +112,9 @@ class Database:
 
             print()
 
+    @typechecked
     def delete_data(self,
-                    dataset):
+                    dataset: str) -> None:
         """
         Function for deleting a dataset from the HDF5 database.
 
@@ -133,7 +137,7 @@ class Database:
 
     @typechecked
     def add_companion(self,
-                      name: Union[Optional[str], Optional[List[str]]]) -> None:
+                      name: Union[Optional[str], Optional[List[str]]] = None) -> None:
         """
         Function for adding the magnitudes of directly imaged planets and brown dwarfs from
         :class:`~species.data.companions.get_data` to the database.
@@ -198,6 +202,7 @@ class Database:
         h5_file.create_group('dust')
 
         dust.add_optical_constants(self.input_path, h5_file)
+        dust.add_cross_sections(self.input_path, h5_file)
 
         h5_file.close()
 
@@ -230,14 +235,14 @@ class Database:
 
         h5_file = h5py.File(self.database, 'a')
 
+        if f'filters/{filter_name}' in h5_file:
+            del h5_file[f'filters/{filter_name}']
+
         if 'filters' not in h5_file:
             h5_file.create_group('filters')
 
         if f'filters/{filter_split[0]}' not in h5_file:
             h5_file.create_group(f'filters/{filter_split[0]}')
-
-        if f'filters/{filter_name}' in h5_file:
-            del h5_file[f'filters/{filter_name}']
 
         if filename is not None:
             data = np.loadtxt(filename)
@@ -255,17 +260,18 @@ class Database:
 
         print(' [DONE]')
 
+    @typechecked
     def add_isochrones(self,
-                       filename,
-                       tag,
-                       model='baraffe'):
+                       filename: str,
+                       tag: str,
+                       model: str = 'baraffe') -> None:
         """
-        Function for adding isochrones data to the database.
+        Function for adding isochrone data to the database.
 
         Parameters
         ----------
         filename : str
-            Filename with the isochrones data.
+            Filename with the isochrone data.
         tag : str
             Database tag name where the isochrone that will be stored.
         model : str
@@ -305,9 +311,9 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-nextgen', 'drift-phoenix',
-            'petitcode-cool-clear', 'petitcode-cool-cloudy', 'petitcode-hot-clear',
-            'petitcode-hot-cloudy', or 'exo-rem').
+            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-settl-cifist', 'bt-nextgen',
+            'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', or 'exo-rem').
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to None.
@@ -334,15 +340,15 @@ class Database:
             raise ValueError(f'The {model} model is not publicly available and needs to '
                              f'be imported by setting the \'data_folder\' parameter.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and wavel_range is None:
+        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and wavel_range is None:
             raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-sett', 'bt-nextgen'] and spec_res is None:
+        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and spec_res is None:
             raise ValueError('The \'spec_res\' should be set for the \'{model}\' models to '
                              'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['bt-settl', 'bt-nextgen'] and teff_range is None:
+        if model == 'bt-nextgen' and teff_range is None:
             warnings.warn('The temperature range is not restricted with the \'teff_range\' '
                           'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
                           'will be very slow.')
@@ -376,6 +382,15 @@ class Database:
                                 wavel_range,
                                 teff_range,
                                 spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'bt-settl-cifist':
+            btsettl_cifist.add_btsettl(self.input_path,
+                                       h5_file,
+                                       wavel_range,
+                                       teff_range,
+                                       spec_res)
 
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
 
@@ -449,7 +464,7 @@ class Database:
                              f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
                              f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
-                             f'\'petitcode-hot-cloudy\', \'exo-rem\'.')
+                             f'\'petitcode-hot-cloudy\', \'exo-rem\', \'bt-settl-cifist\'.')
 
         h5_file.close()
 
@@ -790,7 +805,7 @@ class Database:
                     dset.attrs['specres'] = 0.
 
                 else:
-                    print(f'      - {key}: {value[2]:.2f}')
+                    print(f'      - {key}: {value[2]:.1f}')
                     dset.attrs['specres'] = value[2]
 
         h5_file.close()
@@ -913,9 +928,10 @@ class Database:
 
         print(' [DONE]')
 
+    @typechecked
     def add_spectrum(self,
-                     spec_library,
-                     sptypes=None):
+                     spec_library: str,
+                     sptypes: Optional[List[str]] = None) -> None:
         """
         Parameters
         ----------
