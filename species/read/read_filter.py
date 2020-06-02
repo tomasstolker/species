@@ -59,10 +59,7 @@ class ReadFilter:
 
         h5_file = h5py.File(self.database, 'r')
 
-        if 'filters' in h5_file and self.filter_name in h5_file['filters']:
-            h5_file[f'filters/{self.filter_name}']
-
-        else:
+        if 'filters' not in h5_file or self.filter_name not in h5_file['filters']:
             h5_file.close()
             species_db = database.Database()
             species_db.add_filter(self.filter_name)
