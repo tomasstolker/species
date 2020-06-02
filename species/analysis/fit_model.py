@@ -9,10 +9,8 @@ import warnings
 from typing import Optional, Union, List, Tuple, Dict
 from multiprocessing import Pool, cpu_count
 
-import h5py
 import emcee
 import spectres
-import configparser
 import numpy as np
 
 # Installation of MultiNest is not possible on readthedocs
@@ -644,7 +642,8 @@ class FitModel:
                 if item in self.bounds:
                     del self.bounds[item]
 
-        if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and 'dust_ext' in self.bounds:
+        if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and \
+                'dust_ext' in self.bounds:
             self.cross_sections, self.dust_radius, self.dust_sigma = \
                 dust_util.interpolate_dust(inc_phot, inc_spec, self.spectrum)
 
@@ -755,6 +754,15 @@ class FitModel:
 
             if item in guess:
                 del guess[item]
+
+        if 'dust_radius' in self.bounds:
+            sigma['dust_radius'] = 0.01  # (dex)
+
+        if 'dust_sigma' in self.bounds:
+            sigma['dust_sigma'] = 0.01
+
+        if 'dust_mag' in self.bounds:
+            sigma['dust_mag'] = 0.01
 
         initial = np.zeros((nwalkers, ndim))
 
@@ -980,7 +988,9 @@ class FitModel:
                         ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
             if len(dust_param) == 3:
-                cross_tmp = self.cross_sections['Generic/Bessell.V'](dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                cross_tmp = self.cross_sections['Generic/Bessell.V'](
+                    dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+
                 n_grains = dust_param['dust_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
             for i, obj_item in enumerate(self.objphot):
@@ -993,7 +1003,8 @@ class FitModel:
                     phot_flux *= flux_scaling
 
                 if len(dust_param) == 3:
-                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
+                        dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
                 if obj_item.ndim == 1:
@@ -1038,7 +1049,9 @@ class FitModel:
 
                 if len(dust_param) == 3:
                     for j, cross_item in enumerate(self.cross_sections[item]):
-                        cross_tmp = cross_item(dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                        cross_tmp = cross_item(dust_param['dust_sigma'],
+                                               10.**dust_param['dust_radius'])
+
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
                 if self.spectrum[item][2] is not None:
