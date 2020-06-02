@@ -279,7 +279,7 @@ def lnprob(param: np.ndarray,
                                      List[photometry.SyntheticPhotometry]]],
            modelspec: List[read_model.ReadModel],
            n_planck: int,
-           fit_corr: List[str]) -> np.float64:
+           fit_corr: List[str])) -> np.float64:
     """
     Internal function for calculating the log posterior.
 
@@ -424,7 +424,7 @@ class FitModel:
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
 
-            Reddening parameters:
+            Dust extinction parameters:
 
                  - Extinction by dust can be fitted for grains with a log-normal size distribution,
                    a crystalline MgSiO3 composition, and a homogeneous, spherical structure.
@@ -444,6 +444,8 @@ class FitModel:
 
                  - A uniform prior is used for ``dust_sigma`` and ``dust_ext``, and a log-uniform
                    prior for ``dust_radius``.
+
+                 - Only supported by `run_multinest`.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none

@@ -178,6 +178,10 @@ def add_ames_cond(input_path,
     print_message = 'Adding AMES-Cond model spectra... [DONE]'
     print(f'\r{print_message:<71}')
 
+    print('Grid points with the following parameters have been excluded:')
+    print('   - log(g) < 2.5')
+    print('   - log(g) > 5.5')
+
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
                                       None,
@@ -186,4 +190,7 @@ def add_ames_cond(input_path,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('ames-cond', ['teff', 'logg'], database, data_sorted)
+    data_util.write_data('ames-cond',
+                         ['teff', 'logg'],
+                         database,
+                         data_sorted)

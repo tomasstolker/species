@@ -684,6 +684,15 @@ class ReadModel:
                                    parameters=model_param,
                                    quantity='flux')
 
+        if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
+                'dust_ext' in model_param:
+
+            model_box.flux = self.apply_extinction(model_box.wavelength,
+                                                   model_box.flux,
+                                                   model_param['dust_radius'],
+                                                   model_param['dust_sigma'],
+                                                   model_param['dust_ext'])
+
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
