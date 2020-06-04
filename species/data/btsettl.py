@@ -4,7 +4,6 @@ Module for BT-Settl atmospheric model spectra.
 
 import os
 import tarfile
-import warnings
 import urllib.request
 
 from typing import Optional, Tuple
@@ -23,7 +22,7 @@ def add_btsettl(input_path: str,
                 database: h5py._hl.files.File,
                 wavel_range: Optional[Tuple[float, float]],
                 teff_range: Optional[Tuple[float, float]],
-                spec_res: Optional[float]):
+                spec_res: Optional[float]) -> None:
     """
     Function for adding the BT-Settl atmospheric models (solar metallicity) to the database.
     The spectra had been downloaded from the Theoretical spectra web server
@@ -78,7 +77,7 @@ def add_btsettl(input_path: str,
     logg = []
     flux = []
 
-    if wavel_range is not None:
+    if wavel_range is not None and spec_res is not None:
         wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
@@ -103,7 +102,7 @@ def add_btsettl(input_path: str,
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                if wavel_range is None:
+                if wavel_range is None or spec_res is None:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
@@ -113,15 +112,21 @@ def add_btsettl(input_path: str,
                     flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
-                    try:
-                        flux_resample = spectres.spectres(wavelength, data_wavel, data_flux)
-                        flux.append(flux_resample)  # (W m-2 um-1)
+                    flux_resample = spectres.spectres(wavelength,
+                                                      data_wavel,
+                                                      data_flux,
+                                                      spec_errs=None,
+                                                      fill=np.nan,
+                                                      verbose=False)
 
-                    except ValueError:
-                        flux.append(np.zeros(wavelength.shape[0]))  # (um)
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(f'Resampling is only possible if the new wavelength '
+                                         f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                         f'sufficiently far within the wavelength range '
+                                         f'({data_wavel[0]} - {data_wavel[-1]} um) of the input '
+                                         f'spectra.')
 
-                        warnings.warn('The wavelength range should fall within the range of the '
-                                      'original wavelength sampling. Storing zeros instead.')
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding BT-Settl model spectra... [DONE]'
     print(f'\r{print_message:<69}')

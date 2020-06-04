@@ -6,17 +6,23 @@ import os
 import tarfile
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
+
+from typeguard import typechecked
 
 from species.util import data_util, read_util
 
 
-def add_drift_phoenix(input_path,
-                      database,
-                      wavel_range=None,
-                      teff_range=None,
-                      spec_res=1000.):
+@typechecked
+def add_drift_phoenix(input_path: str,
+                      database: h5py._hl.files.File,
+                      wavel_range: Optional[Tuple[float, float]] = None,
+                      teff_range: Optional[Tuple[float, float]] = None,
+                      spec_res: Optional[float] = 1000.) -> None:
     """
     Function for adding the DRIFT-PHOENIX atmospheric models to the database.
 
@@ -27,11 +33,11 @@ def add_drift_phoenix(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (um). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points are used if set to ``None``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All temperatures are selected if set to None.
+        Effective temperature range (K). All temperatures are selected if set to ``None``.
     spec_res : float, None
-        Spectral resolution. Not used if ``wavel_range`` is set to None.
+        Spectral resolution. Not used if ``wavel_range`` is set to ``None``.
 
     Returns
     -------
@@ -63,7 +69,7 @@ def add_drift_phoenix(input_path,
     feh = []
     flux = []
 
-    if wavel_range is not None:
+    if wavel_range is not None and spec_res is not None:
         wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
@@ -107,13 +113,21 @@ def add_drift_phoenix(input_path,
                     # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
                     data_flux = data[:, 1]*1e-7*1e4*1e4
 
-                    try:
-                        flux.append(spectres.spectres(wavelength, data_wavel, data_flux))
-                    except ValueError:
-                        flux.append(np.zeros(wavelength.shape[0]))
+                    flux_resample = spectres.spectres(wavelength,
+                                                      data_wavel,
+                                                      data_flux,
+                                                      spec_errs=None,
+                                                      fill=np.nan,
+                                                      verbose=False)
 
-                        warnings.warn('The wavelength range should fall within the range of the '
-                                      'original wavelength sampling. Storing zeros instead.')
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(f'Resampling is only possible if the new wavelength '
+                                         f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                         f'sufficiently far within the wavelength range '
+                                         f'({data_wavel[0]} - {data_wavel[-1]} um) of the input '
+                                         f'spectra.')
+
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
     print(f'\r{print_message:<65}')

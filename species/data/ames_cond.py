@@ -3,23 +3,27 @@ Module for AMES-Cond atmospheric model spectra.
 """
 
 import os
-import math
 import gzip
 import tarfile
-import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
+
+from typeguard import typechecked
 
 from species.util import data_util, read_util
 
 
-def add_ames_cond(input_path,
-                  database,
-                  wavel_range,
-                  teff_range,
-                  spec_res):
+@typechecked
+def add_ames_cond(input_path: str,
+                  database: h5py._hl.files.File,
+                  wavel_range: Tuple[float, float],
+                  teff_range: Optional[Tuple[float, float]] = None,
+                  spec_res: float = 1000.) -> None:
     """
     Function for adding the AMES-Cond atmospheric models to the database.
 
@@ -167,13 +171,30 @@ def add_ames_cond(input_path,
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                try:
-                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
-                except ValueError:
+                flux_resample = spectres.spectres(wavelength,
+                                                  data[:, 0],
+                                                  data[:, 1],
+                                                  spec_errs=None,
+                                                  fill=np.nan,
+                                                  verbose=False)
+
+                # if np.isnan(np.sum(flux_resample)):
+                #     raise ValueError(f'Resampling is only possible if the new wavelength '
+                #                      f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                #                      f'sufficiently far within the wavelength range '
+                #                      f'({data[0, 0]} - {data[-1, 0]} um) of the input '
+                #                      f'spectra.')
+                #
+                # flux.append(flux_resample)  # (W m-2 um-1)
+
+                if np.isnan(np.sum(flux_resample)):
                     flux.append(np.zeros(wavelength.shape[0]))
 
                     warnings.warn('The wavelength range should fall within the range of the '
                                   'original wavelength sampling. Storing zeros instead.')
+
+                else:
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding AMES-Cond model spectra... [DONE]'
     print(f'\r{print_message:<71}')

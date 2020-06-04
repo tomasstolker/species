@@ -33,7 +33,7 @@ def plot_spectrum(boxes: list,
                   offset: Optional[Tuple[float, float]] = None,
                   legend: Union[str, dict, Tuple[float, float],
                                 List[Optional[Union[dict, str, Tuple[float, float]]]]] = None,
-                  figsize: Optional[Tuple[float, float]] = (7., 5.),
+                  figsize: Optional[Tuple[float, float]] = (10., 5.),
                   object_type: str = 'planet',
                   quantity: str = 'flux density',
                   output: str = 'spectrum.pdf'):

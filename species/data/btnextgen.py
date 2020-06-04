@@ -4,21 +4,26 @@ Module for BT-NextGen atmospheric model spectra.
 
 import os
 import tarfile
-import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
 import pandas as pd
 
+from typeguard import typechecked
+
 from species.util import data_util, read_util
 
 
-def add_btnextgen(input_path,
-                  database,
-                  wavel_range,
-                  teff_range,
-                  spec_res):
+@typechecked
+def add_btnextgen(input_path: str,
+                  database: h5py._hl.files.File,
+                  wavel_range: Tuple[float, float],
+                  teff_range: Optional[Tuple[float, float]] = None,
+                  spec_res: float = 1000.) -> None:
     """
     Function for adding the BT-NextGen atmospheric models to the database.
 
@@ -31,7 +36,7 @@ def add_btnextgen(input_path,
     wavel_range : tuple(float, float)
         Wavelength range (um).
     teff_range : tuple(float, float), None
-        Effective temperature range (K).
+        Effective temperature range (K). All data is selected if set to ``None``.
     spec_res : float
         Spectral resolution.
 
@@ -129,15 +134,21 @@ def add_btnextgen(input_path,
                 logg.append(logg_val)
                 feh.append(feh_val)
 
-                flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
+                flux_resample = spectres.spectres(wavelength,
+                                                  data[:, 0],
+                                                  data[:, 1],
+                                                  spec_errs=None,
+                                                  fill=np.nan,
+                                                  verbose=False)
 
-                try:
-                    flux.append(spectres.spectres(wavelength, data[:, 0], data[:, 1]))
-                except ValueError:
-                    flux.append(np.zeros(wavelength.shape[0]))
+                if np.isnan(np.sum(flux_resample)):
+                    raise ValueError(f'Resampling is only possible if the new wavelength '
+                                     f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                     f'sufficiently far within the wavelength range '
+                                     f'({data[0, 0]} - {data_wavel[-1, 0]} um) of the input '
+                                     f'spectra.')
 
-                    warnings.warn('The wavelength range should fall within the range of the '
-                                  'original wavelength sampling. Storing zeros instead.')
+                flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding BT-NextGen model spectra... [DONE]'
     print(f'\r{print_message:<72}')

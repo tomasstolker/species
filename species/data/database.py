@@ -301,12 +301,13 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_model(self,
-                  model,
-                  wavel_range=None,
-                  spec_res=None,
-                  teff_range=None,
-                  data_folder=None):
+                  model: str,
+                  wavel_range: Optional[Tuple[float, float]] = None,
+                  spec_res: Optional[float] = None,
+                  teff_range: Optional[Tuple[float, float]] = None,
+                  data_folder: Optional[str] = None) -> None:
         """
         Parameters
         ----------
@@ -316,11 +317,12 @@ class Database:
             'petitcode-hot-clear', 'petitcode-hot-cloudy', or 'exo-rem').
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
-            these models, the original wavelength points are used if set to None.
-            which case the argument can be set to None.
+            these models, the original wavelength points are used if set to ``None``.
+            which case the argument can be set to ``None``.
         spec_res : float, None
-            Spectral resolution. Optional for the DRIFT-PHOENIX and petitCODE models, in which
-            case the argument is only used if ``wavel_range`` is not None.
+            Spectral resolution. The parameter is optional for the DRIFT-PHOENIX, petitCODE,
+            BT-Settl, and Exo-REM models. The argument is only used if ``wavel_range`` is not
+            ``None``.
         teff_range : tuple(float, float), None
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
