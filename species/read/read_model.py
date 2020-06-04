@@ -225,6 +225,7 @@ class ReadModel:
 
                     if self.filter_name is not None:
                         flux_new[i, j] = self.get_flux(model_param)[0]
+
                     else:
                         flux_new[i, j, :] = self.get_model(model_param,
                                                            spec_res=spec_res,
@@ -243,6 +244,7 @@ class ReadModel:
 
                         if self.filter_name is not None:
                             flux_new[i, j, k] = self.get_flux(model_param)[0]
+
                         else:
                             flux_new[i, j, k, :] = self.get_model(model_param,
                                                                   spec_res=spec_res,
@@ -263,6 +265,7 @@ class ReadModel:
 
                             if self.filter_name is not None:
                                 flux_new[i, j, k, m] = self.get_flux(model_param)[0]
+
                             else:
                                 flux_new[i, j, k, m, :] = self.get_model(
                                     model_param, spec_res=spec_res, wavel_resample=wavel_resample,
@@ -284,6 +287,7 @@ class ReadModel:
 
                                 if self.filter_name is not None:
                                     flux_new[i, j, k, m, n] = self.get_flux(model_param)[0]
+
                                 else:
                                     flux_new[i, j, k, m, n, :] = self.get_model(
                                         model_param, spec_res=spec_res,
@@ -498,7 +502,7 @@ class ReadModel:
                                      self.wl_points,
                                      flux,
                                      spec_errs=None,
-                                     fill=0.,
+                                     fill=np.nan,
                                      verbose=True)
 
         elif spec_res is not None and not smooth:
@@ -521,7 +525,7 @@ class ReadModel:
                                      self.wl_points,
                                      flux,
                                      spec_errs=None,
-                                     fill=0.,
+                                     fill=np.nan,
                                      verbose=True)
 
         if magnitude:
@@ -549,7 +553,7 @@ class ReadModel:
                                              calibbox.wavelength,
                                              calibbox.flux,
                                              spec_errs=calibbox.error,
-                                             fill=0.,
+                                             fill=np.nan,
                                              verbose=True)
 
             flux = -2.5*np.log10(flux/flux_vega)
@@ -557,17 +561,22 @@ class ReadModel:
         else:
             quantity = 'flux'
 
-        is_finite = np.where(np.isfinite(flux))[0]
+        if np.isnan(np.sum(flux)):
+            warnings.warn(f'The resampled spectrum contains {np.sum(np.isnan(flux))} NaNs, '
+                          f'probably because the original wavelength range does not fully '
+                          f'encompass the new wavelength range.')
 
-        if wavel_resample is None:
-            wavelength = self.wl_points[is_finite]
-        else:
-            wavelength = wavel_resample[is_finite]
-
-        if wavelength.shape[0] == 0:
-            raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
-                             f'interpolated at {model_param} because zeros are stored in the '
-                             f'database.')
+        # is_finite = np.where(np.isfinite(flux))[0]
+        #
+        # if wavel_resample is None:
+        #     wavelength = self.wl_points[is_finite]
+        # else:
+        #     wavelength = wavel_resample[is_finite]
+        #
+        # if wavelength.shape[0] == 0:
+        #     raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
+        #                      f'interpolated at {model_param} because zeros are stored in the '
+        #                      f'database.')
 
         model_box = box.create_box(boxtype='model',
                                    model=self.model,

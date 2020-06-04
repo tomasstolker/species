@@ -7,18 +7,24 @@ import zipfile
 import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
+
+from typeguard import typechecked
 
 from species.core import constants
 from species.util import data_util, read_util
 
 
-def add_petitcode_cool_clear(input_path,
-                             database,
-                             wavel_range=None,
-                             teff_range=None,
-                             spec_res=1000.):
+@typechecked
+def add_petitcode_cool_clear(input_path: str,
+                             database: h5py._hl.files.File,
+                             wavel_range: Optional[Tuple[float, float]] = None,
+                             teff_range: Optional[Tuple[float, float]] = None,
+                             spec_res: Optional[float] = 1000.) -> None:
     """
     Function for adding the petitCODE cool clear atmospheric models to the database.
 
@@ -136,11 +142,12 @@ def add_petitcode_cool_clear(input_path,
                          data_sorted)
 
 
-def add_petitcode_cool_cloudy(input_path,
-                              database,
-                              wavel_range=None,
-                              teff_range=None,
-                              spec_res=1000.):
+@typechecked
+def add_petitcode_cool_cloudy(input_path: str,
+                              database: h5py._hl.files.File,
+                              wavel_range: Optional[Tuple[float, float]] = None,
+                              teff_range: Optional[Tuple[float, float]] = None,
+                              spec_res: Optional[float] = 1000.) -> None:
     """
     Function for adding the petitCODE cool cloudy atmospheric models to the database.
 
@@ -261,12 +268,13 @@ def add_petitcode_cool_cloudy(input_path,
                          data_sorted)
 
 
-def add_petitcode_hot_clear(input_path,
-                            database,
-                            data_folder,
-                            wavel_range=None,
-                            teff_range=None,
-                            spec_res=1000.):
+@typechecked
+def add_petitcode_hot_clear(input_path: str,
+                            database: h5py._hl.files.File,
+                            data_folder: str,
+                            wavel_range: Optional[Tuple[float, float]] = None,
+                            teff_range: Optional[Tuple[float, float]] = None,
+                            spec_res: Optional[float] = 1000.) -> None:
     """
     Function for adding the petitCODE hot clear atmospheric models to the database.
 
@@ -369,12 +377,13 @@ def add_petitcode_hot_clear(input_path,
                          data_sorted)
 
 
-def add_petitcode_hot_cloudy(input_path,
-                             database,
-                             data_folder,
-                             wavel_range=None,
-                             teff_range=None,
-                             spec_res=1000.):
+@typechecked
+def add_petitcode_hot_cloudy(input_path: str,
+                             database: h5py._hl.files.File,
+                             data_folder: str,
+                             wavel_range: Optional[Tuple[float, float]] = None,
+                             teff_range: Optional[Tuple[float, float]] = None,
+                             spec_res: Optional[float] = 1000.) -> None:
     """
     Function for adding the petitCODE hot cloudy atmospheric models to the database.
 

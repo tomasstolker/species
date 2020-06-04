@@ -5,20 +5,25 @@ Module for AMES-Dusty atmospheric model spectra.
 import os
 import gzip
 import tarfile
-import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
+
+from typeguard import typechecked
 
 from species.util import data_util, read_util
 
 
-def add_ames_dusty(input_path,
-                   database,
-                   wavel_range,
-                   teff_range,
-                   spec_res):
+@typechecked
+def add_ames_dusty(input_path: str,
+                   database: h5py._hl.files.File,
+                   wavel_range: Tuple[float, float],
+                   teff_range: Optional[Tuple[float, float]] = None,
+                   spec_res: float = 1000.):
     """
     Function for adding the AMES-Dusty atmospheric models to the database.
 
@@ -31,7 +36,7 @@ def add_ames_dusty(input_path,
     wavel_range : tuple(float, float)
         Wavelength range (um).
     teff_range : tuple(float, float), None
-        Effective temperature range (K).
+        Effective temperature range (K). All data is selected if set to ``None``.
     spec_res : float
         Spectral resolution.
 
@@ -132,22 +137,38 @@ def add_ames_dusty(input_path,
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                try:
-                    flux.append(spectres.spectres(wavelength,
+                flux_resample = spectres.spectres(wavelength,
                                                   data[:, 0],
                                                   data[:, 1],
-                                                  fill=0.,
-                                                  verbose=False))
+                                                  spec_errs=None,
+                                                  fill=np.nan,
+                                                  verbose=False)
 
-                except (ValueError, IndexError):
-                    flux.append(np.zeros(wavelength.shape[0]))
+                if np.isnan(np.sum(flux_resample)):
+                    raise ValueError(f'Resampling is only possible if the new wavelength '
+                                     f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                     f'sufficiently far within the wavelength range '
+                                     f'({data[0, 0]} - {data_wavel[-1, 0]} um) of the input '
+                                     f'spectra.')
 
-                    warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
-                                  f' um) should fall within the range of the original '
-                                  f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
-                                  f'um). Storing zeros for the flux of Teff={teff_val} '
-                                  f'and log(g)={logg_val}, which will be corrected by the '
-                                  f'\'write_data\' function afterwards.')
+                flux.append(flux_resample)  # (W m-2 um-1)
+
+                # try:
+                #     flux.append(spectres.spectres(wavelength,
+                #                                   data[:, 0],
+                #                                   data[:, 1],
+                #                                   fill=0.,
+                #                                   verbose=False))
+                #
+                # except (ValueError, IndexError):
+                #     flux.append(np.zeros(wavelength.shape[0]))
+                #
+                #     warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
+                #                   f' um) should fall within the range of the original '
+                #                   f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
+                #                   f'um). Storing zeros for the flux of Teff={teff_val} '
+                #                   f'and log(g)={logg_val}, which will be corrected by the '
+                #                   f'\'write_data\' function afterwards.')
 
     print_message = 'Adding AMES-Dusty model spectra... [DONE]'
     print(f'\r{print_message:<75}')

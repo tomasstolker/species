@@ -4,21 +4,25 @@ Module for Exo-REM atmospheric model spectra.
 
 import os
 import tarfile
-import warnings
 import urllib.request
 
+from typing import Optional, Tuple
+
+import h5py
 import spectres
 import numpy as np
 
-from species.core import constants
+from typeguard import typechecked
+
 from species.util import data_util, read_util
 
 
-def add_exo_rem(input_path,
-                database,
-                wavel_range=None,
-                teff_range=None,
-                spec_res=1000.):
+@typechecked
+def add_exo_rem(input_path: str,
+                database: h5py._hl.files.File,
+                wavel_range: Optional[Tuple[float, float]] = None,
+                teff_range: Optional[Tuple[float, float]] = None,
+                spec_res: Optional[float] = None) -> None:
     """
     Function for adding the Exo-REM atmospheric models to the database.
 
@@ -29,11 +33,12 @@ def add_exo_rem(input_path,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (um). The original wavelength points are used if set to None.
+        Wavelength range (um). The original wavelength points with a spectral resolution of 5000
+        are used if set to ``None``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All temperatures are selected if set to None.
+        Effective temperature range (K). All temperatures are selected if set to ``None``.
     spec_res : float, None
-        Spectral resolution. Not used if ``wavel_range`` is set to None.
+        Spectral resolution. Not used if ``wavel_range`` is set to ``None``.
 
     Returns
     -------
@@ -70,7 +75,7 @@ def add_exo_rem(input_path,
     co_ratio = []
     flux = []
 
-    if wavel_range is not None:
+    if wavel_range is not None and spec_res is not None:
         wavelength = read_util.create_wavelengths(wavel_range, spec_res)
     else:
         wavelength = None
@@ -105,7 +110,7 @@ def add_exo_rem(input_path,
                 feh.append(feh_val)
                 co_ratio.append(co_val)
 
-                if wavel_range is None:
+                if wavel_range is None or spec_res is None:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
@@ -115,15 +120,21 @@ def add_exo_rem(input_path,
                     flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
-                    try:
-                        flux_resample = spectres.spectres(wavelength, data_wavel, data_flux)
-                        flux.append(flux_resample)  # (W m-2 um-1)
+                    flux_resample = spectres.spectres(wavelength,
+                                                      data_wavel,
+                                                      data_flux,
+                                                      spec_errs=None,
+                                                      fill=np.nan,
+                                                      verbose=False)
 
-                    except ValueError:
-                        flux.append(np.zeros(wavelength.shape[0]))  # (um)
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(f'Resampling is only possible if the new wavelength '
+                                         f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                         f'sufficiently far within the wavelength range '
+                                         f'({data_wavel[0]} - {data_wavel[-1]} um) of the input '
+                                         f'spectra.')
 
-                        warnings.warn('The wavelength range should fall within the range of the '
-                                      'original wavelength sampling. Storing zeros instead.')
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding Exo-REM model spectra... [DONE]'
     print(f'\r{print_message:<84}')
