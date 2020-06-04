@@ -144,31 +144,27 @@ def add_ames_dusty(input_path: str,
                                                   fill=np.nan,
                                                   verbose=False)
 
+                # if np.isnan(np.sum(flux_resample)):
+                #     raise ValueError(f'Resampling is only possible if the new wavelength '
+                #                      f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                #                      f'sufficiently far within the wavelength range '
+                #                      f'({data[0, 0]} - {data_wavel[-1, 0]} um) of the input '
+                #                      f'spectra.')
+                #
+                # flux.append(flux_resample)  # (W m-2 um-1)
+
                 if np.isnan(np.sum(flux_resample)):
-                    raise ValueError(f'Resampling is only possible if the new wavelength '
-                                     f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
-                                     f'sufficiently far within the wavelength range '
-                                     f'({data[0, 0]} - {data_wavel[-1, 0]} um) of the input '
-                                     f'spectra.')
+                    flux.append(np.zeros(wavelength.shape[0]))
 
-                flux.append(flux_resample)  # (W m-2 um-1)
+                    warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
+                                  f' um) should fall within the range of the original '
+                                  f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
+                                  f'um). Storing zeros for the flux of Teff={teff_val} '
+                                  f'and log(g)={logg_val}, which will be corrected by the '
+                                  f'\'write_data\' function afterwards.')
 
-                # try:
-                #     flux.append(spectres.spectres(wavelength,
-                #                                   data[:, 0],
-                #                                   data[:, 1],
-                #                                   fill=0.,
-                #                                   verbose=False))
-                #
-                # except (ValueError, IndexError):
-                #     flux.append(np.zeros(wavelength.shape[0]))
-                #
-                #     warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
-                #                   f' um) should fall within the range of the original '
-                #                   f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
-                #                   f'um). Storing zeros for the flux of Teff={teff_val} '
-                #                   f'and log(g)={logg_val}, which will be corrected by the '
-                #                   f'\'write_data\' function afterwards.')
+                else:
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding AMES-Dusty model spectra... [DONE]'
     print(f'\r{print_message:<75}')

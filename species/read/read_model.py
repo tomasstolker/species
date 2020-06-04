@@ -566,6 +566,11 @@ class ReadModel:
                           f'probably because the original wavelength range does not fully '
                           f'encompass the new wavelength range.')
 
+        if wavel_resample is None:
+            wavelength = self.wl_points
+        else:
+            wavelength = wavel_resample
+
         # is_finite = np.where(np.isfinite(flux))[0]
         #
         # if wavel_resample is None:
@@ -581,7 +586,7 @@ class ReadModel:
         model_box = box.create_box(boxtype='model',
                                    model=self.model,
                                    wavelength=wavelength,
-                                   flux=flux[is_finite],
+                                   flux=flux,
                                    parameters=model_param,
                                    quantity=quantity)
 

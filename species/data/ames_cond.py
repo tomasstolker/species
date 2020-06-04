@@ -178,14 +178,23 @@ def add_ames_cond(input_path: str,
                                                   fill=np.nan,
                                                   verbose=False)
 
-                if np.isnan(np.sum(flux_resample)):
-                    raise ValueError(f'Resampling is only possible if the new wavelength '
-                                     f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
-                                     f'sufficiently far within the wavelength range '
-                                     f'({data[0, 0]} - {data[-1, 0]} um) of the input '
-                                     f'spectra.')
+                # if np.isnan(np.sum(flux_resample)):
+                #     raise ValueError(f'Resampling is only possible if the new wavelength '
+                #                      f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                #                      f'sufficiently far within the wavelength range '
+                #                      f'({data[0, 0]} - {data[-1, 0]} um) of the input '
+                #                      f'spectra.')
+                #
+                # flux.append(flux_resample)  # (W m-2 um-1)
 
-                flux.append(flux_resample)  # (W m-2 um-1)
+                if np.isnan(np.sum(flux_resample)):
+                    flux.append(np.zeros(wavelength.shape[0]))
+
+                    warnings.warn('The wavelength range should fall within the range of the '
+                                  'original wavelength sampling. Storing zeros instead.')
+
+                else:
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding AMES-Cond model spectra... [DONE]'
     print(f'\r{print_message:<71}')
