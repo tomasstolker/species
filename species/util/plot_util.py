@@ -150,6 +150,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('luminosity')
         param[index] = r'$\log\,L$/L$_\odot$'
 
+    if 'luminosity_ratio' in param:
+        index = param.index('luminosity_ratio')
+        param[index] = r'$\log\,L_1/L_2$'
+
     if 'dust_radius' in param:
         index = param.index('dust_radius')
         param[index] = r'$\log\,r_\mathregular{g}/\mathrm{µm}$'
