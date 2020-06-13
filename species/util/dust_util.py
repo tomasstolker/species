@@ -99,16 +99,15 @@ def dust_cross_section(wavelength: float,
         # the units of the your inputs and outputs. Wavelength and particle diameters are
         # always in nanometers, efficiencies are unitless, cross-sections are in nm2,
         # coefficients are in Mm-1, and size distribution concentration is always in cm-3.
-        mie = PyMieScatt.AutoMieQ(complex(n_index, k_index),
+        mie = PyMieScatt.MieQ(complex(n_index, k_index),
                               wavelength*1e3,  # (nm)
                               2.*mean_radius*1e3,  # diameter (nm)
-                              nMedium=1.0,
-                              crossover=0.01,
                               asDict=True,
                               asCrossSection=False)
 
         if 'Qext' in mie:
-            c_ext += mie['Qext']*np.pi*(2.*mean_radius*1e3)**2*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
+            area = np.pi*(2.*mean_radius*1e3)**2  # (nm2)
+            c_ext += mie['Qext']*area*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
 
         else:
             raise ValueError('Qext not found in PyMieScatt dictionary.')
