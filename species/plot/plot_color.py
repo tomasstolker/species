@@ -271,7 +271,7 @@ def plot_color_magnitude(boxes: list,
             else:
                 label = None
 
-            ax1.plot(item.color, item.magnitude, linestyle='--', linewidth=0.5,
+            ax1.plot(item.color, item.magnitude, linestyle='--', linewidth=0.8,
                      color='black', label=label, zorder=0)
 
             if teff_labels is not None and planck_count == 0:
@@ -372,7 +372,7 @@ def plot_color_magnitude(boxes: list,
 
     if isochrones:
         for item in isochrones:
-            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1, color='black')
+            ax1.plot(item.color, item.magnitude, linestyle='-', linewidth=1., color='black')
 
     if reddening is not None:
         for item in reddening:
@@ -674,7 +674,7 @@ def plot_color_color(boxes: list,
 
                 else:
                     ax1.plot(item.color1, item.color2, linestyle=model_linestyle[model_count[1]],
-                             linewidth=0.6, color=model_color[model_count[0]], label=label, zorder=0)
+                             linewidth=1., color=model_color[model_count[0]], label=label, zorder=0)
 
                     if mass_labels is not None:
                         interp_color1 = interp1d(item.sptype, item.color1)
@@ -729,7 +729,7 @@ def plot_color_color(boxes: list,
             if planck_count == 0:
                 label = plot_util.model_name(item.library)
 
-                ax1.plot(item.color1, item.color2, ls='--', lw=0.6, color='black',
+                ax1.plot(item.color1, item.color2, ls='--', linewidth=0.8, color='black',
                          label=label, zorder=0)
 
                 if teff_labels is not None:
@@ -832,7 +832,7 @@ def plot_color_color(boxes: list,
 
     if isochrones:
         for item in isochrones:
-            ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1, color='black')
+            ax1.plot(item.colors[0], item.colors[1], linestyle='-', linewidth=1., color='black')
 
     if reddening is not None:
         for item in reddening:

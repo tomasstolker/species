@@ -102,14 +102,14 @@ class ReadIsochrone:
                 mag_color_1 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_1],
                                        xi=np.stack((age_points, masses), axis=1),
-                                       method='linear',
+                                       method='cubic',
                                        fill_value='nan',
                                        rescale=False)
 
                 mag_color_2 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_2],
                                        xi=np.stack((age_points, masses), axis=1),
-                                       method='linear',
+                                       method='cubic',
                                        fill_value='nan',
                                        rescale=False)
 
@@ -126,14 +126,14 @@ class ReadIsochrone:
         teff = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_teff],
                         xi=np.stack((age_points, masses), axis=1),
-                        method='linear',
+                        method='cubic',
                         fill_value='nan',
                         rescale=False)
 
         logg = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_logg],
                         xi=np.stack((age_points, masses), axis=1),
-                        method='linear',
+                        method='cubic',
                         fill_value='nan',
                         rescale=False)
 
