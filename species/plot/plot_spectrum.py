@@ -647,8 +647,8 @@ def plot_spectrum(boxes: list,
             res_lim = 5.
 
         ax3.axhline(0., linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
-        ax3.axhline(-2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
-        ax3.axhline(2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(-2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)

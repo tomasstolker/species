@@ -444,7 +444,7 @@ class FitModel:
 
                  - A uniform prior is used for ``dust_sigma`` and ``dust_ext``, and a log-uniform
                    prior for ``dust_radius``.
-                 
+
                  - Only supported by `run_multinest`.
 
         inc_phot : bool, list(str)

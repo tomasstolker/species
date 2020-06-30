@@ -274,7 +274,6 @@ def add_missing(model: str,
     if len(parameters) == 2:
         find_missing = np.zeros(grid_shape, dtype=bool)
 
-
         values = []
         points = [[], []]
         new_points = [[], []]
