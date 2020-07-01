@@ -210,41 +210,41 @@ def plot_posterior(tag: str,
             # box.parameters.append('luminosity')
             # ndim += 1
 
-            teff_index = np.argwhere(np.array(box.parameters) == 'teff_0')
-            radius_index = np.argwhere(np.array(box.parameters) == 'radius_0')
-
-            luminosity_0 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
-                * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
-
-            samples = np.append(samples, np.log10(luminosity_0), axis=-1)
-            box.parameters.append('luminosity_0')
-            ndim += 1
-
-            teff_index = np.argwhere(np.array(box.parameters) == 'teff_1')
-            radius_index = np.argwhere(np.array(box.parameters) == 'radius_1')
-
-            luminosity_1 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
-                * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
-
-            samples = np.append(samples, np.log10(luminosity_1), axis=-1)
-            box.parameters.append('luminosity_1')
-            ndim += 1
-
-            teff_index_0 = np.argwhere(np.array(box.parameters) == 'teff_0')
-            radius_index_0 = np.argwhere(np.array(box.parameters) == 'radius_0')
-
-            teff_index_1 = np.argwhere(np.array(box.parameters) == 'teff_1')
-            radius_index_1 = np.argwhere(np.array(box.parameters) == 'radius_1')
-
-            luminosity_0 = 4. * np.pi * (samples[..., radius_index_0[0]]*constants.R_JUP)**2 \
-                * constants.SIGMA_SB * samples[..., teff_index_0[0]]**4. / constants.L_SUN
-
-            luminosity_1 = 4. * np.pi * (samples[..., radius_index_1[0]]*constants.R_JUP)**2 \
-                * constants.SIGMA_SB * samples[..., teff_index_1[0]]**4. / constants.L_SUN
-
-            samples = np.append(samples, np.log10(luminosity_0/luminosity_1), axis=-1)
-            box.parameters.append('luminosity_ratio')
-            ndim += 1
+            # teff_index = np.argwhere(np.array(box.parameters) == 'teff_0')
+            # radius_index = np.argwhere(np.array(box.parameters) == 'radius_0')
+            #
+            # luminosity_0 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
+            #     * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
+            #
+            # samples = np.append(samples, np.log10(luminosity_0), axis=-1)
+            # box.parameters.append('luminosity_0')
+            # ndim += 1
+            #
+            # teff_index = np.argwhere(np.array(box.parameters) == 'teff_1')
+            # radius_index = np.argwhere(np.array(box.parameters) == 'radius_1')
+            #
+            # luminosity_1 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
+            #     * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
+            #
+            # samples = np.append(samples, np.log10(luminosity_1), axis=-1)
+            # box.parameters.append('luminosity_1')
+            # ndim += 1
+            #
+            # teff_index_0 = np.argwhere(np.array(box.parameters) == 'teff_0')
+            # radius_index_0 = np.argwhere(np.array(box.parameters) == 'radius_0')
+            #
+            # teff_index_1 = np.argwhere(np.array(box.parameters) == 'teff_1')
+            # radius_index_1 = np.argwhere(np.array(box.parameters) == 'radius_1')
+            #
+            # luminosity_0 = 4. * np.pi * (samples[..., radius_index_0[0]]*constants.R_JUP)**2 \
+            #     * constants.SIGMA_SB * samples[..., teff_index_0[0]]**4. / constants.L_SUN
+            #
+            # luminosity_1 = 4. * np.pi * (samples[..., radius_index_1[0]]*constants.R_JUP)**2 \
+            #     * constants.SIGMA_SB * samples[..., teff_index_1[0]]**4. / constants.L_SUN
+            #
+            # samples = np.append(samples, np.log10(luminosity_0/luminosity_1), axis=-1)
+            # box.parameters.append('luminosity_ratio')
+            # ndim += 1
 
             # r_tmp = samples[..., radius_index_0[0]]*constants.R_JUP
             # lum_diff = (luminosity_1*constants.L_SUN-luminosity_0*constants.L_SUN)

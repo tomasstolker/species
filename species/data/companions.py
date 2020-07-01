@@ -106,13 +106,13 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/NACO.Lp': (16.27, 0.19)}},  # De Rosa et al. 2016
 
             'PDS 70 b': {'distance': (113.43, 0.52),
-                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': [(18.17, 0.18), (17.94, 0.24)],  # Keppler et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_H23_3': [(18.06, 0.17), (17.95, 0.17)],  # Keppler et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_K12_1': [(16.66, 0.05), (16.83, 0.30)],  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': [(16.34, 0.10), (16.17, 0.22)],  # Stolker et al. in prep.
-                                     'Paranal/NACO.Lp': (14.59, 0.28),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (14.51, 0.46),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Mp': (13.65, 0.25),  # Stolker et al. in prep.
+                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (18.12, 0.21),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_H23_3': (17.97, 0.18),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.66, 0.04),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.37, 0.06),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Lp': (14.66, 0.24),  # Stolker et al. in prep.
+                                     'Paranal/NACO.NB405': (14.68, 0.27),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Mp': (13.80, 0.27),  # Stolker et al. in prep.
                                      'Keck/NIRC2.Lp': (14.64, 0.18)}},  # Wang et al. 2020
 
             'PDS 70 c': {'distance': (113.43, 0.52),

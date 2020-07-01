@@ -270,7 +270,7 @@ def plot_spectrum(boxes: list,
             ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
             if ylim[0] < 0.:
-                ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
+                ax1.axhline(0.0, ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
 
         else:
             if quantity == 'flux density':
@@ -646,9 +646,9 @@ def plot_spectrum(boxes: list,
         if res_lim > 10.:
             res_lim = 5.
 
-        ax3.axhline(0., linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
-        # ax3.axhline(-2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
-        # ax3.axhline(2., linestyle=':', color='gray', dashes=(1, 4), zorder=0.5)
+        ax3.axhline(0., ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
+        # ax3.axhline(-2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)
