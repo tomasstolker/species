@@ -713,10 +713,10 @@ def plot_spectrum(boxes: list,
         else:
             ax1.legend(**legend)
 
-    filters = ['Paranal/SPHERE.ZIMPOL_N_Ha',
-               'MUSE/Hbeta',
-               'ALMA/855']
-
+    # filters = ['Paranal/SPHERE.ZIMPOL_N_Ha',
+    #            'MUSE/Hbeta',
+    #            'ALMA/855']
+    #
     # filters = ['Paranal/SPHERE.IRDIS_B_Y',
     #            'MKO/NSFCam.J',
     #            'Paranal/SPHERE.IRDIS_D_H23_2',
@@ -726,7 +726,7 @@ def plot_spectrum(boxes: list,
     #            'Paranal/NACO.Lp',
     #            'Paranal/NACO.NB405',
     #            'Paranal/NACO.Mp']
-
+    #
     # for i, item in enumerate(filters):
     #     readfilter = read_filter.ReadFilter(item)
     #     filter_wavelength = readfilter.mean_wavelength()
@@ -743,25 +743,25 @@ def plot_spectrum(boxes: list,
     #         ax1.text(filter_wavelength, 1e-2, r'H$\beta$', ha='center', va='center', fontsize=10, color='black')
     #     elif i == 2:
     #         ax1.text(filter_wavelength, 1e-2, 'ALMA\nband 7 rms', ha='center', va='center', fontsize=8, color='black')
-
-        # if i == 0:
-        #     ax1.text(filter_wavelength, 1.4, 'Y', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 1:
-        #     ax1.text(filter_wavelength, 1.4, 'J', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 2:
-        #     ax1.text(filter_wavelength-0.04, 1.4, 'H2', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 3:
-        #     ax1.text(filter_wavelength+0.04, 1.4, 'H3', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 4:
-        #     ax1.text(filter_wavelength, 1.4, 'K1', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 5:
-        #     ax1.text(filter_wavelength, 1.4, 'K2', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 6:
-        #     ax1.text(filter_wavelength, 1.4, 'L$\'$', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 7:
-        #     ax1.text(filter_wavelength, 1.4, 'NB4.05', ha='center', va='center', fontsize=10, color='black')
-        # elif i == 8:
-        #     ax1.text(filter_wavelength, 1.4, 'M$\'}$', ha='center', va='center', fontsize=10, color='black')
+    #
+    #     if i == 0:
+    #         ax1.text(filter_wavelength, 1.4, 'Y', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 1:
+    #         ax1.text(filter_wavelength, 1.4, 'J', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 2:
+    #         ax1.text(filter_wavelength-0.04, 1.4, 'H2', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 3:
+    #         ax1.text(filter_wavelength+0.04, 1.4, 'H3', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 4:
+    #         ax1.text(filter_wavelength, 1.4, 'K1', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 5:
+    #         ax1.text(filter_wavelength, 1.4, 'K2', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 6:
+    #         ax1.text(filter_wavelength, 1.4, 'L$\'$', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 7:
+    #         ax1.text(filter_wavelength, 1.4, 'NB4.05', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 8:
+    #         ax1.text(filter_wavelength, 1.4, 'M$\'}$', ha='center', va='center', fontsize=10, color='black')
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
