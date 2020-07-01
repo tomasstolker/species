@@ -110,7 +110,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'Paranal/SPHERE.IRDIS_D_H23_3': (17.97, 0.18),  # Stolker et al. in prep.
                                      'Paranal/SPHERE.IRDIS_D_K12_1': (16.66, 0.04),  # Stolker et al. in prep.
                                      'Paranal/SPHERE.IRDIS_D_K12_2': (16.37, 0.06),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Lp': (14.66, 0.24),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Lp': (14.68, 0.22),  # Stolker et al. in prep.
                                      'Paranal/NACO.NB405': (14.68, 0.27),  # Stolker et al. in prep.
                                      'Paranal/NACO.Mp': (13.80, 0.27),  # Stolker et al. in prep.
                                      'Keck/NIRC2.Lp': (14.64, 0.18)}},  # Wang et al. 2020
