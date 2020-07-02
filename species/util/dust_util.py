@@ -77,7 +77,15 @@ def dust_cross_section(wavelength: float,
         Extinction cross section (um2)
     """
 
-    r_lognorm = np.logspace(np.log10(1e-2*radius), np.log10(1e2*radius), 100)  # (um)
+    r_test = np.logspace(-15, 15, 10000)  # (um)
+
+    # The number of grains, N, is set to 1. It is simply the normalization of the distribution.
+    dndr = np.exp(-np.log(r_test/radius)**2./(2.*np.log(sigma)**2.)) / \
+        (r_test*np.sqrt(2.*np.pi)*np.log(sigma))
+
+    index = np.where(dndr/np.amax(dndr) > 1e-3)[0]
+
+    r_lognorm = np.logspace(np.log10(r_test[index[0]]), np.log10(r_test[index[-1]]), 1000)  # (um)
 
     dndr = np.exp(-np.log(r_lognorm/radius)**2./(2.*np.log(sigma)**2.)) / \
         (r_lognorm*np.sqrt(2.*np.pi)*np.log(sigma))
@@ -85,17 +93,24 @@ def dust_cross_section(wavelength: float,
     c_ext = 0.
 
     for i in range(r_lognorm[:-1].size):
-        if dndr[i] / np.amax(dndr[i]) > 0.01:
-            mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
+        mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
 
-            mie = PyMieScatt.MieQ(complex(n_index, k_index),
-                                  wavelength*1e3,  # (nm)
-                                  2.*mean_radius*1e3,  # diameter (nm)
-                                  asDict=True,
-                                  asCrossSection=True)
+        # From the PyMieScatt documentation: When using PyMieScatt, pay close attention to
+        # the units of the your inputs and outputs. Wavelength and particle diameters are
+        # always in nanometers, efficiencies are unitless, cross-sections are in nm2,
+        # coefficients are in Mm-1, and size distribution concentration is always in cm-3.
+        mie = PyMieScatt.MieQ(complex(n_index, k_index),
+                              wavelength*1e3,  # (nm)
+                              2.*mean_radius*1e3,  # diameter (nm)
+                              asDict=True,
+                              asCrossSection=False)
 
-            if 'Cext' in mie:
-                c_ext += mie['Cext']*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
+        if 'Qext' in mie:
+            area = np.pi*(2.*mean_radius*1e3)**2  # (nm2)
+            c_ext += mie['Qext']*area*dndr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
+
+        else:
+            raise ValueError('Qext not found in PyMieScatt dictionary.')
 
     return c_ext*1e-6  # (um2)
 

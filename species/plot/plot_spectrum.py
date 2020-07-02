@@ -14,6 +14,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 
 from species.core import box, constants
 from species.read import read_filter
@@ -133,6 +134,7 @@ def plot_spectrum(boxes: list,
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
         ax1 = plt.subplot(gridsp[0, 0])
+        ax2 = None
         ax3 = plt.subplot(gridsp[1, 0])
 
     elif filters is not None:
@@ -142,6 +144,7 @@ def plot_spectrum(boxes: list,
 
         ax1 = plt.subplot(gridsp[1, 0])
         ax2 = plt.subplot(gridsp[0, 0])
+        ax3 = None
 
     else:
         plt.figure(1, figsize=figsize)
@@ -149,11 +152,25 @@ def plot_spectrum(boxes: list,
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
         ax1 = plt.subplot(gridsp[0, 0])
+        ax2 = None
+        ax3 = None
 
     if residuals is not None:
         labelbottom = False
     else:
         labelbottom = True
+
+    if scale is None:
+        scale = ('linear', 'linear')
+
+    ax1.set_xscale(scale[0])
+    ax1.set_yscale(scale[1])
+
+    if filters is not None:
+        ax2.set_xscale(scale[0])
+
+    if residuals is not None:
+        ax3.set_xscale(scale[0])
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=1, length=5, labelsize=12, top=True,
@@ -181,18 +198,33 @@ def plot_spectrum(boxes: list,
                         direction='in', width=1, length=3, labelsize=12, top=True,
                         bottom=True, left=True, right=True)
 
+    if scale[0] == 'linear':
+        ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+
+    if scale[1] == 'linear':
+        ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+    # ax1.set_yticks([1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0])
+    # ax3.set_yticks([-2., 0., 2.])
+
+    if filters is not None and scale[0] == 'linear':
+        ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
+
+    if residuals is not None and scale[0] == 'linear':
+        ax3.xaxis.set_minor_locator(AutoMinorLocator(5))
+
     if residuals is not None and filters is not None:
-        ax1.set_xlabel('', fontsize=13)
-        ax2.set_xlabel('', fontsize=13)
+        ax1.set_xlabel('')
+        ax2.set_xlabel('')
         ax3.set_xlabel('Wavelength (µm)', fontsize=13)
 
     elif residuals is not None:
-        ax1.set_xlabel('', fontsize=13)
+        ax1.set_xlabel('')
         ax3.set_xlabel('Wavelength (µm)', fontsize=11)
 
     elif filters is not None:
         ax1.set_xlabel('Wavelength (µm)', fontsize=13)
-        ax2.set_xlabel('', fontsize=13)
+        ax2.set_xlabel('')
 
     else:
         ax1.set_xlabel('Wavelength (µm)', fontsize=13)
@@ -202,15 +234,15 @@ def plot_spectrum(boxes: list,
 
     if residuals is not None:
         if quantity == 'flux density':
-            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=11)
+            ax3.set_ylabel(r'$\Delta$$\mathregular{F}_\lambda$ ($\sigma$)', fontsize=11)
 
         elif quantity == 'flux':
-            ax3.set_ylabel(r'$\Delta$$F_\lambda$ ($\sigma$)', fontsize=11)
+            ax3.set_ylabel(r'$\Delta$$\mathregular{F}_\lambda$ ($\sigma$)', fontsize=11)
 
-    if xlim is not None:
-        ax1.set_xlim(xlim[0], xlim[1])
-    else:
+    if xlim is None:
         ax1.set_xlim(0.6, 6.)
+    else:
+        ax1.set_xlim(xlim[0], xlim[1])
 
     if quantity == 'magnitude':
         scaling = 1.
@@ -229,33 +261,31 @@ def plot_spectrum(boxes: list,
             scaling = 10.**exponent
 
             if quantity == 'flux density':
-                ylabel = r'$F_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$ µm$^{-1}$)'
+                ylabel = r'$\mathregular{F}_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$ µm$^{-1}$)'
 
             elif quantity == 'flux':
-                ylabel = r'$\lambda$$F_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$)'
+                ylabel = r'$\lambda$$\mathregular{F}_\lambda$ (10$^{'+str(exponent)+r'}$ W m$^{-2}$)'
 
             ax1.set_ylabel(ylabel, fontsize=11)
             ax1.set_ylim(ylim[0]/scaling, ylim[1]/scaling)
 
             if ylim[0] < 0.:
-                ax1.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
+                ax1.axhline(0.0, ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
 
         else:
             if quantity == 'flux density':
-                ax1.set_ylabel(r'$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)', fontsize=11)
+                ax1.set_ylabel(r'$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$)', fontsize=11)
 
             elif quantity == 'flux':
-                ax1.set_ylabel(r'$\lambda$$F_\lambda$ (W m$^{-2}$)', fontsize=11)
+                ax1.set_ylabel(r'$\lambda$$\mathregular{F}_\lambda$ (W m$^{-2}$)', fontsize=11)
 
             scaling = 1.
-
-    if filters is not None:
-        ax2.set_ylim(0., 1.)
 
     xlim = ax1.get_xlim()
 
     if filters is not None:
         ax2.set_xlim(xlim[0], xlim[1])
+        ax2.set_ylim(0., 1.)
 
     if residuals is not None:
         ax3.set_xlim(xlim[0], xlim[1])
@@ -286,18 +316,6 @@ def plot_spectrum(boxes: list,
     else:
         ax1.get_xaxis().set_label_coords(0.5, -0.12)
         ax1.get_yaxis().set_label_coords(-0.1, 0.5)
-
-    if scale is None:
-        scale = ('linear', 'linear')
-
-    ax1.set_xscale(scale[0])
-    ax1.set_yscale(scale[1])
-
-    if filters is not None:
-        ax2.set_xscale(scale[0])
-
-    if residuals is not None:
-        ax3.set_xscale(scale[0])
 
     for j, boxitem in enumerate(boxes):
         flux_scaling = 1.
@@ -628,10 +646,13 @@ def plot_spectrum(boxes: list,
         if res_lim > 10.:
             res_lim = 5.
 
-        ax3.axhline(0.0, linestyle='--', color='gray', dashes=(2, 4), zorder=0.5)
+        ax3.axhline(0., ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
+        # ax3.axhline(-2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)
+
         else:
             ax3.set_ylim(ylim_res[0], ylim_res[1])
 
@@ -692,6 +713,10 @@ def plot_spectrum(boxes: list,
         else:
             ax1.legend(**legend)
 
+    # filters = ['Paranal/SPHERE.ZIMPOL_N_Ha',
+    #            'MUSE/Hbeta',
+    #            'ALMA/855']
+    #
     # filters = ['Paranal/SPHERE.IRDIS_B_Y',
     #            'MKO/NSFCam.J',
     #            'Paranal/SPHERE.IRDIS_D_H23_2',
@@ -711,6 +736,13 @@ def plot_spectrum(boxes: list,
     #     #     ax1.errorbar(filter_wavelength, 1.3e4, xerr=filter_width/2., color='dimgray', elinewidth=2.5, zorder=10)
     #     # else:
     #     #     ax1.errorbar(filter_wavelength, 6e3, xerr=filter_width/2., color='dimgray', elinewidth=2.5, zorder=10)
+    #
+    #     if i == 0:
+    #         ax1.text(filter_wavelength, 1e-2, r'H$\alpha$', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 1:
+    #         ax1.text(filter_wavelength, 1e-2, r'H$\beta$', ha='center', va='center', fontsize=10, color='black')
+    #     elif i == 2:
+    #         ax1.text(filter_wavelength, 1e-2, 'ALMA\nband 7 rms', ha='center', va='center', fontsize=8, color='black')
     #
     #     if i == 0:
     #         ax1.text(filter_wavelength, 1.4, 'Y', ha='center', va='center', fontsize=10, color='black')

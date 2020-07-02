@@ -124,11 +124,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'teff' in param:
         index = param.index('teff')
-        param[index] = r'$T_\mathregular{eff}$ (K)'
+        param[index] = r'$\mathregular{T}_\mathregular{eff}$ (K)'
 
     if 'logg' in param:
         index = param.index('logg')
-        param[index] = r'$\log\,g$'
+        param[index] = r'$\mathregular{log}\,\mathregular{g}$'
 
     if 'feh' in param:
         index = param.index('feh')
@@ -136,7 +136,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'fsed' in param:
         index = param.index('fsed')
-        param[index] = r'f$_\mathregular{sed}$'
+        param[index] = r'$\mathregular{f}_\mathregular{sed}$'
 
     if 'co' in param:
         index = param.index('co')
@@ -144,36 +144,36 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'radius' in param:
         index = param.index('radius')
-        param[index] = r'$R$ ($\mathregular{R_{J}}$)'
+        param[index] = r'$\mathregular{R}$ ($\mathregular{R_J}$)'
 
     if 'luminosity' in param:
         index = param.index('luminosity')
-        param[index] = r'$\log\,L$/L$_\odot$'
+        param[index] = r'$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$'
 
     if 'luminosity_ratio' in param:
         index = param.index('luminosity_ratio')
-        param[index] = r'$\log\,L_1/L_2$'
+        param[index] = r'$\mathregular{log}\,\mathregular{L_1}/\mathregular{L_2}$'
 
     if 'dust_radius' in param:
         index = param.index('dust_radius')
-        param[index] = r'$\log\,r_\mathregular{g}/\mathrm{µm}$'
+        param[index] = r'$\mathregular{log}\,\mathregular{r_g}$'
 
     if 'dust_sigma' in param:
         index = param.index('dust_sigma')
-        param[index] = r'$\sigma_\mathregular{g}$'
+        param[index] = r'$\mathregular{\sigma_g}$'
 
     if 'dust_ext' in param:
         index = param.index('dust_ext')
-        param[index] = r'$A_\mathregular{V}$ (mag)'
+        param[index] = r'$\mathregular{A_V}$ (mag)'
 
     if 'tint' in param:
         index = param.index('tint')
-        param[index] = r'$T_\mathregular{int}$ (K)'
+        param[index] = r'$\mathregular{T_{int}}$ (K)'
 
     for i in range(15):
         if f't{i}' in param:
             index = param.index(f't{i}')
-            param[index] = rf'$T_\mathregular{{{i}}}$ (K)'
+            param[index] = rf'$\mathregular{{T}}_\mathregular{{{i}}}$ (K)'
 
     if 'alpha' in param:
         index = param.index('alpha')
@@ -181,32 +181,32 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'log_delta' in param:
         index = param.index('log_delta')
-        param[index] = r'$\log\,\delta$'
+        param[index] = r'$\mathregular{log}\,\mathregular{\delta}$'
 
     if 'log_p_quench' in param:
         index = param.index('log_p_quench')
-        param[index] = r'$\log\,P_\mathregular{quench}$'
+        param[index] = r'$\mathregular{log}\,\mathregular{P}_\mathregular{quench}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
-            param[i] = rf'$a_\mathregular{{{item[8:]}}}$'
+            param[i] = rf'$\mathregular{{a}}_\mathregular{{{item[8:]}}}$'
 
         elif item[0:6] == 'error_':
-            param[i] = rf'$b_\mathregular{{{item[6:]}}}$'
+            param[i] = rf'$\mathregular{{b}}_\mathregular{{{item[6:]}}}$'
 
         elif item[0:11] == 'wavelength_':
-            param[i] = rf'$c_\mathregular{{{item[11:]}}}$ (nm)'
+            param[i] = rf'$\mathregular{{c}}_\mathregular{{{item[11:]}}}$ (nm)'
 
         elif item[0:9] == 'corr_len_':
-            param[i] = rf'$\log\,\ell_\mathregular{{{item[9:]}}}$'
+            param[i] = rf'$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}$'
 
         elif item[0:9] == 'corr_amp_':
-            param[i] = rf'$f_\mathregular{{{item[9:]}}}$'
+            param[i] = rf'$\mathregular{{f}}_\mathregular{{{item[9:]}}}$'
 
     for i in range(100):
         if f'teff_{i}' in param:
             index = param.index(f'teff_{i}')
-            param[index] = rf'$T_\mathregular{{{i+1}}}$ (K)'
+            param[index] = rf'$\mathregular{{T}}_\mathregular{{{i+1}}}$ (K)'
 
         else:
             break
@@ -214,7 +214,15 @@ def update_labels(param: List[str]) -> List[str]:
     for i in range(100):
         if f'radius_{i}' in param:
             index = param.index(f'radius_{i}')
-            param[index] = rf'$R_\mathregular{{{i+1}}}$ ' + r'($\mathregular{R_{J}}$)'
+            param[index] = rf'$\mathregular{{R}}_\mathregular{{{i+1}}}$ ' + r'($\mathregular{R_J}$)'
+
+        else:
+            break
+
+    for i in range(100):
+        if f'luminosity_{i}' in param:
+            index = param.index(f'luminosity_{i}')
+            param[index] = rf'$\mathregular{{log}}\,\mathregular{{L}}_\mathregular{{{i+1}}}/\mathregular{{L}}_\mathregular{{\odot}}$'
 
         else:
             break
@@ -310,12 +318,12 @@ def quantity_unit(param: List[str],
     if 'teff' in param:
         quantity.append('teff')
         unit.append('K')
-        label.append(r'$T_\mathregular{eff}$')
+        label.append(r'$\mathregular{T}_\mathregular{eff}$')
 
     if 'logg' in param:
         quantity.append('logg')
         unit.append(None)
-        label.append(r'$\log\,g$')
+        label.append(r'$\mathregular{log}\,\mathregular{g}$')
 
     if 'feh' in param:
         quantity.append('feh')
@@ -325,7 +333,7 @@ def quantity_unit(param: List[str],
     if 'fsed' in param:
         quantity.append('fsed')
         unit.append(None)
-        label.append(r'f$_\mathregular{sed}$')
+        label.append(r'$\mathregular{f}_\mathregular{sed}$')
 
     if 'co' in param:
         quantity.append('co')
@@ -336,17 +344,18 @@ def quantity_unit(param: List[str],
         quantity.append('radius')
 
         if object_type == 'planet':
-            unit.append(r'$R_\mathregular{J}}$')
-        elif object_type == 'star':
-            unit.append(r'$R_\mathregular{\odot}}$')
+            unit.append(r'$\mathregular{R}_\mathregular{J}$')
 
-        label.append(r'$R$')
+        elif object_type == 'star':
+            unit.append(r'$\mathregular{R}_\mathregular{\odot}$')
+
+        label.append(r'$\mathregular{R}$')
 
     for i in range(100):
         if f'teff_{i}' in param:
             quantity.append(f'teff_{i}')
             unit.append('K')
-            label.append(rf'$T_\mathregular{{{i+1}}}$')
+            label.append(rf'$\mathregular{{T}}_\mathregular{{{i+1}}}$')
 
         else:
             break
@@ -354,8 +363,8 @@ def quantity_unit(param: List[str],
     for i in range(100):
         if f'radius_{i}' in param:
             quantity.append(f'radius_{i}')
-            unit.append(r'$R_\mathregular{{J}}$')
-            label.append(rf'$R_\mathregular{{{i+1}}}$')
+            unit.append(r'$\mathregular{R}_\mathregular{J}$')
+            label.append(rf'$\mathregular{{R}}_\mathregular{{{i+1}}}$')
 
         else:
             break
@@ -363,27 +372,28 @@ def quantity_unit(param: List[str],
     if 'distance' in param:
         quantity.append('distance')
         unit.append('pc')
-        label.append(r'$d$')
+        label.append(r'$\mathregular{d}$')
 
     if 'mass' in param:
         quantity.append('mass')
 
         if object_type == 'planet':
-            unit.append(r'$M_\mathregular{J}$')
-        elif object_type == 'star':
-            unit.append(r'$M_\mathregular{\odot}$')
+            unit.append(r'$\mathregular{M}_\mathregular{J}$')
 
-        label.append(r'$M$')
+        elif object_type == 'star':
+            unit.append(r'$\mathregular{M}_\mathregular{\odot}$')
+
+        label.append('M')
 
     if 'luminosity' in param:
         quantity.append('luminosity')
         unit.append(None)
-        label.append(r'$\log\,L$/L$_\odot$')
+        label.append(r'$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$')
 
     if 'dust_ext' in param:
         quantity.append('dust_ext')
         unit.append('mag')
-        label.append('A$_\mathregular{V}$')
+        label.append(r'$\mathregular{A}_\mathregular{V}$')
 
     return quantity, unit, label
 
