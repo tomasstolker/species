@@ -545,8 +545,15 @@ def plot_spectrum(boxes: list,
                                              yerr=flux_scaling*boxitem.flux[item][1, i]/scaling, zorder=3, **plot_kwargs[j][item][i])
 
                         else:
-                            ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                         yerr=flux_scaling*boxitem.flux[item][1]/scaling, zorder=3, **plot_kwargs[j][item])
+                            if boxitem.flux[item][1] == 0.:
+                                ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0]/scaling,
+                                             xerr=fwhm/2., yerr=0.5*flux_scaling*boxitem.flux[item][0]/scaling,
+                                             uplims=True, capsize=2., capthick=0., zorder=3, **plot_kwargs[j][item])
+
+                            else:
+                                ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0]/scaling,
+                                             xerr=fwhm/2., yerr=flux_scaling*boxitem.flux[item][1]/scaling,
+                                             zorder=3, **plot_kwargs[j][item])
 
         elif isinstance(boxitem, box.SynphotBox):
             for i, find_item in enumerate(boxes):

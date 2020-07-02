@@ -206,9 +206,9 @@ def plot_posterior(tag: str,
                 else:
                     break
 
-            # samples = np.append(samples, np.log10(luminosity), axis=-1)
-            # box.parameters.append('luminosity')
-            # ndim += 1
+            samples = np.append(samples, np.log10(luminosity), axis=-1)
+            box.parameters.append('luminosity')
+            ndim += 1
 
             # teff_index = np.argwhere(np.array(box.parameters) == 'teff_0')
             # radius_index = np.argwhere(np.array(box.parameters) == 'radius_0')

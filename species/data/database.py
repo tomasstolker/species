@@ -1157,6 +1157,8 @@ class Database:
 
             samples = np.asarray(dset)
 
+            # samples = samples[samples[:, 2] > 100., ]
+
             if samples.ndim == 3:
                 if burnin > samples.shape[1]:
                     raise ValueError(f'The \'burnin\' value is larger than the number of steps '
@@ -1250,6 +1252,8 @@ class Database:
             distance = None
 
         samples = np.asarray(dset)
+
+        # samples = samples[samples[:, 2] > 100., ]
 
         if samples.ndim == 2:
             ran_index = np.random.randint(samples.shape[0], size=random)
