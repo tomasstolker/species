@@ -577,7 +577,8 @@ def add_missing(model: str,
                                     if not check_low and not check_up:
                                         flux_low = flux[i-1, j, k, m, n, ...]
                                         flux_up = flux[i+1, j, k, m, n, ...]
-                                        flux[i, j, k, m, n, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                        flux[i, j, k, m, n, ...] = flux_low*(1.-scaling) + \
+                                            flux_up*scaling
                                         count_interp += 1
 
                                     else:

@@ -1472,25 +1472,28 @@ class Database:
                               distance=distance,
                               spectrum=spectrum)
 
+    @typechecked
     def get_samples(self,
-                    tag,
-                    burnin=None,
-                    random=None):
+                    tag: str,
+                    burnin: Optional[int] = None,
+                    random: Optional[int] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
         tag: str
             Database tag with the samples.
         burnin : int, None
-            Number of burnin samples to exclude. All samples are selected if set to None.
+            Number of burnin samples to exclude. All samples are selected if set to ``None``.
+            The parameter is only required for samples obtained with ``emcee`` and is therefore
+            not used for samples obtained with ``MultiNest``.
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
-            selected if set to None.
+            selected if set to ``None``.
 
         Returns
         -------
         species.core.box.SamplesBox
-            Box with the MCMC samples.
+            Box with the posterior samples.
         """
 
         if burnin is None:
@@ -1498,6 +1501,7 @@ class Database:
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
+        ln_prob = np.asarray(h5_file[f'results/fit/{tag}/ln_prob'])
 
         spectrum = dset.attrs['spectrum']
 
@@ -1537,6 +1541,7 @@ class Database:
                               spectrum=spectrum,
                               parameters=param,
                               samples=samples,
+                              ln_prob=ln_prob,
                               prob_sample=prob_sample,
                               median_sample=median_sample)
 

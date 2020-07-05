@@ -179,7 +179,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Subaru/CIAO.H': (14.95, 0.13),  # Bonnefoy et al. 2014
                                         'Subaru/CIAO.Ks': (14.32, 0.09),  # Bonnefoy et al. 2014
                                         'Keck/NIRC2.Lp': (13.12, 0.1),  # Bonnefoy et al. 2014
-                                        'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
+                                        # 'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
                                         'LBT/LMIRCam.M_77K': (13.3, 0.3)}},  # Bonnefoy et al. 2014
 
             'HD 1160 B': {'distance': (125.9, 1.2),
@@ -190,11 +190,12 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                       'Keck/NIRC2.Ms': (13.81, 0.24)}},  # Victor Garcia et al. 2017
 
             'ROXs 42 Bb': {'distance': (144.16, 1.54),
-                           'app_mag': {'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
+                           'app_mag': {
+                                       # 'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
                                        'Keck/NIRC2.H': (15.88, 0.05),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ks': (15.01, 0.06),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Lp': (13.97, 0.06),  # Daemgen et al. 2017
-                                       'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
+                                       # 'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ms': (14.01, 0.23)}},  # Daemgen et al. 2017
 
             'GJ 504 b': {'distance': (17.54, 0.08),

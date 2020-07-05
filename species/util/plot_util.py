@@ -164,7 +164,15 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'dust_ext' in param:
         index = param.index('dust_ext')
-        param[index] = r'$\mathregular{A_V}$ (mag)'
+        param[index] = r'$\mathregular{A_V}$'
+
+    if 'ism_ext' in param:
+        index = param.index('ism_ext')
+        param[index] = r'$\mathregular{A_V}$'
+
+    if 'ism_red' in param:
+        index = param.index('ism_red')
+        param[index] = r'$\mathregular{R_V}$'
 
     if 'tint' in param:
         index = param.index('tint')
@@ -222,7 +230,8 @@ def update_labels(param: List[str]) -> List[str]:
     for i in range(100):
         if f'luminosity_{i}' in param:
             index = param.index(f'luminosity_{i}')
-            param[index] = rf'$\mathregular{{log}}\,\mathregular{{L}}_\mathregular{{{i+1}}}/\mathregular{{L}}_\mathregular{{\odot}}$'
+            param[index] = rf'$\mathregular{{log}}\,\mathregular{{L}}_\mathregular{{{i+1}}}' \
+                           rf'/\mathregular{{L}}_\mathregular{{\odot}}$'
 
         else:
             break
