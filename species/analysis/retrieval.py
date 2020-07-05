@@ -96,16 +96,11 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 print(f'   - {item}')
 
-            if chemistry != 'equilibrium':
-                raise ValueError('Clouds are currently only implemented in combination with '
-                                 'equilibrium chemistry.')
-
         print(f'Scattering: {self.scattering}')
 
         species_db = database.Database()
 
         objectbox = species_db.get_object(object_name,
-                                          filters=None,
                                           inc_phot=True,
                                           inc_spec=True)
 
@@ -213,6 +208,12 @@ class AtmosphericRetrieval:
         NoneType
             None
         """
+
+        # check if clouds are used in combination with equilibrium chemistry
+
+        if len(self.cloud_species) and chemistry != 'equilibrium':
+            raise ValueError('Clouds are currently only implemented in combination with '
+                             'equilibrium chemistry.')
 
         # generic parameters
 
