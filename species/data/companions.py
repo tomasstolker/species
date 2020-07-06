@@ -189,7 +189,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                       'Paranal/NACO.Lp': (13.60, 0.10),  # Maire et al. 2016
                                       'Keck/NIRC2.Ms': (13.81, 0.24)}},  # Victor Garcia et al. 2017
 
-            'ROXs 42 Bb': {'distance': (144.16, 1.54),
+            'ROXs 42 Bb': {'distance': (144.16, 1.53),
                            'app_mag': {
                                        # 'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
                                        'Keck/NIRC2.H': (15.88, 0.05),  # Daemgen et al. 2017
