@@ -28,7 +28,7 @@ def multi_photometry(datatype,
     spectrum : str
         Spectrum name (e.g., 'drift-phoenix').
     filters : tuple(str, )
-        Filter IDs.
+        Filter names.
     parameters : dict
         Parameters and values for the spectrum
 

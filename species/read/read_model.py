@@ -175,7 +175,7 @@ class ReadModel:
         Internal function for linearly interpolating the grid of model spectra for a given
         filter or wavelength sampling.
 
-        wavel_resample : np.array, None
+        wavel_resample : np.ndarray, None
             Wavelength points for the resampling of the spectrum. The ``filter_name`` is used
             if set to ``None``.
         smooth : bool
@@ -225,6 +225,7 @@ class ReadModel:
 
                     if self.filter_name is not None:
                         flux_new[i, j] = self.get_flux(model_param)[0]
+
                     else:
                         flux_new[i, j, :] = self.get_model(model_param,
                                                            spec_res=spec_res,
@@ -243,6 +244,7 @@ class ReadModel:
 
                         if self.filter_name is not None:
                             flux_new[i, j, k] = self.get_flux(model_param)[0]
+
                         else:
                             flux_new[i, j, k, :] = self.get_model(model_param,
                                                                   spec_res=spec_res,
@@ -263,6 +265,7 @@ class ReadModel:
 
                             if self.filter_name is not None:
                                 flux_new[i, j, k, m] = self.get_flux(model_param)[0]
+
                             else:
                                 flux_new[i, j, k, m, :] = self.get_model(
                                     model_param, spec_res=spec_res, wavel_resample=wavel_resample,
@@ -284,6 +287,7 @@ class ReadModel:
 
                                 if self.filter_name is not None:
                                     flux_new[i, j, k, m, n] = self.get_flux(model_param)[0]
+
                                 else:
                                     flux_new[i, j, k, m, n, :] = self.get_model(
                                         model_param, spec_res=spec_res,
@@ -302,19 +306,19 @@ class ReadModel:
                                                        bounds_error=False,
                                                        fill_value=np.nan)
 
+    @staticmethod
     @typechecked
-    def apply_extinction(self,
-                         wavelength: np.ndarray,
-                         flux: np.ndarray,
-                         radius_interp: float,
-                         sigma_interp: float,
-                         v_band_ext: float) -> np.ndarray:
+    def apply_size_dist_ext(wavelength: np.ndarray,
+                            flux: np.ndarray,
+                            radius_interp: float,
+                            sigma_interp: float,
+                            v_band_ext: float) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a spectrum.
 
-        wavelength : np.array
+        wavelength : np.ndarray
             Wavelengths (um) of the spectrum.
-        flux : np.array
+        flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
         radius_interp : float
             Logarithm of the mean geometric radius (um) of the log-normal size distribution.
@@ -379,6 +383,34 @@ class ReadModel:
 
         return flux * np.exp(-cross_new*n_grains)
 
+    @staticmethod
+    @typechecked
+    def apply_ism_ext(wavelength: np.ndarray,
+                      flux: np.ndarray,
+                      v_band_ext: float,
+                      v_band_red: float) -> np.ndarray:
+        """
+        Internal function for applying ISM extinction to a spectrum.
+
+        wavelength : np.ndarray
+            Wavelengths (um) of the spectrum.
+        flux : np.ndarray
+            Fluxes (W m-2 um-1) of the spectrum.
+        v_band_ext : float
+            Extinction (mag) in the V band.
+        v_band_red : float
+            Reddening in the V band.
+
+        Returns
+        -------
+        np.ndarray
+            Fluxes (W m-2 um-1) with the extinction applied.
+        """
+
+        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelength)
+
+        return flux * 10.**(-0.4*ext_mag)
+
     @typechecked
     def get_model(self,
                   model_param: Dict[str, float],
@@ -425,7 +457,7 @@ class ReadModel:
         grid_bounds = self.get_bounds()
 
         extra_param = ['radius', 'distance', 'mass', 'luminosity',
-                       'dust_radius', 'dust_sigma', 'dust_ext']
+                       'dust_radius', 'dust_sigma', 'dust_ext', 'ism_ext', 'ism_red']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -498,7 +530,7 @@ class ReadModel:
                                      self.wl_points,
                                      flux,
                                      spec_errs=None,
-                                     fill=0.,
+                                     fill=np.nan,
                                      verbose=True)
 
         elif spec_res is not None and not smooth:
@@ -521,7 +553,7 @@ class ReadModel:
                                      self.wl_points,
                                      flux,
                                      spec_errs=None,
-                                     fill=0.,
+                                     fill=np.nan,
                                      verbose=True)
 
         if magnitude:
@@ -549,7 +581,7 @@ class ReadModel:
                                              calibbox.wavelength,
                                              calibbox.flux,
                                              spec_errs=calibbox.error,
-                                             fill=0.,
+                                             fill=np.nan,
                                              verbose=True)
 
             flux = -2.5*np.log10(flux/flux_vega)
@@ -557,33 +589,50 @@ class ReadModel:
         else:
             quantity = 'flux'
 
-        is_finite = np.where(np.isfinite(flux))[0]
+        if np.isnan(np.sum(flux)):
+            warnings.warn(f'The resampled spectrum contains {np.sum(np.isnan(flux))} NaNs, '
+                          f'probably because the original wavelength range does not fully '
+                          f'encompass the new wavelength range.')
 
         if wavel_resample is None:
-            wavelength = self.wl_points[is_finite]
+            wavelength = self.wl_points
         else:
-            wavelength = wavel_resample[is_finite]
+            wavelength = wavel_resample
 
-        if wavelength.shape[0] == 0:
-            raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
-                             f'interpolated at {model_param} because zeros are stored in the '
-                             f'database.')
+        # is_finite = np.where(np.isfinite(flux))[0]
+        #
+        # if wavel_resample is None:
+        #     wavelength = self.wl_points[is_finite]
+        # else:
+        #     wavelength = wavel_resample[is_finite]
+        #
+        # if wavelength.shape[0] == 0:
+        #     raise ValueError(f'The model spectrum is empty. Perhaps the grid could not be '
+        #                      f'interpolated at {model_param} because zeros are stored in the '
+        #                      f'database.')
 
         model_box = box.create_box(boxtype='model',
                                    model=self.model,
                                    wavelength=wavelength,
-                                   flux=flux[is_finite],
+                                   flux=flux,
                                    parameters=model_param,
                                    quantity=quantity)
 
         if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
                 'dust_ext' in model_param:
 
-            model_box.flux = self.apply_extinction(model_box.wavelength,
-                                                   model_box.flux,
-                                                   model_param['dust_radius'],
-                                                   model_param['dust_sigma'],
-                                                   model_param['dust_ext'])
+            model_box.flux = self.apply_size_dist_ext(model_box.wavelength,
+                                                      model_box.flux,
+                                                      model_param['dust_radius'],
+                                                      model_param['dust_sigma'],
+                                                      model_param['dust_ext'])
+
+        if 'ism_ext' in model_param and 'ism_red' in model_param:
+
+            model_box.flux = self.apply_ism_ext(model_box.wavelength,
+                                                model_box.flux,
+                                                model_param['ism_ext'],
+                                                model_param['ism_red'])
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (
@@ -687,11 +736,18 @@ class ReadModel:
         if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
                 'dust_ext' in model_param:
 
-            model_box.flux = self.apply_extinction(model_box.wavelength,
-                                                   model_box.flux,
-                                                   model_param['dust_radius'],
-                                                   model_param['dust_sigma'],
-                                                   model_param['dust_ext'])
+            model_box.flux = self.apply_size_dist_ext(model_box.wavelength,
+                                                      model_box.flux,
+                                                      model_param['dust_radius'],
+                                                      model_param['dust_sigma'],
+                                                      model_param['dust_ext'])
+
+        if 'ism_ext' in model_param and 'ism_red' in model_param:
+
+            model_box.flux = self.apply_ism_ext(model_box.wavelength,
+                                                model_box.flux,
+                                                model_param['ism_ext'],
+                                                model_param['ism_red'])
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (

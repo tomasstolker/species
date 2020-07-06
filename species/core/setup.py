@@ -34,7 +34,9 @@ class SpeciesInit:
         print(' [DONE]')
 
         try:
-            contents = urllib.request.urlopen('https://pypi.org/pypi/species/json').read()
+            contents = urllib.request.urlopen('https://pypi.org/pypi/species/json',
+                                              timeout=1.).read()
+
             data = json.loads(contents)
             latest_version = data['info']['version']
 

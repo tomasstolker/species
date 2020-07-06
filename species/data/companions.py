@@ -106,13 +106,13 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/NACO.Lp': (16.27, 0.19)}},  # De Rosa et al. 2016
 
             'PDS 70 b': {'distance': (113.43, 0.52),
-                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (17.94, 0.24),  # Keppler et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_H23_3': (17.95, 0.17),  # Keppler et al. 2018
-                                     'Paranal/SPHERE.IRDIS_D_K12_1': [(16.71, 0.04), (16.96, 0.38)],  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': [(16.39, 0.06), (16.43, 0.43)], # Stolker et al. in prep.
-                                     'Paranal/NACO.Lp': (14.44, 0.46),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (14.55, 0.40),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Mp': (13.64, 0.23),  # Stolker et al. in prep.
+                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (18.12, 0.21),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_H23_3': (17.97, 0.18),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.66, 0.04),  # Stolker et al. in prep.
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.37, 0.06),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Lp': (14.68, 0.22),  # Stolker et al. in prep.
+                                     'Paranal/NACO.NB405': (14.68, 0.27),  # Stolker et al. in prep.
+                                     'Paranal/NACO.Mp': (13.80, 0.27),  # Stolker et al. in prep.
                                      'Keck/NIRC2.Lp': (14.64, 0.18)}},  # Wang et al. 2020
 
             'PDS 70 c': {'distance': (113.43, 0.52),
@@ -179,7 +179,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Subaru/CIAO.H': (14.95, 0.13),  # Bonnefoy et al. 2014
                                         'Subaru/CIAO.Ks': (14.32, 0.09),  # Bonnefoy et al. 2014
                                         'Keck/NIRC2.Lp': (13.12, 0.1),  # Bonnefoy et al. 2014
-                                        'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
+                                        # 'Keck/NIRC2.NB_4.05': (13.0, 0.2),  # Bonnefoy et al. 2014
                                         'LBT/LMIRCam.M_77K': (13.3, 0.3)}},  # Bonnefoy et al. 2014
 
             'HD 1160 B': {'distance': (125.9, 1.2),
@@ -189,12 +189,13 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                       'Paranal/NACO.Lp': (13.60, 0.10),  # Maire et al. 2016
                                       'Keck/NIRC2.Ms': (13.81, 0.24)}},  # Victor Garcia et al. 2017
 
-            'ROXs 42 Bb': {'distance': (144.16, 1.54),
-                           'app_mag': {'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
+            'ROXs 42 Bb': {'distance': (144.16, 1.53),
+                           'app_mag': {
+                                       # 'Keck/NIRC2.J': (16.91, 0.11),  # Daemgen et al. 2017
                                        'Keck/NIRC2.H': (15.88, 0.05),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ks': (15.01, 0.06),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Lp': (13.97, 0.06),  # Daemgen et al. 2017
-                                       'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
+                                       # 'Keck/NIRC2.NB_4.05': (13.90, 0.08),  # Daemgen et al. 2017
                                        'Keck/NIRC2.Ms': (14.01, 0.23)}},  # Daemgen et al. 2017
 
             'GJ 504 b': {'distance': (17.54, 0.08),

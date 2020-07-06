@@ -119,10 +119,10 @@ def add_cross_sections(input_path: str,
 
     data_file = os.path.join(input_path, 'mgsio3_crystalline_c_ext.fits')
 
-    if not os.path.isfile(data_file):
-        print('Downloading dust cross sections (23 kB)...', end='', flush=True)
-        urllib.request.urlretrieve(url, data_file)
-        print(' [DONE]')
+    # if not os.path.isfile(data_file):
+    print('Downloading dust cross sections (23 kB)...', end='', flush=True)
+    urllib.request.urlretrieve(url, data_file)
+    print(' [DONE]')
 
     print('Adding dust cross sections...', end='')
 

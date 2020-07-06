@@ -301,12 +301,13 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_model(self,
-                  model,
-                  wavel_range=None,
-                  spec_res=None,
-                  teff_range=None,
-                  data_folder=None):
+                  model: str,
+                  wavel_range: Optional[Tuple[float, float]] = None,
+                  spec_res: Optional[float] = None,
+                  teff_range: Optional[Tuple[float, float]] = None,
+                  data_folder: Optional[str] = None) -> None:
         """
         Parameters
         ----------
@@ -316,11 +317,12 @@ class Database:
             'petitcode-hot-clear', 'petitcode-hot-cloudy', or 'exo-rem').
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
-            these models, the original wavelength points are used if set to None.
-            which case the argument can be set to None.
+            these models, the original wavelength points are used if set to ``None``.
+            which case the argument can be set to ``None``.
         spec_res : float, None
-            Spectral resolution. Optional for the DRIFT-PHOENIX and petitCODE models, in which
-            case the argument is only used if ``wavel_range`` is not None.
+            Spectral resolution. The parameter is optional for the DRIFT-PHOENIX, petitCODE,
+            BT-Settl, and Exo-REM models. The argument is only used if ``wavel_range`` is not
+            ``None``.
         teff_range : tuple(float, float), None
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
@@ -1155,6 +1157,8 @@ class Database:
 
             samples = np.asarray(dset)
 
+            # samples = samples[samples[:, 2] > 100., ]
+
             if samples.ndim == 3:
                 if burnin > samples.shape[1]:
                     raise ValueError(f'The \'burnin\' value is larger than the number of steps '
@@ -1248,6 +1252,8 @@ class Database:
             distance = None
 
         samples = np.asarray(dset)
+
+        # samples = samples[samples[:, 2] > 100., ]
 
         if samples.ndim == 2:
             ran_index = np.random.randint(samples.shape[0], size=random)
@@ -1466,25 +1472,28 @@ class Database:
                               distance=distance,
                               spectrum=spectrum)
 
+    @typechecked
     def get_samples(self,
-                    tag,
-                    burnin=None,
-                    random=None):
+                    tag: str,
+                    burnin: Optional[int] = None,
+                    random: Optional[int] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
         tag: str
             Database tag with the samples.
         burnin : int, None
-            Number of burnin samples to exclude. All samples are selected if set to None.
+            Number of burnin samples to exclude. All samples are selected if set to ``None``.
+            The parameter is only required for samples obtained with ``emcee`` and is therefore
+            not used for samples obtained with ``MultiNest``.
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
-            selected if set to None.
+            selected if set to ``None``.
 
         Returns
         -------
         species.core.box.SamplesBox
-            Box with the MCMC samples.
+            Box with the posterior samples.
         """
 
         if burnin is None:
@@ -1492,6 +1501,7 @@ class Database:
 
         h5_file = h5py.File(self.database, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
+        ln_prob = np.asarray(h5_file[f'results/fit/{tag}/ln_prob'])
 
         spectrum = dset.attrs['spectrum']
 
@@ -1531,6 +1541,7 @@ class Database:
                               spectrum=spectrum,
                               parameters=param,
                               samples=samples,
+                              ln_prob=ln_prob,
                               prob_sample=prob_sample,
                               median_sample=median_sample)
 
