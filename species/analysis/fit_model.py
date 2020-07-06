@@ -24,7 +24,7 @@ from typeguard import typechecked
 from species.analysis import photometry
 from species.data import database
 from species.core import constants
-from species.read import read_model, read_object, read_planck
+from species.read import read_model, read_object, read_planck, read_filter
 from species.util import read_util, dust_util
 
 
@@ -424,10 +424,25 @@ class FitModel:
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
 
-            Dust extinction parameters:
+            ISM extinction parameters:
 
-                 - Extinction by dust can be fitted for grains with a log-normal size distribution,
-                   a crystalline MgSiO3 composition, and a homogeneous, spherical structure.
+                 - There are two approaches of fitting extinction. The first is with the empirical
+                   relation from Cardelli et al. (1989) for ISM extinction.
+
+                 - The extinction is parametrized by the V band extinction, A_V (``ism_ext``), and
+                   the reddening, R_V (``ism_red``).
+
+                 - The prior boundaries of ``ism_ext`` and ``ext_red`` should be provided in the
+                   ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
+                   'ism_red': (0., 20.)}``.
+
+                 - Only supported by `run_multinest`.
+
+            Size distribution extinction parameters:
+
+                 - The second approach is fitting the extinction of a log-normal size distribution
+                   of grains with a crystalline MgSiO3 composition, and a homogeneous, spherical
+                   structure.
 
                  - The size distribution is parameterized with a mean geometric radius
                    (``dust_radius`` in um) and a geometric standard deviation (``dust_sigma``,
@@ -646,6 +661,7 @@ class FitModel:
 
         if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and \
                 'dust_ext' in self.bounds:
+
             self.cross_sections, self.dust_radius, self.dust_sigma = \
                 dust_util.interpolate_dust(inc_phot, inc_spec, self.spectrum)
 
@@ -658,6 +674,10 @@ class FitModel:
 
         else:
             self.cross_sections = None
+
+        if 'ism_ext' in self.bounds and 'ism_red' in self.bounds:
+            self.modelpar.append('ism_ext')
+            self.modelpar.append('ism_red')
 
         print(f'Fitting {len(self.modelpar)} parameters:')
 
@@ -948,6 +968,9 @@ class FitModel:
                 elif item[:5] == 'dust_':
                     dust_param[item] = cube[cube_index[item]]
 
+                elif item[:4] == 'ism_':
+                    dust_param[item] = cube[cube_index[item]]
+
                 else:
                     param_dict[item] = cube[cube_index[item]]
 
@@ -989,7 +1012,7 @@ class FitModel:
                     else:
                         ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
-            if len(dust_param) == 3:
+            if 'dust_ext' in dust_param:
                 cross_tmp = self.cross_sections['Generic/Bessell.V'](
                     dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
 
@@ -1004,10 +1027,21 @@ class FitModel:
                     phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))
                     phot_flux *= flux_scaling
 
-                if len(dust_param) == 3:
+                if 'dust_ext' in dust_param:
                     cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
                         dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+
                     phot_flux *= np.exp(-cross_tmp*n_grains)
+
+                elif 'ism_ext' in dust_param:
+                    read_filt = read_filter.ReadFilter(self.modelphot[i].filter_name)
+                    filt_wavel = np.array([read_filt.mean_wavelength()])
+
+                    ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
+                                                        dust_param['ism_red'],
+                                                        filt_wavel)
+
+                    phot_flux *= 10.**(-0.4*ext_filt[0])
 
                 if obj_item.ndim == 1:
                     ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
@@ -1049,12 +1083,19 @@ class FitModel:
                     model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
                     model_flux *= flux_scaling
 
-                if len(dust_param) == 3:
+                if 'dust_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
                         cross_tmp = cross_item(dust_param['dust_sigma'],
                                                10.**dust_param['dust_radius'])
 
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
+
+                elif 'ism_ext' in dust_param:
+                    ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
+                                                        dust_param['ism_red'],
+                                                        self.spectrum[item][0][:, 0])
+
+                    model_flux *= 10.**(-0.4*ext_filt)
 
                 if self.spectrum[item][2] is not None:
                     dot_tmp = np.dot(data_flux-model_flux,

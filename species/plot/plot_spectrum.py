@@ -345,7 +345,7 @@ def plot_spectrum(boxes: list,
                         if item[:4] == 'teff':
                             value = f'{param[item]:.0f}'
 
-                        elif item in ['logg', 'feh', 'co', 'fsed', 'dust_ext']:
+                        elif item in ['logg', 'feh', 'co', 'fsed', 'dust_ext', 'ism_ext']:
                             value = f'{param[item]:.2f}'
 
                         elif item[:6] == 'radius':
@@ -540,7 +540,6 @@ def plot_spectrum(boxes: list,
                                                  f'values.')
 
                             for i in range(boxitem.flux[item].shape[1]):
-
                                 ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0, i]/scaling, xerr=fwhm/2.,
                                              yerr=flux_scaling*boxitem.flux[item][1, i]/scaling, zorder=3, **plot_kwargs[j][item][i])
 
@@ -654,8 +653,8 @@ def plot_spectrum(boxes: list,
             res_lim = 5.
 
         ax3.axhline(0., ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
-        # ax3.axhline(-2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
-        # ax3.axhline(2., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(-2.5, ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
+        # ax3.axhline(2.5, ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)

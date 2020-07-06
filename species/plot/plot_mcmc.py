@@ -6,6 +6,7 @@ import os
 
 from typing import Optional, Tuple, List
 
+import h5py
 import corner
 import numpy as np
 import matplotlib as mpl
@@ -13,10 +14,11 @@ import matplotlib.pyplot as plt
 
 from typeguard import typechecked
 from matplotlib.ticker import ScalarFormatter
+from scipy.interpolate import RegularGridInterpolator
 
 from species.core import constants
 from species.data import database
-from species.util import plot_util
+from species.util import plot_util, dust_util
 
 
 @typechecked
@@ -34,7 +36,7 @@ def plot_walkers(tag: str,
     nsteps : int, None
         Number of steps that are plotted. All steps are plotted if set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if if set to ``None``.
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
         Output filename.
 
@@ -164,7 +166,7 @@ def plot_posterior(tag: str,
     species_db = database.Database()
     box = species_db.get_samples(tag, burnin=burnin)
 
-    print(f'Median sample:')
+    print('Median sample:')
     for key, value in box.median_sample.items():
         print(f'   - {key} = {value:.2f}')
 
@@ -174,7 +176,7 @@ def plot_posterior(tag: str,
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
 
-        print(f'Maximum posterior sample:')
+        print('Maximum posterior sample:')
         for key, value in box.prob_sample.items():
             print(f'   - {key} = {value:.2f}')
 
@@ -383,6 +385,275 @@ def plot_photometry(tag,
         ax.set_xlim(xlim)
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
+
+    plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+
+    print(' [DONE]')
+
+
+@typechecked
+def plot_size_distributions(tag: str,
+                            burnin: Optional[int] = None,
+                            random: Optional[int] = None,
+                            offset: Optional[Tuple[float, float]] = None,
+                            output: str = 'size_distributions.pdf') -> None:
+    """
+    Function to plot random samples of the log-normal size distribution.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the MCMC samples.
+    burnin : int, None
+        Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
+        after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+    random : int, None
+        Number of randomly selected samples. All samples are used if set to ``None``.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+    output : str
+        Output filename.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    print(f'Plotting size distributions: {output}...', end='', flush=True)
+
+    if burnin is None:
+        burnin = 0
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+
+    if 'dust_radius' not in box.parameters:
+        raise ValueError('The SamplesBox does not contain the \'dust_radius\' parameter.')
+
+    if 'dust_sigma' not in box.parameters:
+        raise ValueError('The SamplesBox does not contain the \'dust_sigma\' parameter.')
+
+    samples = box.samples
+
+    if samples.ndim == 2 and random is not None:
+        ran_index = np.random.randint(samples.shape[0], size=random)
+        samples = samples[ran_index, ]
+
+    elif samples.ndim == 3:
+        if burnin > samples.shape[1]:
+            raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                             f'({samples.shape[1]}) that are made by the walkers.')
+
+        samples = samples[:, burnin:, :]
+
+        ran_walker = np.random.randint(samples.shape[0], size=random)
+        ran_step = np.random.randint(samples.shape[1], size=random)
+        samples = samples[ran_walker, ran_step, :]
+
+    log_r_index = box.parameters.index('dust_radius')
+    sigma_index = box.parameters.index('dust_sigma')
+
+    log_r_g = samples[:, log_r_index]
+    sigma_g = samples[:, sigma_index]
+
+    plt.figure(1, figsize=(6, 3))
+    gridsp = mpl.gridspec.GridSpec(1, 1)
+    gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+
+    ax = plt.subplot(gridsp[0, 0])
+
+    ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                   direction='in', width=1, length=5, labelsize=12, top=True,
+                   bottom=True, left=True, right=True, labelbottom=True)
+
+    ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                   direction='in', width=1, length=3, labelsize=12, top=True,
+                   bottom=True, left=True, right=True, labelbottom=True)
+
+    ax.set_xlabel('Grain size (µm)', fontsize=12)
+    ax.set_ylabel('dn/dr', fontsize=12)
+
+    ax.set_xscale('log')
+
+    if offset is not None:
+        ax.get_xaxis().set_label_coords(0.5, offset[0])
+        ax.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax.get_xaxis().set_label_coords(0.5, -0.22)
+        ax.get_yaxis().set_label_coords(-0.09, 0.5)
+
+    for i in range(samples.shape[0]):
+        test_range = (-15, 15, 10000)
+        dn_dr, r_test = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], test_range)
+
+        index = np.where(dn_dr/np.amax(dn_dr) > 1e-3)[0]
+
+        radius_range = (np.log10(r_test[index[0]]), np.log10(r_test[index[-1]]), 1000)
+        dn_dr, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], radius_range)
+
+        ax.plot(radii, dn_dr, ls='-', lw=0.5, color='black', alpha=0.5)
+
+    plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+
+    print(' [DONE]')
+
+
+@typechecked
+def plot_extinction(tag: str,
+                    burnin: Optional[int] = None,
+                    random: Optional[int] = None,
+                    wavel_range: Optional[Tuple[float, float]] = None,
+                    offset: Optional[Tuple[float, float]] = None,
+                    output: str = 'extinction.pdf') -> None:
+    """
+    Function to plot random samples of the extinction, either from fitting a size distribution
+    of enstatite grains (``dust_radius``, ``dust_sigma``, and ``dust_ext``), or from fitting
+    ISM extinction (``ism_ext`` and ``ism_red``).
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the MCMC samples.
+    burnin : int, None
+        Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
+        after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+    random : int, None
+        Number of randomly selected samples. All samples are used if set to ``None``.
+    wavel_range : tuple(float, float), None
+        Wavelength range (um) for the extinction. The default wavelength range (0.4, 10.) is used
+        if set to ``None``.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+    output : str
+        Output filename.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    print(f'Plotting extinction: {output}...', end='', flush=True)
+
+    if burnin is None:
+        burnin = 0
+
+    if wavel_range is None:
+        wavel_range = (0.4, 10.)
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.2)
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+
+    samples = box.samples
+
+    if samples.ndim == 2 and random is not None:
+        ran_index = np.random.randint(samples.shape[0], size=random)
+        samples = samples[ran_index, ]
+
+    elif samples.ndim == 3:
+        if burnin > samples.shape[1]:
+            raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                             f'({samples.shape[1]}) that are made by the walkers.')
+
+        samples = samples[:, burnin:, :]
+
+        ran_walker = np.random.randint(samples.shape[0], size=random)
+        ran_step = np.random.randint(samples.shape[1], size=random)
+        samples = samples[ran_walker, ran_step, :]
+
+    plt.figure(1, figsize=(6, 3))
+    gridsp = mpl.gridspec.GridSpec(1, 1)
+    gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+
+    ax = plt.subplot(gridsp[0, 0])
+
+    ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                   direction='in', width=1, length=5, labelsize=12, top=True,
+                   bottom=True, left=True, right=True, labelbottom=True)
+
+    ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                   direction='in', width=1, length=3, labelsize=12, top=True,
+                   bottom=True, left=True, right=True, labelbottom=True)
+
+    ax.set_xlabel('Wavelength (µm)', fontsize=12)
+    ax.set_ylabel('Extinction (mag)', fontsize=12)
+
+    if offset is not None:
+        ax.get_xaxis().set_label_coords(0.5, offset[0])
+        ax.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax.get_xaxis().set_label_coords(0.5, -0.22)
+        ax.get_yaxis().set_label_coords(-0.09, 0.5)
+
+    sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
+
+    if 'dust_radius' in box.parameters and 'dust_sigma' in box.parameters and \
+            'dust_ext' in box.parameters:
+
+        cross_optical, dust_radius, dust_sigma = dust_util.interpolate_dust([], [], None)
+
+        log_r_index = box.parameters.index('dust_radius')
+        sigma_index = box.parameters.index('dust_sigma')
+        ext_index = box.parameters.index('dust_ext')
+
+        log_r_g = samples[:, log_r_index]
+        sigma_g = samples[:, sigma_index]
+        dust_ext = samples[:, ext_index]
+
+        database_path = dust_util.check_dust_database()
+
+        with h5py.File(database_path, 'r') as h5_file:
+            cross_section = np.asarray(h5_file['dust/mgsio3/crystalline/cross_section'])
+            wavelength = np.asarray(h5_file['dust/mgsio3/crystalline/wavelength'])
+
+        cross_interp = RegularGridInterpolator((wavelength, dust_radius, dust_sigma), cross_section)
+
+        for i in range(samples.shape[0]):
+            cross_tmp = cross_optical['Generic/Bessell.V'](sigma_g[i], 10.**log_r_g[i])
+
+            n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+
+            sample_cross = np.zeros(sample_wavel.shape)
+
+            for j, item in enumerate(sample_wavel):
+                sample_cross[j] = cross_interp((item, 10.**log_r_g[i], sigma_g[i]))
+
+            sample_ext = 2.5 * np.log10(np.exp(1.)) * sample_cross * n_grains
+
+            ax.plot(sample_wavel, sample_ext, ls='-', lw=0.5, color='black', alpha=0.5)
+
+    elif 'ism_ext' in box.parameters and 'ism_red' in box.parameters:
+
+        ext_index = box.parameters.index('ism_ext')
+        red_index = box.parameters.index('ism_red')
+
+        ism_ext = samples[:, ext_index]
+        ism_red = samples[:, red_index]
+
+        for i in range(samples.shape[0]):
+            sample_ext = dust_util.ism_extinction(ism_ext[i], ism_red[i], sample_wavel)
+
+            ax.plot(sample_wavel, sample_ext, ls='-', lw=0.5, color='black', alpha=0.5)
+
+    else:
+        raise ValueError('The SamplesBox does not contain extinction parameters.')
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
