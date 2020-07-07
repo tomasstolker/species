@@ -353,8 +353,7 @@ def interpolate_dust(inc_phot: List[str],
 @typechecked
 def ism_extinction(av_mag: float,
                    rv_red: float,
-                   wavelengths: Union[float, np.float32, np.ndarray]) -> Union[np.float64,
-                                                                              np.ndarray]:
+                   wavelengths: np.ndarray) -> np.ndarray:
     """
     Function for calculating the optical and IR extinction with the empirical relation from
     Cardelli et al. (1989).
@@ -370,7 +369,7 @@ def ism_extinction(av_mag: float,
 
     Returns
     -------
-    float
+    np.ndarray
         Extinction (mag) at ``wavelengths``.
     """
 
