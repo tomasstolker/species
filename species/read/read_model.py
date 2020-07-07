@@ -385,14 +385,14 @@ class ReadModel:
 
     @staticmethod
     @typechecked
-    def apply_ism_ext(wavelength: np.ndarray,
+    def apply_ism_ext(wavelengths: np.ndarray,
                       flux: np.ndarray,
                       v_band_ext: float,
                       v_band_red: float) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
 
-        wavelength : np.ndarray
+        wavelengths : np.ndarray
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
@@ -407,7 +407,7 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelength)
+        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
 
         return flux * 10.**(-0.4*ext_mag)
 
