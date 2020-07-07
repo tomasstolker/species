@@ -631,6 +631,8 @@ def plot_extinction(tag: str,
                     burnin: Optional[int] = None,
                     random: Optional[int] = None,
                     wavel_range: Optional[Tuple[float, float]] = None,
+                    xlim: Optional[Tuple[float, float]] = None,
+                    ylim: Optional[Tuple[float, float]] = None,
                     offset: Optional[Tuple[float, float]] = None,
                     output: str = 'extinction.pdf') -> None:
     """
@@ -650,6 +652,10 @@ def plot_extinction(tag: str,
     wavel_range : tuple(float, float), None
         Wavelength range (um) for the extinction. The default wavelength range (0.4, 10.) is used
         if set to ``None``.
+    xlim : tuple(float, float), None
+        Limits of the wavelength axis. The range is set automatically if set to ``None``.
+    ylim : tuple(float, float)
+        Limits of the extinction axis. The range is set automatically if set to ``None``.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
@@ -660,8 +666,6 @@ def plot_extinction(tag: str,
     NoneType
         None
     """
-
-    print(f'Plotting extinction: {output}...', end='', flush=True)
 
     if burnin is None:
         burnin = 0
@@ -710,6 +714,12 @@ def plot_extinction(tag: str,
 
     ax.set_xlabel('Wavelength (µm)', fontsize=12)
     ax.set_ylabel('Extinction (mag)', fontsize=12)
+
+    if xlim is not None:
+        ax.set_xlim(xlim[0], xlim[1])
+
+    if ylim is not None:
+        ax.set_ylim(ylim[0], ylim[1])
 
     if offset is not None:
         ax.get_xaxis().set_label_coords(0.5, offset[0])
@@ -771,6 +781,8 @@ def plot_extinction(tag: str,
 
     else:
         raise ValueError('The SamplesBox does not contain extinction parameters.')
+
+    print(f'Plotting extinction: {output}...', end='', flush=True)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
