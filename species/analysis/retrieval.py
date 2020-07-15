@@ -5,6 +5,7 @@ More details on the retrieval code are available at https://petitradtrans.readth
 
 import os
 import json
+import time
 import warnings
 
 from typing import Optional
@@ -117,7 +118,7 @@ class AtmosphericRetrieval:
             obj_phot = self.object.get_photometry(item)
             self.objphot.append((obj_phot[2], obj_phot[3]))
 
-            print(f'   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]}')
+            print(f'   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]:.2e}')
 
             sphot = photometry.SyntheticPhotometry(item)
             self.synphot.append(sphot)
@@ -792,6 +793,8 @@ class AtmosphericRetrieval:
 
             # calculate the emission spectrum
 
+            start = time.time()
+
             if len(self.cloud_species) > 0:
                 # cloudy atmosphere
 
@@ -853,6 +856,10 @@ class AtmosphericRetrieval:
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         None, None, None, log_x_abund, chemistry, half=True, contribution=False)
+
+            end = time.time()
+
+            print(f'\rRadiative transfer time: {end-start:.2f} s', end='', flush=True)
 
             # return zero probability if the spectrum contains NaN values
 
