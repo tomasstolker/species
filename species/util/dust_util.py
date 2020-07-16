@@ -75,7 +75,7 @@ def log_normal_distribution(radius_g: float,
         Grain radii (um).
     """
 
-    # Create radius bins across a broad range
+    # Create bins across a broad radius range to make sure that the full distribution is captured
     r_test = np.logspace(-20., 20., 1000)  # (um)
 
     # Create a size distribution for extracting the approximate minimum and maximum radius
@@ -252,7 +252,7 @@ def calc_reddening(filters_color: Tuple[str, str],
 
     filters = [extinction[0], filters_color[0], filters_color[1]]
 
-    dn_dr, r_width, radii = log_normal_distribution(radius_g, 2., 1000)
+    dn_dr, r_width, radii = log_normal_distribution(radius_g, 2., 100)
 
     c_ext = {}
 
