@@ -30,12 +30,12 @@ def get_mass(model_param):
         Mass (Mjup).
     """
 
-    logg = 1e-2 * 10.**model_param['logg']  # (m s-1)
+    surface_grav = 1e-2 * 10.**model_param['logg']  # (m s-2)
 
     radius = model_param['radius']  # (Rjup)
     radius *= constants.R_JUP  # (m)
 
-    mass = logg*radius**2/constants.GRAVITY  # (kg)
+    mass = surface_grav*radius**2/constants.GRAVITY  # (kg)
     mass /= constants.M_JUP  # (Mjup)
 
     return mass

@@ -1013,8 +1013,17 @@ class FitModel:
                         ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
             if 'dust_ext' in dust_param:
+                # dn_dr, r_test = dust_util.log_normal_distribution(
+                #     10.**dust_param['dust_radius'], dust_param['dust_sigma'], (-15, 15, 10000))
+
+                # index = np.where(dn_dr/np.amax(dn_dr) > 1e-3)[0]
+
+                # if r_test[index[0]] < 1e-3:
+                #     # The minimum grain radius of the distribution is smaller than 1 nm
+                #     return -np.inf
+
                 cross_tmp = self.cross_sections['Generic/Bessell.V'](
-                    dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                    dust_param['dust_sigma'], 10.**dust_param['dust_radius'])[0]
 
                 n_grains = dust_param['dust_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
@@ -1024,12 +1033,12 @@ class FitModel:
                     phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[0]
 
                 else:
-                    phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))
+                    phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))[0][0]
                     phot_flux *= flux_scaling
 
                 if 'dust_ext' in dust_param:
                     cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
-                        dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                        dust_param['dust_sigma'], 10.**dust_param['dust_radius'])[0]
 
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
@@ -1098,6 +1107,7 @@ class FitModel:
                     model_flux *= 10.**(-0.4*ext_filt)
 
                 if self.spectrum[item][2] is not None:
+                    # Use the inverted covariance matrix
                     dot_tmp = np.dot(data_flux-model_flux,
                                      np.dot(data_cov_inv, data_flux-model_flux))
 
@@ -1122,6 +1132,7 @@ class FitModel:
                         ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
                     else:
+                        # Calculate the chi-square without a covariance matrix
                         ln_like += np.nansum(-0.5 * (data_flux-model_flux)**2 / data_var -
                                              0.5 * np.log(2.*np.pi*data_var))
 

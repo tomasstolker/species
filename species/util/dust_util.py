@@ -52,8 +52,7 @@ def check_dust_database() -> str:
 @typechecked
 def log_normal_distribution(radius_g: float,
                             sigma_g: float,
-                            radius_range: Tuple[float, float, int]) -> Tuple[np.ndarray,
-                                                                             np.ndarray]:
+                            n_bins: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Function for returning a log-normal size distribution. See Eq. 9 in Ackerman & Marley (2001).
 
@@ -63,48 +62,127 @@ def log_normal_distribution(radius_g: float,
         Mean geometric radius (um).
     sigma_g : float
         Geometric standard deviation (dimensionless).
-    radius_range : tuple(float, float, int)
-        Tuple with the log10(r_min/um), log10(r_max/um), and the number of radii. For example,
-        ``(-2., 3., 100)`` will create a size distribution from 0.01 um to 1000 um with 100 size
-        samples in log space.
+    n_bins : int
+        Number of logarithmically-spaced radius bins.
 
     Returns
     -------
     np.ndarray
-        Grain sizes (um).
+        Number of grains per radius bin, normalized to an integrated value of 1 grain.
     np.ndarray
-        Number of grains per size bin (dn/dr), normalized to an integrated value of 1.
+        Widths of the radius bins (um).
+    np.ndarray
+        Grain radii (um).
     """
 
-    radii = np.logspace(radius_range[0], radius_range[1], radius_range[2])  # (um)
+    # Create radius bins across a broad range
+    r_test = np.logspace(-20., 20., 1000)  # (um)
 
+    # Create a size distribution for extracting the approximate minimum and maximum radius
+    dn_dr = np.exp(-np.log(r_test/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
+        (r_test*np.sqrt(2.*np.pi)*np.log(sigma_g))
+
+    # Select the radii for which dn/dr is larger than 0.1% of the maximum dn/dr
+    indices = np.where(dn_dr/np.amax(dn_dr) > 0.001)[0]
+
+    # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
+    r_bins = np.logspace(np.log10(r_test[indices[0]]),
+                         np.log10(r_test[indices[-1]]),
+                         n_bins+1)  # (um)
+
+    # Width of the radius bins (um)
+    r_width = np.diff(r_bins)
+
+    # Grains radii (um) at which the size distribution is sampled
+    radii = (r_bins[1:]+r_bins[:-1])/2.
+
+    # Number of grains per radius bin, normalized to an integrated value of 1 grain
     dn_dr = np.exp(-np.log(radii/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
         (radii*np.sqrt(2.*np.pi)*np.log(sigma_g))
 
-    return dn_dr, radii
+    # Total of grains to one
+    # n_grains = np.sum(r_width*dn_dr)
+
+    # Normalize the size distribution to 1 grain
+    # dn_dr /= n_grains
+
+    return dn_dr, r_width, radii
 
 
 @typechecked
-def dust_cross_section(wavelength: float,
-                       n_index: float,
-                       k_index: float,
-                       radius: float,
-                       sigma: float = 2.) -> np.float64:
+def power_law_distribution(exponent: float,
+                           radius_min: float,
+                           radius_max: float,
+                           n_bins: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Function for calculating the extinction cross section of dust grains.
+    Function for returning a power-law size distribution.
 
     Parameters
     ----------
+    exponent : float
+        Exponent of the power-law size distribution, dn/dr = r**exponent.
+    radius_min : float
+        Minimum grain radius (um).
+    radius_max : float
+        Maximum grain radius (um).
+    n_bins : int
+        Number of logarithmically-spaced radius bins.
+
+    Returns
+    -------
+    np.ndarray
+        Number of grains per radius bin, normalized to an integrated value of 1 grain.
+    np.ndarray
+        Widths of the radius bins (um).
+    np.ndarray
+        Grain radii (um).
+    """
+
+    # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
+    r_bins = np.logspace(np.log10(radius_min), np.log10(radius_max), n_bins+1)  # (um)
+
+    # Width of the radius bins (um)
+    r_width = np.diff(r_bins)
+
+    # Grains radii (um) at which the size distribution is sampled
+    radii = (r_bins[1:]+r_bins[:-1])/2.
+
+    # Number of grains per radius bin
+    dn_dr = radii**exponent
+
+    # Total of grains to one
+    n_grains = np.sum(r_width*dn_dr)
+
+    # Normalize the size distribution to 1 grain
+    dn_dr /= n_grains
+
+    return dn_dr, r_width, radii
+
+
+@typechecked
+def dust_cross_section(dn_dr: np.ndarray,
+                       r_width: np.ndarray,
+                       radii: np.ndarray,
+                       wavelength: float,
+                       n_index: float,
+                       k_index: float) -> np.float64:
+    """
+    Function for calculating the extinction cross section for a size distribution of dust grains.
+
+    Parameters
+    ----------
+    dn_dr : np.ndarray
+        Number of grains per radius bin, normalized to an integrated value of 1 grain.
+    r_width : np.ndarray
+        Widths of the radius bins (um).
+    radii : np.ndarray
+        Grain radii (um).
     wavelength : float
         Wavelength (um).
     n_index : float
         Real part of the refractive index.
     k_index : float
         Imaginary part of the refractive index.
-    radius : float
-        Geometric radius of the grain size distribution (um).
-    sigma : float
-        Geometric standard deviation (dimensionless). The default value is 2.
 
     Returns
     -------
@@ -112,29 +190,10 @@ def dust_cross_section(wavelength: float,
         Extinction cross section (um2)
     """
 
-    # r_test = np.logspace(-15, 15, 10000)  # (um)
-
-    # The number of grains, N, is set to 1. It is simply the normalization of the distribution.
-    # dn_dr = np.exp(-np.log(r_test/radius)**2./(2.*np.log(sigma)**2.)) / \
-    #     (r_test*np.sqrt(2.*np.pi)*np.log(sigma))
-
-    # The number of grains, N, is set to 1. It is simply the normalization of the distribution.
-    dn_dr, r_test = log_normal_distribution(radius, sigma, (-15, 15, 10000))
-
-    index = np.where(dn_dr/np.amax(dn_dr) > 1e-3)[0]
-
-    # r_lognorm = np.logspace(np.log10(r_test[index[0]]), np.log10(r_test[index[-1]]), 1000)  # (um)
-
-    # dn+dr = np.exp(-np.log(r_lognorm/radius)**2./(2.*np.log(sigma)**2.)) / \
-    #     (r_lognorm*np.sqrt(2.*np.pi)*np.log(sigma))
-
-    radius_range = (np.log10(r_test[index[0]]), np.log10(r_test[index[-1]]), 1000)
-    dn_dr, r_lognorm = log_normal_distribution(radius, sigma, radius_range)
-
     c_ext = 0.
 
-    for i in range(r_lognorm[:-1].size):
-        mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
+    for i, item in enumerate(radii):
+        # mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
 
         # From the PyMieScatt documentation: When using PyMieScatt, pay close attention to
         # the units of the your inputs and outputs. Wavelength and particle diameters are
@@ -142,18 +201,17 @@ def dust_cross_section(wavelength: float,
         # coefficients are in Mm-1, and size distribution concentration is always in cm-3.
         mie = PyMieScatt.MieQ(complex(n_index, k_index),
                               wavelength*1e3,  # (nm)
-                              2.*mean_radius*1e3,  # diameter (nm)
+                              2.*item*1e3,  # diameter (nm)
                               asDict=True,
                               asCrossSection=False)
 
         if 'Qext' in mie:
-            area = np.pi*(2.*mean_radius*1e3)**2  # (nm2)
-            c_ext += mie['Qext']*area*dn_dr[i]*(r_lognorm[i+1]-r_lognorm[i])  # (nm2)
+            c_ext += np.pi*item**2*mie['Qext']*dn_dr[i]*r_width[i]  # (um2)
 
         else:
-            raise ValueError('Qext not found in PyMieScatt dictionary.')
+            raise ValueError('Qext not found in the PyMieScatt dictionary.')
 
-    return c_ext*1e-6  # (um2)
+    return c_ext  # (um2)
 
 
 @typechecked
@@ -161,7 +219,7 @@ def calc_reddening(filters_color: Tuple[str, str],
                    extinction: Tuple[str, float],
                    composition: str = 'MgSiO3',
                    structure: str = 'crystalline',
-                   radius: float = 1.) -> Tuple[float, float]:
+                   radius_g: float = 1.) -> Tuple[float, float]:
     """
     Function for calculating the reddening of a color given the extinction for a given filter. A
     log-normal size distribution with a geometric standard deviation of 2 is used as
@@ -177,7 +235,7 @@ def calc_reddening(filters_color: Tuple[str, str],
         Dust composition ('MgSiO3' or 'Fe').
     structure : str
         Grain structure ('crystalline' or 'amorphous').
-    radius : float
+    radius_g : float
         Geometric radius of the grain size distribution (um).
 
     Returns
@@ -194,6 +252,8 @@ def calc_reddening(filters_color: Tuple[str, str],
 
     filters = [extinction[0], filters_color[0], filters_color[1]]
 
+    dn_dr, r_width, radii = log_normal_distribution(radius_g, 2., 1000)
+
     c_ext = {}
 
     for item in filters:
@@ -209,16 +269,20 @@ def calc_reddening(filters_color: Tuple[str, str],
                 # Average cross section of the three axes
 
                 if i == 0:
-                    c_ext[item] = dust_cross_section(data[wavel_index, 0],
+                    c_ext[item] = dust_cross_section(dn_dr,
+                                                     r_width,
+                                                     radii,
+                                                     data[wavel_index, 0],
                                                      data[wavel_index, 1],
-                                                     data[wavel_index, 2],
-                                                     radius) / 3.
+                                                     data[wavel_index, 2]) / 3.
 
                 else:
-                    c_ext[item] += dust_cross_section(data[wavel_index, 0],
+                    c_ext[item] += dust_cross_section(dn_dr,
+                                                      r_width,
+                                                      radii,
+                                                      data[wavel_index, 0],
                                                       data[wavel_index, 1],
-                                                      data[wavel_index, 2],
-                                                      radius) / 3.
+                                                      data[wavel_index, 2]) / 3.
 
         else:
             if composition == 'MgSiO3' and structure == 'amorphous':
@@ -232,10 +296,12 @@ def calc_reddening(filters_color: Tuple[str, str],
 
             wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
 
-            c_ext[item] += dust_cross_section(data[wavel_index, 0],
+            c_ext[item] += dust_cross_section(dn_dr,
+                                              r_width,
+                                              radii,
+                                              data[wavel_index, 0],
                                               data[wavel_index, 1],
-                                              data[wavel_index, 2],
-                                              radius)
+                                              data[wavel_index, 2]) / 3.
 
     h5_file.close()
 
