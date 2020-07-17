@@ -97,7 +97,8 @@ def add_optical_constants(input_path: str,
 def add_cross_sections(input_path: str,
                        database: h5py._hl.files.File) -> None:
     """
-    Function for adding the extinction cross section of crystalline MgSiO3 to the database.
+    Function for adding the extinction cross section of crystalline MgSiO3 for a log-normal and
+    power-law size distribution to the database.
 
     Parameters
     ----------
@@ -115,21 +116,55 @@ def add_cross_sections(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/mgsio3_crystalline_c_ext.fits'
+    url = 'https://people.phys.ethz.ch/~stolkert/species/lognorm_mgsio3_c_ext.fits'
 
-    data_file = os.path.join(input_path, 'mgsio3_crystalline_c_ext.fits')
+    data_file = os.path.join(input_path, 'lognorm_mgsio3_c_ext.fits')
 
-    # if not os.path.isfile(data_file):
-    print('Downloading dust cross sections (23 kB)...', end='', flush=True)
+    print('Downloading log-normal dust cross sections (231 kB)...', end='', flush=True)
     urllib.request.urlretrieve(url, data_file)
     print(' [DONE]')
 
-    print('Adding dust cross sections...', end='')
+    print('Adding log-normal dust cross sections...', end='')
 
-    with fits.open(os.path.join(input_path, 'mgsio3_crystalline_c_ext.fits')) as hdu_list:
-        database.create_dataset('dust/mgsio3/crystalline/cross_section/', data=hdu_list[0].data)
-        database.create_dataset('dust/mgsio3/crystalline/wavelength/', data=hdu_list[1].data)
-        database.create_dataset('dust/mgsio3/crystalline/radius/', data=hdu_list[2].data)
-        database.create_dataset('dust/mgsio3/crystalline/sigma/', data=hdu_list[3].data)
+    with fits.open(os.path.join(input_path, 'lognorm_mgsio3_c_ext.fits')) as hdu_list:
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/cross_section/',
+                                data=hdu_list[0].data)
+
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/wavelength/',
+                                data=hdu_list[1].data)
+
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/radius_g/',
+                                data=hdu_list[2].data)
+
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/sigma_g/',
+                                data=hdu_list[3].data)
+
+    print(' [DONE]')
+
+    url = 'https://people.phys.ethz.ch/~stolkert/species/powerlaw_mgsio3_c_ext.fits'
+
+    data_file = os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')
+
+    print('Downloading power-law dust cross sections (552 kB)...', end='', flush=True)
+    urllib.request.urlretrieve(url, data_file)
+    print(' [DONE]')
+
+    print('Adding power-law dust cross sections...', end='')
+
+    with fits.open(os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')) as hdu_list:
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/cross_section/',
+                                data=hdu_list[0].data)
+
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/wavelength/',
+                                data=hdu_list[1].data)
+
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_min/',
+                                data=hdu_list[2].data)
+
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max/',
+                                data=hdu_list[3].data)
+
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/exponent/',
+                                data=hdu_list[4].data)
 
     print(' [DONE]')
