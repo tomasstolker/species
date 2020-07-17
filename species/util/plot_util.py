@@ -222,7 +222,7 @@ def update_labels(param: List[str]) -> List[str]:
             param[i] = rf'$\mathregular{{c}}_\mathregular{{{item[11:]}}}$ (nm)'
 
         elif item[0:9] == 'corr_len_':
-            param[i] = rf'$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}/\mathregular{µm}$'
+            param[i] = rf'$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}/\mathregular{{µm}}$'
 
         elif item[0:9] == 'corr_amp_':
             param[i] = rf'$\mathregular{{f}}_\mathregular{{{item[9:]}}}$'
