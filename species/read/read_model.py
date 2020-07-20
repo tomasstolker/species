@@ -387,7 +387,6 @@ class ReadModel:
     @typechecked
     def apply_powerlaw_ext(wavelength: np.ndarray,
                            flux: np.ndarray,
-                           r_min_interp: float,
                            r_max_interp: float,
                            exp_interp: float,
                            v_band_ext: float) -> np.ndarray:
@@ -398,8 +397,6 @@ class ReadModel:
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
-        r_min_interp : float
-            Minimum radius (um) of the power-law size distribution.
         r_max_interp : float
             Maximum radius (um) of the power-law size distribution.
         exp_interp : float
@@ -418,11 +415,10 @@ class ReadModel:
         with h5py.File(database_path, 'r') as h5_file:
             dust_cross = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/cross_section'])
             dust_wavel = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/wavelength'])
-            dust_r_min = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/radius_min'])
             dust_r_max = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/radius_max'])
             dust_exp = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/exponent'])
 
-        dust_interp = RegularGridInterpolator((dust_wavel, dust_r_min, dust_r_max, dust_exp),
+        dust_interp = RegularGridInterpolator((dust_wavel, dust_r_max, dust_exp),
                                               dust_cross,
                                               method='linear',
                                               bounds_error=True)
@@ -430,37 +426,35 @@ class ReadModel:
         read_filt = read_filter.ReadFilter('Generic/Bessell.V')
         filt_trans = read_filt.get_filter()
 
-        cross_phot = np.zeros((dust_r_min.shape[0], dust_r_max.shape[0], dust_exp.shape[0]))
+        cross_phot = np.zeros((dust_r_max.shape[0], dust_exp.shape[0]))
 
-        for i in range(dust_r_min.shape[0]):
-            for j in range(dust_r_max.shape[0]):
-                for k in range(dust_exp.shape[0]):
-                    cross_interp = interp1d(dust_wavel,
-                                            dust_cross[:, i, j, k],
-                                            kind='linear',
-                                            bounds_error=True)
+        for i in range(dust_r_max.shape[0]):
+            for j in range(dust_exp.shape[0]):
+                cross_interp = interp1d(dust_wavel,
+                                        dust_cross[:, i, j],
+                                        kind='linear',
+                                        bounds_error=True)
 
-                    cross_tmp = cross_interp(filt_trans[:, 0])
+                cross_tmp = cross_interp(filt_trans[:, 0])
 
-                    integral1 = np.trapz(filt_trans[:, 1]*cross_tmp, filt_trans[:, 0])
-                    integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+                integral1 = np.trapz(filt_trans[:, 1]*cross_tmp, filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
 
-                    # Filter-weighted average of the extinction cross section
-                    cross_phot[i, j, k] = integral1/integral2
+                # Filter-weighted average of the extinction cross section
+                cross_phot[i, j] = integral1/integral2
 
-        cross_interp = RegularGridInterpolator((dust_r_min, dust_r_max, dust_exp),
-                                               cross_phot,
-                                               method='linear',
-                                               bounds_error=False,
-                                               fill_value=np.nan)
+        cross_interp = interp2d(dust_exp,
+                                dust_r_max,
+                                cross_phot,
+                                kind='linear',
+                                bounds_error=True)
 
-        cross_v_band = cross_interp((10.**r_min_interp, 10.**r_max_interp, exp_interp))
+        cross_v_band = cross_interp(exp_interp, 10.**r_max_interp)[0]
 
-        r_min_full = np.full(wavelength.shape[0], 10.**r_min_interp)
         r_max_full = np.full(wavelength.shape[0], 10.**r_max_interp)
         exp_full = np.full(wavelength.shape[0], exp_interp)
 
-        cross_new = dust_interp(np.column_stack((wavelength, r_min_full, r_max_full, exp_full)))
+        cross_new = dust_interp(np.column_stack((wavelength, r_max_full, exp_full)))
 
         n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.))
 
@@ -540,8 +534,8 @@ class ReadModel:
         grid_bounds = self.get_bounds()
 
         extra_param = ['radius', 'distance', 'mass', 'luminosity', 'lognorm_radius',
-                       'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_min',
-                       'powerlaw_max', 'powerlaw_exp', 'powerlaw_ext']
+                       'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_max',
+                       'powerlaw_exp', 'powerlaw_ext']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -711,12 +705,11 @@ class ReadModel:
                                                     model_param['lognorm_sigma'],
                                                     model_param['lognorm_ext'])
 
-        if 'powerlaw_min' in model_param and 'powerlaw_max' in model_param and \
-                'powerlaw_exp' in model_param and 'powerlaw_ext' in model_param:
+        if 'powerlaw_max' in model_param and 'powerlaw_exp' in model_param and \
+                'powerlaw_ext' in model_param:
 
             model_box.flux = self.apply_powerlaw_ext(model_box.wavelength,
                                                      model_box.flux,
-                                                     model_param['powerlaw_min'],
                                                      model_param['powerlaw_max'],
                                                      model_param['powerlaw_exp'],
                                                      model_param['powerlaw_ext'])
@@ -836,12 +829,11 @@ class ReadModel:
                                                     model_param['lognorm_sigma'],
                                                     model_param['lognorm_ext'])
 
-        if 'powerlaw_min' in model_param and 'powerlaw_max' in model_param and \
-                'powerlaw_exp' in model_param and 'powerlaw_ext' in model_param:
+        if 'powerlaw_max' in model_param and 'powerlaw_exp' in model_param and \
+                'powerlaw_ext' in model_param:
 
             model_box.flux = self.apply_powerlaw_ext(model_box.wavelength,
                                                      model_box.flux,
-                                                     model_param['powerlaw_min'],
                                                      model_param['powerlaw_max'],
                                                      model_param['powerlaw_exp'],
                                                      model_param['powerlaw_ext'])

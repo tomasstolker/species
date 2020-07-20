@@ -145,7 +145,7 @@ def add_cross_sections(input_path: str,
 
     data_file = os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')
 
-    print('Downloading power-law dust cross sections (552 kB)...', end='', flush=True)
+    print('Downloading power-law dust cross sections (231 kB)...', end='', flush=True)
     urllib.request.urlretrieve(url, data_file)
     print(' [DONE]')
 
@@ -158,13 +158,10 @@ def add_cross_sections(input_path: str,
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/wavelength/',
                                 data=hdu_list[1].data)
 
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_min/',
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max/',
                                 data=hdu_list[2].data)
 
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max/',
-                                data=hdu_list[3].data)
-
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/exponent/',
-                                data=hdu_list[4].data)
+                                data=hdu_list[3].data)
 
     print(' [DONE]')

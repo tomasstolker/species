@@ -435,7 +435,7 @@ def plot_size_distributions(tag: str,
     species_db = database.Database()
     box = species_db.get_samples(tag)
 
-    if 'lognorm_radius' not in box.parameters and 'powerlaw_min' not in box.parameters:
+    if 'lognorm_radius' not in box.parameters and 'powerlaw_max' not in box.parameters:
         raise ValueError('The SamplesBox does not contain extinction parameter for a log-normal '
                          'or power-law size distribution.')
 
@@ -463,12 +463,10 @@ def plot_size_distributions(tag: str,
         log_r_g = samples[:, log_r_index]
         sigma_g = samples[:, sigma_index]
 
-    if 'powerlaw_min' in box.parameters:
-        r_min_index = box.parameters.index('powerlaw_min')
+    if 'powerlaw_max' in box.parameters:
         r_max_index = box.parameters.index('powerlaw_max')
         exponent_index = box.parameters.index('powerlaw_exp')
 
-        r_min = samples[:, r_min_index]
         r_max = samples[:, r_max_index]
         exponent = samples[:, exponent_index]
 
@@ -491,7 +489,7 @@ def plot_size_distributions(tag: str,
 
     ax.set_xscale('log')
 
-    if 'powerlaw_min' in box.parameters:
+    if 'powerlaw_max' in box.parameters:
         ax.set_yscale('log')
 
     if offset is not None:
@@ -506,9 +504,9 @@ def plot_size_distributions(tag: str,
         if 'lognorm_radius' in box.parameters:
             dn_dr, _, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
 
-        elif 'powerlaw_min' in box.parameters:
+        elif 'powerlaw_max' in box.parameters:
             dn_dr, _, radii = dust_util.power_law_distribution(
-                exponent[i], 10.**r_min[i], 10.**r_max[i], 1000)
+                exponent[i], 1e-3, 10.**r_max[i], 1000)
 
         ax.plot(radii, dn_dr, ls='-', lw=0.5, color='black', alpha=0.5)
 
@@ -659,17 +657,15 @@ def plot_extinction(tag: str,
 
             ax.plot(sample_wavel, sample_ext, ls='-', lw=0.5, color='black', alpha=0.5)
 
-    elif 'powerlaw_min' in box.parameters and 'powerlaw_max' in box.parameters and \
-            'powerlaw_exp' in box.parameters and 'powerlaw_ext' in box.parameters:
+    elif 'powerlaw_max' in box.parameters and 'powerlaw_exp' in box.parameters and \
+            'powerlaw_ext' in box.parameters:
 
-        cross_optical, dust_min, dust_max, dust_exp = dust_util.interp_powerlaw([], [], None)
+        cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [], None)
 
-        r_min_index = box.parameters.index('powerlaw_min')
         r_max_index = box.parameters.index('powerlaw_max')
         exp_index = box.parameters.index('powerlaw_exp')
         ext_index = box.parameters.index('powerlaw_ext')
 
-        r_min = samples[:, r_min_index]
         r_max = samples[:, r_max_index]
         exponent = samples[:, exp_index]
         dust_ext = samples[:, ext_index]
@@ -680,19 +676,18 @@ def plot_extinction(tag: str,
             cross_section = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/cross_section'])
             wavelength = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/wavelength'])
 
-        cross_interp = RegularGridInterpolator((wavelength, dust_min, dust_max, dust_exp),
+        cross_interp = RegularGridInterpolator((wavelength, dust_max, dust_exp),
                                                cross_section)
 
         for i in range(samples.shape[0]):
-            cross_tmp = cross_optical['Generic/Bessell.V'](
-                (10.**r_min[i], 10.**r_max[i], exponent[i]))
+            cross_tmp = cross_optical['Generic/Bessell.V'](exponent[i], 10.**r_max[i])
 
             n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
             sample_cross = np.zeros(sample_wavel.shape)
 
             for j, item in enumerate(sample_wavel):
-                sample_cross[j] = cross_interp((item, 10.**r_min[i], 10.**r_max[i], exponent[i]))
+                sample_cross[j] = cross_interp((item, 10.**r_max[i], exponent[i]))
 
             sample_ext = 2.5 * np.log10(np.exp(1.)) * sample_cross * n_grains
 

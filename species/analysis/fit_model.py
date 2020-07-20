@@ -468,21 +468,20 @@ class FitModel:
                    of grains, again with a crystalline MgSiO3 composition, and a homogeneous,
                    spherical structure.
 
-                 - The size distribution is parameterized with a minimum radius (``powerlaw_min``
-                   in um), a maximum radius (``powerlaw_max`` in um), and a power-law exponent
-                   (``powerlaw_exp``, dimensionless).
+                 - The size distribution is parameterized with a maximum radius (``powerlaw_max``
+                   in um) and a power-law exponent (``powerlaw_exp``, dimensionless). The
+                   minimum radius is fixed to 1 nm.
 
                  - The extinction (``powerlaw_ext``) is fitted in the V band (A_V in mag) and the
                    wavelength-dependent extinction cross sections are interpolated from a
                    pre-tabulated grid.
 
-                 - The prior boundaries of ``powerlaw_min``, ``powerlaw_max``, ``powerlaw_exp``,
-                   and ``powerlaw_ext`` should be provided in the ``bounds`` dictionary, for
-                   example ``bounds={'powerlaw_min': (0.001, 0.1), 'powerlaw_max': (0.5, 10.),
-                   'powerlaw_exp': (-5., 5.), 'powerlaw_ext': (0., 5.)}``.
+                 - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
+                   should be provided in the ``bounds`` dictionary, for example ``'powerlaw_max':
+                   (0.5, 10.), 'powerlaw_exp': (-5., 5.), 'powerlaw_ext': (0., 5.)}``.
 
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
-                   log-uniform prior for ``powerlaw_min`` and ``powerlaw_max``.
+                   log-uniform prior for ``powerlaw_max``.
 
                  - Only supported by ``run_multinest``.
 
@@ -695,19 +694,15 @@ class FitModel:
             self.bounds['lognorm_radius'] = (np.log10(self.bounds['lognorm_radius'][0]),
                                              np.log10(self.bounds['lognorm_radius'][1]))
 
-        elif 'powerlaw_min' in self.bounds and 'powerlaw_max' in self.bounds and \
-                'powerlaw_exp' in self.bounds and 'powerlaw_ext' in self.bounds:
+        elif 'powerlaw_max' in self.bounds and 'powerlaw_exp' in self.bounds and \
+                'powerlaw_ext' in self.bounds:
 
-            self.cross_sections, _, _, _ = dust_util.interp_powerlaw(
+            self.cross_sections, _, _ = dust_util.interp_powerlaw(
                 inc_phot, inc_spec, self.spectrum)
 
-            self.modelpar.append('powerlaw_min')
             self.modelpar.append('powerlaw_max')
             self.modelpar.append('powerlaw_exp')
             self.modelpar.append('powerlaw_ext')
-
-            self.bounds['powerlaw_min'] = (np.log10(self.bounds['powerlaw_min'][0]),
-                                           np.log10(self.bounds['powerlaw_min'][1]))
 
             self.bounds['powerlaw_max'] = (np.log10(self.bounds['powerlaw_max'][0]),
                                            np.log10(self.bounds['powerlaw_max'][1]))
@@ -1054,8 +1049,7 @@ class FitModel:
 
             elif 'powerlaw_ext' in dust_param:
                 cross_tmp = self.cross_sections['Generic/Bessell.V'](
-                    (10.**dust_param['powerlaw_min'], 10.**dust_param['powerlaw_max'],
-                     dust_param['powerlaw_exp']))
+                    dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])
 
                 n_grains = dust_param['powerlaw_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
@@ -1076,8 +1070,7 @@ class FitModel:
 
                 elif 'powerlaw_ext' in dust_param:
                     cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
-                        (10.**dust_param['powerlaw_min'], 10.**dust_param['powerlaw_max'],
-                         dust_param['powerlaw_exp']))
+                        dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])[0]
 
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
@@ -1134,15 +1127,14 @@ class FitModel:
                 if 'lognorm_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
                         cross_tmp = cross_item(dust_param['lognorm_sigma'],
-                                               10.**dust_param['lognorm_radius'])
+                                               10.**dust_param['lognorm_radius'])[0]
 
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
                 elif 'powerlaw_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
-                        cross_tmp = cross_item((10.**dust_param['powerlaw_min'],
-                                                10.**dust_param['powerlaw_max'],
-                                                dust_param['powerlaw_exp']))
+                        cross_tmp = cross_item(dust_param['powerlaw_exp'],
+                                               10.**dust_param['powerlaw_max'])[0]
 
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
