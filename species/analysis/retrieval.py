@@ -1,6 +1,6 @@
 """
-Module with functionalities for atmospheric retrieval with petitRADTRANS (Mollière et al. 2019).
-More details on the retrieval code are available at https://petitradtrans.readthedocs.io.
+Module with functionalities for atmospheric retrieval with ``petitRADTRANS`` (Mollière et al.
+2019).  details on the retrieval code are available at https://petitradtrans.readthedocs.io.
 """
 
 import os
@@ -8,7 +8,7 @@ import json
 import time
 import warnings
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import pymultinest
 import numpy as np
@@ -33,7 +33,7 @@ os.environ['OMP_NUM_THREADS'] = '1'
 
 class AtmosphericRetrieval:
     """
-    Class for atmospheric retrieval with petitRADTRANS.
+    Class for atmospheric retrieval with ``petitRADTRANS``.
     """
 
     @typechecked
@@ -42,20 +42,25 @@ class AtmosphericRetrieval:
                  line_species: Optional[list],
                  cloud_species: Optional[list],
                  scattering: bool,
-                 output_folder: str) -> None:
+                 output_folder: str,
+                 wavel_range: Optional[Tuple[float, float]] = None) -> None:
         """
         Parameters
         ----------
         object_name : str
             Object name in the database.
         line_species : list, None
-            List with the line species. No line species are used if set to None.
+            List with the line species. No line species are used if set to ``None``.
         cloud_species : list, None
-            List with the cloud species. No cloud species are used if set to None.
+            List with the cloud species. No cloud species are used if set to ``None``.
         scattering : bool
             Include scattering in the radiative transfer.
         output_folder : str
-            Folder name that is used for the output files from MultiNest.
+            Folder name that is used for the output files from ``MultiNest``.
+        wavel_range : tuple(float, float), None
+            The wavelength range (um) of the forward model. Should be a bit broader than the
+            minimum and maximum wavelength of the data. The wavelength range is set automatically
+            if the argument is set to ``None``.
 
         Returns
         -------
@@ -80,20 +85,20 @@ class AtmosphericRetrieval:
         print(f'Distance: {self.distance}')
 
         if self.line_species is None:
-            print(f'Line species: None')
+            print('Line species: None')
             self.line_species = []
 
         else:
-            print(f'Line species:')
+            print('Line species:')
             for item in self.line_species:
                 print(f'   - {item}')
 
         if self.cloud_species is None:
-            print(f'Cloud species: None')
+            print('Cloud species: None')
             self.cloud_species = []
 
         else:
-            print(f'Cloud species:')
+            print('Cloud species:')
             for item in self.cloud_species:
                 print(f'   - {item}')
 
@@ -163,6 +168,14 @@ class AtmosphericRetrieval:
             print(f'     Wavelength range (um) = {wavel_data[0]:.2f} - {wavel_data[-1]:.2f}')
             print(f'     Spectral resolution = {self.spectrum[key][3]:.2f}')
 
+        # set the wavelength range for the Radtrans object
+
+        if wavel_range is None:
+            self.wavel_range = (0.95*min(self.wavel_min), 1.15*max(self.wavel_max))
+
+        else:
+            self.wavel_range = (wavel_range[0], wavel_range[1])
+
         # create the pressure layers for the Radtrans object
 
         if len(self.cloud_species) > 0:
@@ -212,7 +225,7 @@ class AtmosphericRetrieval:
 
         # check if clouds are used in combination with equilibrium chemistry
 
-        if len(self.cloud_species) and chemistry != 'equilibrium':
+        if len(self.cloud_species) > 0 and chemistry != 'equilibrium':
             raise ValueError('Clouds are currently only implemented in combination with '
                              'equilibrium chemistry.')
 
@@ -410,8 +423,7 @@ class AtmosphericRetrieval:
                                         rayleigh_species=['H2', 'He'],
                                         cloud_species=self.cloud_species,
                                         continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=(0.95*min(self.wavel_min),
-                                                           1.15*max(self.wavel_max)),
+                                        wlen_bords_micron=self.wavel_range,
                                         mode='c-k',
                                         test_ck_shuffle_comp=self.scattering,
                                         do_scat_emis=self.scattering)
@@ -421,8 +433,7 @@ class AtmosphericRetrieval:
                                  rayleigh_species=['H2', 'He'],
                                  cloud_species=self.cloud_species,
                                  continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=(0.95*min(self.wavel_min),
-                                                    1.15*max(self.wavel_max)),
+                                 wlen_bords_micron=self.wavel_range,
                                  mode='c-k')
 
         # create RT arrays of 60 pressure layers
@@ -803,8 +814,8 @@ class AtmosphericRetrieval:
                     cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
-                                                                  cube[cube_index['metallicity']],
-                                                                  cloud_fractions)
+                                                             cube[cube_index['metallicity']],
+                                                             cloud_fractions)
 
                 # the try-except is required to catch numerical precision errors with the clouds
                 # try:
@@ -859,7 +870,7 @@ class AtmosphericRetrieval:
 
             end = time.time()
 
-            print(f'\rRadiative transfer time: {end-start:.2f} s', end='', flush=True)
+            print(f'\rRadiative transfer time: {end-start:.2e} s', end='', flush=True)
 
             # return zero probability if the spectrum contains NaN values
 
