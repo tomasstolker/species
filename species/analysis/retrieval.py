@@ -18,8 +18,8 @@ from typeguard import typechecked
 from scipy.stats import invgamma
 from rebin_give_width import rebin_give_width
 
-from petitRADTRANS import Radtrans
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransScatter
+from petitRADTRANS.radtrans import Radtrans
+from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 
 from species.analysis import photometry
 from species.data import database
@@ -54,7 +54,8 @@ class AtmosphericRetrieval:
         cloud_species : list, None
             List with the cloud species. No cloud species are used if set to ``None``.
         scattering : bool
-            Include scattering in the radiative transfer.
+            Include scattering in the radiative transfer. Scattering is not required if no cloud
+            species are selected.
         output_folder : str
             Folder name that is used for the output files from ``MultiNest``.
         wavel_range : tuple(float, float), None
@@ -109,6 +110,11 @@ class AtmosphericRetrieval:
         objectbox = species_db.get_object(object_name,
                                           inc_phot=True,
                                           inc_spec=True)
+
+        # scattering is not required without cloud species
+
+        if self.scattering and len(self.cloud_species) == 0:
+            raise ValueError('Scattering is not required if there are no cloud species selected.')
 
         # get photometric data
 

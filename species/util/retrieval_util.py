@@ -1,6 +1,6 @@
 import copy
 
-from typing import Optional, Tuple
+from typing import Optional, Union, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,9 +9,9 @@ from typeguard import typechecked
 from scipy.interpolate import interp1d, CubicSpline
 from scipy.ndimage.filters import gaussian_filter
 
-from petitRADTRANS.radtrans import Radtrans as RadtransClear
+from petitRADTRANS.radtrans import Radtrans as Radtrans
 from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransCloudy
+from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
     interpol_abundances
 
@@ -416,7 +416,7 @@ def create_abund_dict(abund_in: dict,
 
 
 @typechecked
-def calc_spectrum_clear(rt_object: RadtransClear,
+def calc_spectrum_clear(rt_object: Radtrans,
                         pressure: np.ndarray,
                         temperature: np.ndarray,
                         logg: float,
@@ -434,7 +434,7 @@ def calc_spectrum_clear(rt_object: RadtransClear,
 
     Parameters
     ----------
-    rt_object : RadtransClear, RadtransCloudy
+    rt_object : Radtrans
     pressure : np.ndarrau
     temperature : np.ndarray
     logg : float
@@ -510,7 +510,7 @@ def calc_spectrum_clear(rt_object: RadtransClear,
 
 
 @typechecked
-def calc_spectrum_clouds(rt_object: RadtransCloudy,
+def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
                          pressure: np.ndarray,
                          temperature: np.ndarray,
                          c_o_ratio: float,
@@ -532,7 +532,7 @@ def calc_spectrum_clouds(rt_object: RadtransCloudy,
 
     Parameters
     ----------
-    rt_object : RadtransClear, RadtransCloudy
+    rt_object : Radtrans, RadtransScatter
     pressure : np.ndarray
     temperature : np.ndarray
     c_o_ratio : float
@@ -750,14 +750,28 @@ def calc_spectrum_clouds(rt_object: RadtransCloudy,
     # reinitiate the pressure layers after make_half_pressure_better
     rt_object.setup_opa_structure(pressure)
 
-    rt_object.calc_flux(temperature,
-                        abundances,
-                        10.**logg,
-                        mmw,
-                        Kzz=Kzz_use,
-                        fsed=fseds,
-                        sigma_lnorm=sigma_lnorm,
-                        contribution=contribution)
+    if isinstance(rt_object, Radtrans):
+        # the argument of fsed is a float
+        rt_object.calc_flux(temperature,
+                            abundances,
+                            10.**logg,
+                            mmw,
+                            Kzz=Kzz_use,
+                            fsed=fsed,
+                            sigma_lnorm=sigma_lnorm,
+                            add_cloud_scat_as_abs=True,
+                            contribution=contribution)
+
+    elif isinstance(rt_object, RadtransScatter):
+        # the argument of fsed is a dictionary
+        rt_object.calc_flux(temperature,
+                            abundances,
+                            10.**logg,
+                            mmw,
+                            Kzz=Kzz_use,
+                            fsed=fseds,
+                            sigma_lnorm=sigma_lnorm,
+                            contribution=contribution)
 
     wlen_micron = nc.c/rt_object.freq/1e-4
     wlen = nc.c/rt_object.freq
