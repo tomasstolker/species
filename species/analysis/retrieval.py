@@ -57,7 +57,8 @@ class AtmosphericRetrieval:
             Include scattering in the radiative transfer. Scattering is not required if no cloud
             species are selected.
         output_folder : str
-            Folder name that is used for the output files from ``MultiNest``.
+            Folder name that is used for the output files from ``MultiNest``. The folder should
+            already exist.
         wavel_range : tuple(float, float), None
             The wavelength range (um) of the forward model. Should be a bit broader than the
             minimum and maximum wavelength of the data. The wavelength range is set automatically
@@ -370,7 +371,7 @@ class AtmosphericRetrieval:
         # create the output folder if required
 
         if not os.path.exists(self.output_folder):
-            os.mkdir(self.output_folder)
+            raise ValueError('The output folder ({self.output_folder}) does not exist.')
 
         # create list with parameters for MultiNest
 
