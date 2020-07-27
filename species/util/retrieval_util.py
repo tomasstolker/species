@@ -1162,6 +1162,8 @@ def atomic_masses() -> dict:
     masses['H2S'] = 34.
     masses['VO'] = 67.
     masses['TiO'] = 64.
+    masses['FeH'] = 57.
+    masses['OH'] = 17.
 
     return masses
 
