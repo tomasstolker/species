@@ -759,7 +759,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
                             Kzz=Kzz_use,
                             fsed=fsed,
                             sigma_lnorm=sigma_lnorm,
-                            add_cloud_scat_as_abs=True,
+                            add_cloud_scat_as_abs=False,
                             contribution=contribution)
 
     elif isinstance(rt_object, RadtransScatter):
