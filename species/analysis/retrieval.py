@@ -371,7 +371,7 @@ class AtmosphericRetrieval:
         # create the output folder if required
 
         if not os.path.exists(self.output_folder):
-            raise ValueError('The output folder ({self.output_folder}) does not exist.')
+            raise ValueError(f'The output folder ({self.output_folder}) does not exist.')
 
         # create list with parameters for MultiNest
 

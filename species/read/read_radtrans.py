@@ -6,7 +6,7 @@ Mollière et al. 2019 for details about the retrieval code.
 import os
 import configparser
 
-from typing import List, Tuple, Optional
+from typing import Optional, List, Tuple, Dict
 
 import numpy as np
 import matplotlib as mpl
@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 
 from typeguard import typechecked
 
-from petitRADTRANS import Radtrans as RadtransClear
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransCloudy
+from petitRADTRANS.radtrans import Radtrans
+from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 
+from species.analysis import photometry
 from species.core import box, constants
 from species.read import read_filter
 from species.util import read_util, retrieval_util
@@ -38,17 +39,17 @@ class ReadRadtrans:
         Parameters
         ----------
         line_species : list, None
-            List with the line species. No line species are used if set to None.
+            List with the line species. No line species are used if set to ``None``.
         cloud_species : list, None
-            List with the cloud species. No clouds are used if set to None
+            List with the cloud species. No clouds are used if set to ``None``.
         scattering : bool
             Include scattering in the radiative transfer.
         wavel_range : tuple(float, float), None
-            Wavelength range (um). The wavelength range is set to 0.8-10 um if set to None or
-            not used if ``filter_name`` is not None.
+            Wavelength range (um). The wavelength range is set to 0.8-10 um if set to ``None`` or
+            not used if ``filter_name`` is not ``None``.
         filter_name : str, None
             Filter name that is used for the wavelength range. The ``wavel_range`` is used if
-            ''filter_name`` is set to None.
+            ''filter_name`` is set to ``None``.
 
         Returns
         -------
@@ -63,6 +64,7 @@ class ReadRadtrans:
         if self.filter_name is not None:
             transmission = read_filter.ReadFilter(self.filter_name)
             self.wavel_range = transmission.wavelength_range()
+            self.wavel_range = (0.9*self.wavel_range[0], 1.2*self.wavel_range[1])
 
         elif self.wavel_range is None:
             self.wavel_range = (0.8, 10.)
@@ -82,6 +84,7 @@ class ReadRadtrans:
         if cloud_species is None:
             self.cloud_species = []
             n_pressure = 180
+
         else:
             self.cloud_species = cloud_species
             # n_pressure = 1440
@@ -93,22 +96,22 @@ class ReadRadtrans:
         # create Radtrans object
 
         if self.scattering:
-            self.rt_object = RadtransCloudy(line_species=self.line_species,
-                                            rayleigh_species=['H2', 'He'],
-                                            cloud_species=self.cloud_species,
-                                            continuum_opacities=['H2-H2', 'H2-He'],
-                                            wlen_bords_micron=wavel_range,
-                                            mode='c-k',
-                                            test_ck_shuffle_comp=self.scattering,
-                                            do_scat_emis=self.scattering)
+            self.rt_object = RadtransScatter(line_species=self.line_species,
+                                             rayleigh_species=['H2', 'He'],
+                                             cloud_species=self.cloud_species.copy(),
+                                             continuum_opacities=['H2-H2', 'H2-He'],
+                                             wlen_bords_micron=self.wavel_range,
+                                             mode='c-k',
+                                             test_ck_shuffle_comp=self.scattering,
+                                             do_scat_emis=self.scattering)
 
         else:
-            self.rt_object = RadtransClear(line_species=self.line_species,
-                                           rayleigh_species=['H2', 'He'],
-                                           cloud_species=self.cloud_species,
-                                           continuum_opacities=['H2-H2', 'H2-He'],
-                                           wlen_bords_micron=wavel_range,
-                                           mode='c-k')
+            self.rt_object = Radtrans(line_species=self.line_species,
+                                      rayleigh_species=['H2', 'He'],
+                                      cloud_species=self.cloud_species.copy(),
+                                      continuum_opacities=['H2-H2', 'H2-He'],
+                                      wlen_bords_micron=self.wavel_range,
+                                      mode='c-k')
 
         # create RT arrays of appropriate lengths by using every three pressure points
         self.rt_object.setup_opa_structure(self.pressure[::3])
@@ -133,13 +136,14 @@ class ReadRadtrans:
             :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if both ``spec_res`` and ``wavel_resample`` are set to None.
+            wavelength points are used if both ``spec_res`` and ``wavel_resample`` are set to
+            ``None``.
         wavel_resample : numpy.ndarray
             Wavelength points (um) to which the spectrum is resampled. Only used if
-            ``spec_res`` is set to None.
+            ``spec_res`` is set to ``None``.
         plot_contribution : str, None
             Filename for the plot of the emission contribution function. The plot is not created if
-            set to None.
+            set to ``None``.
 
         Returns
         -------
@@ -179,9 +183,10 @@ class ReadRadtrans:
             log_p_quench = -10.
 
         if len(self.cloud_species) > 0:
+
             cloud_fractions = {}
             for item in self.cloud_species:
-                cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
+                cloud_fractions[item[:-3]] = model_param[f'{item[:-6].lower()}_fraction']
 
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],
@@ -268,3 +273,28 @@ class ReadRadtrans:
                               flux=flux,
                               parameters=model_param,
                               quantity='flux')
+
+    @typechecked
+    def get_flux(self,
+                 model_param: Dict[str, float]) -> Tuple[float, None]:
+        """
+        Function for calculating the average flux density for the ``filter_name``.
+
+        Parameters
+        ----------
+        model_param : dict
+            Model parameters and values.
+
+        Returns
+        -------
+        float
+            Average flux (W m-2 um-1).
+        float, None
+            Uncertainty (W m-2 um-1), which is set to ``None``.
+        """
+
+        spectrum = self.get_model(model_param)
+
+        synphot = photometry.SyntheticPhotometry(self.filter_name)
+
+        return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)

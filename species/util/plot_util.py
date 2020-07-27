@@ -207,6 +207,14 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('kzz')
         param[index] = r'$\log\,K_{zz}$'
 
+    if 'fe_fraction' in param:
+        index = param.index('fe_fraction')
+        param[index] = r'$\log\,\tilde{X}_\mathregular{Fe}$'
+
+    if 'mgsio3_fraction' in param:
+        index = param.index('mgsio3_fraction')
+        param[index] = r'$\log\,\tilde{X}_\mathregular{MgSiO_{3}}$'
+
     if 'na2s_fraction' in param:
         index = param.index('na2s_fraction')
         param[index] = r'$\log\,\tilde{X}_\mathregular{Na_{2}S}$'

@@ -212,16 +212,16 @@ class Database:
                    filename: Optional[str] = None) -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or input file.
+        Service or from an input file.
 
         Parameters
         ----------
         filter_name : str
-            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
+            Filter name from the SVO Filter Profile Service (e.g., ``'Paranal/NACO.Lp'``).
         filename : str
             Filename of the filter profile. The first column should contain the wavelength
             (um) and the second column the transmission. The profile is downloaded from the SVO
-            Filter Profile Service if set to None.
+            Filter Profile Service if set to ``None``.
 
         Returns
         -------
@@ -252,9 +252,18 @@ class Database:
         else:
             wavelength, transmission = filters.download_filter(filter_name)
 
+        wavel_new = [wavelength[0]]
+        transm_new = [transmission[0]]
+
+        for i in range(wavelength.size-1):
+            if wavelength[i+1] > wavel_new[-1]:
+                # Required for the issue with the Keck/NIRC2.J filter on SVO
+                wavel_new.append(wavelength[i+1])
+                transm_new.append(transmission[i+1])
+
         if wavelength is not None and transmission is not None:
             h5_file.create_dataset(f'filters/{filter_name}',
-                                   data=np.column_stack((wavelength, transmission)))
+                                   data=np.column_stack((wavel_new, transm_new)))
 
         h5_file.close()
 
@@ -1554,7 +1563,7 @@ class Database:
         tag : str
             Database tag.
         output_folder : str
-            Output folder that was used for the output files by MultiNest.
+            Output folder that was used for the output files by ``MultiNest``.
 
         Returns
         -------
@@ -1586,6 +1595,9 @@ class Database:
 
             if f'results/fit/{tag}' in h5_file:
                 del h5_file[f'results/fit/{tag}']
+
+            # store the ln-likelihood
+            h5_file.create_dataset(f'results/fit/{tag}/ln_prob', data=samples[:, -1])
 
             # remove the column with the log-likelihood value
             samples = samples[:, :-1]

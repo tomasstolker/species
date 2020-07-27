@@ -16,21 +16,31 @@ from species.core import box
 from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
-def multi_photometry(datatype,
-                     spectrum,
-                     filters,
-                     parameters):
+@typechecked
+def multi_photometry(datatype: str,
+                     spectrum: str,
+                     filters: List[str],
+                     parameters: Dict[str, float],
+                     **kwargs_radtrans: Union[List[str],
+                                              Tuple[float, float],
+                                              bool]) -> box.SynphotBox:
     """
     Parameters
     ----------
     datatype : str
         Data type ('model' or 'calibration').
     spectrum : str
-        Spectrum name (e.g., 'drift-phoenix').
-    filters : tuple(str, )
+        Spectrum name (e.g., 'drift-phoenix', 'planck', or 'petitradtrans').
+    filters : list(str, )
         Filter names.
     parameters : dict
         Parameters and values for the spectrum
+
+    Keyword arguments
+    -----------------
+    kwargs_radtrans : dict
+        Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
+        ``line_species``, ``cloud_species``, and ``scattering``.
 
     Returns
     -------
@@ -46,11 +56,19 @@ def multi_photometry(datatype,
         for item in filters:
             if spectrum == 'planck':
                 readmodel = read_planck.ReadPlanck(filter_name=item)
+
+            elif spectrum == 'petitradtrans':
+                readmodel = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
+                                                       cloud_species=kwargs_radtrans['cloud_species'],
+                                                       scattering=kwargs_radtrans['scattering'],
+                                                       filter_name=item)
+
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
             try:
                 flux[item] = readmodel.get_flux(parameters)[0]
+
             except IndexError:
                 flux[item] = np.nan
 
@@ -193,7 +211,8 @@ def get_residuals(datatype: str,
         model_phot = multi_photometry(datatype=datatype,
                                       spectrum=spectrum,
                                       filters=inc_phot,
-                                      parameters=parameters)
+                                      parameters=parameters,
+                                      **kwargs_radtrans)
 
         res_phot = {}
 
@@ -221,6 +240,7 @@ def get_residuals(datatype: str,
         readmodel = None
 
         for key in objectbox.spectrum:
+
             if isinstance(inc_spec, bool) or key in inc_spec:
                 wavel_range = (0.9*objectbox.spectrum[key][0][0, 0],
                                1.1*objectbox.spectrum[key][0][-1, 0])
@@ -248,7 +268,7 @@ def get_residuals(datatype: str,
                                                           scattering=kwargs_radtrans['scattering'],
                                                           wavel_range=wavel_range)
 
-                    model = radtrans.get_model(parameters, spec_res=None)
+                    model = radtrans.get_model(parameters)
 
                     # separate resampling to the new wavelength points
 
