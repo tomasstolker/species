@@ -98,7 +98,7 @@ class ReadRadtrans:
         if self.scattering:
             self.rt_object = RadtransScatter(line_species=self.line_species,
                                              rayleigh_species=['H2', 'He'],
-                                             cloud_species=self.cloud_species.copy(),
+                                             cloud_species=self.cloud_species,
                                              continuum_opacities=['H2-H2', 'H2-He'],
                                              wlen_bords_micron=self.wavel_range,
                                              mode='c-k',
@@ -108,7 +108,7 @@ class ReadRadtrans:
         else:
             self.rt_object = Radtrans(line_species=self.line_species,
                                       rayleigh_species=['H2', 'He'],
-                                      cloud_species=self.cloud_species.copy(),
+                                      cloud_species=self.cloud_species,
                                       continuum_opacities=['H2-H2', 'H2-He'],
                                       wlen_bords_micron=self.wavel_range,
                                       mode='c-k')

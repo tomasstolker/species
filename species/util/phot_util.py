@@ -21,7 +21,7 @@ def multi_photometry(datatype: str,
                      spectrum: str,
                      filters: List[str],
                      parameters: Dict[str, float],
-                     **kwargs_radtrans: Union[List[str],
+                     **kwargs_radtrans: Union[Optional[List[str]],
                                               Tuple[float, float],
                                               bool]) -> box.SynphotBox:
     """
@@ -162,7 +162,7 @@ def get_residuals(datatype: str,
                   objectbox: box.ObjectBox,
                   inc_phot: Union[bool, List[str]] = True,
                   inc_spec: Union[bool, List[str]] = True,
-                  **kwargs_radtrans: Union[List[str],
+                  **kwargs_radtrans: Union[Optional[List[str]],
                                            Tuple[float, float],
                                            bool]) -> box.ResidualsBox:
     """
