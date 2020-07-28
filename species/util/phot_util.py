@@ -21,9 +21,7 @@ def multi_photometry(datatype: str,
                      spectrum: str,
                      filters: List[str],
                      parameters: Dict[str, float],
-                     **kwargs_radtrans: Union[Optional[List[str]],
-                                              Tuple[float, float],
-                                              bool]) -> box.SynphotBox:
+                     radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> box.SynphotBox:
     """
     Parameters
     ----------
@@ -34,13 +32,11 @@ def multi_photometry(datatype: str,
     filters : list(str, )
         Filter names.
     parameters : dict
-        Parameters and values for the spectrum
-
-    Keyword arguments
-    -----------------
-    kwargs_radtrans : dict
-        Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
-        ``line_species``, ``cloud_species``, and ``scattering``.
+        Parameters and values for the spectrum.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
+        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
+        instance is sufficiently broad to cover all the ``filters``. Not used if set to `None`.
 
     Returns
     -------
@@ -58,10 +54,10 @@ def multi_photometry(datatype: str,
                 readmodel = read_planck.ReadPlanck(filter_name=item)
 
             elif spectrum == 'petitradtrans':
-                readmodel = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
-                                                       cloud_species=kwargs_radtrans['cloud_species'],
-                                                       scattering=kwargs_radtrans['scattering'],
-                                                       filter_name=item)
+                readmodel = radtrans
+
+                # Set the filter_name because the instance of ReadRadtrans only has a wavel_range
+                readmodel.filter_name = item
 
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
@@ -74,6 +70,9 @@ def multi_photometry(datatype: str,
 
                 warnings.warn(f'The wavelength range of the {item} filter does not match with '
                               f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
+
+            # Set the filter_name back to None
+            readmodel.filter_name = None
 
     elif datatype == 'calibration':
         for item in filters:
@@ -162,9 +161,7 @@ def get_residuals(datatype: str,
                   objectbox: box.ObjectBox,
                   inc_phot: Union[bool, List[str]] = True,
                   inc_spec: Union[bool, List[str]] = True,
-                  **kwargs_radtrans: Union[Optional[List[str]],
-                                           Tuple[float, float],
-                                           bool]) -> box.ResidualsBox:
+                  radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> box.ResidualsBox:
     """
     Parameters
     ----------
@@ -187,22 +184,17 @@ def get_residuals(datatype: str,
         (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
         in the database with :func:`~species.data.database.Database.add_object`) can be
         provided.
-
-    Keyword arguments
-    -----------------
-    kwargs_radtrans : dict
-        Dictionary with the keyword arguments for the ``ReadRadtrans`` object, containing
-        ``line_species``, ``cloud_species``, ``scattering``,  and ``wavel_range``.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
+        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
+        instance is sufficiently broad to cover all the photometric and spectroscopic data of
+        ``inc_phot`` and ``inc_spec``. Not used if set to `None`.
 
     Returns
     -------
     species.core.box.ResidualsBox
         Box with the residuals.
     """
-
-    if 'filters' in kwargs_radtrans:
-        warnings.warn('The \'filters\' parameter has been deprecated. Please use the \'inc_phot\' '
-                      'parameter instead. The \'filters\' parameter is ignored.')
 
     if isinstance(inc_phot, bool) and inc_phot:
         inc_phot = objectbox.filters
@@ -212,7 +204,7 @@ def get_residuals(datatype: str,
                                       spectrum=spectrum,
                                       filters=inc_phot,
                                       parameters=parameters,
-                                      **kwargs_radtrans)
+                                      radtrans=radtrans)
 
         res_phot = {}
 
@@ -263,11 +255,6 @@ def get_residuals(datatype: str,
                                                  verbose=True)
 
                 elif spectrum == 'petitradtrans':
-                    radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
-                                                          cloud_species=kwargs_radtrans['cloud_species'],
-                                                          scattering=kwargs_radtrans['scattering'],
-                                                          wavel_range=wavel_range)
-
                     model = radtrans.get_model(parameters)
 
                     # separate resampling to the new wavelength points

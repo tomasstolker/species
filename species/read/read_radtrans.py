@@ -255,13 +255,11 @@ class ReadRadtrans:
             ax.set_yscale('log')
             ax.set_xscale('log')
 
-            self.pressure = self.pressure[::3]
-
-            xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure)
+            xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure[::3])
             ax.contourf(xx_grid, yy_grid, emission_contr, 30, cmap=plt.cm.bone_r)
 
             ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
-            ax.set_ylim(np.amax(self.pressure), np.amin(self.pressure))
+            ax.set_ylim(np.amax(self.pressure[::3]), np.amin(self.pressure[::3]))
 
             plt.savefig(plot_contribution, bbox_inches='tight')
             plt.clf()
