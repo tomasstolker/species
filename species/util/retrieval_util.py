@@ -1155,6 +1155,7 @@ def atomic_masses() -> dict:
     masses['CH4'] = 16.
     masses['CO2'] = 44.
     masses['CO'] = 28.
+    masses['CO_all_iso'] = 28.
     masses['NH3'] = 17.
     masses['HCN'] = 27.
     masses['C2H2,acetylene'] = 26.

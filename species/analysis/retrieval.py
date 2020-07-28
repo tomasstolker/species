@@ -236,6 +236,12 @@ class AtmosphericRetrieval:
             raise ValueError('Clouds are currently only implemented in combination with '
                              'equilibrium chemistry.')
 
+        # check if the Mollière P/T profile is used in combination with equilibrium chemistry
+
+        if pt_profile == 'molliere' and chemistry != 'equilibrium':
+            raise ValueError('The \'molliere\' P/T parametrization can only be used in '
+                             'combination with equilibrium chemistry.')
+
         # generic parameters
 
         self.parameters.append('logg')
