@@ -320,6 +320,15 @@ class AtmosphericRetrieval:
                 if bounds[item][2] is not None:
                     self.parameters.append(f'wavelength_{item}')
 
+        # add extinction parameters
+
+        if 'ism_ext' in bounds and 'ism_red' in bounds:
+
+            self.parameters.append('ism_ext')
+            self.parameters.append('ism_red')
+
+        # list all parameters
+
         print(f'Fitting {len(self.parameters)} parameters:')
 
         for item in self.parameters:
@@ -914,6 +923,14 @@ class AtmosphericRetrieval:
 
                 # fitted error component
                 err_fit = 10.**err_offset[key]
+
+                # apply ISM extinction to the model spectrum
+                if 'ism_ext' in self.parameters and 'ism_red' in self.parameters:
+                    spec_ext = dust_util.ism_extinction(cube[cube_index['ism_ext']],
+                                                        cube[cube_index['ism_red']],
+                                                        wlen_micron)
+
+                    flux_lambda *= 10.**(-0.4*spec_ext)
 
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,

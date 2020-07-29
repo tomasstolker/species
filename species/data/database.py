@@ -17,16 +17,16 @@ import numpy as np
 from typeguard import typechecked
 from astropy.io import fits
 
-from petitRADTRANS import Radtrans as RadtransClear
+from petitRADTRANS.radtrans import Radtrans
 from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed import Radtrans as RadtransCloudy
+from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, btsettl, btsettl_cifist, ames_dusty, \
                          ames_cond, isochrones, petitcode, exo_rem, dust
-from species.read import read_model, read_calibration, read_planck
+from species.read import read_model, read_calibration, read_planck, read_radtrans
 from species.util import data_util
 from species.util import data_util, retrieval_util
 
@@ -1648,11 +1648,13 @@ class Database:
 
         print(' [DONE]')
 
+    @typechecked
     def get_retrieval_spectra(self,
-                              tag,
-                              random,
-                              wavel_range,
-                              spec_res=None):
+                              tag: str,
+                              random: int,
+                              wavel_range: Union[Tuple[float, float], str],
+                              spec_res: Optional[float] = None) -> Tuple[
+                                  List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
         Parameters
         ----------
@@ -1660,16 +1662,18 @@ class Database:
             Database tag with the MCMC samples.
         random : int
             Number of randomly selected samples.
-        wavel_range : tuple(float, float) or str
+        wavel_range : tuple(float, float), str
             Wavelength range (um) or filter name.
-        spec_res : float
+        spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied if set to None.
+            is applied if set to ``None``.
 
         Returns
         -------
-        list(species.core.box.ModelBox, )
+        list(box.ModelBox, )
             Boxes with the randomly sampled spectra.
+        read_radtrans.Radtrans
+            Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
@@ -1693,7 +1697,9 @@ class Database:
         n_line_species = dset.attrs['n_line_species']
         n_cloud_species = dset.attrs['n_cloud_species']
 
-        scattering = dset.attrs['scattering']
+        # Convert numpy boolean to regular boolean
+        scattering = bool(dset.attrs['scattering'])
+
         quenching = dset.attrs['quenching']
         pt_profile = dset.attrs['pt_profile']
         chemistry = dset.attrs['chemistry']
@@ -1764,95 +1770,46 @@ class Database:
             kzz_index = np.argwhere(parameters == 'kzz')[0][0]
             sigma_lnorm_index = np.argwhere(parameters == 'sigma_lnorm')[0][0]
 
-        if scattering:
-            rt_object = RadtransCloudy(line_species=line_species,
-                                       rayleigh_species=['H2', 'He'],
-                                       cloud_species=cloud_species,
-                                       continuum_opacities=['H2-H2', 'H2-He'],
-                                       wlen_bords_micron=wavel_range,
-                                       mode='c-k',
-                                       test_ck_shuffle_comp=scattering,
-                                       do_scat_emis=scattering)
-
-        else:
-            rt_object = RadtransClear(line_species=line_species,
-                                      rayleigh_species=['H2', 'He'],
-                                      cloud_species=cloud_species,
-                                      continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=wavel_range,
-                                      mode='c-k')
-
-        # create RT arrays of appropriate lengths by using every three pressure points
-        rt_object.setup_opa_structure(pressure[::3])
+        read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
+                                              cloud_species=cloud_species,
+                                              scattering=scattering,
+                                              wavel_range=wavel_range)
 
         boxes = []
 
         for i, item in tqdm.tqdm(enumerate(samples), desc='Getting MCMC spectra'):
 
+            model_param = {}
+            model_param['logg'] = item[logg_index]
+
             if pt_profile == 'molliere':
-                temp, _, _ = retrieval_util.pt_ret_model(
-                    np.array([item[t1_index], item[t2_index], item[t3_index]]),
-                    10.**item[log_delta_index], item[alpha_index], item[tint_index], pressure,
-                    item[metallicity_index], item[c_o_ratio_index])
+                model_param['t1'] = item[t1_index]
+                model_param['t2'] = item[t2_index]
+                model_param['t3'] = item[t3_index]
+                model_param['log_delta_index'] = item[log_delta_index]
+                model_param['alpha_index'] = item[alpha_index]
+                model_param['tint_index'] = item[tint_index]
 
             elif pt_profile in ['free', 'monotonic']:
-                knot_temp = []
                 for i in range(15):
-                    knot_temp.append(item[temp_index[i]])
-
-                knot_temp = np.asarray(knot_temp)
-
-                temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+                    model_param[f't{i}'] = item[temp_index[i]]
 
             if quenching:
-                log_p_quench = item[log_p_quench_index]
-            else:
-                log_p_quench = -10.
+                model_param['log_p_quench'] = item[log_p_quench_index]
 
             if chemistry == 'equilibrium':
-                if len(cloud_species) == 0:
-                    wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
-                        rt_object, pressure, temp, item[logg_index], item[c_o_ratio_index],
-                        item[metallicity_index], log_p_quench, None, half=True, chemistry=chemistry)
+                model_param['c_o_ratio'] = item[c_o_ratio_index]
+                model_param['metallicity'] = item[metallicity_index]
 
-                else:
-                    cloud_fractions = {}
-
-                    for cloud_item in cloud_species:
-                        cloud_str = f'{cloud_item[:-3].lower()}_fraction'
-                        cloud_index = np.argwhere(parameters == cloud_str)[0][0]
-                        cloud_fractions[cloud_item] = item[cloud_index]
-
-                    log_x_base = retrieval_util.log_x_cloud_base(item[c_o_ratio_index],
-                                                                 item[metallicity_index],
-                                                                 cloud_fractions)
-
-                    wavelength, flux, _ = retrieval_util.calc_spectrum_clouds(
-                        rt_object, pressure, temp, item[c_o_ratio_index], item[metallicity_index],
-                        log_p_quench, log_x_base, item[fsed_index], item[kzz_index],
-                        item[logg_index], item[sigma_lnorm_index], chemistry=chemistry, half=True,
-                        plotting=False, contribution=False)
-
-            elif chemistry == 'free':
-                log_x_abund = {}
-                for ab_item in line_species:
-                    ab_index = np.argwhere(parameters == ab_item)[0][0]
-                    log_x_abund[ab_item] = item[ab_index]
-
-                wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
-                    rt_object, pressure, temp, item[logg_index],
-                    None, None, None, log_x_abund, half=True, chemistry=chemistry)
-
-            flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
-
-            if spec_res is not None:
-                # convolve with a Gaussian line spread function
-                flux = retrieval_util.convolve(wavelength, flux, spec_res)
+            model_box = read_rad.get_model(model_param,
+                                           spec_res=spec_res,
+                                           wavel_resample=None,
+                                           plot_contribution=None)
 
             model_box = box.create_box(boxtype='model',
                                        model='petitradtrans',
-                                       wavelength=wavelength,
-                                       flux=flux,
+                                       wavelength=model_box.wavelength,
+                                       flux=model_box.flux,
                                        parameters=None,
                                        quantity='flux')
 
@@ -1862,268 +1819,4 @@ class Database:
 
         h5_file.close()
 
-        return boxes
-
-    # def add_retrieval(self,
-    #                   tag,
-    #                   output_name):
-    #     """
-    #     Parameters
-    #     ----------
-    #     tag : str
-    #         Database tag.
-    #     output_name : str
-    #         Output name that was used for the output files by MultiNest.
-    #
-    #     Returns
-    #     -------
-    #     NoneType
-    #         None
-    #     """
-    #
-    #     print('Storing samples in the database...', end='', flush=True)
-    #
-    #     with open(f'{output_name}_params.json') as json_file:
-    #         parameters = json.load(json_file)
-    #
-    #     with open(f'{output_name}_radtrans.json') as json_file:
-    #         radtrans = json.load(json_file)
-    #
-    #     samples = np.loadtxt(f'{output_name}_post_equal_weights.dat')
-    #
-    #     with h5py.File(self.database, 'a') as h5_file:
-    #
-    #         if 'results' not in h5_file:
-    #             h5_file.create_group('results')
-    #
-    #         if 'results/fit' not in h5_file:
-    #             h5_file.create_group('results/fit')
-    #
-    #         if f'results/fit/{tag}' in h5_file:
-    #             del h5_file[f'results/fit/{tag}']
-    #
-    #         # remove the column with the log-likelihood value
-    #         samples = samples[:, :-1]
-    #
-    #         if samples.shape[1] != len(parameters):
-    #             raise ValueError('The number of parameters is not equal to the parameter size '
-    #                              'of the samples array.')
-    #
-    #         dset = h5_file.create_dataset(f'results/fit/{tag}/samples', data=samples)
-    #
-    #         dset.attrs['type'] = 'model'
-    #         dset.attrs['spectrum'] = 'petitradtrans'
-    #         dset.attrs['n_param'] = len(parameters)
-    #         dset.attrs['distance'] = radtrans['distance']
-    #
-    #         count_scale = 0
-    #         count_error = 0
-    #
-    #         for i, item in enumerate(parameters):
-    #             dset.attrs[f'parameter{i}'] = item
-    #
-    #         for i, item in enumerate(parameters):
-    #             if item[0:6] == 'scaling_':
-    #                 dset.attrs[f'scaling{count_scale}'] = item
-    #                 count_scale += 1
-    #
-    #         for i, item in enumerate(parameters):
-    #             if item[0:6] == 'error_':
-    #                 dset.attrs[f'error{count_error}'] = item
-    #                 count_error += 1
-    #
-    #         dset.attrs['n_scaling'] = count_scale
-    #         dset.attrs['n_error'] = count_error
-    #
-    #         for i, item in enumerate(radtrans['line_species']):
-    #             dset.attrs[f'line_species{i}'] = item
-    #
-    #         for i, item in enumerate(radtrans['cloud_species']):
-    #             dset.attrs[f'cloud_species{i}'] = item
-    #
-    #         dset.attrs['n_line_species'] = len(radtrans['line_species'])
-    #         dset.attrs['n_cloud_species'] = len(radtrans['cloud_species'])
-    #
-    #         dset.attrs['scattering'] = radtrans['scattering']
-    #         dset.attrs['quenching'] = radtrans['quenching']
-    #         dset.attrs['pt_profile'] = radtrans['pt_profile']
-    #
-    #     print(' [DONE]')
-    #
-    # def get_retrieval_spectra(self,
-    #                           tag,
-    #                           random,
-    #                           wavel_range,
-    #                           spec_res=None):
-    #     """
-    #     Parameters
-    #     ----------
-    #     tag : str
-    #         Database tag with the MCMC samples.
-    #     random : int
-    #         Number of randomly selected samples.
-    #     wavel_range : tuple(float, float) or str
-    #         Wavelength range (um) or filter name.
-    #     spec_res : float
-    #         Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-    #         is applied if set to None.
-    #
-    #     Returns
-    #     -------
-    #     list(species.core.box.ModelBox, )
-    #         Boxes with the randomly sampled spectra.
-    #     """
-    #
-    #     config_file = os.path.join(os.getcwd(), 'species_config.ini')
-    #
-    #     config = configparser.ConfigParser()
-    #     config.read_file(open(config_file))
-    #
-    #     database_path = config['species']['database']
-    #
-    #     h5_file = h5py.File(database_path, 'r')
-    #     dset = h5_file[f'results/fit/{tag}/samples']
-    #
-    #     spectrum_type = dset.attrs['type']
-    #     spectrum_name = dset.attrs['spectrum']
-    #
-    #     if 'n_param' in dset.attrs:
-    #         n_param = dset.attrs['n_param']
-    #     elif 'nparam' in dset.attrs:
-    #         n_param = dset.attrs['nparam']
-    #
-    #     n_line_species = dset.attrs['n_line_species']
-    #     n_cloud_species = dset.attrs['n_cloud_species']
-    #
-    #     scattering = dset.attrs['scattering']
-    #     quenching = dset.attrs['quenching']
-    #     pt_profile = dset.attrs['pt_profile']
-    #
-    #     if dset.attrs.__contains__('distance'):
-    #         distance = dset.attrs['distance']
-    #     else:
-    #         distance = None
-    #
-    #     samples = np.asarray(dset)
-    #
-    #     random_indices = np.random.randint(samples.shape[0], size=random)
-    #     samples = samples[random_indices, :]
-    #
-    #     parameters = []
-    #     for i in range(n_param):
-    #         parameters.append(dset.attrs[f'parameter{i}'])
-    #
-    #     parameters = np.asarray(parameters)
-    #
-    #     line_species = []
-    #     for i in range(n_line_species):
-    #         line_species.append(dset.attrs[f'line_species{i}'])
-    #
-    #     line_species = np.asarray(line_species)
-    #
-    #     cloud_species = []
-    #     for i in range(n_cloud_species):
-    #         cloud_species.append(dset.attrs[f'cloud_species{i}'])
-    #
-    #     cloud_species = np.asarray(cloud_species)
-    #
-    #     # create mock p-t profile
-    #
-    #     temp_params = {}
-    #     temp_params['log_delta'] = -6.
-    #     temp_params['log_gamma'] = 1.
-    #     temp_params['t_int'] = 750.
-    #     temp_params['t_equ'] = 0.
-    #     temp_params['log_p_trans'] = -3.
-    #     temp_params['alpha'] = 0.
-    #
-    #     pressure, _ = nc.make_press_temp(temp_params)
-    #
-    #     logg_index = np.argwhere(parameters == 'logg')[0]
-    #     radius_index = np.argwhere(parameters == 'radius')[0]
-    #     feh_index = np.argwhere(parameters == 'feh')[0]
-    #     co_index = np.argwhere(parameters == 'co')[0]
-    #
-    #     if quenching:
-    #         log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0]
-    #
-    #     if pt_profile == 'molliere':
-    #         tint_index = np.argwhere(parameters == 'tint')[0]
-    #         t1_index = np.argwhere(parameters == 't1')[0]
-    #         t2_index = np.argwhere(parameters == 't2')[0]
-    #         t3_index = np.argwhere(parameters == 't3')[0]
-    #         alpha_index = np.argwhere(parameters == 'alpha')[0]
-    #         log_delta_index = np.argwhere(parameters == 'log_delta')[0]
-    #
-    #     elif pt_profile == 'line':
-    #         temp_index = []
-    #         for i in range(15):
-    #             temp_index.append(np.argwhere(parameters == f't{i}')[0])
-    #
-    #         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
-    #
-    #     if scattering:
-    #         rt_object = RadtransScatter(line_species=line_species,
-    #                                     rayleigh_species=['H2', 'He'],
-    #                                     cloud_species=cloud_species,
-    #                                     continuum_opacities=['H2-H2', 'H2-He'],
-    #                                     wlen_bords_micron=wavel_range,
-    #                                     mode='c-k',
-    #                                     test_ck_shuffle_comp=scattering,
-    #                                     do_scat_emis=scattering)
-    #
-    #     else:
-    #         rt_object = Radtrans(line_species=line_species,
-    #                              rayleigh_species=['H2', 'He'],
-    #                              cloud_species=cloud_species,
-    #                              continuum_opacities=['H2-H2', 'H2-He'],
-    #                              wlen_bords_micron=wavel_range,
-    #                              mode='c-k')
-    #
-    #     # create RT arrays of appropriate lengths by using every three pressure points
-    #     rt_object.setup_opa_structure(pressure[::3])
-    #
-    #     boxes = []
-    #
-    #     for i, item in tqdm.tqdm(enumerate(samples), desc='Getting MCMC spectra'):
-    #
-    #         if pt_profile == 'molliere':
-    #             temp, _, _ = retrieval_util.pt_ret_model(
-    #                 np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
-    #                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-    #                 item[feh_index][0], item[co_index][0])
-    #
-    #         elif pt_profile == 'line':
-    #             knot_temp = []
-    #             for i in range(15):
-    #                 knot_temp.append(item[temp_index[i]][0])
-    #
-    #             temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
-    #
-    #         if quenching:
-    #             log_p_quench = item[log_p_quench_index][0]
-    #         else:
-    #             log_p_quench = -10.
-    #
-    #         wavelength, flux, _ = retrieval_util.calc_spectrum_clear(
-    #             rt_object, pressure, temp, item[logg_index][0], item[co_index][0],
-    #             item[feh_index][0], log_p_quench, half=True)
-    #
-    #         flux *= (item[radius_index]*constants.R_JUP/(distance*constants.PARSEC))**2.
-    #
-    #         if spec_res is not None:
-    #             # convolve with a Gaussian line spread function
-    #             flux = retrieval_util.convolve(wavelength, flux, spec_res)
-    #
-    #         model_box = box.create_box(boxtype='model',
-    #                                    model='petitradtrans',
-    #                                    wavelength=wavelength,
-    #                                    flux=flux,
-    #                                    parameters=None,
-    #                                    quantity='flux')
-    #
-    #         boxes.append(model_box)
-    #
-    #     h5_file.close()
-    #
-    #     return boxes
+        return boxes, read_rad
