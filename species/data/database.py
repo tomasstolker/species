@@ -171,9 +171,9 @@ class Database:
     @typechecked
     def add_dust(self) -> None:
         """
-        Function for adding optical constants of MgSiO3 and Fe to the database. The optical
-        constants have been compiled by Mollière et al. (2019) for petitRADTRANS from the
-        following sources:
+        Function for adding optical constants of MgSiO3 and Fe, and MgSiO3 cross sections for
+        a log-normal and power-law size distribution to the database. The optical constants have
+        been compiled by Mollière et al. (2019) for petitRADTRANS from the following sources:
 
         - MgSiO3, crystalline
             - Scott & Duley (1996), ApJS, 105, 401
@@ -351,13 +351,13 @@ class Database:
             raise ValueError(f'The {model} model is not publicly available and needs to '
                              f'be imported by setting the \'data_folder\' parameter.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and wavel_range is None:
-            raise ValueError('The \'wavel_range\' should be set for the \'{model}\' models to '
-                             'resample the original spectra on a fixed wavelength grid.')
+        if model in ['ames-dusty', 'bt-nextgen'] and wavel_range is None:
+            raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
+                             f'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['ames-cond', 'ames-dusty', 'bt-nextgen'] and spec_res is None:
-            raise ValueError('The \'spec_res\' should be set for the \'{model}\' models to '
-                             'resample the original spectra on a fixed wavelength grid.')
+        if model in ['ames-dusty', 'bt-nextgen'] and spec_res is None:
+            raise ValueError(f'The \'spec_res\' should be set for the \'{model}\' models to '
+                             f'resample the original spectra on a fixed wavelength grid.')
 
         if model == 'bt-nextgen' and teff_range is None:
             warnings.warn('The temperature range is not restricted with the \'teff_range\' '

@@ -158,16 +158,32 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('luminosity_ratio')
         param[index] = r'$\mathregular{log}\,\mathregular{L_1}/\mathregular{L_2}$'
 
-    if 'dust_radius' in param:
-        index = param.index('dust_radius')
+    if 'lognorm_radius' in param:
+        index = param.index('lognorm_radius')
         param[index] = r'$\mathregular{log}\,\mathregular{r_g}$'
 
-    if 'dust_sigma' in param:
-        index = param.index('dust_sigma')
+    if 'lognorm_sigma' in param:
+        index = param.index('lognorm_sigma')
         param[index] = r'$\mathregular{\sigma_g}$'
 
-    if 'dust_ext' in param:
-        index = param.index('dust_ext')
+    if 'lognorm_ext' in param:
+        index = param.index('lognorm_ext')
+        param[index] = r'$\mathregular{A_V}$'
+
+    if 'powerlaw_min' in param:
+        index = param.index('powerlaw_min')
+        param[index] = r'$\mathregular{{log}}\,\mathregular{a}_\mathregular{min}/\mathregular{µm}$'
+
+    if 'powerlaw_max' in param:
+        index = param.index('powerlaw_max')
+        param[index] = r'$\mathregular{{log}}\,\mathregular{a}_\mathregular{max}/\mathregular{µm}$'
+
+    if 'powerlaw_exp' in param:
+        index = param.index('powerlaw_exp')
+        param[index] = r'$\beta$'
+
+    if 'powerlaw_ext' in param:
+        index = param.index('powerlaw_ext')
         param[index] = r'$\mathregular{A_V}$'
 
     if 'ism_ext' in param:
@@ -234,7 +250,7 @@ def update_labels(param: List[str]) -> List[str]:
             param[i] = rf'$\mathregular{{c}}_\mathregular{{{item[11:]}}}$ (nm)'
 
         elif item[0:9] == 'corr_len_':
-            param[i] = rf'$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}$'
+            param[i] = rf'$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}/\mathregular{{µm}}$'
 
         elif item[0:9] == 'corr_amp_':
             param[i] = rf'$\mathregular{{f}}_\mathregular{{{item[9:]}}}$'
@@ -440,9 +456,14 @@ def quantity_unit(param: List[str],
         unit.append(None)
         label.append(r'$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$')
 
-    if 'dust_ext' in param:
-        quantity.append('dust_ext')
-        unit.append('mag')
+    if 'lognorm_ext' in param:
+        quantity.append('lognorm_ext')
+        unit.append(None)
+        label.append(r'$\mathregular{A}_\mathregular{V}$')
+
+    if 'powerlaw_ext' in param:
+        quantity.append('powerlaw_ext')
+        unit.append(None)
         label.append(r'$\mathregular{A}_\mathregular{V}$')
 
     return quantity, unit, label

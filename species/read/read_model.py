@@ -160,8 +160,8 @@ class ReadModel:
         flux = np.asarray(h5_file[f'models/{self.model}/flux'])
         flux = flux[..., self.wl_index]
 
-        self.spectrum_interp = RegularGridInterpolator(points=points,
-                                                       values=flux,
+        self.spectrum_interp = RegularGridInterpolator(points,
+                                                       flux,
                                                        method='linear',
                                                        bounds_error=False,
                                                        fill_value=np.nan)
@@ -300,19 +300,19 @@ class ReadModel:
         else:
             self.wl_points = wavel_resample
 
-        self.spectrum_interp = RegularGridInterpolator(points=points,
-                                                       values=flux_new,
+        self.spectrum_interp = RegularGridInterpolator(points,
+                                                       flux_new,
                                                        method='linear',
                                                        bounds_error=False,
                                                        fill_value=np.nan)
 
     @staticmethod
     @typechecked
-    def apply_size_dist_ext(wavelength: np.ndarray,
-                            flux: np.ndarray,
-                            radius_interp: float,
-                            sigma_interp: float,
-                            v_band_ext: float) -> np.ndarray:
+    def apply_lognorm_ext(wavelength: np.ndarray,
+                          flux: np.ndarray,
+                          radius_interp: float,
+                          sigma_interp: float,
+                          v_band_ext: float) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a spectrum.
 
@@ -336,10 +336,10 @@ class ReadModel:
         database_path = dust_util.check_dust_database()
 
         with h5py.File(database_path, 'r') as h5_file:
-            dust_cross = np.asarray(h5_file['dust/mgsio3/crystalline/cross_section'])
-            dust_wavel = np.asarray(h5_file['dust/mgsio3/crystalline/wavelength'])
-            dust_radius = np.asarray(h5_file['dust/mgsio3/crystalline/radius'])
-            dust_sigma = np.asarray(h5_file['dust/mgsio3/crystalline/sigma'])
+            dust_cross = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/cross_section'])
+            dust_wavel = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/wavelength'])
+            dust_radius = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/radius_g'])
+            dust_sigma = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/sigma_g'])
 
         dust_interp = RegularGridInterpolator((dust_wavel, dust_radius, dust_sigma),
                                               dust_cross,
@@ -385,14 +385,91 @@ class ReadModel:
 
     @staticmethod
     @typechecked
-    def apply_ism_ext(wavelength: np.ndarray,
+    def apply_powerlaw_ext(wavelength: np.ndarray,
+                           flux: np.ndarray,
+                           r_max_interp: float,
+                           exp_interp: float,
+                           v_band_ext: float) -> np.ndarray:
+        """
+        Internal function for applying extinction by dust to a spectrum.
+
+        wavelength : np.ndarray
+            Wavelengths (um) of the spectrum.
+        flux : np.ndarray
+            Fluxes (W m-2 um-1) of the spectrum.
+        r_max_interp : float
+            Maximum radius (um) of the power-law size distribution.
+        exp_interp : float
+            Exponent of the power-law size distribution.
+        v_band_ext : float
+            The extinction (mag) in the V band.
+
+        Returns
+        -------
+        np.ndarray
+            Fluxes (W m-2 um-1) with the extinction applied.
+        """
+
+        database_path = dust_util.check_dust_database()
+
+        with h5py.File(database_path, 'r') as h5_file:
+            dust_cross = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/cross_section'])
+            dust_wavel = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/wavelength'])
+            dust_r_max = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/radius_max'])
+            dust_exp = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/exponent'])
+
+        dust_interp = RegularGridInterpolator((dust_wavel, dust_r_max, dust_exp),
+                                              dust_cross,
+                                              method='linear',
+                                              bounds_error=True)
+
+        read_filt = read_filter.ReadFilter('Generic/Bessell.V')
+        filt_trans = read_filt.get_filter()
+
+        cross_phot = np.zeros((dust_r_max.shape[0], dust_exp.shape[0]))
+
+        for i in range(dust_r_max.shape[0]):
+            for j in range(dust_exp.shape[0]):
+                cross_interp = interp1d(dust_wavel,
+                                        dust_cross[:, i, j],
+                                        kind='linear',
+                                        bounds_error=True)
+
+                cross_tmp = cross_interp(filt_trans[:, 0])
+
+                integral1 = np.trapz(filt_trans[:, 1]*cross_tmp, filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+
+                # Filter-weighted average of the extinction cross section
+                cross_phot[i, j] = integral1/integral2
+
+        cross_interp = interp2d(dust_exp,
+                                dust_r_max,
+                                cross_phot,
+                                kind='linear',
+                                bounds_error=True)
+
+        cross_v_band = cross_interp(exp_interp, 10.**r_max_interp)[0]
+
+        r_max_full = np.full(wavelength.shape[0], 10.**r_max_interp)
+        exp_full = np.full(wavelength.shape[0], exp_interp)
+
+        cross_new = dust_interp(np.column_stack((wavelength, r_max_full, exp_full)))
+
+        n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.))
+
+        return flux * np.exp(-cross_new*n_grains)
+
+    @staticmethod
+    @typechecked
+    def apply_ism_ext(wavelengths: np.ndarray,
                       flux: np.ndarray,
                       v_band_ext: float,
                       v_band_red: float) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
 
-        wavelength : np.ndarray
+        wavelengths : np.ndarray
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
@@ -407,7 +484,7 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelength)
+        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
 
         return flux * 10.**(-0.4*ext_mag)
 
@@ -456,8 +533,9 @@ class ReadModel:
 
         grid_bounds = self.get_bounds()
 
-        extra_param = ['radius', 'distance', 'mass', 'luminosity',
-                       'dust_radius', 'dust_sigma', 'dust_ext', 'ism_ext', 'ism_red']
+        extra_param = ['radius', 'distance', 'mass', 'luminosity', 'lognorm_radius',
+                       'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_max',
+                       'powerlaw_exp', 'powerlaw_ext']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -618,14 +696,23 @@ class ReadModel:
                                    parameters=model_param,
                                    quantity=quantity)
 
-        if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
-                'dust_ext' in model_param:
+        if 'lognorm_radius' in model_param and 'lognorm_sigma' in model_param and \
+                'lognorm_ext' in model_param:
 
-            model_box.flux = self.apply_size_dist_ext(model_box.wavelength,
-                                                      model_box.flux,
-                                                      model_param['dust_radius'],
-                                                      model_param['dust_sigma'],
-                                                      model_param['dust_ext'])
+            model_box.flux = self.apply_lognorm_ext(model_box.wavelength,
+                                                    model_box.flux,
+                                                    model_param['lognorm_radius'],
+                                                    model_param['lognorm_sigma'],
+                                                    model_param['lognorm_ext'])
+
+        if 'powerlaw_max' in model_param and 'powerlaw_exp' in model_param and \
+                'powerlaw_ext' in model_param:
+
+            model_box.flux = self.apply_powerlaw_ext(model_box.wavelength,
+                                                     model_box.flux,
+                                                     model_param['powerlaw_max'],
+                                                     model_param['powerlaw_exp'],
+                                                     model_param['powerlaw_ext'])
 
         if 'ism_ext' in model_param and 'ism_red' in model_param:
 
@@ -733,14 +820,23 @@ class ReadModel:
                                    parameters=model_param,
                                    quantity='flux')
 
-        if 'dust_radius' in model_param and 'dust_sigma' in model_param and \
-                'dust_ext' in model_param:
+        if 'lognorm_radius' in model_param and 'lognorm_sigma' in model_param and \
+                'lognorm_ext' in model_param:
 
-            model_box.flux = self.apply_size_dist_ext(model_box.wavelength,
-                                                      model_box.flux,
-                                                      model_param['dust_radius'],
-                                                      model_param['dust_sigma'],
-                                                      model_param['dust_ext'])
+            model_box.flux = self.apply_lognorm_ext(model_box.wavelength,
+                                                    model_box.flux,
+                                                    model_param['lognorm_radius'],
+                                                    model_param['lognorm_sigma'],
+                                                    model_param['lognorm_ext'])
+
+        if 'powerlaw_max' in model_param and 'powerlaw_exp' in model_param and \
+                'powerlaw_ext' in model_param:
+
+            model_box.flux = self.apply_powerlaw_ext(model_box.wavelength,
+                                                     model_box.flux,
+                                                     model_param['powerlaw_max'],
+                                                     model_param['powerlaw_exp'],
+                                                     model_param['powerlaw_ext'])
 
         if 'ism_ext' in model_param and 'ism_red' in model_param:
 

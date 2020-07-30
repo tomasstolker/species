@@ -346,7 +346,7 @@ def plot_spectrum(boxes: list,
                             value = f'{param[item]:.0f}'
 
                         elif item in ['logg', 'feh', 'co', 'c_o_ratio', 'metallicity', 'fsed',
-                                      'dust_ext', 'ism_ext']:
+                                      'lognorm_ext', 'powerlaw_ext', 'ism_ext']:
                             value = f'{param[item]:.2f}'
 
                         elif item[:6] == 'radius':
