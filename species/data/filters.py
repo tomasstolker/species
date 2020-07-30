@@ -1,5 +1,5 @@
 """
-Module for downloading filter data from the SVO website.
+Module for downloading filter data from the website of the SVO Filter Profile Service.
 """
 
 import os
@@ -15,21 +15,26 @@ from typeguard import typechecked
 
 
 @typechecked
-def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
+                                             Optional[np.ndarray],
+                                             Optional[str]]:
     """
-    Function for downloading filter transmission data from the SVO Filter Profile Service.
+    Function for downloading filter profile data from the SVO Filter Profile Service.
 
     Parameters
     ----------
     filter_id : str
-        Filter name as listed on the SVO website.
+        Filter name as listed on the website of the SVO Filter Profile Service
+        (see http://svo2.cab.inta-csic.es/svo/theory/fps/).
 
     Returns
     -------
     np.ndarray
         Wavelength (um).
     np.ndarray
-        Transmission.
+        Fractional transmission.
+    str
+        Detector type ('energy' or 'photon').
     """
 
     if filter_id == 'LCO/VisAO.Ys':
@@ -40,6 +45,9 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.n
 
         wavelength = wavelength[:-7]
         transmission = transmission[:-7]
+
+        # Not sure if energy- or photon-counting detector
+        det_type = 'energy'
 
         os.remove('VisAO_Ys_filter_curve.dat')
 
@@ -56,6 +64,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.n
         except IndexError:
             wavelength = None
             transmission = None
+            det_type = None
 
             warnings.warn(f'Filter \'{filter_id}\' is not available on the SVO Filter Profile '
                           f'Service.')
@@ -77,14 +86,8 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.n
                     det_type = 'photon'
 
             except KeyError:
+                # Energy-counting detector if the DetectorType key is not present
                 det_type = 'energy'
-
-            if det_type == 'photon':
-                raise ValueError(f'The detector of the {filter_id} filter is a photon counter, '
-                                 f'therefore the transmission profile has to be multiplied with '
-                                 f'the wavelength when calculating average fluxes. This is '
-                                 f'currently not implemented in species. Please open an issue on '
-                                 f'Github if needed.')
 
             wavelength *= 1e-4  # (um)
 
@@ -120,4 +123,4 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray], Optional[np.n
             wavelength = wavelength[indices]
             transmission = transmission[indices]
 
-    return wavelength, transmission
+    return wavelength, transmission, det_type

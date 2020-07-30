@@ -21,7 +21,9 @@ from species.util import phot_util
 
 class SyntheticPhotometry:
     """
-    Class for calculating synthetic photometry from a spectrum.
+    Class for calculating synthetic photometry from a spectrum and also for conversion between
+    magnitudes and fluxes. Note that depending on the detector type (energy- or photon-counting)
+    the integral for the filter-weighted flux contains an additional wavelength factor.
     """
 
     @typechecked
@@ -32,7 +34,7 @@ class SyntheticPhotometry:
         ----------
         filter_name : str
             Filter name as listed in the database. Filters from the SVO Filter Profile Service are
-            downloaded and added to the database.
+            automatically downloaded and added to the database.
 
         Returns
         -------
@@ -52,6 +54,9 @@ class SyntheticPhotometry:
         config.read_file(open(config_file))
 
         self.database = config['species']['database']
+
+        read_filt = read_filter.ReadFilter(self.filter_name)
+        self.det_type = read_filt.detector_type()
 
     @typechecked
     def zero_point(self) -> np.float64:
@@ -113,13 +118,13 @@ class SyntheticPhotometry:
             Wavelength points (um).
         flux : np.ndarray
             Flux (W m-2 um-1).
-        error : np.ndarray
-            Uncertainty (W m-2 um-1). Not used if set to None.
+        error : np.ndarray, None
+            Uncertainty (W m-2 um-1). Not used if set to ``None``.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter profile. Not used if set to
-            None.
+            ``None``.
 
         Returns
         -------
@@ -128,6 +133,11 @@ class SyntheticPhotometry:
         float, None
             Uncertainty (W m-2 um-1).
         """
+
+        if error is not None:
+            # The error calculation requires the original spectrum because spectrum_to_flux is used
+            wavel_error = wavelength.copy()
+            flux_error = flux.copy()
 
         if self.filter_interp is None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -150,7 +160,6 @@ class SyntheticPhotometry:
                           'point. Photometry is set to NaN.')
 
         else:
-
             if threshold is None and (wavelength[0] > self.wavel_range[0] or
                                       wavelength[-1] < self.wavel_range[1]):
 
@@ -165,9 +174,6 @@ class SyntheticPhotometry:
             else:
                 wavelength = wavelength[indices]
                 flux = flux[indices]
-
-                if error is not None:
-                    error = error[indices]
 
                 transmission = self.filter_interp(wavelength)
 
@@ -189,8 +195,15 @@ class SyntheticPhotometry:
                     indices = np.isnan(transmission)
                     indices = np.logical_not(indices)
 
-                    integrand1 = transmission[indices]*flux[indices]
-                    integrand2 = transmission[indices]
+                    if self.det_type == 'energy':
+                        # Energy counting detector
+                        integrand1 = transmission[indices]*flux[indices]
+                        integrand2 = transmission[indices]
+
+                    if self.det_type == 'photon':
+                        # Photon counting detector
+                        integrand1 = wavelength[indices]*transmission[indices]*flux[indices]
+                        integrand2 = wavelength[indices]*transmission[indices]
 
                     integral1 = np.trapz(integrand1, wavelength[indices])
                     integral2 = np.trapz(integrand2, wavelength[indices])
@@ -201,11 +214,12 @@ class SyntheticPhotometry:
             phot_random = np.zeros(200)
 
             for i in range(200):
-                spec_random = flux + np.random.normal(loc=0.,
-                                                      scale=1.,
-                                                      size=wavelength.shape[0])*error
+                # Use the original spectrum size (i.e. wavel_error and flux_error)
+                spec_random = flux_error + np.random.normal(loc=0.,
+                                                            scale=1.,
+                                                            size=wavel_error.shape[0])*error
 
-                phot_random[i] = self.spectrum_to_flux(wavelength,
+                phot_random[i] = self.spectrum_to_flux(wavel_error,
                                                        spec_random,
                                                        error=None,
                                                        threshold=threshold)[0]
@@ -240,20 +254,20 @@ class SyntheticPhotometry:
         error : np.ndarray, list(np.ndarray), None
             Uncertainty (W m-2 um-1).
         distance : tuple(float, float), None
-            Distance and uncertainty (pc). No absolute magnitude is calculated if set to None.
-            No error on the absolute magnitude is calculated if the uncertainty is set to None.
+            Distance and uncertainty (pc). No absolute magnitude is calculated if set to ``None``.
+            No error on the absolute magnitude is calculated if the uncertainty is set to ``None``.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the minimum transmission value is
             larger than the threshold, a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter profile. Not used if set to
-            None.
+            ``None``.
 
         Returns
         -------
         tuple(float, float)
-            Apparent magnitude and uncertainty (mag).
+            Apparent magnitude and uncertainty.
         tuple(float, float)
-            Absolute magnitude and uncertainty (mag).
+            Absolute magnitude and uncertainty.
         """
 
         zp_flux = self.zero_point()
@@ -312,9 +326,9 @@ class SyntheticPhotometry:
         Parameters
         ----------
         magnitude : float
-            Magnitude (mag).
+            Magnitude.
         error : float, None
-            Error (mag). Not used if set to ``None``.
+            Error on the magnitude. Not used if set to ``None``.
         zp_flux : float, None
             Zero-point flux (W m-2 um-1). The value is calculated if set to ``None``.
 
@@ -369,9 +383,9 @@ class SyntheticPhotometry:
         Returns
         -------
         tuple(float, float), tuple(np.ndarray, np.ndarray)
-            Apparent magnitude and uncertainty (mag).
+            Apparent magnitude and uncertainty.
         tuple(float, float), tuple(np.ndarray, np.ndarray)
-            Absolute magnitude and uncertainty (mag).
+            Absolute magnitude and uncertainty.
         """
 
         zp_flux = self.zero_point()

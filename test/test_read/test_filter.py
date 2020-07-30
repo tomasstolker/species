@@ -35,6 +35,25 @@ class TestFilter:
         assert filter_profile.shape == (970, 2)
         assert np.sum(filter_profile) == pytest.approx(2089.2432, rel=1e-6, abs=0.)
 
+    def test_detector_type(self):
+        read_filter = species.ReadFilter('MKO/NSFCam.H')
+        det_type = read_filter.detector_type()
+
+        assert det_type == 'energy'
+
+    def test_get_filter_photon_counter(self):
+        read_filter = species.ReadFilter('Keck/NIRC2.J')
+        filter_profile = read_filter.get_filter()
+
+        assert filter_profile.shape == (1054, 2)
+        assert np.sum(filter_profile) == pytest.approx(2038.0486, rel=1e-6, abs=0.)
+
+    def test_detector_type_photon(self):
+        read_filter = species.ReadFilter('Keck/NIRC2.J')
+        det_type = read_filter.detector_type()
+
+        assert det_type == 'photon'
+
     def test_interpolate_filter(self):
         read_filter = species.ReadFilter('MKO/NSFCam.H')
         interp_filter = read_filter.interpolate_filter()
