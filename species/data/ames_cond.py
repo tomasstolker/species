@@ -3,7 +3,6 @@ Module for AMES-Cond atmospheric model spectra.
 """
 
 import os
-import gzip
 import tarfile
 import urllib.request
 
@@ -21,11 +20,12 @@ from species.util import data_util, read_util
 @typechecked
 def add_ames_cond(input_path: str,
                   database: h5py._hl.files.File,
-                  wavel_range: Tuple[float, float],
+                  wavel_range: Optional[Tuple[float, float]] = None,
                   teff_range: Optional[Tuple[float, float]] = None,
-                  spec_res: float = 1000.) -> None:
+                  spec_res: float = None) -> None:
     """
-    Function for adding the AMES-Cond atmospheric models to the database.
+    Function for adding the AMES-Cond atmospheric models to the database. The original spectra
+    have been resampled to a spectral resolution of R = 2000 from 0.5 to 40 um.
 
     Parameters
     ----------
@@ -33,12 +33,14 @@ def add_ames_cond(input_path: str,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    wavel_range : tuple(float, float)
-        Wavelength range (um).
+    wavel_range : tuple(float, float), None
+        Wavelength range (um). The full wavelength range (0.5-40 um) is stored if set to ``None``.
+        Only used in combination with ``spec_res``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K).
-    spec_res : float
-        Spectral resolution.
+        Effective temperature range (K). All available temperatures are stored if set to ``None``.
+    spec_res : float, None
+        Spectral resolution. The data is stored with the spectral resolution of the input spectra
+        (R = 2000) if set to ``None``. Only used in combination with ``wavel_range``.
 
     Returns
     -------
@@ -49,159 +51,83 @@ def add_ames_cond(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    input_file = 'ames-cond.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/ames-cond.tgz'
+
     data_folder = os.path.join(input_path, 'ames-cond/')
+    data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    input_file = 'SPECTRA.tar'
-    label = '(823 MB)'
-
-    url = 'https://phoenix.ens-lyon.fr/Grids/AMES-Cond/SPECTRA.tar'
-
-    data_file = os.path.join(data_folder, input_file)
-
     if not os.path.isfile(data_file):
-        print(f'Downloading AMES-Cond model spectra {label}...', end='', flush=True)
+        print('Downloading AMES-Cond model spectra (150 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print(f'Unpacking AMES-Cond model spectra {label}...', end='', flush=True)
+    print('Unpacking AMES-Cond model spectra (150 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
 
-    data_folder += 'SPECTRA/'
-
     teff = []
     logg = []
     flux = []
 
-    wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    if wavel_range is not None and spec_res is not None:
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    else:
+        wavelength = None
 
-    for _, _, file_list in os.walk(data_folder):
-        for filename in sorted(file_list):
+    for _, _, files in os.walk(data_folder):
+        for filename in files:
+            if filename[:10] == 'ames-cond_':
+                file_split = filename.split('_')
 
-            if filename.startswith('lte') and filename.endswith('.gz'):
-                teff_val = float(filename[3:5])*100.
-                logg_val = float(filename[6:9])
-                feh_val = float(filename[10:13])
-
-                if feh_val != 0.:
-                    continue
+                teff_val = float(file_split[2])
+                logg_val = float(file_split[4])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                # Exclude low and high log(g) values because of many missing grid points
-                if logg_val < 2.5 or logg_val > 5.5:
-                    continue
-
                 print_message = f'Adding AMES-Cond model spectra... {filename}'
                 print(f'\r{print_message:<71}', end='')
 
-                data_wavel = []
-                data_flux = []
-
-                with gzip.open(data_folder+filename, 'rt') as gz_file:
-                    if filename.endswith('.7.gz'):
-
-                        for line in gz_file:
-                            line_split = line.split()
-
-                            if len(line_split) > 1:
-                                tmp_wavel = line_split[0].strip()
-                                tmp_flux = line_split[1].strip()
-
-                                if len(tmp_wavel) == 21 and tmp_wavel[-4] == 'D' \
-                                        and tmp_flux[-4] == 'D':
-                                    data_wavel.append(float(line[1:23].replace('D', 'E')))
-                                    data_flux.append(float(line[25:35].replace('D', 'E')))
-
-                        # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                        data_flux = 10.**(np.asarray(data_flux)-8.)  # (erg s-1 cm-2 Angstrom-1)
-
-                    elif filename.endswith('.spec.gz'):
-
-                        read_wavel = True
-                        read_end = False
-
-                        for i, line in enumerate(gz_file):
-                            if read_end:
-                                break
-
-                            if i == 1:
-                                wl_points = int(line.split()[0])
-
-                            elif i > 1:
-                                for item in line.split():
-                                    if read_wavel:
-                                        data_wavel.append(float(item))
-
-                                        if len(data_wavel) == wl_points:
-                                            read_wavel = False
-                                            break
-
-                                    else:
-                                        data_flux.append(float(item))
-
-                                        if len(data_flux) == wl_points:
-                                            read_end = True
-                                            break
-
-                        # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                        data_flux = np.asarray(data_flux)*10.**-8.  # (erg s-1 cm-2 Angstrom-1)
-
-                # (Angstrom) -> (um)
-                data_wavel = np.asarray(data_wavel)*1e-4
-
-                # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                data_flux = data_flux*1e-7*1e4*1e4
-
-                data = np.stack((data_wavel, data_flux), axis=1)
-
-                index_sort = np.argsort(data[:, 0])
-                data = data[index_sort, :]
-
-                if np.all(np.diff(data[:, 0]) < 0):
-                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+                data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                flux_resample = spectres.spectres(wavelength,
-                                                  data[:, 0],
-                                                  data[:, 1],
-                                                  spec_errs=None,
-                                                  fill=np.nan,
-                                                  verbose=False)
+                if wavel_range is None or spec_res is None:
+                    if wavelength is None:
+                        wavelength = np.copy(data_wavel)  # (um)
 
-                # if np.isnan(np.sum(flux_resample)):
-                #     raise ValueError(f'Resampling is only possible if the new wavelength '
-                #                      f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
-                #                      f'sufficiently far within the wavelength range '
-                #                      f'({data[0, 0]} - {data[-1, 0]} um) of the input '
-                #                      f'spectra.')
-                #
-                # flux.append(flux_resample)  # (W m-2 um-1)
+                    if np.all(np.diff(wavelength) < 0):
+                        raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                if np.isnan(np.sum(flux_resample)):
-                    flux.append(np.zeros(wavelength.shape[0]))
-
-                    warnings.warn('The wavelength range should fall within the range of the '
-                                  'original wavelength sampling. Storing zeros instead.')
+                    flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
+                    flux_resample = spectres.spectres(wavelength,
+                                                      data_wavel,
+                                                      data_flux,
+                                                      spec_errs=None,
+                                                      fill=np.nan,
+                                                      verbose=False)
+
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(f'Resampling is only possible if the new wavelength '
+                                         f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                         f'sufficiently far within the wavelength range '
+                                         f'({data_wavel[0]} - {data_wavel[-1]} um) of the input '
+                                         f'spectra.')
+
                     flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding AMES-Cond model spectra... [DONE]'
     print(f'\r{print_message:<71}')
-
-    print('Grid points with the following parameters have been excluded:')
-    print('   - log(g) < 2.5')
-    print('   - log(g) > 5.5')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),

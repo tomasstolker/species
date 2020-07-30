@@ -17,8 +17,7 @@ class TestIsochrone:
 
         filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
-        url = 'https://phoenix.ens-lyon.fr/Grids/AMES-Cond/ISOCHRONES/' \
-              'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
+        url = 'https://people.phys.ethz.ch/~stolkert/species/model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
         urllib.request.urlretrieve(url, filename)
 
@@ -80,10 +79,10 @@ class TestIsochrone:
         assert colormag_box.color.shape == (10, )
         assert colormag_box.magnitude.shape == (10, )
 
-        assert np.sum(colormag_box.color) == pytest.approx(2.5196748507479008,
+        assert np.sum(colormag_box.color) == pytest.approx(2.519677745822591,
                                                            rel=self.limit, abs=0.)
 
-        assert np.sum(colormag_box.magnitude) == pytest.approx(109.59753494447742,
+        assert np.sum(colormag_box.magnitude) == pytest.approx(109.59727599872247,
                                                                rel=self.limit, abs=0.)
 
         assert np.sum(colormag_box.sptype)  == pytest.approx(400., rel=self.limit, abs=0.)
@@ -101,10 +100,10 @@ class TestIsochrone:
         assert colorcolor_box.color1.shape == (10, )
         assert colorcolor_box.color2.shape == (10, )
 
-        assert np.sum(colorcolor_box.color1) == pytest.approx(2.5196748507479008,
+        assert np.sum(colorcolor_box.color1) == pytest.approx(2.519677745822591,
                                                               rel=self.limit, abs=0.)
 
-        assert np.sum(colorcolor_box.color2) == pytest.approx(3.3475160958322423,
+        assert np.sum(colorcolor_box.color2) == pytest.approx(3.3467959032673775,
                                                               rel=self.limit, abs=0.)
 
         assert np.sum(colorcolor_box.sptype) == pytest.approx(400., rel=self.limit, abs=0.)
