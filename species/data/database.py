@@ -351,18 +351,18 @@ class Database:
             raise ValueError(f'The {model} model is not publicly available and needs to '
                              f'be imported by setting the \'data_folder\' parameter.')
 
-        if model in ['bt-nextgen'] and wavel_range is None:
-            raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
-                             f'resample the original spectra on a fixed wavelength grid.')
+        # if model in ['bt-nextgen'] and wavel_range is None:
+        #     raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
+        #                      f'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['bt-nextgen'] and spec_res is None:
-            raise ValueError(f'The \'spec_res\' should be set for the \'{model}\' models to '
-                             f'resample the original spectra on a fixed wavelength grid.')
+        # if model in ['bt-nextgen'] and spec_res is None:
+        #     raise ValueError(f'The \'spec_res\' should be set for the \'{model}\' models to '
+        #                      f'resample the original spectra on a fixed wavelength grid.')
 
-        if model == 'bt-nextgen' and teff_range is None:
-            warnings.warn('The temperature range is not restricted with the \'teff_range\' '
-                          'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
-                          'will be very slow.')
+        # if model == 'bt-nextgen' and teff_range is None:
+        #     warnings.warn('The temperature range is not restricted with the \'teff_range\' '
+        #                   'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
+        #                   'will be very slow.')
 
         h5_file = h5py.File(self.database, 'a')
 
