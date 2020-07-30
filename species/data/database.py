@@ -342,11 +342,11 @@ class Database:
             raise ValueError(f'The {model} model is not publicly available and needs to '
                              f'be imported by setting the \'data_folder\' parameter.')
 
-        if model in ['ames-dusty', 'bt-nextgen'] and wavel_range is None:
+        if model in ['bt-nextgen'] and wavel_range is None:
             raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
                              f'resample the original spectra on a fixed wavelength grid.')
 
-        if model in ['ames-dusty', 'bt-nextgen'] and spec_res is None:
+        if model in ['bt-nextgen'] and spec_res is None:
             raise ValueError(f'The \'spec_res\' should be set for the \'{model}\' models to '
                              f'resample the original spectra on a fixed wavelength grid.')
 

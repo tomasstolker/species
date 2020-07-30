@@ -21,11 +21,13 @@ from species.util import data_util, read_util
 @typechecked
 def add_ames_dusty(input_path: str,
                    database: h5py._hl.files.File,
-                   wavel_range: Tuple[float, float],
+                   wavel_range: Optional[Tuple[float, float]] = None,
                    teff_range: Optional[Tuple[float, float]] = None,
-                   spec_res: float = 1000.):
+                   spec_res: float = None) -> None:
     """
-    Function for adding the AMES-Dusty atmospheric models to the database.
+    Function for adding the AMES-Dusty atmospheric models to the database. The original spectra
+    have been resampled to a spectral resolution of R = 2000 from 0.5 to 40 um. Note that a few
+    of the spectra contain NaNs due to their limited, original wavelength coverage.
 
     Parameters
     ----------
@@ -33,12 +35,14 @@ def add_ames_dusty(input_path: str,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    wavel_range : tuple(float, float)
-        Wavelength range (um).
+    wavel_range : tuple(float, float), None
+        Wavelength range (um). The full wavelength range (0.5-40 um) is stored if set to ``None``.
+        Only used in combination with ``spec_res``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All data is selected if set to ``None``.
-    spec_res : float
-        Spectral resolution.
+        Effective temperature range (K). All available temperatures are stored if set to ``None``.
+    spec_res : float, None
+        Spectral resolution. The data is stored with the spectral resolution of the input spectra
+        (R = 2000) if set to ``None``. Only used in combination with ``wavel_range``.
 
     Returns
     -------
@@ -49,125 +53,83 @@ def add_ames_dusty(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    input_file = 'ames-dusty.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/ames-dusty.tgz'
+
     data_folder = os.path.join(input_path, 'ames-dusty/')
+    data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    input_file = 'SPECTRA.tar'
-    label = '[Fe/H]=0.0 (106 MB)'
-
-    url = 'https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/SPECTRA.tar'
-
-    data_file = os.path.join(data_folder, input_file)
-
     if not os.path.isfile(data_file):
-        print(f'Downloading AMES-Dusty model spectra {label}...', end='', flush=True)
+        print('Downloading AMES-Dusty model spectra (59 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print(f'Unpacking AMES-Dusty model spectra {label}...', end='', flush=True)
+    print('Unpacking AMES-Dusty model spectra (59 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
 
-    data_folder += 'SPECTRA/'
-
     teff = []
     logg = []
     flux = []
 
-    wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    if wavel_range is not None and spec_res is not None:
+        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+    else:
+        wavelength = None
 
-    for _, _, file_list in os.walk(data_folder):
-        for filename in sorted(file_list):
+    for _, _, files in os.walk(data_folder):
+        for filename in files:
+            if filename[:11] == 'ames-dusty_':
+                file_split = filename.split('_')
 
-            if filename.startswith('lte') and filename.endswith('.7.gz'):
-                teff_val = float(filename[3:5])*100.
-                logg_val = float(filename[6:9])
-                feh_val = float(filename[10:13])
-
-                if feh_val != 0.:
-                    continue
+                teff_val = float(file_split[2])
+                logg_val = float(file_split[4])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
                 print_message = f'Adding AMES-Dusty model spectra... {filename}'
-                print(f'\r{print_message:<75}', end='')
+                print(f'\r{print_message:<73}', end='')
 
-                data_wavel = []
-                data_flux = []
-
-                with gzip.open(data_folder+filename, 'rt') as gz_file:
-                    for line in gz_file:
-                        line_split = line.split()
-
-                        if len(line_split) > 1:
-                            tmp_wavel = line_split[0].strip()
-                            tmp_flux = line_split[1].strip()
-
-                            if len(tmp_wavel) == 21 and tmp_wavel[-4] == 'D' \
-                                    and tmp_flux[-4] == 'D':
-                                data_wavel.append(float(line[1:23].replace('D', 'E')))
-                                data_flux.append(float(line[25:35].replace('D', 'E')))
-
-                            elif len(tmp_wavel) == 21 and tmp_wavel[-4] == 'E' \
-                                    and tmp_flux[-4] == 'E':
-                                data_wavel.append(float(line[1:23]))
-                                data_flux.append(float(line[25:35]))
-
-                # See https://phoenix.ens-lyon.fr/Grids/FORMAT
-                data_wavel = np.asarray(data_wavel)*1e-4  # (Angstrom) -> (um)
-                data_flux = 10.**(np.asarray(data_flux)-8.)  # (erg s-1 cm-2 Angstrom-1)
-
-                # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                data_flux = data_flux*1e-7*1e4*1e4
-
-                data = np.stack((data_wavel, data_flux), axis=1)
-
-                index_sort = np.argsort(data[:, 0])
-                data = data[index_sort, :]
-
-                if np.all(np.diff(data[:, 0]) < 0):
-                    raise ValueError('The wavelengths are not all sorted by increasing value.')
+                data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
 
-                flux_resample = spectres.spectres(wavelength,
-                                                  data[:, 0],
-                                                  data[:, 1],
-                                                  spec_errs=None,
-                                                  fill=np.nan,
-                                                  verbose=False)
+                if wavel_range is None or spec_res is None:
+                    if wavelength is None:
+                        wavelength = np.copy(data_wavel)  # (um)
 
-                # if np.isnan(np.sum(flux_resample)):
-                #     raise ValueError(f'Resampling is only possible if the new wavelength '
-                #                      f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
-                #                      f'sufficiently far within the wavelength range '
-                #                      f'({data[0, 0]} - {data_wavel[-1, 0]} um) of the input '
-                #                      f'spectra.')
-                #
-                # flux.append(flux_resample)  # (W m-2 um-1)
+                    if np.all(np.diff(wavelength) < 0):
+                        raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                if np.isnan(np.sum(flux_resample)):
-                    flux.append(np.zeros(wavelength.shape[0]))
-
-                    warnings.warn(f'The wavelength range ({wavelength[0]:.2f}-{wavelength[-1]:.2f}'
-                                  f' um) should fall within the range of the original '
-                                  f'wavelength sampling ({data[0, 0]:.2f}-{data[-1, 0]:.2f} '
-                                  f'um). Storing zeros for the flux of Teff={teff_val} '
-                                  f'and log(g)={logg_val}, which will be corrected by the '
-                                  f'\'write_data\' function afterwards.')
+                    flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
+                    flux_resample = spectres.spectres(wavelength,
+                                                      data_wavel,
+                                                      data_flux,
+                                                      spec_errs=None,
+                                                      fill=np.nan,
+                                                      verbose=False)
+
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(f'Resampling is only possible if the new wavelength '
+                                         f'range ({wavelength[0]} - {wavelength[-1]} um) falls '
+                                         f'sufficiently far within the wavelength range '
+                                         f'({data_wavel[0]} - {data_wavel[-1]} um) of the input '
+                                         f'spectra.')
+
                     flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding AMES-Dusty model spectra... [DONE]'
-    print(f'\r{print_message:<75}')
+    print(f'\r{print_message:<73}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -177,4 +139,7 @@ def add_ames_dusty(input_path: str,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('ames-dusty', ['teff', 'logg'], database, data_sorted)
+    data_util.write_data('ames-dusty',
+                         ['teff', 'logg'],
+                         database,
+                         data_sorted)
