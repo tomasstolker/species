@@ -380,7 +380,7 @@ def plot_color_magnitude(boxes: list,
                                                     item[1],
                                                     composition=item[2],
                                                     structure='crystalline',
-                                                    radius=item[3])
+                                                    radius_g=item[3])
 
             delta_x = ext_1 - ext_2
             delta_y = item[1][1]
@@ -840,13 +840,13 @@ def plot_color_color(boxes: list,
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',
-                                                    radius=item[4])
+                                                    radius_g=item[4])
 
             ext_3, ext_4 = dust_util.calc_reddening(item[1],
                                                     item[2],
                                                     composition=item[3],
                                                     structure='crystalline',
-                                                    radius=item[4])
+                                                    radius_g=item[4])
 
             delta_x = ext_1 - ext_2
             delta_y = ext_3 - ext_4

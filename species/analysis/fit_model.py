@@ -380,7 +380,7 @@ class FitModel:
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform priors.
 
-            Atmospheric model parameters (e.g. ``model='bt-settl``):
+            Atmospheric model parameters (e.g. ``model='bt-settl'``):
 
                  - Boundaries are provided as tuple of two floats. For example,
                    ``bounds={'teff': (1000, 1500.), 'logg': (3.5, 5.), 'radius': (0.8, 1.2)}``.
@@ -416,9 +416,9 @@ class FitModel:
 
                  - The dictionary key should be equal to the database tag of the spectrum. For
                    example, ``{'SPHERE': ((0.8, 1.2), (-18., -14.))}`` if the spectrum is stored as
-                   ``sphere`` with :func:`~species.data.database.Database.add_object`.
+                   ``'SPHERE'`` with :func:`~species.data.database.Database.add_object`.
 
-                 - Each of the two scaling parameters can be set to ``None`` in which case the
+                 - Each of the two calibration parameters can be set to ``None`` in which case the
                    parameter is not used. For example, ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
 
                  - No calibration parameters are fitted if the spectrum name is not included in
@@ -426,8 +426,8 @@ class FitModel:
 
             ISM extinction parameters:
 
-                 - There are two approaches of fitting extinction. The first is with the empirical
-                   relation from Cardelli et al. (1989) for ISM extinction.
+                 - There are three approaches for fitting extinction. The first is with the
+                   empirical relation from Cardelli et al. (1989) for ISM extinction.
 
                  - The extinction is parametrized by the V band extinction, A_V (``ism_ext``), and
                    the reddening, R_V (``ism_red``).
@@ -436,31 +436,54 @@ class FitModel:
                    ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
                    'ism_red': (0., 20.)}``.
 
-                 - Only supported by `run_multinest`.
+                 - Only supported by ``run_multinest``.
 
-            Size distribution extinction parameters:
+            Log-normal size distribution:
 
                  - The second approach is fitting the extinction of a log-normal size distribution
                    of grains with a crystalline MgSiO3 composition, and a homogeneous, spherical
                    structure.
 
                  - The size distribution is parameterized with a mean geometric radius
-                   (``dust_radius`` in um) and a geometric standard deviation (``dust_sigma``,
-                   dimensionless).
+                   (``lognorm_radius`` in um) and a geometric standard deviation
+                   (``lognorm_sigma``, dimensionless).
 
-                 - The extinction (``dust_ext``) is fitted in the V band (A_V in mag) and the
+                 - The extinction (``lognorm_ext``) is fitted in the V band (A_V in mag) and the
                    wavelength-dependent extinction cross sections are interpolated from a
                    pre-tabulated grid.
 
-                 - The prior boundaries of ``dust_radius``, ``dust_sigma``, and ``dust_ext`` should
-                   be provided in the ``bounds`` dictionary, for example
-                   ``bounds={'dust_radius': (0.01, 10.), 'dust_sigma': (1.2, 10.),
-                   'dust_ext': (0., 5.)}``.
+                 - The prior boundaries of ``lognorm_radius``, ``lognorm_sigma``, and
+                   ``lognorm_ext`` should be provided in the ``bounds`` dictionary, for example
+                   ``bounds={'lognorm_radius': (0.01, 10.), 'lognorm_sigma': (1.2, 10.),
+                   'lognorm_ext': (0., 5.)}``.
 
-                 - A uniform prior is used for ``dust_sigma`` and ``dust_ext``, and a log-uniform
-                   prior for ``dust_radius``.
+                 - A uniform prior is used for ``lognorm_sigma`` and ``lognorm_ext``, and a
+                   log-uniform prior for ``lognorm_radius``.
 
-                 - Only supported by `run_multinest`.
+                 - Only supported by ``run_multinest``.
+
+            Power-law size distribution:
+
+                 - The third approach is fitting the extinction of a power-law size distribution
+                   of grains, again with a crystalline MgSiO3 composition, and a homogeneous,
+                   spherical structure.
+
+                 - The size distribution is parameterized with a maximum radius (``powerlaw_max``
+                   in um) and a power-law exponent (``powerlaw_exp``, dimensionless). The
+                   minimum radius is fixed to 1 nm.
+
+                 - The extinction (``powerlaw_ext``) is fitted in the V band (A_V in mag) and the
+                   wavelength-dependent extinction cross sections are interpolated from a
+                   pre-tabulated grid.
+
+                 - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
+                   should be provided in the ``bounds`` dictionary, for example ``'powerlaw_max':
+                   (0.5, 10.), 'powerlaw_exp': (-5., 5.), 'powerlaw_ext': (0., 5.)}``.
+
+                 - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
+                   log-uniform prior for ``powerlaw_max``.
+
+                 - Only supported by ``run_multinest``.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none
@@ -659,18 +682,30 @@ class FitModel:
                 if item in self.bounds:
                     del self.bounds[item]
 
-        if 'dust_radius' in self.bounds and 'dust_sigma' in self.bounds and \
-                'dust_ext' in self.bounds:
+        if 'lognorm_radius' in self.bounds and 'lognorm_sigma' in self.bounds and \
+                'lognorm_ext' in self.bounds:
 
-            self.cross_sections, self.dust_radius, self.dust_sigma = \
-                dust_util.interpolate_dust(inc_phot, inc_spec, self.spectrum)
+            self.cross_sections, _, _ = dust_util.interp_lognorm(inc_phot, inc_spec, self.spectrum)
 
-            self.modelpar.append('dust_radius')
-            self.modelpar.append('dust_sigma')
-            self.modelpar.append('dust_ext')
+            self.modelpar.append('lognorm_radius')
+            self.modelpar.append('lognorm_sigma')
+            self.modelpar.append('lognorm_ext')
 
-            self.bounds['dust_radius'] = (np.log10(self.bounds['dust_radius'][0]),
-                                          np.log10(self.bounds['dust_radius'][1]))
+            self.bounds['lognorm_radius'] = (np.log10(self.bounds['lognorm_radius'][0]),
+                                             np.log10(self.bounds['lognorm_radius'][1]))
+
+        elif 'powerlaw_max' in self.bounds and 'powerlaw_exp' in self.bounds and \
+                'powerlaw_ext' in self.bounds:
+
+            self.cross_sections, _, _ = dust_util.interp_powerlaw(
+                inc_phot, inc_spec, self.spectrum)
+
+            self.modelpar.append('powerlaw_max')
+            self.modelpar.append('powerlaw_exp')
+            self.modelpar.append('powerlaw_ext')
+
+            self.bounds['powerlaw_max'] = (np.log10(self.bounds['powerlaw_max'][0]),
+                                           np.log10(self.bounds['powerlaw_max'][1]))
 
         else:
             self.cross_sections = None
@@ -776,15 +811,6 @@ class FitModel:
 
             if item in guess:
                 del guess[item]
-
-        if 'dust_radius' in self.bounds:
-            sigma['dust_radius'] = 0.01  # (dex)
-
-        if 'dust_sigma' in self.bounds:
-            sigma['dust_sigma'] = 0.01
-
-        if 'dust_mag' in self.bounds:
-            sigma['dust_mag'] = 0.01
 
         initial = np.zeros((nwalkers, ndim))
 
@@ -965,7 +991,10 @@ class FitModel:
                 elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
                     corr_amp[item[9:]] = cube[cube_index[item]]
 
-                elif item[:5] == 'dust_':
+                elif item[:8] == 'lognorm_':
+                    dust_param[item] = cube[cube_index[item]]
+
+                elif item[:9] == 'powerlaw_':
                     dust_param[item] = cube[cube_index[item]]
 
                 elif item[:4] == 'ism_':
@@ -1012,11 +1041,17 @@ class FitModel:
                     else:
                         ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
 
-            if 'dust_ext' in dust_param:
+            if 'lognorm_ext' in dust_param:
                 cross_tmp = self.cross_sections['Generic/Bessell.V'](
-                    dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                    dust_param['lognorm_sigma'], 10.**dust_param['lognorm_radius'])[0]
 
-                n_grains = dust_param['dust_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+                n_grains = dust_param['lognorm_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+
+            elif 'powerlaw_ext' in dust_param:
+                cross_tmp = self.cross_sections['Generic/Bessell.V'](
+                    dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])
+
+                n_grains = dust_param['powerlaw_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
             for i, obj_item in enumerate(self.objphot):
                 if self.model == 'planck':
@@ -1024,12 +1059,18 @@ class FitModel:
                     phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[0]
 
                 else:
-                    phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))
+                    phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))[0][0]
                     phot_flux *= flux_scaling
 
-                if 'dust_ext' in dust_param:
+                if 'lognorm_ext' in dust_param:
                     cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
-                        dust_param['dust_sigma'], 10.**dust_param['dust_radius'])
+                        dust_param['lognorm_sigma'], 10.**dust_param['lognorm_radius'])[0]
+
+                    phot_flux *= np.exp(-cross_tmp*n_grains)
+
+                elif 'powerlaw_ext' in dust_param:
+                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
+                        dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])[0]
 
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
@@ -1083,10 +1124,17 @@ class FitModel:
                     model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
                     model_flux *= flux_scaling
 
-                if 'dust_ext' in dust_param:
+                if 'lognorm_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
-                        cross_tmp = cross_item(dust_param['dust_sigma'],
-                                               10.**dust_param['dust_radius'])
+                        cross_tmp = cross_item(dust_param['lognorm_sigma'],
+                                               10.**dust_param['lognorm_radius'])[0]
+
+                        model_flux[j] *= np.exp(-cross_tmp*n_grains)
+
+                elif 'powerlaw_ext' in dust_param:
+                    for j, cross_item in enumerate(self.cross_sections[item]):
+                        cross_tmp = cross_item(dust_param['powerlaw_exp'],
+                                               10.**dust_param['powerlaw_max'])[0]
 
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
@@ -1098,6 +1146,7 @@ class FitModel:
                     model_flux *= 10.**(-0.4*ext_filt)
 
                 if self.spectrum[item][2] is not None:
+                    # Use the inverted covariance matrix
                     dot_tmp = np.dot(data_flux-model_flux,
                                      np.dot(data_cov_inv, data_flux-model_flux))
 
@@ -1122,6 +1171,7 @@ class FitModel:
                         ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
                     else:
+                        # Calculate the chi-square without a covariance matrix
                         ln_like += np.nansum(-0.5 * (data_flux-model_flux)**2 / data_var -
                                              0.5 * np.log(2.*np.pi*data_var))
 

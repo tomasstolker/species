@@ -171,9 +171,9 @@ class Database:
     @typechecked
     def add_dust(self) -> None:
         """
-        Function for adding optical constants of MgSiO3 and Fe to the database. The optical
-        constants have been compiled by Mollière et al. (2019) for petitRADTRANS from the
-        following sources:
+        Function for adding optical constants of MgSiO3 and Fe, and MgSiO3 cross sections for
+        a log-normal and power-law size distribution to the database. The optical constants have
+        been compiled by Mollière et al. (2019) for petitRADTRANS from the following sources:
 
         - MgSiO3, crystalline
             - Scott & Duley (1996), ApJS, 105, 401

@@ -32,7 +32,7 @@ def plot_walkers(tag: str,
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the samples.
     nsteps : int, None
         Number of steps that are plotted. All steps are plotted if set to ``None``.
     offset : tuple(float, float), None
@@ -130,7 +130,7 @@ def plot_posterior(tag: str,
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the samples.
     burnin : int, None
         Number of burnin steps to exclude. All samples are used if set to ``None``.
     title : str, None
@@ -338,7 +338,7 @@ def plot_photometry(tag,
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the samples.
     filter_id : str
         Filter ID.
     burnin : int, None
@@ -400,12 +400,12 @@ def plot_size_distributions(tag: str,
                             offset: Optional[Tuple[float, float]] = None,
                             output: str = 'size_distributions.pdf') -> None:
     """
-    Function to plot random samples of the log-normal size distribution.
+    Function to plot random samples of the log-normal or power-law size distribution.
 
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the samples.
     burnin : int, None
         Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
         after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
@@ -435,11 +435,9 @@ def plot_size_distributions(tag: str,
     species_db = database.Database()
     box = species_db.get_samples(tag)
 
-    if 'dust_radius' not in box.parameters:
-        raise ValueError('The SamplesBox does not contain the \'dust_radius\' parameter.')
-
-    if 'dust_sigma' not in box.parameters:
-        raise ValueError('The SamplesBox does not contain the \'dust_sigma\' parameter.')
+    if 'lognorm_radius' not in box.parameters and 'powerlaw_max' not in box.parameters:
+        raise ValueError('The SamplesBox does not contain extinction parameter for a log-normal '
+                         'or power-law size distribution.')
 
     samples = box.samples
 
@@ -458,11 +456,19 @@ def plot_size_distributions(tag: str,
         ran_step = np.random.randint(samples.shape[1], size=random)
         samples = samples[ran_walker, ran_step, :]
 
-    log_r_index = box.parameters.index('dust_radius')
-    sigma_index = box.parameters.index('dust_sigma')
+    if 'lognorm_radius' in box.parameters:
+        log_r_index = box.parameters.index('lognorm_radius')
+        sigma_index = box.parameters.index('lognorm_sigma')
 
-    log_r_g = samples[:, log_r_index]
-    sigma_g = samples[:, sigma_index]
+        log_r_g = samples[:, log_r_index]
+        sigma_g = samples[:, sigma_index]
+
+    if 'powerlaw_max' in box.parameters:
+        r_max_index = box.parameters.index('powerlaw_max')
+        exponent_index = box.parameters.index('powerlaw_exp')
+
+        r_max = samples[:, r_max_index]
+        exponent = samples[:, exponent_index]
 
     plt.figure(1, figsize=(6, 3))
     gridsp = mpl.gridspec.GridSpec(1, 1)
@@ -483,6 +489,9 @@ def plot_size_distributions(tag: str,
 
     ax.set_xscale('log')
 
+    if 'powerlaw_max' in box.parameters:
+        ax.set_yscale('log')
+
     if offset is not None:
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
@@ -492,13 +501,12 @@ def plot_size_distributions(tag: str,
         ax.get_yaxis().set_label_coords(-0.09, 0.5)
 
     for i in range(samples.shape[0]):
-        test_range = (-15, 15, 10000)
-        dn_dr, r_test = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], test_range)
+        if 'lognorm_radius' in box.parameters:
+            dn_dr, _, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
 
-        index = np.where(dn_dr/np.amax(dn_dr) > 1e-3)[0]
-
-        radius_range = (np.log10(r_test[index[0]]), np.log10(r_test[index[-1]]), 1000)
-        dn_dr, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], radius_range)
+        elif 'powerlaw_max' in box.parameters:
+            dn_dr, _, radii = dust_util.power_law_distribution(
+                exponent[i], 1e-3, 10.**r_max[i], 1000)
 
         ax.plot(radii, dn_dr, ls='-', lw=0.5, color='black', alpha=0.5)
 
@@ -526,7 +534,7 @@ def plot_extinction(tag: str,
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the samples.
     burnin : int, None
         Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
         after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
@@ -614,14 +622,14 @@ def plot_extinction(tag: str,
 
     sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
 
-    if 'dust_radius' in box.parameters and 'dust_sigma' in box.parameters and \
-            'dust_ext' in box.parameters:
+    if 'lognorm_radius' in box.parameters and 'lognorm_sigma' in box.parameters and \
+            'lognorm_ext' in box.parameters:
 
-        cross_optical, dust_radius, dust_sigma = dust_util.interpolate_dust([], [], None)
+        cross_optical, dust_radius, dust_sigma = dust_util.interp_lognorm([], [], None)
 
-        log_r_index = box.parameters.index('dust_radius')
-        sigma_index = box.parameters.index('dust_sigma')
-        ext_index = box.parameters.index('dust_ext')
+        log_r_index = box.parameters.index('lognorm_radius')
+        sigma_index = box.parameters.index('lognorm_sigma')
+        ext_index = box.parameters.index('lognorm_ext')
 
         log_r_g = samples[:, log_r_index]
         sigma_g = samples[:, sigma_index]
@@ -630,8 +638,8 @@ def plot_extinction(tag: str,
         database_path = dust_util.check_dust_database()
 
         with h5py.File(database_path, 'r') as h5_file:
-            cross_section = np.asarray(h5_file['dust/mgsio3/crystalline/cross_section'])
-            wavelength = np.asarray(h5_file['dust/mgsio3/crystalline/wavelength'])
+            cross_section = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/cross_section'])
+            wavelength = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/wavelength'])
 
         cross_interp = RegularGridInterpolator((wavelength, dust_radius, dust_sigma), cross_section)
 
@@ -644,6 +652,42 @@ def plot_extinction(tag: str,
 
             for j, item in enumerate(sample_wavel):
                 sample_cross[j] = cross_interp((item, 10.**log_r_g[i], sigma_g[i]))
+
+            sample_ext = 2.5 * np.log10(np.exp(1.)) * sample_cross * n_grains
+
+            ax.plot(sample_wavel, sample_ext, ls='-', lw=0.5, color='black', alpha=0.5)
+
+    elif 'powerlaw_max' in box.parameters and 'powerlaw_exp' in box.parameters and \
+            'powerlaw_ext' in box.parameters:
+
+        cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [], None)
+
+        r_max_index = box.parameters.index('powerlaw_max')
+        exp_index = box.parameters.index('powerlaw_exp')
+        ext_index = box.parameters.index('powerlaw_ext')
+
+        r_max = samples[:, r_max_index]
+        exponent = samples[:, exp_index]
+        dust_ext = samples[:, ext_index]
+
+        database_path = dust_util.check_dust_database()
+
+        with h5py.File(database_path, 'r') as h5_file:
+            cross_section = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/cross_section'])
+            wavelength = np.asarray(h5_file['dust/powerlaw/mgsio3/crystalline/wavelength'])
+
+        cross_interp = RegularGridInterpolator((wavelength, dust_max, dust_exp),
+                                               cross_section)
+
+        for i in range(samples.shape[0]):
+            cross_tmp = cross_optical['Generic/Bessell.V'](exponent[i], 10.**r_max[i])
+
+            n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+
+            sample_cross = np.zeros(sample_wavel.shape)
+
+            for j, item in enumerate(sample_wavel):
+                sample_cross[j] = cross_interp((item, 10.**r_max[i], exponent[i]))
 
             sample_ext = 2.5 * np.log10(np.exp(1.)) * sample_cross * n_grains
 
