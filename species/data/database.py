@@ -209,19 +209,26 @@ class Database:
     @typechecked
     def add_filter(self,
                    filter_name: str,
-                   filename: Optional[str] = None) -> None:
+                   filename: Optional[str] = None,
+                   detector_type: str = 'photon') -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or input file.
+        Service or from an input file.
 
         Parameters
         ----------
         filter_name : str
-            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp').
+            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp') or a
+            user-defined name if a ``filename`` is specified.
         filename : str
             Filename of the filter profile. The first column should contain the wavelength
-            (um) and the second column the transmission. The profile is downloaded from the SVO
-            Filter Profile Service if set to None.
+            (um) and the second column the fractional transmission. The profile is downloaded from
+            the SVO Filter Profile Service if the argument of ``filename`` is set to ``None``.
+        detector_type : str
+            The detector type ('photon' or 'energy'). The argument is only used if a ``filename``
+            is provided. Otherwise, for filters that are fetched from the SVO website, the detector
+            type is read from the SVO data. The detector type determines if a wavelength factor
+            is included in the integral for the synthetic photometry.
 
         Returns
         -------
@@ -250,11 +257,13 @@ class Database:
             transmission = data[:, 1]
 
         else:
-            wavelength, transmission = filters.download_filter(filter_name)
+            wavelength, transmission, detector_type = filters.download_filter(filter_name)
 
         if wavelength is not None and transmission is not None:
-            h5_file.create_dataset(f'filters/{filter_name}',
-                                   data=np.column_stack((wavelength, transmission)))
+            dset = h5_file.create_dataset(f'filters/{filter_name}',
+                                          data=np.column_stack((wavelength, transmission)))
+
+            dset.attrs['det_type'] = str(detector_type)
 
         h5_file.close()
 
