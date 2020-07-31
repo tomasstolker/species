@@ -1810,6 +1810,11 @@ class Database:
                 model_param['c_o_ratio'] = item[c_o_ratio_index]
                 model_param['metallicity'] = item[metallicity_index]
 
+            elif chemistry == 'free':
+                for species_item in line_species:
+                    species_item_index = np.argwhere(parameters == species_item)[0][0]
+                    model_param[species_item] = item[species_item_index]
+
             model_box = read_rad.get_model(model_param,
                                            spec_res=spec_res,
                                            wavel_resample=None,
