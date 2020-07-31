@@ -52,10 +52,9 @@ def add_btsettl(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'bt-settl-cifist.tgz'
-    label = '(578 MB)'
 
     data_folder = os.path.join(input_path, 'bt-settl-cifist/')
-    data_file = os.path.join(data_folder, input_file)
+    data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
@@ -63,11 +62,11 @@ def add_btsettl(input_path: str,
     url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl-cifist.tgz'
 
     if not os.path.isfile(data_file):
-        print(f'Downloading Bt-Settl model spectra {label}...', end='', flush=True)
+        print('Downloading Bt-Settl model spectra (578 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print(f'Unpacking BT-Settl model spectra {label}...', end='', flush=True)
+    print('Unpacking BT-Settl model spectra (578 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
