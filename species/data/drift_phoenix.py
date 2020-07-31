@@ -22,9 +22,10 @@ def add_drift_phoenix(input_path: str,
                       database: h5py._hl.files.File,
                       wavel_range: Optional[Tuple[float, float]] = None,
                       teff_range: Optional[Tuple[float, float]] = None,
-                      spec_res: Optional[float] = 1000.) -> None:
+                      spec_res: float = None) -> None:
     """
-    Function for adding the DRIFT-PHOENIX atmospheric models to the database.
+    Function for adding the DRIFT-PHOENIX atmospheric models to the database. The original spectra
+    have been resampled to a spectral resolution of R = 2000 from 0.1 to 50 um.
 
     Parameters
     ----------
@@ -33,11 +34,13 @@ def add_drift_phoenix(input_path: str,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (um). The original wavelength points are used if set to ``None``.
+        Wavelength range (um). The full wavelength range (0.1-50 um) is stored if set to ``None``.
+        Only used in combination with ``spec_res``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All temperatures are selected if set to ``None``.
+        Effective temperature range (K). All available temperatures are stored if set to ``None``.
     spec_res : float, None
-        Spectral resolution. Not used if ``wavel_range`` is set to ``None``.
+        Spectral resolution. The data is stored with the spectral resolution of the input spectra
+        (R = 2000) if set to ``None``. Only used in combination with ``wavel_range``.
 
     Returns
     -------
@@ -48,19 +51,23 @@ def add_drift_phoenix(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    data_file = os.path.join(input_path, 'drift-phoenix.tgz')
-    data_folder = os.path.join(input_path, 'drift-phoenix/')
-
+    input_file = 'drift-phoenix.tgz'
     url = 'https://people.phys.ethz.ch/~ipa/tstolker/drift-phoenix.tgz'
 
+    data_folder = os.path.join(input_path, 'drift-phoenix/')
+    data_file = os.path.join(input_path, input_file)
+
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
+
     if not os.path.isfile(data_file):
-        print('Downloading DRIFT-PHOENIX model spectra (151 MB)...', end='', flush=True)
+        print('Downloading DRIFT-PHOENIX model spectra (229 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking DRIFT-PHOENIX model spectra...', end='', flush=True)
+    print('Unpacking DRIFT-PHOENIX model spectra (229 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
-    tar.extractall(input_path)
+    tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
 
@@ -74,45 +81,38 @@ def add_drift_phoenix(input_path: str,
     else:
         wavelength = None
 
-    for _, _, file_list in os.walk(data_folder):
-        for filename in sorted(file_list):
+    for _, _, files in os.walk(data_folder):
+        for filename in files:
+            if filename[:14] == 'drift-phoenix_':
+                file_split = filename.split('_')
 
-            if filename.startswith('lte_'):
-                teff_val = float(filename[4:8])
-                logg_val = float(filename[9:12])
-                feh_val = float(filename[12:16])
+                teff_val = float(file_split[2])
+                logg_val = float(file_split[4])
+                feh_val = float(file_split[6])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
                 print_message = f'Adding DRIFT-PHOENIX model spectra... {filename}'
-                print(f'\r{print_message:<65}', end='')
+                print(f'\r{print_message:<88}', end='')
 
-                data = np.loadtxt(data_folder+filename)
+                data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
                 feh.append(feh_val)
 
-                if wavel_range is None:
+                if wavel_range is None or spec_res is None:
                     if wavelength is None:
-                        # (Angstrom) -> (um)
-                        wavelength = data[:, 0]*1e-4
+                        wavelength = np.copy(data_wavel)  # (um)
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
-                    # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                    flux.append(data[:, 1]*1e-7*1e4*1e4)
+                    flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
-                    # (Angstrom) -> (um)
-                    data_wavel = data[:, 0]*1e-4
-
-                    # (erg s-1 cm-2 Angstrom-1) -> (W m-2 um-1)
-                    data_flux = data[:, 1]*1e-7*1e4*1e4
-
                     flux_resample = spectres.spectres(wavelength,
                                                       data_wavel,
                                                       data_flux,
@@ -130,7 +130,7 @@ def add_drift_phoenix(input_path: str,
                     flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding DRIFT-PHOENIX model spectra... [DONE]'
-    print(f'\r{print_message:<65}')
+    print(f'\r{print_message:<88}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
