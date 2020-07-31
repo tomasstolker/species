@@ -46,6 +46,16 @@ class ReadFilter:
 
         self.database = config['species']['database']
 
+        h5_file = h5py.File(self.database, 'r')
+
+        if 'filters' not in h5_file or self.filter_name not in h5_file['filters']:
+            h5_file.close()
+            species_db = database.Database()
+            species_db.add_filter(self.filter_name)
+            h5_file = h5py.File(self.database, 'r')
+
+        h5_file.close()
+
     @typechecked
     def get_filter(self) -> np.ndarray:
         """
@@ -58,12 +68,6 @@ class ReadFilter:
         """
 
         h5_file = h5py.File(self.database, 'r')
-
-        if 'filters' not in h5_file or self.filter_name not in h5_file['filters']:
-            h5_file.close()
-            species_db = database.Database()
-            species_db.add_filter(self.filter_name)
-            h5_file = h5py.File(self.database, 'r')
 
         data = np.asarray(h5_file[f'filters/{self.filter_name}'])
 
@@ -149,3 +153,20 @@ class ReadFilter:
         root2 = np.amin(diff[diff > 0.])
 
         return root2 - root1
+
+    @typechecked
+    def detector_type(self) -> str:
+        """
+        Function for returning the detector type.
+
+        Returns
+        -------
+        str
+            Detector type ('energy' or 'photon').
+        """
+
+        with h5py.File(self.database, 'r') as h5_file:
+            dset = h5_file[f'filters/{self.filter_name}']
+            det_type = dset.attrs['det_type']
+
+        return det_type
