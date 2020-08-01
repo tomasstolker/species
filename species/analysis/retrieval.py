@@ -809,7 +809,7 @@ class AtmosphericRetrieval:
                 if item in bounds and bounds[item][1] is not None:
                     err_offset[item] = cube[cube_index[f'error_{item}']]
                 else:
-                    err_offset[item] = -100.
+                    err_offset[item] = None
 
             # create dictionary with wavelength calibration parameters
 
@@ -962,7 +962,10 @@ class AtmosphericRetrieval:
                 data_flux = self.spectrum[item][0][:, 1]
 
                 # variance with optional inflation
-                data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
+                if err_offset[item] is None:
+                    data_var = self.spectrum[item][0][:, 2]**2
+                else:
+                    data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
                 # apply ISM extinction to the model spectrum
                 if 'ism_ext' in self.parameters and 'ism_red' in self.parameters:
