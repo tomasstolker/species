@@ -71,8 +71,8 @@ def lnprior(param: np.ndarray,
     if prior is not None:
         for key, value in prior.items():
             if key == 'mass':
-                mass = read_util.get_mass({'logg': param[param_index['logg']],
-                                           'radius': param[param_index['radius']]})
+                mass = read_util.get_mass(param[param_index['logg']],
+                                          param[param_index['radius']])
 
                 ln_prior += -0.5 * (mass - value[0])**2 / value[1]**2
 
@@ -1034,8 +1034,8 @@ class FitModel:
             if prior is not None:
                 for key, value in prior.items():
                     if key == 'mass':
-                        mass = read_util.get_mass({'logg': cube[cube_index['logg']],
-                                                   'radius': cube[cube_index['radius']]})
+                        mass = read_util.get_mass(cube[cube_index['logg']],
+                                                  cube[cube_index['radius']])
 
                         ln_like += -0.5 * (mass - value[0])**2 / value[1]**2
 

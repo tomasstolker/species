@@ -37,7 +37,7 @@ def plot_color_magnitude(boxes: list,
                          xlim: Optional[Tuple[float, float]] = None,
                          ylim: Optional[Tuple[float, float]] = None,
                          offset: Optional[Tuple[float, float]] = None,
-                         legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                         legend: Optional[Union[str, dict, Tuple[float, float]]] = 'upper left',
                          output: str = 'color-magnitude.pdf') -> None:
     """
     Function for creating a color-magnitude diagram.
@@ -508,7 +508,7 @@ def plot_color_color(boxes: list,
                      xlim: Optional[Tuple[float, float]] = None,
                      ylim: Optional[Tuple[float, float]] = None,
                      offset: Optional[Tuple[float, float]] = None,
-                     legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                     legend: Optional[Union[str, dict, Tuple[float, float]]] = 'upper left',
                      output: str = 'color-color.pdf') -> None:
     """
     Function for creating a color-color diagram.
@@ -562,8 +562,8 @@ def plot_color_color(boxes: list,
         Limits for the y-axis.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
-    legend : str
-        Legend position.
+    legend : str, tuple(float, float), dict, None
+        Legend position or keyword arguments. No legend is shown if set to ``None``.
 
     Returns
     -------

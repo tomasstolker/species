@@ -5,7 +5,7 @@ Utility functions for reading data.
 import math
 import warnings
 
-from typing import Tuple, Union
+from typing import Union, Dict, Tuple
 
 import numpy as np
 
@@ -17,22 +17,25 @@ from species.core import constants
 from species.read import read_model, read_planck
 
 
-def get_mass(model_param):
+@typechecked
+def get_mass(logg: Union[float, np.ndarray],
+             radius: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Parameters
     ----------
-    model_param : dict
-        Model parameter values. Should contain the surface gravity and radius.
+    logg : float, np.ndarray
+        Log10 of the surface gravity (cgs).
+    radius : float, np.ndarray
+        Radius (Rjup).
 
     Returns
     -------
-    float
+    float, np.ndarray
         Mass (Mjup).
     """
 
-    surface_grav = 1e-2 * 10.**model_param['logg']  # (m s-2)
+    surface_grav = 1e-2 * 10.**logg  # (m s-2)
 
-    radius = model_param['radius']  # (Rjup)
     radius *= constants.R_JUP  # (m)
 
     mass = surface_grav*radius**2/constants.GRAVITY  # (kg)

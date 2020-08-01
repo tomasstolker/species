@@ -590,7 +590,7 @@ class ReadModel:
         flux = self.spectrum_interp(parameters)[0]
 
         if 'radius' in model_param:
-            model_param['mass'] = read_util.get_mass(model_param)
+            model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
 
             if 'distance' in model_param:
                 scaling = (model_param['radius']*constants.R_JUP)**2 / \
@@ -886,7 +886,7 @@ class ReadModel:
 
     @typechecked
     def get_magnitude(self,
-                      model_param: Dict[str, float]) -> Tuple[float, float]:
+                      model_param: Dict[str, float]) -> Tuple[float, Optional[float]]:
         """
         Function for calculating the apparent and absolute magnitudes for the ``filter_name``.
 
@@ -899,8 +899,9 @@ class ReadModel:
         -------
         float
             Apparent magnitude.
-        float
-            Absolute magnitude.
+        float, None
+            Absolute magnitude. A ``None`` is returned if the ``model_param`` do not contain a
+            ``radius`` and ``distance``.
         """
 
         if self.spectrum_interp is None:
