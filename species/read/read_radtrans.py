@@ -186,7 +186,7 @@ class ReadRadtrans:
 
             cloud_fractions = {}
             for item in self.cloud_species:
-                cloud_fractions[item[:-3]] = model_param[f'{item[:-6].lower()}_fraction']
+                cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
 
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],

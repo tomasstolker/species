@@ -1737,17 +1737,8 @@ class Database:
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f'cloud_species{i}']+'_cd')
 
-        # create mock p-t profile
-
-        temp_params = {}
-        temp_params['log_delta'] = -6.
-        temp_params['log_gamma'] = 1.
-        temp_params['t_int'] = 750.
-        temp_params['t_equ'] = 0.
-        temp_params['log_p_trans'] = -3.
-        temp_params['alpha'] = 0.
-
-        pressure, _ = nc.make_press_temp(temp_params)
+        # create 180 pressure layers in log space
+        pressure = np.logspace(-6, 3, 180)
 
         logg_index = np.argwhere(parameters == 'logg')[0][0]
         radius_index = np.argwhere(parameters == 'radius')[0][0]
@@ -1814,6 +1805,16 @@ class Database:
                 for species_item in line_species:
                     species_item_index = np.argwhere(parameters == species_item)[0][0]
                     model_param[species_item] = item[species_item_index]
+
+            if len(cloud_species) > 0:
+                model_param['fsed'] = item[fsed_index]
+                model_param['kzz'] = item[kzz_index]
+                model_param['sigma_lnorm'] = item[sigma_lnorm_index]
+
+                for cloud_item in cloud_species:
+                    cloud_param = f'{cloud_item[:-3].lower()}_fraction'
+                    cloud_item_index = np.argwhere(parameters == cloud_param)[0][0]
+                    model_param[cloud_param] = item[cloud_item_index]
 
             model_box = read_rad.get_model(model_param,
                                            spec_res=spec_res,
