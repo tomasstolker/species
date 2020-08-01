@@ -8,7 +8,7 @@ import json
 import time
 import warnings
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import pymultinest
 import numpy as np
@@ -25,7 +25,7 @@ from species.analysis import photometry
 from species.data import database
 from species.core import constants
 from species.read import read_object
-from species.util import retrieval_util
+from species.util import retrieval_util, dust_util
 
 
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -43,7 +43,7 @@ class AtmosphericRetrieval:
                  cloud_species: Optional[list],
                  scattering: bool,
                  output_folder: str,
-                 wavel_range: Optional[Tuple[float, float]] = None) -> None:
+                 wavel_range: Optional[Tuple[float, float]]) -> None:
         """
         Parameters
         ----------
@@ -207,7 +207,8 @@ class AtmosphericRetrieval:
                        bounds: dict,
                        chemistry: str,
                        quenching: bool,
-                       pt_profile: str) -> None:
+                       pt_profile: str,
+                       fit_corr: List[str]) -> None:
         """
         Function to set the list with parameters.
 
@@ -223,6 +224,9 @@ class AtmosphericRetrieval:
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
+        fit_corr : list(str), None
+            List with spectrum names for which the correlation length and fractional amplitude are
+            fitted (see Wang et al. 2020).
 
         Returns
         -------
@@ -327,6 +331,13 @@ class AtmosphericRetrieval:
             self.parameters.append('ism_ext')
             self.parameters.append('ism_red')
 
+        # add covariance parameters
+
+        for item in self.spectrum:
+            if item in fit_corr:
+                self.parameters.append(f'corr_len_{item}')
+                self.parameters.append(f'corr_amp_{item}')
+
         # list all parameters
 
         print(f'Fitting {len(self.parameters)} parameters:')
@@ -340,6 +351,7 @@ class AtmosphericRetrieval:
                       chemistry: str = 'equilibrium',
                       quenching: bool = True,
                       pt_profile: str = 'molliere',
+                      fit_corr: Optional[List[str]] = None,
                       live_points: int = 2000,
                       resume: bool = False,
                       plotting: bool = False) -> None:
@@ -370,6 +382,9 @@ class AtmosphericRetrieval:
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
+        fit_corr : list(str), None
+            List with spectrum names for which the correlation length and fractional amplitude are
+            fitted (see Wang et al. 2020).
         live_points : int
             Number of live points.
         resume : bool
@@ -388,13 +403,23 @@ class AtmosphericRetrieval:
         if not os.path.exists(self.output_folder):
             raise ValueError(f'The output folder ({self.output_folder}) does not exist.')
 
+        # List with spectra for which the correlated noise is fitted
+
+        if fit_corr is None:
+            fit_corr = []
+
+        for item in self.spectrum:
+            if item in fit_corr:
+                bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len) (um)
+                bounds[f'corr_amp_{item}'] = (0., 1.)
+
         # create list with parameters for MultiNest
 
         if quenching and chemistry != 'equilibrium':
             raise ValueError('The \'quenching\' parameter can only be used in combination with '
                              'chemistry=\'equilibrium\'.')
 
-        self.set_parameters(bounds, chemistry, quenching, pt_profile)
+        self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr)
 
         # create a dictionary with the cube indices of the parameters
 
@@ -727,6 +752,18 @@ class AtmosphericRetrieval:
                             (bounds[item][2][1]-bounds[item][2][0]) * \
                             cube[cube_index[f'wavelength_{item}']]
 
+            # add covariance parameters if any spectra are provided to fit_corr
+
+            for item in self.spectrum:
+                if item in fit_corr:
+                    cube[cube_index[f'corr_len_{item}']] = bounds[f'corr_len_{item}'][0] + \
+                        (bounds[f'corr_len_{item}'][1]-bounds[f'corr_len_{item}'][0]) * \
+                        cube[cube_index[f'corr_len_{item}']]
+
+                    cube[cube_index[f'corr_amp_{item}']] = bounds[f'corr_amp_{item}'][0] + \
+                        (bounds[f'corr_amp_{item}'][1]-bounds[f'corr_amp_{item}'][0]) * \
+                        cube[cube_index[f'corr_amp_{item}']]
+
         @typechecked
         def loglike(cube,
                     n_dim: int,
@@ -751,8 +788,8 @@ class AtmosphericRetrieval:
 
             # initiate the logarithm of the prior and likelihood
 
-            log_prior = 0.
-            log_likelihood = 0.
+            ln_prior = 0.
+            ln_like = 0.
 
             # create dictionary with flux scaling parameters
 
@@ -784,6 +821,18 @@ class AtmosphericRetrieval:
                 else:
                     wavel_cal[item] = 0.
 
+            # create dictionary with covariance parameters
+
+            corr_len = {}
+            corr_amp = {}
+
+            for item in self.spectrum:
+                if f'corr_len_{item}' in bounds:
+                    corr_len[item] = 10.**cube[cube_index[f'corr_len_{item}']]  # (um)
+
+                if f'corr_amp_{item}' in bounds:
+                    corr_amp[item] = cube[cube_index[f'corr_amp_{item}']]
+
             # create a p-t profile
 
             if pt_profile == 'molliere':
@@ -810,7 +859,7 @@ class AtmosphericRetrieval:
                     temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
                     # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
-                    log_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                    ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                         0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
             # return zero probability if the minimum temperature is negative
@@ -905,24 +954,15 @@ class AtmosphericRetrieval:
             # scale the emitted spectrum to the observation
             flux_lambda *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
-            for key, value in self.spectrum.items():
-                # get spectrum
+            for i, item in enumerate(self.spectrum.keys()):
                 # shift the wavelengths of the data with the fitted calibration parameter
-                data_wavel = value[0][:, 0] + wavel_cal[key]
-                data_flux = value[0][:, 1]
-                data_error = value[0][:, 2]
+                data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
 
-                # get inverted covariance matrix
-                data_cov_inv = value[2]
+                # flux density
+                data_flux = self.spectrum[item][0][:, 1]
 
-                # get spectral resolution
-                spec_res = value[3]
-
-                # get wavelength bins
-                data_wavel_bins = value[4]
-
-                # fitted error component
-                err_fit = 10.**err_offset[key]
+                # variance with optional inflation
+                data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
                 # apply ISM extinction to the model spectrum
                 if 'ism_ext' in self.parameters and 'ism_red' in self.parameters:
@@ -935,29 +975,57 @@ class AtmosphericRetrieval:
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
                                                       flux_lambda,
-                                                      spec_res)
+                                                      self.spectrum[item][3])
 
                 # resample to the observation
                 flux_rebinned = rebin_give_width(wlen_micron,
                                                  flux_smooth,
                                                  data_wavel,
-                                                 data_wavel_bins)
+                                                 self.spectrum[item][4])
 
                 # difference between the observed and modeled spectrum
-                diff = flux_rebinned - scaling[key]*data_flux
+                flux_diff = flux_rebinned - scaling[item]*data_flux
 
-                if data_cov_inv is not None:
-                    # calculate the log-likelihood with the covariance matrix
-                    # TODO include err_fit in the covariance matrix
-                    log_likelihood += -np.dot(diff, data_cov_inv.dot(diff))/2.
+                if self.spectrum[item][2] is not None:
+                    # Use the inverted covariance matrix
+
+                    if err_offset[item] is None:
+                        data_cov_inv = self.spectrum[item][2]
+
+                    else:
+                        # Ratio of the inflated and original uncertainties
+                        sigma_ratio = np.sqrt(data_var) / self.spectrum[item][0][:, 2]
+                        sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
+
+                        # Calculate the inversion of the infalted covariances
+                        data_cov_inv = np.linalg.inv(self.spectrum[item][1]*sigma_i*sigma_j)
+
+                    # Use the inverted covariance matrix
+                    dot_tmp = np.dot(flux_diff, np.dot(data_cov_inv, flux_diff))
+                    ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
                 else:
-                    # calculate the log-likelihood without the covariance matrix
-                    var_infl = data_error**2.+err_fit**2
-                    log_likelihood += -0.5*np.sum(diff**2/var_infl + np.log(2.*np.pi*var_infl))
+                    if item in fit_corr:
+                        # Covariance model (Wang et al. 2020)
+                        wavel_j, wavel_i = np.meshgrid(data_wavel, data_wavel)
+
+                        error = np.sqrt(data_var)  # (W m-2 um-1)
+                        error_j, error_i = np.meshgrid(error, error)
+
+                        cov_matrix = corr_amp[item]**2 * error_i * error_j * \
+                            np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
+                            (1.-corr_amp[item]**2) * np.eye(data_wavel.shape[0])*error_i**2
+
+                        dot_tmp = np.dot(flux_diff, np.dot(np.linalg.inv(cov_matrix), flux_diff))
+
+                        ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+
+                    else:
+                        # calculate the log-likelihood without the covariance matrix
+                        ln_like += -0.5*np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
 
                 if plotting:
-                    plt.errorbar(data_wavel, scaling[key]*data_flux, yerr=data_error+err_fit,
+                    plt.errorbar(data_wavel, scaling[item]*data_flux, yerr=np.sqrt(data_var),
                                  marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue')
 
                     plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange')
@@ -969,7 +1037,7 @@ class AtmosphericRetrieval:
                 plt.savefig('spectrum.pdf', bbox_inches='tight')
                 plt.clf()
 
-            return log_prior + log_likelihood
+            return ln_prior + ln_like
 
         # store the model parameters in a JSON file
 
