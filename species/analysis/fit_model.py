@@ -206,10 +206,11 @@ def lnlike(param: np.ndarray,
 
     for i, item in enumerate(spectrum.keys()):
         data_flux = spec_scaling[item]*spectrum[item][0][:, 1]
-        data_var = spectrum[item][0][:, 2]**2
 
-        if err_offset[item] is not None:
-            data_var += (10.**err_offset[item])**2
+        if err_offset[item] is None:
+            data_var = spectrum[item][0][:, 2]**2
+        else:
+            data_var = (spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
         if spectrum[item][2] is not None:
             if err_offset[item] is None:
@@ -1093,10 +1094,11 @@ class FitModel:
 
             for i, item in enumerate(self.spectrum.keys()):
                 data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
-                data_var = self.spectrum[item][0][:, 2]**2
 
-                if err_offset[item] is not None:
-                    data_var += (10.**err_offset[item])**2
+                if err_offset[item] is None:
+                    data_var = self.spectrum[item][0][:, 2]**2
+                else:
+                    data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
                 if self.spectrum[item][2] is not None:
                     if err_offset[item] is None:
