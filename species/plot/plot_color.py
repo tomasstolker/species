@@ -511,6 +511,7 @@ def plot_color_color(boxes: list,
                      ylim: Optional[Tuple[float, float]] = None,
                      offset: Optional[Tuple[float, float]] = None,
                      legend: Optional[Union[str, dict, Tuple[float, float]]] = 'upper left',
+                     figsize: Optional[Tuple[float, float]] = (4., 4.3),
                      output: str = 'color-color.pdf') -> None:
     """
     Function for creating a color-color diagram.
@@ -556,8 +557,6 @@ def plot_color_color(boxes: list,
         Label for the x-axis.
     label_y : str
         Label for the y-axis.
-    output : str
-        Output filename.
     xlim : tuple(float, float)
         Limits for the x-axis.
     ylim : tuple(float, float)
@@ -566,6 +565,10 @@ def plot_color_color(boxes: list,
         Offset of the x- and y-axis label.
     legend : str, tuple(float, float), dict, None
         Legend position or keyword arguments. No legend is shown if set to ``None``.
+    figsize : tuple(float, float)
+        Figure size.
+    output : str
+        Output filename.
 
     Returns
     -------
@@ -604,7 +607,7 @@ def plot_color_color(boxes: list,
             raise ValueError(f'Found a {type(item)} while only ColorColorBox and IsochroneBox '
                              f'objects can be provided to \'boxes\'.')
 
-    plt.figure(1, figsize=(4, 4.3))
+    plt.figure(1, figsize=figsize)
     gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.])
     gridsp.update(wspace=0., hspace=0., left=0, right=1, bottom=0, top=1)
 
