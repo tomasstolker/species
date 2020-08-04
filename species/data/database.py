@@ -868,7 +868,7 @@ class Database:
             Filename with the calibration spectrum. The first column should contain the wavelength
             (um), the second column the flux density (W m-2 um-1), and the third column
             the error (W m-2 um-1). The `data` argument is used if set to None.
-        data : numpy.ndarray, None
+        data : np.ndarray, None
             Spectrum stored as 3D array with shape (n_wavelength, 3). The first column should
             contain the wavelength (um), the second column the flux density (W m-2 um-1),
             and the third column the error (W m-2 um-1).
@@ -1337,7 +1337,7 @@ class Database:
 
         Returns
         -------
-        numpy.ndarray
+        np.ndarray
             Synthetic photometry (mag).
         """
 
