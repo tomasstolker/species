@@ -3,6 +3,7 @@ Module with reading functionalities for filter profiles.
 """
 
 import os
+import warnings
 import configparser
 
 from typing import Union, Tuple
@@ -167,6 +168,15 @@ class ReadFilter:
 
         with h5py.File(self.database, 'r') as h5_file:
             dset = h5_file[f'filters/{self.filter_name}']
-            det_type = dset.attrs['det_type']
+
+            if 'det_type' in dset.attrs:
+                det_type = dset.attrs['det_type']
+
+            else:
+                warnings.warn('Detector type not found. The database was probably created '
+                              'before the detector type was introduced in species (v0.3.1). '
+                              'Assuming an energy-counting detector.')
+
+                det_type = 'energy'
 
         return det_type

@@ -4,27 +4,32 @@ Module with functionalities for fitting a calibration spectrum.
 
 import math
 
+from typing import Optional, Dict, Tuple, List
+
 from multiprocessing import Pool, cpu_count
 
 import emcee
 import numpy as np
+
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.data import database
 from species.read import read_object, read_calibration
 
 
-def lnprob(param,
-           bounds,
-           modelpar,
-           objphot,
-           specphot):
+@typechecked
+def lnprob(param: np.ndarray,
+           bounds: Dict[str, Tuple[float, float]],
+           modelpar: List[str],
+           objphot: List[np.ndarray],
+           specphot: List[float]) -> float:
     """
     Internal function for the posterior probability.
 
     Parameters
     ----------
-    param : numpy.ndarray
+    param : np.ndarray
         Value of the scaling parameter.
     bounds : dict
         Boundaries of the main scaling parameter.
@@ -74,27 +79,29 @@ class FitSpectrum:
     Class for fitting a calibration spectrum to photometric data.
     """
 
+    @typechecked
     def __init__(self,
-                 object_name,
-                 filters,
-                 spectrum,
-                 bounds):
+                 object_name: str,
+                 filters: Optional[List[str]],
+                 spectrum: str,
+                 bounds: Dict[str, Tuple[float, float]]) -> None:
         """
         Parameters
         ----------
         object_name : str
             Object name in the database.
-        filters : tuple(str, )
-            Filter IDs for which the photometry is selected. All available photometry of the
-            object is selected if set to None.
+        filters : list(str, )
+            Filter names for which the photometry is selected. All available photometry of the
+            object is selected if set to ``None``.
         spectrum : str
             Calibration spectrum.
         bounds : dict
-            Boundaries of the scaling parameter, as {'scaling':(min, max)}.
+            Boundaries of the scaling parameter, as ``{'scaling':(min, max)}``.
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         self.object = read_object.ReadObject(object_name)
@@ -127,11 +134,12 @@ class FitSpectrum:
 
         self.modelpar = ['scaling']
 
+    @typechecked
     def run_mcmc(self,
-                 nwalkers,
-                 nsteps,
-                 guess,
-                 tag):
+                 nwalkers: int,
+                 nsteps: int,
+                 guess: Dict[str, float],
+                 tag: str) -> None:
         """
         Function to run the MCMC sampler.
 
@@ -148,10 +156,13 @@ class FitSpectrum:
 
         Returns
         -------
-        None
+        NoneType
+            None
         """
 
         print('Running MCMC...')
+
+        ndim = 1
 
         initial = np.zeros((nwalkers, ndim))
         initial[:, 0] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)

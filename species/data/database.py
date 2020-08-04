@@ -985,8 +985,8 @@ class Database:
                     spectrum: Tuple[str, str],
                     tag: str,
                     modelpar: List[str],
-                    distance: float,
-                    spec_labels: List[Optional[str]]):
+                    distance: Optional[float],
+                    spec_labels: Optional[List[str]]):
         """
         Parameters
         ----------
@@ -1005,17 +1005,20 @@ class Database:
             Database tag.
         modelpar : list(str, )
             List with the model parameter names.
-        distance : float
+        distance : float, None
             Distance to the object (pc). Not used if set to ``None``.
-        spec_labels : list(str, )
+        spec_labels : list(str, ), None
             List with the spectrum labels that are used for fitting an additional scaling
-            parameter. Not used if an empty list is provided.
+            parameter. Not used if set to ``None``.
 
         Returns
         -------
         NoneType
             None
         """
+
+        if spec_labels is None:
+            spec_labels = []
 
         h5_file = h5py.File(self.database, 'a')
 
