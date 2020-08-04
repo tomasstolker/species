@@ -32,8 +32,8 @@ def plot_spectrum(boxes: list,
                   scale: Optional[Tuple[str, str]] = None,
                   title: Optional[str] = None,
                   offset: Optional[Tuple[float, float]] = None,
-                  legend: Union[str, dict, Tuple[float, float],
-                                List[Optional[Union[dict, str, Tuple[float, float]]]]] = None,
+                  legend: Optional[Union[str, dict, Tuple[float, float],
+                                   List[Optional[Union[dict, str, Tuple[float, float]]]]]] = None,
                   figsize: Optional[Tuple[float, float]] = (10., 5.),
                   object_type: str = 'planet',
                   quantity: str = 'flux density',
@@ -341,7 +341,6 @@ def plot_spectrum(boxes: list,
                     newline = False
 
                     for i, item in enumerate(par_key):
-
                         if item[:4] == 'teff':
                             value = f'{param[item]:.0f}'
 

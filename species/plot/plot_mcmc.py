@@ -18,7 +18,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from species.core import constants
 from species.data import database
-from species.util import plot_util, dust_util, retrieval_util
+from species.util import plot_util, dust_util, read_util, retrieval_util
 
 
 @typechecked
@@ -124,6 +124,7 @@ def plot_posterior(tag: str,
                    max_prob: bool = False,
                    vmr: bool = False,
                    inc_luminosity: bool = False,
+                   inc_mass: bool = False,
                    output: str = 'posterior.pdf') -> None:
     """
     Function to plot the posterior distribution of the fitted parameters.
@@ -150,6 +151,8 @@ def plot_posterior(tag: str,
     inc_luminosity : bool
         Include the log10 of the luminosity in the posterior plot as calculated from the
         effective temperature and radius.
+    inc_mass : bool
+        Include the mass in the posterior plot as calculated from the surface gravity and radius.
     output : str
         Output filename.
 
@@ -374,7 +377,22 @@ def plot_posterior(tag: str,
             # box.parameters.append('m_mdot')
             # ndim += 1
 
-    labels = plot_util.update_labels(samples_box.parameters)
+    if inc_mass:
+        if 'logg' in box.parameters and 'radius' in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == 'logg')[0]
+            radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+
+            
+            mass_samples = read_util.get_mass(samples[..., logg_index], samples[..., radius_index])
+
+            samples = np.append(samples, mass_samples, axis=-1)
+            box.parameters.append('mass')
+            ndim += 1
+
+        else:
+            warnings.warn('Samples with the log(g) and radius are required for \'inc_mass=True\'.')
+
+    labels = plot_util.update_labels(box.parameters)
 
     samples = samples.reshape((-1, ndim))
 

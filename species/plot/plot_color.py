@@ -37,7 +37,7 @@ def plot_color_magnitude(boxes: list,
                          xlim: Optional[Tuple[float, float]] = None,
                          ylim: Optional[Tuple[float, float]] = None,
                          offset: Optional[Tuple[float, float]] = None,
-                         legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                         legend: Optional[Union[str, dict, Tuple[float, float]]] = 'upper left',
                          output: str = 'color-magnitude.pdf') -> None:
     """
     Function for creating a color-magnitude diagram.
@@ -69,12 +69,14 @@ def plot_color_magnitude(boxes: list,
         to None.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
-    reddening : list(tuple(str, str, str, float, str, float, tuple(float, float)), None
+    reddening : list(tuple(tuple(str, str), tuple(str, float), str, float, tuple(float, float)), None
         Include reddening arrows by providing a list with tuples. Each tuple contains the filter
-        names for the color, the filter name for the magnitude, the particle radius (um), and the
-        start position (color, mag) of the arrow in the plot, so (filter_color_1, filter_color_2,
-        filter_mag, composition, radius, (x_pos, y_pos)). The composition can be either 'Fe' or
-        'MgSiO3' (both with crystalline structure). The parameter is not used if set to ``None``.
+        names for the color, the filter name and value of the magnitude, the particle radius (um),
+        and the start position (color, mag) of the arrow in the plot, so ``((filter_color_1,
+        filter_color_2), (filter_mag, mag_value), composition, radius, (x_pos, y_pos))``. The
+        composition can be either ``'Fe'`` or ``'MgSiO3'`` (both with crystalline structure). Both
+        ``xlim`` and ``ylim`` need to be set for the correct rotation of the reddening label. The
+        parameter is not used if set to ``None``.
     field_range : tuple(str, str), None
         Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
         and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
@@ -508,7 +510,7 @@ def plot_color_color(boxes: list,
                      xlim: Optional[Tuple[float, float]] = None,
                      ylim: Optional[Tuple[float, float]] = None,
                      offset: Optional[Tuple[float, float]] = None,
-                     legend: Union[str, dict, Tuple[float, float]] = 'upper left',
+                     legend: Optional[Union[str, dict, Tuple[float, float]]] = 'upper left',
                      output: str = 'color-color.pdf') -> None:
     """
     Function for creating a color-color diagram.
@@ -562,8 +564,8 @@ def plot_color_color(boxes: list,
         Limits for the y-axis.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
-    legend : str
-        Legend position.
+    legend : str, tuple(float, float), dict, None
+        Legend position or keyword arguments. No legend is shown if set to ``None``.
 
     Returns
     -------

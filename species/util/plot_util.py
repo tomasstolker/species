@@ -150,6 +150,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('radius')
         param[index] = r'$\mathregular{R}$ ($\mathregular{R_J}$)'
 
+    if 'mass' in param:
+        index = param.index('mass')
+        param[index] = r'$\mathregular{M}$ ($\mathregular{M_J}$)'
+
     if 'luminosity' in param:
         index = param.index('luminosity')
         param[index] = r'$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$'
@@ -455,6 +459,11 @@ def quantity_unit(param: List[str],
         quantity.append('luminosity')
         unit.append(None)
         label.append(r'$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$')
+
+    if 'ism_ext' in param:
+        quantity.append('ism_ext')
+        unit.append(None)
+        label.append(r'$\mathregular{A}_\mathregular{V}$')
 
     if 'lognorm_ext' in param:
         quantity.append('lognorm_ext')
