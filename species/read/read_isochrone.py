@@ -258,8 +258,8 @@ class ReadIsochrone:
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
-            Filter IDs for the colors as listed in the file with the isochrone data. The filter IDs
-            should be provided in the format of the SVO Filter Profile Service.
+            Filter names for the colors as listed in the file with the isochrone data. The filter
+            names should be provided in the format of the SVO Filter Profile Service.
 
         Returns
         -------
@@ -297,18 +297,25 @@ class ReadIsochrone:
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
                 mag2[i] = np.nan
+                mag3[i] = np.nan
+                mag4[i] = np.nan
 
             else:
                 for item_bounds in model1.get_bounds():
                     if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
+                        mag3[i] = np.nan
+                        mag4[i] = np.nan
 
                     elif model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
+                        mag3[i] = np.nan
+                        mag4[i] = np.nan
 
-                if not np.isnan(mag1[i]):
+                if not np.isnan(mag1[i]) and not np.isnan(mag2[i]) and\
+                        not np.isnan(mag3[i]) and not np.isnan(mag4[i]):
                     mag1[i], _ = model1.get_magnitude(model_param)
                     mag2[i], _ = model2.get_magnitude(model_param)
                     mag3[i], _ = model3.get_magnitude(model_param)
