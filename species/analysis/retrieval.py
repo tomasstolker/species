@@ -8,7 +8,7 @@ import json
 import time
 import warnings
 
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple, Union
 
 import pymultinest
 import numpy as np
@@ -43,7 +43,8 @@ class AtmosphericRetrieval:
                  cloud_species: Optional[list],
                  scattering: bool,
                  output_folder: str,
-                 wavel_range: Optional[Tuple[float, float]]) -> None:
+                 wavel_range: Optional[Tuple[float, float]],
+                 inc_spec: Union[bool, List[str]] = True) -> None:
         """
         Parameters
         ----------
@@ -63,6 +64,11 @@ class AtmosphericRetrieval:
             The wavelength range (um) of the forward model. Should be a bit broader than the
             minimum and maximum wavelength of the data. The wavelength range is set automatically
             if the argument is set to ``None``.
+        inc_spec : bool, list(str)
+            Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
+            (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
+            in the database with :func:`~species.data.database.Database.add_object`) can be
+            provided.
 
         Returns
         -------
@@ -143,10 +149,33 @@ class AtmosphericRetrieval:
 
         # get spectroscopic data
 
-        self.spectrum = self.object.get_spectrum()
+        if isinstance(inc_spec, bool):
+            if inc_spec:
+                # Select all filters if True
+                species_db = database.Database()
+                objectbox = species_db.get_object(object_name)
+                inc_spec = list(objectbox.spectrum.keys())
 
-        if self.spectrum is None:
-            raise ValueError('A spectrum is required for atmospheric retrieval.')
+            else:
+                inc_spec = []
+
+        if inc_spec:
+            # Select all spectra
+            self.spectrum = self.object.get_spectrum()
+
+            # Select the spectrum names that are not in inc_spec
+            spec_remove = []
+            for item in self.spectrum:
+                if item not in inc_spec:
+                    spec_remove.append(item)
+
+            # Remove the spectra that are not included in inc_spec
+            for item in spec_remove:
+                del self.spectrum[item]
+
+        if not inc_spec or self.spectrum is None:
+            raise ValueError('At least one spectrum is required for AtmosphericRetrieval. Please '
+                             'add a spectrum with the add_object method of Database. ')
 
         # set wavelength bins and add to spectrum dictionary
 
