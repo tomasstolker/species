@@ -332,31 +332,31 @@ def plot_posterior(tag: str,
             samples_box.parameters.append('luminosity')
             ndim += 1
 
-            # teff_index = np.argwhere(np.array(box.parameters) == 'teff_0')
-            # radius_index = np.argwhere(np.array(box.parameters) == 'radius_0')
+            # teff_index = np.argwhere(np.array(samples_box.parameters) == 'teff_0')
+            # radius_index = np.argwhere(np.array(samples_box.parameters) == 'radius_0')
             #
             # luminosity_0 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
             #     * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
             #
             # samples = np.append(samples, np.log10(luminosity_0), axis=-1)
-            # box.parameters.append('luminosity_0')
+            # samples_box.parameters.append('luminosity_0')
             # ndim += 1
             #
-            # teff_index = np.argwhere(np.array(box.parameters) == 'teff_1')
-            # radius_index = np.argwhere(np.array(box.parameters) == 'radius_1')
+            # teff_index = np.argwhere(np.array(samples_box.parameters) == 'teff_1')
+            # radius_index = np.argwhere(np.array(samples_box.parameters) == 'radius_1')
             #
             # luminosity_1 = 4. * np.pi * (samples[..., radius_index[0]]*constants.R_JUP)**2 \
             #     * constants.SIGMA_SB * samples[..., teff_index[0]]**4. / constants.L_SUN
             #
             # samples = np.append(samples, np.log10(luminosity_1), axis=-1)
-            # box.parameters.append('luminosity_1')
+            # samples_box.parameters.append('luminosity_1')
             # ndim += 1
             #
-            # teff_index_0 = np.argwhere(np.array(box.parameters) == 'teff_0')
-            # radius_index_0 = np.argwhere(np.array(box.parameters) == 'radius_0')
+            # teff_index_0 = np.argwhere(np.array(samples_box.parameters) == 'teff_0')
+            # radius_index_0 = np.argwhere(np.array(samples_box.parameters) == 'radius_0')
             #
-            # teff_index_1 = np.argwhere(np.array(box.parameters) == 'teff_1')
-            # radius_index_1 = np.argwhere(np.array(box.parameters) == 'radius_1')
+            # teff_index_1 = np.argwhere(np.array(samples_box.parameters) == 'teff_1')
+            # radius_index_1 = np.argwhere(np.array(samples_box.parameters) == 'radius_1')
             #
             # luminosity_0 = 4. * np.pi * (samples[..., radius_index_0[0]]*constants.R_JUP)**2 \
             #     * constants.SIGMA_SB * samples[..., teff_index_0[0]]**4. / constants.L_SUN
@@ -365,7 +365,7 @@ def plot_posterior(tag: str,
             #     * constants.SIGMA_SB * samples[..., teff_index_1[0]]**4. / constants.L_SUN
             #
             # samples = np.append(samples, np.log10(luminosity_0/luminosity_1), axis=-1)
-            # box.parameters.append('luminosity_ratio')
+            # samples_box.parameters.append('luminosity_ratio')
             # ndim += 1
 
             # r_tmp = samples[..., radius_index_0[0]]*constants.R_JUP
@@ -374,25 +374,25 @@ def plot_posterior(tag: str,
             # m_mdot = (3600.*24.*365.25)*lum_diff*r_tmp/constants.GRAVITY/constants.M_JUP**2
             #
             # samples = np.append(samples, m_mdot, axis=-1)
-            # box.parameters.append('m_mdot')
+            # samples_box.parameters.append('m_mdot')
             # ndim += 1
 
     if inc_mass:
-        if 'logg' in box.parameters and 'radius' in box.parameters:
-            logg_index = np.argwhere(np.array(box.parameters) == 'logg')[0]
-            radius_index = np.argwhere(np.array(box.parameters) == 'radius')[0]
+        if 'logg' in samples_box.parameters and 'radius' in samples_box.parameters:
+            logg_index = np.argwhere(np.array(samples_box.parameters) == 'logg')[0]
+            radius_index = np.argwhere(np.array(samples_box.parameters) == 'radius')[0]
 
             
             mass_samples = read_util.get_mass(samples[..., logg_index], samples[..., radius_index])
 
             samples = np.append(samples, mass_samples, axis=-1)
-            box.parameters.append('mass')
+            samples_box.parameters.append('mass')
             ndim += 1
 
         else:
             warnings.warn('Samples with the log(g) and radius are required for \'inc_mass=True\'.')
 
-    labels = plot_util.update_labels(box.parameters)
+    labels = plot_util.update_labels(samples_box.parameters)
 
     samples = samples.reshape((-1, ndim))
 
