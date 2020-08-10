@@ -214,7 +214,7 @@ class ReadRadtrans:
                 None, None, abund, half=True, chemistry='free', contribution=contribution)
 
         if 'radius' in model_param:
-            model_param['mass'] = read_util.get_mass(model_param)
+            model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
 
             if 'distance' in model_param:
                 scaling = (model_param['radius']*constants.R_JUP)**2 / \
