@@ -670,7 +670,8 @@ class ReadModel:
         if np.isnan(np.sum(flux)):
             warnings.warn(f'The resampled spectrum contains {np.sum(np.isnan(flux))} NaNs, '
                           f'probably because the original wavelength range does not fully '
-                          f'encompass the new wavelength range.')
+                          f'encompass the new wavelength range. The happened with the '
+                          f'following parameters: {model_param}.')
 
         if wavel_resample is None:
             wavelength = self.wl_points
@@ -874,6 +875,11 @@ class ReadModel:
             Uncertainty (W m-2 um-1), which is set to ``None``.
         """
 
+        for key in self.get_parameters():
+            if key not in model_param.keys():
+                raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
+                                 f'The mandatory parameters are {self.get_parameters()}.')
+
         if self.spectrum_interp is None:
             self.interpolate_model()
 
@@ -903,6 +909,11 @@ class ReadModel:
             Absolute magnitude. A ``None`` is returned if the ``model_param`` do not contain a
             ``radius`` and ``distance``.
         """
+
+        for key in self.get_parameters():
+            if key not in model_param.keys():
+                raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
+                                 f'The mandatory parameters are {self.get_parameters()}.')
 
         if self.spectrum_interp is None:
             self.interpolate_model()

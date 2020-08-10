@@ -109,6 +109,11 @@ def add_ames_dusty(input_path: str,
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
 
+                    # if np.isnan(np.sum(data_flux)):
+                        # Three of the files contain partially NaNs due to a more limited
+                        # wavelength coverage in the original spectra (before using spectres)
+                        # data_flux = np.full(data_wavel.shape[0], np.nan)
+
                     flux.append(data_flux)  # (W m-2 um-1)
 
                 else:

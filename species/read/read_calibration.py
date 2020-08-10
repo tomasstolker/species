@@ -5,10 +5,13 @@ Module with reading functionalities for calibration spectra.
 import os
 import configparser
 
+from typing import Optional, Dict, Tuple
+
 import h5py
 import spectres
 import numpy as np
 
+from typeguard import typechecked
 from scipy.optimize import curve_fit
 
 from species.analysis import photometry
@@ -22,16 +25,18 @@ class ReadCalibration:
     Class for reading a calibration spectrum from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 tag,
-                 filter_name=None):
+                 tag: str,
+                 filter_name: Optional[str] = None) -> None:
         """
         Parameters
         ----------
         tag : str
             Database tag of the calibration spectrum.
         filter_name : str, None
-            Filter ID that is used for the wavelength range. Full spectrum is used if set to None.
+            Filter name that is used for the wavelength range. Full spectrum is used if set to
+            ``None``.
 
         Returns
         -------
@@ -56,19 +61,20 @@ class ReadCalibration:
 
         self.database = config['species']['database']
 
+    @typechecked
     def resample_spectrum(self,
-                          wavel_points,
-                          model_param=None,
-                          apply_mask=False):
+                          wavel_points: np.ndarray,
+                          model_param: Optional[Dict[str, float]] = None,
+                          apply_mask: bool = False) -> box.SpectrumBox:
         """
         Function for resampling of a spectrum and uncertainties onto a new wavelength grid.
 
         Parameters
         ----------
-        wavel_points : numpy.ndarray
+        wavel_points : np.ndarray
             Wavelength points (um).
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to None.
+            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
         apply_mask : bool
             Exclude negative values and NaN values.
 
@@ -108,28 +114,29 @@ class ReadCalibration:
                               sptype=None,
                               distance=None)
 
+    @typechecked
     def get_spectrum(self,
-                     model_param=None,
-                     apply_mask=False,
-                     spec_res=None,
-                     extrapolate=False,
-                     min_wavelength=None):
+                     model_param: Optional[Dict[str, float]] = None,
+                     apply_mask: bool = False,
+                     spec_res: Optional[float] = None,
+                     extrapolate: bool = False,
+                     min_wavelength: Optional[float] = None) -> box.SpectrumBox:
         """
         Function for selecting the calibration spectrum.
 
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to None.
+            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
         apply_mask : bool
             Exclude negative values and NaN values.
         spec_res : float, None
-            Spectral resolution. Original wavelength points are used if set to None.
+            Spectral resolution. Original wavelength points are used if set to ``None``.
         extrapolate : bool
             Extrapolate to 6 um by fitting a power law function.
         min_wavelength : float, None
             Minimum wavelength used for fitting the power law function. All data is used if set
-            to None.
+            to ``None``.
 
         Returns
         -------
@@ -138,7 +145,7 @@ class ReadCalibration:
         """
 
         with h5py.File(self.database, 'r') as h5_file:
-            data = np.asarray(h5_file['spectra/calibration/'+self.tag])
+            data = np.asarray(h5_file[f'spectra/calibration/{self.tag}'])
 
             wavelength = np.asarray(data[0, ])
             flux = np.asarray(data[1, ])
@@ -193,7 +200,7 @@ class ReadCalibration:
 
             sigma = np.sqrt(np.diag(pcov))
 
-            print(f'Fit result for f(x) = a + b*x^c:')
+            print('Fit result for f(x) = a + b*x^c:')
             print(f'a = {popt[0]} +/- {sigma[0]}')
             print(f'b = {popt[1]} +/- {sigma[1]}')
             print(f'c = {popt[2]} +/- {sigma[2]}')
@@ -230,47 +237,51 @@ class ReadCalibration:
                               sptype=None,
                               distance=None)
 
+    @typechecked
     def get_flux(self,
-                 model_param=None):
+                 model_param: Optional[Dict[str, float]] = None) -> Tuple[float, float]:
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux for the ``filter_name``.
 
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to None.
+            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
 
         Returns
         -------
-        float
-            Average flux density (W m-2 um-1).
+        tuple(float, float)
+            Average flux and uncertainty (W m-2 um-1).
         """
 
         specbox = self.get_spectrum(model_param=model_param)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_flux(specbox.wavelength, specbox.flux)
+        return synphot.spectrum_to_flux(specbox.wavelength, specbox.flux, error=specbox.flux)
 
+    @typechecked
     def get_magnitude(self,
-                      model_param=None,
-                      distance=None):
+                      model_param: Optional[Dict[str, float]] = None,
+                      distance: Optional[Tuple[float, float]] = None) -> Tuple[
+                          Tuple[float, float], Tuple[Optional[float], Optional[float]]]:
         """
         Function for calculating the apparent magnitude for the ``filter_name``.
 
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to None.
-        distance : float, None
-            Distance to the calibration objects (pc).
+            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
+        distance : tuple(float, float), None
+            Distance and uncertainty to the calibration object (pc). Not used if set to ``None``,
+            in which case the returned absolute magnitude is ``(None, None)``.
 
         Returns
         -------
-        float
-            Apparent magnitude (mag).
-        float, None
-            Absolute magnitude (mag).
+        tuple(float, float)
+            Apparent magnitude and uncertainty.
+        tuple(float, float), tuple(None, None)
+            Absolute magnitude and uncertainty.
         """
 
         specbox = self.get_spectrum(model_param=model_param)
