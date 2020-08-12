@@ -131,7 +131,10 @@ class Database:
 
         with h5py.File(self.database, 'a') as hdf_file:
             if dataset in hdf_file:
+                print(f'Deleting data: {dataset}...', end='', flush=True)
                 del hdf_file[dataset]
+                print(' [DONE]')
+
             else:
                 warnings.warn(f'The dataset {dataset} is not found in {self.database}.')
 

@@ -2,23 +2,23 @@
 Module with functions for creating color-magnitude and color-color plot.
 """
 
-import os
 import math
+import os
 
-from typing import Union, Optional, Tuple, List
+from typing import List, Optional, Tuple, Union
 
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
-from typeguard import typechecked
-from scipy.interpolate import interp1d
 from matplotlib.colorbar import Colorbar
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import MultipleLocator
+from scipy.interpolate import interp1d
+from typeguard import typechecked
 
 from species.core import box
 from species.read import read_object
-from species.util import plot_util, dust_util
+from species.util import dust_util, plot_util
 
 
 @typechecked
@@ -157,8 +157,11 @@ def plot_color_magnitude(boxes: list,
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
-    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
-    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.xaxis.set_major_locator(MultipleLocator(1.))
+    ax1.yaxis.set_major_locator(MultipleLocator(1.))
+
+    ax1.xaxis.set_minor_locator(MultipleLocator(0.2))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.2))
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
@@ -622,8 +625,11 @@ def plot_color_color(boxes: list,
                     direction='in', width=1, length=3, labelsize=12, top=True,
                     bottom=True, left=True, right=True)
 
-    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
-    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.xaxis.set_major_locator(MultipleLocator(0.5))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.5))
+
+    ax1.xaxis.set_minor_locator(MultipleLocator(0.1))
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.1))
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)

@@ -349,9 +349,13 @@ def plot_spectrum(boxes: list,
                             value = f'{param[item]:.2f}'
 
                         elif item[:6] == 'radius':
-
                             if object_type == 'planet':
                                 value = f'{param[item]:.1f}'
+
+                                # if item == 'radius_1':
+                                #     value = f'{param[item]:.0f}'
+                                # else:
+                                #     value = f'{param[item]:.1f}'
 
                             elif object_type == 'star':
                                 value = f'{param[item]*constants.R_JUP/constants.R_SUN:.1f}'
@@ -359,11 +363,12 @@ def plot_spectrum(boxes: list,
                         elif item == 'mass':
                             if object_type == 'planet':
                                 value = f'{param[item]:.2f}'
+
                             elif object_type == 'star':
                                 value = f'{param[item]*constants.M_JUP/constants.M_SUN:.2f}'
 
                         elif item == 'luminosity':
-                            value = f'{np.log10(param[item]):.1f}'
+                            value = f'{np.log10(param[item]):.2f}'
 
                         else:
                             continue
@@ -768,6 +773,9 @@ def plot_spectrum(boxes: list,
     #         ax1.text(filter_wavelength, 1.4, 'NB4.05', ha='center', va='center', fontsize=10, color='black')
     #     elif i == 8:
     #         ax1.text(filter_wavelength, 1.4, 'M$\'}$', ha='center', va='center', fontsize=10, color='black')
+    #
+    # ax1.text(1.26, 0.58, 'VLT/SPHERE', ha='center', va='center', fontsize=8., color='slateblue', rotation=43.)
+    # ax1.text(2.5, 1.28, 'VLT/SINFONI', ha='left', va='center', fontsize=8., color='darkgray')
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

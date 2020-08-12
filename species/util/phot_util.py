@@ -128,8 +128,13 @@ def apparent_to_absolute(app_mag: Union[Tuple[float, Optional[float]],
     return abs_mag, abs_err
 
 
-def absolute_to_apparent(abs_mag,
-                         distance):
+@typechecked
+def absolute_to_apparent(abs_mag: Union[Tuple[float, Optional[float]],
+                                        Tuple[np.ndarray, Optional[np.ndarray]]],
+                         distance: Union[Tuple[float, float],
+                                         Tuple[np.ndarray, np.ndarray]]) -> \
+                             Union[Tuple[float, Optional[float]],
+                                   Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
     Function for converting an absolute magnitude into an apparent magnitude.
 

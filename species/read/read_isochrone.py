@@ -62,11 +62,11 @@ class ReadIsochrone:
         masses : np.ndarray
             Masses (Mjup) at which the isochrone data is interpolated.
         filters_color : tuple(str, str), None
-            Filter IDs for the color as listed in the file with the isochrone data. Not selected if
-            set to ``None`` or if only evolutionary tracks are available.
+            Filter names for the color as listed in the file with the isochrone data. Not selected
+            if set to ``None`` or if only evolutionary tracks are available.
         filter_mag : str, None
-            Filter ID for the absolute magnitude as listed in the file with the isochrone data. Not
-            selected if set to ``None`` or if only evolutionary tracks are available.
+            Filter name for the absolute magnitude as listed in the file with the isochrone data.
+            Not selected if set to ``None`` or if only evolutionary tracks are available.
 
         Returns
         -------
@@ -166,11 +166,11 @@ class ReadIsochrone:
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_color : tuple(str, str)
-            Filter IDs for the color as listed in the file with the isochrone data. The filter IDs
-            should be provided in the format of the SVO Filter Profile Service.
+            Filter names for the color as listed in the file with the isochrone data. The filter
+            names should be provided in the format of the SVO Filter Profile Service.
         filter_mag : str
-            Filter ID for the absolute magnitude as listed in the file with the isochrone data. The
-            value should be equal to one of the ``filters_color`` values.
+            Filter name for the absolute magnitude as listed in the file with the isochrone data.
+            The value should be equal to one of the ``filters_color`` values.
 
         Returns
         -------

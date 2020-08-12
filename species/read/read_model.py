@@ -793,7 +793,7 @@ class ReadModel:
 
         for item in param_key:
             data = np.asarray(h5_file[f'models/{self.model}/{item}'])
-            data_index = np.argwhere(data == model_param[item])[0]
+            data_index = np.argwhere(np.round(data, 4) == np.round(model_param[item], 4))[0]
 
             if len(data_index) == 0:
                 raise ValueError('The parameter {item}={model_val[i]} is not found.')
