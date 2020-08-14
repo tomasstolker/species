@@ -442,6 +442,8 @@ def plot_spectrum(boxes: list,
                     ax1.plot(wavelength, flux_scaling*masked/scaling, color='gray', lw=0.2, alpha=0.5, zorder=1)
 
         elif isinstance(boxitem, box.PhotometryBox):
+            label_check = []
+
             for i, item in enumerate(boxitem.wavelength):
                 transmission = read_filter.ReadFilter(boxitem.filter_name[i])
                 fwhm = transmission.filter_fwhm()
@@ -450,12 +452,29 @@ def plot_spectrum(boxes: list,
                     flux_scaling = item
 
                 if plot_kwargs[j]:
-                    ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
-                                 yerr=flux_scaling*boxitem.flux[i][1]/scaling, zorder=3, **plot_kwargs[j])
+                    if 'label' in plot_kwargs[j] and plot_kwargs[j]['label'] not in label_check:
+                        label_check.append(plot_kwargs[j]['label'])
+
+                    elif 'label' in plot_kwargs[j] and plot_kwargs[j]['label'] in label_check:
+                        del plot_kwargs[j]['label']
+
+                    if boxitem.flux[i][1] is None:
+                        ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                     yerr=None, zorder=3, **plot_kwargs[j])
+
+                    else:
+                        ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                     yerr=flux_scaling*boxitem.flux[i][1]/scaling, zorder=3, **plot_kwargs[j])
+
                 else:
-                    ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
-                                 yerr=flux_scaling*boxitem.flux[i][1]/scaling, marker='s', ms=6, color='black',
-                                 zorder=3)
+                    if boxitem.flux[i][1] is None:
+                        ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                     yerr=None, marker='s', ms=6, color='black', zorder=3)
+
+                    else:
+                        ax1.errorbar(item, flux_scaling*boxitem.flux[i][0]/scaling, xerr=fwhm/2.,
+                                     yerr=flux_scaling*boxitem.flux[i][1]/scaling, marker='s', ms=6, color='black',
+                                     zorder=3)
 
         elif isinstance(boxitem, box.ObjectBox):
             if boxitem.spectrum is not None:
