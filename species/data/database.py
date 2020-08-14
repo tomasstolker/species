@@ -824,8 +824,9 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_photometry(self,
-                       phot_library):
+                       phot_library: str) -> None:
         """
         Parameters
         ----------
@@ -854,12 +855,13 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def add_calibration(self,
-                        tag,
-                        filename=None,
-                        data=None,
-                        units=None,
-                        scaling=None):
+                        tag: str,
+                        filename: Optional[str] = None,
+                        data: Optional[np.ndarray] = None,
+                        units: Optional[Dict[str, str]] = None,
+                        scaling: Optional[Tuple[float, float]] = None) -> None:
         """
         Function for adding a calibration spectrum to the database.
 
@@ -870,17 +872,18 @@ class Database:
         filename : str, None
             Filename with the calibration spectrum. The first column should contain the wavelength
             (um), the second column the flux density (W m-2 um-1), and the third column
-            the error (W m-2 um-1). The `data` argument is used if set to None.
+            the error (W m-2 um-1). The ``data`` argument is used if set to ``None``.
         data : np.ndarray, None
-            Spectrum stored as 3D array with shape (n_wavelength, 3). The first column should
+            Spectrum stored as 3D array with shape ``(n_wavelength, 3)``. The first column should
             contain the wavelength (um), the second column the flux density (W m-2 um-1),
-            and the third column the error (W m-2 um-1).
+            and the third column the error (W m-2 um-1). The ``filename`` argument is used if set
+            to ``None``.
         units : dict, None
-            Dictionary with the wavelength and flux units. Default (um and W m-2 um-1) is
-            used if set to None.
-        scaling : tuple(float, float)
-            Scaling for the wavelength and flux as (scaling_wavelength, scaling_flux). Not used if
-            set to None.
+            Dictionary with the wavelength and flux units, e.g. ``{'wavelength': 'angstrom',
+            'flux': 'w m-2'}``. The default units (um and W m-2 um-1) are used if set to ``None``.
+        scaling : tuple(float, float), None
+            Scaling for the wavelength and flux as ``(scaling_wavelength, scaling_flux)``. Not used
+            if set to ``None``.
 
         Returns
         -------
@@ -913,8 +916,12 @@ class Database:
             if units['wavelength'] == 'um':
                 wavelength = scaling[0]*data[:, 0]  # (um)
 
+            elif units['wavelength'] == 'angstrom':
+                wavelength = scaling[0]*data[:, 0]*1e-4  # (um)
+
             if units['flux'] == 'w m-2 um-1':
                 flux = scaling[1]*data[:, 1]  # (W m-2 um-1)
+
             elif units['flux'] == 'w m-2':
                 if units['wavelength'] == 'um':
                     flux = scaling[1]*data[:, 1]/wavelength  # (W m-2 um-1)
@@ -926,6 +933,7 @@ class Database:
             else:
                 if units['flux'] == 'w m-2 um-1':
                     error = scaling[1]*data[:, 2]  # (W m-2 um-1)
+
                 elif units['flux'] == 'w m-2':
                     if units['wavelength'] == 'um':
                         error = scaling[1]*data[:, 2]/wavelength  # (W m-2 um-1)
