@@ -797,19 +797,13 @@ class AtmosphericRetrieval:
 
             if 'ism_ext' in bounds:
                 ism_ext = bounds['ism_ext'][0] + (bounds['ism_ext'][1]-bounds['ism_ext'][0])*cube[cube_index['ism_ext']]
-            else:
-                # default: 0 - 5 mag
-                ism_ext = 5.*cube[cube_index['ism_ext']]
 
-            cube[cube_index['ism_ext']] = ism_ext
+                cube[cube_index['ism_ext']] = ism_ext
 
             if 'ism_red' in bounds:
                 ism_red = bounds['ism_red'][0] + (bounds['ism_red'][1]-bounds['ism_red'][0])*cube[cube_index['ism_red']]
-            else:
-                # default: 0 - 5
-                ism_red = 5.*cube[cube_index['ism_red']]
 
-            cube[cube_index['ism_red']] = ism_ext
+                cube[cube_index['ism_red']] = ism_red
 
         @typechecked
         def loglike(cube,
