@@ -1792,9 +1792,9 @@ class Database:
                 model_param['t1'] = item[t1_index]
                 model_param['t2'] = item[t2_index]
                 model_param['t3'] = item[t3_index]
-                model_param['log_delta_index'] = item[log_delta_index]
-                model_param['alpha_index'] = item[alpha_index]
-                model_param['tint_index'] = item[tint_index]
+                model_param['log_delta'] = item[log_delta_index]
+                model_param['alpha'] = item[alpha_index]
+                model_param['tint'] = item[tint_index]
 
             elif pt_profile in ['free', 'monotonic']:
                 for i in range(15):

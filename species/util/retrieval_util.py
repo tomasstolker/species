@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d, CubicSpline
+from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
 
 from petitRADTRANS.radtrans import Radtrans as Radtrans
@@ -225,7 +225,7 @@ def pt_ret_model(T3: np.ndarray,
         # Make the temperature spline interpolation to be returned to the user
         # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
 
-        cs = CubicSpline(np.log10(support_points), t_support)
+        cs = PchipInterpolator(np.log10(support_points), t_support)
         tret = cs(np.log10(press_cgs))
 
     # Return the temperature, the pressure at tau = 1, and the temperature at the connection point.
@@ -238,6 +238,8 @@ def pt_spline_interp(knot_press: np.ndarray,
                      knot_temp: np.ndarray,
                      pressure: np.ndarray) -> np.ndarray:
     """
+    Function for interpolating the P/T knots with a PCHIP 1-D monotonic cubic interpolation.
+
     Parameters
     ----------
     knot_press : np.ndarray
@@ -253,7 +255,7 @@ def pt_spline_interp(knot_press: np.ndarray,
         Interpolated temperature points.
     """
 
-    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
+    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
 
     return pt_interp(np.log10(pressure))
 
