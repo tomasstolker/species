@@ -1,31 +1,39 @@
+"""
+Module for plotting atmospheric retrieval results.
+"""
+
+from typing import Optional, Tuple
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from typeguard import typechecked
 from petitRADTRANS_ck_test_speed import nat_cst as nc
 
 from species.data import database
 from species.util import retrieval_util
 
 
-def plot_pt_profile(tag,
-                    random=100,
-                    xlim=None,
-                    ylim=None,
-                    offset=None,
-                    output='pt_profile.pdf'):
+@typechecked
+def plot_pt_profile(tag: str,
+                    random: int = 100,
+                    xlim: Optional[Tuple[float, float]] = None,
+                    ylim: Optional[Tuple[float, float]] = None,
+                    offset: Optional[Tuple[float, float]] = None,
+                    output: str = 'pt_profile.pdf') -> None:
     """
     Function to plot the posterior distribution.
 
     Parameters
     ----------
     tag : str
-        Database tag with the MCMC samples.
+        Database tag with the posterior samples.
     random : int
         Number of randomly selected samples from the posterior.
-    xlim : tuple(float, float)
+    xlim : tuple(float, float), None
         Limits of the wavelength axis.
-    ylim : tuple(float, float)
+    ylim : tuple(float, float), None
         Limits of the flux axis.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
@@ -119,7 +127,7 @@ def plot_pt_profile(tag,
         log_delta_index = np.argwhere(parameters == 'log_delta')[0]
 
     else:
-        pt_profile = 'line'
+        pt_profile = 'free'
 
         temp_index = []
         for i in range(15):
@@ -137,7 +145,7 @@ def plot_pt_profile(tag,
                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
                 item[metallicity_index][0], item[c_o_ratio_index][0])
 
-        elif pt_profile == 'line':
+        elif pt_profile == 'free':
             knot_temp = []
             for i in range(15):
                 knot_temp.append(item[temp_index[i]][0])
@@ -153,12 +161,14 @@ def plot_pt_profile(tag,
             np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
             median['alpha'], median['tint'], pressure, median['metallicity'], median['c_o_ratio'])
 
-    elif pt_profile == 'line':
+    elif pt_profile == 'free':
         knot_temp = []
         for i in range(15):
             knot_temp.append(median[f't{i}'])
 
         knot_temp = np.asarray(knot_temp)
+
+        ax.plot(knot_temp, knot_press, 'o', ms=5., mew=0., color='tomato', zorder=3.)
 
         temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 

@@ -20,6 +20,14 @@ species.plot.plot\_mcmc module
    :undoc-members:
    :show-inheritance:
 
+species.plot.plot\_retrieval module
+-----------------------------------
+
+.. automodule:: species.plot.plot_retrieval
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.plot.plot\_spectrum module
 ----------------------------------
 

@@ -28,6 +28,14 @@ species.analysis.photometry module
    :undoc-members:
    :show-inheritance:
 
+species.analysis.retrieval module
+---------------------------------
+
+.. automodule:: species.analysis.retrieval
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

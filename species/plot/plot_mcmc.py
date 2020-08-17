@@ -126,6 +126,7 @@ def plot_posterior(tag: str,
                    vmr: bool = False,
                    inc_luminosity: bool = False,
                    inc_mass: bool = False,
+                   inc_pt_param: bool = False,
                    output: str = 'posterior.pdf') -> None:
     """
     Function to plot the posterior distribution of the fitted parameters.
@@ -156,6 +157,9 @@ def plot_posterior(tag: str,
         effective temperature and radius.
     inc_mass : bool
         Include the mass in the posterior plot as calculated from the surface gravity and radius.
+    inc_pt_param : bool
+        Include the parameters of the pressure-temperature profile. Only used if the ``tag``
+        contains samples obtained with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
     output : str
         Output filename.
 
@@ -177,6 +181,37 @@ def plot_posterior(tag: str,
 
     samples_box = species_db.get_samples(tag, burnin=burnin)
     samples = samples_box.samples
+
+    ndim = len(samples_box.parameters)
+
+    if not inc_pt_param and samples_box.spectrum == 'petitradtrans':
+        pt_param = ['tint', 't1', 't2', 't3', 'alpha', 'log_delta']
+
+        index_del = []
+        item_del = []
+
+        for i in range(100):
+            pt_item = f't{i}'
+
+            if pt_item in samples_box.parameters:
+                param_index = np.argwhere(np.array(samples_box.parameters) == pt_item)[0]
+                index_del.append(param_index)
+                item_del.append(pt_item)
+
+            else:
+                break
+
+        for item in pt_param:
+            if item in samples_box.parameters and item not in item_del:
+                param_index = np.argwhere(np.array(samples_box.parameters) == item)[0]
+                index_del.append(param_index)
+                item_del.append(item)
+
+        samples = np.delete(samples, index_del, axis=1)
+        ndim -= len(index_del)
+
+        for item in item_del:
+            samples_box.parameters.remove(item)
 
     if 'H2O' in samples_box.parameters:
         samples_box.parameters.append('c_h_ratio')
@@ -234,7 +269,8 @@ def plot_posterior(tag: str,
 
             c_h_ratio[i], o_h_ratio[i] = retrieval_util.calc_metal_ratio(abund)
 
-    if vmr and samples_box.spectrum == 'petitradtrans' and 'metallicity' not in samples_box.parameters:
+    if vmr and samples_box.spectrum == 'petitradtrans' and \
+            'metallicity' not in samples_box.parameters:
         print('Changing mass fractions to number fractions...', end='', flush=True)
 
         # get all available line species
@@ -270,7 +306,8 @@ def plot_posterior(tag: str,
                     param_index = samples_box.parameters.index(param_item)
 
                     # overwrite the sample with the log10 number fraction
-                    samples_item[param_index] = np.log10(10.**samples_item[param_index] * mmw/masses[param_item])
+                    samples_item[param_index] = np.log10(10.**samples_item[param_index] *
+                                                         mmw/masses[param_item])
 
             # store the updated sample to the array
             updated_samples[i, ] = samples_item
@@ -299,8 +336,6 @@ def plot_posterior(tag: str,
             samples_box.samples[:, param_index] *= 1e3
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
-
-    ndim = len(samples_box.parameters)
 
     if 'H2O' in samples_box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
