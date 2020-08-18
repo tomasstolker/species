@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 from typeguard import typechecked
 from petitRADTRANS_ck_test_speed import nat_cst as nc
+from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+    interpol_abundances
 
 from species.data import database
 from species.util import retrieval_util
@@ -173,6 +175,32 @@ def plot_pt_profile(tag: str,
         temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
+
+    if 'metallicity' in parameters and 'c_o_ratio' in parameters:
+        if 'log_p_quench' in median:
+            quench_press = 10.**median['log_p_quench']
+        else:
+            quench_press = None
+
+        abund = interpol_abundances(np.full(pressure.shape[0], median['c_o_ratio']),
+                                    np.full(pressure.shape[0], median['metallicity']),
+                                    temp,
+                                    pressure,
+                                    Pquench_carbon=quench_press)
+
+        if 'fe_fraction' in median:
+            sat_press, sat_temp = retrieval_util.return_T_cond_Fe_comb(median['metallicity'],
+                                                                       median['c_o_ratio'],
+                                                                       MMW=np.mean(abund['MMW']))
+
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='black', zorder=2)
+
+        if 'mgsio3_fraction' in median:
+            sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(median['metallicity'],
+                                                                      median['c_o_ratio'],
+                                                                      MMW=np.mean(abund['MMW']))
+
+            ax.plot(sat_temp, sat_press, '-.', lw=0.8, color='black', zorder=2)
 
     plt.savefig(output, bbox_inches='tight')
     plt.clf()

@@ -1333,12 +1333,21 @@ def return_T_cond_Fe(FeH: float,
                      CO: float,
                      MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for solid Fe.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     masses = atomic_masses()
@@ -1358,12 +1367,21 @@ def return_T_cond_Fe_l(FeH: float,
                        CO: float,
                        MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for liquid Fe.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     masses = atomic_masses()
@@ -1383,12 +1401,21 @@ def return_T_cond_Fe_comb(FeH: float,
                           CO: float,
                           MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for Fe.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     P1, T1 = return_T_cond_Fe(FeH, CO, MMW)
@@ -1407,12 +1434,21 @@ def return_T_cond_MgSiO3(FeH: float,
                          CO: float,
                          MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for MgSiO3.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     masses = atomic_masses()
@@ -1434,12 +1470,21 @@ def return_T_cond_Na2S(FeH: float,
                        CO: float,
                        MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for Na2S.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     masses = atomic_masses()
@@ -1466,12 +1511,21 @@ def return_T_cond_KCl(FeH: float,
                       CO: float,
                       MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
     """
+    Function for calculating the saturation pressure for KCl.
+
     Parameters
     ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
 
     Returns
     -------
-
+    tuple(np.ndarray, np.ndarray)
+        Arrays with the saturation pressure and temperature.
     """
 
     masses = atomic_masses()
