@@ -691,58 +691,71 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        quenching: np.bool_,
                        spec_res: float,
                        read_rad: read_radtrans.ReadRadtrans,
-                       item: np.ndarray) -> box.ModelBox:
+                       sample: np.ndarray) -> box.ModelBox:
     """
     Function for calculating a petitRADTRANS spectrum from a posterior sample.
 
     Parameters
     ----------
-    cor_matrix : np.ndarray
-        Correlation matrix of the spectrum.
-    spec_sigma : np.ndarray
-        Uncertainties (W m-2 um-1).
+    indices : dict
+        Dictionary with the parameter indices for ``sample``.
+    chemistry : str
+        Chemistry type (``'equilibrium'`` or ``'free'``).
+    pt_profile : str
+        Pressure-temperature parametrization (``'molliere'``, ``'monotonic'``, or ``'free'``).
+    line_species : list(str)
+        List with the line species.
+    cloud_species : list(str)
+        List with the cloud species.
+    quenching : bool
+        Use a quenching pressure for CH4/CO.
+    spec_res : float
+        Spectral resolution.
+    read_rad : read_radtrans.ReadRadtrans
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+    sample : np.ndarray
+        Parameter values with their order given by the ``indices``.
 
     Returns
     -------
-    np.ndarrays
-        Covariance matrix of the spectrum.
+    box.ModelBox
+        Box with the petitRADTRANS spectrum.
     """
 
     model_param = {}
-    model_param['logg'] = item[indices['logg']]
+    model_param['logg'] = sample[indices['logg']]
 
     if pt_profile == 'molliere':
-        model_param['t1'] = item[indices['t1']]
-        model_param['t2'] = item[indices['t2']]
-        model_param['t3'] = item[indices['t3']]
-        model_param['log_delta'] = item[indices['log_delta']]
-        model_param['alpha'] = item[indices['alpha']]
-        model_param['tint'] = item[indices['tint']]
+        model_param['t1'] = sample[indices['t1']]
+        model_param['t2'] = sample[indices['t2']]
+        model_param['t3'] = sample[indices['t3']]
+        model_param['log_delta'] = sample[indices['log_delta']]
+        model_param['alpha'] = sample[indices['alpha']]
+        model_param['tint'] = sample[indices['tint']]
 
     elif pt_profile in ['free', 'monotonic']:
         for j in range(15):
-            model_param[f't{j}'] = item[indices[f't{j}']]
+            model_param[f't{j}'] = sample[indices[f't{j}']]
 
     if quenching:
-        model_param['log_p_quench'] = item[indices['log_p_quench']]
+        model_param['log_p_quench'] = sample[indices['log_p_quench']]
 
     if chemistry == 'equilibrium':
-        model_param['c_o_ratio'] = item[indices['c_o_ratio']]
-        model_param['metallicity'] = item[indices['metallicity']]
+        model_param['c_o_ratio'] = sample[indices['c_o_ratio']]
+        model_param['metallicity'] = sample[indices['metallicity']]
 
     elif chemistry == 'free':
         for species_item in line_species:
-            species_item_index = np.argwhere(parameters == species_item)[0][0]
-            model_param[species_item] = item[indices[species_item]]
+            model_param[species_item] = sample[indices[species_item]]
 
     if len(cloud_species) > 0:
-        model_param['fsed'] = item[indices['fsed']]
-        model_param['kzz'] = item[indices['kzz']]
-        model_param['sigma_lnorm'] = item[indices['sigma_lnorm']]
+        model_param['fsed'] = sample[indices['fsed']]
+        model_param['kzz'] = sample[indices['kzz']]
+        model_param['sigma_lnorm'] = sample[indices['sigma_lnorm']]
 
         for cloud_item in cloud_species:
             cloud_param = f'{cloud_item[:-3].lower()}_fraction'
-            model_param[cloud_param] = item[indices[cloud_param]]
+            model_param[cloud_param] = sample[indices[cloud_param]]
 
     model_box = read_rad.get_model(model_param,
                                    spec_res=spec_res,

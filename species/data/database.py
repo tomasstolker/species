@@ -1801,9 +1801,6 @@ class Database:
             cloud_param = f'{item[:-6].lower()}_fraction'
             indices[cloud_param] = np.argwhere(parameters == cloud_param)[0][0]
 
-        # create 180 pressure layers in log space
-        # pressure = np.logspace(-6, 3, 180)
-
         indices['logg'] = np.argwhere(parameters == 'logg')[0][0]
 
         if chemistry == 'equilibrium':
@@ -1824,8 +1821,6 @@ class Database:
         elif pt_profile in ['free', 'monotonic']:
             for i in range(15):
                 indices[f't{i}'] = np.argwhere(parameters == f't{i}')[0][0]
-
-            # knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
         if len(cloud_species) > 0:
             indices['fsed'] = np.argwhere(parameters == 'fsed')[0][0]
@@ -1880,6 +1875,6 @@ class Database:
         #     boxes.append(item.get(timeout=30))
         #     print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
 
-        print(f' [DONE]')
+        print(' [DONE]')
 
         return boxes, read_rad
