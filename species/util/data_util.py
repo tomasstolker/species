@@ -693,6 +693,8 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        read_rad: read_radtrans.ReadRadtrans,
                        item: np.ndarray) -> box.ModelBox:
     """
+    Function for calculating a petitRADTRANS spectrum from a posterior sample.
+
     Parameters
     ----------
     cor_matrix : np.ndarray

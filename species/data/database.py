@@ -4,7 +4,7 @@ Module with functionalities for reading and writing of data.
 
 import configparser
 import json
-import multiprocessing
+# import multiprocessing
 import os
 import warnings
 
@@ -1839,32 +1839,47 @@ class Database:
                                               scattering=scattering,
                                               wavel_range=wavel_range)
 
-        pool = multiprocessing.Pool(os.cpu_count())
-
-        processes = []
-
-        for item in samples:
-            proc = pool.apply_async(data_util.retrieval_spectrum,
-                                    args=(indices,
-                                          chemistry,
-                                          pt_profile,
-                                          line_species,
-                                          cloud_species,
-                                          quenching,
-                                          spec_res,
-                                          read_rad,
-                                          item))
-
-            processes.append(proc)
-
-        pool.close()
-
-        boxes = []
-
         n_total = samples.shape[0]
 
-        for i, item in enumerate(processes):
-            boxes.append(item.get(timeout=30))
+        # pool = multiprocessing.Pool(os.cpu_count())
+
+        # processes = []
+        boxes = []
+
+        for i, item in enumerate(samples):
+            model_box = data_util.retrieval_spectrum(indices,
+                                                     chemistry,
+                                                     pt_profile,
+                                                     line_species,
+                                                     cloud_species,
+                                                     quenching,
+                                                     spec_res,
+                                                     read_rad,
+                                                     item)
+
+            boxes.append(model_box)
+
             print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
+
+            # proc = pool.apply_async(data_util.retrieval_spectrum,
+            #                         args=(indices,
+            #                               chemistry,
+            #                               pt_profile,
+            #                               line_species,
+            #                               cloud_species,
+            #                               quenching,
+            #                               spec_res,
+            #                               read_rad,
+            #                               item))
+            #
+            # processes.append(proc)
+
+        # pool.close()
+
+        # for i, item in enumerate(processes):
+        #     boxes.append(item.get(timeout=30))
+        #     print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
+
+        print(f' [DONE]')
 
         return boxes, read_rad
