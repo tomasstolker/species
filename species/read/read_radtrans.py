@@ -69,13 +69,6 @@ class ReadRadtrans:
         elif self.wavel_range is None:
             self.wavel_range = (0.8, 10.)
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
-
-        config = configparser.ConfigParser()
-        config.read_file(open(config_file))
-
-        self.database = config['species']['database']
-
         if line_species is None:
             self.line_species = []
         else:

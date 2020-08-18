@@ -2,24 +2,22 @@
 Module with functionalities for reading and writing of data.
 """
 
-import os
-import json
-import warnings
 import configparser
+import json
+import multiprocessing
+import os
+import warnings
 
-from typing import Optional, Union, List, Tuple, Dict
+from typing import Dict, List, Optional, Tuple, Union
 
-import h5py
-import tqdm
 import emcee
+import h5py
 import numpy as np
+import tqdm
 
-from typeguard import typechecked
 from astropy.io import fits
-
-from petitRADTRANS.radtrans import Radtrans
-from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
+from scipy.integrate import simps
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -28,7 +26,6 @@ from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, le
                          ames_cond, isochrones, petitcode, exo_rem, dust
 from species.read import read_model, read_calibration, read_planck, read_radtrans
 from species.util import data_util
-from species.util import data_util, retrieval_util
 
 
 class Database:
@@ -1577,16 +1574,26 @@ class Database:
                               prob_sample=prob_sample,
                               median_sample=median_sample)
 
+    @typechecked
     def add_retrieval(self,
-                      tag,
-                      output_folder):
+                      tag: str,
+                      output_folder: str,
+                      inc_teff: bool = False) -> None:
         """
+        Function for adding the output data from the atmospheric retrieval with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval` to the database.
+
         Parameters
         ----------
         tag : str
             Database tag.
         output_folder : str
             Output folder that was used for the output files by ``MultiNest``.
+        inc_teff : bool
+            Calculate Teff for each sample by integrating the model spectrum from 0.5 to 50 um.
+            The Teff samples are added to the array with samples that are stored in the database.
+            The computation time for adding Teff will be long because the spectra need to be
+            calculated and integrated for all samples.
 
         Returns
         -------
@@ -1671,20 +1678,55 @@ class Database:
 
         print(' [DONE]')
 
+        if inc_teff:
+            print('Calculating Teff from the posterior samples... ')
+
+            boxes, _ = self.get_retrieval_spectra(tag=tag,
+                                                  random=None,
+                                                  wavel_range=(0.5, 50.),
+                                                  spec_res=100.)
+
+            teff = np.zeros(len(boxes))
+
+            for i, box_item in enumerate(boxes):
+                # flux = sigma * Teff^4
+                teff[i] = (simps(box_item.flux, x=box_item.wavelength)/constants.SIGMA_SB)**0.25
+
+            db_tag = f'results/fit/{tag}/samples'
+
+            with h5py.File(self.database, 'a') as h5_file:
+                dset_attrs = h5_file[db_tag].attrs
+
+                samples = np.asarray(h5_file[db_tag])
+                samples = np.append(samples, teff[..., np.newaxis], axis=1)
+
+                del h5_file[db_tag]
+                dset = h5_file.create_dataset(db_tag, data=samples)
+
+                for item in dset_attrs:
+                    dset.attrs[item] = dset_attrs[item]
+
+                n_param = dset_attrs['n_param'] + 1
+
+                dset.attrs['n_param'] = n_param
+                dset.attrs[f'parameter{n_param-1}'] = 'teff'
+
+    @staticmethod
     @typechecked
-    def get_retrieval_spectra(self,
-                              tag: str,
-                              random: int,
+    def get_retrieval_spectra(tag: str,
+                              random: Optional[int],
                               wavel_range: Union[Tuple[float, float], str],
                               spec_res: Optional[float] = None) -> Tuple[
                                   List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
+        Function for extracting random spectra from the atmospheric retrieval posterior.
+
         Parameters
         ----------
         tag : str
-            Database tag with the MCMC samples.
-        random : int
-            Number of randomly selected samples.
+            Database tag with the posterior samples.
+        random : int, None
+            Number of randomly selected samples. All samples are used if set to ``None``.
         wavel_range : tuple(float, float), str
             Wavelength range (um) or filter name.
         spec_res : float, None
@@ -1699,6 +1741,8 @@ class Database:
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
 
+        indices = {}
+
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
         config = configparser.ConfigParser()
@@ -1708,9 +1752,6 @@ class Database:
 
         h5_file = h5py.File(database_path, 'r')
         dset = h5_file[f'results/fit/{tag}/samples']
-
-        spectrum_type = dset.attrs['type']
-        spectrum_name = dset.attrs['spectrum']
 
         if 'n_param' in dset.attrs:
             n_param = dset.attrs['n_param']
@@ -1727,15 +1768,16 @@ class Database:
         pt_profile = dset.attrs['pt_profile']
         chemistry = dset.attrs['chemistry']
 
-        if dset.attrs.__contains__('distance'):
-            distance = dset.attrs['distance']
-        else:
-            distance = None
+        # if dset.attrs.__contains__('distance'):
+        #     distance = dset.attrs['distance']
+        # else:
+        #     distance = None
 
         samples = np.asarray(dset)
 
-        random_indices = np.random.randint(samples.shape[0], size=random)
-        samples = samples[random_indices, :]
+        if random is not None:
+            random_indices = np.random.randint(samples.shape[0], size=random)
+            samples = samples[random_indices, :]
 
         parameters = []
         for i in range(n_param):
@@ -1747,105 +1789,82 @@ class Database:
         for i in range(n_line_species):
             line_species.append(dset.attrs[f'line_species{i}'])
 
+        if chemistry == 'free':
+            for item in line_species:
+                indices[item] = np.argwhere(parameters == item)[0][0]
+
         cloud_species = []
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f'cloud_species{i}']+'_cd')
 
-        # create 180 pressure layers in log space
-        pressure = np.logspace(-6, 3, 180)
+        for item in cloud_species:
+            cloud_param = f'{item[:-6].lower()}_fraction'
+            indices[cloud_param] = np.argwhere(parameters == cloud_param)[0][0]
 
-        logg_index = np.argwhere(parameters == 'logg')[0][0]
-        radius_index = np.argwhere(parameters == 'radius')[0][0]
+        # create 180 pressure layers in log space
+        # pressure = np.logspace(-6, 3, 180)
+
+        indices['logg'] = np.argwhere(parameters == 'logg')[0][0]
 
         if chemistry == 'equilibrium':
-            metallicity_index = np.argwhere(parameters == 'metallicity')[0][0]
-            c_o_ratio_index = np.argwhere(parameters == 'c_o_ratio')[0][0]
+            indices['metallicity'] = np.argwhere(parameters == 'metallicity')[0][0]
+            indices['c_o_ratio'] = np.argwhere(parameters == 'c_o_ratio')[0][0]
 
         if quenching:
-            log_p_quench_index = np.argwhere(parameters == 'log_p_quench')[0][0]
+            indices['log_p_quench'] = np.argwhere(parameters == 'log_p_quench')[0][0]
 
         if pt_profile == 'molliere':
-            tint_index = np.argwhere(parameters == 'tint')[0][0]
-            t1_index = np.argwhere(parameters == 't1')[0][0]
-            t2_index = np.argwhere(parameters == 't2')[0][0]
-            t3_index = np.argwhere(parameters == 't3')[0][0]
-            alpha_index = np.argwhere(parameters == 'alpha')[0][0]
-            log_delta_index = np.argwhere(parameters == 'log_delta')[0][0]
+            indices['tint'] = np.argwhere(parameters == 'tint')[0][0]
+            indices['t1'] = np.argwhere(parameters == 't1')[0][0]
+            indices['t2'] = np.argwhere(parameters == 't2')[0][0]
+            indices['t3'] = np.argwhere(parameters == 't3')[0][0]
+            indices['alpha'] = np.argwhere(parameters == 'alpha')[0][0]
+            indices['log_delta'] = np.argwhere(parameters == 'log_delta')[0][0]
 
         elif pt_profile in ['free', 'monotonic']:
-            temp_index = []
             for i in range(15):
-                temp_index.append(np.argwhere(parameters == f't{i}')[0][0])
+                indices[f't{i}'] = np.argwhere(parameters == f't{i}')[0][0]
 
-            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+            # knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
         if len(cloud_species) > 0:
-            fsed_index = np.argwhere(parameters == 'fsed')[0][0]
-            kzz_index = np.argwhere(parameters == 'kzz')[0][0]
-            sigma_lnorm_index = np.argwhere(parameters == 'sigma_lnorm')[0][0]
+            indices['fsed'] = np.argwhere(parameters == 'fsed')[0][0]
+            indices['kzz'] = np.argwhere(parameters == 'kzz')[0][0]
+            indices['sigma_lnorm'] = np.argwhere(parameters == 'sigma_lnorm')[0][0]
+
+        h5_file.close()
 
         read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
                                               cloud_species=cloud_species,
                                               scattering=scattering,
                                               wavel_range=wavel_range)
 
+        pool = multiprocessing.Pool(os.cpu_count())
+
+        processes = []
+
+        for item in samples:
+            proc = pool.apply_async(data_util.retrieval_spectrum,
+                                    args=(indices,
+                                          chemistry,
+                                          pt_profile,
+                                          line_species,
+                                          cloud_species,
+                                          quenching,
+                                          spec_res,
+                                          read_rad,
+                                          item))
+
+            processes.append(proc)
+
+        pool.close()
+
         boxes = []
 
-        for i, item in tqdm.tqdm(enumerate(samples), desc='Getting MCMC spectra'):
+        n_total = samples.shape[0]
 
-            model_param = {}
-            model_param['logg'] = item[logg_index]
-
-            if pt_profile == 'molliere':
-                model_param['t1'] = item[t1_index]
-                model_param['t2'] = item[t2_index]
-                model_param['t3'] = item[t3_index]
-                model_param['log_delta'] = item[log_delta_index]
-                model_param['alpha'] = item[alpha_index]
-                model_param['tint'] = item[tint_index]
-
-            elif pt_profile in ['free', 'monotonic']:
-                for i in range(15):
-                    model_param[f't{i}'] = item[temp_index[i]]
-
-            if quenching:
-                model_param['log_p_quench'] = item[log_p_quench_index]
-
-            if chemistry == 'equilibrium':
-                model_param['c_o_ratio'] = item[c_o_ratio_index]
-                model_param['metallicity'] = item[metallicity_index]
-
-            elif chemistry == 'free':
-                for species_item in line_species:
-                    species_item_index = np.argwhere(parameters == species_item)[0][0]
-                    model_param[species_item] = item[species_item_index]
-
-            if len(cloud_species) > 0:
-                model_param['fsed'] = item[fsed_index]
-                model_param['kzz'] = item[kzz_index]
-                model_param['sigma_lnorm'] = item[sigma_lnorm_index]
-
-                for cloud_item in cloud_species:
-                    cloud_param = f'{cloud_item[:-3].lower()}_fraction'
-                    cloud_item_index = np.argwhere(parameters == cloud_param)[0][0]
-                    model_param[cloud_param] = item[cloud_item_index]
-
-            model_box = read_rad.get_model(model_param,
-                                           spec_res=spec_res,
-                                           wavel_resample=None,
-                                           plot_contribution=None)
-
-            model_box = box.create_box(boxtype='model',
-                                       model='petitradtrans',
-                                       wavelength=model_box.wavelength,
-                                       flux=model_box.flux,
-                                       parameters=None,
-                                       quantity='flux')
-
-            model_box.type = 'mcmc'
-
-            boxes.append(model_box)
-
-        h5_file.close()
+        for i, item in enumerate(processes):
+            boxes.append(item.get(timeout=30))
+            print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
 
         return boxes, read_rad

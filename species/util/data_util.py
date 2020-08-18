@@ -2,14 +2,16 @@
 Utility functions for data processing.
 """
 
-from typing import Optional, List
+from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
 
+from scipy.interpolate import griddata
 from typeguard import typechecked
 
-from scipy.interpolate import griddata
+from species.core import box
+from species.read import read_radtrans
 
 
 def update_sptype(sptypes):
@@ -678,3 +680,80 @@ def correlation_to_covariance(cor_matrix,
                 assert cor_matrix[i, j] == 1.
 
     return cov_matrix
+
+
+@typechecked
+def retrieval_spectrum(indices: Dict[str, np.int64],
+                       chemistry: str,
+                       pt_profile: str,
+                       line_species: List[str],
+                       cloud_species: List[str],
+                       quenching: np.bool_,
+                       spec_res: float,
+                       read_rad: read_radtrans.ReadRadtrans,
+                       item: np.ndarray) -> box.ModelBox:
+    """
+    Parameters
+    ----------
+    cor_matrix : np.ndarray
+        Correlation matrix of the spectrum.
+    spec_sigma : np.ndarray
+        Uncertainties (W m-2 um-1).
+
+    Returns
+    -------
+    np.ndarrays
+        Covariance matrix of the spectrum.
+    """
+
+    model_param = {}
+    model_param['logg'] = item[indices['logg']]
+
+    if pt_profile == 'molliere':
+        model_param['t1'] = item[indices['t1']]
+        model_param['t2'] = item[indices['t2']]
+        model_param['t3'] = item[indices['t3']]
+        model_param['log_delta'] = item[indices['log_delta']]
+        model_param['alpha'] = item[indices['alpha']]
+        model_param['tint'] = item[indices['tint']]
+
+    elif pt_profile in ['free', 'monotonic']:
+        for j in range(15):
+            model_param[f't{j}'] = item[indices[f't{j}']]
+
+    if quenching:
+        model_param['log_p_quench'] = item[indices['log_p_quench']]
+
+    if chemistry == 'equilibrium':
+        model_param['c_o_ratio'] = item[indices['c_o_ratio']]
+        model_param['metallicity'] = item[indices['metallicity']]
+
+    elif chemistry == 'free':
+        for species_item in line_species:
+            species_item_index = np.argwhere(parameters == species_item)[0][0]
+            model_param[species_item] = item[indices[species_item]]
+
+    if len(cloud_species) > 0:
+        model_param['fsed'] = item[indices['fsed']]
+        model_param['kzz'] = item[indices['kzz']]
+        model_param['sigma_lnorm'] = item[indices['sigma_lnorm']]
+
+        for cloud_item in cloud_species:
+            cloud_param = f'{cloud_item[:-3].lower()}_fraction'
+            model_param[cloud_param] = item[indices[cloud_param]]
+
+    model_box = read_rad.get_model(model_param,
+                                   spec_res=spec_res,
+                                   wavel_resample=None,
+                                   plot_contribution=None)
+
+    model_box = box.create_box(boxtype='model',
+                               model='petitradtrans',
+                               wavelength=model_box.wavelength,
+                               flux=model_box.flux,
+                               parameters=None,
+                               quantity='flux')
+
+    model_box.type = 'mcmc'
+
+    return model_box
