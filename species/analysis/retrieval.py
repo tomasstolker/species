@@ -355,9 +355,14 @@ class AtmosphericRetrieval:
 
         # add extinction parameters
 
-        if 'ism_ext' in bounds and 'ism_red' in bounds:
-
+        if 'ism_ext' in bounds:
             self.parameters.append('ism_ext')
+
+        if 'ism_red' in bounds:
+            if 'ism_ext' not in bounds:
+                raise ValueError('The \'ism_red\' parameter can only be used in combination '
+                                 'with \'ism_ext\'.')
+
             self.parameters.append('ism_red')
 
         # add covariance parameters
@@ -1009,11 +1014,18 @@ class AtmosphericRetrieval:
                     data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
                 # apply ISM extinction to the model spectrum
-                if 'ism_ext' in self.parameters and 'ism_red' in self.parameters:
+                if 'ism_ext' in self.parameters:
+                    if 'ism_red' in self.parameters:
+                        ism_reddening = cube[cube_index['ism_red']]
+
+                    else:
+                        # Use default interstellar reddening (R_V = 3.1)
+                        ism_reddening = 3.1
+
                     flux_lambda = dust_util.apply_ism_ext(wlen_micron,
                                                           flux_lambda,
                                                           cube[cube_index['ism_ext']],
-                                                          cube[cube_index['ism_red']])
+                                                          ism_reddening)
 
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
