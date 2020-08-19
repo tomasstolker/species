@@ -1741,8 +1741,6 @@ class Database:
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
 
-        indices = {}
-
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
         config = configparser.ConfigParser()
@@ -1768,10 +1766,10 @@ class Database:
         pt_profile = dset.attrs['pt_profile']
         chemistry = dset.attrs['chemistry']
 
-        # if dset.attrs.__contains__('distance'):
-        #     distance = dset.attrs['distance']
-        # else:
-        #     distance = None
+        if dset.attrs.__contains__('distance'):
+            distance = dset.attrs['distance']
+        else:
+            distance = None
 
         samples = np.asarray(dset)
 
@@ -1784,6 +1782,10 @@ class Database:
             parameters.append(dset.attrs[f'parameter{i}'])
 
         parameters = np.asarray(parameters)
+
+        indices = {}
+        indices['logg'] = np.argwhere(parameters == 'logg')[0][0]
+        indices['radius'] = np.argwhere(parameters == 'radius')[0][0]
 
         line_species = []
         for i in range(n_line_species):
@@ -1800,8 +1802,6 @@ class Database:
         for item in cloud_species:
             cloud_param = f'{item[:-6].lower()}_fraction'
             indices[cloud_param] = np.argwhere(parameters == cloud_param)[0][0]
-
-        indices['logg'] = np.argwhere(parameters == 'logg')[0][0]
 
         if chemistry == 'equilibrium':
             indices['metallicity'] = np.argwhere(parameters == 'metallicity')[0][0]
@@ -1827,7 +1827,14 @@ class Database:
             indices['kzz'] = np.argwhere(parameters == 'kzz')[0][0]
             indices['sigma_lnorm'] = np.argwhere(parameters == 'sigma_lnorm')[0][0]
 
+        if 'ism_ext' in parameters and 'ism_red' in parameters:
+            indices['ism_ext'] = np.argwhere(parameters == 'ism_ext')[0][0]
+            indices['ism_red'] = np.argwhere(parameters == 'ism_red')[0][0]
+
         h5_file.close()
+
+        # After creating and instance of ReadRadtrans, the cloud_species have been
+        # shortened to 'Fe(c)' and 'MgSiO3(c)'
 
         read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
                                               cloud_species=cloud_species,
@@ -1849,6 +1856,7 @@ class Database:
                                                      cloud_species,
                                                      quenching,
                                                      spec_res,
+                                                     distance,
                                                      read_rad,
                                                      item)
 

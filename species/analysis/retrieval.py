@@ -1010,11 +1010,10 @@ class AtmosphericRetrieval:
 
                 # apply ISM extinction to the model spectrum
                 if 'ism_ext' in self.parameters and 'ism_red' in self.parameters:
-                    spec_ext = dust_util.ism_extinction(cube[cube_index['ism_ext']],
-                                                        cube[cube_index['ism_red']],
-                                                        wlen_micron)
-
-                    flux_lambda *= 10.**(-0.4*spec_ext)
+                    flux_lambda = dust_util.apply_ism_ext(wlen_micron,
+                                                          flux_lambda,
+                                                          cube[cube_index['ism_ext']],
+                                                          cube[cube_index['ism_red']])
 
                 # convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,

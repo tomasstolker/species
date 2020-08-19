@@ -690,6 +690,7 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        cloud_species: List[str],
                        quenching: np.bool_,
                        spec_res: float,
+                       distance: Optional[float],
                        read_rad: read_radtrans.ReadRadtrans,
                        sample: np.ndarray) -> box.ModelBox:
     """
@@ -711,6 +712,8 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         Use a quenching pressure for CH4/CO.
     spec_res : float
         Spectral resolution.
+    distance: float, None
+        Distance (pc).
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -723,7 +726,12 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     """
 
     model_param = {}
+
     model_param['logg'] = sample[indices['logg']]
+    model_param['radius'] = sample[indices['radius']]
+
+    if distance is not None:
+        model_param['distance'] = distance
 
     if pt_profile == 'molliere':
         model_param['t1'] = sample[indices['t1']]
@@ -756,6 +764,10 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         for cloud_item in cloud_species:
             cloud_param = f'{cloud_item[:-3].lower()}_fraction'
             model_param[cloud_param] = sample[indices[cloud_param]]
+
+    if 'ism_ext' in indices and 'ism_red' in indices:
+        model_param['ism_ext'] = sample[indices['ism_ext']]
+        model_param['ism_red'] = sample[indices['ism_red']]
 
     model_box = read_rad.get_model(model_param,
                                    spec_res=spec_res,

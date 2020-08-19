@@ -20,7 +20,7 @@ from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 from species.analysis import photometry
 from species.core import box, constants
 from species.read import read_filter
-from species.util import read_util, retrieval_util
+from species.util import dust_util, read_util, retrieval_util
 
 
 class ReadRadtrans:
@@ -214,6 +214,12 @@ class ReadRadtrans:
                           (model_param['distance']*constants.PARSEC)**2
 
                 flux *= scaling
+
+        if 'ism_ext' in model_param and 'ism_red' in model_param:
+            flux = dust_util.apply_ism_ext(wavelength,
+                                           flux,
+                                           model_param['ism_ext'],
+                                           model_param['ism_red'])
 
         if spec_res is not None:
             # convolve with Gaussian LSF

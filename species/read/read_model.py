@@ -20,7 +20,7 @@ from species.analysis import photometry
 from species.core import box, constants
 from species.data import database
 from species.read import read_filter, read_calibration
-from species.util import read_util, dust_util
+from species.util import dust_util, read_util
 
 
 class ReadModel:
@@ -460,34 +460,6 @@ class ReadModel:
 
         return flux * np.exp(-cross_new*n_grains)
 
-    @staticmethod
-    @typechecked
-    def apply_ism_ext(wavelengths: np.ndarray,
-                      flux: np.ndarray,
-                      v_band_ext: float,
-                      v_band_red: float) -> np.ndarray:
-        """
-        Internal function for applying ISM extinction to a spectrum.
-
-        wavelengths : np.ndarray
-            Wavelengths (um) of the spectrum.
-        flux : np.ndarray
-            Fluxes (W m-2 um-1) of the spectrum.
-        v_band_ext : float
-            Extinction (mag) in the V band.
-        v_band_red : float
-            Reddening in the V band.
-
-        Returns
-        -------
-        np.ndarray
-            Fluxes (W m-2 um-1) with the extinction applied.
-        """
-
-        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
-
-        return flux * 10.**(-0.4*ext_mag)
-
     @typechecked
     def get_model(self,
                   model_param: Dict[str, float],
@@ -717,10 +689,10 @@ class ReadModel:
 
         if 'ism_ext' in model_param and 'ism_red' in model_param:
 
-            model_box.flux = self.apply_ism_ext(model_box.wavelength,
-                                                model_box.flux,
-                                                model_param['ism_ext'],
-                                                model_param['ism_red'])
+            model_box.flux = dust_util.apply_ism_ext(model_box.wavelength,
+                                                     model_box.flux,
+                                                     model_param['ism_ext'],
+                                                     model_param['ism_red'])
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (
@@ -841,10 +813,10 @@ class ReadModel:
 
         if 'ism_ext' in model_param and 'ism_red' in model_param:
 
-            model_box.flux = self.apply_ism_ext(model_box.wavelength,
-                                                model_box.flux,
-                                                model_param['ism_ext'],
-                                                model_param['ism_red'])
+            model_box.flux = dust_util.apply_ism_ext(model_box.wavelength,
+                                                     model_box.flux,
+                                                     model_param['ism_ext'],
+                                                     model_param['ism_red'])
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (

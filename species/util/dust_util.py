@@ -571,3 +571,31 @@ def ism_extinction(av_mag: float,
             0.62251*y_wavel[indices]**5 + 5.30260*y_wavel[indices]**6 - 2.09002*y_wavel[indices]**7
 
     return av_mag * (a_coeff + b_coeff/rv_red)
+
+
+@typechecked
+def apply_ism_ext(wavelengths: np.ndarray,
+                  flux: np.ndarray,
+                  v_band_ext: float,
+                  v_band_red: float) -> np.ndarray:
+    """
+    Function for applying ISM extinction to a spectrum.
+
+    wavelengths : np.ndarray
+        Wavelengths (um) of the spectrum.
+    flux : np.ndarray
+        Fluxes (W m-2 um-1) of the spectrum.
+    v_band_ext : float
+        Extinction (mag) in the V band.
+    v_band_red : float
+        Reddening in the V band.
+
+    Returns
+    -------
+    np.ndarray
+        Fluxes (W m-2 um-1) with the extinction applied.
+    """
+
+    ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
+
+    return flux * 10.**(-0.4*ext_mag)
