@@ -225,7 +225,7 @@ def pt_ret_model(T3: np.ndarray,
         # Make the temperature spline interpolation to be returned to the user
         # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
 
-        cs = PchipInterpolator(np.log10(support_points), t_support)
+        cs = CubicSpline(np.log10(support_points), t_support)
         tret = cs(np.log10(press_cgs))
 
     # Return the temperature, the pressure at tau = 1, and the temperature at the connection point.
@@ -255,7 +255,7 @@ def pt_spline_interp(knot_press: np.ndarray,
         Interpolated temperature points.
     """
 
-    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
+    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
 
     return pt_interp(np.log10(pressure))
 
