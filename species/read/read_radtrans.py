@@ -215,11 +215,18 @@ class ReadRadtrans:
 
                 flux *= scaling
 
-        if 'ism_ext' in model_param and 'ism_red' in model_param:
+        if 'ism_ext' in model_param:
+            if 'ism_red' in model_param:
+                ism_reddening = model_param['ism_red']
+
+            else:
+                # Use default ISM reddening (R_V = 3.1) if ism_red is not provided
+                ism_reddening = 3.1
+
             flux = dust_util.apply_ism_ext(wavelength,
                                            flux,
                                            model_param['ism_ext'],
-                                           model_param['ism_red'])
+                                           ism_reddening)
 
         if spec_res is not None:
             # convolve with Gaussian LSF

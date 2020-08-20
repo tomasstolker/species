@@ -765,21 +765,16 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
             cloud_param = f'{cloud_item[:-3].lower()}_fraction'
             model_param[cloud_param] = sample[indices[cloud_param]]
 
-    if 'ism_ext' in indices and 'ism_red' in indices:
+    if 'ism_ext' in indices:
         model_param['ism_ext'] = sample[indices['ism_ext']]
+
+    if 'ism_red' in indices:
         model_param['ism_red'] = sample[indices['ism_red']]
 
     model_box = read_rad.get_model(model_param,
                                    spec_res=spec_res,
                                    wavel_resample=None,
                                    plot_contribution=None)
-
-    model_box = box.create_box(boxtype='model',
-                               model='petitradtrans',
-                               wavelength=model_box.wavelength,
-                               flux=model_box.flux,
-                               parameters=None,
-                               quantity='flux')
 
     model_box.type = 'mcmc'
 

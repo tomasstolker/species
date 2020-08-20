@@ -1827,8 +1827,10 @@ class Database:
             indices['kzz'] = np.argwhere(parameters == 'kzz')[0][0]
             indices['sigma_lnorm'] = np.argwhere(parameters == 'sigma_lnorm')[0][0]
 
-        if 'ism_ext' in parameters and 'ism_red' in parameters:
+        if 'ism_ext' in parameters:
             indices['ism_ext'] = np.argwhere(parameters == 'ism_ext')[0][0]
+
+        if 'ism_red' in parameters:
             indices['ism_red'] = np.argwhere(parameters == 'ism_red')[0][0]
 
         h5_file.close()
