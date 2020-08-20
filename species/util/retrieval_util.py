@@ -432,27 +432,40 @@ def calc_spectrum_clear(rt_object: Radtrans,
                                                              np.ndarray,
                                                              Optional[np.ndarray]]:
     """
-    Function to simulate an emission spectrum of a clear atmosphere.
+    Function to simulate an emission spectrum of a clear atmosphere. The function supports both
+    equilibrium chemistry (``chemistry='equilibrium'``) and free abundances (``chemistry='free'``).
 
-    Parameters
-    ----------
     rt_object : Radtrans
-    pressure : np.ndarrau
+        Instance of ``Radtrans``.
+    pressure : np.ndarray
+        Array with the pressure points (bar).
     temperature : np.ndarray
+        Array with the temperature points (K) corresponding to ``pressure``.
     logg : float
-    c_o_ratio : float, None
-    metallicity : float, None
-    log_p_quench : float, None
+        Log10 of the surface gravity (cm s-2).
+    c_o_ratio : float
+        Carbon-to-oxygen ratio.
+    metallicity : float
+        Metallicity.
+    log_p_quench : float
+        Log10 of the quench pressure.
     log_x_abund : dict, None
+        Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
     chemistry : str
-    half : bool
+        Chemistry type (``'equilibrium'`` or ``'free'``).
+    half: bool
+        Only use every third P/T point.
     contribution : bool
+        Calculate the emission contribution.
 
     Returns
     -------
     np.ndarray
+        Wavelength (um).
     np.ndarray
+        Flux (W m-2 um-1).
     np.ndarray, None
+        Emission contribution.
     """
 
     if chemistry == 'equilibrium':
@@ -530,30 +543,50 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
                                                               np.ndarray,
                                                               Optional[np.ndarray]]:
     """
-    Function to simulate an emission spectrum of a cloudy atmosphere.
+    Function to simulate an emission spectrum of a cloudy atmosphere. Currently, the function
+    only supports equilibrium chemistry (i.e. ``chemistry='equilibrium'``).
 
     Parameters
     ----------
     rt_object : Radtrans, RadtransScatter
+        Instance of ``Radtrans``.
     pressure : np.ndarray
+        Array with the pressure points (bar).
     temperature : np.ndarray
+        Array with the temperature points (K) corresponding to ``pressure``.
     c_o_ratio : float
+        Carbon-to-oxygen ratio.
     metallicity : float
+        Metallicity.
     log_p_quench : float
+        Log10 of the quench pressure.
     log_x_base : dict
+        Dictionary with the log10 of the mass fractions at the cloud base.
     fsed : float
+        Sedimentation parameter.
     Kzz : float
+        Eddy diffusion coefficient (cm2 s-1?).
     logg : float
+        Log10 of the surface gravity (cm s-2).
     sigma_lnorm : float
+        Geometric standard deviation of the log-normal size distribution.
     chemistry : str
+        Chemistry type (``'equilibrium'`` or ``'free'``).
     half: bool
+        Only use every third P/T point.
     plotting : bool
+        Create plots.
     contribution : bool
+        Calculate the emission contribution.
 
     Returns
     -------
     np.ndarray
+        Wavelength (um).
     np.ndarray
+        Flux (W m-2 um-1).
+    np.ndarray, None
+        Emission contribution.
     """
 
     # interpolate the abundances, following chemical equilibrium
@@ -634,6 +667,8 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
 
     # adaptive pressure refinement around the cloud base
     _, small_index = make_half_pressure_better(p_base, pressure)
+
+    # TODO
     small_index = None
 
     abundances = create_abund_dict(abund_in,
@@ -651,12 +686,16 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
         Kzz_use = Kzz_use[::3]
 
     fseds = {}
+
     if 'Fe' in log_x_base:
         fseds['Fe(c)'] = fsed
+
     if 'MgSiO3' in log_x_base:
         fseds['MgSiO3(c)'] = fsed
+
     if 'Na2S' in log_x_base:
         fseds['Na2S(c)'] = fsed
+
     if 'KCl' in log_x_base:
         fseds['KCL(c)'] = fsed
 
