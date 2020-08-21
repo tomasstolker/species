@@ -238,26 +238,38 @@ def pt_spline_interp(knot_press: np.ndarray,
                      knot_temp: np.ndarray,
                      pressure: np.ndarray) -> np.ndarray:
     """
-    Function for interpolating the P/T knots with a PCHIP 1-D monotonic cubic interpolation.
+    Function for interpolating the P/T knots with a PCHIP 1-D monotonic cubic interpolation. The
+    interpolated temperature is smoothed with a Gaussian kernel of width 0.3 dex in pressure
+    (Piette & Madhusudhan 2020).
 
     Parameters
     ----------
     knot_press : np.ndarray
-        Pressure knots.
+        Pressure knots (bar).
     knot_temp : np.ndarray
-        Temperature knots.
+        Temperature knots (K).
     pressure : np.ndarray
-        Pressure points at which the temperatures is interpolated.
+        Pressure points (bar) at which the temperatures is interpolated.
 
     Returns
     -------
     np.ndarray
-        Interpolated temperature points.
+        Interpolated, smoothed temperature points (K).
     """
 
-    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
+    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
 
-    return pt_interp(np.log10(pressure))
+    # return pt_interp(np.log10(pressure))
+
+    temp_interp = pt_interp(np.log10(pressure))
+
+    log_press = np.log10(pressure)
+    log_diff = np.mean(np.diff(log_press))
+
+    if np.std(np.diff(log_press))/log_diff > 1e-6:
+        raise ValueError('Expecting equally spaced pressures in log space.')
+
+    return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
 
 
 @typechecked

@@ -435,7 +435,7 @@ class AtmosphericRetrieval:
         # create the output folder if required
 
         if not os.path.exists(self.output_folder):
-            raise ValueError(f'The output folder ({self.output_folder}) does not exist.')
+            raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
 
         # List with spectra for which the correlated noise is fitted
 
@@ -637,18 +637,23 @@ class AtmosphericRetrieval:
                 cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
 
                 for i in range(13, -1, -1):
-                    if i == 13:
-                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
-                            (1.-cube[cube_index[f't{i}']])
+                    cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
+                        (1.-cube[cube_index[f't{i}']])
 
-                    else:
-                        temp_diff = cube[cube_index[f't{i+2}']] - cube[cube_index[f't{i+1}']]
 
-                        if cube[cube_index[f't{i+1}']] - temp_diff < 0.:
-                            temp_diff = cube[cube_index[f't{i+1}']]
-
-                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
-                            cube[cube_index[f't{i}']]*temp_diff
+                    # Increasing temperature steps with increasing pressure
+                    # if i == 13:
+                    #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
+                    #         (1.-cube[cube_index[f't{i}']])
+                    #
+                    # else:
+                    #     temp_diff = cube[cube_index[f't{i+2}']] - cube[cube_index[f't{i+1}']]
+                    #
+                    #     if cube[cube_index[f't{i+1}']] - temp_diff < 0.:
+                    #         temp_diff = cube[cube_index[f't{i+1}']]
+                    #
+                    #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
+                    #         cube[cube_index[f't{i}']]*temp_diff
 
             if chemistry == 'equilibrium':
                 # metallicity (dex) for the nabla_ad interpolation
