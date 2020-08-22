@@ -257,19 +257,19 @@ def pt_spline_interp(knot_press: np.ndarray,
         Interpolated, smoothed temperature points (K).
     """
 
-    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
+    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
 
-    # return pt_interp(np.log10(pressure))
+    return pt_interp(np.log10(pressure))
 
-    temp_interp = pt_interp(np.log10(pressure))
-
-    log_press = np.log10(pressure)
-    log_diff = np.mean(np.diff(log_press))
-
-    if np.std(np.diff(log_press))/log_diff > 1e-6:
-        raise ValueError('Expecting equally spaced pressures in log space.')
-
-    return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
+    # temp_interp = pt_interp(np.log10(pressure))
+    #
+    # log_press = np.log10(pressure)
+    # log_diff = np.mean(np.diff(log_press))
+    #
+    # if np.std(np.diff(log_press))/log_diff > 1e-6:
+    #     raise ValueError('Expecting equally spaced pressures in log space.')
+    #
+    # return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
 
 
 @typechecked
@@ -577,7 +577,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
     fsed : float
         Sedimentation parameter.
     Kzz : float
-        Eddy diffusion coefficient (cm2 s-1?).
+        Log 10 of the eddy diffusion coefficient (cm2 s-1).
     logg : float
         Log10 of the surface gravity (cm s-2).
     sigma_lnorm : float
