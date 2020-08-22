@@ -257,7 +257,7 @@ def pt_spline_interp(knot_press: np.ndarray,
         Interpolated, smoothed temperature points (K).
     """
 
-    pt_interp = CubicSpline(np.log10(knot_press), knot_temp)
+    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
 
     # return pt_interp(np.log10(pressure))
 
