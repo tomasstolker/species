@@ -362,10 +362,10 @@ def plot_spectrum(boxes: list,
 
                         elif item == 'mass':
                             if object_type == 'planet':
-                                value = f'{param[item]:.2f}'
+                                value = f'{param[item]:.1f}'
 
                             elif object_type == 'star':
-                                value = f'{param[item]*constants.M_JUP/constants.M_SUN:.2f}'
+                                value = f'{param[item]*constants.M_JUP/constants.M_SUN:.1f}'
 
                         elif item == 'luminosity':
                             value = f'{np.log10(param[item]):.2f}'

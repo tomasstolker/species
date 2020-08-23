@@ -596,7 +596,7 @@ def plot_extinction(tag: str,
     """
     Function to plot random samples of the extinction, either from fitting a size distribution
     of enstatite grains (``dust_radius``, ``dust_sigma``, and ``dust_ext``), or from fitting
-    ISM extinction (``ism_ext`` and ``ism_red``).
+    ISM extinction (``ism_ext`` and optionally ``ism_red``).
 
     Parameters
     ----------
@@ -760,13 +760,17 @@ def plot_extinction(tag: str,
 
             ax.plot(sample_wavel, sample_ext, ls='-', lw=0.5, color='black', alpha=0.5)
 
-    elif 'ism_ext' in box.parameters and 'ism_red' in box.parameters:
+    elif 'ism_ext' in box.parameters:
 
         ext_index = box.parameters.index('ism_ext')
-        red_index = box.parameters.index('ism_red')
-
         ism_ext = samples[:, ext_index]
-        ism_red = samples[:, red_index]
+
+        if 'ism_red' in box.parameters:
+            red_index = box.parameters.index('ism_red')
+            ism_red = samples[:, red_index]
+
+        else:
+            ism_red = np.full(samples.shape[0], 3.1)
 
         for i in range(samples.shape[0]):
             sample_ext = dust_util.ism_extinction(ism_ext[i], ism_red[i], sample_wavel)
