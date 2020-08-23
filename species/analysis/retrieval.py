@@ -216,7 +216,8 @@ class AtmosphericRetrieval:
 
         if len(self.cloud_species) > 0:
             # initiate many pressure layers for the refinement around the cloud decks
-            n_pressure = 1440
+            n_pressure = 180
+            # n_pressure = 1440
 
         else:
             # initiate fewer pressure layers for a cloudless atmosphere
@@ -520,7 +521,8 @@ class AtmosphericRetrieval:
         # create RT arrays of 60 pressure layers
 
         if len(self.cloud_species) > 0:
-            rt_object.setup_opa_structure(self.pressure[::24])
+            # rt_object.setup_opa_structure(self.pressure[::24])
+            rt_object.setup_opa_structure(self.pressure[::3])
 
         else:
             rt_object.setup_opa_structure(self.pressure[::3])
@@ -639,7 +641,6 @@ class AtmosphericRetrieval:
                 for i in range(13, -1, -1):
                     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
                         (1.-cube[cube_index[f't{i}']])
-
 
                     # Increasing temperature steps with increasing pressure
                     # if i == 13:
@@ -825,6 +826,32 @@ class AtmosphericRetrieval:
                 ism_red = bounds['ism_red'][0] + (bounds['ism_red'][1]-bounds['ism_red'][0])*cube[cube_index['ism_red']]
 
                 cube[cube_index['ism_red']] = ism_red
+
+            # cube[cube_index['logg']] = 3.889129124464218
+            # cube[cube_index['radius']] = 2.782281902917557
+            # cube[cube_index['t0']] = 3.6323078909436415
+            # cube[cube_index['t1']] = 402.4518324693274
+            # cube[cube_index['t2']] = 517.6747101464242
+            # cube[cube_index['t3']] = 612.3059882867121
+            # cube[cube_index['t4']] = 969.6533117546811
+            # cube[cube_index['t5']] = 1150.9593576344894
+            # cube[cube_index['t6']] = 1413.7935964800458
+            # cube[cube_index['t7']] = 1910.6754772582656
+            # cube[cube_index['t8']] = 2010.425563860078
+            # cube[cube_index['t9']] = 2731.0170384152675
+            # cube[cube_index['t10']] = 3496.246220135957
+            # cube[cube_index['t11']] = 4464.355779518287
+            # cube[cube_index['t12']] = 4953.484925829709
+            # cube[cube_index['t13']] = 6547.033952410037
+            # cube[cube_index['t14']] = 7893.735763050435
+            # cube[cube_index['c_o_ratio']] = 0.6074392809502862
+            # cube[cube_index['metallicity']] = 0.39497153764401904
+            # cube[cube_index['fsed']] = 7.355974818443403
+            # cube[cube_index['kzz']] = 6.719652601818581
+            # cube[cube_index['sigma_lnorm']] = 2.1134742348467945
+            # cube[cube_index['fe_fraction']] = -0.6823065648290996
+            # cube[cube_index['mgsio3_fraction']] = -0.2330782053544842
+            # cube[cube_index['ism_ext']] = 0.03771736713089137
 
         @typechecked
         def loglike(cube,
@@ -1097,9 +1124,9 @@ class AtmosphericRetrieval:
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[item]*data_flux, yerr=np.sqrt(data_var),
-                                 marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue')
+                                 marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue', alpha=0.2)
 
-                    plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange')
+                    plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange', alpha=0.2)
 
             if plotting:
                 plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)

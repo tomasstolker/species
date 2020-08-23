@@ -771,10 +771,7 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     if 'ism_red' in indices:
         model_param['ism_red'] = sample[indices['ism_red']]
 
-    model_box = read_rad.get_model(model_param,
-                                   spec_res=spec_res,
-                                   wavel_resample=None,
-                                   plot_contribution=None)
+    model_box = read_rad.get_model(model_param, spec_res=spec_res)
 
     model_box.type = 'mcmc'
 

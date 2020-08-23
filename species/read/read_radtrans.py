@@ -106,8 +106,14 @@ class ReadRadtrans:
                                       wlen_bords_micron=self.wavel_range,
                                       mode='c-k')
 
-        # create RT arrays of appropriate lengths by using every three pressure points
-        self.rt_object.setup_opa_structure(self.pressure[::3])
+        # create RT arrays of 60 pressure layers
+
+        if len(self.cloud_species) > 0:
+            # self.rt_object.setup_opa_structure(self.pressure[::24])
+            self.rt_object.setup_opa_structure(self.pressure[::3])
+
+        else:
+            self.rt_object.setup_opa_structure(self.pressure[::3])
 
     @typechecked
     def get_model(self,
@@ -176,8 +182,8 @@ class ReadRadtrans:
             log_p_quench = -10.
 
         if len(self.cloud_species) > 0:
-
             cloud_fractions = {}
+
             for item in self.cloud_species:
                 cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
 

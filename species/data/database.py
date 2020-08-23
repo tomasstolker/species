@@ -1851,16 +1851,16 @@ class Database:
         boxes = []
 
         for i, item in enumerate(samples):
-            model_box = data_util.retrieval_spectrum(indices,
-                                                     chemistry,
-                                                     pt_profile,
-                                                     line_species,
-                                                     cloud_species,
-                                                     quenching,
-                                                     spec_res,
-                                                     distance,
-                                                     read_rad,
-                                                     item)
+            model_box = data_util.retrieval_spectrum(indices=indices,
+                                                     chemistry=chemistry,
+                                                     pt_profile=pt_profile,
+                                                     line_species=line_species,
+                                                     cloud_species=cloud_species,
+                                                     quenching=quenching,
+                                                     spec_res=spec_res,
+                                                     distance=distance,
+                                                     read_rad=read_rad,
+                                                     sample=item)
 
             boxes.append(model_box)
 

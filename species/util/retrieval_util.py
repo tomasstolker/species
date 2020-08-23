@@ -678,7 +678,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
         p_base['KCl(c)'] = P_base_KCl
 
     # adaptive pressure refinement around the cloud base
-    _, small_index = make_half_pressure_better(p_base, pressure)
+    # _, small_index = make_half_pressure_better(p_base, pressure)
 
     # TODO
     small_index = None
