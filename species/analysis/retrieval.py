@@ -24,7 +24,7 @@ from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 from species.analysis import photometry
 from species.data import database
 from species.core import constants
-from species.read import read_object
+from species.read import read_filter, read_object
 from species.util import retrieval_util, dust_util
 
 
@@ -44,7 +44,8 @@ class AtmosphericRetrieval:
                  scattering: bool,
                  output_folder: str,
                  wavel_range: Optional[Tuple[float, float]],
-                 inc_spec: Union[bool, List[str]] = True) -> None:
+                 inc_spec: Union[bool, List[str]] = True,
+                 inc_phot: Union[bool, List[str]] = False) -> None:
         """
         Parameters
         ----------
@@ -69,6 +70,10 @@ class AtmosphericRetrieval:
             (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
             in the database with :func:`~species.data.database.Database.add_object`) can be
             provided.
+        inc_phot : bool, list(str)
+            Include photometric data in the fit. If a boolean, either all (``True``) or none
+            (``False``) of the data are selected. If a list, a subset of filter names (as stored in
+            the database) can be provided.
 
         Returns
         -------
@@ -128,13 +133,21 @@ class AtmosphericRetrieval:
         self.objphot = []
         self.synphot = []
 
+        if isinstance(inc_phot, bool):
+            if inc_phot:
+                # Select all filters if True
+                species_db = database.Database()
+                inc_phot = objectbox.filters
+
+            else:
+                inc_phot = []
+
         if len(objectbox.filters) != 0:
-            warnings.warn('Support for photometric data is not yet implemented.')
             print('Photometric data:')
 
-        for item in objectbox.filters:
+        for item in inc_phot:
             obj_phot = self.object.get_photometry(item)
-            self.objphot.append((obj_phot[2], obj_phot[3]))
+            self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
             print(f'   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]:.2e}')
 
@@ -1127,6 +1140,28 @@ class AtmosphericRetrieval:
                                  marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue', alpha=0.2)
 
                     plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange', alpha=0.2)
+
+            for i, obj_item in enumerate(self.objphot):
+                # Calculate the photometric flux from the model spectrum
+                phot_flux, _ = self.synphot[i].spectrum_to_flux(wlen_micron, flux_lambda)
+
+                if plotting:
+                    read_filt = read_filter.ReadFilter(self.synphot[i].filter_name)
+
+                    plt.errorbar(read_filt.mean_wavelength(), phot_flux, xerr=read_filt.filter_fwhm(),
+                                 marker='s', ms=5., color='tab:green', mfc='white')
+
+                if obj_item.ndim == 1:
+                    # Filter with one flux
+                    ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
+
+                    plt.errorbar(read_filt.mean_wavelength(), obj_item[0], xerr=read_filt.filter_fwhm(),
+                                 yerr=obj_item[1], marker='s', ms=5., color='tab:green', mfc='tab:green')
+
+                else:
+                    # Filter with multiple fluxes
+                    for j in range(obj_item.shape[1]):
+                        ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
 
             if plotting:
                 plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)

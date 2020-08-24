@@ -269,7 +269,19 @@ def pt_spline_interp(knot_press: np.ndarray,
     if np.std(np.diff(log_press))/log_diff > 1e-6:
         raise ValueError('Expecting equally spaced pressures in log space.')
 
-    return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
+    temp_smooth = gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
+
+    # z1 = np.hstack((log_press[0], log_press[:-1]))
+    # z2 = np.hstack((log_press[1:], log_press[-1]))
+    #
+    # dx1 = np.hstack((0, np.diff(temp_smooth)))
+    # dx2 = np.hstack((np.diff(temp_smooth), 0))
+
+    # d = np.diff(temp_smooth)
+    # print(d)
+    # exit()
+
+    return temp_smooth
 
 
 @typechecked
