@@ -154,12 +154,6 @@ class AtmosphericRetrieval:
             sphot = photometry.SyntheticPhotometry(item)
             self.synphot.append(sphot)
 
-        if not self.objphot:
-            self.objphot = None
-
-        if not self.synphot:
-            self.synphot = None
-
         # get spectroscopic data
 
         if isinstance(inc_spec, bool):
@@ -402,7 +396,8 @@ class AtmosphericRetrieval:
                       fit_corr: Optional[List[str]] = None,
                       live_points: int = 2000,
                       resume: bool = False,
-                      plotting: bool = False) -> None:
+                      plotting: bool = False,
+                      check_isothermal: bool = False) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -439,6 +434,8 @@ class AtmosphericRetrieval:
             Resume from a previous run.
         plotting : bool
             Plot sample results for testing.
+        check_isothermal : bool
+            Check if there is an isothermal region below 1 bar. If so, discard the sample.
 
         Returns
         -------
@@ -840,32 +837,6 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['ism_red']] = ism_red
 
-            # cube[cube_index['logg']] = 3.889129124464218
-            # cube[cube_index['radius']] = 2.782281902917557
-            # cube[cube_index['t0']] = 3.6323078909436415
-            # cube[cube_index['t1']] = 402.4518324693274
-            # cube[cube_index['t2']] = 517.6747101464242
-            # cube[cube_index['t3']] = 612.3059882867121
-            # cube[cube_index['t4']] = 969.6533117546811
-            # cube[cube_index['t5']] = 1150.9593576344894
-            # cube[cube_index['t6']] = 1413.7935964800458
-            # cube[cube_index['t7']] = 1910.6754772582656
-            # cube[cube_index['t8']] = 2010.425563860078
-            # cube[cube_index['t9']] = 2731.0170384152675
-            # cube[cube_index['t10']] = 3496.246220135957
-            # cube[cube_index['t11']] = 4464.355779518287
-            # cube[cube_index['t12']] = 4953.484925829709
-            # cube[cube_index['t13']] = 6547.033952410037
-            # cube[cube_index['t14']] = 7893.735763050435
-            # cube[cube_index['c_o_ratio']] = 0.6074392809502862
-            # cube[cube_index['metallicity']] = 0.39497153764401904
-            # cube[cube_index['fsed']] = 7.355974818443403
-            # cube[cube_index['kzz']] = 6.719652601818581
-            # cube[cube_index['sigma_lnorm']] = 2.1134742348467945
-            # cube[cube_index['fe_fraction']] = -0.6823065648290996
-            # cube[cube_index['mgsio3_fraction']] = -0.2330782053544842
-            # cube[cube_index['ism_ext']] = 0.03771736713089137
-
         @typechecked
         def loglike(cube,
                     n_dim: int,
@@ -963,6 +934,22 @@ class AtmosphericRetrieval:
 
                     ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                         0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+
+                if check_isothermal:
+                    # Get indices where pressure is larger than 1 bar
+                    indices = np.where(self.pressure > 1.)[0]
+
+                    # Remove last index because temp_diff.size = self.pressure.size-1
+                    indices = indices[:-1]
+
+                    temp_diff = np.diff(temp)
+                    temp_diff = temp_diff[indices]
+
+                    small_temp = np.where(temp_diff < 10.)[0]
+
+                    if len(small_temp) > 0:
+                        # Return zero probability if there is a temperature step smaller than 10 K
+                        return -np.inf
 
             # return zero probability if the minimum temperature is negative
 
