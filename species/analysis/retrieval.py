@@ -1155,8 +1155,9 @@ class AtmosphericRetrieval:
                     # Filter with one flux
                     ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
 
-                    plt.errorbar(read_filt.mean_wavelength(), obj_item[0], xerr=read_filt.filter_fwhm(),
-                                 yerr=obj_item[1], marker='s', ms=5., color='tab:green', mfc='tab:green')
+                    if plotting:
+                        plt.errorbar(read_filt.mean_wavelength(), obj_item[0], xerr=read_filt.filter_fwhm(),
+                                     yerr=obj_item[1], marker='s', ms=5., color='tab:green', mfc='tab:green')
 
                 else:
                     # Filter with multiple fluxes
