@@ -687,12 +687,17 @@ class ReadModel:
                                                      model_param['powerlaw_exp'],
                                                      model_param['powerlaw_ext'])
 
-        if 'ism_ext' in model_param and 'ism_red' in model_param:
+        if 'ism_ext' in model_param:
+
+            if 'ism_red' in model_param:
+                ism_reddening = model_param['ism_red']
+            else:
+                ism_reddening = 3.1
 
             model_box.flux = dust_util.apply_ism_ext(model_box.wavelength,
                                                      model_box.flux,
                                                      model_param['ism_ext'],
-                                                     model_param['ism_red'])
+                                                     ism_reddening)
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (
@@ -811,12 +816,17 @@ class ReadModel:
                                                      model_param['powerlaw_exp'],
                                                      model_param['powerlaw_ext'])
 
-        if 'ism_ext' in model_param and 'ism_red' in model_param:
+        if 'ism_ext' in model_param:
+
+            if 'ism_red' in model_param:
+                ism_reddening = model_param['ism_red']
+            else:
+                ism_reddening = 3.1
 
             model_box.flux = dust_util.apply_ism_ext(model_box.wavelength,
                                                      model_box.flux,
                                                      model_param['ism_ext'],
-                                                     model_param['ism_red'])
+                                                     ism_reddening)
 
         if 'radius' in model_box.parameters:
             model_box.parameters['luminosity'] = 4. * np.pi * (

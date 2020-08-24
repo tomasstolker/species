@@ -431,7 +431,8 @@ class FitModel:
                    empirical relation from Cardelli et al. (1989) for ISM extinction.
 
                  - The extinction is parametrized by the V band extinction, A_V (``ism_ext``), and
-                   the reddening, R_V (``ism_red``).
+                   optionally the reddening, R_V (``ism_red``). If ``ism_red`` is not provided,
+                   its value is fixed to 3.1 and not fitted.
 
                  - The prior boundaries of ``ism_ext`` and ``ext_red`` should be provided in the
                    ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
@@ -711,8 +712,10 @@ class FitModel:
         else:
             self.cross_sections = None
 
-        if 'ism_ext' in self.bounds and 'ism_red' in self.bounds:
+        if 'ism_ext' in self.bounds:
             self.modelpar.append('ism_ext')
+
+        if 'ism_red' in self.bounds:
             self.modelpar.append('ism_red')
 
         print(f'Fitting {len(self.modelpar)} parameters:')
@@ -1079,8 +1082,13 @@ class FitModel:
                     read_filt = read_filter.ReadFilter(self.modelphot[i].filter_name)
                     filt_wavel = np.array([read_filt.mean_wavelength()])
 
+                    if 'ism_red' in dust_param:
+                        ism_reddening = dust_param['ism_red']
+                    else:
+                        ism_reddening = 3.1
+
                     ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
-                                                        dust_param['ism_red'],
+                                                        ism_reddening,
                                                         filt_wavel)
 
                     phot_flux *= 10.**(-0.4*ext_filt[0])
@@ -1141,8 +1149,13 @@ class FitModel:
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
                 elif 'ism_ext' in dust_param:
+                    if 'ism_red' in dust_param:
+                        ism_reddening = dust_param['ism_red']
+                    else:
+                        ism_reddening = 3.1
+
                     ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
-                                                        dust_param['ism_red'],
+                                                        ism_reddening,
                                                         self.spectrum[item][0][:, 0])
 
                     model_flux *= 10.**(-0.4*ext_filt)
