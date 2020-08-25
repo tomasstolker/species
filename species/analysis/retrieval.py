@@ -926,6 +926,22 @@ class AtmosphericRetrieval:
 
                 knot_temp = np.asarray(knot_temp)
 
+                if check_isothermal:
+                    # Get knot indices where the pressure is larger than 1 bar
+                    indices = np.where(knot_press > 1.)[0]
+
+                    # Remove last index because temp_diff.size = knot_press.size - 1
+                    indices = indices[:-1]
+
+                    temp_diff = np.diff(knot_temp)
+                    temp_diff = temp_diff[indices]
+
+                    small_temp = np.where(temp_diff < 100.)[0]
+
+                    if len(small_temp) > 0:
+                        # Return zero probability if there is a temperature step smaller than 10 K
+                        return -np.inf
+
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
                 if pt_profile == 'free':
@@ -934,22 +950,6 @@ class AtmosphericRetrieval:
 
                     ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                         0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
-
-                if check_isothermal:
-                    # Get indices where pressure is larger than 1 bar
-                    indices = np.where(self.pressure > 1.)[0]
-
-                    # Remove last index because temp_diff.size = self.pressure.size-1
-                    indices = indices[:-1]
-
-                    temp_diff = np.diff(temp)
-                    temp_diff = temp_diff[indices]
-
-                    small_temp = np.where(temp_diff < 10.)[0]
-
-                    if len(small_temp) > 0:
-                        # Return zero probability if there is a temperature step smaller than 10 K
-                        return -np.inf
 
             # return zero probability if the minimum temperature is negative
 
