@@ -713,53 +713,74 @@ class AtmosphericRetrieval:
                 elif 'K_burrows' in self.line_species:
                     cube[cube_index['K_burrows']] = log_x_k_abund
 
-            # quench pressure (bar)
-            # default: 1e-6 - 1e3 bar
+            # CO/CH4 quenching pressure (bar)
             if quenching:
                 if 'log_p_quench' in bounds:
                     log_p_quench = bounds['log_p_quench'][0] + (bounds['log_p_quench'][1]-bounds['log_p_quench'][0])*cube[cube_index['log_p_quench']]
                 else:
-                    # default: -6 - 3.
+                    # default: -6 - 3. (i.e. 1e-6 - 1e3 bar)
                     log_p_quench = -6. + 9.*cube[cube_index['log_p_quench']]
 
                 cube[cube_index['log_p_quench']] = log_p_quench
 
             if len(self.cloud_species) > 0:
+                # Cloud mass fractions at the cloud base, relative to the maximum values allowed
+                # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
+
                 if 'Fe(c)' in self.cloud_species:
-                    # cloud base mass fractions of Fe
-                    # relative to the maximum values allowed from elemental abundances
-                    # see Eq. 3 in Mollière et al. (2020)
-                    # default: 0.05 - 1.
-                    fe_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['fe_fraction']]
+
+                    if 'fe_fraction' in bounds:
+                        fe_fraction = bounds['fe_fraction'][0] + (bounds['fe_fraction'][1] -
+                            bounds['fe_fraction'][0])*cube[cube_index['fe_fraction']]
+
+                    else:
+                        # default: 0.05 - 1.
+                        fe_fraction = np.log10(0.05) + (np.log10(1.) -
+                            np.log10(0.05))*cube[cube_index['fe_fraction']]
+
                     cube[cube_index['fe_fraction']] = fe_fraction
 
                 if 'MgSiO3(c)' in self.cloud_species:
-                    # cloud base mass fractions of MgSiO3
-                    # relative to the maximum values allowed from elemental abundances
-                    # see Eq. 3 in Mollière et al. (2020)
-                    # default: 0.05 - 1.
-                    mgsio3_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['mgsio3_fraction']]
+
+                    if 'mgsio3_fraction' in bounds:
+                        mgsio3_fraction = bounds['mgsio3_fraction'][0] + (bounds['mgsio3_fraction'][1] -
+                            bounds['mgsio3_fraction'][0])*cube[cube_index['mgsio3_fraction']]
+
+                    else:
+                        # default: 0.05 - 1.
+                        mgsio3_fraction = np.log10(0.05) + (np.log10(1.) -
+                            np.log10(0.05))*cube[cube_index['fe_fraction']]
+
                     cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
 
                 if 'Na2S(c)' in self.cloud_species:
-                    # cloud base mass fractions of Na2S
-                    # relative to the maximum values allowed from elemental abundances
-                    # see Eq. 3 in Mollière et al. (2020)
-                    # default: 0.05 - 1.
-                    na2s_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['na2s_fraction']]
+
+                    if 'na2s_fraction' in bounds:
+                        na2s_fraction = bounds['na2s_fraction'][0] + (bounds['na2s_fraction'][1] -
+                            bounds['na2s_fraction'][0])*cube[cube_index['na2s_fraction']]
+
+                    else:
+                        # default: 0.05 - 1.
+                        na2s_fraction = np.log10(0.05) + (np.log10(1.) -
+                            np.log10(0.05))*cube[cube_index['na2s_fraction']]
+
                     cube[cube_index['na2s_fraction']] = na2s_fraction
 
                 if 'KCL(c)' in self.cloud_species:
-                    # cloud base mass fractions of KCl
-                    # relative to the maximum values allowed from elemental abundances
-                    # see Eq. 3 in Mollière et al. (2020)
-                    # default: 0.05 - 1.
-                    kcl_fraction = np.log10(0.05)+(np.log10(1.)-np.log10(0.05))*cube[cube_index['kcl_fraction']]
+
+                    if 'kcl_fraction' in bounds:
+                        kcl_fraction = bounds['kcl_fraction'][0] + (bounds['kcl_fraction'][1] -
+                            bounds['kcl_fraction'][0])*cube[cube_index['kcl_fraction']]
+
+                    else:
+                        # default: 0.05 - 1.
+                        kcl_fraction = np.log10(0.05) + (np.log10(1.) -
+                            np.log10(0.05))*cube[cube_index['kcl_fraction']]
+
                     cube[cube_index['kcl_fraction']] = kcl_fraction
 
-                # sedimentation parameter
-                # ratio of the settling and mixing velocities of the cloud particles
-                # see Eq. 3 in Mollière et al. (2020)
+                # Sedimentation parameter: ratio of the settling and mixing velocities of the
+                # cloud particles (see Eq. 3 in Mollière et al. 2020)
                 if 'fsed' in bounds:
                     fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
                 else:
@@ -768,7 +789,7 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['fsed']] = fsed
 
-                # eddy diffusion coefficient, log(Kzz)
+                # Log10 of the eddy diffusion coefficient
                 if 'kzz' in bounds:
                     kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[cube_index['kzz']]
                 else:
@@ -777,7 +798,7 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['kzz']] = kzz
 
-                # width of the log-normal particle size distribution
+                # Geometric standard deviation of the log-normal particle size distribution
                 if 'sigma_lnorm' in bounds:
                     sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
                                                               bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
