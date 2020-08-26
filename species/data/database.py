@@ -1689,8 +1689,15 @@ class Database:
             teff = np.zeros(len(boxes))
 
             for i, box_item in enumerate(boxes):
-                # flux = sigma * Teff^4
-                teff[i] = (simps(box_item.flux, x=box_item.wavelength)/constants.SIGMA_SB)**0.25
+                sample_distance = box_item.parameters['distance']*constants.PARSEC
+                sample_radius = box_item.parameters['radius']*constants.R_JUP
+
+                # Scaling for the flux back to the planet surface
+                sample_scale = (sample_distance/sample_radius)**2
+
+                # Blackbody flux: sigma * Teff^4
+                flux_int = simps(sample_scale*box_item.flux, box_item.wavelength)
+                teff[i] = (flux_int/constants.SIGMA_SB)**0.25
 
             db_tag = f'results/fit/{tag}/samples'
 
