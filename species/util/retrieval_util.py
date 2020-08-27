@@ -590,7 +590,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
     sigma_lnorm : float
         Geometric standard deviation of the log-normal size distribution.
     chemistry : str
-        Chemistry type (``'equilibrium'`` or ``'free'``).
+        Chemistry type (only ``'equilibrium'`` is supported).
     half: bool
         Only use every third P/T point.
     plotting : bool
