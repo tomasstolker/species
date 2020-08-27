@@ -330,6 +330,9 @@ class AtmosphericRetrieval:
             if 'MgSiO3(c)_cd' in self.cloud_species:
                 self.parameters.append('mgsio3_fraction')
 
+            if 'Al2O3(c)_cd' in self.cloud_species:
+                self.parameters.append('al2o3_fraction')
+
             if 'Na2S(c)_cd' in self.cloud_species:
                 self.parameters.append('na2s_fraction')
 
@@ -480,6 +483,9 @@ class AtmosphericRetrieval:
 
             if 'mgsio3_fraction' in bounds:
                 del bounds['mgsio3_fraction']
+
+            if 'al2o3_fraction' in bounds:
+                del bounds['al2o3_fraction']
 
             if 'na2s_fraction' in bounds:
                 del bounds['na2s_fraction']
@@ -749,9 +755,22 @@ class AtmosphericRetrieval:
                     else:
                         # default: 0.05 - 1.
                         mgsio3_fraction = np.log10(0.05) + (np.log10(1.) -
-                            np.log10(0.05))*cube[cube_index['fe_fraction']]
+                            np.log10(0.05))*cube[cube_index['mgsio3_fraction']]
 
                     cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+
+                if 'Al2O3(c)' in self.cloud_species:
+
+                    if 'al2o3_fraction' in bounds:
+                        al2o3_fraction = bounds['al2o3_fraction'][0] + (bounds['al2o3_fraction'][1] -
+                            bounds['al2o3_fraction'][0])*cube[cube_index['al2o3_fraction']]
+
+                    else:
+                        # default: 0.05 - 1.
+                        al2o3_fraction = np.log10(0.05) + (np.log10(1.) -
+                            np.log10(0.05))*cube[cube_index['al2o3_fraction']]
+
+                    cube[cube_index['al2o3_fraction']] = al2o3_fraction
 
                 if 'Na2S(c)' in self.cloud_species:
 

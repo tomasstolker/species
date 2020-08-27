@@ -355,6 +355,9 @@ def create_abund_dict(abund_in: dict,
         if 'MgSiO3(c)' in abund_in:
             abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)'][indices]
 
+        if 'Al2O3(c)' in abund_in:
+            abund_out['Al2O3(c)'] = abund_in['Al2O3(c)'][indices]
+
         if 'Na2S(c)' in abund_in:
             abund_out['Na2S(c)'] = abund_in['Na2S(c)'][indices]
 
@@ -382,6 +385,9 @@ def create_abund_dict(abund_in: dict,
         if 'MgSiO3(c)' in abund_in:
             abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)'][::3]
 
+        if 'Al2O3(c)' in abund_in:
+            abund_out['Al2O3(c)'] = abund_in['Al2O3(c)'][::3]
+
         if 'Na2S(c)' in abund_in:
             abund_out['Na2S(c)'] = abund_in['Na2S(c)'][::3]
 
@@ -408,6 +414,9 @@ def create_abund_dict(abund_in: dict,
 
         if 'MgSiO3(c)' in abund_in:
             abund_out['MgSiO3(c)'] = abund_in['MgSiO3(c)']
+
+        if 'Al2O3(c)' in abund_in:
+            abund_out['Al2O3(c)'] = abund_in['Al2O3(c)']
 
         if 'Na2S(c)' in abund_in:
             abund_out['Na2S(c)'] = abund_in['Na2S(c)']
@@ -643,6 +652,22 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
 
         p_base['MgSiO3(c)'] = P_base_MgSiO3
 
+    if 'Al2O3' in log_x_base:
+        # Cloud base of Al2O3
+        P_base_Al2O3 = simple_cdf_Al2O3(pressure,
+                                        temperature,
+                                        metallicity,
+                                        c_o_ratio,
+                                        np.mean(mmw),
+                                        plotting=plotting)
+
+        abund_in['Al2O3(c)'] = np.zeros_like(temperature)
+
+        abund_in['Al2O3(c)'][pressure < P_base_Al2O3] = 10.**log_x_base['Al2O3'] * \
+            (pressure[pressure <= P_base_Al2O3] / P_base_Al2O3)**fsed
+
+        p_base['Al2O3(c)'] = P_base_Al2O3
+
     if 'Na2S' in log_x_base:
         # Cloud base of Na2S
         P_base_Na2S = simple_cdf_Na2S(pressure,
@@ -703,6 +728,9 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
     if 'MgSiO3' in log_x_base:
         fseds['MgSiO3(c)'] = fsed
 
+    if 'Al2O3' in log_x_base:
+        fseds['Al2O3(c)'] = fsed
+
     if 'Na2S' in log_x_base:
         fseds['Na2S(c)'] = fsed
 
@@ -732,6 +760,8 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
             plt.axhline(P_base_Fe, label='Cloud deck Fe')
         if 'MgSiO3' in log_x_base:
             plt.axhline(P_base_MgSiO3, label='Cloud deck MgSiO3')
+        if 'Al2O3' in log_x_base:
+            plt.axhline(P_base_Al2O3, label='Cloud deck Al2O3')
         if 'Na2S' in log_x_base:
             plt.axhline(P_base_Na2S, label='Cloud deck Na2S')
         if 'KCl' in log_x_base:
@@ -766,6 +796,19 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
             log_x_base_mgsio3 = log_x_base['MgSiO3']
             plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_mgsio3:.2f}')
             plt.savefig('mgsio3_clouds.pdf', bbox_inches='tight')
+            plt.clf()
+
+        if 'Al2O3' in log_x_base:
+            plt.plot(abundances['Al2O3(c)'], pressure)
+            plt.axhline(P_base_Al2O3)
+            plt.yscale('log')
+            if np.count_nonzero(abundances['Al2O3(c)']) > 0:
+                plt.xscale('log')
+            plt.ylim(1e3, 1e-6)
+            plt.xlim(1e-10, 1.)
+            log_x_base_al2o3 = log_x_base['Al2O3']
+            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_al2o3:.2f}')
+            plt.savefig('al2o3_clouds.pdf', bbox_inches='tight')
             plt.clf()
 
         if 'Na2S' in log_x_base:
@@ -1104,6 +1147,13 @@ def log_x_cloud_base(c_o_ratio: float,
         # logarithm of the cloud base mass fraction of MgSiO3
         log_x_base['MgSiO3'] = np.log10(10.**cloud_fractions['MgSiO3(c)']*x_mgsio3)
 
+    if 'Al2O3(c)' in cloud_fractions:
+        # mass fraction of MgSiO3
+        x_al2o3 = return_XAl2O3(metallicity, c_o_ratio)
+
+        # logarithm of the cloud base mass fraction of MgSiO3
+        log_x_base['Al2O3'] = np.log10(10.**cloud_fractions['Al2O3(c)']*x_al2o3)
+
     if 'Na2S(c)' in cloud_fractions:
         # mass fraction of Na2S
         x_na2s = return_XNa2S(metallicity, c_o_ratio)
@@ -1250,9 +1300,7 @@ def return_XFe(FeH: float,
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
 
-    XFe = XFe / add
-
-    return XFe
+    return XFe / add
 
 
 @typechecked
@@ -1289,9 +1337,48 @@ def return_XMgSiO3(FeH: float,
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
 
-    Xmgsio3 = Xmgsio3 / add
+    return Xmgsio3 / add
 
-    return Xmgsio3
+
+@typechecked
+def return_XAl2O3(FeH: float,
+                  CO: float) -> float:
+    """
+    Parameters
+    ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+
+    Returns
+    -------
+    float
+    """
+
+    nfracs = solar_mixing_ratios()
+    masses = atomic_masses()
+
+    nfracs_use = copy.copy(nfracs)
+
+    for spec in nfracs.keys():
+
+        if (spec != 'H') and (spec != 'He'):
+            nfracs_use[spec] = nfracs[spec]*1e1**FeH
+
+    nfracs_use['O'] = nfracs_use['C']/CO
+
+    nfracs_al2o3 = np.min([nfracs_use['Al']/2., nfracs_use['O']/3.])
+
+    masses_al2o3 = 2. * masses['Al'] + 3. * masses['O']
+
+    Xal2o3 = masses_al2o3*nfracs_al2o3
+
+    add = 0.
+    for spec in nfracs_use.keys():
+        add += masses[spec]*nfracs_use[spec]
+
+    return Xal2o3 / add
 
 
 @typechecked
@@ -1320,7 +1407,7 @@ def return_XNa2S(FeH: float,
 
     nfracs_na2s = np.min([nfracs_use['Na']/2., nfracs_use['S']])
 
-    masses_na2s = 2.*masses['Na'] + masses['S']
+    masses_na2s = 2. * masses['Na'] + masses['S']
 
     Xna2s = masses_na2s*nfracs_na2s
 
@@ -1328,9 +1415,7 @@ def return_XNa2S(FeH: float,
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
 
-    Xna2s = Xna2s / add
-
-    return Xna2s
+    return Xna2s / add
 
 
 @typechecked
@@ -1367,9 +1452,7 @@ def return_XKCl(FeH: float,
     for spec in nfracs_use.keys():
         add += masses[spec]*nfracs_use[spec]
 
-    Xkcl = Xkcl / add
-
-    return Xkcl
+    return Xkcl / add
 
 
 #############################################################
@@ -1512,6 +1595,51 @@ def return_T_cond_MgSiO3(FeH: float,
     m_mgsio3 = masses['Mg'] + masses['Si'] + 3. * masses['O']
 
     return P_vap(T)/(Xmgsio3*MMW/m_mgsio3), T
+
+
+@typechecked
+def return_T_cond_Al2O3(FeH: float,
+                        CO: float,
+                        MMW: float = 2.33) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Function for calculating the saturation pressure for Al2O3.
+
+    Parameters
+    ----------
+    FeH : float
+        Metallicity.
+    CO : float
+        Carbon-to-oxygen ratio.
+    MMW : float
+        Mean molecular weight.
+
+    Returns
+    -------
+    np.ndarray
+        Array with the pressures (bar).
+    np.ndarray
+        Array with condensation temperatures (K).
+    """
+
+    # Return dictionary with atomic masses
+    masses = atomic_masses()
+
+    # Create pressures (bar)
+    pressure = np.logspace(-6, 3, 1000)
+
+    # Equilibrium mass fraction of Al2O3
+    # Xal2o3 = return_XAl2O3(FeH, CO)
+
+    # Molecular mass of Al2O3
+    # m_al2o3 = 3. * masses['Al'] + 2. * masses['O']
+
+    # Partial pressure of Al2O3
+    # part_press = pressure/(Xal2o3*MMW/m_al2o3)
+
+    # Condensation temperature of Al2O3 (see Eq. 4 in Wakeford et al. 2017)
+    t_cond = 1e4 / (5.014 - 0.2179*np.log(pressure) + 2.264e-3*np.log(pressure)**2 - 0.580*FeH)
+
+    return pressure, t_cond
 
 
 @typechecked
@@ -1709,6 +1837,68 @@ def simple_cdf_MgSiO3(press: np.ndarray,
         plt.xlim(0., 3000.)
         plt.ylim(1e2, 1e-6)
         plt.savefig('mgsio3_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
+
+    return P_cloud
+
+
+@typechecked
+def simple_cdf_Al2O3(press: np.ndarray,
+                     temp: np.ndarray,
+                     FeH: float,
+                     CO: float,
+                     MMW: float = 2.33,
+                     plotting: bool = False) -> float:
+    """
+    Function to calculate the base of the Al2O3 cloud deck by intersecting the P/T profile with
+    the saturation vapor pressure.
+
+    Parameters
+    ----------
+    press : np.ndarray
+        Pressure.
+    temp : np.ndarray
+        Temperature.
+    FeH : float
+        Metallicity.
+    CO : float
+        C/O ratio.
+    MMW : float
+        Mean molecular weight.
+    plotting : bool
+        Create a plot.
+
+    Returns
+    -------
+    float
+        Base pressure of the cloud deck.
+    """
+
+    Pc, Tc = return_T_cond_Al2O3(FeH, CO, MMW)
+    index = (Pc > 1e-8) & (Pc < 1e5)
+    Pc, Tc = Pc[index], Tc[index]
+    tcond_p = interp1d(Pc, Tc)
+    Tcond_on_input_grid = tcond_p(press)
+
+    Tdiff = Tcond_on_input_grid - temp
+    diff_vec = Tdiff[1:]*Tdiff[:-1]
+    ind_cdf = (diff_vec < 0.)
+
+    if len(diff_vec[ind_cdf]) > 0:
+        P_clouds = (press[1:]+press[:-1])[ind_cdf]/2.
+        P_cloud = float(P_clouds[-1])
+
+    else:
+        P_cloud = 1e-8
+
+    if plotting:
+        plt.plot(temp, press)
+        plt.plot(Tcond_on_input_grid, press)
+        plt.axhline(P_cloud, color='red', linestyle='--')
+        plt.yscale('log')
+        plt.xlim(0., 3000.)
+        plt.ylim(1e2, 1e-6)
+        plt.savefig('al2o3_clouds_cdf.pdf', bbox_inches='tight')
         plt.clf()
 
     return P_cloud
