@@ -202,6 +202,13 @@ def plot_pt_profile(tag: str,
 
             ax.plot(sat_temp, sat_press, '-.', lw=0.8, color='black', zorder=2)
 
+        if 'al2o3_fraction' in median:
+            sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(median['metallicity'],
+                                                                     median['c_o_ratio'],
+                                                                     MMW=np.mean(abund['MMW']))
+
+            ax.plot(sat_temp, sat_press, ':', lw=0.8, color='black', zorder=2)
+
     plt.savefig(output, bbox_inches='tight')
     plt.clf()
     plt.close()

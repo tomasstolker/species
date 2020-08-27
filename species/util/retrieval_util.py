@@ -1622,7 +1622,7 @@ def return_T_cond_Al2O3(FeH: float,
     """
 
     # Return dictionary with atomic masses
-    masses = atomic_masses()
+    # masses = atomic_masses()
 
     # Create pressures (bar)
     pressure = np.logspace(-6, 3, 1000)
@@ -1637,7 +1637,7 @@ def return_T_cond_Al2O3(FeH: float,
     # part_press = pressure/(Xal2o3*MMW/m_al2o3)
 
     # Condensation temperature of Al2O3 (see Eq. 4 in Wakeford et al. 2017)
-    t_cond = 1e4 / (5.014 - 0.2179*np.log(pressure) + 2.264e-3*np.log(pressure)**2 - 0.580*FeH)
+    t_cond = 1e4 / (5.014 - 0.2179*np.log10(pressure) + 2.264e-3*np.log10(pressure)**2 - 0.580*FeH)
 
     return pressure, t_cond
 
