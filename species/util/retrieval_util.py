@@ -1,13 +1,13 @@
 import copy
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from typeguard import typechecked
 from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
+from typeguard import typechecked
 
 from petitRADTRANS.radtrans import Radtrans as Radtrans
 from petitRADTRANS_ck_test_speed import nat_cst as nc
@@ -240,7 +240,7 @@ def pt_spline_interp(knot_press: np.ndarray,
     """
     Function for interpolating the P/T knots with a PCHIP 1-D monotonic cubic interpolation. The
     interpolated temperature is smoothed with a Gaussian kernel of width 0.3 dex in pressure
-    (Piette & Madhusudhan 2020).
+    (see Piette & Madhusudhan 2020).
 
     Parameters
     ----------
@@ -739,10 +739,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
 
     # convert flux f_nu to f_lambda
     f_lambda = flux*nc.c/wlen**2.
-    # convert to flux per m^2 (from flux per cm^2) cancels with step below
-    # f_lambda = f_lambda * 1e4
-    # convert to flux per micron (from flux per cm) cancels with step above
-    # f_lambda = f_lambda * 1e-4
+
     # convert from ergs to Joule
     f_lambda = f_lambda * 1e-7
 
@@ -919,10 +916,13 @@ def mean_molecular_weight(abundances: dict) -> float:
     for key in abundances:
         if key == 'CO_all_iso':
             mmw += abundances[key]/mol_weight['CO']
+
         elif key in ['Na_lor_cut', 'Na_burrows']:
             mmw += abundances[key]/mol_weight['Na']
+
         elif key in ['K_lor_cut', 'K_burrows']:
             mmw += abundances[key]/mol_weight['K']
+
         else:
             mmw += abundances[key]/mol_weight[key]
 
@@ -962,8 +962,10 @@ def potassium_abundance(log_x_abund: dict) -> float:
     # volume mixing ratio of sodium
     if 'Na' in log_x_abund:
         n_na_abund = x_abund['Na'] * mmw/masses['Na']
+
     elif 'Na_lor_cut' in log_x_abund:
         n_na_abund = x_abund['Na_lor_cut'] * mmw/masses['Na']
+
     elif 'Na_burrows' in log_x_abund:
         n_na_abund = x_abund['Na_burrows'] * mmw/masses['Na']
 
@@ -1179,10 +1181,85 @@ def cloud_mass_fraction(composition: str,
     return x_cloud/mass_norm
 
 
-#############################################################
-# Fe saturation pressure, from Ackerman & Marley (2001),
-# including erratum (P_vap is in bar, not cgs!)
-#############################################################
+@typechecked
+def find_cloud_deck(composition: str,
+                    press: np.ndarray,
+                    temp: np.ndarray,
+                    metallicity: float,
+                    c_o_ratio: float,
+                    mmw: float = 2.33,
+                    plotting: bool = False) -> float:
+    """
+    Function to find the base of the cloud deck by intersecting the P/T profile with the
+    saturation vapor pressure.
+
+    Parameters
+    ----------
+    composition : str
+        Cloud composition ('Fe', 'MgSiO3', 'Al2O3', 'Na2S', or 'KCL').
+    press : np.ndarray
+        Pressures (bar).
+    temp : np.ndarray
+        Temperatures (K).
+    metallicity : float
+        Metallicity [Fe/H].
+    c_o_ratio : float
+        Carbon-to-oxygen ratio.
+    mmw : float
+        Mean molecular weight.
+    plotting : bool
+        Create a plot.
+
+    Returns
+    -------
+    float
+        Pressure (bar) at the base of the cloud deck.
+    """
+
+    if composition == 'Fe':
+        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
+
+    elif composition == 'MgSiO3':
+        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
+
+    elif composition == 'Al2O3':
+        Pc, Tc = return_T_cond_Al2O3(metallicity, c_o_ratio, mmw)
+
+    elif composition == 'Na2S':
+        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
+
+    elif composition == 'KCL':
+        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
+
+    index = (Pc > 1e-8) & (Pc < 1e5)
+    Pc, Tc = Pc[index], Tc[index]
+
+    tcond_p = interp1d(Pc, Tc)
+    Tcond_on_input_grid = tcond_p(press)
+
+    Tdiff = Tcond_on_input_grid - temp
+    diff_vec = Tdiff[1:]*Tdiff[:-1]
+    ind_cdf = (diff_vec < 0.)
+
+    if len(diff_vec[ind_cdf]) > 0:
+        P_clouds = (press[1:]+press[:-1])[ind_cdf]/2.
+        P_cloud = float(P_clouds[-1])
+
+    else:
+        P_cloud = 1e-8
+
+    if plotting:
+        plt.plot(temp, press)
+        plt.plot(Tcond_on_input_grid, press)
+        plt.axhline(P_cloud, color='red', linestyle='--')
+        plt.yscale('log')
+        plt.xlim(0., 3000.)
+        plt.ylim(1e2, 1e-6)
+        plt.savefig(f'{composition.lower()}_clouds_cdf.pdf', bbox_inches='tight')
+        plt.clf()
+
+    return P_cloud
+
 
 @typechecked
 def return_T_cond_Fe(FeH: float,
@@ -1210,7 +1287,7 @@ def return_T_cond_Fe(FeH: float,
 
     T = np.linspace(100., 10000., 1000)
     # Taken from Ackerman & Marley (2001)
-    # including their erratum
+    # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(15.71 - 47664./x)
 
     XFe = cloud_mass_fraction('Fe', FeH, CO)
@@ -1244,7 +1321,7 @@ def return_T_cond_Fe_l(FeH: float,
 
     T = np.linspace(100., 10000., 1000)
     # Taken from Ackerman & Marley (2001)
-    # including their erratum
+    # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(9.86 - 37120./x)
 
     XFe = cloud_mass_fraction('Fe', FeH, CO)
@@ -1311,7 +1388,7 @@ def return_T_cond_MgSiO3(FeH: float,
 
     T = np.linspace(100., 10000., 1000)
     # Taken from Ackerman & Marley (2001)
-    # including their erratum
+    # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(25.37 - 58663./x)
 
     Xmgsio3 = cloud_mass_fraction('MgSiO3', FeH, CO)
@@ -1440,86 +1517,6 @@ def return_T_cond_KCl(FeH: float,
 
 
 @typechecked
-def find_cloud_deck(composition: str,
-                    press: np.ndarray,
-                    temp: np.ndarray,
-                    metallicity: float,
-                    c_o_ratio: float,
-                    mmw: float = 2.33,
-                    plotting: bool = False) -> float:
-    """
-    Function to find the base of the cloud deck by intersecting the P/T profile with the
-    saturation vapor pressure.
-
-    Parameters
-    ----------
-    composition : str
-        Cloud composition ('Fe', 'MgSiO3', 'Al2O3', 'Na2S', or 'KCL').
-    press : np.ndarray
-        Pressures (bar).
-    temp : np.ndarray
-        Temperatures (K).
-    metallicity : float
-        Metallicity [Fe/H].
-    c_o_ratio : float
-        Carbon-to-oxygen ratio.
-    mmw : float
-        Mean molecular weight.
-    plotting : bool
-        Create a plot.
-
-    Returns
-    -------
-    float
-        Pressure (bar) at the base of the cloud deck.
-    """
-
-    if composition == 'Fe':
-        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
-
-    elif composition == 'MgSiO3':
-        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
-
-    elif composition == 'Al2O3':
-        Pc, Tc = return_T_cond_Al2O3(metallicity, c_o_ratio, mmw)
-
-    elif composition == 'Na2S':
-        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
-
-    elif composition == 'KCL':
-        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
-
-    index = (Pc > 1e-8) & (Pc < 1e5)
-    Pc, Tc = Pc[index], Tc[index]
-
-    tcond_p = interp1d(Pc, Tc)
-    Tcond_on_input_grid = tcond_p(press)
-
-    Tdiff = Tcond_on_input_grid - temp
-    diff_vec = Tdiff[1:]*Tdiff[:-1]
-    ind_cdf = (diff_vec < 0.)
-
-    if len(diff_vec[ind_cdf]) > 0:
-        P_clouds = (press[1:]+press[:-1])[ind_cdf]/2.
-        P_cloud = float(P_clouds[-1])
-
-    else:
-        P_cloud = 1e-8
-
-    if plotting:
-        plt.plot(temp, press)
-        plt.plot(Tcond_on_input_grid, press)
-        plt.axhline(P_cloud, color='red', linestyle='--')
-        plt.yscale('log')
-        plt.xlim(0., 3000.)
-        plt.ylim(1e2, 1e-6)
-        plt.savefig(f'{composition.lower()}_clouds_cdf.pdf', bbox_inches='tight')
-        plt.clf()
-
-    return P_cloud
-
-
-@typechecked
 def convolve(input_wavel: np.ndarray,
              input_flux: np.ndarray,
              spec_res: float) -> np.ndarray:
@@ -1556,62 +1553,3 @@ def convolve(input_wavel: np.ndarray,
     sigma_lsf_gauss_filter = sigma_lsf/spacing
 
     return gaussian_filter(input_flux, sigma=sigma_lsf_gauss_filter, mode='nearest')
-
-
-# if plotting:
-#     kappa_IR = 0.01
-#     gamma = 0.4
-#     T_int = 200.
-#     T_equ = 1550.
-#     gravity = 1e1**2.45
-#
-#     pressures = np.logspace(-6, 2, 100)
-#
-#     temperature = nc.guillot_global(pressures, kappa_IR, gamma, gravity, T_int, T_equ)
-#
-#     simple_cdf('Fe', pressures, temperature, 0., 0.55)
-#     simple_cdf('MgSiO3', pressures, temperature, 0., 0.55)
-#
-#     T_int = 200.
-#     T_equ = 800.
-#     temperature = nc.guillot_global(pressures, kappa_IR, gamma, gravity, T_int, T_equ)
-#     simple_cdf('Na2S', pressures, temperature, 0., 0.55)
-#
-#     T_int = 150.
-#     T_equ = 650.
-#     temperature = nc.guillot_global(pressures, kappa_IR, gamma, gravity, T_int, T_equ)
-#     simple_cdf('KCL', pressures, temperature, 0., 0.55)
-
-
-# if plotting:
-#
-#     #FeHs = np.linspace(-0.5, 2., 5)
-#     #COs = np.linspace(0.3, 1.2, 5)
-#     FeHs = [0.]
-#     COs = [0.55]
-#
-#     for FeH in FeHs:
-#         for CO in COs:
-#             P, T = return_T_cond_Fe(FeH, CO)
-#             plt.plot(T,P, label = 'Fe(c), [Fe/H] = '+str(FeH)+', C/O = '+str(CO), color = 'black')
-#             P, T = return_T_cond_Fe_l(FeH, CO)
-#             plt.plot(T,P, '--', label = 'Fe(l), [Fe/H] = '+str(FeH)+', C/O = '+str(CO))
-#             P, T = return_T_cond_Fe_comb(FeH, CO)
-#             plt.plot(T,P, ':', label = 'Fe(c+l), [Fe/H] = '+str(FeH)+', C/O = '+str(CO))
-#             P, T = return_T_cond_MgSiO3(FeH, CO)
-#             plt.plot(T,P, label = 'MgSiO3, [Fe/H] = '+str(FeH)+', C/O = '+str(CO))
-#             P, T = return_T_cond_Na2S(FeH, CO)
-#             plt.plot(T,P, label = 'Na2S, [Fe/H] = '+str(FeH)+', C/O = '+str(CO))
-#             P, T = return_T_cond_KCl(FeH, CO)
-#             plt.plot(T,P, label = 'KCl, [Fe/H] = '+str(FeH)+', C/O = '+str(CO))
-#
-#
-#     plt.yscale('log')
-#     '''
-#     plt.xlim([0., 5000.])
-#     plt.ylim([1e5,1e-10])
-#     '''
-#     plt.xlim([0., 2000.])
-#     plt.ylim([1e2,1e-3])
-#     plt.legend(loc = 'best', frameon = False)
-#     plt.show()
