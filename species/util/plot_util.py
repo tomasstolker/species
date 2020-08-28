@@ -235,6 +235,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('mgsio3_fraction')
         param[index] = r'$\log\,\tilde{X}_\mathregular{MgSiO_{3}}$'
 
+    if 'al2o3_fraction' in param:
+        index = param.index('al2o3_fraction')
+        param[index] = r'$\log\,\tilde{X}_\mathregular{Al_{2}O_{3}}$'
+
     if 'na2s_fraction' in param:
         index = param.index('na2s_fraction')
         param[index] = r'$\log\,\tilde{X}_\mathregular{Na_{2}S}$'

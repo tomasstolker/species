@@ -212,6 +212,9 @@ class ReadRadtrans:
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
                 None, None, abund, half=True, chemistry='free', contribution=contribution)
 
+        # tau = self.rt_object.total_tau
+        # print(tau.shape)
+
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
 
