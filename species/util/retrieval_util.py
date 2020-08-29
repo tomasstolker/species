@@ -1,3 +1,7 @@
+"""
+Utility functions for atmospheric retrieval.
+"""
+
 import copy
 
 from typing import Optional, Tuple, Union
