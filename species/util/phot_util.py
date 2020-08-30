@@ -193,7 +193,7 @@ def get_residuals(datatype: str,
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
         ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
         instance is sufficiently broad to cover all the photometric and spectroscopic data of
-        ``inc_phot`` and ``inc_spec``. Not used if set to `None`.
+        ``inc_phot`` and ``inc_spec``. Not used if set to ``None``.
 
     Returns
     -------

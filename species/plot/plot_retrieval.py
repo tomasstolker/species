@@ -14,6 +14,7 @@ from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem impor
     interpol_abundances
 
 from species.data import database
+from species.read import read_radtrans
 from species.util import retrieval_util
 
 
@@ -23,7 +24,8 @@ def plot_pt_profile(tag: str,
                     xlim: Optional[Tuple[float, float]] = None,
                     ylim: Optional[Tuple[float, float]] = None,
                     offset: Optional[Tuple[float, float]] = None,
-                    output: str = 'pt_profile.pdf') -> None:
+                    output: str = 'pt_profile.pdf',
+                    radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> None:
     """
     Function to plot the posterior distribution.
 
@@ -41,6 +43,11 @@ def plot_pt_profile(tag: str,
         Offset of the x- and y-axis label.
     output : str
         Output filename.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
+        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
+        instance is sufficiently broad to cover all the photometric and spectroscopic data of
+        ``inc_phot`` and ``inc_spec``. Not used if set to ``None``.
 
     Returns
     -------
@@ -75,12 +82,17 @@ def plot_pt_profile(tag: str,
 
     ax = plt.subplot(gridsp[0, 0])
 
+    if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median:
+        top = False
+    else:
+        top = True
+
     ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                   direction='in', width=1, length=5, labelsize=12, top=True,
+                   direction='in', width=1, length=5, labelsize=12, top=top,
                    bottom=True, left=True, right=True)
 
     ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                   direction='in', width=1, length=3, labelsize=12, top=True,
+                   direction='in', width=1, length=3, labelsize=12, top=top,
                    bottom=True, left=True, right=True)
 
     ax.set_xlabel('Temperature (K)', fontsize=13)
@@ -193,21 +205,63 @@ def plot_pt_profile(tag: str,
                                                                        median['c_o_ratio'],
                                                                        MMW=np.mean(abund['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='black', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:blue', zorder=2)
 
         if 'mgsio3_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(median['metallicity'],
                                                                       median['c_o_ratio'],
                                                                       MMW=np.mean(abund['MMW']))
 
-            ax.plot(sat_temp, sat_press, '-.', lw=0.8, color='black', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:orange', zorder=2)
 
         if 'al2o3_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(median['metallicity'],
                                                                      median['c_o_ratio'],
                                                                      MMW=np.mean(abund['MMW']))
 
-            ax.plot(sat_temp, sat_press, ':', lw=0.8, color='black', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:green', zorder=2)
+
+    if radtrans is not None:
+        if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median:
+            ax2 = ax.twiny()
+
+            ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                            direction='in', width=1, length=5, labelsize=12, top=True,
+                            bottom=False, left=True, right=True)
+
+            ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                            direction='in', width=1, length=3, labelsize=12, top=True,
+                            bottom=False, left=True, right=True)
+
+            if ylim:
+                ax2.set_ylim(ylim[0], ylim[1])
+            else:
+                ax2.set_ylim(1e3, 1e-6)
+
+            ax2.set_xscale('log')
+            ax2.set_yscale('log')
+
+            ax2.set_xlabel('Average particle radius (µm)', fontsize=13, va='bottom')
+
+            # Recalculate the best-fit model to update the r_g attribute of radtrans.rt_object
+            radtrans.get_model(median)
+
+            if offset is not None:
+                ax2.get_xaxis().set_label_coords(0.5, 1.+abs(offset[0]))
+            else:
+                ax2.get_xaxis().set_label_coords(0.5, 1.06)
+
+        if 'fe_fraction' in median:
+            # Convert from (cm) to (um)
+            ax2.plot(radtrans.rt_object.r_g[:, radtrans.rt_object.cloud_species.index('Fe(c)')]*1e4, pressure[::3], lw=0.8, color='tab:blue')
+
+        if 'mgsio3_fraction' in median:
+            # Convert from (cm) to (um)
+            ax2.plot(radtrans.rt_object.r_g[:, radtrans.rt_object.cloud_species.index('MgSiO3(c)')]*1e4, pressure[::3], lw=0.8, color='tab:orange')
+
+        if 'al2o3_fraction' in median:
+            # Convert from (cm) to (um)
+            ax2.plot(radtrans.rt_object.r_g[:, radtrans.rt_object.cloud_species.index('Al2O3(c)')]*1e4, pressure[::3], lw=0.8, color='tab:green')
 
     plt.savefig(output, bbox_inches='tight')
     plt.clf()

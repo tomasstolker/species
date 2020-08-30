@@ -747,26 +747,6 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
     # convert from ergs to Joule
     f_lambda = f_lambda * 1e-7
 
-    # plt.yscale('log')
-    # plt.xscale('log')
-    # plt.ylim([1e2,1e-6])
-    # plt.ylabel('P (bar)')
-    # plt.xlabel('Average particle size of MgSiO3 particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('MgSiO3(c)')]/1e-4, pressure)
-    # plt.savefig('mgsio3_size.png')
-    # plt.show()
-    # plt.clf()
-
-    # plt.yscale('log')
-    # plt.xscale('log')
-    # plt.ylim([1e2,1e-6])
-    # plt.ylabel('P (bar)')
-    # plt.xlabel('Average particle size of Fe particles (microns)')
-    # plt.plot(rt_object.r_g[:,rt_object.cloud_species.index('Fe(c)')]/1e-4, pressure)
-    # plt.savefig('fe_size.png')
-    # plt.show()rt_object
-    # plt.clf()
-
     # optionally return the emission contribution
     if contribution:
         contr_em = rt_object.contr_em
@@ -913,22 +893,22 @@ def mean_molecular_weight(abundances: dict) -> float:
         Mean molecular weight in atomic mass units.
     """
 
-    mol_weight = atomic_masses()
+    masses = atomic_masses()
 
     mmw = 0.
 
     for key in abundances:
         if key == 'CO_all_iso':
-            mmw += abundances[key]/mol_weight['CO']
+            mmw += abundances[key]/masses['CO']
 
         elif key in ['Na_lor_cut', 'Na_burrows']:
-            mmw += abundances[key]/mol_weight['Na']
+            mmw += abundances[key]/masses['Na']
 
         elif key in ['K_lor_cut', 'K_burrows']:
-            mmw += abundances[key]/mol_weight['K']
+            mmw += abundances[key]/masses['K']
 
         else:
-            mmw += abundances[key]/mol_weight[key]
+            mmw += abundances[key]/masses[key]
 
     return 1./mmw
 
@@ -1015,23 +995,16 @@ def log_x_cloud_base(c_o_ratio: float,
     return log_x_base
 
 
-#############################################################
-# To calculate X_Fe from [Fe/H], C/O
-#############################################################
-
-# metal species
-# metals = ['C', 'N', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'K', 'Ca', 'Ti', 'V', 'Fe', 'Ni']
-
 @typechecked
 def solar_mixing_ratios() -> dict:
     """
-    Function which returns the volume mixing ratios of a solar elemental abundances (i.e.
-    [Fe/H] = 0), adopted from Asplund et al. (2009).
+    Function which returns the volume mixing ratios for solar elemental abundances (i.e.
+    [Fe/H] = 0); adopted from Asplund et al. (2009).
 
     Returns
     -------
     dict
-        Dictionary with the solar number fractions (volume mixing ratios).
+        Dictionary with the solar number fractions (i.e. volume mixing ratios).
     """
 
     n_fracs = {}
