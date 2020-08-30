@@ -1075,8 +1075,8 @@ class AtmosphericRetrieval:
             # return zero probability if the spectrum contains NaN values
 
             if np.sum(np.isnan(flux_lambda)) > 0:
-                if len(flux_lambda) > 1:
-                    warnings.warn('Spectrum with NaN values encountered.')
+                # if len(flux_lambda) > 1:
+                #     warnings.warn('Spectrum with NaN values encountered.')
 
                 return -np.inf
 
