@@ -1308,7 +1308,7 @@ def scale_cloud_fraction(cube,
                          composition: str,
                          tau_cloud: float) -> float:
     """
-    Function to calculate the abundance scaling for a certain cloud composition. TODO
+    Function to scale the mass fraction of a cloud species to the requested optical depth.
 
     Parameters
     ----------
@@ -1316,42 +1316,68 @@ def scale_cloud_fraction(cube,
         Unit cube.
     cube_index : dict
         Dictionary with the index of each parameter in the ``cube``.
+    rt_object : Radtrans
+        Instance of ``Radtrans``.
+    pressure : np.ndarray
+        Array with the pressure points (bar).
+    temperature : np.ndarray
+        Array with the temperature points (K) corresponding to ``pressure``.
+    mmw : np.ndarray
+        Array with the mean molecular weights corresponding to ``pressure``.
+    chemistry : str
+        Chemistry type (only ``'equilibrium'`` is supported).
+    abund_in : dict
+        Dictionary with arrays that contain the pressure-dependent, equilibrium mass fractions
+        of the line species.
+    composition : sr
+        Cloud composition ('Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)').
+    tau_cloud : float
+        Optical depth of the clouds. The returned mass fraction is scaled such that the optical
+        depth at the shortest wavelength is equal to ``tau_cloud``.
 
     Returns
     -------
     float
-        Scaling for the cloud abundance of ``composition`` (i.e. the ratio of the sampled optical
-        depth and the optical depth at the shortest wavelength for a mass fraction equal to the
-        equilibrium abundance).
+        Mass fraction relative to the maximum value allowed from elemental abundances. The value
+        has been scaled to the requested optical depth ``tau_cloud`` (at the shortest wavelength).
     """
 
+    # Dictionary with the requested cloud composition and setting the log10 of the mass fraction
+    # (relative to the maximum value allowed from elemental abundances) equal to zero
     cloud_fractions = {composition: 0.}
 
+    # Create a dictionary with the log10 of the mass fraction at the cloud base
     log_x_base = log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                   cube[cube_index['metallicity']],
                                   cloud_fractions)
 
-    p_base_item = find_cloud_deck(composition[:-3],
-                                  pressure,
-                                  temperature,
-                                  cube[cube_index['metallicity']],
-                                  cube[cube_index['c_o_ratio']],
-                                  mmw=np.mean(mmw),
-                                  plotting=False)
+    # Get the pressure (bar) of the cloud base
+    p_base = find_cloud_deck(composition[:-3],
+                             pressure,
+                             temperature,
+                             cube[cube_index['metallicity']],
+                             cube[cube_index['c_o_ratio']],
+                             mmw=np.mean(mmw),
+                             plotting=False)
 
+    # Initialize the cloud abundance in the dictionary with mass fractions
     abund_in[composition] = np.zeros_like(temperature)
 
-    abund_in[composition][pressure < p_base_item] = 10.**log_x_base[composition[:-3]] * \
-        (pressure[pressure <= p_base_item] / p_base_item)**cube[cube_index['fsed']]
+    # Set the cloud abundances by scaling from the base with the f_sed parameter
+    abund_in[composition][pressure < p_base] = 10.**log_x_base[composition[:-3]] * \
+        (pressure[pressure <= p_base] / p_base)**cube[cube_index['fsed']]
 
+    # Update the abundance dictionary
     abundances = create_abund_dict(abund_in,
                                    rt_object.line_species,
                                    chemistry,
                                    half=True,
                                    indices=None)
 
+    # Interpolate the line opacities to the temperature structure
     rt_object.interpolate_species_opa(temperature[::3])
 
+    # Combine the line opacities according their mass fractions and add the continuum opacities
     rt_object.mix_opa_tot(abundances,
                           mmw[::3],
                           10.**cube[cube_index['logg']],
@@ -1362,17 +1388,19 @@ def scale_cloud_fraction(cube,
                           gray_opacity=None,
                           add_cloud_scat_as_abs=False)
 
+    # Calculate the cloud optical depth and set the tau_cloud attribute
     rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
 
-    # The cloud optical depth is extracted at the largest pressure and the shortest wavelength
+    # Extract the optical at the largest pressure and the shortest wavelength
     tau_bottom = rt_object.tau_cloud[0, 0, 0, -1]
 
     if tau_bottom > 0.:
-        scaled_abundance = np.log10(tau_cloud/rt_object.tau_cloud[0, 0, 0, -1])
+        # Scale the mass fraction
+        log_x_scaled = np.log10(tau_cloud/tau_bottom)
     else:
-        scaled_abundance = 100.
+        log_x_scaled = 100.
 
-    return scaled_abundance
+    return log_x_scaled
 
 
 @typechecked
