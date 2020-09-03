@@ -1297,16 +1297,16 @@ def find_cloud_deck(composition: str,
 
 
 @typechecked
-def scale_cloud_fraction(cube,
-                         cube_index: Dict[str, float],
-                         rt_object: Radtrans,
-                         pressure: np.ndarray,
-                         temperature: np.ndarray,
-                         mmw: np.ndarray,
-                         chemistry: str,
-                         abund_in: Dict[str, np.ndarray],
-                         composition: str,
-                         tau_cloud: float) -> float:
+def scale_cloud_abund(cube,
+                      cube_index: Dict[str, float],
+                      rt_object: Radtrans,
+                      pressure: np.ndarray,
+                      temperature: np.ndarray,
+                      mmw: np.ndarray,
+                      chemistry: str,
+                      abund_in: Dict[str, np.ndarray],
+                      composition: str,
+                      tau_cloud: float) -> float:
     """
     Function to scale the mass fraction of a cloud species to the requested optical depth.
 

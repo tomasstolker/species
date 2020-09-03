@@ -1042,7 +1042,7 @@ class AtmosphericRetrieval:
                         cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
 
                     elif f'{item[:-3].lower()}_tau' in self.parameters:
-                        cloud_fractions[item] = retrieval_util.scale_cloud_fraction(
+                        cloud_fractions[item] = retrieval_util.scale_cloud_abund(
                             cube, cube_index, rt_object, self.pressure, temp, mmw, chemistry,
                             abund_in, item, cube[cube_index[f'{item[:-3].lower()}_tau']])
 
