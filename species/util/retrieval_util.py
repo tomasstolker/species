@@ -1371,9 +1371,8 @@ def scale_cloud_fraction(cube,
 
     rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
 
-    tau_min_wavel = np.nansum(rt_object.tau_cloud[0, 0, 0, :])
-
-    return np.log10(tau_cloud/tau_min_wavel)
+    # The cloud optical depth is extracted at the largest pressure and the shortest wavelength
+    return np.log10(tau_cloud/rt_object.tau_cloud[0, 0, 0, -1])
 
 
 @typechecked
