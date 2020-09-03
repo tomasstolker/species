@@ -1313,7 +1313,7 @@ def scale_cloud_abund(cube,
     Parameters
     ----------
     cube : LP_c_double
-        Unit cube.
+        Cube with the model parameters.
     cube_index : dict
         Dictionary with the index of each parameter in the ``cube``.
     rt_object : Radtrans

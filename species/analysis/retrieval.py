@@ -897,7 +897,7 @@ class AtmosphericRetrieval:
             Parameters
             ----------
             cube : LP_c_double
-                Unit cube.
+                Cube with the model parameters.
             n_dim : int
                 Number of dimensions.
             n_param : int
