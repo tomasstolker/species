@@ -9,7 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
-from petitRADTRANS_ck_test_speed import nat_cst as nc
+from petitRADTRANS import nat_cst as nc
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
     interpol_abundances
 

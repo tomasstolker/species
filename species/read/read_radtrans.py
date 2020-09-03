@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 
 from petitRADTRANS.radtrans import Radtrans
-from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -88,23 +87,14 @@ class ReadRadtrans:
 
         # create Radtrans object
 
-        if self.scattering:
-            self.rt_object = RadtransScatter(line_species=self.line_species,
-                                             rayleigh_species=['H2', 'He'],
-                                             cloud_species=self.cloud_species,
-                                             continuum_opacities=['H2-H2', 'H2-He'],
-                                             wlen_bords_micron=self.wavel_range,
-                                             mode='c-k',
-                                             test_ck_shuffle_comp=self.scattering,
-                                             do_scat_emis=self.scattering)
-
-        else:
-            self.rt_object = Radtrans(line_species=self.line_species,
-                                      rayleigh_species=['H2', 'He'],
-                                      cloud_species=self.cloud_species,
-                                      continuum_opacities=['H2-H2', 'H2-He'],
-                                      wlen_bords_micron=self.wavel_range,
-                                      mode='c-k')
+        self.rt_object = Radtrans(line_species=self.line_species,
+                                  rayleigh_species=['H2', 'He'],
+                                  cloud_species=self.cloud_species,
+                                  continuum_opacities=['H2-H2', 'H2-He'],
+                                  wlen_bords_micron=self.wavel_range,
+                                  mode='c-k',
+                                  test_ck_shuffle_comp=self.scattering,
+                                  do_scat_emis=self.scattering)
 
         # create RT arrays of 60 pressure layers
 

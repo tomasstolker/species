@@ -1,10 +1,10 @@
 """
-Utility functions for atmospheric retrieval.
+Utility functions for atmospheric retrieval with major contributions by Paul Mollière (MPIA).
 """
 
 import copy
 
-from typing import Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,9 +13,8 @@ from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
 from typeguard import typechecked
 
+from petitRADTRANS import nat_cst as nc
 from petitRADTRANS.radtrans import Radtrans as Radtrans
-from petitRADTRANS_ck_test_speed import nat_cst as nc
-from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
     interpol_abundances
 
@@ -272,6 +271,64 @@ def pt_spline_interp(knot_press: np.ndarray,
         raise ValueError('Expecting equally spaced pressures in log space.')
 
     return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
+
+
+@typechecked
+def create_pt_profile(cube,
+                      cube_index: Dict[str, float],
+                      pt_profile: str,
+                      pressure: np.ndarray,
+                      knot_press: Optional[np.ndarray]) -> Tuple[np.ndarray,
+                                                                 Optional[np.ndarray]]:
+    """
+    Function for creating the P/T profile.
+
+    Parameters
+    ----------
+    cube : LP_c_double
+        Unit cube.
+    cube_index : dict
+        Dictionary with the index of each parameter in the ``cube``.
+    pt_profile : str
+        The parametrization for the pressure-temperature profile ('molliere', 'free', or
+        'monotonic').
+    pressure : np.ndarray
+        Pressure points (bar) at which the temperatures is interpolated.
+    knot_press : np.ndarray, None
+        Pressure knots (bar), which are required when the argument of ``pt_profile`` is either
+        'free' or 'monotonic'.
+
+    Returns
+    -------
+    np.ndarray
+        Temperatures (K).
+    np.ndarray, None
+        Temperature at the knots (K). A None is returned if ``pt_profile`` is set to 'molliere'.
+    """
+
+    knot_temp = None
+
+    if pt_profile == 'molliere':
+        temp, _, _ = pt_ret_model(np.array([cube[cube_index['t1']],
+                                            cube[cube_index['t2']],
+                                            cube[cube_index['t3']]]),
+                                  10.**cube[cube_index['log_delta']],
+                                  cube[cube_index['alpha']],
+                                  cube[cube_index['tint']],
+                                  pressure,
+                                  cube[cube_index['metallicity']],
+                                  cube[cube_index['c_o_ratio']])
+
+    elif pt_profile in ['free', 'monotonic']:
+        knot_temp = []
+        for i in range(15):
+            knot_temp.append(cube[cube_index[f't{i}']])
+
+        knot_temp = np.asarray(knot_temp)
+
+        temp = pt_spline_interp(knot_press, knot_temp, pressure)
+
+    return temp, knot_temp
 
 
 @typechecked
@@ -548,7 +605,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
 
 
 @typechecked
-def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
+def calc_spectrum_clouds(rt_object: Radtrans,
                          pressure: np.ndarray,
                          temperature: np.ndarray,
                          c_o_ratio: float,
@@ -571,7 +628,7 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
 
     Parameters
     ----------
-    rt_object : Radtrans, RadtransScatter
+    rt_object : Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
         Array with the pressure points (bar).
@@ -714,28 +771,34 @@ def calc_spectrum_clouds(rt_object: Union[Radtrans, RadtransScatter],
     # reinitiate the pressure layers after make_half_pressure_better
     rt_object.setup_opa_structure(pressure)
 
-    if isinstance(rt_object, Radtrans):
-        # the argument of fsed is a float
-        rt_object.calc_flux(temperature,
-                            abundances,
-                            10.**logg,
-                            mmw,
-                            Kzz=Kzz_use,
-                            fsed=fsed,
-                            sigma_lnorm=sigma_lnorm,
-                            add_cloud_scat_as_abs=False,
-                            contribution=contribution)
+    # if isinstance(rt_object, Radtrans):
+    #     # the argument of fsed is a float
+    #     rt_object.calc_flux(temperature,
+    #                         abundances,
+    #                         10.**logg,
+    #                         mmw,
+    #                         Kzz=Kzz_use,
+    #                         fsed=fsed,
+    #                         sigma_lnorm=sigma_lnorm,
+    #                         add_cloud_scat_as_abs=False,
+    #                         contribution=contribution)
 
-    elif isinstance(rt_object, RadtransScatter):
-        # the argument of fsed is a dictionary
-        rt_object.calc_flux(temperature,
-                            abundances,
-                            10.**logg,
-                            mmw,
-                            Kzz=Kzz_use,
-                            fsed=fseds,
-                            sigma_lnorm=sigma_lnorm,
-                            contribution=contribution)
+    # elif isinstance(rt_object, RadtransScatter):
+    # the argument of fsed is a dictionary
+    rt_object.calc_flux(temperature,
+                        abundances,
+                        10.**logg,
+                        mmw,
+                        sigma_lnorm=sigma_lnorm,
+                        Kzz=Kzz_use,
+                        fsed=fseds,
+                        radius=None,
+                        contribution=contribution,
+                        gray_opacity=None,
+                        Pcloud=None,
+                        kappa_zero=None,
+                        gamma_scat=None,
+                        add_cloud_scat_as_abs=False)
 
     wlen_micron = nc.c/rt_object.freq/1e-4
     wlen = nc.c/rt_object.freq
@@ -980,7 +1043,9 @@ def log_x_cloud_base(c_o_ratio: float,
     Returns
     -------
     dict
-        Dictionary with the log10 mass fractions at the cloud base.
+        Dictionary with the log10 mass fractions at the cloud base. Compared to the keys of
+        ``cloud_fractions``, the keys in the returned dictionary are provided without ``(c)``
+        (e.g. Na2S instead of Na2S(c)).
     """
 
     log_x_base = {}
@@ -1236,6 +1301,79 @@ def find_cloud_deck(composition: str,
         plt.clf()
 
     return P_cloud
+
+
+@typechecked
+def scale_cloud_fraction(cube,
+                         cube_index: Dict[str, float],
+                         rt_object: Radtrans,
+                         pressure: np.ndarray,
+                         temperature: np.ndarray,
+                         mmw: np.ndarray,
+                         chemistry: str,
+                         abund_in: Dict[str, np.ndarray],
+                         composition: str,
+                         tau_cloud: float) -> float:
+    """
+    Function to calculate the abundance scaling for a certain cloud composition. TODO
+
+    Parameters
+    ----------
+    cube : LP_c_double
+        Unit cube.
+    cube_index : dict
+        Dictionary with the index of each parameter in the ``cube``.
+
+    Returns
+    -------
+    float
+        Scaling for the cloud abundance of ``composition`` (i.e. the ratio of the sampled optical
+        depth and the optical depth at the shortest wavelength for a mass fraction equal to the
+        equilibrium abundance).
+    """
+
+    cloud_fractions = {composition: 0.}
+
+    log_x_base = log_x_cloud_base(cube[cube_index['c_o_ratio']],
+                                  cube[cube_index['metallicity']],
+                                  cloud_fractions)
+
+    p_base_item = find_cloud_deck(composition[:-3],
+                                  pressure,
+                                  temperature,
+                                  cube[cube_index['metallicity']],
+                                  cube[cube_index['c_o_ratio']],
+                                  mmw=np.mean(mmw),
+                                  plotting=False)
+
+    abund_in[composition] = np.zeros_like(temperature)
+
+    abund_in[composition][pressure < p_base_item] = 10.**log_x_base[composition[:-3]] * \
+        (pressure[pressure <= p_base_item] / p_base_item)**cube[cube_index['fsed']]
+
+    abundances = create_abund_dict(abund_in,
+                                   rt_object.line_species,
+                                   chemistry,
+                                   half=True,
+                                   indices=None)
+
+    rt_object.interpolate_species_opa(temperature[::3])
+
+    rt_object.mix_opa_tot(abundances,
+                          mmw[::3],
+                          10.**cube[cube_index['logg']],
+                          sigma_lnorm=cube[cube_index['sigma_lnorm']],
+                          fsed=cube[cube_index['fsed']],
+                          Kzz=np.full(pressure.size//3, 10.**cube[cube_index['kzz']]),
+                          radius=None,
+                          gray_opacity=None,
+                          add_cloud_scat_as_abs=False)
+
+    rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
+
+    tau_min_wavel = np.nansum(rt_object.tau_cloud[0, 0, 0, :])
+
+    return np.log10(tau_cloud/tau_min_wavel)
 
 
 @typechecked

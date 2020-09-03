@@ -1,6 +1,7 @@
 """
-Module with functionalities for atmospheric retrieval with ``petitRADTRANS`` (Mollière et al.
-2019).  details on the retrieval code are available at https://petitradtrans.readthedocs.io.
+Module with a frontend for atmospheric retrieval with ``petitRADTRANS`` (see Mollière et al.
+2019). Details on the retrieval code are available at https://petitradtrans.readthedocs.io.
+The frontend contains major contributions by Paul Mollière (MPIA).
 """
 
 import os
@@ -19,7 +20,8 @@ from scipy.stats import invgamma
 from rebin_give_width import rebin_give_width
 
 from petitRADTRANS.radtrans import Radtrans
-from petitRADTRANS_ck_test_speed.radtrans import Radtrans as RadtransScatter
+from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+    interpol_abundances
 
 from species.analysis import photometry
 from species.data import database
@@ -41,9 +43,9 @@ class AtmosphericRetrieval:
                  object_name: str,
                  line_species: Optional[list],
                  cloud_species: Optional[list],
-                 scattering: bool,
                  output_folder: str,
                  wavel_range: Optional[Tuple[float, float]],
+                 scattering: bool = True,
                  inc_spec: Union[bool, List[str]] = True,
                  inc_phot: Union[bool, List[str]] = False) -> None:
         """
@@ -55,9 +57,6 @@ class AtmosphericRetrieval:
             List with the line species. No line species are used if set to ``None``.
         cloud_species : list, None
             List with the cloud species. No cloud species are used if set to ``None``.
-        scattering : bool
-            Include scattering in the radiative transfer. Scattering is not required if no cloud
-            species are selected.
         output_folder : str
             Folder name that is used for the output files from ``MultiNest``. The folder should
             already exist.
@@ -65,6 +64,9 @@ class AtmosphericRetrieval:
             The wavelength range (um) of the forward model. Should be a bit broader than the
             minimum and maximum wavelength of the data. The wavelength range is set automatically
             if the argument is set to ``None``.
+        scattering : bool
+            Include scattering in the radiative transfer. Scattering is not required if no cloud
+            species are selected.
         inc_spec : bool, list(str)
             Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
             (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
@@ -325,19 +327,34 @@ class AtmosphericRetrieval:
 
         if len(self.cloud_species) > 0:
             if 'Fe(c)_cd' in self.cloud_species:
-                self.parameters.append('fe_fraction')
+                if 'fe_tau' in bounds:
+                    self.parameters.append('fe_tau')
+                else:
+                    self.parameters.append('fe_fraction')
 
             if 'MgSiO3(c)_cd' in self.cloud_species:
-                self.parameters.append('mgsio3_fraction')
+                if 'mgsio3_tau' in bounds:
+                    self.parameters.append('mgsio3_tau')
+                else:
+                    self.parameters.append('mgsio3_fraction')
 
             if 'Al2O3(c)_cd' in self.cloud_species:
-                self.parameters.append('al2o3_fraction')
+                if 'al2o3_tau' in bounds:
+                    self.parameters.append('al2o3_tau')
+                else:
+                    self.parameters.append('al2o3_fraction')
 
             if 'Na2S(c)_cd' in self.cloud_species:
-                self.parameters.append('na2s_fraction')
+                if 'na2s_tau' in bounds:
+                    self.parameters.append('na2s_tau')
+                else:
+                    self.parameters.append('na2s_fraction')
 
             if 'KCL(c)_cd' in self.cloud_species:
-                self.parameters.append('kcl_fraction')
+                if 'kcl_tau' in bounds:
+                    self.parameters.append('kcl_tau')
+                else:
+                    self.parameters.append('kcl_fraction')
 
             self.parameters.append('fsed')
             self.parameters.append('kzz')
@@ -446,7 +463,7 @@ class AtmosphericRetrieval:
             None
         """
 
-        # create the output folder if required
+        # Create the output folder if required
 
         if not os.path.exists(self.output_folder):
             raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
@@ -461,7 +478,7 @@ class AtmosphericRetrieval:
                 bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len) (um)
                 bounds[f'corr_amp_{item}'] = (0., 1.)
 
-        # create list with parameters for MultiNest
+        # Create list with parameters for MultiNest
 
         if quenching and chemistry != 'equilibrium':
             raise ValueError('The \'quenching\' parameter can only be used in combination with '
@@ -469,29 +486,21 @@ class AtmosphericRetrieval:
 
         self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr)
 
-        # create a dictionary with the cube indices of the parameters
+        # Create a dictionary with the cube indices of the parameters
 
         cube_index = {}
         for i, item in enumerate(self.parameters):
             cube_index[item] = i
 
-        # delete the cloud parameters from the boundaries dictionary in case of no cloud species
+        # Delete the cloud parameters from the boundaries dictionary in case of no cloud species
 
         if len(self.cloud_species) == 0:
-            if 'fe_fraction' in bounds:
-                del bounds['fe_fraction']
+            for item in ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']:
+                if f'{item}_fraction' in bounds:
+                    del bounds[f'{item}_fraction']
 
-            if 'mgsio3_fraction' in bounds:
-                del bounds['mgsio3_fraction']
-
-            if 'al2o3_fraction' in bounds:
-                del bounds['al2o3_fraction']
-
-            if 'na2s_fraction' in bounds:
-                del bounds['na2s_fraction']
-
-            if 'kcl_fraction' in bounds:
-                del bounds['kcl_fraction']
+                if f'{item}_tau' in bounds:
+                    del bounds[f'{item}_tau']
 
             if 'fsed' in bounds:
                 del bounds['fsed']
@@ -502,7 +511,7 @@ class AtmosphericRetrieval:
             if 'sigma_lnorm' in bounds:
                 del bounds['sigma_lnorm']
 
-        # delete C/H and O/H boundaries if the chemistry is not free
+        # Delete C/H and O/H boundaries if the chemistry is not free
 
         if chemistry != 'free':
             if 'c_h_ratio' in bounds:
@@ -511,28 +520,19 @@ class AtmosphericRetrieval:
             if 'o_h_ratio' in bounds:
                 del bounds['o_h_ratio']
 
-        # create Ratrans object
+        # Create Ratrans object
 
         print('Setting up petitRADTRANS...')
 
-        if self.scattering:
-            # the names in self.cloud_species are converted
-            rt_object = RadtransScatter(line_species=self.line_species,
-                                        rayleigh_species=['H2', 'He'],
-                                        cloud_species=self.cloud_species,
-                                        continuum_opacities=['H2-H2', 'H2-He'],
-                                        wlen_bords_micron=self.wavel_range,
-                                        mode='c-k',
-                                        test_ck_shuffle_comp=self.scattering,
-                                        do_scat_emis=self.scattering)
-
-        else:
-            rt_object = Radtrans(line_species=self.line_species,
-                                 rayleigh_species=['H2', 'He'],
-                                 cloud_species=self.cloud_species,
-                                 continuum_opacities=['H2-H2', 'H2-He'],
-                                 wlen_bords_micron=self.wavel_range,
-                                 mode='c-k')
+        # the names in self.cloud_species are converted
+        rt_object = Radtrans(line_species=self.line_species,
+                             rayleigh_species=['H2', 'He'],
+                             cloud_species=self.cloud_species,
+                             continuum_opacities=['H2-H2', 'H2-He'],
+                             wlen_bords_micron=self.wavel_range,
+                             mode='c-k',
+                             test_ck_shuffle_comp=self.scattering,
+                             do_scat_emis=self.scattering)
 
         # create RT arrays of 60 pressure layers
 
@@ -548,6 +548,8 @@ class AtmosphericRetrieval:
 
         if pt_profile in ['free', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
+        else:
+            knot_press = None
 
         @typechecked
         def prior(cube,
@@ -724,12 +726,41 @@ class AtmosphericRetrieval:
                 if 'log_p_quench' in bounds:
                     log_p_quench = bounds['log_p_quench'][0] + (bounds['log_p_quench'][1]-bounds['log_p_quench'][0])*cube[cube_index['log_p_quench']]
                 else:
-                    # default: -6 - 3. (i.e. 1e-6 - 1e3 bar)
+                    # Default: -6 - 3. (i.e. 1e-6 - 1e3 bar)
                     log_p_quench = -6. + 9.*cube[cube_index['log_p_quench']]
 
                 cube[cube_index['log_p_quench']] = log_p_quench
 
             if len(self.cloud_species) > 0:
+                # Sedimentation parameter: ratio of the settling and mixing velocities of the
+                # cloud particles (used in Eq. 3 of Mollière et al. 2020)
+                if 'fsed' in bounds:
+                    fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
+                else:
+                    # Default: 0 - 10
+                    fsed = 10.*cube[cube_index['fsed']]
+
+                cube[cube_index['fsed']] = fsed
+
+                # Log10 of the eddy diffusion coefficient (cm2 s-1)
+                if 'kzz' in bounds:
+                    kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[cube_index['kzz']]
+                else:
+                    # Default: 5 - 13
+                    kzz = 5. + 8.*cube[cube_index['kzz']]
+
+                cube[cube_index['kzz']] = kzz
+
+                # Geometric standard deviation of the log-normal size distribution
+                if 'sigma_lnorm' in bounds:
+                    sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
+                                                              bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
+                else:
+                    # Default: 1.05 - 3.
+                    sigma_lnorm = 1.05 + 1.95*cube[cube_index['sigma_lnorm']]
+
+                cube[cube_index['sigma_lnorm']] = sigma_lnorm
+
                 # Cloud mass fractions at the cloud base, relative to the maximum values allowed
                 # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
 
@@ -765,12 +796,20 @@ class AtmosphericRetrieval:
                         al2o3_fraction = bounds['al2o3_fraction'][0] + (bounds['al2o3_fraction'][1] -
                             bounds['al2o3_fraction'][0])*cube[cube_index['al2o3_fraction']]
 
+                        cube[cube_index['al2o3_fraction']] = al2o3_fraction
+
+                    elif 'al2o3_tau' in bounds:
+                        al2o3_tau = bounds['al2o3_tau'][0] + (bounds['al2o3_tau'][1] -
+                            bounds['al2o3_tau'][0])*cube[cube_index['al2o3_tau']]
+
+                        cube[cube_index['al2o3_tau']] = al2o3_tau
+
                     else:
-                        # default: 0.05 - 1.
+                        # Default: 0.05 - 1.
                         al2o3_fraction = np.log10(0.05) + (np.log10(1.) -
                             np.log10(0.05))*cube[cube_index['al2o3_fraction']]
 
-                    cube[cube_index['al2o3_fraction']] = al2o3_fraction
+                        cube[cube_index['al2o3_fraction']] = al2o3_fraction
 
                 if 'Na2S(c)' in self.cloud_species:
 
@@ -797,35 +836,6 @@ class AtmosphericRetrieval:
                             np.log10(0.05))*cube[cube_index['kcl_fraction']]
 
                     cube[cube_index['kcl_fraction']] = kcl_fraction
-
-                # Sedimentation parameter: ratio of the settling and mixing velocities of the
-                # cloud particles (see Eq. 3 in Mollière et al. 2020)
-                if 'fsed' in bounds:
-                    fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
-                else:
-                    # default: 0 - 10
-                    fsed = 10.*cube[cube_index['fsed']]
-
-                cube[cube_index['fsed']] = fsed
-
-                # Log10 of the eddy diffusion coefficient
-                if 'kzz' in bounds:
-                    kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[cube_index['kzz']]
-                else:
-                    # default: 5 - 13
-                    kzz = 5. + 8.*cube[cube_index['kzz']]
-
-                cube[cube_index['kzz']] = kzz
-
-                # Geometric standard deviation of the log-normal particle size distribution
-                if 'sigma_lnorm' in bounds:
-                    sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
-                                                              bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
-                else:
-                    # default: 1.05 - 3.
-                    sigma_lnorm = 1.05 + 1.95*cube[cube_index['sigma_lnorm']]
-
-                cube[cube_index['sigma_lnorm']] = sigma_lnorm
 
             # add flux scaling parameter if the boundaries are provided
 
@@ -946,50 +956,67 @@ class AtmosphericRetrieval:
                 if f'corr_amp_{item}' in bounds:
                     corr_amp[item] = cube[cube_index[f'corr_amp_{item}']]
 
-            # create a p-t profile
+            # Check if the cloud optical depth is a free parameter
 
-            if pt_profile == 'molliere':
-                temp, _, _ = retrieval_util.pt_ret_model(np.array([cube[cube_index['t1']],
-                                                                   cube[cube_index['t2']],
-                                                                   cube[cube_index['t3']]]),
-                                                         10.**cube[cube_index['log_delta']],
-                                                         cube[cube_index['alpha']],
-                                                         cube[cube_index['tint']],
-                                                         self.pressure,
-                                                         cube[cube_index['metallicity']],
-                                                         cube[cube_index['c_o_ratio']])
+            calc_tau_cloud = False
 
-            elif pt_profile in ['free', 'monotonic']:
-                knot_temp = []
-                for i in range(15):
-                    knot_temp.append(cube[cube_index[f't{i}']])
+            for item in self.cloud_species:
+                if item[:-3].lower()+'_tau' in bounds:
+                    calc_tau_cloud = True
 
-                knot_temp = np.asarray(knot_temp)
+            # Prepare the scaling based on the cloud optical depth
 
-                if check_isothermal:
-                    # Get knot indices where the pressure is larger than 1 bar
-                    indices = np.where(knot_press > 1.)[0]
+            if calc_tau_cloud:
+                # Create the P/T profile
+                temperature, knot_temp = retrieval_util.create_pt_profile(
+                    cube, cube_index, pt_profile, self.pressure, knot_press)
 
-                    # Remove last index because temp_diff.size = knot_press.size - 1
-                    indices = indices[:-1]
+                if 'log_p_quench' in cube_index:
+                    # Quenching pressure (bar)
+                    quench_pressure = 10.**cube[cube_index['log_p_quench']]
+                else:
+                    quench_pressure = None
 
-                    temp_diff = np.diff(knot_temp)
-                    temp_diff = temp_diff[indices]
+                # Interpolate the abundances, following chemical equilibrium
+                abund_in = interpol_abundances(np.full(self.pressure.size, cube[cube_index['c_o_ratio']]),
+                                               np.full(self.pressure.size, cube[cube_index['metallicity']]),
+                                               temperature,
+                                               self.pressure,
+                                               Pquench_carbon=quench_pressure)
 
-                    small_temp = np.where(temp_diff < 100.)[0]
+                # Extract the mean molecular weight
+                mmw = abund_in['MMW']
 
-                    if len(small_temp) > 0:
-                        # Return zero probability if there is a temperature step smaller than 10 K
-                        return -np.inf
+                # Set the kappa_zero argument, required by Radtrans.mix_opa_tot
+                rt_object.kappa_zero = None
 
-                temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
+            # Create the P-T profile
 
-                if pt_profile == 'free':
-                    temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
-                    # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
+            temp, knot_temp = retrieval_util.create_pt_profile(
+                cube, cube_index, pt_profile, self.pressure, knot_press)
 
-                    ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
-                        0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
+            if check_isothermal:
+                # Get knot indices where the pressure is larger than 1 bar
+                indices = np.where(knot_press > 1.)[0]
+
+                # Remove last index because temp_diff.size = knot_press.size - 1
+                indices = indices[:-1]
+
+                temp_diff = np.diff(knot_temp)
+                temp_diff = temp_diff[indices]
+
+                small_temp = np.where(temp_diff < 100.)[0]
+
+                if len(small_temp) > 0:
+                    # Return zero probability if there is a temperature step smaller than 10 K
+                    return -np.inf
+
+            if pt_profile == 'free':
+                temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
+                # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
+
+                ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
+                    0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
             # return zero probability if the minimum temperature is negative
 
@@ -1011,7 +1038,13 @@ class AtmosphericRetrieval:
 
                 cloud_fractions = {}
                 for item in self.cloud_species:
-                    cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
+                    if f'{item[:-3].lower()}_fraction' in self.parameters:
+                        cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
+
+                    elif f'{item[:-3].lower()}_tau' in self.parameters:
+                        cloud_fractions[item] = retrieval_util.scale_cloud_fraction(
+                            cube, cube_index, rt_object, self.pressure, temp, mmw, chemistry,
+                            abund_in, item, cube[cube_index[f'{item[:-3].lower()}_tau']])
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
@@ -1020,9 +1053,11 @@ class AtmosphericRetrieval:
                 # the try-except is required to catch numerical precision errors with the clouds
                 # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
-                    rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
-                    log_x_base, cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
-                    cube[cube_index['sigma_lnorm']], chemistry=chemistry, half=True, plotting=plotting, contribution=False)
+                    rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']],
+                    cube[cube_index['metallicity']], log_p_quench, log_x_base,
+                    cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
+                    cube[cube_index['sigma_lnorm']], chemistry=chemistry, half=True,
+                    plotting=plotting, contribution=False)
 
                 # except:
                 #     return -np.inf
@@ -1033,8 +1068,8 @@ class AtmosphericRetrieval:
                 if chemistry == 'equilibrium':
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
-                        cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']], log_p_quench,
-                        None, chemistry=chemistry, half=True, contribution=False)
+                        cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']],
+                        log_p_quench, None, chemistry=chemistry, half=True, contribution=False)
 
                 elif chemistry == 'free':
                     # create a dictionary with the mass fractions
