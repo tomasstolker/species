@@ -593,28 +593,28 @@ class AtmosphericRetrieval:
 
             if pt_profile == 'molliere':
 
-                # internal temperature (K) of the Eddington approximation (middle altitudes)
+                # Internal temperature (K) of the Eddington approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
                 if 'tint' in bounds:
                     tint = bounds['tint'][0] + (bounds['tint'][1]-bounds['tint'][0])*cube[cube_index['tint']]
                 else:
-                    # default: 500 - 3000 K
+                    # Default: 500 - 3000 K
                     tint = 500. + 2500.*cube[cube_index['tint']]
 
                 cube[cube_index['tint']] = tint
 
-                # connection temperature (K)
+                # Connection temperature (K)
                 t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
 
-                # the temperature (K) at temp_3 is scaled down from t_connect
+                # The temperature (K) at temp_3 is scaled down from t_connect
                 temp_3 = t_connect*(1-cube[cube_index['t3']])
                 cube[cube_index['t3']] = temp_3
 
-                # the temperature (K) at temp_2 is scaled down from temp_3
+                # The temperature (K) at temp_2 is scaled down from temp_3
                 temp_2 = temp_3*(1-cube[cube_index['t2']])
                 cube[cube_index['t2']] = temp_2
 
-                # the temperature (K) at temp_1 is scaled down from temp_2
+                # The temperature (K) at temp_1 is scaled down from temp_2
                 temp_1 = temp_2*(1-cube[cube_index['t1']])
                 cube[cube_index['t1']] = temp_1
 
@@ -623,13 +623,13 @@ class AtmosphericRetrieval:
                 if 'alpha' in bounds:
                     alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[cube_index['alpha']]
                 else:
-                    # default: 1 - 2
+                    # Default: 1 - 2
                     alpha = 1. + cube[cube_index['alpha']]
 
                 cube[cube_index['alpha']] = alpha
 
-                # photospheric pressure (bar)
-                # default: 1e-3 - 1e2 bar
+                # Photospheric pressure (bar)
+                # Default: 1e-3 - 1e2 bar
                 p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
 
                 # delta: proportionality factor in tau = delta * press_cgs**alpha

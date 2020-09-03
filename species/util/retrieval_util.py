@@ -35,47 +35,50 @@ def get_line_species() -> list:
 
 
 @typechecked
-def pt_ret_model(T3: np.ndarray,
+def pt_ret_model(temp_3: np.ndarray,
                  delta: float,
                  alpha: float,
                  tint: float,
                  press: np.ndarray,
-                 FeH: float,
-                 CO: float,
+                 metallicity: float,
+                 c_o_ratio: float,
                  conv: bool = True) -> Tuple[np.ndarray, float, np.ndarray]:
     """
     Self-luminous retrieval P-T model.
 
     Parameters
     ----------
-    T3 = np.array([t1, t2, t3]): temperature points to be added on top
-      of the radiative Eddington structure (above tau = 0.1).
-      Use spline interpolation, t1 < t2 < t3 < tconnect as prior.
-
-    delta: proportionality factor in tau = delta * press_cgs**alpha
-
-    alpha: power law index in tau = delta * press_cgs**alpha
-       For the tau model: use proximity to kappa_rosseland photosphere
-       as prior.
-
-    tint: internal temperature of the Eddington model
-
-    press: input pressure profile in bar
-
-    FeH: metallicity for the nabla_ad interpolation
-
-    CO: C/O for the nabla_ad interpolation
-
-    conv: enforce convective adiabat yes/no
+    temp_3 : np.ndarray
+        Array with three temperature points that are added on top of the radiative Eddington
+        structure (i.e. above tau = 0.1). The temperature knots are connected with a spline
+        interpolation and a prior is used such that t1 < t2 < t3 < t_connect.
+    delta : float
+        Proportionality factor in tau = delta * press_cgs**alpha.
+    alpha : float
+        Power law index in tau = delta * press_cgs**alpha. For the tau model: use the proximity
+        to the kappa_rosseland photosphere as prior.
+    tint : float
+        Internal temperature for the Eddington model.
+    press : np.ndarray
+        Pressure profile (bar).
+    metallicity : float
+        Metallicity [Fe/H]. Required for the ``nabla_ad`` interpolation.
+    c_o_ratio : float
+        Carbon-to-oxygen ratio. Required for the ``nabla_ad`` interpolation.
+    conv : bool
+        Enforace a convective adiabat.
 
     Returns
     -------
     np.ndarray
+        Temperature profile (K) for ``press``.
     float
+        Pressure (bar) where the optical depth is 1.
     np.ndarray
+        Temperature (K) at the connection point.
     """
 
-    # Go grom bar to cgs
+    # Go from bar to cgs units
     press_cgs = press*1e6
 
     # Calculate the optical depth
@@ -84,7 +87,10 @@ def pt_ret_model(T3: np.ndarray,
     # This is the eddington temperature
     tedd = (3./4.*tint**4.*(2./3.+tau))**0.25
 
-    ab = interpol_abundances(CO*np.ones_like(tedd), FeH*np.ones_like(tedd), tedd, press)
+    ab = interpol_abundances(np.full(tedd.shape[0], c_o_ratio),
+                             np.full(tedd.shape[0], metallicity),
+                             tedd,
+                             press)
 
     nabla_ad = ab['nabla_ad']
 
@@ -103,14 +109,13 @@ def pt_ret_model(T3: np.ndarray,
         conv_index = nabla_rad > nabla_ad
 
         for i in range(10):
-
             if i == 0:
                 t_take = copy.copy(tedd)
             else:
                 t_take = copy.copy(tfinal)
 
-            ab = interpol_abundances(CO*np.ones_like(t_take),
-                                     FeH*np.ones_like(t_take),
+            ab = interpol_abundances(np.full(t_take.shape[0], c_o_ratio),
+                                     np.full(t_take.shape[0], metallicity),
                                      t_take,
                                      press)
 
@@ -129,8 +134,7 @@ def pt_ret_model(T3: np.ndarray,
             # Integrate and translate to temperature from log(temperature)
             tnew = np.exp(np.cumsum(tnew)+tstart)
 
-            # Add upper radiative and
-            # lower conective part into one single array
+            # Add upper radiative and lower conective part into one single array
             tfinal = copy.copy(t_take)
             tfinal[conv_index] = tnew
 
@@ -145,21 +149,25 @@ def pt_ret_model(T3: np.ndarray,
     @typechecked
     def press_tau(tau: float) -> float:
         """
+        Function to return the pressure in cgs units at a given optical depth.
+
         Parameters
         ----------
+        tau : float
+            Optical depth.
 
         Returns
         -------
-
+        float
+            Pressure (cgs) at optical depth ``tau``.
         """
-        # Returns the pressure at a given tau, in cgs
+
         return (tau/delta)**(1./alpha)
 
     # Where is the uppermost pressure of the Eddington radiative structure?
     p_bot_spline = press_tau(0.1)
 
     for i_intp in range(2):
-
         if i_intp == 0:
 
             # Create the pressure coordinates for the spline support nodes at low pressure
@@ -168,7 +176,7 @@ def pt_ret_model(T3: np.ndarray,
             # Create the pressure coordinates for the spline support nodes at high pressure,
             # the corresponding temperatures for these nodes will be taken from the
             # radiative-convective solution
-            support_points_high = 1e1**np.arange(np.log10(p_bot_spline),
+            support_points_high = 10.**np.arange(np.log10(p_bot_spline),
                                                  np.log10(press_cgs[-1]),
                                                  np.diff(np.log10(support_points_low))[0])
 
@@ -202,7 +210,7 @@ def pt_ret_model(T3: np.ndarray,
             t_support[int(len(support_points_low))-1] = tfintp(p_bot_spline)
 
             # The temperature at pressures below p_bot_spline (free parameters)
-            t_support[:(int(len(support_points_low))-1)] = T3
+            t_support[:(int(len(support_points_low))-1)] = temp_3
             # t_support[:3] = tfintp(support_points_low)
 
             # The temperature at pressures above p_bot_spline (from the
@@ -227,7 +235,6 @@ def pt_ret_model(T3: np.ndarray,
 
         # Make the temperature spline interpolation to be returned to the user
         # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
-
         cs = CubicSpline(np.log10(support_points), t_support)
         tret = cs(np.log10(press_cgs))
 
@@ -771,20 +778,7 @@ def calc_spectrum_clouds(rt_object: Radtrans,
     # reinitiate the pressure layers after make_half_pressure_better
     rt_object.setup_opa_structure(pressure)
 
-    # if isinstance(rt_object, Radtrans):
-    #     # the argument of fsed is a float
-    #     rt_object.calc_flux(temperature,
-    #                         abundances,
-    #                         10.**logg,
-    #                         mmw,
-    #                         Kzz=Kzz_use,
-    #                         fsed=fsed,
-    #                         sigma_lnorm=sigma_lnorm,
-    #                         add_cloud_scat_as_abs=False,
-    #                         contribution=contribution)
-
-    # elif isinstance(rt_object, RadtransScatter):
-    # the argument of fsed is a dictionary
+    # calculate the emission spectrum
     rt_object.calc_flux(temperature,
                         abundances,
                         10.**logg,
@@ -816,7 +810,6 @@ def calc_spectrum_clouds(rt_object: Radtrans,
     else:
         contr_em = None
 
-    # return wlen_micron, f_lambda, rt_object.pphot, rt_object.tau_pow, np.mean(rt_object.tau_cloud)
     return wlen_micron, f_lambda, contr_em
 
 
@@ -1372,7 +1365,14 @@ def scale_cloud_fraction(cube,
     rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
 
     # The cloud optical depth is extracted at the largest pressure and the shortest wavelength
-    return np.log10(tau_cloud/rt_object.tau_cloud[0, 0, 0, -1])
+    tau_bottom = rt_object.tau_cloud[0, 0, 0, -1]
+
+    if tau_bottom > 0.:
+        scaled_abundance = np.log10(tau_cloud/rt_object.tau_cloud[0, 0, 0, -1])
+    else:
+        scaled_abundance = 100.
+
+    return scaled_abundance
 
 
 @typechecked
