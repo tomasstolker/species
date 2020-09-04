@@ -1461,26 +1461,35 @@ def scale_cloud_abund(cube,
         mmw_select = mmw[indices]
         kzz_select = np.full(pressure[indices].size, 10.**cube[cube_index['kzz']])
 
-    # Combine the line opacities according their mass fractions and add the continuum opacities
-    rt_object.mix_opa_tot(abundances,
-                          mmw_select,
-                          10.**cube[cube_index['logg']],
-                          sigma_lnorm=cube[cube_index['sigma_lnorm']],
-                          fsed=cube[cube_index['fsed']],
-                          Kzz=kzz_select,
-                          radius=None,
-                          gray_opacity=None,
-                          add_cloud_scat_as_abs=False)
+    # Set the continuum opacities to zero because calc_cloud_opacity adds to existing opacities
+    rt_object.continuum_opa = np.zeros_like(rt_object.continuum_opa)
+    rt_object.continuum_opa_scat = np.zeros_like(rt_object.continuum_opa_scat)
+    rt_object.continuum_opa_scat_emis = np.zeros_like(rt_object.continuum_opa_scat_emis)
+
+    # Calculate the cloud opacities for the defined atmospheric structure
+    rt_object.calc_cloud_opacity(abundances,
+                                 mmw_select,
+                                 10.**cube[cube_index['logg']],
+                                 cube[cube_index['sigma_lnorm']],
+                                 fsed=cube[cube_index['fsed']],
+                                 Kzz=kzz_select,
+                                 radius=None,
+                                 add_cloud_scat_as_abs=False)
 
     # Calculate the cloud optical depth and set the tau_cloud attribute
     rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
 
-    # Extract the optical depth at the largest pressure and the shortest wavelength
-    tau_bottom = rt_object.tau_cloud[0, 0, 0, -1]
+    # Extract the wavelength-averaged optical depth at the largest pressure
+    tau_current = np.mean(rt_object.tau_cloud[0, :, 0, -1])
 
-    if tau_bottom > 0.:
+    # Set the continuum opacities again to zero
+    rt_object.continuum_opa = np.zeros_like(rt_object.continuum_opa)
+    rt_object.continuum_opa_scat = np.zeros_like(rt_object.continuum_opa_scat)
+    rt_object.continuum_opa_scat_emis = np.zeros_like(rt_object.continuum_opa_scat_emis)
+
+    if tau_current > 0.:
         # Scale the mass fraction
-        log_x_scaled = np.log10(tau_cloud/tau_bottom)
+        log_x_scaled = np.log10(tau_cloud/tau_current)
     else:
         log_x_scaled = 100.
 
