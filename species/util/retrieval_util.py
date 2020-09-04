@@ -13,10 +13,11 @@ from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
 from typeguard import typechecked
 
-from petitRADTRANS import nat_cst as nc
-from petitRADTRANS.radtrans import Radtrans as Radtrans
+from petitRADTRANS.radtrans import Radtrans
 from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
     interpol_abundances
+
+from species.core import constants
 
 
 @typechecked
@@ -495,7 +496,7 @@ def create_abund_dict(abund_in: dict,
         abund_out['H2'] = abund_in['H2']
         abund_out['He'] = abund_in['He']
 
-    # Corretion for the nuclear spin degeneracy that was not included in the partition function
+    # Correction for the nuclear spin degeneracy that was not included in the partition function
     # See Charnay et al. (2018)
 
     if 'FeH' in abund_out:
@@ -599,7 +600,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
     rt_object.calc_flux(temperature, abundances, 10.**logg, mmw, contribution=contribution)
 
     # convert frequency (Hz) to wavelength (cm)
-    wavel = nc.c/rt_object.freq
+    wavel = constants.LIGHT*1e2/rt_object.freq
 
     # optionally return the emission contribution
     if contribution:
@@ -608,7 +609,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
         contr_em = None
 
     # return wavelength (micron), flux (W m-2 um-1), and emission contribution
-    return 1e4*wavel, 1e-7*rt_object.flux*nc.c/wavel**2., contr_em
+    return 1e4*wavel, 1e-7*rt_object.flux*constants.LIGHT*1e2/wavel**2., contr_em
 
 
 @typechecked
@@ -794,12 +795,12 @@ def calc_spectrum_clouds(rt_object: Radtrans,
                         gamma_scat=None,
                         add_cloud_scat_as_abs=False)
 
-    wlen_micron = nc.c/rt_object.freq/1e-4
-    wlen = nc.c/rt_object.freq
+    wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
+    wlen = constants.LIGHT*1e2/rt_object.freq
     flux = rt_object.flux
 
     # convert flux f_nu to f_lambda
-    f_lambda = flux*nc.c/wlen**2.
+    f_lambda = flux*constants.LIGHT*1e2/wlen**2.
 
     # convert from ergs to Joule
     f_lambda = f_lambda * 1e-7
@@ -1391,7 +1392,7 @@ def scale_cloud_abund(cube,
     # Calculate the cloud optical depth and set the tau_cloud attribute
     rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
 
-    # Extract the optical at the largest pressure and the shortest wavelength
+    # Extract the optical depth at the largest pressure and the shortest wavelength
     tau_bottom = rt_object.tau_cloud[0, 0, 0, -1]
 
     if tau_bottom > 0.:

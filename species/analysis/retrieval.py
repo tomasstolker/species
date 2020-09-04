@@ -1,7 +1,6 @@
 """
 Module with a frontend for atmospheric retrieval with ``petitRADTRANS`` (see Mollière et al.
 2019). Details on the retrieval code are available at https://petitradtrans.readthedocs.io.
-The frontend contains major contributions by Paul Mollière (MPIA).
 """
 
 import os
