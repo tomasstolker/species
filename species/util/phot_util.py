@@ -12,6 +12,7 @@ import numpy as np
 
 from typeguard import typechecked
 
+from species.analysis import photometry
 from species.core import box
 from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
@@ -49,30 +50,34 @@ def multi_photometry(datatype: str,
     flux = {}
 
     if datatype == 'model':
+        if spectrum == 'petitradtrans':
+            # Calculate the petitRADTRANS spectrum only once
+            radtrans_box = radtrans.get_model(parameters)
+
         for item in filters:
-            if spectrum == 'planck':
-                readmodel = read_planck.ReadPlanck(filter_name=item)
+            if spectrum == 'petitradtrans':
+                # Use an instance of SyntheticPhotometry instead of get_flux from ReadRadtrans
+                # in order to not recalculate the spectrum
+                syn_phot = photometry.SyntheticPhotometry(item)
 
-            elif spectrum == 'petitradtrans':
-                readmodel = radtrans
-
-                # Set the filter_name because the instance of ReadRadtrans only has a wavel_range
-                readmodel.filter_name = item
+                flux[item], _ = syn_phot.spectrum_to_flux(radtrans_box.wavelength,
+                                                          radtrans_box.flux)
 
             else:
-                readmodel = read_model.ReadModel(spectrum, filter_name=item)
+                if spectrum == 'planck':
+                    readmodel = read_planck.ReadPlanck(filter_name=item)
 
-            try:
-                flux[item] = readmodel.get_flux(parameters)[0]
+                else:
+                    readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            except IndexError:
-                flux[item] = np.nan
+                try:
+                    flux[item] = readmodel.get_flux(parameters)[0]
 
-                warnings.warn(f'The wavelength range of the {item} filter does not match with '
-                              f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
+                except IndexError:
+                    flux[item] = np.nan
 
-            # Set the filter_name back to None
-            readmodel.filter_name = None
+                    warnings.warn(f'The wavelength range of the {item} filter does not match with '
+                                  f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
 
     elif datatype == 'calibration':
         for item in filters:
@@ -234,7 +239,9 @@ def get_residuals(datatype: str,
     if inc_spec:
         res_spec = {}
 
-        readmodel = None
+        if spectrum == 'petitradtrans':
+            # Calculate the petitRADTRANS spectrum only once
+            model = radtrans.get_model(parameters)
 
         for key in objectbox.spectrum:
 
@@ -250,7 +257,7 @@ def get_residuals(datatype: str,
 
                     model = readmodel.get_spectrum(model_param=parameters, spec_res=1000.)
 
-                    # separate resampling to the new wavelength points
+                    # Separate resampling to the new wavelength points
 
                     flux_new = spectres.spectres(wl_new,
                                                  model.wavelength,
@@ -260,10 +267,7 @@ def get_residuals(datatype: str,
                                                  verbose=True)
 
                 elif spectrum == 'petitradtrans':
-                    model = radtrans.get_model(parameters)
-
-                    # separate resampling to the new wavelength points
-
+                    # Separate resampling to the new wavelength points
                     flux_new = spectres.spectres(wl_new,
                                                  model.wavelength,
                                                  model.flux,
@@ -274,7 +278,7 @@ def get_residuals(datatype: str,
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
-                    # resampling to the new wavelength points is done in teh get_model function
+                    # Resampling to the new wavelength points is done in teh get_model function
 
                     model_spec = readmodel.get_model(parameters,
                                                      spec_res=spec_res,
