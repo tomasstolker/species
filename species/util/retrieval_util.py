@@ -340,8 +340,28 @@ def create_pt_profile(cube,
 
 
 @typechecked
-def make_half_pressure_better(p_base: dict,
+def make_half_pressure_better(p_base: Dict[str, float],
                               pressure: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Function for reducing the number of pressure layers from 1440 to ~100 (depending on the number
+    of cloud species) with a refinement around the cloud decks.
+
+    Parameters
+    ----------
+    p_base : dict
+        Dictionary with the base of the cloud deck for all cloud species. The keys in the
+        dictionary are included for example as MgSiO3(c).
+    pressure : np.ndarray
+        Pressures (bar) at high resolution (1440 points).
+
+    Returns
+    -------
+    np.ndarray
+        Pressures (bar) at lower resolution (60 points) but with a refinement around the position
+        of the cloud decks.
+    np.ndarray, None
+        The indices of the pressures that have been selected from the input array ``pressure``.
+    """
 
     press_plus_index = np.zeros(len(pressure)*2).reshape(len(pressure), 2)
     press_plus_index[:, 0] = pressure
@@ -378,7 +398,7 @@ def make_half_pressure_better(p_base: dict,
 def create_abund_dict(abund_in: dict,
                       line_species: list,
                       chemistry: str,
-                      half: bool = True,
+                      pressure_grid: str = 'smaller',
                       indices: Optional[np.array] = None) -> dict:
     """
     Function to update the names in the abundance dictionary.
@@ -391,8 +411,15 @@ def create_abund_dict(abund_in: dict,
         List with the line species.
     chemistry : str
         Chemistry type ('equilibrium' or 'free').
-    half : bool
-        Use every third pressure point.
+    pressure_grid : str
+        The type of pressure grid that is used for the radiative transfer. Either 'standard',
+        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
+        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
+        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
+        to ~100 layers with the radiative transfer after applying a refinement around the cloud
+        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
+        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     indices : np.ndarray, None
         Pressure indices from the adaptive refinement in a cloudy atmosphere.
 
@@ -436,7 +463,7 @@ def create_abund_dict(abund_in: dict,
         abund_out['H2'] = abund_in['H2'][indices]
         abund_out['He'] = abund_in['He'][indices]
 
-    elif half:
+    elif pressure_grid == 'smaller':
         for item in line_species:
             if chemistry == 'equilibrium':
                 item_replace = item.replace('_all_iso', '')
@@ -515,7 +542,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
                         log_p_quench: Optional[float],
                         log_x_abund: Optional[dict],
                         chemistry: str,
-                        half: bool = False,
+                        pressure_grid: str = 'smaller',
                         contribution: bool = False) -> Tuple[np.ndarray,
                                                              np.ndarray,
                                                              Optional[np.ndarray]]:
@@ -541,8 +568,15 @@ def calc_spectrum_clear(rt_object: Radtrans,
         Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
     chemistry : str
         Chemistry type (``'equilibrium'`` or ``'free'``).
-    half: bool
-        Only use every third P/T point.
+    pressure_grid : str
+        The type of pressure grid that is used for the radiative transfer. Either 'standard',
+        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
+        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
+        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
+        to ~100 layers with the radiative transfer after applying a refinement around the cloud
+        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
+        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     contribution : bool
         Calculate the emission contribution.
 
@@ -583,9 +617,9 @@ def calc_spectrum_clear(rt_object: Radtrans,
         # create an array of a constant mean molecular weight
         mmw *= np.ones_like(pressure)
 
-    # extract every three levels if half=True
+    # Extract every three levels when pressure_grid is set to 'smaller'
 
-    if half:
+    if pressure_grid == 'smaller':
         temperature = temperature[::3]
         pressure = pressure[::3]
         mmw = mmw[::3]
@@ -593,7 +627,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
     abundances = create_abund_dict(abund_in,
                                    rt_object.line_species,
                                    chemistry,
-                                   half=half,
+                                   pressure_grid=pressure_grid,
                                    indices=None)
 
     # calculate the emission spectrum
@@ -625,7 +659,7 @@ def calc_spectrum_clouds(rt_object: Radtrans,
                          logg: float,
                          sigma_lnorm: float,
                          chemistry: str,
-                         half: bool = False,
+                         pressure_grid: str = 'smaller',
                          plotting: bool = False,
                          contribution: bool = False) -> Tuple[np.ndarray,
                                                               np.ndarray,
@@ -660,8 +694,15 @@ def calc_spectrum_clouds(rt_object: Radtrans,
         Geometric standard deviation of the log-normal size distribution.
     chemistry : str
         Chemistry type (only ``'equilibrium'`` is supported).
-    half: bool
-        Only use every third P/T point.
+    pressure_grid : str
+        The type of pressure grid that is used for the radiative transfer. Either 'standard',
+        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
+        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
+        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
+        to ~100 layers with the radiative transfer after applying a refinement around the cloud
+        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
+        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     plotting : bool
         Create plots.
     contribution : bool
@@ -677,14 +718,14 @@ def calc_spectrum_clouds(rt_object: Radtrans,
         Emission contribution.
     """
 
-    # interpolate the abundances, following chemical equilibrium
+    # Interpolate the abundances, following chemical equilibrium
     abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
                                    np.full(pressure.shape, metallicity),
                                    temperature,
                                    pressure,
                                    Pquench_carbon=1e1**log_p_quench)
 
-    # extract the mean molecular weight
+    # Extract the mean molecular weight
     mmw = abund_in['MMW']
 
     p_base = {}
@@ -705,25 +746,31 @@ def calc_spectrum_clouds(rt_object: Radtrans,
 
         p_base[f'{item}(c)'] = p_base_item
 
-    # adaptive pressure refinement around the cloud base
-    # _, small_index = make_half_pressure_better(p_base, pressure)
-
-    # TODO
-    small_index = None
+    # Adaptive pressure refinement around the cloud base
+    if pressure_grid == 'clouds':
+        _, indices = make_half_pressure_better(p_base, pressure)
+    else:
+        indices = None
 
     abundances = create_abund_dict(abund_in,
                                    rt_object.line_species,
                                    chemistry,
-                                   half=half,
-                                   indices=small_index)
+                                   pressure_grid=pressure_grid,
+                                   indices=indices)
 
     Kzz_use = np.full(pressure.shape, 10.**Kzz)
 
-    if half:
+    if pressure_grid == 'smaller':
         temperature = temperature[::3]
         pressure = pressure[::3]
         mmw = mmw[::3]
         Kzz_use = Kzz_use[::3]
+
+    elif pressure_grid == 'clouds':
+        temperature = temperature[indices]
+        pressure = pressure[indices]
+        mmw = mmw[indices]
+        Kzz_use = Kzz_use[indices]
 
     fseds = {}
 
@@ -776,10 +823,11 @@ def calc_spectrum_clouds(rt_object: Radtrans,
     # abundances['MgSiO3(c)'] = np.zeros_like(pressure)
     # abundances['Fe(c)'] = np.zeros_like(pressure)
 
-    # reinitiate the pressure layers after make_half_pressure_better
-    rt_object.setup_opa_structure(pressure)
+    # Reinitiate the pressure layers after make_half_pressure_better
+    if pressure_grid == 'clouds':
+        rt_object.setup_opa_structure(pressure)
 
-    # calculate the emission spectrum
+    # Calculate the emission spectrum
     rt_object.calc_flux(temperature,
                         abundances,
                         10.**logg,
@@ -799,13 +847,13 @@ def calc_spectrum_clouds(rt_object: Radtrans,
     wlen = constants.LIGHT*1e2/rt_object.freq
     flux = rt_object.flux
 
-    # convert flux f_nu to f_lambda
+    # Convert flux f_nu to f_lambda
     f_lambda = flux*constants.LIGHT*1e2/wlen**2.
 
-    # convert from ergs to Joule
+    # Convert from ergs to Joule
     f_lambda = f_lambda * 1e-7
 
-    # optionally return the emission contribution
+    # Optionally return the emission contribution
     if contribution:
         contr_em = rt_object.contr_em
     else:
@@ -1307,7 +1355,8 @@ def scale_cloud_abund(cube,
                       chemistry: str,
                       abund_in: Dict[str, np.ndarray],
                       composition: str,
-                      tau_cloud: float) -> float:
+                      tau_cloud: float,
+                      pressure_grid: str) -> float:
     """
     Function to scale the mass fraction of a cloud species to the requested optical depth.
 
@@ -1335,6 +1384,15 @@ def scale_cloud_abund(cube,
     tau_cloud : float
         Optical depth of the clouds. The returned mass fraction is scaled such that the optical
         depth at the shortest wavelength is equal to ``tau_cloud``.
+    pressure_grid : str
+        The type of pressure grid that is used for the radiative transfer. Either 'standard',
+        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
+        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
+        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
+        to ~100 layers with the radiative transfer after applying a refinement around the cloud
+        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
+        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
 
     Returns
     -------
@@ -1368,23 +1426,48 @@ def scale_cloud_abund(cube,
     abund_in[composition][pressure < p_base] = 10.**log_x_base[composition[:-3]] * \
         (pressure[pressure <= p_base] / p_base)**cube[cube_index['fsed']]
 
+    # Adaptive pressure refinement around the cloud base
+    if pressure_grid == 'clouds':
+        _, indices = make_half_pressure_better({composition: p_base}, pressure)
+    else:
+        indices = None
+
     # Update the abundance dictionary
     abundances = create_abund_dict(abund_in,
                                    rt_object.line_species,
                                    chemistry,
-                                   half=True,
-                                   indices=None)
+                                   pressure_grid=pressure_grid,
+                                   indices=indices)
 
     # Interpolate the line opacities to the temperature structure
-    rt_object.interpolate_species_opa(temperature[::3])
+
+    if pressure_grid == 'standard':
+        rt_object.interpolate_species_opa(temperature)
+
+        mmw_select = mmw.copy()
+        kzz_select = np.full(pressure.size, 10.**cube[cube_index['kzz']])
+
+    elif pressure_grid == 'smaller':
+        rt_object.interpolate_species_opa(temperature[::3])
+
+        mmw_select = mmw[::3]
+        kzz_select = np.full(pressure[::3].size, 10.**cube[cube_index['kzz']])
+
+    elif pressure_grid == 'clouds':
+        # Reinitiate the pressure structure after make_half_pressure_better
+        rt_object.setup_opa_structure(pressure[indices])
+        rt_object.interpolate_species_opa(temperature[indices])
+
+        mmw_select = mmw[indices]
+        kzz_select = np.full(pressure[indices].size, 10.**cube[cube_index['kzz']])
 
     # Combine the line opacities according their mass fractions and add the continuum opacities
     rt_object.mix_opa_tot(abundances,
-                          mmw[::3],
+                          mmw_select,
                           10.**cube[cube_index['logg']],
                           sigma_lnorm=cube[cube_index['sigma_lnorm']],
                           fsed=cube[cube_index['fsed']],
-                          Kzz=np.full(pressure.size//3, 10.**cube[cube_index['kzz']]),
+                          Kzz=kzz_select,
                           radius=None,
                           gray_opacity=None,
                           add_cloud_scat_as_abs=False)
