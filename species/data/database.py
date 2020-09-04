@@ -1773,6 +1773,11 @@ class Database:
         pt_profile = dset.attrs['pt_profile']
         chemistry = dset.attrs['chemistry']
 
+        if 'pressure_grid' in dset.attrs:
+            pressure_grid = dset.attrs['pressure_grid']
+        else:
+            pressure_grid = 'smaller'
+
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
         else:
@@ -1848,7 +1853,8 @@ class Database:
         read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
                                               cloud_species=cloud_species,
                                               scattering=scattering,
-                                              wavel_range=wavel_range)
+                                              wavel_range=wavel_range,
+                                              pressure_grid=pressure_grid)
 
         n_total = samples.shape[0]
 

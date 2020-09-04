@@ -1,6 +1,6 @@
 """
 Module with reading functionalities for atmospheric models from petitRADTRANS. See
-Mollière et al. 2019 for details about the retrieval code.
+Mollière et al. 2019 for details about the atmospheric retrieval code.
 """
 
 import os
@@ -33,7 +33,8 @@ class ReadRadtrans:
                  cloud_species: Optional[List[str]] = None,
                  scattering: bool = False,
                  wavel_range: Optional[Tuple[float, float]] = None,
-                 filter_name: Optional[str] = None) -> None:
+                 filter_name: Optional[str] = None,
+                 pressure_grid: str = 'smaller') -> None:
         """
         Parameters
         ----------
@@ -49,6 +50,15 @@ class ReadRadtrans:
         filter_name : str, None
             Filter name that is used for the wavelength range. The ``wavel_range`` is used if
             ''filter_name`` is set to ``None``.
+        pressure_grid : str
+            The type of pressure grid that is used for the radiative transfer. Either 'standard',
+            to use 180 layers both for the atmospheric structure (e.g. when interpolating the
+            abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
+            of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
+            to ~100 layers with the radiative transfer after applying a refinement around the cloud
+            For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
+            'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
+            'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
 
         Returns
         -------
@@ -59,6 +69,7 @@ class ReadRadtrans:
         self.filter_name = filter_name
         self.wavel_range = wavel_range
         self.scattering = scattering
+        self.pressure_grid = pressure_grid
 
         if self.filter_name is not None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -185,13 +196,15 @@ class ReadRadtrans:
                 self.rt_object, self.pressure, temp, model_param['c_o_ratio'],
                 model_param['metallicity'], log_p_quench, log_x_base, model_param['fsed'],
                 model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
-                chemistry='equilibrium', half=True, plotting=False, contribution=contribution)
+                chemistry='equilibrium', pressure_grid=self.pressure_grid,
+                plotting=False, contribution=contribution)
 
         elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'],
                 model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
-                None, half=True, chemistry='equilibrium', contribution=contribution)
+                None, pressure_grid=self.pressure_grid, chemistry='equilibrium',
+                contribution=contribution)
 
         else:
             abund = {}
@@ -200,7 +213,8 @@ class ReadRadtrans:
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
-                None, None, abund, half=True, chemistry='free', contribution=contribution)
+                None, None, abund, pressure_grid=self.pressure_grid,
+                chemistry='free', contribution=contribution)
 
         # tau = self.rt_object.total_tau
         # print(tau.shape)

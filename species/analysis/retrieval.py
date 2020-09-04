@@ -1287,6 +1287,7 @@ class AtmosphericRetrieval:
         radtrans_dict['chemistry'] = chemistry
         radtrans_dict['quenching'] = quenching
         radtrans_dict['pt_profile'] = pt_profile
+        radtrans_dict['pressure_grid'] = self.pressure_grid
 
         with open(radtrans_filename, 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
