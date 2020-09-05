@@ -20,11 +20,11 @@ from scipy.integrate import simps
 from typeguard import typechecked
 
 from species.analysis import photometry
-from species.core import box, constants
+from species.core import box
 from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
                          companions, filters, btsettl, btsettl_cifist, ames_dusty, \
                          ames_cond, isochrones, petitcode, exo_rem, dust
-from species.read import read_model, read_calibration, read_planck, read_radtrans
+from species.read import read_filter, read_model, read_calibration, read_planck, read_radtrans
 from species.util import data_util, dust_util
 
 
@@ -532,10 +532,11 @@ class Database:
             ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter is ignored if set to None.
             For GRAVITY data, the same FITS file can be provided as spectrum and covariance matrix.
         deredden : dict, None
-            Dictionary with ``spectrum`` names that will de dereddened with the provided A_V. For
-            example, ``deredden={'SPHERE': 1.5}`` will deredden the spectrum named 'SPHERE' with
-            a visual extinction of 1.5. Currently, this parameter only supports spectra and not
-            photometric data of ``app_mag``.
+            Dictionary with ``spectrum`` and ``app_mag`` names that will de dereddened with the
+            provided A_V. For example, ``deredden={'SPHERE': 1.5, 'Keck/NIRC2.J': 1.5}`` will
+            deredden the provided spectrum named 'SPHERE' and the Keck/NIRC2 J-band photometry with
+            a visual extinction of 1.5. For photometric fluxes, the filter-averaged extinction is
+            used for the dereddening.
 
         Returns
         -------
@@ -575,15 +576,34 @@ class Database:
 
         flux = {}
         error = {}
+        dered_phot = {}
 
         if app_mag is not None:
             for mag_item in app_mag:
+                if mag_item in deredden:
+                    read_filt = read_filter.ReadFilter(mag_item)
+                    filter_profile = read_filt.get_filter()
+
+                    ext_mag = dust_util.ism_extinction(deredden[mag_item], 3.1,
+                                                       filter_profile[:, 0])
+
+                    synphot = photometry.SyntheticPhotometry(mag_item)
+
+                    dered_phot[mag_item], _ = synphot.spectrum_to_flux(filter_profile[:, 0],
+                                                                       10.**(0.4*ext_mag))
+
+                else:
+                    dered_phot[mag_item] = 1.
+
                 if isinstance(app_mag[mag_item], tuple):
 
                     try:
                         synphot = photometry.SyntheticPhotometry(mag_item)
+
                         flux[mag_item], error[mag_item] = synphot.magnitude_to_flux(
                             app_mag[mag_item][0], app_mag[mag_item][1])
+
+                        flux[mag_item] *= dered_phot[mag_item]
 
                     except KeyError:
                         warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO Filter '
@@ -603,8 +623,11 @@ class Database:
 
                         try:
                             synphot = photometry.SyntheticPhotometry(mag_item)
+
                             flux_dupl, error_dupl = synphot.magnitude_to_flux(
                                 dupl_item[0], dupl_item[1])
+
+                            flux_dupl *= dered_phot[mag_item]
 
                         except KeyError:
                             warnings.warn(f'Filter \'{mag_item}\' is not available on the SVO '
@@ -635,6 +658,9 @@ class Database:
                 if isinstance(app_mag[mag_item], tuple):
                     n_phot = 1
 
+                    app_mag[mag_item] = (app_mag[mag_item][0] - 2.5*np.log10(dered_phot[mag_item]),
+                                         app_mag[mag_item][1])
+
                     print(f'   - {mag_item}:')
 
                     print(f'      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- '
@@ -656,6 +682,9 @@ class Database:
                     mag_err_list = []
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
+                        dered_mag = app_mag[mag_item][i][0] - 2.5*np.log10(dered_phot[mag_item])
+                        app_mag[mag_item] = (dered_mag, app_mag[mag_item][i][1])
+
                         print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- '
                               f'{app_mag[mag_item][i][1]:.2f}')
 
@@ -732,6 +761,10 @@ class Database:
                     print('   - Spectrum:')
                     read_spec[key] = data
 
+                if key in deredden:
+                    ext_mag = dust_util.ism_extinction(deredden[key], 3.1, read_spec[key][:, 0])
+                    read_spec[key][:, 1] *= 10.**(0.4*ext_mag)
+
                 wavelength = read_spec[key][:, 0]
                 flux = read_spec[key][:, 1]
                 error = read_spec[key][:, 2]
@@ -744,8 +777,6 @@ class Database:
                 print(f'      - Mean error (W m-2 um-1): {np.mean(error):.2e}')
 
                 if key in deredden:
-                    ext_mag = dust_util.ism_extinction(deredden[key], 3.1, wavelength)
-                    read_spec[key][:, 1] *= 10.**(-0.4*ext_mag)
                     print(f'      - Dereddening A_V: {deredden[key]}')
 
             # Read covariance matrix
@@ -1485,13 +1516,13 @@ class Database:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
 
-            filters = list(magnitude.keys())
+            phot_filters = list(magnitude.keys())
 
         else:
 
             magnitude = None
             flux = None
-            filters = None
+            phot_filters = None
 
         if inc_spec and f'objects/{object_name}/spectrum' in h5_file:
             spectrum = {}
@@ -1522,7 +1553,7 @@ class Database:
 
         return box.create_box('object',
                               name=object_name,
-                              filters=filters,
+                              filters=phot_filters,
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance,
