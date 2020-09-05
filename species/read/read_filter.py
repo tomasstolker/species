@@ -64,8 +64,8 @@ class ReadFilter:
 
         Returns
         -------
-        numpy.ndarray
-            Filter transmission profile.
+        np.ndarray
+            Array with the wavelengths and filter transmission.
         """
 
         h5_file = h5py.File(self.database, 'r')
