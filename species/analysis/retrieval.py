@@ -9,23 +9,20 @@ import time
 
 from typing import List, Optional, Tuple, Union
 
-import pymultinest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pymultinest
 
-from typeguard import typechecked
 from scipy.stats import invgamma
+from typeguard import typechecked
+
 from rebin_give_width import rebin_give_width
 
-from petitRADTRANS.radtrans import Radtrans
-from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-    interpol_abundances
-
 from species.analysis import photometry
-from species.data import database
 from species.core import constants
+from species.data import database
 from species.read import read_filter, read_object
-from species.util import retrieval_util, dust_util
+from species.util import dust_util, retrieval_util
 
 
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -213,7 +210,7 @@ class AtmosphericRetrieval:
             dict_val.append(wavel_bins)
             self.spectrum[key] = dict_val
 
-            # Min and max wavelength for Radtrans object
+            # Min and max wavelength for the Radtrans object
 
             self.wavel_min.append(wavel_data[0])
             self.wavel_max.append(wavel_data[-1])
@@ -477,10 +474,21 @@ class AtmosphericRetrieval:
             None
         """
 
-        # Create the output folder if required
+        # Check if the output folder exists
 
         if not os.path.exists(self.output_folder):
             raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
+
+        # Import petitRADTRANS and interpol_abundances here because it is slow
+
+        print('Importing petitRADTRANS...', end='', flush=True)
+        from petitRADTRANS.radtrans import Radtrans
+        print(' [DONE]')
+
+        print('Importing chemistry module...', end='', flush=True)
+        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+            interpol_abundances
+        print(' [DONE]')
 
         # List with spectra for which the correlated noise is fitted
 

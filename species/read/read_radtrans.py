@@ -3,18 +3,17 @@ Module with reading functionalities for atmospheric models from petitRADTRANS. S
 Mollière et al. 2019 for details about the atmospheric retrieval code.
 """
 
-import os
 import configparser
+import os
+import sys
 
-from typing import Optional, List, Tuple, Dict
+from typing import Dict, Optional, List, Tuple
 
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 from typeguard import typechecked
-
-from petitRADTRANS.radtrans import Radtrans
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -93,10 +92,16 @@ class ReadRadtrans:
             # n_pressure = 1440
             n_pressure = 180
 
-        # create 180 pressure layers in log space
+        # Create 180 pressure layers in log space
         self.pressure = np.logspace(-6, 3, n_pressure)
 
-        # create Radtrans object
+        # Import petitRADTRANS here because it is slow
+
+        print('Importing petitRADTRANS...', end='', flush=True)
+        from petitRADTRANS.radtrans import Radtrans
+        print(' [DONE]')
+
+        # Create the Radtrans object
 
         self.rt_object = Radtrans(line_species=self.line_species,
                                   rayleigh_species=['H2', 'He'],
@@ -107,14 +112,16 @@ class ReadRadtrans:
                                   test_ck_shuffle_comp=self.scattering,
                                   do_scat_emis=self.scattering)
 
-        # create RT arrays of 60 pressure layers
+        # Create the RT arrays
 
-        if len(self.cloud_species) > 0:
-            # self.rt_object.setup_opa_structure(self.pressure[::24])
+        if self.pressure_grid == 'standard':
+            self.rt_object.setup_opa_structure(self.pressure)
+
+        elif self.pressure_grid == 'smaller':
             self.rt_object.setup_opa_structure(self.pressure[::3])
 
-        else:
-            self.rt_object.setup_opa_structure(self.pressure[::3])
+        elif self.pressure_grid == 'clouds':
+            self.rt_object.setup_opa_structure(self.pressure[::24])
 
     @typechecked
     def get_model(self,

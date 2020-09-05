@@ -4,13 +4,11 @@ Module for plotting atmospheric retrieval results.
 
 from typing import Optional, Tuple
 
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 from typeguard import typechecked
-from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-    interpol_abundances
 
 from species.data import database
 from species.read import read_radtrans
@@ -180,6 +178,11 @@ def plot_pt_profile(tag: str,
         temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
+
+    # Import interpol_abundances here because it is slow
+
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+        interpol_abundances
 
     if 'metallicity' in parameters and 'c_o_ratio' in parameters:
         if 'log_p_quench' in median:

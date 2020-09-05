@@ -4,7 +4,6 @@ Module with functionalities for reading and writing of data.
 
 import configparser
 import json
-# import multiprocessing
 import os
 import warnings
 

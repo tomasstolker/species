@@ -13,10 +13,6 @@ from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
 from typeguard import typechecked
 
-from petitRADTRANS.radtrans import Radtrans
-from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-    interpol_abundances
-
 from species.core import constants
 
 
@@ -87,6 +83,13 @@ def pt_ret_model(temp_3: np.ndarray,
 
     # This is the eddington temperature
     tedd = (3./4.*tint**4.*(2./3.+tau))**0.25
+
+    # Import interpol_abundances here because it slows down importing species otherwise.
+    # Importing interpol_abundances is only slow the first time, which occurs at the start
+    # of the run_multinest method of AtmosphericRetrieval
+
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+        interpol_abundances
 
     ab = interpol_abundances(np.full(tedd.shape[0], c_o_ratio),
                              np.full(tedd.shape[0], metallicity),
@@ -533,7 +536,7 @@ def create_abund_dict(abund_in: dict,
 
 
 @typechecked
-def calc_spectrum_clear(rt_object: Radtrans,
+def calc_spectrum_clear(rt_object,
                         pressure: np.ndarray,
                         temperature: np.ndarray,
                         logg: float,
@@ -550,7 +553,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
     Function to simulate an emission spectrum of a clear atmosphere. The function supports both
     equilibrium chemistry (``chemistry='equilibrium'``) and free abundances (``chemistry='free'``).
 
-    rt_object : Radtrans
+    rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
         Array with the pressure points (bar).
@@ -589,6 +592,13 @@ def calc_spectrum_clear(rt_object: Radtrans,
     np.ndarray, None
         Emission contribution.
     """
+
+    # Import interpol_abundances here because it slows down importing species otherwise.
+    # Importing interpol_abundances is only slow the first time, which occurs at the start
+    # of the run_multinest method of AtmosphericRetrieval
+
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+        interpol_abundances
 
     if chemistry == 'equilibrium':
         # chemical equilibrium
@@ -647,7 +657,7 @@ def calc_spectrum_clear(rt_object: Radtrans,
 
 
 @typechecked
-def calc_spectrum_clouds(rt_object: Radtrans,
+def calc_spectrum_clouds(rt_object,
                          pressure: np.ndarray,
                          temperature: np.ndarray,
                          c_o_ratio: float,
@@ -670,7 +680,7 @@ def calc_spectrum_clouds(rt_object: Radtrans,
 
     Parameters
     ----------
-    rt_object : Radtrans
+    rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
         Array with the pressure points (bar).
@@ -717,6 +727,13 @@ def calc_spectrum_clouds(rt_object: Radtrans,
     np.ndarray, None
         Emission contribution.
     """
+
+    # Import interpol_abundances here because it slows down importing species otherwise.
+    # Importing interpol_abundances is only slow the first time, which occurs at the start
+    # of the run_multinest method of AtmosphericRetrieval
+
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+        interpol_abundances
 
     # Interpolate the abundances, following chemical equilibrium
     abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
@@ -1348,7 +1365,7 @@ def find_cloud_deck(composition: str,
 @typechecked
 def scale_cloud_abund(cube,
                       cube_index: Dict[str, float],
-                      rt_object: Radtrans,
+                      rt_object,
                       pressure: np.ndarray,
                       temperature: np.ndarray,
                       mmw: np.ndarray,
@@ -1366,7 +1383,7 @@ def scale_cloud_abund(cube,
         Cube with the model parameters.
     cube_index : dict
         Dictionary with the index of each parameter in the ``cube``.
-    rt_object : Radtrans
+    rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
         Array with the pressure points (bar).
