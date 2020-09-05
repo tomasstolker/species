@@ -16,8 +16,6 @@ import pymultinest
 from scipy.stats import invgamma
 from typeguard import typechecked
 
-from rebin_give_width import rebin_give_width
-
 from species.analysis import photometry
 from species.core import constants
 from species.data import database
@@ -488,6 +486,10 @@ class AtmosphericRetrieval:
         print('Importing chemistry module...', end='', flush=True)
         from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
             interpol_abundances
+        print(' [DONE]')
+
+        print('Importing rebin module...', end='', flush=True)
+        from rebin_give_width import rebin_give_width
         print(' [DONE]')
 
         # List with spectra for which the correlated noise is fitted
