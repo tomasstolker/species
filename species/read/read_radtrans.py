@@ -1,6 +1,7 @@
 """
-Module with reading functionalities for atmospheric models from petitRADTRANS. See
-Mollière et al. 2019 for details about the atmospheric retrieval code.
+Module for generating atmospheric model spectra with ``petitRADTRANS``. Details on this
+atmospheric retrieval code can be found in Mollière et al. (2019) and in the online
+documentation (https://petitradtrans.readthedocs.io).
 """
 
 import configparser
@@ -23,7 +24,7 @@ from species.util import dust_util, read_util, retrieval_util
 
 class ReadRadtrans:
     """
-    Class for reading a model spectrum from the database.
+    Class for generating a model spectrum with ``petitRADTRANS``.
     """
 
     @typechecked
@@ -54,10 +55,10 @@ class ReadRadtrans:
             to use 180 layers both for the atmospheric structure (e.g. when interpolating the
             abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
             of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-            to ~100 layers with the radiative transfer after applying a refinement around the cloud
-            For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
-            'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
-            'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+            to ~100 layers (depending on the number of cloud species) with a refinement around the
+            cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
+            faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
+            test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
 
         Returns
         -------
@@ -125,32 +126,26 @@ class ReadRadtrans:
 
     @typechecked
     def get_model(self,
-                  model_param: dict,
+                  model_param: Dict[str, float],
                   spec_res: Optional[float] = None,
                   wavel_resample: Optional[np.ndarray] = None,
                   plot_contribution: Optional[str] = None) -> box.ModelBox:
         """
-        Function for extracting a model spectrum by linearly interpolating the model grid. The
-        parameters values should lie within the boundaries of the grid points that are stored
-        in the database. The stored grid points can be inspected with
-        :func:`~species.read.read_model.ReadModel.get_points`.
+        Function for calculating a model spectrum.
 
         Parameters
         ----------
         model_param : dict
-            Model parameters and values. The values should be within the boundaries of the grid.
-            The grid boundaries of the available spectra in the database can be obtained with
-            :func:`~species.read.read_model.ReadModel.get_bounds()`.
+            Dictionary with the model parameters and values.
         spec_res : float, None
-            Spectral resolution, achieved by smoothing with a Gaussian kernel. The original
-            wavelength points are used if both ``spec_res`` and ``wavel_resample`` are set to
-            ``None``.
-        wavel_resample : numpy.ndarray
-            Wavelength points (um) to which the spectrum is resampled. Only used if
-            ``spec_res`` is set to ``None``.
+            Spectral resolution, achieved by smoothing with a Gaussian kernel. No smoothing is
+            applied when set to ``None``.
+        wavel_resample : np.ndarray, None
+            Wavelength points (um) to which the spectrum is resampled. The original wavelengths
+            points are used if set to ``None``.
         plot_contribution : str, None
-            Filename for the plot of the emission contribution function. The plot is not created if
-            set to ``None``.
+            Filename for the plot with the emission contribution. The plot is not created if set
+            to ``None``.
 
         Returns
         -------
@@ -222,9 +217,6 @@ class ReadRadtrans:
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
                 None, None, abund, pressure_grid=self.pressure_grid,
                 chemistry='free', contribution=contribution)
-
-        # tau = self.rt_object.total_tau
-        # print(tau.shape)
 
         if 'radius' in model_param:
             model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
@@ -307,14 +299,14 @@ class ReadRadtrans:
         Parameters
         ----------
         model_param : dict
-            Model parameters and values.
+            Dictionary with the model parameters and values.
 
         Returns
         -------
         float
-            Average flux (W m-2 um-1).
-        float, None
-            Uncertainty (W m-2 um-1), which is set to ``None``.
+            Flux (W m-2 um-1).
+        NoneType
+            Error (W m-2 um-1). Always set to ``None``.
         """
 
         spectrum = self.get_model(model_param)

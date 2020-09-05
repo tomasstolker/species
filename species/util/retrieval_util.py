@@ -1,5 +1,6 @@
 """
-Utility functions for atmospheric retrieval with major contributions by Paul Mollière (MPIA).
+Utility functions for atmospheric retrieval with ``petitRADTRANS``. This module was put together
+with major contributions by Paul Mollière (MPIA).
 """
 
 import copy
@@ -419,10 +420,10 @@ def create_abund_dict(abund_in: dict,
         to use 180 layers both for the atmospheric structure (e.g. when interpolating the
         abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
         of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers with the radiative transfer after applying a refinement around the cloud
-        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
-        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
-        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        to ~100 layers (depending on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
+        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
+        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     indices : np.ndarray, None
         Pressure indices from the adaptive refinement in a cloudy atmosphere.
 
@@ -576,10 +577,10 @@ def calc_spectrum_clear(rt_object,
         to use 180 layers both for the atmospheric structure (e.g. when interpolating the
         abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
         of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers with the radiative transfer after applying a refinement around the cloud
-        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
-        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
-        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        to ~100 layers (depending on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
+        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
+        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     contribution : bool
         Calculate the emission contribution.
 
@@ -709,10 +710,10 @@ def calc_spectrum_clouds(rt_object,
         to use 180 layers both for the atmospheric structure (e.g. when interpolating the
         abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
         of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers with the radiative transfer after applying a refinement around the cloud
-        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
-        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
-        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        to ~100 layers (depending on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
+        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
+        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     plotting : bool
         Create plots.
     contribution : bool
@@ -1406,10 +1407,10 @@ def scale_cloud_abund(cube,
         to use 180 layers both for the atmospheric structure (e.g. when interpolating the
         abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
         of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers with the radiative transfer after applying a refinement around the cloud
-        For cloudless atmospheres it is recommended to use 'smaller', which runs faster than
-        'standard' and provides sufficient accuracy. For cloudy atmosphere, one can test with
-        'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        to ~100 layers (depending on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
+        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
+        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
 
     Returns
     -------
