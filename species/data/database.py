@@ -25,7 +25,7 @@ from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, le
                          companions, filters, btsettl, btsettl_cifist, ames_dusty, \
                          ames_cond, isochrones, petitcode, exo_rem, dust
 from species.read import read_model, read_calibration, read_planck, read_radtrans
-from species.util import data_util
+from species.util import data_util, dust_util
 
 
 class Database:
@@ -61,13 +61,20 @@ class Database:
 
         print('Database content:')
 
-        def descend(h5_object,
-                    seperator=''):
+        @typechecked
+        def descend(h5_object: Union[h5py._hl.files.File,
+                                     h5py._hl.group.Group,
+                                     h5py._hl.dataset.Dataset],
+                    seperator: str = '') -> None:
             """
+            Function for descending into an HDF5 dataset and printing its content.
+
             Parameters
             ----------
             h5_object : h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
+                The ``h5py`` object.
             separator : str
+                Separator that is used between items.
 
             Returns
             -------
@@ -498,7 +505,8 @@ class Database:
                    spectrum: Optional[Dict[str,
                                            Tuple[str,
                                                  Optional[str],
-                                                 Optional[float]]]] = None) -> None:
+                                                 Optional[float]]]] = None,
+                   deredden: Dict[str, float] = None) -> None:
         """
         Function for adding the photometric and/or spectroscopic data of an object to the database.
 
@@ -523,6 +531,11 @@ class Database:
             50.)}``. No covariance data is stored if set to None, for example, ``{'SPHERE':
             ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter is ignored if set to None.
             For GRAVITY data, the same FITS file can be provided as spectrum and covariance matrix.
+        deredden : dict, None
+            Dictionary with ``spectrum`` names that will de dereddened with the provided A_V. For
+            example, ``deredden={'SPHERE': 1.5}`` will deredden the spectrum named 'SPHERE' with
+            a visual extinction of 1.5. Currently, this parameter only supports spectra and not
+            photometric data of ``app_mag``.
 
         Returns
         -------
@@ -726,6 +739,11 @@ class Database:
                 print(f'      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}')
                 print(f'      - Mean flux (W m-2 um-1): {np.mean(flux):.2e}')
                 print(f'      - Mean error (W m-2 um-1): {np.mean(error):.2e}')
+
+                if key in deredden:
+                    ext_mag = dust_util.ism_extinction(deredden[key], 3.1, wavelength)
+                    read_spec[key][:, 1] = flux * 10.**(0.4*ext_mag)
+                    print(f'      - Dereddening A_V: {deredden[key]}')
 
             # Read covariance matrix
 
@@ -1090,18 +1108,19 @@ class Database:
 
         h5_file.close()
 
+    @typechecked
     def get_probable_sample(self,
-                            tag,
-                            burnin):
+                            tag: str,
+                            burnin: Optional[int] = None) -> Dict[str, float]:
         """
         Function for extracting the sample parameters with the highest posterior probability.
 
         Parameters
         ----------
         tag : str
-            Database tag with the MCMC results.
-        burnin : int
-            Number of burnin steps.
+            Database tag with the posterior results.
+        burnin : int, None
+            Number of burnin steps. No burnin is removed if set to ``None``.
 
         Returns
         -------
@@ -1154,18 +1173,19 @@ class Database:
 
         return prob_sample
 
+    @typechecked
     def get_median_sample(self,
-                          tag,
-                          burnin=None):
+                          tag: str,
+                          burnin: Optional[int] = None) -> Dict[str, float]:
         """
-        Function for extracting the median parameter values from the MCMC samples.
+        Function for extracting the median parameter values from the posterior samples.
 
         Parameters
         ----------
         tag : str
-            Database tag with the MCMC results.
+            Database tag with the posterior results.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to None.
+            Number of burnin steps. No burnin is removed if set to ``None``.
 
         Returns
         -------
@@ -1210,26 +1230,27 @@ class Database:
 
         return median_sample
 
+    @typechecked
     def get_mcmc_spectra(self,
-                         tag,
-                         burnin,
-                         random,
-                         wavel_range,
-                         spec_res=None):
+                         tag: str,
+                         random: int,
+                         burnin: Optional[int] = None,
+                         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
+                         spec_res: Optional[float] = None) -> box.ModelBox:
         """
         Parameters
         ----------
         tag : str
-            Database tag with the MCMC samples.
-        burnin : int
-            Number of burnin steps.
+            Database tag with the posterior samples.
         random : int
             Number of random samples.
+        burnin : int, None
+            Number of burnin steps. No burnin is removed if set to ``None``.
         wavel_range : tuple(float, float), str, None
-            Wavelength range (um) or filter name. Full spectrum if set to None.
+            Wavelength range (um) or filter name. Full spectrum is used if set to ``None``.
         spec_res : float
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied if set to None.
+            is applied if set to ``None``.
 
         Returns
         -------
@@ -1338,24 +1359,25 @@ class Database:
 
         return boxes
 
+    @typechecked
     def get_mcmc_photometry(self,
-                            tag,
-                            burnin,
-                            filter_name):
+                            tag: str,
+                            filter_name: str,
+                            burnin: Optional[int] = None) -> np.ndarray:
         """
         Parameters
         ----------
         tag : str
-            Database tag with the MCMC samples.
-        burnin : int
-            Number of burnin steps.
+            Database tag with the posterior samples.
         filter_name : str
             Filter name for which the photometry is calculated.
+        burnin : int, None
+            Number of burnin steps. No burnin is removed if set to ``None``.
 
         Returns
         -------
         np.ndarray
-            Synthetic photometry (mag).
+            Synthetic magnitudes.
         """
 
         if burnin is None:
@@ -1389,6 +1411,7 @@ class Database:
 
         if spectrum_type == 'model':
             readmodel = read_model.ReadModel(spectrum_name, filter_name=filter_name)
+
         # elif spectrum_type == 'calibration':
         #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
 
@@ -1404,6 +1427,7 @@ class Database:
 
             if spectrum_type == 'model':
                 mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
+
             # elif spectrum_type == 'calibration':
             #     specbox = readcalib.get_spectrum(model_param)
 
