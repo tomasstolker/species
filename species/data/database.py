@@ -545,6 +545,9 @@ class Database:
 
         h5_file = h5py.File(self.database, 'a')
 
+        if deredden is None:
+            deredden = {}
+
         if app_mag is not None:
             if 'spectra/calibration/vega' not in h5_file:
                 self.add_spectrum('vega')
@@ -742,7 +745,7 @@ class Database:
 
                 if key in deredden:
                     ext_mag = dust_util.ism_extinction(deredden[key], 3.1, wavelength)
-                    read_spec[key][:, 1] = flux * 10.**(0.4*ext_mag)
+                    read_spec[key][:, 1] *= 10.**(-0.4*ext_mag)
                     print(f'      - Dereddening A_V: {deredden[key]}')
 
             # Read covariance matrix
