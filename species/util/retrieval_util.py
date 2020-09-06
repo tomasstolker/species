@@ -5,7 +5,7 @@ with major contributions by Paul Mollière (MPIA).
 
 import copy
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1244,7 +1244,7 @@ def cloud_mass_fraction(composition: str,
     nfracs_use = copy.copy(nfracs)
 
     # Scale the solar number densities by the [Fe/H], except H and He
-    for item in nfracs.keys():
+    for item in nfracs:
         if item != 'H' and item != 'He':
             nfracs_use[item] = nfracs[item]*10.**metallicity
 
@@ -1364,8 +1364,7 @@ def find_cloud_deck(composition: str,
 
 
 @typechecked
-def scale_cloud_abund(cube,
-                      cube_index: Dict[str, float],
+def scale_cloud_abund(params: Dict[str, float],
                       rt_object,
                       pressure: np.ndarray,
                       temperature: np.ndarray,
@@ -1380,10 +1379,8 @@ def scale_cloud_abund(cube,
 
     Parameters
     ----------
-    cube : LP_c_double
-        Cube with the model parameters.
-    cube_index : dict
-        Dictionary with the index of each parameter in the ``cube``.
+    params : dict
+        Dictionary with the model parameters.
     rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
@@ -1424,16 +1421,16 @@ def scale_cloud_abund(cube,
     cloud_fractions = {composition: 0.}
 
     # Create a dictionary with the log10 of the mass fraction at the cloud base
-    log_x_base = log_x_cloud_base(cube[cube_index['c_o_ratio']],
-                                  cube[cube_index['metallicity']],
+    log_x_base = log_x_cloud_base(params['c_o_ratio'],
+                                  params['metallicity'],
                                   cloud_fractions)
 
     # Get the pressure (bar) of the cloud base
     p_base = find_cloud_deck(composition[:-3],
                              pressure,
                              temperature,
-                             cube[cube_index['metallicity']],
-                             cube[cube_index['c_o_ratio']],
+                             params['metallicity'],
+                             params['c_o_ratio'],
                              mmw=np.mean(mmw),
                              plotting=False)
 
@@ -1442,7 +1439,7 @@ def scale_cloud_abund(cube,
 
     # Set the cloud abundances by scaling from the base with the f_sed parameter
     abund_in[composition][pressure < p_base] = 10.**log_x_base[composition[:-3]] * \
-        (pressure[pressure <= p_base] / p_base)**cube[cube_index['fsed']]
+        (pressure[pressure <= p_base] / p_base)**params['fsed']
 
     # Adaptive pressure refinement around the cloud base
     if pressure_grid == 'clouds':
@@ -1463,13 +1460,13 @@ def scale_cloud_abund(cube,
         rt_object.interpolate_species_opa(temperature)
 
         mmw_select = mmw.copy()
-        kzz_select = np.full(pressure.size, 10.**cube[cube_index['kzz']])
+        kzz_select = np.full(pressure.size, 10.**params['kzz'])
 
     elif pressure_grid == 'smaller':
         rt_object.interpolate_species_opa(temperature[::3])
 
         mmw_select = mmw[::3]
-        kzz_select = np.full(pressure[::3].size, 10.**cube[cube_index['kzz']])
+        kzz_select = np.full(pressure[::3].size, 10.**params['kzz'])
 
     elif pressure_grid == 'clouds':
         # Reinitiate the pressure structure after make_half_pressure_better
@@ -1477,7 +1474,7 @@ def scale_cloud_abund(cube,
         rt_object.interpolate_species_opa(temperature[indices])
 
         mmw_select = mmw[indices]
-        kzz_select = np.full(pressure[indices].size, 10.**cube[cube_index['kzz']])
+        kzz_select = np.full(pressure[indices].size, 10.**params['kzz'])
 
     # Set the continuum opacities to zero because calc_cloud_opacity adds to existing opacities
     rt_object.continuum_opa = np.zeros_like(rt_object.continuum_opa)
@@ -1487,15 +1484,15 @@ def scale_cloud_abund(cube,
     # Calculate the cloud opacities for the defined atmospheric structure
     rt_object.calc_cloud_opacity(abundances,
                                  mmw_select,
-                                 10.**cube[cube_index['logg']],
-                                 cube[cube_index['sigma_lnorm']],
-                                 fsed=cube[cube_index['fsed']],
+                                 10.**params['logg'],
+                                 params['sigma_lnorm'],
+                                 fsed=params['fsed'],
                                  Kzz=kzz_select,
                                  radius=None,
                                  add_cloud_scat_as_abs=False)
 
     # Calculate the cloud optical depth and set the tau_cloud attribute
-    rt_object.calc_tau_cloud(10.**cube[cube_index['logg']])
+    rt_object.calc_tau_cloud(10.**params['logg'])
 
     # Extract the wavelength-averaged optical depth at the largest pressure
     tau_current = np.mean(rt_object.tau_cloud[0, :, 0, -1])
@@ -1512,6 +1509,33 @@ def scale_cloud_abund(cube,
         log_x_scaled = 100.
 
     return log_x_scaled
+
+
+@typechecked
+def cube_to_dict(cube,
+                 cube_index: Dict[str, float]) -> Dict[str, float]:
+    """
+    Function to convert the parameter cube into a dictionary.
+
+    Parameters
+    ----------
+    cube : LP_c_double
+        Cube with the parameters.
+    cube_index : dict
+        Dictionary with the index of each parameter in the ``cube``.
+
+    Returns
+    -------
+    dict
+        Dictionary with the parameters.
+    """
+
+    params = {}
+
+    for key, value in cube_index.items():
+        params[key] = cube[value]
+
+    return params
 
 
 @typechecked

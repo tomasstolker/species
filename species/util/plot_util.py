@@ -122,6 +122,9 @@ def update_labels(param: List[str]) -> List[str]:
         List with parameter labels for plots.
     """
 
+    cloud_species = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
+    cloud_labels = ['Fe', r'MgSiO_{3}', r'Al_{2}O_{3}', r'Na_{2}S', 'KCl']
+
     if 'teff' in param:
         index = param.index('teff')
         param[index] = r'$\mathregular{T}_\mathregular{eff}$ (K)'
@@ -227,25 +230,14 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('kzz')
         param[index] = r'$\log\,K_{zz}$'
 
-    if 'fe_fraction' in param:
-        index = param.index('fe_fraction')
-        param[index] = r'$\log\,\tilde{X}_\mathregular{Fe}$'
+    for i, item in enumerate(cloud_species):
+        if f'{item}_fraction' in param:
+            index = param.index(f'{item}_fraction')
+            param[index] = rf'$\log\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}$'
 
-    if 'mgsio3_fraction' in param:
-        index = param.index('mgsio3_fraction')
-        param[index] = r'$\log\,\tilde{X}_\mathregular{MgSiO_{3}}$'
-
-    if 'al2o3_fraction' in param:
-        index = param.index('al2o3_fraction')
-        param[index] = r'$\log\,\tilde{X}_\mathregular{Al_{2}O_{3}}$'
-
-    if 'na2s_fraction' in param:
-        index = param.index('na2s_fraction')
-        param[index] = r'$\log\,\tilde{X}_\mathregular{Na_{2}S}$'
-
-    if 'kcl_fraction' in param:
-        index = param.index('kcl_fraction')
-        param[index] = r'$\log\,\tilde{X}_\mathregular{KCl}$'
+        if f'{item}_tau' in param:
+            index = param.index(f'{item}_tau')
+            param[index] = rf'$\bar{{\tau}}_\mathregular{{{cloud_labels[i]}}}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':

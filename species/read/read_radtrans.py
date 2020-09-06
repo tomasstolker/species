@@ -4,10 +4,6 @@ atmospheric retrieval code can be found in Mollière et al. (2019) and in the on
 documentation (https://petitradtrans.readthedocs.io).
 """
 
-import configparser
-import os
-import sys
-
 from typing import Dict, Optional, List, Tuple
 
 import matplotlib as mpl
@@ -188,7 +184,41 @@ class ReadRadtrans:
             cloud_fractions = {}
 
             for item in self.cloud_species:
-                cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
+                cloud_param = f'{item[:-3].lower()}_fraction'
+
+                if cloud_param in model_param:
+                    cloud_fractions[item] = model_param[cloud_param]
+
+                cloud_param = f'{item[:-3].lower()}_tau'
+
+                if cloud_param in model_param:
+                    if 'log_p_quench' in model_param:
+                        # Quenching pressure (bar)
+                        quench_pressure = 10.**model_param['log_p_quench']
+                    else:
+                        quench_pressure = None
+
+                    # Import the chemistry module here because it is slow
+                    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
+                        import interpol_abundances
+
+                    # Interpolate the abundances, following chemical equilibrium
+                    abund_in = interpol_abundances(np.full(self.pressure.size,
+                                                           model_param['c_o_ratio']),
+                                                   np.full(self.pressure.size,
+                                                           model_param['metallicity']),
+                                                   temp,
+                                                   self.pressure,
+                                                   Pquench_carbon=quench_pressure)
+
+                    # Extract the mean molecular weight
+                    mmw = abund_in['MMW']
+
+                    # Calculate the scaled mass fraction of the clouds
+                    cloud_fractions[item] = retrieval_util.scale_cloud_abund(
+                        model_param, self.rt_object, self.pressure, temp, mmw,
+                        'equilibrium', abund_in, item, model_param[cloud_param],
+                        pressure_grid=self.pressure_grid)
 
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],

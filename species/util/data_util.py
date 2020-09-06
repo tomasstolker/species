@@ -763,7 +763,14 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
 
         for cloud_item in cloud_species:
             cloud_param = f'{cloud_item[:-3].lower()}_fraction'
-            model_param[cloud_param] = sample[indices[cloud_param]]
+
+            if cloud_param in indices:
+                model_param[cloud_param] = sample[indices[cloud_param]]
+
+            cloud_param = f'{cloud_item[:-3].lower()}_tau'
+
+            if cloud_param in indices:
+                model_param[cloud_param] = sample[indices[cloud_param]]
 
     if 'ism_ext' in indices:
         model_param['ism_ext'] = sample[indices['ism_ext']]

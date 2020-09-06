@@ -1795,7 +1795,7 @@ class Database:
             Wavelength range (um) or filter name.
         spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied if set to ``None``.
+            is applied when set to ``None``.
 
         Returns
         -------
@@ -1869,8 +1869,14 @@ class Database:
             cloud_species.append(dset.attrs[f'cloud_species{i}']+'_cd')
 
         for item in cloud_species:
-            cloud_param = f'{item[:-6].lower()}_fraction'
-            indices[cloud_param] = np.argwhere(parameters == cloud_param)[0][0]
+            cloud_fraction = f'{item[:-6].lower()}_fraction'
+            cloud_tau = f'{item[:-6].lower()}_tau'
+
+            if cloud_fraction in parameters:
+                indices[cloud_fraction] = np.argwhere(parameters == cloud_fraction)[0][0]
+
+            elif cloud_tau in parameters:
+                indices[cloud_tau] = np.argwhere(parameters == cloud_tau)[0][0]
 
         if chemistry == 'equilibrium':
             indices['metallicity'] = np.argwhere(parameters == 'metallicity')[0][0]

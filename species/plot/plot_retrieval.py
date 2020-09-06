@@ -54,6 +54,7 @@ def plot_pt_profile(tag: str,
 
     print(f'Plotting the P-T profiles: {output}...', end='', flush=True)
 
+    cloud_species = ['Fe(c)', 'MgSio3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
     cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
     species_db = database.Database()
@@ -85,6 +86,9 @@ def plot_pt_profile(tag: str,
 
     for item in cloud_check:
         if f'{item}_fraction' in median:
+            top = False
+
+        elif f'{item}_tau' in median:
             top = False
 
     ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
@@ -179,59 +183,68 @@ def plot_pt_profile(tag: str,
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 
-    # Import interpol_abundances here because it is slow
-
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-        interpol_abundances
-
     if 'metallicity' in parameters and 'c_o_ratio' in parameters:
         if 'log_p_quench' in median:
             quench_press = 10.**median['log_p_quench']
         else:
             quench_press = None
 
-        abund = interpol_abundances(np.full(pressure.shape[0], median['c_o_ratio']),
-                                    np.full(pressure.shape[0], median['metallicity']),
-                                    temp,
-                                    pressure,
-                                    Pquench_carbon=quench_press)
+        # Import interpol_abundances here because it is slow
+
+        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+            interpol_abundances
+
+        abund_in = interpol_abundances(np.full(pressure.shape[0], median['c_o_ratio']),
+                                       np.full(pressure.shape[0], median['metallicity']),
+                                       temp,
+                                       pressure,
+                                       Pquench_carbon=quench_press)
+
+        for item in cloud_species:
+            if f'{item[:-3].lower()}_tau' in median:
+                # Calculate the scaled mass fraction of the clouds
+                median[f'{item[:-3].lower()}_fraction'] = retrieval_util.scale_cloud_abund(
+                    median, radtrans.rt_object, pressure, temp, abund_in['MMW'], 'equilibrium',
+                    abund_in, item, median[f'{item[:-3].lower()}_tau'],
+                    pressure_grid=radtrans.pressure_grid)
 
         if 'fe_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_Fe_comb(median['metallicity'],
                                                                        median['c_o_ratio'],
-                                                                       MMW=np.mean(abund['MMW']))
+                                                                       MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:blue', zorder=2)
 
         if 'mgsio3_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(median['metallicity'],
                                                                       median['c_o_ratio'],
-                                                                      MMW=np.mean(abund['MMW']))
+                                                                      MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:orange', zorder=2)
 
         if 'al2o3_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(median['metallicity'],
                                                                      median['c_o_ratio'],
-                                                                     MMW=np.mean(abund['MMW']))
+                                                                     MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:green', zorder=2)
 
         if 'na2s_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_Na2S(median['metallicity'],
                                                                     median['c_o_ratio'],
-                                                                    MMW=np.mean(abund['MMW']))
+                                                                    MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:cyan', zorder=2)
 
         if 'kcl_fraction' in median:
             sat_press, sat_temp = retrieval_util.return_T_cond_KCl(median['metallicity'],
                                                                    median['c_o_ratio'],
-                                                                   MMW=np.mean(abund['MMW']))
+                                                                   MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:pink', zorder=2)
 
     if radtrans is not None:
+
         if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median \
                 or 'na2s_fraction' in median or 'kcl_fraction' in median:
             ax2 = ax.twiny()
