@@ -19,11 +19,11 @@ from scipy.integrate import simps
 from typeguard import typechecked
 
 from species.analysis import photometry
-from species.core import box
-from species.data import drift_phoenix, btnextgen, vega, irtf, spex, vlm_plx, leggett, \
-                         companions, filters, btsettl, btsettl_cifist, ames_dusty, \
-                         ames_cond, isochrones, petitcode, exo_rem, dust
-from species.read import read_filter, read_model, read_calibration, read_planck, read_radtrans
+from species.core import box, constants
+from species.data import ames_cond, ames_dusty, btnextgen, btsettl, btsettl_cifist, companions, \
+                         drift_phoenix, dust, exo_rem, filters, irtf, isochrones, leggett, \
+                         petitcode, spex, vega, vlm_plx
+from species.read import read_calibration, read_filter, read_model, read_planck, read_radtrans
 from species.util import data_util, dust_util
 
 
@@ -150,7 +150,7 @@ class Database:
 
         Parameters
         ----------
-        name : str, list(str, ), None
+        name : str, list(str), None
             Name or list with names of the directly imaged planets and brown dwarfs (e.g.
             ``'HR 8799 b'`` or ``['HR 8799 b', '51 Eri b', 'PZ Tel B']``). All the available
             companion data are added if set to ``None``.
@@ -1016,7 +1016,7 @@ class Database:
         ----------
         spec_library : str
             Spectral library ('irtf' or 'spex').
-        sptypes : list(str, )
+        sptypes : list(str)
             Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
 
         Returns
@@ -1071,11 +1071,11 @@ class Database:
             'drift-phoenix').
         tag : str
             Database tag.
-        modelpar : list(str, )
+        modelpar : list(str)
             List with the model parameter names.
         distance : float, None
             Distance to the object (pc). Not used if set to ``None``.
-        spec_labels : list(str, ), None
+        spec_labels : list(str), None
             List with the spectrum labels that are used for fitting an additional scaling
             parameter. Not used if set to ``None``.
 
@@ -1269,7 +1269,7 @@ class Database:
                          random: int,
                          burnin: Optional[int] = None,
                          wavel_range: Optional[Union[Tuple[float, float], str]] = None,
-                         spec_res: Optional[float] = None) -> box.ModelBox:
+                         spec_res: Optional[float] = None) -> List[box.ModelBox]:
         """
         Parameters
         ----------
@@ -1287,7 +1287,7 @@ class Database:
 
         Returns
         -------
-        list(species.core.box.ModelBox, )
+        list(species.core.box.ModelBox)
             Boxes with the randomly sampled spectra.
         """
 
