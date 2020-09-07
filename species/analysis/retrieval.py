@@ -129,6 +129,10 @@ class AtmosphericRetrieval:
                                           inc_phot=True,
                                           inc_spec=True)
 
+        # Copy the cloud species into a new list because the values will be adjusted by Radtrans
+
+        self.cloud_species_full = self.cloud_species.copy()
+
         # Scattering is not required without cloud species
 
         if self.scattering and len(self.cloud_species) == 0:
@@ -246,7 +250,7 @@ class AtmosphericRetrieval:
         print(f'Initiating {self.pressure.size} pressure levels (bar): '
               f'{self.pressure[0]:.2e} - {self.pressure[-1]:.2e}')
 
-        # initiate parameter list and counters
+        # Initiate parameter list and counters
 
         self.parameters = []
 
@@ -282,24 +286,24 @@ class AtmosphericRetrieval:
             None
         """
 
-        # check if clouds are used in combination with equilibrium chemistry
+        # Check if clouds are used in combination with equilibrium chemistry
 
         if len(self.cloud_species) > 0 and chemistry != 'equilibrium':
             raise ValueError('Clouds are currently only implemented in combination with '
                              'equilibrium chemistry.')
 
-        # check if the Mollière P/T profile is used in combination with equilibrium chemistry
+        # Check if the Mollière P/T profile is used in combination with equilibrium chemistry
 
         if pt_profile == 'molliere' and chemistry != 'equilibrium':
             raise ValueError('The \'molliere\' P/T parametrization can only be used in '
                              'combination with equilibrium chemistry.')
 
-        # generic parameters
+        # Generic parameters
 
         self.parameters.append('logg')
         self.parameters.append('radius')
 
-        # p-t profile parameters
+        # P-T profile parameters
 
         if pt_profile == 'molliere':
             self.parameters.append('tint')
@@ -317,7 +321,7 @@ class AtmosphericRetrieval:
                 self.parameters.append('gamma_r')
                 self.parameters.append('beta_r')
 
-        # abundance parameters
+        # Abundance parameters
 
         if chemistry == 'equilibrium':
 
@@ -332,7 +336,7 @@ class AtmosphericRetrieval:
         if quenching:
             self.parameters.append('log_p_quench')
 
-        # cloud parameters
+        # Cloud parameters
 
         if len(self.cloud_species) > 0:
             if 'Fe(c)_cd' in self.cloud_species:
@@ -369,28 +373,28 @@ class AtmosphericRetrieval:
             self.parameters.append('kzz')
             self.parameters.append('sigma_lnorm')
 
-        # add the flux scaling parameters
+        # Add the flux scaling parameters
 
         for item in self.spectrum:
             if item in bounds:
                 if bounds[item][0] is not None:
                     self.parameters.append(f'scaling_{item}')
 
-        # add the error offset parameters
+        # Add the error offset parameters
 
         for item in self.spectrum:
             if item in bounds:
                 if bounds[item][1] is not None:
                     self.parameters.append(f'error_{item}')
 
-        # add the wavelength calibration parameters
+        # Add the wavelength calibration parameters
 
         for item in self.spectrum:
             if item in bounds:
                 if bounds[item][2] is not None:
                     self.parameters.append(f'wavelength_{item}')
 
-        # add extinction parameters
+        # Add extinction parameters
 
         if 'ism_ext' in bounds:
             self.parameters.append('ism_ext')
@@ -402,14 +406,14 @@ class AtmosphericRetrieval:
 
             self.parameters.append('ism_red')
 
-        # add covariance parameters
+        # Add covariance parameters
 
         for item in self.spectrum:
             if item in fit_corr:
                 self.parameters.append(f'corr_len_{item}')
                 self.parameters.append(f'corr_amp_{item}')
 
-        # list all parameters
+        # List all parameters
 
         print(f'Fitting {len(self.parameters)} parameters:')
 
@@ -564,11 +568,11 @@ class AtmosphericRetrieval:
             rt_object.setup_opa_structure(self.pressure)
             print(f'Number of pressure levels used with the radiative transfer: {self.pressure.size}')
 
-        if self.pressure_grid == 'smaller':
+        elif self.pressure_grid == 'smaller':
             rt_object.setup_opa_structure(self.pressure[::3])
             print(f'Number of pressure levels used with the radiative transfer: {self.pressure[::3].size}')
 
-        if self.pressure_grid == 'clouds':
+        elif self.pressure_grid == 'clouds':
             if len(self.cloud_species) == 0:
                 raise ValueError('Please select a different pressure_grid. Setting the argument '
                                  'to \'clouds\' is only possible with the use of cloud species.')
@@ -1293,13 +1297,14 @@ class AtmosphericRetrieval:
 
         radtrans_dict = {}
         radtrans_dict['line_species'] = self.line_species
-        radtrans_dict['cloud_species'] = self.cloud_species
+        radtrans_dict['cloud_species'] = self.cloud_species_full
         radtrans_dict['distance'] = self.distance
         radtrans_dict['scattering'] = self.scattering
         radtrans_dict['chemistry'] = chemistry
         radtrans_dict['quenching'] = quenching
         radtrans_dict['pt_profile'] = pt_profile
         radtrans_dict['pressure_grid'] = self.pressure_grid
+        radtrans_dict['wavel_range'] = self.wavel_range
 
         with open(radtrans_filename, 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)

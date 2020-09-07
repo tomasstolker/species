@@ -24,7 +24,7 @@ from species.data import ames_cond, ames_dusty, btnextgen, btsettl, btsettl_cifi
                          drift_phoenix, dust, exo_rem, filters, irtf, isochrones, leggett, \
                          petitcode, spex, vega, vlm_plx
 from species.read import read_calibration, read_filter, read_model, read_planck, read_radtrans
-from species.util import data_util, dust_util
+from species.util import data_util, dust_util, retrieval_util
 
 
 class Database:
@@ -1734,6 +1734,108 @@ class Database:
             dset.attrs['chemistry'] = radtrans['chemistry']
 
         print(' [DONE]')
+
+        rt_object = None
+
+        cloud_species_ext = []
+        for item in radtrans['cloud_species']:
+            cloud_species_ext.append(item+'_cd')
+
+        for i, cloud_item in enumerate(radtrans['cloud_species']):
+            if f'{cloud_item[:-3].lower()}_tau' in parameters:
+                pressure = np.logspace(-6, 3, 180)
+                cloud_mass = np.zeros(samples.shape[0])
+
+                if rt_object is None:
+                    print('Importing petitRADTRANS...', end='', flush=True)
+                    from petitRADTRANS.radtrans import Radtrans
+                    print(' [DONE]')
+
+                    print('Importing chemistry module...', end='', flush=True)
+                    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
+                        import interpol_abundances
+                    print(' [DONE]')
+
+                    rt_object = Radtrans(line_species=radtrans['line_species'],
+                                         rayleigh_species=['H2', 'He'],
+                                         cloud_species=cloud_species_ext,
+                                         continuum_opacities=['H2-H2', 'H2-He'],
+                                         # wlen_bords_micron=radtrans['wavel_range'], TODO
+                                         wlen_bords_micron=(0.9, 2.46),
+                                         mode='c-k',
+                                         test_ck_shuffle_comp=radtrans['scattering'],
+                                         do_scat_emis=radtrans['scattering'])
+
+                    if radtrans['pressure_grid'] == 'standard':
+                        rt_object.setup_opa_structure(pressure)
+
+                    elif radtrans['pressure_grid'] == 'smaller':
+                        rt_object.setup_opa_structure(pressure[::3])
+
+                    elif radtrans['pressure_grid'] == 'clouds':
+                        rt_object.setup_opa_structure(pressure[::24])
+
+                print(f'Calculating mass fractions for {cloud_item[:-3]} clouds...',
+                      end='', flush=True)
+
+                for j, sample_item in enumerate(samples):
+                    sample_dict = retrieval_util.list_to_dict(parameters, sample_item)
+
+                    if radtrans['pt_profile'] == 'molliere':
+                        upper_temp = np.array([sample_dict['t1'],
+                                               sample_dict['t2'],
+                                               sample_dict['t3']])
+
+                        temp, _, _ = retrieval_util.pt_ret_model(upper_temp,
+                                                                 10.**sample_dict['log_delta'],
+                                                                 sample_dict['alpha'],
+                                                                 sample_dict['tint'],
+                                                                 pressure,
+                                                                 sample_dict['metallicity'],
+                                                                 sample_dict['c_o_ratio'])
+
+                    # Set the quenching pressure (bar)
+
+                    if 'log_p_quench' in parameters:
+                        quench_press = 10.**sample_dict['log_p_quench']
+                    else:
+                        quench_press = None
+
+                    abund_in = interpol_abundances(np.full(pressure.shape[0],
+                                                           sample_dict['c_o_ratio']),
+                                                   np.full(pressure.shape[0],
+                                                           sample_dict['metallicity']),
+                                                   temp,
+                                                   pressure,
+                                                   Pquench_carbon=quench_press)
+
+                    # Calculate the scaled mass fraction of the clouds
+
+                    cloud_mass[j] = retrieval_util.scale_cloud_abund(
+                        sample_dict, rt_object, pressure, temp, abund_in['MMW'], 'equilibrium',
+                        abund_in, cloud_item, sample_dict[f'{cloud_item[:-3].lower()}_tau'],
+                        pressure_grid=radtrans['pressure_grid'])
+
+                db_tag = f'results/fit/{tag}/samples'
+
+                with h5py.File(self.database, 'a') as h5_file:
+                    dset_attrs = h5_file[db_tag].attrs
+
+                    samples = np.asarray(h5_file[db_tag])
+                    samples = np.append(samples, cloud_mass[..., np.newaxis], axis=1)
+
+                    del h5_file[db_tag]
+                    dset = h5_file.create_dataset(db_tag, data=samples)
+
+                    for attr_item in dset_attrs:
+                        dset.attrs[attr_item] = dset_attrs[attr_item]
+
+                    n_param = dset_attrs['n_param'] + 1
+
+                    dset.attrs['n_param'] = n_param
+                    dset.attrs[f'parameter{n_param-1}'] = f'{cloud_item[:-3].lower()}_fraction'
+
+                print(' [DONE]')
 
         if inc_teff:
             print('Calculating Teff from the posterior samples... ')

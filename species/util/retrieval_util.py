@@ -5,7 +5,7 @@ with major contributions by Paul Mollière (MPIA).
 
 import copy
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1536,6 +1536,33 @@ def cube_to_dict(cube,
         params[key] = cube[value]
 
     return params
+
+
+@typechecked
+def list_to_dict(param_list: List[str],
+                 sample_val: np.ndarray) -> Dict[str, float]:
+    """
+    Function to convert the parameter cube into a dictionary.
+
+    Parameters
+    ----------
+    param_list : list(str)
+        List with the parameter labels.
+    sample_val : np.ndarray
+        Array with the parameter values, in the same order as ``param_list``.
+
+    Returns
+    -------
+    dict
+        Dictionary with the parameters.
+    """
+
+    sample_dict = {}
+
+    for item in param_list:
+        sample_dict[item] = sample_val[param_list.index(item)]
+
+    return sample_dict
 
 
 @typechecked
