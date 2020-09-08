@@ -1756,12 +1756,16 @@ class Database:
                         import interpol_abundances
                     print(' [DONE]')
 
+                    if 'wavel_range' in radtrans:
+                        wlen_bords_micron = radtrans['wavel_range']
+                    else:
+                        wlen_bords_micron = (0.9, 2.46)
+
                     rt_object = Radtrans(line_species=radtrans['line_species'],
                                          rayleigh_species=['H2', 'He'],
                                          cloud_species=cloud_species_ext,
                                          continuum_opacities=['H2-H2', 'H2-He'],
-                                         # wlen_bords_micron=radtrans['wavel_range'], TODO
-                                         wlen_bords_micron=(0.9, 2.46),
+                                         wlen_bords_micron=wlen_bords_micron,
                                          mode='c-k',
                                          test_ck_shuffle_comp=radtrans['scattering'],
                                          do_scat_emis=radtrans['scattering'])

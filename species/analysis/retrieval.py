@@ -98,7 +98,7 @@ class AtmosphericRetrieval:
         # Get object data
 
         self.object = read_object.ReadObject(self.object_name)
-        self.distance = self.object.get_distance()[0]  # [pc]
+        self.distance = self.object.get_distance()[0]  # (pc)
 
         print(f'Object: {self.object_name}')
         print(f'Distance: {self.distance}')
@@ -292,10 +292,10 @@ class AtmosphericRetrieval:
             raise ValueError('Clouds are currently only implemented in combination with '
                              'equilibrium chemistry.')
 
-        # Check if the Mollière P/T profile is used in combination with equilibrium chemistry
+        # Check if the Mollière P-T profile is used in combination with equilibrium chemistry
 
         if pt_profile == 'molliere' and chemistry != 'equilibrium':
-            raise ValueError('The \'molliere\' P/T parametrization can only be used in '
+            raise ValueError('The \'molliere\' P-T parametrization can only be used in '
                              'combination with equilibrium chemistry.')
 
         # Generic parameters
@@ -503,7 +503,7 @@ class AtmosphericRetrieval:
 
         for item in self.spectrum:
             if item in fit_corr:
-                bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len) (um)
+                bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len/um)
                 bounds[f'corr_amp_{item}'] = (0., 1.)
 
         # Create list with parameters for MultiNest
@@ -609,20 +609,20 @@ class AtmosphericRetrieval:
                 None
             """
 
-            # surface gravity (dex)
+            # Surface gravity log10(g/cgs)
             if 'logg' in bounds:
                 logg = bounds['logg'][0] + (bounds['logg'][1]-bounds['logg'][0])*cube[cube_index['logg']]
             else:
-                # default: 2 - 5.5 dex
+                # Default: 2 - 5.5
                 logg = 2. + 3.5*cube[cube_index['logg']]
 
             cube[cube_index['logg']] = logg
 
-            # planet radius (Rjup)
+            # Planet radius (Rjup)
             if 'radius' in bounds:
                 radius = bounds['radius'][0] + (bounds['radius'][1]-bounds['radius'][0])*cube[cube_index['radius']]
             else:
-                # defaul: 0.8-2 Rjup
+                # Defaul: 0.8-2 Rjup
                 radius = 0.8 + 1.2*cube[cube_index['radius']]
 
             cube[cube_index['radius']] = radius
@@ -676,20 +676,20 @@ class AtmosphericRetrieval:
                 cube[cube_index['log_delta']] = log_delta
 
             elif pt_profile == 'free':
-                # 15 temperature (K) knots
+                # 15 temperature knots (K)
                 for i in range(15):
-                    # default: 0 - 8000 K
+                    # Default: 0 - 8000 K
                     cube[cube_index[f't{i}']] = 8000.*cube[cube_index[f't{i}']]
 
-                # penalization of wiggles in the P-T profile
-                # inverse Gamma: a=1, b=5e-5
+                # Penalization of wiggles in the P-T profile
+                # inverse gamma: a=1, b=5e-5
                 beta_r = cube[cube_index['beta_r']]
                 gamma_r = invgamma.ppf(cube[cube_index['gamma_r']], a=1., scale=beta_r)
                 cube[cube_index['beta_r']] = beta_r
                 cube[cube_index['gamma_r']] = gamma_r
 
             elif pt_profile == 'monotonic':
-                # 15 temperature (K) knots
+                # 15 temperature knots (K)
                 cube[cube_index['t14']] = 10000.*cube[cube_index['t14']]
 
                 for i in range(13, -1, -1):
@@ -711,20 +711,20 @@ class AtmosphericRetrieval:
                     #         cube[cube_index[f't{i}']]*temp_diff
 
             if chemistry == 'equilibrium':
-                # metallicity (dex) for the nabla_ad interpolation
+                # Metallicity [Fe/H] for the nabla_ad interpolation
                 if 'metallicity' in bounds:
                     metallicity = bounds['metallicity'][0] + (bounds['metallicity'][1]-bounds['metallicity'][0])*cube[cube_index['metallicity']]
                 else:
-                    # default: -1.5 - 1.5 dex
+                    # Default: -1.5 - 1.5 dex
                     metallicity = -1.5 + 3.*cube[cube_index['metallicity']]
 
                 cube[cube_index['metallicity']] = metallicity
 
-                # carbon-to-oxygen ratio for the nabla_ad interpolation
+                # Carbon-to-oxygen ratio for the nabla_ad interpolation
                 if 'c_o_ratio' in bounds:
                     c_o_ratio = bounds['c_o_ratio'][0] + (bounds['c_o_ratio'][1]-bounds['c_o_ratio'][0])*cube[cube_index['c_o_ratio']]
                 else:
-                    # default: 0.1 - 1.6
+                    # Default: 0.1 - 1.6
                     c_o_ratio = 0.1 + 1.5*cube[cube_index['c_o_ratio']]
 
                 cube[cube_index['c_o_ratio']] = c_o_ratio
@@ -738,10 +738,10 @@ class AtmosphericRetrieval:
                         cube[cube_index[item]] = bounds[item][0] + (bounds[item][1]-bounds[item][0])*cube[cube_index[item]]
 
                     elif item not in ['K', 'K_lor_cut', 'K_burrows']:
-                        # default: -10. - 0. dex
+                        # Default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
-                        # add the log10 of the mass fraction to the abundace dictionary
+                        # Add the log10 of the mass fraction to the abundace dictionary
                         log_x_abund[item] = cube[cube_index[item]]
 
                 if 'Na' in self.line_species or 'Na_lor_cut' in self.line_species or \
@@ -808,7 +808,7 @@ class AtmosphericRetrieval:
                             cube[cube_index['fe_fraction']]
 
                     else:
-                        # default: 0.05 - 1.
+                        # Default: 0.05 - 1.
                         fe_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['fe_fraction']]
 
@@ -822,7 +822,7 @@ class AtmosphericRetrieval:
                             cube[cube_index['mgsio3_fraction']]
 
                     else:
-                        # default: 0.05 - 1.
+                        # Default: 0.05 - 1.
                         mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['mgsio3_fraction']]
 
@@ -859,7 +859,7 @@ class AtmosphericRetrieval:
                             cube[cube_index['na2s_fraction']]
 
                     else:
-                        # default: 0.05 - 1.
+                        # Default: 0.05 - 1.
                         na2s_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['na2s_fraction']]
 
@@ -873,13 +873,13 @@ class AtmosphericRetrieval:
                             cube[cube_index['kcl_fraction']]
 
                     else:
-                        # default: 0.05 - 1.
+                        # Default: 0.05 - 1.
                         kcl_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['kcl_fraction']]
 
                     cube[cube_index['kcl_fraction']] = kcl_fraction
 
-            # add flux scaling parameter if the boundaries are provided
+            # Add flux scaling parameter if the boundaries are provided
 
             for item in self.spectrum:
                 if item in bounds:
@@ -887,7 +887,7 @@ class AtmosphericRetrieval:
                         cube[cube_index[f'scaling_{item}']] = bounds[item][0][0] + \
                             (bounds[item][0][1]-bounds[item][0][0])*cube[cube_index[f'scaling_{item}']]
 
-            # add error inflation parameter if the boundaries are provided
+            # Add error inflation parameter if the boundaries are provided
 
             for item in self.spectrum:
                 if item in bounds:
@@ -896,7 +896,7 @@ class AtmosphericRetrieval:
                             (bounds[item][1][1]-bounds[item][1][0]) * \
                             cube[cube_index[f'error_{item}']]
 
-            # add wavelength calibration parameter if the boundaries are provided
+            # Add wavelength calibration parameter if the boundaries are provided
 
             for item in self.spectrum:
                 if item in bounds:
@@ -905,7 +905,7 @@ class AtmosphericRetrieval:
                             (bounds[item][2][1]-bounds[item][2][0]) * \
                             cube[cube_index[f'wavelength_{item}']]
 
-            # add covariance parameters if any spectra are provided to fit_corr
+            # Add covariance parameters if any spectra are provided to fit_corr
 
             for item in self.spectrum:
                 if item in fit_corr:
@@ -951,12 +951,12 @@ class AtmosphericRetrieval:
                 Sum of the logarithm of the prior and likelihood.
             """
 
-            # initiate the logarithm of the prior and likelihood
+            # Initiate the logarithm of the prior and likelihood
 
             ln_prior = 0.
             ln_like = 0.
 
-            # create dictionary with flux scaling parameters
+            # Create dictionary with flux scaling parameters
 
             scaling = {}
 
@@ -966,7 +966,7 @@ class AtmosphericRetrieval:
                 else:
                     scaling[item] = 1.
 
-            # create dictionary with error offset parameters
+            # Create dictionary with error offset parameters
 
             err_offset = {}
 
@@ -976,7 +976,7 @@ class AtmosphericRetrieval:
                 else:
                     err_offset[item] = None
 
-            # create dictionary with wavelength calibration parameters
+            # Create dictionary with wavelength calibration parameters
 
             wavel_cal = {}
 
@@ -986,7 +986,7 @@ class AtmosphericRetrieval:
                 else:
                     wavel_cal[item] = 0.
 
-            # create dictionary with covariance parameters
+            # Create dictionary with covariance parameters
 
             corr_len = {}
             corr_amp = {}
@@ -1009,7 +1009,7 @@ class AtmosphericRetrieval:
             # Prepare the scaling based on the cloud optical depth
 
             if calc_tau_cloud:
-                # Create the P/T profile
+                # Create the P-T profile
                 temperature, knot_temp = retrieval_util.create_pt_profile(
                     cube, cube_index, pt_profile, self.pressure, knot_press)
 
@@ -1028,9 +1028,6 @@ class AtmosphericRetrieval:
 
                 # Extract the mean molecular weight
                 mmw = abund_in['MMW']
-
-                # Set the kappa_zero argument, required by Radtrans.mix_opa_tot
-                rt_object.kappa_zero = None
 
             # Create the P-T profile
 
@@ -1060,23 +1057,23 @@ class AtmosphericRetrieval:
                 ln_prior += -1.*temp_sum/(2.*cube[cube_index['gamma_r']]) - \
                     0.5*np.log(2.*np.pi*cube[cube_index['gamma_r']])
 
-            # return zero probability if the minimum temperature is negative
+            # Return zero probability if the minimum temperature is negative
 
             if np.min(temp) < 0.:
                 return -np.inf
 
-            # set the quenching pressure
+            # Set the quenching pressure
             if quenching:
                 log_p_quench = cube[cube_index['log_p_quench']]
             else:
                 log_p_quench = -10.
 
-            # calculate the emission spectrum
+            # Calculate the emission spectrum
 
             start = time.time()
 
             if len(self.cloud_species) > 0:
-                # cloudy atmosphere
+                # Cloudy atmosphere
 
                 cloud_fractions = {}
                 for item in self.cloud_species:
@@ -1095,7 +1092,7 @@ class AtmosphericRetrieval:
                                                              cube[cube_index['metallicity']],
                                                              cloud_fractions)
 
-                # the try-except is required to catch numerical precision errors with the clouds
+                # The try-except is required to catch numerical precision errors with the clouds
                 # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']],
@@ -1108,7 +1105,7 @@ class AtmosphericRetrieval:
                 #     return -np.inf
 
             else:
-                # clear atmosphere
+                # Clear atmosphere
 
                 if chemistry == 'equilibrium':
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
@@ -1118,17 +1115,18 @@ class AtmosphericRetrieval:
                         contribution=False)
 
                 elif chemistry == 'free':
-                    # create a dictionary with the mass fractions
+                    # Create a dictionary with the mass fractions
+
                     log_x_abund = {}
                     for item in self.line_species:
                         log_x_abund[item] = cube[cube_index[item]]
 
-                    # check if the sum of fractional abundances is smaller than unity
+                    # Check if the sum of fractional abundances is smaller than unity
 
                     if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
                         return -np.inf
 
-                    # check if the C/H and O/H ratios are within the prior boundaries
+                    # Check if the C/H and O/H ratios are within the prior boundaries
 
                     if 'c_h_ratio' or 'o_h_ratio' in bounds:
                         c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
@@ -1143,7 +1141,7 @@ class AtmosphericRetrieval:
 
                         return -np.inf
 
-                    # calculate the emission spectrum
+                    # Calculate the emission spectrum
 
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
@@ -1154,7 +1152,7 @@ class AtmosphericRetrieval:
 
             print(f'\rRadiative transfer time: {end-start:.2e} s', end='', flush=True)
 
-            # return zero probability if the spectrum contains NaN values
+            # Return zero probability if the spectrum contains NaN values
 
             if np.sum(np.isnan(flux_lambda)) > 0:
                 # if len(flux_lambda) > 1:
@@ -1162,23 +1160,23 @@ class AtmosphericRetrieval:
 
                 return -np.inf
 
-            # scale the emitted spectrum to the observation
+            # Scale the emitted spectrum to the observation
             flux_lambda *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
             for i, item in enumerate(self.spectrum.keys()):
-                # shift the wavelengths of the data with the fitted calibration parameter
+                # Shift the wavelengths of the data with the fitted calibration parameter
                 data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
 
-                # flux density
+                # Flux density
                 data_flux = self.spectrum[item][0][:, 1]
 
-                # variance with optional inflation
+                # Variance with optional inflation
                 if err_offset[item] is None:
                     data_var = self.spectrum[item][0][:, 2]**2
                 else:
                     data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
-                # apply ISM extinction to the model spectrum
+                # Apply ISM extinction to the model spectrum
                 if 'ism_ext' in self.parameters:
                     if 'ism_red' in self.parameters:
                         ism_reddening = cube[cube_index['ism_red']]
@@ -1192,18 +1190,18 @@ class AtmosphericRetrieval:
                                                           cube[cube_index['ism_ext']],
                                                           ism_reddening)
 
-                # convolve with Gaussian LSF
+                # Convolve with Gaussian LSF
                 flux_smooth = retrieval_util.convolve(wlen_micron,
                                                       flux_lambda,
                                                       self.spectrum[item][3])
 
-                # resample to the observation
+                # Resample to the observation
                 flux_rebinned = rebin_give_width(wlen_micron,
                                                  flux_smooth,
                                                  data_wavel,
                                                  self.spectrum[item][4])
 
-                # difference between the observed and modeled spectrum
+                # Difference between the observed and modeled spectrum
                 flux_diff = flux_rebinned - scaling[item]*data_flux
 
                 if self.spectrum[item][2] is not None:
@@ -1241,7 +1239,7 @@ class AtmosphericRetrieval:
                         ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
                     else:
-                        # calculate the log-likelihood without the covariance matrix
+                        # Calculate the log-likelihood without the covariance matrix
                         ln_like += -0.5*np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
 
                 if plotting:
@@ -1282,7 +1280,7 @@ class AtmosphericRetrieval:
 
             return ln_prior + ln_like
 
-        # store the model parameters in a JSON file
+        # Store the model parameters in a JSON file
 
         json_filename = os.path.join(self.output_folder, 'params.json')
         print(f'Storing the model parameters: {json_filename}')
@@ -1290,7 +1288,7 @@ class AtmosphericRetrieval:
         with open(json_filename, 'w') as json_file:
             json.dump(self.parameters, json_file)
 
-        # store the Radtrans arguments in a JSON file
+        # Store the Radtrans arguments in a JSON file
 
         radtrans_filename = os.path.join(self.output_folder, 'radtrans.json')
         print(f'Storing the Radtrans arguments: {radtrans_filename}')
@@ -1309,7 +1307,7 @@ class AtmosphericRetrieval:
         with open(radtrans_filename, 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
-        # run the nested sampling with MultiNest
+        # Run the nested sampling with MultiNest
 
         print('Sampling the posterior distribution with MultiNest...')
 
