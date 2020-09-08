@@ -275,10 +275,10 @@ def lnprob(param: np.ndarray,
            objphot: List[Optional[np.ndarray]],
            distance: Tuple[float, float],
            prior: Optional[Dict[str, Tuple[float, float]]],
-           spectrum: dict,
+           spectrum: Optional[dict],
            modelphot: Optional[Union[List[read_model.ReadModel],
                                      List[photometry.SyntheticPhotometry]]],
-           modelspec: List[read_model.ReadModel],
+           modelspec: Optional[List[read_model.ReadModel]],
            n_planck: int,
            fit_corr: List[str]) -> np.float64:
     """
@@ -318,8 +318,8 @@ def lnprob(param: np.ndarray,
         calculation of synthetic photometry for Planck spectra. No photometry is fitted if set
         to ``None``.
     modelspec : list(species.read.read_model.ReadModel, ), None
-        List with the interpolated synthetic spectra. The parameter is not used if no spectroscopic
-        data is fitted ot if ``model='planck'``.
+        List with the interpolated synthetic spectra. The parameter is set to ``None`` when no
+        spectroscopic data is included or when ``model='planck'``.
     n_planck : int
         Number of Planck components. The argument is set to zero if ``model`` is not ``'planck'``.
     fit_corr : list(str)
