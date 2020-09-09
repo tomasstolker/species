@@ -182,6 +182,19 @@ def plot_posterior(tag: str,
     samples_box = species_db.get_samples(tag, burnin=burnin)
     samples = samples_box.samples
 
+    # index_sel = [0, 1, 8, 9, 14]
+    # samples = samples[:, index_sel]
+    #
+    # for i in range(13, 9, -1):
+    #     del samples_box.parameters[i]
+    #
+    # del samples_box.parameters[2]
+    # del samples_box.parameters[2]
+    # del samples_box.parameters[2]
+    # del samples_box.parameters[2]
+    # del samples_box.parameters[2]
+    # del samples_box.parameters[2]
+
     ndim = len(samples_box.parameters)
 
     if not inc_pt_param and samples_box.spectrum == 'petitradtrans':

@@ -1737,12 +1737,8 @@ class Database:
 
         rt_object = None
 
-        cloud_species_ext = []
-        for item in radtrans['cloud_species']:
-            cloud_species_ext.append(item+'_cd')
-
         for i, cloud_item in enumerate(radtrans['cloud_species']):
-            if f'{cloud_item[:-3].lower()}_tau' in parameters:
+            if f'{cloud_item[:-6].lower()}_tau' in parameters:
                 pressure = np.logspace(-6, 3, 180)
                 cloud_mass = np.zeros(samples.shape[0])
 
@@ -1756,16 +1752,11 @@ class Database:
                         import interpol_abundances
                     print(' [DONE]')
 
-                    if 'wavel_range' in radtrans:
-                        wlen_bords_micron = radtrans['wavel_range']
-                    else:
-                        wlen_bords_micron = (0.9, 2.46)
-
                     rt_object = Radtrans(line_species=radtrans['line_species'],
                                          rayleigh_species=['H2', 'He'],
-                                         cloud_species=cloud_species_ext,
+                                         cloud_species=radtrans['cloud_species'].copy(),
                                          continuum_opacities=['H2-H2', 'H2-He'],
-                                         wlen_bords_micron=wlen_bords_micron,
+                                         wlen_bords_micron=radtrans['wavel_range'],
                                          mode='c-k',
                                          test_ck_shuffle_comp=radtrans['scattering'],
                                          do_scat_emis=radtrans['scattering'])
@@ -1779,7 +1770,7 @@ class Database:
                     elif radtrans['pressure_grid'] == 'clouds':
                         rt_object.setup_opa_structure(pressure[::24])
 
-                print(f'Calculating mass fractions for {cloud_item[:-3]} clouds...',
+                print(f'Calculating mass fractions for {cloud_item[:-6]} clouds...',
                       end='', flush=True)
 
                 for j, sample_item in enumerate(samples):
@@ -1817,7 +1808,7 @@ class Database:
 
                     cloud_mass[j] = retrieval_util.scale_cloud_abund(
                         sample_dict, rt_object, pressure, temp, abund_in['MMW'], 'equilibrium',
-                        abund_in, cloud_item, sample_dict[f'{cloud_item[:-3].lower()}_tau'],
+                        abund_in, cloud_item[:-3], sample_dict[f'{cloud_item[:-6].lower()}_tau'],
                         pressure_grid=radtrans['pressure_grid'])
 
                 db_tag = f'results/fit/{tag}/samples'
@@ -1837,7 +1828,7 @@ class Database:
                     n_param = dset_attrs['n_param'] + 1
 
                     dset.attrs['n_param'] = n_param
-                    dset.attrs[f'parameter{n_param-1}'] = f'{cloud_item[:-3].lower()}_fraction'
+                    dset.attrs[f'parameter{n_param-1}'] = f'{cloud_item[:-6].lower()}_fraction'
 
                 print(' [DONE]')
 
@@ -1972,7 +1963,7 @@ class Database:
 
         cloud_species = []
         for i in range(n_cloud_species):
-            cloud_species.append(dset.attrs[f'cloud_species{i}']+'_cd')
+            cloud_species.append(dset.attrs[f'cloud_species{i}'])
 
         for item in cloud_species:
             cloud_fraction = f'{item[:-6].lower()}_fraction'
