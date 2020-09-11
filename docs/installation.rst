@@ -35,6 +35,13 @@ And running the setup script to install the package and its dependencies:
 
     $ python setup.py install
 
+.. important::
+   If an error occurs when running ``setup.py`` then update ``pip`` to the latest version:
+
+   .. code-block:: console
+
+       $ pip install --upgrade pip
+
 Once a local copy of the repository exists, new commits can be pulled from Github with:
 
 .. code-block:: console
