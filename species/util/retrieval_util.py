@@ -33,23 +33,24 @@ def get_line_species() -> list:
 
 
 @typechecked
-def pt_ret_model(temp_3: np.ndarray,
+def pt_ret_model(temp_3: Optional[np.ndarray],
                  delta: float,
                  alpha: float,
                  tint: float,
                  press: np.ndarray,
                  metallicity: float,
                  c_o_ratio: float,
-                 conv: bool = True) -> Tuple[np.ndarray, float, np.ndarray]:
+                 conv: bool = True) -> Tuple[np.ndarray, float]:
     """
     Self-luminous retrieval P-T model.
 
     Parameters
     ----------
-    temp_3 : np.ndarray
+    temp_3 : np.ndarray, None
         Array with three temperature points that are added on top of the radiative Eddington
         structure (i.e. above tau = 0.1). The temperature knots are connected with a spline
-        interpolation and a prior is used such that t1 < t2 < t3 < t_connect.
+        interpolation and a prior is used such that t1 < t2 < t3 < t_connect. The three
+        temperature points are not used if set to ``None``.
     delta : float
         Proportionality factor in tau = delta * press_cgs**alpha.
     alpha : float
@@ -64,7 +65,7 @@ def pt_ret_model(temp_3: np.ndarray,
     c_o_ratio : float
         Carbon-to-oxygen ratio. Required for the ``nabla_ad`` interpolation.
     conv : bool
-        Enforace a convective adiabat.
+        Enforce a convective adiabat.
 
     Returns
     -------
@@ -73,7 +74,7 @@ def pt_ret_model(temp_3: np.ndarray,
     float
         Pressure (bar) where the optical depth is 1.
     np.ndarray
-        Temperature (K) at the connection point.
+        Temperature (K) at the connection point (removed).
     """
 
     # Go from bar to cgs units
@@ -82,7 +83,7 @@ def pt_ret_model(temp_3: np.ndarray,
     # Calculate the optical depth
     tau = delta*press_cgs**alpha
 
-    # This is the eddington temperature
+    # Calculate the eddington temperature
     tedd = (3./4.*tint**4.*(2./3.+tau))**0.25
 
     # Import interpol_abundances here because it slows down importing species otherwise.
@@ -151,6 +152,7 @@ def pt_ret_model(temp_3: np.ndarray,
         tfinal = tedd
 
     # Add the three temperature-point P-T description above tau = 0.1
+
     @typechecked
     def press_tau(tau: float) -> float:
         """
@@ -172,80 +174,89 @@ def pt_ret_model(temp_3: np.ndarray,
     # Where is the uppermost pressure of the Eddington radiative structure?
     p_bot_spline = press_tau(0.1)
 
-    for i_intp in range(2):
-        if i_intp == 0:
+    if temp_3 is None:
+        tret = tfinal
 
-            # Create the pressure coordinates for the spline support nodes at low pressure
-            support_points_low = np.logspace(np.log10(press_cgs[0]), np.log10(p_bot_spline), 4)
+    else:
+        for i_intp in range(2):
+            if i_intp == 0:
 
-            # Create the pressure coordinates for the spline support nodes at high pressure,
-            # the corresponding temperatures for these nodes will be taken from the
-            # radiative-convective solution
-            support_points_high = 10.**np.arange(np.log10(p_bot_spline),
-                                                 np.log10(press_cgs[-1]),
-                                                 np.diff(np.log10(support_points_low))[0])
+                # Create the pressure coordinates for the spline support nodes at low pressure
+                support_points_low = np.logspace(np.log10(press_cgs[0]), np.log10(p_bot_spline), 4)
 
-            # Combine into one support node array, don't add the p_bot_spline point twice.
-            support_points = np.zeros(len(support_points_low)+len(support_points_high)-1)
-            support_points[:4] = support_points_low
-            support_points[4:] = support_points_high[1:]
+                # Create the pressure coordinates for the spline support nodes at high pressure,
+                # the corresponding temperatures for these nodes will be taken from the
+                # radiative-convective solution
+                support_points_high = 10.**np.arange(np.log10(p_bot_spline),
+                                                     np.log10(press_cgs[-1]),
+                                                     np.diff(np.log10(support_points_low))[0])
 
-        else:
+                # Combine into one support node array, don't add the p_bot_spline point twice.
+                support_points = np.zeros(len(support_points_low)+len(support_points_high)-1)
 
-            # Create the pressure coordinates for the spline support nodes at low pressure
-            support_points_low = np.logspace(np.log10(press_cgs[0]), np.log10(p_bot_spline), 7)
+                support_points[:4] = support_points_low
+                support_points[4:] = support_points_high[1:]
 
-            # Create the pressure coordinates for the spline support nodes at high pressure,
-            # the corresponding temperatures for these nodes will be taken from the
-            # radiative-convective solution
-            support_points_high = np.logspace(np.log10(p_bot_spline), np.log10(press_cgs[-1]), 7)
+            else:
 
-            # Combine into one support node array, don't add the p_bot_spline point twice.
-            support_points = np.zeros(len(support_points_low)+len(support_points_high)-1)
-            support_points[:7] = support_points_low
-            support_points[7:] = support_points_high[1:]
+                # Create the pressure coordinates for the spline support nodes at low pressure
+                support_points_low = np.logspace(np.log10(press_cgs[0]), np.log10(p_bot_spline), 7)
 
-        # Define the temperature values at the node points.
-        t_support = np.zeros_like(support_points)
+                # Create the pressure coordinates for the spline support nodes at high pressure,
+                # the corresponding temperatures for these nodes will be taken from the
+                # radiative-convective solution
+                support_points_high = np.logspace(np.log10(p_bot_spline), np.log10(press_cgs[-1]), 7)
 
-        if i_intp == 0:
-            tfintp = interp1d(press_cgs, tfinal)
+                # Combine into one support node array, don't add the p_bot_spline point twice.
+                support_points = np.zeros(len(support_points_low)+len(support_points_high)-1)
+                support_points[:7] = support_points_low
+                support_points[7:] = support_points_high[1:]
 
-            # The temperature at p_bot_spline (from the radiative-convectice solution)
-            t_support[int(len(support_points_low))-1] = tfintp(p_bot_spline)
+            # Define the temperature values at the node points.
+            t_support = np.zeros_like(support_points)
 
-            # The temperature at pressures below p_bot_spline (free parameters)
-            t_support[:(int(len(support_points_low))-1)] = temp_3
-            # t_support[:3] = tfintp(support_points_low)
+            if i_intp == 0:
+                tfintp = interp1d(press_cgs, tfinal)
 
-            # The temperature at pressures above p_bot_spline (from the
-            # radiative-convectice solution)
-            t_support[int(len(support_points_low)):] = \
-                tfintp(support_points[(int(len(support_points_low))):])
+                # The temperature at p_bot_spline (from the radiative-convectice solution)
+                t_support[len(support_points_low)-1] = tfintp(p_bot_spline)
 
-        else:
-            tfintp1 = interp1d(press_cgs, tret)
+                # if temp_3 is not None:
+                # The temperature at pressures below p_bot_spline (free parameters)
+                t_support[:len(support_points_low)-1] = temp_3
 
-            t_support[:(int(len(support_points_low))-1)] = \
-                tfintp1(support_points[:(int(len(support_points_low))-1)])
+                # else:
+                #     t_support[:3] = tfintp(support_points_low[:3])
 
-            tfintp = interp1d(press_cgs, tfinal)
+                # The temperature at pressures above p_bot_spline (from the
+                # radiative-convectice solution)
+                t_support[len(support_points_low):] = \
+                    tfintp(support_points[len(support_points_low):])
 
-            # The temperature at p_bot_spline (from the radiative-convectice solution)
-            t_support[int(len(support_points_low))-1] = tfintp(p_bot_spline)
+            else:
+                tfintp1 = interp1d(press_cgs, tret)
 
-            # print('diff', t_connect_calc - tfintp(p_bot_spline))
-            t_support[int(len(support_points_low)):] = \
-                tfintp(support_points[(int(len(support_points_low))):])
+                t_support[:len(support_points_low)-1] = \
+                    tfintp1(support_points[:len(support_points_low)-1])
 
-        # Make the temperature spline interpolation to be returned to the user
-        # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
-        cs = PchipInterpolator(np.log10(support_points), t_support)
-        tret = cs(np.log10(press_cgs))
+                tfintp = interp1d(press_cgs, tfinal)
 
-    # Return the temperature, the pressure at tau = 1, and the temperature at the connection point.
+                # The temperature at p_bot_spline (from the radiative-convectice solution)
+                t_support[len(support_points_low)-1] = tfintp(p_bot_spline)
+
+                # print('diff', t_connect_calc - tfintp(p_bot_spline))
+                t_support[len(support_points_low):] = \
+                    tfintp(support_points[len(support_points_low):])
+
+            # Make the temperature spline interpolation to be returned to the user
+            # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
+            cs = PchipInterpolator(np.log10(support_points), t_support)
+            tret = cs(np.log10(press_cgs))
+
+    # Return the temperature, the pressure at tau = 1
+    # The temperature at the connection point: tfintp(p_bot_spline)
     # The last two are needed for the priors on the P-T profile.
-    return tret, press_tau(1.)/1e6, tfintp(p_bot_spline)
+    return tret, press_tau(1.)/1e6
 
 
 @typechecked
@@ -321,15 +332,24 @@ def create_pt_profile(cube,
     knot_temp = None
 
     if pt_profile == 'molliere':
-        temp, _, _ = pt_ret_model(np.array([cube[cube_index['t1']],
-                                            cube[cube_index['t2']],
-                                            cube[cube_index['t3']]]),
-                                  10.**cube[cube_index['log_delta']],
-                                  cube[cube_index['alpha']],
-                                  cube[cube_index['tint']],
-                                  pressure,
-                                  cube[cube_index['metallicity']],
-                                  cube[cube_index['c_o_ratio']])
+        temp, _ = pt_ret_model(np.array([cube[cube_index['t1']],
+                                         cube[cube_index['t2']],
+                                         cube[cube_index['t3']]]),
+                               10.**cube[cube_index['log_delta']],
+                               cube[cube_index['alpha']],
+                               cube[cube_index['tint']],
+                               pressure,
+                               cube[cube_index['metallicity']],
+                               cube[cube_index['c_o_ratio']])
+
+    elif pt_profile == 'mod-molliere':
+        temp, _ = pt_ret_model(None,
+                               10.**cube[cube_index['log_delta']],
+                               cube[cube_index['alpha']],
+                               cube[cube_index['tint']],
+                               pressure,
+                               cube[cube_index['metallicity']],
+                               cube[cube_index['c_o_ratio']])
 
     elif pt_profile in ['free', 'monotonic']:
         knot_temp = []

@@ -149,7 +149,7 @@ def plot_pt_profile(tag: str,
             metallicity_index = np.argwhere(parameters == 'metallicity')[0]
             c_o_ratio_index = np.argwhere(parameters == 'c_o_ratio')[0]
 
-            temp, _, _ = retrieval_util.pt_ret_model(
+            temp, _ = retrieval_util.pt_ret_model(
                 np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
                 10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
                 item[metallicity_index][0], item[c_o_ratio_index][0])
@@ -166,7 +166,7 @@ def plot_pt_profile(tag: str,
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
 
     if pt_profile == 'molliere':
-        temp, _, _ = retrieval_util.pt_ret_model(
+        temp, _= retrieval_util.pt_ret_model(
             np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
             median['alpha'], median['tint'], pressure, median['metallicity'], median['c_o_ratio'])
 

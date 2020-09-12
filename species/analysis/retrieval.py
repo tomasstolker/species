@@ -305,13 +305,15 @@ class AtmosphericRetrieval:
 
         # P-T profile parameters
 
-        if pt_profile == 'molliere':
+        if pt_profile == 'molliere' or pt_profile == 'mod-molliere':
             self.parameters.append('tint')
-            self.parameters.append('t1')
-            self.parameters.append('t2')
-            self.parameters.append('t3')
             self.parameters.append('alpha')
             self.parameters.append('log_delta')
+
+            if pt_profile == 'molliere':
+                self.parameters.append('t1')
+                self.parameters.append('t2')
+                self.parameters.append('t3')
 
         elif pt_profile in ['free', 'monotonic']:
             for i in range(15):
@@ -627,7 +629,7 @@ class AtmosphericRetrieval:
 
             cube[cube_index['radius']] = radius
 
-            if pt_profile == 'molliere':
+            if pt_profile == 'molliere' or pt_profile == 'mod-molliere':
 
                 # Internal temperature (K) of the Eddington approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
@@ -639,20 +641,21 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['tint']] = tint
 
-                # Connection temperature (K)
-                t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
+                if pt_profile == 'molliere':
+                    # Connection temperature (K)
+                    t_connect = (3./4.*tint**4.*(0.1+2./3.))**0.25
 
-                # The temperature (K) at temp_3 is scaled down from t_connect
-                temp_3 = t_connect*(1-cube[cube_index['t3']])
-                cube[cube_index['t3']] = temp_3
+                    # The temperature (K) at temp_3 is scaled down from t_connect
+                    temp_3 = t_connect*(1-cube[cube_index['t3']])
+                    cube[cube_index['t3']] = temp_3
 
-                # The temperature (K) at temp_2 is scaled down from temp_3
-                temp_2 = temp_3*(1-cube[cube_index['t2']])
-                cube[cube_index['t2']] = temp_2
+                    # The temperature (K) at temp_2 is scaled down from temp_3
+                    temp_2 = temp_3*(1-cube[cube_index['t2']])
+                    cube[cube_index['t2']] = temp_2
 
-                # The temperature (K) at temp_1 is scaled down from temp_2
-                temp_1 = temp_2*(1-cube[cube_index['t1']])
-                cube[cube_index['t1']] = temp_1
+                    # The temperature (K) at temp_1 is scaled down from temp_2
+                    temp_1 = temp_2*(1-cube[cube_index['t1']])
+                    cube[cube_index['t1']] = temp_1
 
                 # alpha: power law index in tau = delta * press_cgs**alpha
                 # see Eq. 1 in Mollière et al. (2020)
@@ -665,8 +668,14 @@ class AtmosphericRetrieval:
                 cube[cube_index['alpha']] = alpha
 
                 # Photospheric pressure (bar)
-                # Default: 1e-3 - 1e2 bar
-                p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
+
+                if pt_profile == 'molliere':
+                    # 1e-3 - 1e2 bar
+                    p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
+
+                elif pt_profile == 'mod-molliere':
+                    # 1e-6 - 1e2 bar
+                    p_phot = 10.**(-6. + 8.*cube[cube_index['log_delta']])
 
                 # delta: proportionality factor in tau = delta * press_cgs**alpha
                 # see Eq. 1 in Mollière et al. (2020)
