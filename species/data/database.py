@@ -682,16 +682,16 @@ class Database:
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
                         dered_mag = app_mag[mag_item][i][0] - 2.5*np.log10(dered_phot[mag_item])
-                        app_mag[mag_item] = (dered_mag, app_mag[mag_item][i][1])
+                        app_mag_item = (dered_mag, app_mag[mag_item][i][1])
 
-                        print(f'      - Apparent magnitude = {app_mag[mag_item][i][0]:.2f} +/- '
-                              f'{app_mag[mag_item][i][1]:.2f}')
+                        print(f'      - Apparent magnitude = {app_mag_item[0]:.2f} +/- '
+                              f'{app_mag_item[1]:.2f}')
 
                         print(f'      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- '
                               f'{error[mag_item][i]:.2e}')
 
-                        mag_list.append(app_mag[mag_item][i][0])
-                        mag_err_list.append(app_mag[mag_item][i][1])
+                        mag_list.append(app_mag_item[0])
+                        mag_err_list.append(app_mag_item[1])
 
                     data = np.asarray([mag_list,
                                        mag_err_list,
