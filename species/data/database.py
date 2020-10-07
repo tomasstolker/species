@@ -657,6 +657,9 @@ class Database:
                     print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- '
                           f'{error[mag_item]:.2e}')
 
+                    if mag_item in deredden:
+                        print(f'      - Dereddening A_V: {deredden[mag_item]}')
+
                     data = np.asarray([app_mag[mag_item][0],
                                        app_mag[mag_item][1],
                                        flux[mag_item],
@@ -681,6 +684,9 @@ class Database:
 
                         mag_list.append(app_mag_item[0])
                         mag_err_list.append(app_mag_item[1])
+
+                        if mag_item in deredden:
+                            print(f'      - Dereddening A_V: {deredden[mag_item]}')
 
                     data = np.asarray([mag_list,
                                        mag_err_list,
