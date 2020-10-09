@@ -2,6 +2,8 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import warnings
+
 from typing import Optional, Tuple
 
 import matplotlib as mpl
@@ -22,7 +24,8 @@ def plot_pt_profile(tag: str,
                     ylim: Optional[Tuple[float, float]] = None,
                     offset: Optional[Tuple[float, float]] = None,
                     output: str = 'pt_profile.pdf',
-                    radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> None:
+                    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+                    extra_axis: str = 'photosphere') -> None:
     """
     Function to plot the posterior distribution.
 
@@ -45,6 +48,8 @@ def plot_pt_profile(tag: str,
         ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
         instance is sufficiently broad to cover all the photometric and spectroscopic data of
         ``inc_phot`` and ``inc_spec``. Not used if set to ``None``.
+    extra_axis : str, None
+        The quantify that is plotted at the top axis ('photosphere', 'grains', None).
 
     Returns
     -------
@@ -63,10 +68,6 @@ def plot_pt_profile(tag: str,
     parameters = np.asarray(box.parameters)
     samples = box.samples
     median = box.median_sample
-
-    # indices = np.argwhere(samples[:, 0] > 4.5)
-    # indices = indices[:, 0]
-    # samples = samples[indices, ]
 
     indices = np.random.randint(samples.shape[0], size=random)
     samples = samples[indices, ]
@@ -245,8 +246,19 @@ def plot_pt_profile(tag: str,
 
     if radtrans is not None:
 
-        if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median \
-                or 'na2s_fraction' in median or 'kcl_fraction' in median:
+        # Recalculate the best-fit model to update the attributes of radtrans.rt_object
+        radtrans.get_model(median)
+
+        if extra_axis == 'photosphere':
+            radtrans.rt_object.calc_opt_depth(10.**median['logg'])
+
+            wavelength = radtrans.rt_object.lambda_angstroem*1e-4  # (um)
+
+            # From petitRADTRANS: Only use 0 index for species because for lbl or
+            # test_ck_shuffle_comp = True everything has been moved into the 0th index
+            # TODO What is the first axis? Take the mean?
+            optical_depth = np.mean(radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
+
             ax2 = ax.twiny()
 
             ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
@@ -262,53 +274,94 @@ def plot_pt_profile(tag: str,
             else:
                 ax2.set_ylim(1e3, 1e-6)
 
-            ax2.set_xscale('log')
             ax2.set_yscale('log')
 
-            ax2.set_xlabel('Average particle radius (µm)', fontsize=13, va='bottom')
-
-            # Recalculate the best-fit model to update the r_g attribute of radtrans.rt_object
-            radtrans.get_model(median)
+            ax2.set_xlabel('Wavelength (µm)', fontsize=13, va='bottom')
 
             if offset is not None:
                 ax2.get_xaxis().set_label_coords(0.5, 1.+abs(offset[0]))
             else:
                 ax2.get_xaxis().set_label_coords(0.5, 1.06)
 
-        if 'fe_fraction' in median:
-            cloud_index = radtrans.rt_object.cloud_species.index('Fe(c)')
+            photo_press = np.zeros(wavelength.shape[0])
 
-            # Convert from (cm) to (um)
-            ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                     lw=0.8, color='tab:blue')
+            for i in range(photo_press.shape[0]):
+                photo_index = np.argmax(optical_depth[i, :] > 1.)
+                photo_press[i] = radtrans.rt_object.press[photo_index]*1e-6  # cgs to (bar)
 
-        if 'mgsio3_fraction' in median:
-            cloud_index = radtrans.rt_object.cloud_species.index('MgSiO3(c)')
+            ax2.plot(wavelength, photo_press, lw=0.5, color='tab:blue')
 
-            # Convert from (cm) to (um)
-            ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                     lw=0.8, color='tab:orange')
+        elif extra_axis == 'grains':
 
-        if 'al2o3_fraction' in median:
-            cloud_index = radtrans.rt_object.cloud_species.index('Al2O3(c)')
+            if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median \
+                    or 'na2s_fraction' in median or 'kcl_fraction' in median:
+                ax2 = ax.twiny()
 
-            # Convert from (cm) to (um)
-            ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                     lw=0.8, color='tab:green')
+                ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                                direction='in', width=1, length=5, labelsize=12, top=True,
+                                bottom=False, left=True, right=True)
 
-        if 'na2s_fraction' in median:
-            cloud_index = radtrans.rt_object.cloud_species.index('Na2S(c)')
+                ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                                direction='in', width=1, length=3, labelsize=12, top=True,
+                                bottom=False, left=True, right=True)
 
-            # Convert from (cm) to (um)
-            ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                     lw=0.8, color='tab:cyan')
+                if ylim:
+                    ax2.set_ylim(ylim[0], ylim[1])
+                else:
+                    ax2.set_ylim(1e3, 1e-6)
 
-        if 'kcl_fraction' in median:
-            cloud_index = radtrans.rt_object.cloud_species.index('KCl(c)')
+                ax2.set_xscale('log')
+                ax2.set_yscale('log')
 
-            # Convert from (cm) to (um)
-            ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                     lw=0.8, color='tab:pink')
+                ax2.set_xlabel('Average particle radius (µm)', fontsize=13, va='bottom')
+
+                # Recalculate the best-fit model to update the r_g attribute of radtrans.rt_object
+                radtrans.get_model(median)
+
+                if offset is not None:
+                    ax2.get_xaxis().set_label_coords(0.5, 1.+abs(offset[0]))
+                else:
+                    ax2.get_xaxis().set_label_coords(0.5, 1.06)
+
+            if 'fe_fraction' in median:
+                cloud_index = radtrans.rt_object.cloud_species.index('Fe(c)')
+
+                # Convert from (cm) to (um)
+                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
+                         lw=0.8, color='tab:blue')
+
+            if 'mgsio3_fraction' in median:
+                cloud_index = radtrans.rt_object.cloud_species.index('MgSiO3(c)')
+
+                # Convert from (cm) to (um)
+                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
+                         lw=0.8, color='tab:orange')
+
+            if 'al2o3_fraction' in median:
+                cloud_index = radtrans.rt_object.cloud_species.index('Al2O3(c)')
+
+                # Convert from (cm) to (um)
+                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
+                         lw=0.8, color='tab:green')
+
+            if 'na2s_fraction' in median:
+                cloud_index = radtrans.rt_object.cloud_species.index('Na2S(c)')
+
+                # Convert from (cm) to (um)
+                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
+                         lw=0.8, color='tab:cyan')
+
+            if 'kcl_fraction' in median:
+                cloud_index = radtrans.rt_object.cloud_species.index('KCl(c)')
+
+                # Convert from (cm) to (um)
+                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
+                         lw=0.8, color='tab:pink')
+
+    else:
+        if extra_axis is not None:
+            warnings.warn('The argument of extra_axis is ignored because radtrans does not '
+                          'contain a ReadRadtrans object.')
 
     plt.savefig(output, bbox_inches='tight')
     plt.clf()
