@@ -448,6 +448,24 @@ def plot_posterior(tag: str,
 
     labels = plot_util.update_labels(samples_box.parameters)
 
+    # Check if parameter values were fixed
+
+    index_sel = []
+    index_del = []
+
+    for i in range(ndim):
+        if np.amin(samples[:, i]) == np.amax(samples[:, i]):
+            index_del.append(i)
+        else:
+            index_sel.append(i)
+
+    samples = samples[:, index_sel]
+
+    for i in range(len(index_del)-1, -1, -1):
+        del labels[index_del[i]]
+
+    ndim -= len(index_del)
+
     samples = samples.reshape((-1, ndim))
 
     hist_titles = []

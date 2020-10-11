@@ -1795,6 +1795,17 @@ class Database:
                                                                  sample_dict['metallicity'],
                                                                  sample_dict['c_o_ratio'])
 
+                    elif radtrans['pt_profile'] == 'free' or radtrans['pt_profile'] == 'monotonic':
+                        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+
+                        knot_temp = []
+                        for i in range(15):
+                            knot_temp.append(sample_dict[f't{i}'])
+
+                        knot_temp = np.asarray(knot_temp)
+
+                        temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+
                     # Set the quenching pressure (bar)
 
                     if 'log_p_quench' in parameters:

@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.data import database
@@ -286,8 +287,8 @@ def plot_pt_profile(tag: str,
             photo_press = np.zeros(wavelength.shape[0])
 
             for i in range(photo_press.shape[0]):
-                photo_index = np.argmax(optical_depth[i, :] > 1.)
-                photo_press[i] = radtrans.rt_object.press[photo_index]*1e-6  # cgs to (bar)
+                press_interp = interp1d(optical_depth[i, :], radtrans.rt_object.press)
+                photo_press[i] = press_interp(1.)*1e-6  # cgs to (bar)
 
             ax2.plot(wavelength, photo_press, lw=0.5, color='tab:blue')
 
