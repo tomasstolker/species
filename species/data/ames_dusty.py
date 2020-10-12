@@ -26,8 +26,7 @@ def add_ames_dusty(input_path: str,
                    spec_res: float = None) -> None:
     """
     Function for adding the AMES-Dusty atmospheric models to the database. The original spectra
-    have been resampled to a spectral resolution of R = 2000 from 0.5 to 40 um. Note that a few
-    of the spectra contain NaNs due to their limited, original wavelength coverage.
+    have been resampled to a spectral resolution of R = 2000 from 0.5 to 40 um.
 
     Parameters
     ----------
@@ -98,6 +97,12 @@ def add_ames_dusty(input_path: str,
                 print(f'\r{print_message:<73}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
+
+                if np.isnan(np.sum(data_flux)):
+                    # A few of the spectra contain NaNs due to their limited, original wavelength
+                    # coverage. Set the fluxes to zero such that they are interpolated when running
+                    # add_missing in add_model
+                    data_flux = np.zeros(data_flux.shape)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
