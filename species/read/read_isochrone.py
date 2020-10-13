@@ -2,8 +2,9 @@
 Module with reading functionalities for isochrones.
 """
 
-import os
 import configparser
+import os
+import warnings
 
 from typing import Optional, Tuple
 
@@ -205,15 +206,30 @@ class ReadIsochrone:
                 mag1[i] = np.nan
                 mag2[i] = np.nan
 
+                warnings.warn(f'The value of Teff is NaN for the following isochrone sample: '
+                              f'{model_param}. Setting the magnitudes to NaN.')
+
             else:
                 for item_bounds in model1.get_bounds():
                     if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
 
+                        warnings.warn(f'The value of {item_bounds} is {model_param[item_bounds]}, '
+                                      f'which is below the lower bound of the model grid '
+                                      f'({model1.get_bounds()[item_bounds][0]}). Setting the '
+                                      f'magnitudes to NaN for the following isochrone sample: '
+                                      f'{model_param}.')
+
                     elif model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
+
+                        warnings.warn(f'The value of {item_bounds} is {model_param[item_bounds]}, '
+                                      f'which is above the upper bound of the model grid '
+                                      f'({model1.get_bounds()[item_bounds][1]}). Setting the '
+                                      f'magnitudes to NaN for the following isochrone sample: '
+                                      f'{model_param}.')
 
                 if not np.isnan(mag1[i]):
                     mag1[i], _ = model1.get_magnitude(model_param)
@@ -226,7 +242,7 @@ class ReadIsochrone:
             abs_mag = mag2
 
         else:
-            raise ValueError('The filter_mag argument should be equal to one of the two filter '
+            raise ValueError('The argument of filter_mag should be equal to one of the two filter '
                              'values of filters_color.')
 
         return box.create_box(boxtype='colormag',
@@ -300,6 +316,9 @@ class ReadIsochrone:
                 mag3[i] = np.nan
                 mag4[i] = np.nan
 
+                warnings.warn(f'The value of Teff is NaN for the following isochrone sample: '
+                              f'{model_param}. Setting the magnitudes to NaN.')
+
             else:
                 for item_bounds in model1.get_bounds():
                     if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
@@ -308,11 +327,23 @@ class ReadIsochrone:
                         mag3[i] = np.nan
                         mag4[i] = np.nan
 
+                        warnings.warn(f'The value of {item_bounds} is {model_param[item_bounds]}, '
+                                      f'which is below the lower bound of the model grid '
+                                      f'({model1.get_bounds()[item_bounds][0]}). Setting the '
+                                      f'magnitudes to NaN for the following isochrone sample: '
+                                      f'{model_param}.')
+
                     elif model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
                         mag3[i] = np.nan
                         mag4[i] = np.nan
+
+                        warnings.warn(f'The value of {item_bounds} is {model_param[item_bounds]}, '
+                                      f'which is above the upper bound of the model grid '
+                                      f'({model1.get_bounds()[item_bounds][1]}). Setting the '
+                                      f'magnitudes to NaN for the following isochrone sample: '
+                                      f'{model_param}.')
 
                 if not np.isnan(mag1[i]) and not np.isnan(mag2[i]) and\
                         not np.isnan(mag3[i]) and not np.isnan(mag4[i]):
