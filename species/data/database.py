@@ -18,9 +18,9 @@ from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box
-from species.data import ames_cond, ames_dusty, btcond, btnextgen, btsettl, btsettl_cifist, \
-                         companions, drift_phoenix, dust, exo_rem, filters, irtf, isochrones, \
-                         leggett, petitcode, spex, vega, vlm_plx
+from species.data import ames_cond, ames_dusty, btcond, btcond_feh, btnextgen, btsettl, \
+                         btsettl_cifist, companions, drift_phoenix, dust, exo_rem, filters, irtf, \
+                         isochrones, leggett, petitcode, spex, vega, vlm_plx
 from species.read import read_calibration, read_filter, read_model, read_planck
 from species.util import data_util, dust_util
 
@@ -327,7 +327,7 @@ class Database:
         model : str
             Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-settl-cifist', 'bt-nextgen',
             'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
-            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', or 'bt-cond').
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'bt-cond', or 'bt-cond-feh).
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to ``None``.
@@ -399,6 +399,15 @@ class Database:
                               spec_res)
 
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'bt-cond-feh':
+            btcond_feh.add_btcond_feh(self.input_path,
+                                      h5_file,
+                                      wavel_range,
+                                      teff_range,
+                                      spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
         elif model == 'bt-settl':
             btsettl.add_btsettl(self.input_path,
@@ -489,7 +498,7 @@ class Database:
                              f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
                              f'\'petitcode-hot-cloudy\', \'exo-rem\', \'bt-settl-cifist\', '
-                             f'\'bt-cond\'.')
+                             f'\'bt-cond\', \'bt-cond-feh\'.')
 
         h5_file.close()
 
