@@ -150,12 +150,11 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'Paranal/SPHERE.IRDIS_B_Ks': (13.51, 0.20)}},  # Kennedy et al. 2020
 
             'GQ Lup B': {'distance': (151.82, 1.10),
-                         'app_mag': {
-                                     # 'HST/WFPC2.f606w': (19.19, 0.07),  # Marois et al. 2006
-                                     # 'HST/WFPC2.f814w': (17.67, 0.05),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
+                         'app_mag': {'HST/WFPC2-PC.F606W': (19.19, 0.07),  # Marois et al. 2006
+                                     'HST/WFPC2-PC.F814W': (17.67, 0.05),  # Marois et al. 2006
+                                     'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
+                                     'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
+                                     'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
                                      'Subaru/CIAO.CH4s': (13.76, 0.26),  # Marois et al. 2006
                                      'Subaru/CIAO.K': (13.37, 0.12),  # Marois et al. 2006
                                      'Subaru/CIAO.Lp': (12.44, 0.22)}},  # Marois et al. 2006

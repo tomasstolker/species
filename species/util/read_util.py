@@ -5,7 +5,7 @@ Utility functions for reading data.
 import math
 import warnings
 
-from typing import Union, Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter
 
-from species.core import constants
+from species.core import box, constants
 from species.read import read_model, read_planck
 
 
@@ -94,8 +94,9 @@ def add_luminosity(modelbox):
     return modelbox
 
 
-def update_spectra(objectbox,
-                   model_param):
+@typechecked
+def update_spectra(objectbox: box.ObjectBox,
+                   model_param: Dict[str, float]) -> box.ObjectBox:
     """
     Function for applying a best-fit scaling and/or error inflation to the spectra of an object.
 

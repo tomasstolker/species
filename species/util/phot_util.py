@@ -5,22 +5,23 @@ Utility functions for photometry.
 import math
 import warnings
 
-from typing import Optional, Union, Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
-import spectres
 import numpy as np
+import spectres
 
 from typeguard import typechecked
 
 from species.core import box
-from species.read import read_model, read_calibration, read_filter, read_planck
+from species.read import read_calibration, read_filter, read_model, read_planck
 # from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 
 
-def multi_photometry(datatype,
-                     spectrum,
-                     filters,
-                     parameters):
+@typechecked
+def multi_photometry(datatype: str,
+                     spectrum: str,
+                     filters: List[str],
+                     parameters: Dict[str, float]) -> box.SynphotBox:
     """
     Parameters
     ----------
@@ -28,7 +29,7 @@ def multi_photometry(datatype,
         Data type ('model' or 'calibration').
     spectrum : str
         Spectrum name (e.g., 'drift-phoenix').
-    filters : tuple(str, )
+    filters : list(str, )
         Filter names.
     parameters : dict
         Parameters and values for the spectrum

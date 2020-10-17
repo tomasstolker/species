@@ -925,6 +925,9 @@ class ReadModel:
                 raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
                                  f'The mandatory parameters are {self.get_parameters()}.')
 
+        # if model_param['logg'] < 3.5:
+        #     model_param['logg'] = 3.5
+
         if self.spectrum_interp is None:
             self.interpolate_model()
 
