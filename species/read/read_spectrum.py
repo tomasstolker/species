@@ -5,8 +5,12 @@ Module with reading functionalities for spectral libraries.
 import os
 import configparser
 
+from typing import List
+
 import h5py
 import numpy as np
+
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box
@@ -19,16 +23,17 @@ class ReadSpectrum:
     Class for reading spectral library data from the database.
     """
 
+    @typechecked
     def __init__(self,
-                 spec_library,
-                 filter_name=None):
+                 spec_library: str,
+                 filter_name: str = None) -> None:
         """
         Parameters
         ----------
         spec_library : str
             Name of the spectral library ('irtf', 'spex') or other type of spectrum ('vega').
         filter_name : str, None
-            Filter ID for the wavelength range. Full spectra are read if set to None.
+            Filter name for the wavelength range. Full spectra are read if set to ``None``.
 
         Returns
         -------
@@ -53,17 +58,18 @@ class ReadSpectrum:
 
         self.database = config['species']['database']
 
+    @typechecked
     def get_spectrum(self,
-                     sptypes=None,
-                     exclude_nan=True):
+                     sptypes: List[str] = None,
+                     exclude_nan: bool = True) -> box.SpectrumBox:
         """
         Function for selecting spectra from the database.
 
         Parameters
         ----------
-        sptypes : list('str', )
+        sptypes : list(str), None
             Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
         exclude_nan : bool
             Exclude wavelength points for which the flux is NaN.
 
@@ -162,47 +168,53 @@ class ReadSpectrum:
                 list_distance.append((np.nan, np.nan))
 
         specbox = box.SpectrumBox()
-
         specbox.spec_library = self.spec_library
-        specbox.wavelength = np.asarray(list_wavelength)
-        specbox.flux = np.asarray(list_flux)
-        specbox.error = np.asarray(list_error)
-        specbox.name = np.asarray(list_name)
-        specbox.simbad = np.asarray(list_simbad)
-        specbox.sptype = np.asarray(list_sptype)
-        specbox.distance = np.asarray(list_distance)
 
         if sptypes is not None:
-            indices = None
+            indices = []
+
+            specbox.wavelength = []
+            specbox.flux = []
+            specbox.error = []
+            specbox.name = []
+            specbox.simbad = []
+            specbox.sptype = []
+            specbox.distance = []
 
             for item in sptypes:
-                if indices is None:
-                    indices = np.where(np.chararray.startswith(specbox.sptype, item))[0]
 
-                else:
-                    ind_tmp = np.where(np.chararray.startswith(specbox.sptype, item))[0]
-                    indices = np.append(indices, ind_tmp)
+                for i, spec_item in enumerate(list_sptype):
+                    if item == spec_item[:2]:
+                        specbox.wavelength.append(list_wavelength[i])
+                        specbox.flux.append(list_flux[i])
+                        specbox.error.append(list_error[i])
+                        specbox.name.append(list_name[i])
+                        specbox.simbad.append(list_simbad[i])
+                        specbox.sptype.append(list_sptype[i])
+                        specbox.distance.append(list_distance[i])
 
-            specbox.wavelength = specbox.wavelength[indices]
-            specbox.flux = specbox.flux[indices]
-            specbox.error = specbox.error[indices]
-            specbox.name = specbox.name[indices]
-            specbox.simbad = specbox.simbad[indices]
-            specbox.sptype = specbox.sptype[indices]
-            specbox.distance = specbox.distance[indices]
+        else:
+            specbox.wavelength = list_wavelength
+            specbox.flux = list_flux
+            specbox.error = list_error
+            specbox.name = list_name
+            specbox.simbad = list_simbad
+            specbox.sptype = list_sptype
+            specbox.distance = list_distance
 
         return specbox
 
+    @typechecked
     def get_flux(self,
-                 sptypes=None):
+                 sptypes: List[str] = None) -> box.PhotometryBox:
         """
         Function for calculating the average flux density for the ``filter_name``.
 
         Parameters
         ----------
-        sptypes : list('str', )
+        sptypes : list(str), None
             Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------
@@ -243,16 +255,17 @@ class ReadSpectrum:
                               abs_mag=None,
                               filter_name=filters)
 
+    @typechecked
     def get_magnitude(self,
-                      sptypes=None):
+                      sptypes: List[str] = None) -> box.PhotometryBox:
         """
         Function for calculating the apparent magnitude for the ``filter_name``.
 
         Parameters
         ----------
-        sptypes : list('str', )
+        sptypes : list(str)
             Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to None.
+            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------

@@ -133,7 +133,10 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         if transmission is not None:
             try:
                 det_type = table.get_field_by_id('DetectorType').value
-                det_type = det_type.decode('utf-8')
+
+                # For backward compatibility
+                if not isinstance(det_type, str):
+                    det_type = det_type.decode('utf-8')
 
                 if int(det_type) == 1:
                     det_type = 'photon'
