@@ -1,5 +1,5 @@
 """
-Module for BT-Cond atmospheric model spectra with Teff > 2500 K and [Fe/H] as free parameter.
+Module for blackbody model spectra.
 """
 
 import os
@@ -18,17 +18,14 @@ from species.util import data_util, read_util
 
 
 @typechecked
-def add_btcond_feh(input_path: str,
-                   database: h5py._hl.files.File,
-                   wavel_range: Optional[Tuple[float, float]],
-                   teff_range: Optional[Tuple[float, float]],
-                   spec_res: Optional[float]) -> None:
+def add_blackbody(input_path: str,
+                  database: h5py._hl.files.File,
+                  wavel_range: Optional[Tuple[float, float]],
+                  teff_range: Optional[Tuple[float, float]],
+                  spec_res: Optional[float]) -> None:
     """
-    Function for adding the BT-Cond atmospheric models with Teff > 2500 K to the database.
-    The spectra have been downloaded from the Theoretical spectra web server
-    (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-cond) and resampled
-    to a spectral resolution of 5000 from 0.1 to 100 um. The metallicity is also a free
-    parameter.
+    Function for adding the blackbody atmospheric models to the database. The spectra have been
+    calculated for Teff from 10 to 5000 K at spectral resolution of 1000 from 0.1 um to 5 mm.
 
     Parameters
     ----------
@@ -52,30 +49,28 @@ def add_btcond_feh(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    input_file = 'bt-cond_feh.tgz'
+    input_file = 'blackbody.tgz'
 
-    data_folder = os.path.join(input_path, 'bt-cond_feh/')
+    data_folder = os.path.join(input_path, 'blackbody/')
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-cond_feh.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/blackbody.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading BT-Cond model spectra (390 MB)...', end='', flush=True)
+        print('Downloading blackbody model spectra (46 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking BT-Cond model spectra (390 MB)...', end='', flush=True)
+    print('Unpacking blackbody model spectra (46 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
     print(' [DONE]')
 
     teff = []
-    logg = []
-    feh = []
     flux = []
 
     if wavel_range is not None and spec_res is not None:
@@ -85,25 +80,21 @@ def add_btcond_feh(input_path: str,
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
-            if filename[:8] == 'bt-cond_':
+            if filename[:10] == 'blackbody_':
                 file_split = filename.split('_')
 
                 teff_val = float(file_split[2])
-                logg_val = float(file_split[4])
-                feh_val = float(file_split[6])
 
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                print_message = f'Adding BT-Cond model spectra... {filename}'
-                print(f'\r{print_message:<76}', end='')
+                print_message = f'Adding blackbody model spectra... {filename}'
+                print(f'\r{print_message:<62}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
                 teff.append(teff_val)
-                logg.append(logg_val)
-                feh.append(feh_val)
 
                 if wavel_range is None or spec_res is None:
                     if wavelength is None:
@@ -131,18 +122,18 @@ def add_btcond_feh(input_path: str,
 
                     flux.append(flux_resample)  # (W m-2 um-1)
 
-    print_message = 'Adding BT-Cond model spectra... [DONE]'
-    print(f'\r{print_message:<76}')
+    print_message = 'Adding blackbody model spectra... [DONE]'
+    print(f'\r{print_message:<62}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
-                                      np.asarray(logg),
-                                      np.asarray(feh),
+                                      None,
+                                      None,
                                       None,
                                       None,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-cond-feh',
-                         ['teff', 'logg', 'feh'],
+    data_util.write_data('blackbody',
+                         ['teff'],
                          database,
                          data_sorted)

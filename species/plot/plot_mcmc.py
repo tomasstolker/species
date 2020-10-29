@@ -60,6 +60,12 @@ def plot_walkers(tag: str,
     samples = box.samples
     labels = plot_util.update_labels(box.parameters)
 
+    if samples.ndim == 2:
+        raise ValueError(f'The samples of \'{tag}\' have only 2 dimensions whereas 3 are required '
+                         f'for plotting the walkers. The plot_walkers function can only be '
+                         f'used after running the MCMC with run_mcmc and not after running '
+                         f'MultiNest with run_multinest.')
+        
     ndim = samples.shape[-1]
 
     plt.figure(1, figsize=(6, ndim*1.5))
@@ -408,25 +414,26 @@ def plot_posterior(tag: str,
     print(' [DONE]')
 
 
-def plot_photometry(tag,
-                    filter_id,
-                    burnin=None,
-                    xlim=None,
-                    output='photometry.pdf'):
+@typechecked
+def plot_photometry(tag: str,
+                    filter_name: str,
+                    burnin: int = None,
+                    xlim: Tuple[float, float] = None,
+                    output: str = 'photometry.pdf') -> None:
     """
     Function to plot the posterior distribution of the synthetic photometry.
 
     Parameters
     ----------
     tag : str
-        Database tag with the samples.
-    filter_id : str
-        Filter ID.
+        Database tag with the posterior samples.
+    filter_name : str
+        Filter name.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to None.
+        Number of burnin steps to exclude. All samples are used if set to ``None``.
     xlim : tuple(float, float), None
-        Axis limits. Automatically set if set to None.
-    output : strr
+        Axis limits. Automatically set if set to ``None``.
+    output : str
         Output filename.
 
     Returns
@@ -442,7 +449,7 @@ def plot_photometry(tag,
 
     species_db = database.Database()
 
-    samples = species_db.get_mcmc_photometry(tag, burnin, filter_id)
+    samples = species_db.get_mcmc_photometry(tag, filter_name, burnin)
 
     print(f'Plotting photometry samples: {output}...', end='', flush=True)
 

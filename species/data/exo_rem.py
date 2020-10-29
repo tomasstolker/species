@@ -53,17 +53,17 @@ def add_exo_rem(input_path: str,
     url = 'https://people.phys.ethz.ch/~ipa/tstolker/exo-rem.tgz'
 
     data_folder = os.path.join(input_path, 'exo-rem/')
-    data_file = os.path.join(data_folder, input_file)
+    data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
     if not os.path.isfile(data_file):
-        print('Downloading Exo-REM model spectra (790 MB)...', end='', flush=True)
+        print('Downloading Exo-REM model spectra (792 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking Exo-REM model spectra (790 MB)...', end='', flush=True)
+    print('Unpacking Exo-REM model spectra (792 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()

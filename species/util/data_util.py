@@ -81,7 +81,7 @@ def update_filter(filter_in):
 
 @typechecked
 def sort_data(param_teff: np.ndarray,
-              param_logg: np.ndarray,
+              param_logg: Optional[np.ndarray],
               param_feh: Optional[np.ndarray],
               param_co: Optional[np.ndarray],
               param_fsed: Optional[np.ndarray],
@@ -92,7 +92,7 @@ def sort_data(param_teff: np.ndarray,
     ----------
     param_teff : np.ndarray
         Array with the effective temperature (K) of each spectrum.
-    param_logg : np.ndarray
+    param_logg : np.ndarray, None
         Array with the log10 surface gravity (cgs) of each spectrum.
     param_feh : np.ndarray, None
         Array with the metallicity of each spectrum. Not used if set to ``None``.
@@ -115,13 +115,15 @@ def sort_data(param_teff: np.ndarray,
     n_spectra = param_teff.shape[0]
 
     teff_unique = np.unique(param_teff)
-    logg_unique = np.unique(param_logg)
+    spec_shape = [teff_unique.shape[0]]
 
     print('Grid points stored in the database:')
     print(f'   - Teff = {teff_unique}')
-    print(f'   - log(g) = {logg_unique}')
 
-    spec_shape = [teff_unique.shape[0], logg_unique.shape[0]]
+    if param_logg is not None:
+        logg_unique = np.unique(param_logg)
+        spec_shape.append(logg_unique.shape[0])
+        print(f'   - log(g) = {logg_unique}')
 
     if param_feh is not None:
         feh_unique = np.unique(param_feh)
@@ -147,9 +149,11 @@ def sort_data(param_teff: np.ndarray,
         # Not all parameters have to be included but the order matters
 
         index_teff = np.argwhere(teff_unique == param_teff[i])[0][0]
-        index_logg = np.argwhere(logg_unique == param_logg[i])[0][0]
+        spec_select = [index_teff]
 
-        spec_select = [index_teff, index_logg]
+        if param_logg is not None:
+            index_logg = np.argwhere(logg_unique == param_logg[i])[0][0]
+            spec_select.append(index_logg)
 
         if param_feh is not None:
             index_feh = np.argwhere(feh_unique == param_feh[i])[0][0]
@@ -167,7 +171,10 @@ def sort_data(param_teff: np.ndarray,
 
         spectrum[tuple(spec_select)] = flux[i]
 
-    sorted_data = [teff_unique, logg_unique]
+    sorted_data = [teff_unique]
+
+    if param_logg is not None:
+        sorted_data.append(logg_unique)
 
     if param_feh is not None:
         sorted_data.append(feh_unique)
@@ -271,7 +278,11 @@ def add_missing(model: str,
     count_interp = 0
     count_missing = 0
 
-    if len(parameters) == 2:
+    if len(parameters) == 1:
+        # Blackbody spectra
+        pass
+
+    elif len(parameters) == 2:
         find_missing = np.zeros(grid_shape, dtype=bool)
 
         values = []

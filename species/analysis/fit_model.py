@@ -377,7 +377,7 @@ class FitModel:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         model : str
-            Atmospheric model (e.g. 'bt-settl', 'exo-rem', or 'planck').
+            Atmospheric model (e.g. 'bt-settl', 'exo-rem', 'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform priors.
 
@@ -509,7 +509,7 @@ class FitModel:
         if not inc_phot and not inc_spec:
             raise ValueError('No photometric or spectroscopic data has been selected.')
 
-        if model == 'planck' and 'teff' not in bounds or 'radius' not in bounds:
+        if model == 'planck' and ('teff' not in bounds or 'radius' not in bounds):
             raise ValueError('The \'bounds\' dictionary should contain \'teff\' and \'radius\'.')
 
         self.object = read_object.ReadObject(object_name)
@@ -546,6 +546,11 @@ class FitModel:
                 self.modelpar = ['teff', 'radius']
                 self.bounds = bounds
 
+        elif self.model == 'powerlaw':
+            self.n_planck = 0
+
+            self.modelpar = ['log_powerlaw_a', 'log_powerlaw_b', 'log_powerlaw_c']
+
         else:
             # Fitting self-consistent atmospheric models
             if self.bounds is not None:
@@ -570,6 +575,10 @@ class FitModel:
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append('radius')
 
+            if 'disk_teff' in self.bounds and 'disk_radius' in self.bounds:
+                self.modelpar.append('disk_teff')
+                self.modelpar.append('disk_radius')
+
         # Select filters and spectra
 
         if isinstance(inc_phot, bool):
@@ -592,6 +601,13 @@ class FitModel:
             else:
                 inc_spec = []
 
+        if inc_spec and self.model == 'powerlaw':
+            warnings.warn('The \'inc_spec\' parameter is not supported when fitting a '
+                          'power-law spectrum to photometric data. The argument of '
+                          '\'inc_spec\' is therefore ignored.')
+
+            inc_spec = []
+
         # Include photometric data
 
         self.objphot = []
@@ -602,6 +618,19 @@ class FitModel:
                 # Create SyntheticPhotometry objects when fitting a Planck function
                 print(f'Creating synthetic photometry: {item}...', end='', flush=True)
                 self.modelphot.append(photometry.SyntheticPhotometry(item))
+                print(' [DONE]')
+
+            elif self.model == 'powerlaw':
+                # Or create SyntheticPhotometry objects when fitting a power-law function
+                synphot = photometry.SyntheticPhotometry(item)
+
+                # Set the wavelength range of the filter as attribute
+                synphot.zero_point()
+
+                self.modelphot.append(synphot)
+
+                if f'{item}_error' in self.bounds:
+                    self.modelpar.append(f'{item}_error')
 
             else:
                 # Or interpolate the model grid for each filter
@@ -609,8 +638,7 @@ class FitModel:
                 readmodel = read_model.ReadModel(self.model, filter_name=item)
                 readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
                 self.modelphot.append(readmodel)
-
-            print(' [DONE]')
+                print(' [DONE]')
 
             # Store the flux and uncertainty for each filter
             obj_phot = self.object.get_photometry(item)
@@ -667,6 +695,34 @@ class FitModel:
             self.spectrum = {}
             self.modelspec = None
             self.n_corr_par = 0
+
+        # Include blackbody disk
+
+        self.diskphot = []
+        self.diskspec = []
+
+        if 'disk_teff' in self.bounds and 'disk_radius' in self.bounds:
+            for item in inc_phot:
+                print(f'Interpolating {item}...', end='', flush=True)
+                readmodel = read_model.ReadModel('blackbody', filter_name=item)
+                readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
+                self.diskphot.append(readmodel)
+                print(' [DONE]')
+
+            for key, value in self.spectrum.items():
+                print(f'\rInterpolating {key}...', end='', flush=True)
+
+                wavel_range = (0.9*value[0][0, 0], 1.1*value[0][-1, 0])
+
+                readmodel = read_model.ReadModel('blackbody', wavel_range=wavel_range)
+
+                readmodel.interpolate_grid(wavel_resample=self.spectrum[key][0][:, 0],
+                                           smooth=True,
+                                           spec_res=self.spectrum[key][3])
+
+                self.diskspec.append(readmodel)
+
+                print(' [DONE]')
 
         for item in self.spectrum:
             if item in bounds:
@@ -739,7 +795,11 @@ class FitModel:
                  nsteps: int = 1000,
                  prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
-        Function to run the MCMC sampler of ``emcee``.
+        Function to run the MCMC sampler of ``emcee``. The functionalities of ``run_mcmc`` are
+        more limited than :func:`~species.analysis.fit_model.FitModel.run_multinest` and
+        ``run_multinest`` provides more robust results when sampling multimodal posterior
+        distributions and has the additional advantage of returning the model evidence. Therefore,
+        it is recommended to use ``run_multinest`` instead of ``run_mcmc``.
 
         Parameters
         ----------
@@ -981,6 +1041,7 @@ class FitModel:
             corr_len = {}
             corr_amp = {}
             dust_param = {}
+            disk_param = {}
 
             for item in self.bounds:
                 if item[:8] == 'scaling_' and item[8:] in self.spectrum:
@@ -1004,13 +1065,34 @@ class FitModel:
                 elif item[:4] == 'ism_':
                     dust_param[item] = cube[cube_index[item]]
 
+                elif item == 'disk_teff':
+                    disk_param['teff'] = cube[cube_index[item]]
+
+                elif item == 'disk_radius':
+                    disk_param['radius'] = cube[cube_index[item]]
+
                 else:
                     param_dict[item] = cube[cube_index[item]]
+
+            if self.model == 'planck' and self.n_planck > 1:
+                for i in range(self.n_planck-1):
+                    if param_dict[f'teff_{i+1}'] > param_dict[f'teff_{i}']:
+                        return -np.inf
+
+                    if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
+                        return -np.inf
+
+            if disk_param:
+                if disk_param['teff'] > param_dict['teff']:
+                    return -np.inf
+
+                if disk_param['radius'] < param_dict['radius']:
+                    return -np.inf
 
             if self.model == 'planck':
                 param_dict['distance'] = self.distance[0]
 
-            else:
+            elif self.model != 'powerlaw':
                 flux_scaling = (param_dict['radius']*constants.R_JUP)**2 / \
                                (self.distance[0]*constants.PARSEC)**2
 
@@ -1025,14 +1107,6 @@ class FitModel:
                     err_offset[item] = None
 
             ln_like = 0.
-
-            if self.model == 'planck' and self.n_planck > 1:
-                for i in range(self.n_planck-1):
-                    if param_dict[f'teff_{i+1}'] > param_dict[f'teff_{i}']:
-                        return -np.inf
-
-                    if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
-                        return -np.inf
 
             if prior is not None:
                 for key, value in prior.items():
@@ -1058,34 +1132,49 @@ class FitModel:
                 n_grains = dust_param['powerlaw_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
             for i, obj_item in enumerate(self.objphot):
+                if self.modelphot[i] is not None:
+                    phot_filter = self.modelphot[i].filter_name
+                else:
+                    phot_filter = None
+
                 if self.model == 'planck':
-                    readplanck = read_planck.ReadPlanck(filter_name=self.modelphot[i].filter_name)
+                    readplanck = read_planck.ReadPlanck(filter_name=phot_filter)
                     phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[0]
+
+                elif self.model == 'powerlaw':
+                    powerl_box = read_util.powerlaw_spectrum(self.modelphot[i].wavel_range,
+                                                             param_dict)
+
+                    phot_flux = self.modelphot[i].spectrum_to_flux(
+                        powerl_box.wavelength, powerl_box.flux)[0]
 
                 else:
                     phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))[0][0]
                     phot_flux *= flux_scaling
 
+                if disk_param:
+                    phot_tmp = self.diskphot[i].spectrum_interp([disk_param['teff']])[0][0]
+
+                    phot_flux += phot_tmp * (disk_param['radius']*constants.R_JUP)**2 / \
+                        (self.distance[0]*constants.PARSEC)**2
+
                 if 'lognorm_ext' in dust_param:
-                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
+                    cross_tmp = self.cross_sections[phot_filter](
                         dust_param['lognorm_sigma'], 10.**dust_param['lognorm_radius'])[0]
 
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
                 elif 'powerlaw_ext' in dust_param:
-                    cross_tmp = self.cross_sections[self.modelphot[i].filter_name](
+                    cross_tmp = self.cross_sections[phot_filter](
                         dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])[0]
 
                     phot_flux *= np.exp(-cross_tmp*n_grains)
 
                 elif 'ism_ext' in dust_param:
-                    read_filt = read_filter.ReadFilter(self.modelphot[i].filter_name)
+                    read_filt = read_filter.ReadFilter(phot_filter)
                     filt_wavel = np.array([read_filt.mean_wavelength()])
 
-                    if 'ism_red' in dust_param:
-                        ism_reddening = dust_param['ism_red']
-                    else:
-                        ism_reddening = 3.1
+                    ism_reddening = dust_param.get('ism_red', 3.1)
 
                     ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
                                                         ism_reddening,
@@ -1094,11 +1183,27 @@ class FitModel:
                     phot_flux *= 10.**(-0.4*ext_filt[0])
 
                 if obj_item.ndim == 1:
-                    ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
+                    phot_var = obj_item[1]**2
+
+                    if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
+                        phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0]**2
+
+                    ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / phot_var
+
+                    # Only required when fitting an error scaling with the power-law spectrum
+                    ln_like += -0.5 * np.log(2.*np.pi*phot_var)
 
                 else:
+                    phot_var = obj_item[1, j]**2
+
+                    if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
+                        phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0, j]**2
+
                     for j in range(obj_item.shape[1]):
-                        ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
+                        ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / phot_var
+
+                        # Only required when fitting an error scaling with the power-law spectrum
+                        ln_like += -0.5 * np.log(2.*np.pi*phot_var)
 
             for i, item in enumerate(self.spectrum.keys()):
                 data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
@@ -1134,6 +1239,12 @@ class FitModel:
                     model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
                     model_flux *= flux_scaling
 
+                if disk_param:
+                    model_tmp = self.diskspec[i].spectrum_interp([disk_param['teff']])[0, :]
+
+                    model_flux += model_tmp * (disk_param['radius']*constants.R_JUP)**2 / \
+                        (self.distance[0]*constants.PARSEC)**2
+
                 if 'lognorm_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
                         cross_tmp = cross_item(dust_param['lognorm_sigma'],
@@ -1149,10 +1260,7 @@ class FitModel:
                         model_flux[j] *= np.exp(-cross_tmp*n_grains)
 
                 elif 'ism_ext' in dust_param:
-                    if 'ism_red' in dust_param:
-                        ism_reddening = dust_param['ism_red']
-                    else:
-                        ism_reddening = 3.1
+                    ism_reddening = dust_param.get('ism_red', 3.1)
 
                     ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
                                                         ism_reddening,

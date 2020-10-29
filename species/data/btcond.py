@@ -62,7 +62,7 @@ def add_btcond(input_path: str,
     url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-cond.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading Bt-Cond model spectra (162 MB)...', end='', flush=True)
+        print('Downloading BT-Cond model spectra (162 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 

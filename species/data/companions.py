@@ -145,7 +145,8 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/NACO.Mp': (12.77, 0.27)}},  # Stolker et al. 2020
 
             'RZ Psc B': {'distance': (195.86, 4.03),
-                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14), (13.85, 0.26)],  # Kennedy et al. 2020
+                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14),  # Kennedy et al. 2020
+                                                                  (13.85, 0.26)],  # Kennedy et al. 2020
                                      'Paranal/SPHERE.IRDIS_B_Ks': (13.51, 0.20)}},  # Kennedy et al. 2020
 
             'GQ Lup B': {'distance': (151.82, 1.10),
@@ -154,6 +155,13 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
                                      'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
                                      'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
+                                     'Magellan/VisAO.ip': (18.89, 0.24),  # Wu et al. 20017
+                                     'Magellan/VisAO.zp': (16.40, 0.10),  # Wu et al. 20017
+                                     'Magellan/VisAO.Ys': (15.88, 0.10),  # Wu et al. 20017
+                                     'Paranal/NACO.Ks': [(13.474, 0.031),  # Ginski et al. 2014
+                                                         (13.386, 0.032),  # Ginski et al. 2014
+                                                         (13.496, 0.050),  # Ginski et al. 2014
+                                                         (13.501, 0.028), ],  # Ginski et al. 2014
                                      'Subaru/CIAO.CH4s': (13.76, 0.26),  # Marois et al. 2006
                                      'Subaru/CIAO.K': (13.37, 0.12),  # Marois et al. 2006
                                      'Subaru/CIAO.Lp': (12.44, 0.22)}},  # Marois et al. 2006

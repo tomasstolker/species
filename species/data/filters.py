@@ -37,7 +37,40 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         Detector type ('energy' or 'photon').
     """
 
-    if filter_id == 'LCO/VisAO.Ys':
+    if filter_id == 'Magellan/MagAO.VisAO_rp':
+        url = 'https://xwcl.science/magao/visao/VisAO_rp_filter_curve.dat'
+        urllib.request.urlretrieve(url, 'VisAO_rp_filter_curve.dat')
+
+        wavelength, transmission, _, _ = np.loadtxt('VisAO_rp_filter_curve.dat', unpack=True)
+
+        # Not sure if energy- or photon-counting detector
+        det_type = 'energy'
+
+        os.remove('VisAO_rp_filter_curve.dat')
+
+    elif filter_id == 'Magellan/MagAO.VisAO_ip':
+        url = 'https://xwcl.science/magao/visao/VisAO_ip_filter_curve.dat'
+        urllib.request.urlretrieve(url, 'VisAO_ip_filter_curve.dat')
+
+        wavelength, transmission, _, _ = np.loadtxt('VisAO_ip_filter_curve.dat', unpack=True)
+
+        # Not sure if energy- or photon-counting detector
+        det_type = 'energy'
+
+        os.remove('VisAO_ip_filter_curve.dat')
+
+    elif filter_id == 'Magellan/MagAO.VisAO_zp':
+        url = 'https://xwcl.science/magao/visao/VisAO_zp_filter_curve.dat'
+        urllib.request.urlretrieve(url, 'VisAO_zp_filter_curve.dat')
+
+        wavelength, transmission, _, _ = np.loadtxt('VisAO_zp_filter_curve.dat', unpack=True)
+
+        # Not sure if energy- or photon-counting detector
+        det_type = 'energy'
+
+        os.remove('VisAO_zp_filter_curve.dat')
+
+    elif filter_id == 'LCO/VisAO.Ys' or filter_id == 'Magellan/MagAO.VisAO_Ys':
         url = 'https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_Ys_filter_curve.dat')
 
@@ -50,6 +83,26 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         det_type = 'energy'
 
         os.remove('VisAO_Ys_filter_curve.dat')
+
+    elif filter_id == 'ALMA/band6':
+        url = 'https://people.phys.ethz.ch/~stolkert/species/alma_band6.dat'
+        urllib.request.urlretrieve(url, 'alma_band6.dat')
+
+        wavelength, transmission = np.loadtxt('alma_band6.dat', unpack=True)
+
+        det_type = 'energy'
+
+        os.remove('alma_band6.dat')
+
+    elif filter_id == 'ALMA/band7':
+        url = 'https://people.phys.ethz.ch/~stolkert/species/alma_band7.dat'
+        urllib.request.urlretrieve(url, 'alma_band7.dat')
+
+        wavelength, transmission = np.loadtxt('alma_band7.dat', unpack=True)
+
+        det_type = 'energy'
+
+        os.remove('alma_band7.dat')
 
     else:
         url = 'http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID='+filter_id

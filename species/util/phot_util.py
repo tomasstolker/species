@@ -12,9 +12,11 @@ import spectres
 
 from typeguard import typechecked
 
+from species.analysis import photometry
 from species.core import box
 from species.read import read_calibration, read_filter, read_model, read_planck
 # from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
+from species.util import read_util
 
 
 @typechecked
@@ -28,11 +30,11 @@ def multi_photometry(datatype: str,
     datatype : str
         Data type ('model' or 'calibration').
     spectrum : str
-        Spectrum name (e.g., 'drift-phoenix').
+        Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw').
     filters : list(str, )
-        Filter names.
+        List with the filter names.
     parameters : dict
-        Parameters and values for the spectrum
+        Dictionary with the model parameters.
 
     Returns
     -------
@@ -48,16 +50,26 @@ def multi_photometry(datatype: str,
         for item in filters:
             if spectrum == 'planck':
                 readmodel = read_planck.ReadPlanck(filter_name=item)
+
+            elif spectrum == 'powerlaw':
+                synphot = photometry.SyntheticPhotometry(item)
+                synphot.zero_point()  # Set the wavel_range attribute
+
+                powerl_box = read_util.powerlaw_spectrum(synphot.wavel_range, parameters)
+                flux[item] = synphot.spectrum_to_flux(powerl_box.wavelength, powerl_box.flux)[0]
+
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            try:
-                flux[item] = readmodel.get_flux(parameters)[0]
-            except IndexError:
-                flux[item] = np.nan
+            if spectrum != 'powerlaw':
+                try:
+                    flux[item] = readmodel.get_flux(parameters)[0]
 
-                warnings.warn(f'The wavelength range of the {item} filter does not match with '
-                              f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
+                except IndexError:
+                    flux[item] = np.nan
+
+                    warnings.warn(f'The wavelength range of the {item} filter does not match with '
+                                  f'the wavelength range of {spectrum}. The flux is set to NaN.')
 
     elif datatype == 'calibration':
         for item in filters:
@@ -151,7 +163,7 @@ def get_residuals(datatype: str,
                   objectbox: box.ObjectBox,
                   inc_phot: Union[bool, List[str]] = True,
                   inc_spec: Union[bool, List[str]] = True,
-                  **kwargs_radtrans: Optional[dict]) -> box.ResidualsBox:
+                  **kwargs_radtrans: Optional[Union[dict, list]]) -> box.ResidualsBox:
     """
     Parameters
     ----------

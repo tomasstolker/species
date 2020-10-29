@@ -113,25 +113,42 @@ def update_spectra(objectbox: box.ObjectBox,
         The input box with the scaled and/or error inflated spectra.
     """
 
-    for key, value in objectbox.spectrum.items():
-        spec_tmp = value[0]
+    if objectbox.flux is not None:
 
-        if f'scaling_{key}' in model_param:
-            scaling = model_param[f'scaling_{key}']
+        for key, value in objectbox.flux.items():
+            if f'{key}_error' in model_param:
+                var_add = model_param[f'{key}_error']**2 * value[0]**2
 
-            print(f'Scaling the flux of {key}: {scaling:.2f}...', end='', flush=True)
-            spec_tmp[:, 1] *= model_param[f'scaling_{key}']
-            # spec_tmp[:, 2] *= model_param[f'scaling_{key}']
-            print(' [DONE]')
+                message = f'Inflating the error of {key} (W m-2 um-1): {np.sqrt(var_add):.2e}...'
+                print(message, end='', flush=True)
 
-        if f'error_{key}' in model_param:
-            error = 10.**model_param[f'error_{key}']
+                value[1] = np.sqrt(value[1]**2 + var_add)
 
-            print(f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...', end='', flush=True)
-            spec_tmp[:, 2] += error
-            print(' [DONE]')
+                print(' [DONE]')
 
-        objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
+            objectbox.flux[key] = value
+
+    if objectbox.spectrum is not None:
+
+        for key, value in objectbox.spectrum.items():
+            spec_tmp = value[0]
+
+            if f'scaling_{key}' in model_param:
+                scaling = model_param[f'scaling_{key}']
+
+                print(f'Scaling the flux of {key}: {scaling:.2f}...', end='', flush=True)
+                spec_tmp[:, 1] *= model_param[f'scaling_{key}']
+                # spec_tmp[:, 2] *= model_param[f'scaling_{key}']
+                print(' [DONE]')
+
+            if f'error_{key}' in model_param:
+                error = 10.**model_param[f'error_{key}']
+
+                print(f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...', end='', flush=True)
+                spec_tmp[:, 2] += error
+                print(' [DONE]')
+
+            objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
 
     return objectbox
 
@@ -170,7 +187,7 @@ def create_wavelengths(wavel_range: Tuple[Union[float, np.float32], Union[float,
                              np.log10(wavel_range[1]),
                              math.ceil(2.*n_test*spec_res/np.mean(res_test))+1)
 
-    res_out = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength)/2.)
+    # res_out = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength)/2.)
 
     return wavelength
 
@@ -250,3 +267,44 @@ def smooth_spectrum(wavelength: np.ndarray,
                 flux_smooth[i] = np.nan
 
     return flux_smooth
+
+
+@typechecked
+def powerlaw_spectrum(wavel_range: Union[Tuple[float, float],
+                                         Tuple[np.float32, np.float32]],
+                      model_param: Dict[str, float],
+                      spec_res: float = 100.) -> box.ModelBox:
+    """
+    Function for calculating a power-law spectrum. The power-law function is calculated in
+    log(wavelength)-log(flux) space but stored in the :class:`~species.core.box.ModelBox`
+    in linear wavelength-flux space.
+
+    Parameters
+    ----------
+    wavel_range : tuple(float, float)
+        Tuple with the minimum and maximum wavelength (um).
+    model_param : dict
+        Dictionary with the model parameters. Should contain `'log_powerlaw_a'`,
+        `'log_powerlaw_b'`, and `'log_powerlaw_c'`.
+    spec_res : float
+        Spectral resolution (default: 100).
+
+    Returns
+    -------
+    species.core.box.ModelBox
+        Box with the power-law spectrum.
+    """
+
+    wavel = create_wavelengths((wavel_range[0], wavel_range[1]), spec_res)
+
+    log_flux = model_param['log_powerlaw_a'] + \
+        model_param['log_powerlaw_b']*np.log10(wavel)**model_param['log_powerlaw_c']
+
+    model_box = box.create_box(boxtype='model',
+                               model='powerlaw',
+                               wavelength=wavel,
+                               flux=10.**log_flux,
+                               parameters=model_param,
+                               quantity='flux')
+
+    return model_box

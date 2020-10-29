@@ -55,9 +55,11 @@ from species.util.phot_util import apparent_to_absolute, \
 
 from species.util.query_util import get_parallax
 
-from species.util.read_util import get_mass, \
-                                   add_luminosity, \
+from species.util.read_util import add_luminosity, \
+                                   get_mass, \
+                                   powerlaw_spectrum, \
                                    update_spectra
+                                   
 
 __author__ = 'Tomas Stolker'
 __license__ = 'MIT'

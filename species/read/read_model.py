@@ -19,7 +19,7 @@ from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import database
-from species.read import read_filter, read_calibration
+from species.read import read_calibration, read_filter, read_planck
 from species.util import read_util, dust_util
 
 
@@ -215,7 +215,22 @@ class ReadModel:
 
         flux_new = np.zeros(dim_size)
 
-        if n_param == 2:
+        if n_param == 1:
+            model_param = {}
+
+            for i, item_0 in enumerate(points[0]):
+                model_param[param[0]] = item_0
+
+                if self.filter_name is not None:
+                    flux_new[i] = self.get_flux(model_param)[0]
+
+                else:
+                    flux_new[i, :] = self.get_model(model_param,
+                                                    spec_res=spec_res,
+                                                    wavel_resample=wavel_resample,
+                                                    smooth=smooth).flux
+
+        elif n_param == 2:
             model_param = {}
 
             for i, item_0 in enumerate(points[0]):
@@ -535,7 +550,7 @@ class ReadModel:
 
         extra_param = ['radius', 'distance', 'mass', 'luminosity', 'lognorm_radius',
                        'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_max',
-                       'powerlaw_exp', 'powerlaw_ext']
+                       'powerlaw_exp', 'powerlaw_ext', 'disk_teff', 'disk_radius']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -589,14 +604,29 @@ class ReadModel:
 
         flux = self.spectrum_interp(parameters)[0]
 
-        if 'radius' in model_param:
+        if 'radius' in model_param and 'logg' in model_param:
             model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
 
-            if 'distance' in model_param:
-                scaling = (model_param['radius']*constants.R_JUP)**2 / \
-                          (model_param['distance']*constants.PARSEC)**2
+        if 'radius' in model_param and 'distance' in model_param:
+            scaling = (model_param['radius']*constants.R_JUP)**2 / \
+                      (model_param['distance']*constants.PARSEC)**2
 
-                flux *= scaling
+            flux *= scaling
+
+        if 'disk_teff' in model_param and 'disk_radius' in model_param:
+            disk_param = {'teff': model_param['disk_teff'],
+                          'radius': model_param['disk_radius'],
+                          'distance': model_param['distance']}
+
+            readplanck = read_planck.ReadPlanck((0.9*self.wavel_range[0], 1.1*self.wavel_range[-1]))
+
+            if spec_res is None:
+                planck_box = readplanck.get_spectrum(disk_param, 1000., smooth=False)
+
+            else:
+                planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
+
+            flux += spectres.spectres(self.wl_points, planck_box.wavelength, planck_box.flux)
 
         if smooth:
             flux = read_util.smooth_spectrum(wavelength=self.wl_points,
@@ -924,9 +954,6 @@ class ReadModel:
             if key not in model_param.keys():
                 raise ValueError(f'The \'{key}\' parameter is required by \'{self.model}\'. '
                                  f'The mandatory parameters are {self.get_parameters()}.')
-
-        # if model_param['logg'] < 3.5:
-        #     model_param['logg'] = 3.5
 
         if self.spectrum_interp is None:
             self.interpolate_model()
