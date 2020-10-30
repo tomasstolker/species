@@ -550,7 +550,14 @@ class Database:
             ``{'Paranal/NACO.Lp': [(15., 0.2), (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``.
             No photometric data is stored if set to ``None``.
         flux_density : dict, None
-            TODO
+            Dictionary with filter names, flux densities (W m-2 um-1), and uncertainties
+            (W m-1 um-1). For example, ``{'Paranal/NACO.Lp': (1e-15, 1e-16)}``. Currently,
+            the use of duplicate filters is not implemented. The use of ``app_mag`` is preferred
+            over ``flux_density`` because with ``flux_density`` only fluxes are stored while with
+            ``app_mag`` both magnitudes and fluxes. However, ``flux_density`` can be used in case
+            the magnitudes and/or filter profiles are not available. In that case, the fluxes can
+            still be selected with ``inc_phot`` in :class:`~species.analysis.fit_model.FitModel`.
+            The argument of ``flux_density`` is ignored if set to ``None``.
         spectrum : dict, None
             Dictionary with the spectrum, optional covariance matrix, and spectral resolution for
             each instrument. The input data can either have a FITS or ASCII format. The spectra

@@ -362,15 +362,8 @@ def plot_posterior(tag: str,
                 ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
                 ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
 
-                if j == 0 and i != 0:
-                    labelleft = True
-                else:
-                    labelleft = False
-
-                if i == ndim-1:
-                    labelbottom = True
-                else:
-                    labelbottom = False
+                labelleft = j == 0 and i != 0
+                labelbottom = i == ndim - 1
 
                 ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                                direction='in', width=1, length=5, labelsize=12, top=True,

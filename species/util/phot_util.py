@@ -259,7 +259,6 @@ def get_residuals(datatype: str,
 
                 else:
                     if spectrum == 'petitradtrans':
-                        # TODO change back
                         pass
 
                         # radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],

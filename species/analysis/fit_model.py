@@ -405,6 +405,25 @@ class FitModel:
                    temperatures and radii to decreasing and increasing values, respectively, in the
                    order as provided in ``bounds``.
 
+            Power-law spectrum (``model='powerlaw'``):
+
+                 - Parameter boundaries have to be provided for 'log_powerlaw_a', 'log_powerlaw_b',
+                   and 'log_powerlaw_c'. For example, ``bounds={'log_powerlaw_a': (-20., 0.),
+                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c': (-20., 5.)}.
+
+                 - The spectrum is parametrized as f(wavelength) = a + b*wavelength^c, where
+                   a = 10^log_powerlaw_a, b = 10^log_powerlaw_b, and c = 10^log_powerlaw_c.
+
+                 - Only implemented for fitting photometric fluxes, for example the IR fluxes of a
+                   star with disk. In that way, synthetic photometry can be calculated afterwards
+                   for a different filter. Note that this option assumes that the photometric
+                   fluxes are dominated by continuum emission while spectral lines are ignored.
+
+                 - The :func:`~species.plot.plot_mcmc.plot_photometry` function can be used to
+                   calculate synthetic photometry and error bars from the posterior distribution.
+
+                 - Only supported by ``run_multinest``.
+
             Calibration parameters:
 
                  - For each spectrum/instrument, two optional parameters can be fitted to account
@@ -421,6 +440,13 @@ class FitModel:
 
                  - Each of the two calibration parameters can be set to ``None`` in which case the
                    parameter is not used. For example, ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
+
+                 - The errors of the photometric fluxes can be inflated to account for
+                   underestimated error bars. The error inflation is relative to the actual flux
+                   and is fitted separately for different filters. The keyword in the ``bounds``
+                   dictionary should be provided in the following format:
+                   ``'Paranal/NACO.Mp_error': (0., 1.)``. In this case, the error of the NACO Mp
+                   flux is inflated up to 100 percent of the actual flux.
 
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
@@ -484,6 +510,17 @@ class FitModel:
 
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
                    log-uniform prior for ``powerlaw_max``.
+
+                 - Only supported by ``run_multinest``.
+
+            Blackbody disk emission:
+
+                 - Additional blackbody emission can be added to the atmospheric spectrum to
+                   account for thermal emission from a disk.
+
+                 - Parameter boundaries have to be provided for 'disk_teff' and 'disk_radius'.
+                   For example, ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
+                   'logg': (3.5, 4.5), 'disk_teff': (100., 2000.), 'disk_radius': (1., 100.)}``.
 
                  - Only supported by ``run_multinest``.
 
