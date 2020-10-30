@@ -81,9 +81,15 @@ def get_parallax():
                 result_table = Simbad.query_region(target_coord, radius='0d1m0s')
 
             if item == 'HIP38939B':
-                simbad_id.append(get_simbad('HIP38939').decode('utf-8'))
+                sim_id = get_simbad('HIP38939')
             else:
-                simbad_id.append(result_table['MAIN_ID'][0].decode('utf-8'))
+                sim_id = result_table['MAIN_ID'][0]
+
+            # For backward compatibility
+            if not isinstance(sim_id, str):
+                sim_id = sim_id.decode('utf-8')
+
+            simbad_id.append(sim_id)
 
         print(' [DONE]')
 
@@ -109,11 +115,11 @@ def get_simbad(name):
 
     Parameters
     ----------
-    name : numpy.ndarray
+    name : np.ndarray
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
         SIMBAD name.
     """
 
@@ -201,7 +207,12 @@ def get_distance(target):
 
     # query SIMBAD
     if simbad_result is not None:
-        simbad_id = simbad_result['MAIN_ID'][0].decode('utf-8')
+        simbad_id = simbad_result['MAIN_ID'][0]
+
+        # For backward compatibility
+        if not isinstance(simbad_id, str):
+            simbad_id = simbad_id.decode('utf-8')
+
         parallax = simbad_result['PLX_VALUE'][0]  # (mas)
         parallax_error = simbad_result['PLX_ERROR'][0]  # (mas)
 

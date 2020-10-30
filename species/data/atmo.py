@@ -1,5 +1,5 @@
 """
-Module for BT-Settl atmospheric model spectra.
+Module for ATMO 2020 atmospheric model spectra.
 """
 
 import os
@@ -18,17 +18,17 @@ from species.util import data_util, read_util
 
 
 @typechecked
-def add_btsettl(input_path: str,
-                database: h5py._hl.files.File,
-                wavel_range: Optional[Tuple[float, float]],
-                teff_range: Optional[Tuple[float, float]],
-                spec_res: Optional[float]) -> None:
+def add_atmo(input_path: str,
+             database: h5py._hl.files.File,
+             wavel_range: Optional[Tuple[float, float]],
+             teff_range: Optional[Tuple[float, float]],
+             spec_res: Optional[float]) -> None:
     """
-    Function for adding the BT-Settl atmospheric models (solar metallicity) to the database.
-    The spectra have been downloaded from the Theoretical spectra web server
-    (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl) and resampled
-    to a spectral resolution of 5000 from 0.1 to 100 um. For Teff > 2500 K, these are
-    BT-NextGen spectra instead of BT-Settl.
+    Function for adding the ATMO 2020 atmospheric models to the database. The spectra have been
+    calculated with equilibrium chemistry and solar metallicity in the Teff range from 200 to 
+    3000 K. The spectra have been downloaded from the Theoretical spectra web server
+    (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq) and resampled
+    to a spectral resolution of 5000 from 0.3 to 100 um.
 
     Parameters
     ----------
@@ -52,22 +52,22 @@ def add_btsettl(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    input_file = 'bt-settl.tgz'
+    input_file = 'atmo.tgz'
 
-    data_folder = os.path.join(input_path, 'bt-settl/')
+    data_folder = os.path.join(input_path, 'atmo/')
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl.tgz'
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/atmo.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading Bt-Settl model spectra (227 MB)...', end='', flush=True)
+        print('Downloading ATMO model spectra (430 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking BT-Settl model spectra (227 MB)...', end='', flush=True)
+    print('Unpacking ATMO model spectra (430 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
@@ -84,7 +84,7 @@ def add_btsettl(input_path: str,
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
-            if filename[:9] == 'bt-settl_':
+            if filename[:5] == 'atmo_':
                 file_split = filename.split('_')
 
                 teff_val = float(file_split[2])
@@ -94,8 +94,8 @@ def add_btsettl(input_path: str,
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                print_message = f'Adding BT-Settl model spectra... {filename}'
-                print(f'\r{print_message:<69}', end='')
+                print_message = f'Adding ATMO model spectra... {filename}'
+                print(f'\r{print_message:<61}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
@@ -128,8 +128,8 @@ def add_btsettl(input_path: str,
 
                     flux.append(flux_resample)  # (W m-2 um-1)
 
-    print_message = 'Adding BT-Settl model spectra... [DONE]'
-    print(f'\r{print_message:<69}')
+    print_message = 'Adding ATMO model spectra... [DONE]'
+    print(f'\r{print_message:<61}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -139,7 +139,7 @@ def add_btsettl(input_path: str,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('bt-settl',
+    data_util.write_data('atmo',
                          ['teff', 'logg'],
                          database,
                          data_sorted)

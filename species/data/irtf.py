@@ -136,7 +136,9 @@ def add_irtf(input_path: str,
                         simbad_id = query_util.get_simbad(name)
 
                         if simbad_id is not None:
-                            simbad_id = simbad_id.decode('utf-8')
+                            # For backward compatibility
+                            if not isinstance(simbad_id, str):
+                                simbad_id = simbad_id.decode('utf-8')
 
                             dist_select = distance_data.loc[distance_data['object'] == simbad_id]
 

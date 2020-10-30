@@ -63,7 +63,7 @@ class ReadObject:
         Returns
         -------
         np.ndarray
-            Apparent magnitude (mag), magnitude error (error), flux (W m-2 um-1),
+            Apparent magnitude, magnitude error (error), flux (W m-2 um-1),
             flux error (W m-2 um-1).
         """
 
@@ -147,9 +147,9 @@ class ReadObject:
         Returns
         -------
         float, np.ndarray
-            Absolute magnitude (mag)
+            Absolute magnitude.
         float, np.ndarray
-            Error (mag).
+            Error on the absolute magnitude.
         """
 
         with h5py.File(self.database, 'r') as h5_file:

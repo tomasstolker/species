@@ -106,27 +106,26 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/NACO.Lp': (16.27, 0.19)}},  # De Rosa et al. 2016
 
             'PDS 70 b': {'distance': (113.43, 0.52),
-                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (18.12, 0.21),  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_H23_3': (17.97, 0.18),  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.66, 0.04),  # Stolker et al. in prep.
-                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.37, 0.06),  # Stolker et al. in prep.
-                                     'MKO/NSFCam.J': (20.04, 0.09),  # Stolker et al. in prep. / Müller et al. 2017
-                                     'MKO/NSFCam.H': (18.24, 0.04),  # Stolker et al. in prep. / Müller et al. 2017
-                                     'Paranal/NACO.Lp': (14.68, 0.22),  # Stolker et al. in prep.
-                                     'Paranal/NACO.NB405': (14.68, 0.27),  # Stolker et al. in prep.
-                                     'Paranal/NACO.Mp': (13.80, 0.27),  # Stolker et al. in prep.
+                         'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (18.12, 0.21),  # Stolker et al. 2020.
+                                     'Paranal/SPHERE.IRDIS_D_H23_3': (17.97, 0.18),  # Stolker et al. 2020.
+                                     'Paranal/SPHERE.IRDIS_D_K12_1': (16.66, 0.04),  # Stolker et al. 2020.
+                                     'Paranal/SPHERE.IRDIS_D_K12_2': (16.37, 0.06),  # Stolker et al. 2020.
+                                     'MKO/NSFCam.J': (20.04, 0.09),  # Stolker et al. 2020 / Müller et al. 2017
+                                     'MKO/NSFCam.H': (18.24, 0.04),  # Stolker et al. 2020 / Müller et al. 2017
+                                     'Paranal/NACO.Lp': (14.68, 0.22),  # Stolker et al. 2020.
+                                     'Paranal/NACO.NB405': (14.68, 0.27),  # Stolker et al. 2020
+                                     'Paranal/NACO.Mp': (13.80, 0.27),  # Stolker et al. 2020
                                      'Keck/NIRC2.Lp': (14.64, 0.18)}},  # Wang et al. 2020
 
             'PDS 70 c': {'distance': (113.43, 0.52),
-                         'app_mag': {'Paranal/NACO.NB405': (14.91, 0.35),  # Stolker et al. in prep.
+                         'app_mag': {'Paranal/NACO.NB405': (14.91, 0.35),  # Stolker et al. 2020
                                      'Keck/NIRC2.Lp': (15.5, 0.46)}},  # Wang et al. 2020
 
             '2M1207 b': {'distance': (64.42, 0.65),
-                         'app_mag': {
-                                     # 'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006
-                                     # 'HST/NICMOS1.F110M': (20.61, 0.15),  # Song et al. 2006
-                                     # 'HST/NICMOS1.F145M': (19.05, 0.03),  # Song et al. 2006
-                                     # 'HST/NICMOS1.F160W': (18.27, 0.02),  # Song et al. 2006
+                         'app_mag': {'HST/NICMOS1.F090M': (22.58, 0.35),  # Song et al. 2006
+                                     'HST/NICMOS1.F110M': (20.61, 0.15),  # Song et al. 2006
+                                     'HST/NICMOS1.F145M': (19.05, 0.03),  # Song et al. 2006
+                                     'HST/NICMOS1.F160W': (18.27, 0.02),  # Song et al. 2006
                                      'Paranal/NACO.J': (20.0, 0.2),  # Mohanty et al. 200z
                                      'Paranal/NACO.H': (18.09, 0.21),  # Chauvin et al. 2004
                                      'Paranal/NACO.Ks': (16.93, 0.11),  # Chauvin et al. 2004
@@ -146,16 +145,23 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/NACO.Mp': (12.77, 0.27)}},  # Stolker et al. 2020
 
             'RZ Psc B': {'distance': (195.86, 4.03),
-                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14), (13.85, 0.26)],  # Kennedy et al. 2020
+                         'app_mag': {'Paranal/SPHERE.IRDIS_B_H': [(13.71, 0.14),  # Kennedy et al. 2020
+                                                                  (13.85, 0.26)],  # Kennedy et al. 2020
                                      'Paranal/SPHERE.IRDIS_B_Ks': (13.51, 0.20)}},  # Kennedy et al. 2020
 
             'GQ Lup B': {'distance': (151.82, 1.10),
-                         'app_mag': {
-                                     # 'HST/WFPC2.f606w': (19.19, 0.07),  # Marois et al. 2006
-                                     # 'HST/WFPC2.f814w': (17.67, 0.05),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
-                                     # 'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
+                         'app_mag': {'HST/WFPC2-PC.F606W': (19.19, 0.07),  # Marois et al. 2006
+                                     'HST/WFPC2-PC.F814W': (17.67, 0.05),  # Marois et al. 2006
+                                     'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2006
+                                     'HST/NICMOS2.F190N': (14.08, 0.20),  # Marois et al. 2006
+                                     'HST/NICMOS2.F215N': (13.40, 0.15),  # Marois et al. 2006
+                                     'Magellan/VisAO.ip': (18.89, 0.24),  # Wu et al. 20017
+                                     'Magellan/VisAO.zp': (16.40, 0.10),  # Wu et al. 20017
+                                     'Magellan/VisAO.Ys': (15.88, 0.10),  # Wu et al. 20017
+                                     'Paranal/NACO.Ks': [(13.474, 0.031),  # Ginski et al. 2014
+                                                         (13.386, 0.032),  # Ginski et al. 2014
+                                                         (13.496, 0.050),  # Ginski et al. 2014
+                                                         (13.501, 0.028), ],  # Ginski et al. 2014
                                      'Subaru/CIAO.CH4s': (13.76, 0.26),  # Marois et al. 2006
                                      'Subaru/CIAO.K': (13.37, 0.12),  # Marois et al. 2006
                                      'Subaru/CIAO.Lp': (12.44, 0.22)}},  # Marois et al. 2006
@@ -170,7 +176,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                      'Paranal/NACO.J': (12.47, 0.20),  # Biller et al. 2010
                                      'Paranal/NACO.H': (11.93, 0.14),  # Biller et al. 2010
                                      'Paranal/NACO.Ks': (11.53, 0.07),  # Biller et al. 2010
-                                     'Paranal/NACO.Lp': (11.04, 0.22),  # Stolker et al. in prep
+                                     'Paranal/NACO.Lp': (11.04, 0.22),  # Stolker et al. 2020
                                      'Paranal/NACO.NB405': (10.94, 0.07),  # Stolker et al. 2020
                                      'Paranal/NACO.Mp': (10.93, 0.03),  # Stolker et al. 2020
                                      'Gemini/NICI.ED286': (11.68, 0.14),  # Biller et al. 2010
