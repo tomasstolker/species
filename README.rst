@@ -1,7 +1,7 @@
 *species*
 =========
 
-**s**pectral and **p**hotometric **e**xamination **c**ode for **i*nvestigating **e**xoplanet and **s**ubstellar atmospheres**
+"**s**"pectral and "**p**"hotometric "**e**"xamination "**c**"ode for "**i**"nvestigating "**e**"xoplanet and "**s**"ubstellar atmospheres**
 
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species

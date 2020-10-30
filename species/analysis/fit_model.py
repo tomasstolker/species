@@ -409,7 +409,7 @@ class FitModel:
 
                  - Parameter boundaries have to be provided for 'log_powerlaw_a', 'log_powerlaw_b',
                    and 'log_powerlaw_c'. For example, ``bounds={'log_powerlaw_a': (-20., 0.),
-                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c': (-20., 5.)}.
+                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c': (-20., 5.)}``.
 
                  - The spectrum is parametrized as log10(flux) = a + b*log10(wavelength)^c, where
                    a = log_powerlaw_a, b = log_powerlaw_b, and c = log_powerlaw_c.
