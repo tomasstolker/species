@@ -199,18 +199,19 @@ class ReadPlanck:
                                    quantity='flux')
 
         if n_planck == 1 and 'radius' in model_param:
-                model_box.parameters['luminosity'] = 4. * np.pi * (
-                    model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
-                    model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
+            model_box.parameters['luminosity'] = 4. * np.pi * (
+                model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
 
-        else:
+        elif n_planck > 1:
             lum_total = 0.
 
             for i in range(n_planck):
                 if f'radius_{i}' in model_box.parameters:
                     # Add up the luminosity of the blackbody components (Lsun)
-                    lum_total += 4.*np.pi*(model_box.parameters[f'radius_{i}']* \
-                        constants.R_JUP)**2*constants.SIGMA_SB* \
+                    surface = 4. * np.pi * (model_box.parameters[f'radius_{i}']*constants.R_JUP)**2
+
+                    lum_total += surface * constants.SIGMA_SB * \
                         model_box.parameters[f'teff_{i}']**4. / constants.L_SUN
 
             if lum_total > 0.:

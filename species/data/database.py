@@ -217,7 +217,9 @@ class Database:
                    detector_type: str = 'photon') -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or from an input file.
+        Service or from an input file. Additional filters that are automatically added are
+        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp, Magellan/VisAO.Ys, ALMA/band6,
+        and ALMA/band7.
 
         Parameters
         ----------

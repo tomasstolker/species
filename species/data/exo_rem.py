@@ -59,11 +59,11 @@ def add_exo_rem(input_path: str,
         os.makedirs(data_folder)
 
     if not os.path.isfile(data_file):
-        print('Downloading Exo-REM model spectra (792 MB)...', end='', flush=True)
+        print('Downloading Exo-REM model spectra (706 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking Exo-REM model spectra (792 MB)...', end='', flush=True)
+    print('Unpacking Exo-REM model spectra (706 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()

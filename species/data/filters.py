@@ -37,7 +37,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         Detector type ('energy' or 'photon').
     """
 
-    if filter_id == 'Magellan/MagAO.VisAO_rp':
+    if filter_id == 'Magellan/VisAO.rp':
         url = 'https://xwcl.science/magao/visao/VisAO_rp_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_rp_filter_curve.dat')
 
@@ -48,7 +48,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         os.remove('VisAO_rp_filter_curve.dat')
 
-    elif filter_id == 'Magellan/MagAO.VisAO_ip':
+    elif filter_id == 'Magellan/VisAO.ip':
         url = 'https://xwcl.science/magao/visao/VisAO_ip_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_ip_filter_curve.dat')
 
@@ -59,7 +59,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         os.remove('VisAO_ip_filter_curve.dat')
 
-    elif filter_id == 'Magellan/MagAO.VisAO_zp':
+    elif filter_id == 'Magellan/VisAO.zp':
         url = 'https://xwcl.science/magao/visao/VisAO_zp_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_zp_filter_curve.dat')
 
@@ -70,7 +70,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         os.remove('VisAO_zp_filter_curve.dat')
 
-    elif filter_id == 'LCO/VisAO.Ys' or filter_id == 'Magellan/MagAO.VisAO_Ys':
+    elif filter_id == 'LCO/VisAO.Ys' or filter_id == 'Magellan/VisAO.Ys':
         url = 'https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_Ys_filter_curve.dat')
 

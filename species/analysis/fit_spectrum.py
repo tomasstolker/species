@@ -149,7 +149,7 @@ class FitSpectrum:
             Number of walkers.
         nsteps : int
             Number of steps per walker.
-        guess : dict(str, float), dict(str, none)
+        guess : dict(str, float), dict(str, None)
             Guess of the scaling parameter.
         tag : str
             Database tag where the MCMC samples will be stored.

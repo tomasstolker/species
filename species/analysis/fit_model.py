@@ -411,8 +411,8 @@ class FitModel:
                    and 'log_powerlaw_c'. For example, ``bounds={'log_powerlaw_a': (-20., 0.),
                    'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c': (-20., 5.)}.
 
-                 - The spectrum is parametrized as f(wavelength) = a + b*wavelength^c, where
-                   a = 10^log_powerlaw_a, b = 10^log_powerlaw_b, and c = 10^log_powerlaw_c.
+                 - The spectrum is parametrized as log10(flux) = a + b*log10(wavelength)^c, where
+                   a = log_powerlaw_a, b = log_powerlaw_b, and c = log_powerlaw_c.
 
                  - Only implemented for fitting photometric fluxes, for example the IR fluxes of a
                    star with disk. In that way, synthetic photometry can be calculated afterwards
@@ -1227,7 +1227,7 @@ class FitModel:
 
                     ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / phot_var
 
-                    # Only required when fitting an error scaling with the power-law spectrum
+                    # Only required when fitting an error inflation
                     ln_like += -0.5 * np.log(2.*np.pi*phot_var)
 
                 else:
@@ -1239,7 +1239,7 @@ class FitModel:
                     for j in range(obj_item.shape[1]):
                         ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / phot_var
 
-                        # Only required when fitting an error scaling with the power-law spectrum
+                        # Only required when fitting an error inflation
                         ln_like += -0.5 * np.log(2.*np.pi*phot_var)
 
             for i, item in enumerate(self.spectrum.keys()):
