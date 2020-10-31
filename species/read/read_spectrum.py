@@ -99,11 +99,11 @@ class ReadSpectrum:
         list_distance = []
 
         for item in h5_file[f'spectra/{self.spec_library}']:
-            data = h5_file[f'spectra/{self.spec_library}/{item}']
+            dset = h5_file[f'spectra/{self.spec_library}/{item}']
 
-            wavelength = data[0, :]  # (um)
-            flux = data[1, :]  # (W m-2 um-1)
-            error = data[2, :]  # (W m-2 um-1)
+            wavelength = dset[0, :]  # (um)
+            flux = dset[1, :]  # (W m-2 um-1)
+            error = dset[2, :]  # (W m-2 um-1)
 
             if exclude_nan:
                 indices = np.isnan(flux)
@@ -136,25 +136,34 @@ class ReadSpectrum:
                 list_flux.append(flux[wl_index])
                 list_error.append(error[wl_index])
 
-                attrs = data.attrs
+                attrs = dset.attrs
 
                 if 'name' in attrs:
-                    list_name.append(data.attrs['name'].decode('utf-8'))
+                    if isinstance(dset.attrs['name'], str):
+                        list_name.append(dset.attrs['name'])
+                    else:                        
+                        list_name.append(dset.attrs['name'].decode('utf-8'))
                 else:
                     list_name.append('')
 
                 if 'simbad' in attrs:
-                    list_simbad.append(data.attrs['simbad'].decode('utf-8'))
+                    if isinstance(dset.attrs['simbad'], str):
+                        list_simbad.append(dset.attrs['simbad'])
+                    else:
+                        list_simbad.append(dset.attrs['simbad'].decode('utf-8'))
                 else:
                     list_simbad.append('')
 
                 if 'sptype' in attrs:
-                    list_sptype.append(data.attrs['sptype'].decode('utf-8'))
+                    if isinstance(dset.attrs['sptype'], str):
+                        list_sptype.append(dset.attrs['sptype'])
+                    else:
+                        list_sptype.append(dset.attrs['sptype'].decode('utf-8'))
                 else:
                     list_sptype.append('None')
 
                 if 'distance' in attrs:
-                    list_distance.append((data.attrs['distance'], data.attrs['distance_error']))
+                    list_distance.append((dset.attrs['distance'], dset.attrs['distance_error']))
                 else:
                     list_distance.append((np.nan, np.nan))
 
