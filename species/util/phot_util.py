@@ -79,8 +79,6 @@ def multi_photometry(datatype: str,
                 else:
                     readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            if spectrum != 'powerlaw':
-
                 try:
                     flux[item] = readmodel.get_flux(parameters)[0]
 
@@ -290,7 +288,7 @@ def get_residuals(datatype: str,
                 else:
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
-                    # Resampling to the new wavelength points is done in teh get_model function
+                    # resampling to the new wavelength points is done in teh get_model function
 
                     model_spec = readmodel.get_model(parameters,
                                                      spec_res=spec_res,

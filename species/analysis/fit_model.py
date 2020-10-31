@@ -474,7 +474,9 @@ class FitModel:
 
                  - The size distribution is parameterized with a mean geometric radius
                    (``lognorm_radius`` in um) and a geometric standard deviation
-                   (``lognorm_sigma``, dimensionless).
+                   (``lognorm_sigma``, dimensionless). The grid of cross sections has been
+                   calculated for mean geometric radii between 0.001 and 10 um, and geometric
+                   standard deviations between 1.1 and 10.
 
                  - The extinction (``lognorm_ext``) is fitted in the V band (A_V in mag) and the
                    wavelength-dependent extinction cross sections are interpolated from a
@@ -482,7 +484,7 @@ class FitModel:
 
                  - The prior boundaries of ``lognorm_radius``, ``lognorm_sigma``, and
                    ``lognorm_ext`` should be provided in the ``bounds`` dictionary, for example
-                   ``bounds={'lognorm_radius': (0.01, 10.), 'lognorm_sigma': (1.2, 10.),
+                   ``bounds={'lognorm_radius': (0.001, 10.), 'lognorm_sigma': (1.1, 10.),
                    'lognorm_ext': (0., 5.)}``.
 
                  - A uniform prior is used for ``lognorm_sigma`` and ``lognorm_ext``, and a
@@ -498,7 +500,9 @@ class FitModel:
 
                  - The size distribution is parameterized with a maximum radius (``powerlaw_max``
                    in um) and a power-law exponent (``powerlaw_exp``, dimensionless). The
-                   minimum radius is fixed to 1 nm.
+                   minimum radius is fixed to 1 nm. The grid of cross sections has been calculated
+                   for maximum radii between 0.01 and 10 um, and power-law exponents between -10
+                   and 0.
 
                  - The extinction (``powerlaw_ext``) is fitted in the V band (A_V in mag) and the
                    wavelength-dependent extinction cross sections are interpolated from a
@@ -506,7 +510,7 @@ class FitModel:
 
                  - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
                    should be provided in the ``bounds`` dictionary, for example ``'powerlaw_max':
-                   (0.5, 10.), 'powerlaw_exp': (-5., 5.), 'powerlaw_ext': (0., 5.)}``.
+                   (0.01, 10.), 'powerlaw_exp': (-10., 0.), 'powerlaw_ext': (0., 5.)}``.
 
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
                    log-uniform prior for ``powerlaw_max``.

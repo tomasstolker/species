@@ -124,22 +124,31 @@ def add_cross_sections(input_path: str,
     urllib.request.urlretrieve(url, data_file)
     print(' [DONE]')
 
-    print('Adding log-normal dust cross sections...', end='')
+    print('Adding log-normal dust cross sections:')
 
     with fits.open(os.path.join(input_path, 'lognorm_mgsio3_c_ext.fits')) as hdu_list:
         database.create_dataset('dust/lognorm/mgsio3/crystalline/cross_section/',
                                 data=hdu_list[0].data)
 
+        print(f'   - Data shape (n_wavelength, n_radius, n_sigma): {hdu_list[0].data.shape}')
+
         database.create_dataset('dust/lognorm/mgsio3/crystalline/wavelength/',
                                 data=hdu_list[1].data)
+
+        data_range = f'{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}'
+        print(f'   - Wavelength range: {data_range} um')
 
         database.create_dataset('dust/lognorm/mgsio3/crystalline/radius_g/',
                                 data=hdu_list[2].data)
 
+        data_range = f'{np.amin(hdu_list[2].data)} - {np.amax(hdu_list[2].data)}'
+        print(f'   - Mean geometric radius range: {data_range} um')
+
         database.create_dataset('dust/lognorm/mgsio3/crystalline/sigma_g/',
                                 data=hdu_list[3].data)
 
-    print(' [DONE]')
+        data_range = f'{np.amin(hdu_list[3].data)} - {np.amax(hdu_list[3].data)}'
+        print(f'   - Geometric standard deviation range: {data_range}')
 
     url = 'https://people.phys.ethz.ch/~stolkert/species/powerlaw_mgsio3_c_ext.fits'
 
@@ -149,19 +158,28 @@ def add_cross_sections(input_path: str,
     urllib.request.urlretrieve(url, data_file)
     print(' [DONE]')
 
-    print('Adding power-law dust cross sections...', end='')
+    print('Adding power-law dust cross sections')
 
     with fits.open(os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')) as hdu_list:
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/cross_section/',
                                 data=hdu_list[0].data)
 
+        print(f'   - Data shape (n_wavelength, n_radius, n_exponent): {hdu_list[0].data.shape}')
+
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/wavelength/',
                                 data=hdu_list[1].data)
+
+        data_range = f'{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}'
+        print(f'   - Wavelength range: {data_range} um')
 
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max/',
                                 data=hdu_list[2].data)
 
+        data_range = f'{np.amin(hdu_list[2].data)} - {np.amax(hdu_list[2].data)}'
+        print(f'   - Maximum grain radius range: {data_range} um')
+
         database.create_dataset('dust/powerlaw/mgsio3/crystalline/exponent/',
                                 data=hdu_list[3].data)
 
-    print(' [DONE]')
+        data_range = f'{np.amin(hdu_list[3].data)} - {np.amax(hdu_list[3].data)}'
+        print(f'   - Power-law exponent range: {data_range}')
