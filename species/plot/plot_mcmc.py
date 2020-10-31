@@ -60,6 +60,12 @@ def plot_walkers(tag: str,
     samples = box.samples
     labels = plot_util.update_labels(box.parameters)
 
+    if samples.ndim == 2:
+        raise ValueError(f'The samples of \'{tag}\' have only 2 dimensions whereas 3 are required '
+                         f'for plotting the walkers. The plot_walkers function can only be '
+                         f'used after running the MCMC with run_mcmc and not after running '
+                         f'MultiNest with run_multinest.')
+        
     ndim = samples.shape[-1]
 
     plt.figure(1, figsize=(6, ndim*1.5))
@@ -466,6 +472,24 @@ def plot_posterior(tag: str,
 
     ndim -= len(index_del)
 
+    # Check if parameter values were fixed
+
+    index_sel = []
+    index_del = []
+
+    for i in range(ndim):
+        if np.amin(samples[:, i]) == np.amax(samples[:, i]):
+            index_del.append(i)
+        else:
+            index_sel.append(i)
+
+    samples = samples[:, index_sel]
+
+    for i in range(len(index_del)-1, -1, -1):
+        del labels[index_del[i]]
+
+    ndim -= len(index_del)
+
     samples = samples.reshape((-1, ndim))
 
     hist_titles = []
@@ -521,15 +545,8 @@ def plot_posterior(tag: str,
                 ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
                 ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
 
-                if j == 0 and i != 0:
-                    labelleft = True
-                else:
-                    labelleft = False
-
-                if i == ndim-1:
-                    labelbottom = True
-                else:
-                    labelbottom = False
+                labelleft = j == 0 and i != 0
+                labelbottom = i == ndim - 1
 
                 ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                                direction='in', width=1, length=5, labelsize=12, top=True,
@@ -573,25 +590,26 @@ def plot_posterior(tag: str,
     print(' [DONE]')
 
 
-def plot_photometry(tag,
-                    filter_id,
-                    burnin=None,
-                    xlim=None,
-                    output='photometry.pdf'):
+@typechecked
+def plot_photometry(tag: str,
+                    filter_name: str,
+                    burnin: int = None,
+                    xlim: Tuple[float, float] = None,
+                    output: str = 'photometry.pdf') -> None:
     """
     Function to plot the posterior distribution of the synthetic photometry.
 
     Parameters
     ----------
     tag : str
-        Database tag with the samples.
-    filter_id : str
-        Filter ID.
+        Database tag with the posterior samples.
+    filter_name : str
+        Filter name.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to None.
+        Number of burnin steps to exclude. All samples are used if set to ``None``.
     xlim : tuple(float, float), None
-        Axis limits. Automatically set if set to None.
-    output : strr
+        Axis limits. Automatically set if set to ``None``.
+    output : str
         Output filename.
 
     Returns
@@ -607,7 +625,7 @@ def plot_photometry(tag,
 
     species_db = database.Database()
 
-    samples = species_db.get_mcmc_photometry(tag, burnin, filter_id)
+    samples = species_db.get_mcmc_photometry(tag, filter_name, burnin)
 
     print(f'Plotting photometry samples: {output}...', end='', flush=True)
 

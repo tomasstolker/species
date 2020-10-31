@@ -25,9 +25,10 @@ def add_btsettl(input_path: str,
                 spec_res: Optional[float]) -> None:
     """
     Function for adding the BT-Settl atmospheric models (solar metallicity) to the database.
-    The spectra had been downloaded from the Theoretical spectra web server
+    The spectra have been downloaded from the Theoretical spectra web server
     (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl) and resampled
-    to a spectral resolution of 5000 from 0.1 to 100 um.
+    to a spectral resolution of 5000 from 0.1 to 100 um. For Teff > 2500 K, these are
+    BT-NextGen spectra instead of BT-Settl.
 
     Parameters
     ----------
@@ -62,11 +63,11 @@ def add_btsettl(input_path: str,
     url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading Bt-Settl model spectra (130 MB)...', end='', flush=True)
+        print('Downloading Bt-Settl model spectra (227 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking BT-Settl model spectra (130 MB)...', end='', flush=True)
+    print('Unpacking BT-Settl model spectra (227 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()

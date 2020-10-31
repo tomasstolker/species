@@ -1,12 +1,14 @@
 """
-Module with functionalities for fitting a calibration spectrum.
+Module with functionalities for photometric and spectroscopic calibration. The fitting routine
+can be used to fit photometric data with a calibration spectrum (e.g. extracted with
+:func:`~species.read.read_model.ReadModel.get_model`) by simply fitting a scaling parameter.
 """
 
 import math
 
-from typing import Optional, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple, Union
 
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count, Pool
 
 import emcee
 import numpy as np
@@ -15,7 +17,7 @@ from typeguard import typechecked
 
 from species.analysis import photometry
 from species.data import database
-from species.read import read_object, read_calibration
+from species.read import read_calibration, read_object
 
 
 @typechecked
@@ -23,9 +25,11 @@ def lnprob(param: np.ndarray,
            bounds: Dict[str, Tuple[float, float]],
            modelpar: List[str],
            objphot: List[np.ndarray],
-           specphot: List[float]) -> float:
+           specphot: Union[List[float],
+                           List[Tuple[photometry.SyntheticPhotometry,
+                                      Tuple[np.float64, np.float64]]]]) -> float:
     """
-    Internal function for the posterior probability.
+    Internal function for calculating the posterior probability.
 
     Parameters
     ----------
@@ -33,11 +37,11 @@ def lnprob(param: np.ndarray,
         Value of the scaling parameter.
     bounds : dict
         Boundaries of the main scaling parameter.
-    modelpar : list(str, )
+    modelpar : list(str)
         Parameter names.
-    objphot : list(tuple(float, float), )
+    objphot : list(tuple(float, float))
         Photometry of the object.
-    specphot : list(float, )
+    specphot : list(float), photometry.SyntheticPhotometry
         Synthetic photometry of the calibration spectrum for the same filters as the photometry
         of the object.
 
@@ -47,29 +51,27 @@ def lnprob(param: np.ndarray,
         Log posterior probability.
     """
 
+    ln_prob = 0.
+
     for i, item in enumerate(modelpar):
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
-            ln_prior = 0.
+            ln_prob += 0.
 
         else:
-            ln_prior = -np.inf
+            ln_prob += -np.inf
             break
 
-    if math.isinf(ln_prior):
-        ln_prob = -np.inf
+    if not math.isinf(ln_prob):
 
-    else:
-        chisq = 0.
         for i, obj_item in enumerate(objphot):
             if obj_item.ndim == 1:
-                chisq += (obj_item[0] - param[0]*specphot[i])**2 / obj_item[1]**2
+                ln_prob += -0.5 * (obj_item[0] - param[0]*specphot[i])**2 / obj_item[1]**2
 
             else:
-                for j in range(obj_item.shape[1]):
-                    chisq += (obj_item[0, j] - param[0]*specphot[i])**2 / obj_item[1, j]**2
 
-        ln_prob = ln_prior - 0.5*chisq
+                for j in range(obj_item.shape[1]):
+                    ln_prob += -0.5 * (obj_item[0, j] - param[0]*specphot[i])**2 / obj_item[1, j]**2
 
     return ln_prob
 
@@ -90,11 +92,12 @@ class FitSpectrum:
         ----------
         object_name : str
             Object name in the database.
-        filters : list(str, )
+        filters : list(str)
             Filter names for which the photometry is selected. All available photometry of the
             object is selected if set to ``None``.
         spectrum : str
-            Calibration spectrum.
+            Calibration spectrum as labelled in the database. The calibration spectrum can be
+            stored in the database with :func:`~species.data.database.Database.add_calibration`.
         bounds : dict
             Boundaries of the scaling parameter, as ``{'scaling':(min, max)}``.
 
@@ -115,10 +118,7 @@ class FitSpectrum:
         if filters is None:
             species_db = database.Database()
 
-            objectbox = species_db.get_object(object_name,
-                                              inc_phot=True,
-                                              inc_spec=False)
-
+            objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=False)
             filters = objectbox.filters
 
         for item in filters:
@@ -138,7 +138,7 @@ class FitSpectrum:
     def run_mcmc(self,
                  nwalkers: int,
                  nsteps: int,
-                 guess: Dict[str, float],
+                 guess: Union[Dict[str, float], Dict[str, None]],
                  tag: str) -> None:
         """
         Function to run the MCMC sampler.
@@ -149,10 +149,10 @@ class FitSpectrum:
             Number of walkers.
         nsteps : int
             Number of steps per walker.
-        guess : dict
+        guess : dict(str, float), dict(str, None)
             Guess of the scaling parameter.
         tag : str
-            Database tag where the MCMC samples are stored.
+            Database tag where the MCMC samples will be stored.
 
         Returns
         -------
@@ -165,13 +165,18 @@ class FitSpectrum:
         ndim = 1
 
         initial = np.zeros((nwalkers, ndim))
-        initial[:, 0] = guess['scaling'] + np.random.normal(0, 1e-1*guess['scaling'], nwalkers)
 
-        if ndim > 1:
-            for i in range(1, ndim):
-                initial[:, i] = 1. + np.random.normal(0, 0.1, nwalkers)
-                self.modelpar.append('scaling'+str(i))
-                self.bounds['scaling'+str(i)] = (0., 1e2)
+        for i, item in enumerate(self.modelpar):
+            if guess[item] is not None:
+                width = min(abs(guess[item] - self.bounds[item][0]),
+                            abs(guess[item] - self.bounds[item][1]))
+
+                initial[:, i] = guess[item] + np.random.normal(0, 0.1*width, nwalkers)
+
+            else:
+                initial[:, i] = np.random.uniform(low=self.bounds[item][0],
+                                                  high=self.bounds[item][1],
+                                                  size=nwalkers)
 
         with Pool(processes=cpu_count()):
             ens_sampler = emcee.EnsembleSampler(nwalkers,

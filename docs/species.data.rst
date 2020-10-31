@@ -20,6 +20,38 @@ species.data.ames\_dusty module
    :undoc-members:
    :show-inheritance:
 
+species.data.atmo module
+------------------------
+
+.. automodule:: species.data.atmo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.blackbody module
+-----------------------------
+
+.. automodule:: species.data.blackbody
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.btcond module
+--------------------------
+
+.. automodule:: species.data.btcond
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.btcond\_feh module
+-------------------------------
+
+.. automodule:: species.data.btcond_feh
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.btnextgen module
 -----------------------------
 

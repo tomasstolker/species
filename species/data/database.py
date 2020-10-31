@@ -20,11 +20,11 @@ from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box, constants
-from species.data import ames_cond, ames_dusty, btnextgen, btsettl, btsettl_cifist, companions, \
-                         drift_phoenix, dust, exo_rem, filters, irtf, isochrones, leggett, \
-                         petitcode, spex, vega, vlm_plx
+from species.data import ames_cond, ames_dusty, atmo, blackbody, btcond, btcond_feh, btnextgen, \
+                         btsettl, btsettl_cifist, companions, drift_phoenix, dust, exo_rem, \
+                         filters, irtf, isochrones, leggett, petitcode, spex, vega, vlm_plx
 from species.read import read_calibration, read_filter, read_model, read_planck, read_radtrans
-from species.util import data_util, dust_util, retrieval_util
+from species.util import data_util, dust_util, read_util, retrieval_util
 
 
 class Database:
@@ -219,7 +219,9 @@ class Database:
                    detector_type: str = 'photon') -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or from an input file.
+        Service or from an input file. Additional filters that are automatically added are
+        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp, Magellan/VisAO.Ys, ALMA/band6,
+        and ALMA/band7.
 
         Parameters
         ----------
@@ -336,9 +338,10 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'bt-settl', 'bt-settl-cifist', 'bt-nextgen',
-            'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
-            'petitcode-hot-clear', 'petitcode-hot-cloudy', or 'exo-rem').
+            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl', 'bt-settl-cifist',
+            'bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'blackbody', bt-cond',
+            or 'bt-cond-feh).
         wavel_range : tuple(float, float), None
             Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
             these models, the original wavelength points are used if set to ``None``.
@@ -401,6 +404,42 @@ class Database:
                                       spec_res)
 
             data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'atmo':
+            atmo.add_atmo(self.input_path,
+                          h5_file,
+                          wavel_range,
+                          teff_range,
+                          spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'blackbody':
+            blackbody.add_blackbody(self.input_path,
+                                    h5_file,
+                                    wavel_range,
+                                    teff_range,
+                                    spec_res)
+
+            data_util.add_missing(model, ['teff'], h5_file)
+
+        elif model == 'bt-cond':
+            btcond.add_btcond(self.input_path,
+                              h5_file,
+                              wavel_range,
+                              teff_range,
+                              spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg'], h5_file)
+
+        elif model == 'bt-cond-feh':
+            btcond_feh.add_btcond_feh(self.input_path,
+                                      h5_file,
+                                      wavel_range,
+                                      teff_range,
+                                      spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
 
         elif model == 'bt-settl':
             btsettl.add_btsettl(self.input_path,
@@ -487,10 +526,11 @@ class Database:
 
         else:
             raise ValueError(f'The {model} atmospheric model is not available. Please choose from '
-                             f'\'ames-cond\', \'ames-dusty\', \'bt-settl\', \'bt-nextgen\', '
-                             f'\'drift-phoexnix\', \'petitcode-cool-clear\', '
+                             f'\'ames-cond\', \'ames-dusty\', \'atmo\', \'bt-settl\', '
+                             f'\'bt-nextgen\', \'drift-phoexnix\', \'petitcode-cool-clear\', '
                              f'\'petitcode-cool-cloudy\', \'petitcode-hot-clear\', '
-                             f'\'petitcode-hot-cloudy\', \'exo-rem\', \'bt-settl-cifist\'.')
+                             f'\'petitcode-hot-cloudy\', \'exo-rem\', \'bt-settl-cifist\', '
+                             f'\'bt-cond\', \'bt-cond-feh\', \'blackbody\'.')
 
         h5_file.close()
 
@@ -501,6 +541,7 @@ class Database:
                    app_mag: Optional[Dict[str,
                                           Union[Tuple[float, float],
                                                 List[Tuple[float, float]]]]] = None,
+                   flux_density: Optional[Dict[str, Tuple[float, float]]] = None,
                    spectrum: Optional[Dict[str,
                                            Tuple[str,
                                                  Optional[str],
@@ -521,6 +562,15 @@ class Database:
             duplicate filter names, the magnitudes have to be provided in a list, for example
             ``{'Paranal/NACO.Lp': [(15., 0.2), (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``.
             No photometric data is stored if set to ``None``.
+        flux_density : dict, None
+            Dictionary with filter names, flux densities (W m-2 um-1), and uncertainties
+            (W m-1 um-1). For example, ``{'Paranal/NACO.Lp': (1e-15, 1e-16)}``. Currently,
+            the use of duplicate filters is not implemented. The use of ``app_mag`` is preferred
+            over ``flux_density`` because with ``flux_density`` only fluxes are stored while with
+            ``app_mag`` both magnitudes and fluxes. However, ``flux_density`` can be used in case
+            the magnitudes and/or filter profiles are not available. In that case, the fluxes can
+            still be selected with ``inc_phot`` in :class:`~species.analysis.fit_model.FitModel`.
+            The argument of ``flux_density`` is ignored if set to ``None``.
         spectrum : dict, None
             Dictionary with the spectrum, optional covariance matrix, and spectral resolution for
             each instrument. The input data can either have a FITS or ASCII format. The spectra
@@ -553,6 +603,14 @@ class Database:
                 self.add_spectrum('vega')
 
             for item in app_mag:
+                if f'filters/{item}' not in h5_file:
+                    self.add_filter(item)
+
+        if flux_density is not None:
+            if 'spectra/calibration/vega' not in h5_file:
+                self.add_spectrum('vega')
+
+            for item in flux_density:
                 if f'filters/{item}' not in h5_file:
                     self.add_filter(item)
 
@@ -709,6 +767,34 @@ class Database:
                                               data=data)
 
                 dset.attrs['n_phot'] = n_phot
+
+        if flux_density is not None:
+            for flux_item in flux_density:
+                if flux_item in deredden:
+                    warnings.warn(f'The deredden parameter is not supported by flux_density. '
+                                  f'Please use app_mag instead or contact Tomas Stolker and ask '
+                                  f'if the flux_density support can be added. Ignoring the '
+                                  f'dereddening of {flux_item}.')
+
+                if f'objects/{object_name}/{flux_item}' in h5_file:
+                    del h5_file[f'objects/{object_name}/{flux_item}']
+
+                if isinstance(flux_density[flux_item], tuple):
+                    print(f'   - {flux_item}:')
+
+                    print(f'      - Flux (W m-2 um-1) = {flux_density[flux_item][0]:.2e} +/- '
+                          f'{flux_density[flux_item][1]:.2e}')
+
+                    data = np.asarray([np.nan,
+                                       np.nan,
+                                       flux_density[flux_item][0],
+                                       flux_density[flux_item][1]])
+
+                    # None, None, (W m-2 um-1), (W m-2 um-1)
+                    dset = h5_file.create_dataset(f'objects/{object_name}/{flux_item}',
+                                                  data=data)
+
+                    dset.attrs['n_phot'] = n_phot
 
         if spectrum is not None:
             read_spec = {}
@@ -1275,7 +1361,8 @@ class Database:
                          random: int,
                          burnin: Optional[int] = None,
                          wavel_range: Optional[Union[Tuple[float, float], str]] = None,
-                         spec_res: Optional[float] = None) -> List[box.ModelBox]:
+                         spec_res: Optional[float] = None) -> Union[List[box.ModelBox],
+                                                                    List[box.SpectrumBox]]:
         """
         Parameters
         ----------
@@ -1366,6 +1453,10 @@ class Database:
         if spectrum_type == 'model':
             if spectrum_name == 'planck':
                 readmodel = read_planck.ReadPlanck(wavel_range)
+
+            elif spectrum_name == 'powerlaw':
+                pass
+
             else:
                 readmodel = read_model.ReadModel(spectrum_name, wavel_range=wavel_range)
 
@@ -1386,6 +1477,10 @@ class Database:
             if spectrum_type == 'model':
                 if spectrum_name == 'planck':
                     specbox = readmodel.get_spectrum(model_param, spec_res)
+
+                elif spectrum_name == 'powerlaw':
+                    specbox = read_util.powerlaw_spectrum(wavel_range, model_param)
+
                 else:
                     specbox = readmodel.get_model(model_param, spec_res=spec_res, smooth=True)
 
@@ -1409,7 +1504,7 @@ class Database:
         tag : str
             Database tag with the posterior samples.
         filter_name : str
-            Filter name for which the photometry is calculated.
+            Filter name for which the photometry will be computed.
         burnin : int, None
             Number of burnin steps. No burnin is removed if set to ``None``.
 
@@ -1430,8 +1525,8 @@ class Database:
         elif 'nparam' in dset.attrs:
             n_param = dset.attrs['nparam']
 
-        spectrum_type = dset.attrs['type'].decode('utf-8')
-        spectrum_name = dset.attrs['spectrum'].decode('utf-8')
+        spectrum_type = dset.attrs['type']
+        spectrum_name = dset.attrs['spectrum']
 
         if dset.attrs.__contains__('distance'):
             distance = dset.attrs['distance']
@@ -1439,8 +1534,14 @@ class Database:
             distance = None
 
         samples = np.asarray(dset)
-        samples = samples[:, burnin:, :]
-        samples = samples.reshape((samples.shape[0]*samples.shape[1], n_param))
+
+        if samples.ndim == 3:
+            if burnin > samples.shape[1]:
+                raise ValueError(f'The \'burnin\' value is larger than the number of steps '
+                                 f'({samples.shape[1]}) that are made by the walkers.')
+
+            samples = samples[:, burnin:, :]
+            samples = samples.reshape((samples.shape[0]*samples.shape[1], n_param))
 
         param = []
         for i in range(n_param):
@@ -1449,7 +1550,12 @@ class Database:
         h5_file.close()
 
         if spectrum_type == 'model':
-            readmodel = read_model.ReadModel(spectrum_name, filter_name=filter_name)
+            if spectrum_name == 'powerlaw':
+                synphot = photometry.SyntheticPhotometry(filter_name)
+                synphot.zero_point()  # Set the wavel_range attribute
+
+            else:
+                readmodel = read_model.ReadModel(spectrum_name, filter_name=filter_name)
 
         # elif spectrum_type == 'calibration':
         #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
@@ -1465,7 +1571,15 @@ class Database:
                 model_param['distance'] = distance
 
             if spectrum_type == 'model':
-                mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
+                if spectrum_name == 'powerlaw':
+                    pl_box = read_util.powerlaw_spectrum(synphot.wavel_range, model_param)
+
+                    app_mag, _ = synphot.spectrum_to_magnitude(pl_box.wavelength, pl_box.flux)
+
+                    mcmc_phot[i, 0] = app_mag[0]
+
+                else:
+                    mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
 
             # elif spectrum_type == 'calibration':
             #     specbox = readcalib.get_spectrum(model_param)

@@ -344,8 +344,13 @@ def plot_spectrum(boxes: list,
                         if item[:4] == 'teff':
                             value = f'{param[item]:.0f}'
 
-                        elif item in ['logg', 'feh', 'co', 'c_o_ratio', 'metallicity', 'fsed',
+                        elif item in ['logg', 'feh', 'metallicity', 'fsed',
                                       'lognorm_ext', 'powerlaw_ext', 'ism_ext']:
+
+                            value = f'{param[item]:.1f}'
+
+                        elif item in ['co', 'c_o_ratio']:
+
                             value = f'{param[item]:.2f}'
 
                         elif item[:6] == 'radius':
@@ -362,7 +367,7 @@ def plot_spectrum(boxes: list,
 
                         elif item == 'mass':
                             if object_type == 'planet':
-                                value = f'{param[item]:.1f}'
+                                value = f'{param[item]:.0f}'
 
                             elif object_type == 'star':
                                 value = f'{param[item]*constants.M_JUP/constants.M_SUN:.1f}'
@@ -614,6 +619,9 @@ def plot_spectrum(boxes: list,
 
                         if 'label' in kwargs_copy:
                             del kwargs_copy['label']
+
+                        if 'mfc' in kwargs_copy:
+                            del kwargs_copy['mfc']
 
                         ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item]/scaling, xerr=fwhm/2., yerr=None,
                                      zorder=4, mfc='white', **kwargs_copy)

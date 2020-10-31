@@ -1,9 +1,8 @@
 """
-Module for AMES-Dusty atmospheric model spectra.
+Module for ATMO 2020 atmospheric model spectra.
 """
 
 import os
-import gzip
 import tarfile
 import urllib.request
 
@@ -19,14 +18,17 @@ from species.util import data_util, read_util
 
 
 @typechecked
-def add_ames_dusty(input_path: str,
-                   database: h5py._hl.files.File,
-                   wavel_range: Optional[Tuple[float, float]] = None,
-                   teff_range: Optional[Tuple[float, float]] = None,
-                   spec_res: float = None) -> None:
+def add_atmo(input_path: str,
+             database: h5py._hl.files.File,
+             wavel_range: Optional[Tuple[float, float]],
+             teff_range: Optional[Tuple[float, float]],
+             spec_res: Optional[float]) -> None:
     """
-    Function for adding the AMES-Dusty atmospheric models to the database. The original spectra
-    have been resampled to a spectral resolution of R = 2000 from 0.5 to 40 um.
+    Function for adding the ATMO 2020 atmospheric models to the database. The spectra have been
+    calculated with equilibrium chemistry and solar metallicity in the Teff range from 200 to 
+    3000 K. The spectra have been downloaded from the Theoretical spectra web server
+    (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq) and resampled
+    to a spectral resolution of 5000 from 0.3 to 100 um.
 
     Parameters
     ----------
@@ -35,13 +37,11 @@ def add_ames_dusty(input_path: str,
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (um). The full wavelength range (0.5-40 um) is stored if set to ``None``.
-        Only used in combination with ``spec_res``.
+        Wavelength range (um). The original wavelength points are used if set to ``None``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All available temperatures are stored if set to ``None``.
+        Effective temperature range (K). All temperatures are selected if set to ``None``.
     spec_res : float, None
-        Spectral resolution. The data is stored with the spectral resolution of the input spectra
-        (R = 2000) if set to ``None``. Only used in combination with ``wavel_range``.
+        Spectral resolution. Not used if ``wavel_range`` is set to ``None``.
 
     Returns
     -------
@@ -52,21 +52,22 @@ def add_ames_dusty(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    input_file = 'ames-dusty.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/ames-dusty.tgz'
+    input_file = 'atmo.tgz'
 
-    data_folder = os.path.join(input_path, 'ames-dusty/')
+    data_folder = os.path.join(input_path, 'atmo/')
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/atmo.tgz'
+
     if not os.path.isfile(data_file):
-        print('Downloading AMES-Dusty model spectra (59 MB)...', end='', flush=True)
+        print('Downloading ATMO model spectra (430 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking AMES-Dusty model spectra (59 MB)...', end='', flush=True)
+    print('Unpacking ATMO model spectra (430 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
@@ -81,9 +82,9 @@ def add_ames_dusty(input_path: str,
     else:
         wavelength = None
 
-    for _, _, files in os.walk(data_folder):
-        for filename in files:
-            if filename[:11] == 'ames-dusty_':
+    for _, _, file_list in os.walk(data_folder):
+        for filename in sorted(file_list):
+            if filename[:5] == 'atmo_':
                 file_split = filename.split('_')
 
                 teff_val = float(file_split[2])
@@ -93,16 +94,10 @@ def add_ames_dusty(input_path: str,
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
 
-                print_message = f'Adding AMES-Dusty model spectra... {filename}'
-                print(f'\r{print_message:<73}', end='')
+                print_message = f'Adding ATMO model spectra... {filename}'
+                print(f'\r{print_message:<61}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
-
-                if np.isnan(np.sum(data_flux)):
-                    # A few of the spectra contain NaNs due to their limited, original wavelength
-                    # coverage. Set the fluxes to zero such that they are interpolated when running
-                    # add_missing in add_model
-                    data_flux = np.zeros(data_flux.shape)
 
                 teff.append(teff_val)
                 logg.append(logg_val)
@@ -113,11 +108,6 @@ def add_ames_dusty(input_path: str,
 
                     if np.all(np.diff(wavelength) < 0):
                         raise ValueError('The wavelengths are not all sorted by increasing value.')
-
-                    # if np.isnan(np.sum(data_flux)):
-                        # Three of the files contain partially NaNs due to a more limited
-                        # wavelength coverage in the original spectra (before using spectres)
-                        # data_flux = np.full(data_wavel.shape[0], np.nan)
 
                     flux.append(data_flux)  # (W m-2 um-1)
 
@@ -138,8 +128,8 @@ def add_ames_dusty(input_path: str,
 
                     flux.append(flux_resample)  # (W m-2 um-1)
 
-    print_message = 'Adding AMES-Dusty model spectra... [DONE]'
-    print(f'\r{print_message:<73}')
+    print_message = 'Adding ATMO model spectra... [DONE]'
+    print(f'\r{print_message:<61}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -149,7 +139,7 @@ def add_ames_dusty(input_path: str,
                                       wavelength,
                                       np.asarray(flux))
 
-    data_util.write_data('ames-dusty',
+    data_util.write_data('atmo',
                          ['teff', 'logg'],
                          database,
                          data_sorted)

@@ -288,6 +288,26 @@ def update_labels(param: List[str]) -> List[str]:
         else:
             break
 
+    if 'disk_teff' in param:
+        index = param.index('disk_teff')
+        param[index] = r'$\mathregular{T}_\mathregular{disk}$ (K)'
+
+    if 'disk_radius' in param:
+        index = param.index('disk_radius')
+        param[index] = r'$\mathregular{R}_\mathregular{disk}$ ($\mathregular{R_J}$)'
+
+    if 'log_powerlaw_a' in param:
+        index = param.index('log_powerlaw_a')
+        param[index] = r'$\mathregular{log}\,a$'
+
+    if 'log_powerlaw_b' in param:
+        index = param.index('log_powerlaw_b')
+        param[index] = r'$\mathregular{log}\,b$'
+
+    if 'log_powerlaw_c' in param:
+        index = param.index('log_powerlaw_c')
+        param[index] = r'$\mathregular{log}\,c$'
+
     return param
 
 
@@ -315,6 +335,15 @@ def model_name(key: str) -> str:
 
     elif key == 'ames-dusty':
         name = 'AMES-Dusty'
+
+    elif key == 'atmo':
+        name = 'ATMO'
+
+    elif key == 'bt-cond':
+        name = 'BT-Cond'
+
+    elif key == 'bt-cond-feh':
+        name = 'BT-Cond'
 
     elif key == 'bt-settl':
         name = 'BT-Settl'

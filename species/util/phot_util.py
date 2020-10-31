@@ -5,16 +5,17 @@ Utility functions for photometry.
 import math
 import warnings
 
-from typing import Optional, Union, Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
-import spectres
 import numpy as np
+import spectres
 
 from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box
-from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
+from species.read import read_calibration, read_filter, read_model, read_planck, read_radtrans
+from species.util import read_util
 
 
 @typechecked
@@ -29,11 +30,11 @@ def multi_photometry(datatype: str,
     datatype : str
         Data type ('model' or 'calibration').
     spectrum : str
-        Spectrum name (e.g., 'drift-phoenix', 'planck', or 'petitradtrans').
+        Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw', 'petitradtrans').
     filters : list(str, )
-        Filter names.
+        List with the filter names.
     parameters : dict
-        Parameters and values for the spectrum.
+        Dictionary with the model parameters.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
         ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
@@ -55,6 +56,7 @@ def multi_photometry(datatype: str,
             radtrans_box = radtrans.get_model(parameters)
 
         for item in filters:
+
             if spectrum == 'petitradtrans':
                 # Use an instance of SyntheticPhotometry instead of get_flux from ReadRadtrans
                 # in order to not recalculate the spectrum
@@ -63,12 +65,21 @@ def multi_photometry(datatype: str,
                 flux[item], _ = syn_phot.spectrum_to_flux(radtrans_box.wavelength,
                                                           radtrans_box.flux)
 
+            elif spectrum == 'powerlaw':
+                synphot = photometry.SyntheticPhotometry(item)
+                synphot.zero_point()  # Set the wavel_range attribute
+
+                powerl_box = read_util.powerlaw_spectrum(synphot.wavel_range, parameters)
+                flux[item] = synphot.spectrum_to_flux(powerl_box.wavelength, powerl_box.flux)[0]
+
             else:
                 if spectrum == 'planck':
                     readmodel = read_planck.ReadPlanck(filter_name=item)
 
                 else:
                     readmodel = read_model.ReadModel(spectrum, filter_name=item)
+
+            if spectrum != 'powerlaw':
 
                 try:
                     flux[item] = readmodel.get_flux(parameters)[0]
@@ -77,7 +88,7 @@ def multi_photometry(datatype: str,
                     flux[item] = np.nan
 
                     warnings.warn(f'The wavelength range of the {item} filter does not match with '
-                                  f'the wavelength coverage of {spectrum}. The flux is set to NaN.')
+                                  f'the wavelength range of {spectrum}. The flux is set to NaN.')
 
     elif datatype == 'calibration':
         for item in filters:
@@ -172,6 +183,7 @@ def get_residuals(datatype: str,
                   inc_phot: Union[bool, List[str]] = True,
                   inc_spec: Union[bool, List[str]] = True,
                   radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> box.ResidualsBox:
+
     """
     Parameters
     ----------
