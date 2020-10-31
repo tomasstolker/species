@@ -184,14 +184,13 @@ class ReadRadtrans:
             cloud_fractions = {}
 
             for item in self.cloud_species:
-                cloud_param = f'{item[:-3].lower()}_fraction'
+                cloud_param_frac = f'{item[:-3].lower()}_fraction'
+                cloud_param_tau = f'{item[:-3].lower()}_tau'
 
-                if cloud_param in model_param:
-                    cloud_fractions[item] = model_param[cloud_param]
+                if cloud_param_frac in model_param:
+                    cloud_fractions[item] = model_param[cloud_param_frac]
 
-                cloud_param = f'{item[:-3].lower()}_tau'
-
-                if cloud_param in model_param:
+                elif cloud_param_tau in model_param:
                     if 'log_p_quench' in model_param:
                         # Quenching pressure (bar)
                         quench_pressure = 10.**model_param['log_p_quench']
@@ -217,7 +216,7 @@ class ReadRadtrans:
                     # Calculate the scaled mass fraction of the clouds
                     cloud_fractions[item] = retrieval_util.scale_cloud_abund(
                         model_param, self.rt_object, self.pressure, temp, mmw,
-                        'equilibrium', abund_in, item, model_param[cloud_param],
+                        'equilibrium', abund_in, item, model_param[cloud_param_tau],
                         pressure_grid=self.pressure_grid)
 
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],

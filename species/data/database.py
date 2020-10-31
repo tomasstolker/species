@@ -1347,7 +1347,7 @@ class Database:
 
             for i in range(n_param):
                 par_key = dset.attrs[f'parameter{i}']
-                par_value = np.percentile(samples[:, i], 50.)
+                par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
             if dset.attrs.__contains__('distance'):
@@ -1803,10 +1803,10 @@ class Database:
             if f'results/fit/{tag}' in h5_file:
                 del h5_file[f'results/fit/{tag}']
 
-            # store the ln-likelihood
+            # Store the ln-likelihood
             h5_file.create_dataset(f'results/fit/{tag}/ln_prob', data=samples[:, -1])
 
-            # remove the column with the log-likelihood value
+            # Remove the column with the log-likelihood value
             samples = samples[:, :-1]
 
             if samples.shape[1] != len(parameters):
@@ -2136,8 +2136,6 @@ class Database:
         if 'ism_red' in parameters:
             indices['ism_red'] = np.argwhere(parameters == 'ism_red')[0][0]
 
-        h5_file.close()
-
         # After creating and instance of ReadRadtrans, the cloud_species have been
         # shortened to 'Fe(c)' and 'MgSiO3(c)'
 
@@ -2190,5 +2188,7 @@ class Database:
         #     print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
 
         print(' [DONE]')
+
+        h5_file.close()
 
         return boxes, read_rad
