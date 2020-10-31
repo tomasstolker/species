@@ -15,7 +15,6 @@ from typeguard import typechecked
 from species.analysis import photometry
 from species.core import box
 from species.read import read_calibration, read_filter, read_model, read_planck
-# from species.read import read_model, read_calibration, read_filter, read_planck, read_radtrans
 from species.util import read_util
 
 
@@ -61,7 +60,6 @@ def multi_photometry(datatype: str,
             else:
                 readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
-            if spectrum != 'powerlaw':
                 try:
                     flux[item] = readmodel.get_flux(parameters)[0]
 
@@ -258,36 +256,16 @@ def get_residuals(datatype: str,
                                                  verbose=True)
 
                 else:
-                    if spectrum == 'petitradtrans':
-                        pass
+                    readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
-                        # radtrans = read_radtrans.ReadRadtrans(line_species=kwargs_radtrans['line_species'],
-                        #                                       cloud_species=kwargs_radtrans['cloud_species'],
-                        #                                       scattering=kwargs_radtrans['scattering'],
-                        #                                       wavel_range=wavel_range)
-                        #
-                        # model = radtrans.get_model(parameters, spec_res=None)
-                        #
-                        # # separate resampling to the new wavelength points
-                        #
-                        # flux_new = spectres.spectres(wl_new,
-                        #                              model.wavelength,
-                        #                              model.flux,
-                        #                              spec_errs=None,
-                        #                              fill=0.,
-                        #                              verbose=True)
+                    # resampling to the new wavelength points is done in teh get_model function
 
-                    else:
-                        readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
+                    model_spec = readmodel.get_model(parameters,
+                                                     spec_res=spec_res,
+                                                     wavel_resample=wl_new,
+                                                     smooth=True)
 
-                        # resampling to the new wavelength points is done in teh get_model function
-
-                        model_spec = readmodel.get_model(parameters,
-                                                         spec_res=spec_res,
-                                                         wavel_resample=wl_new,
-                                                         smooth=True)
-
-                        flux_new = model_spec.flux
+                    flux_new = model_spec.flux
 
                 data_spec = objectbox.spectrum[key][0]
                 res_tmp = (data_spec[:, 1]-flux_new) / data_spec[:, 2]
