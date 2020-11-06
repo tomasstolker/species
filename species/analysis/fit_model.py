@@ -1311,10 +1311,10 @@ class FitModel:
 
                 if self.spectrum[item][2] is not None:
                     # Use the inverted covariance matrix
-                    dot_tmp = np.dot(data_flux-model_flux,
-                                     np.dot(data_cov_inv, data_flux-model_flux))
+                    ln_like += -0.5 * np.dot(data_flux-model_flux,
+                                             np.dot(data_cov_inv, data_flux-model_flux))
 
-                    ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+                    ln_like += -0.5 * np.nansum(np.log(2.*np.pi*data_var))
 
                 else:
                     if item in self.fit_corr:

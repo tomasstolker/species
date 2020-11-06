@@ -27,7 +27,7 @@ from species.util import data_util, dust_util, read_util
 
 class Database:
     """
-    Class for fitting atmospheric model spectra to photometric data.
+    Class with reading and writing functionalities for the HDF5 database.
     """
 
     @typechecked
@@ -343,8 +343,8 @@ class Database:
             Effective temperature range (K). Setting the value to None for will add all available
             temperatures.
         data_folder : str, None
-            Folder with input data. Only required for the petitCODE hot models which are not
-            publicly available.
+            Folder with input data. This parameter has been deprecated since all model spectra
+            are publicly available.
 
         Returns
         -------
@@ -352,11 +352,17 @@ class Database:
             None
         """
 
-        proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy']
+        if data_folder is not None:
+            warnings.warn('The \'data_folder\' parameter has been deprecated since '
+                          'all supported model spectra are publicly available. The'
+                          'parameter will therefore be ignored and will cause an error '
+                          'in a future release.')
 
-        if model in proprietary and data_folder is None:
-            raise ValueError(f'The {model} model is not publicly available and needs to '
-                             f'be imported by setting the \'data_folder\' parameter.')
+        # proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy']
+
+        # if model in proprietary and data_folder is None:
+        #     raise ValueError(f'The {model} model is not publicly available and needs to '
+        #                      f'be imported by setting the \'data_folder\' parameter.')
 
         # if model in ['bt-nextgen'] and wavel_range is None:
         #     raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
@@ -487,7 +493,6 @@ class Database:
         elif model == 'petitcode-hot-clear':
             petitcode.add_petitcode_hot_clear(self.input_path,
                                               h5_file,
-                                              data_folder,
                                               wavel_range,
                                               teff_range,
                                               spec_res)
@@ -497,7 +502,6 @@ class Database:
         elif model == 'petitcode-hot-cloudy':
             petitcode.add_petitcode_hot_cloudy(self.input_path,
                                                h5_file,
-                                               data_folder,
                                                wavel_range,
                                                teff_range,
                                                spec_res)
