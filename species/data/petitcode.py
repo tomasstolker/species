@@ -3,15 +3,16 @@ Module for petitCODE atmospheric model spectra.
 """
 
 import os
-import zipfile
-import warnings
+import tarfile
 import urllib.request
+import warnings
+import zipfile
 
 from typing import Optional, Tuple
 
 import h5py
-import spectres
 import numpy as np
+import spectres
 
 from typeguard import typechecked
 
@@ -57,11 +58,11 @@ def add_petitcode_cool_clear(input_path: str,
     data_file = os.path.join(input_path, 'linder_molliere_grid.zip')
 
     if not os.path.isfile(data_file):
-        print('Downloading petitCODE cool clear model spectra (3.7 GB)...', end='', flush=True)
+        print('Downloading petitCODE cool model spectra (3.7 GB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking petitCODE cool clear model spectra...', end='', flush=True)
+    print('Unpacking petitCODE cool model spectra (3.7 GB)...', end='', flush=True)
 
     with zipfile.ZipFile(data_file, 'r') as zip_ref:
         zip_ref.extractall(input_path)
@@ -180,11 +181,11 @@ def add_petitcode_cool_cloudy(input_path: str,
     data_file = os.path.join(input_path, 'linder_molliere_grid.zip')
 
     if not os.path.isfile(data_file):
-        print('Downloading petitCODE cool cloudy model spectra (3.7 GB)...', end='', flush=True)
+        print('Downloading petitCODE cool model spectra (3.7 GB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking petitCODE cool cloudy model spectra...', end='', flush=True)
+    print('Unpacking petitCODE cool model spectra (3.7 GB)...', end='', flush=True)
 
     with zipfile.ZipFile(data_file, 'r') as zip_ref:
         zip_ref.extractall(input_path)
@@ -271,7 +272,6 @@ def add_petitcode_cool_cloudy(input_path: str,
 @typechecked
 def add_petitcode_hot_clear(input_path: str,
                             database: h5py._hl.files.File,
-                            data_folder: str,
                             wavel_range: Optional[Tuple[float, float]] = None,
                             teff_range: Optional[Tuple[float, float]] = None,
                             spec_res: Optional[float] = 1000.) -> None:
@@ -284,8 +284,6 @@ def add_petitcode_hot_clear(input_path: str,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    data_folder : str
-        Path with input data.
     wavel_range : tuple(float, float), None
         Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
@@ -302,6 +300,23 @@ def add_petitcode_hot_clear(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    data_folder = os.path.join(input_path, 'petitcode-hot-clear/')
+
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/petitcode-hot-clear.tgz'
+
+    data_file = os.path.join(input_path, 'petitcode-hot-clear.tgz')
+
+    if not os.path.isfile(data_file):
+        print('Downloading petitCODE hot clear model spectra (93 MB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
+        print(' [DONE]')
+
+    print('Unpacking petitCODE hot clear model spectra (93 MB)...', end='', flush=True)
+    tar = tarfile.open(data_file)
+    tar.extractall(data_folder)
+    tar.close()
+    print(' [DONE]')
+
     teff = []
     logg = []
     feh = []
@@ -315,17 +330,19 @@ def add_petitcode_hot_clear(input_path: str,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            teff_val = float(filename[9:13])
-            logg_val = float(filename[19:23])
-            feh_val = float(filename[28:32])
-            co_ratio_val = float(filename[36:40])
+            file_split = filename.split('_')
+
+            teff_val = float(file_split[2])
+            logg_val = float(file_split[4])
+            feh_val = float(file_split[6])
+            co_ratio_val = float(file_split[8])
 
             if teff_range is not None:
                 if teff_val < teff_range[0] or teff_val > teff_range[1]:
                     continue
 
             print_message = f'Adding petitCODE hot clear model spectra... {filename}'
-            print(f'\r{print_message:<100}', end='')
+            print(f'\r{print_message:<99}', end='')
 
             data = np.loadtxt(os.path.join(data_folder, filename))
 
@@ -361,7 +378,7 @@ def add_petitcode_hot_clear(input_path: str,
                                   'original wavelength sampling. Storing zeros instead.')
 
     print_message = 'Adding petitCODE hot clear model spectra... [DONE]'
-    print(f'\r{print_message:<100}')
+    print(f'\r{print_message:<99}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
@@ -380,7 +397,6 @@ def add_petitcode_hot_clear(input_path: str,
 @typechecked
 def add_petitcode_hot_cloudy(input_path: str,
                              database: h5py._hl.files.File,
-                             data_folder: str,
                              wavel_range: Optional[Tuple[float, float]] = None,
                              teff_range: Optional[Tuple[float, float]] = None,
                              spec_res: Optional[float] = 1000.) -> None:
@@ -393,8 +409,6 @@ def add_petitcode_hot_cloudy(input_path: str,
         Folder where the data is located.
     database : h5py._hl.files.File
         Database.
-    data_folder : str
-        Path with input data.
     wavel_range : tuple(float, float), None
         Wavelength range (um). The original wavelength points are used if set to None.
     teff_range : tuple(float, float), None
@@ -411,6 +425,23 @@ def add_petitcode_hot_cloudy(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
+    data_folder = os.path.join(input_path, 'petitcode-hot-cloudy/')
+
+    url = 'https://people.phys.ethz.ch/~ipa/tstolker/petitcode-hot-cloudy.tgz'
+
+    data_file = os.path.join(input_path, 'petitcode-hot-cloudy.tgz')
+
+    if not os.path.isfile(data_file):
+        print('Downloading petitCODE hot cloudy model spectra (276 MB)...', end='', flush=True)
+        urllib.request.urlretrieve(url, data_file)
+        print(' [DONE]')
+
+    print('Unpacking petitCODE hot cloudy model spectra (276 MB)...', end='', flush=True)
+    tar = tarfile.open(data_file)
+    tar.extractall(data_folder)
+    tar.close()
+    print(' [DONE]')
+
     teff = []
     logg = []
     feh = []
@@ -425,18 +456,20 @@ def add_petitcode_hot_cloudy(input_path: str,
 
     for _, _, files in os.walk(data_folder):
         for filename in files:
-            teff_val = float(filename[9:13])
-            logg_val = float(filename[19:23])
-            feh_val = float(filename[28:32])
-            co_ratio_val = float(filename[36:40])
-            fsed_val = float(filename[46:50])
+            file_split = filename.split('_')
+
+            teff_val = float(file_split[2])
+            logg_val = float(file_split[4])
+            feh_val = float(file_split[6])
+            co_ratio_val = float(file_split[8])
+            fsed_val = float(file_split[10])
 
             if teff_range is not None:
                 if teff_val < teff_range[0] or teff_val > teff_range[1]:
                     continue
 
             print_message = f'Adding petitCODE hot cloudy model spectra... {filename}'
-            print(f'\r{print_message:<112}', end='')
+            print(f'\r{print_message:<111}', end='')
 
             data = np.loadtxt(os.path.join(data_folder, filename))
 
@@ -473,7 +506,7 @@ def add_petitcode_hot_cloudy(input_path: str,
                                   'original wavelength sampling. Storing zeros instead.')
 
     print_message = 'Adding petitCODE hot cloudy model spectra... [DONE]'
-    print(f'\r{print_message:<112}')
+    print(f'\r{print_message:<111}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       np.asarray(logg),
