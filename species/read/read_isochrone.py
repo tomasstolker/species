@@ -20,7 +20,7 @@ from species.read import read_model
 
 class ReadIsochrone:
     """
-    Class for reading an isochrone from the database.
+    Class for reading isochrone data from the database.
     """
 
     @typechecked
@@ -103,14 +103,14 @@ class ReadIsochrone:
                 mag_color_1 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_1],
                                        xi=np.stack((age_points, masses), axis=1),
-                                       method='cubic',
+                                       method='linear',
                                        fill_value='nan',
                                        rescale=False)
 
                 mag_color_2 = griddata(points=evolution[:, 0:2],
                                        values=magnitudes[:, index_color_2],
                                        xi=np.stack((age_points, masses), axis=1),
-                                       method='cubic',
+                                       method='linear',
                                        fill_value='nan',
                                        rescale=False)
 
@@ -127,14 +127,14 @@ class ReadIsochrone:
         teff = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_teff],
                         xi=np.stack((age_points, masses), axis=1),
-                        method='cubic',
+                        method='linear',
                         fill_value='nan',
                         rescale=False)
 
         logg = griddata(points=evolution[:, 0:2],
                         values=evolution[:, index_logg],
                         xi=np.stack((age_points, masses), axis=1),
-                        method='cubic',
+                        method='linear',
                         fill_value='nan',
                         rescale=False)
 
@@ -190,8 +190,8 @@ class ReadIsochrone:
         if model1.get_parameters() != ['teff', 'logg']:
             raise ValueError('Creating synthetic colors and magnitudes from isochrones is '
                              'currently only implemented for models with only Teff and log(g) '
-                             'as free parameters. Please contact Tomas Stolker if additional '
-                             'functionalities are required.')
+                             'as free parameters. Please create an issue on the Github page if '
+                             'additional functionalities are required.')
 
         mag1 = np.zeros(isochrone.masses.shape[0])
         mag2 = np.zeros(isochrone.masses.shape[0])

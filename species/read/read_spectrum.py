@@ -234,13 +234,13 @@ class ReadSpectrum:
         specbox = self.get_spectrum(sptypes=sptypes,
                                     exclude_nan=True)
 
-        n_spectra = specbox.wavelength.shape[0]
+        n_spectra = len(specbox.wavelength)
 
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
 
-        wavelengths = np.full(specbox.wavelength.shape[0], mean_wavel)
-        filters = np.full(specbox.wavelength.shape[0], self.filter_name)
+        wavelengths = np.full(n_spectra, mean_wavel)
+        filters = np.full(n_spectra, self.filter_name)
 
         synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
 
@@ -285,13 +285,13 @@ class ReadSpectrum:
         specbox = self.get_spectrum(sptypes=sptypes,
                                     exclude_nan=True)
 
-        n_spectra = specbox.wavelength.shape[0]
+        n_spectra = len(specbox.wavelength)
 
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
 
-        wavelengths = np.full(specbox.wavelength.shape[0], mean_wavel)
-        filters = np.full(specbox.wavelength.shape[0], self.filter_name)
+        wavelengths = np.full(n_spectra, mean_wavel)
+        filters = np.full(n_spectra, self.filter_name)
 
         synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
 
