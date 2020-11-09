@@ -25,7 +25,8 @@ def add_drift_phoenix(input_path: str,
                       spec_res: float = None) -> None:
     """
     Function for adding the DRIFT-PHOENIX atmospheric models to the database. The original spectra
-    have been resampled to a spectral resolution of R = 2000 from 0.1 to 50 um.
+    were downloaded from http://svo2.cab.inta-csic.es/theory/newov2/index.php?models=drift and have
+    been resampled to a spectral resolution of R = 2000 from 0.1 to 50 um.
 
     Parameters
     ----------

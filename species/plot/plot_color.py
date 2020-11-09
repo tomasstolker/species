@@ -393,7 +393,7 @@ def plot_color_magnitude(boxes: list,
             x_pos = item[4][0] + delta_x
             y_pos = item[4][1] + delta_y
 
-            ax1.annotate(s='', xy=(x_pos, y_pos), xytext=(item[4][0], item[4][1]),
+            ax1.annotate('', (x_pos, y_pos), xytext=(item[4][0], item[4][1]),
                          fontsize=8, arrowprops={'arrowstyle': '->'}, color='black', zorder=3.)
 
             x_pos_text = item[4][0] + delta_x/2.
@@ -411,7 +411,7 @@ def plot_color_magnitude(boxes: list,
             else:
                 red_label = f'{dust_species} ({item[3]:.1f} µm)'
 
-            text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
+            text = ax1.annotate(red_label, (x_pos_text, y_pos_text),
                                 xytext=(7.*delta_y/vector_len, 7.*delta_x/vector_len),
                                 textcoords='offset points', fontsize=8., color='black',
                                 ha='center', va='center')
@@ -865,7 +865,7 @@ def plot_color_color(boxes: list,
             x_pos = item[5][0] + delta_x
             y_pos = item[5][1] + delta_y
 
-            ax1.annotate(s='', xy=(x_pos, y_pos), xytext=(item[5][0], item[5][1]),
+            ax1.annotate('', (x_pos, y_pos), xytext=(item[5][0], item[5][1]),
                          fontsize=8, arrowprops={'arrowstyle': '->'}, color='black', zorder=3.)
 
             x_pos_text = item[5][0] + delta_x/2.
@@ -885,7 +885,7 @@ def plot_color_color(boxes: list,
             else:
                 red_label = f'{dust_species} ({item[4]:.1f} µm)'
 
-            text = ax1.annotate(red_label, xy=(x_pos_text, y_pos_text),
+            text = ax1.annotate(red_label, (x_pos_text, y_pos_text),
                                 xytext=(-7.*delta_y/vector_len, 7.*delta_x/vector_len),
                                 textcoords='offset points', fontsize=8., color='black',
                                 ha='center', va='center')

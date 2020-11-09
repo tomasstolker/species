@@ -14,19 +14,21 @@ A configuration file with the name `species_config.ini` is required in the worki
 In this case the database is stored in the working folder and an absolute path points to the folder for the external data.
 
 .. important::
-   The configuration file should always be located in the working folder. Not sure what your current working folder is? Try running the following code.
+   The configuration file should always be located in the working folder. Are you not sure about your current working folder? Try running the following Python code.
 
       .. code-block:: python
 
          >>> import os
          >>> os.getcwd()
 
-A configuration file with default values is automatically created when `species` is initiated by running :class:`~species.core.setup.SpeciesInit` in case the configuration file is not present in the working folder. *species* is now initiated with:
+The workflow with *species* is now initiated with :class:`~species.core.setup.SpeciesInit`:
 
 .. code-block:: python
 
    >>> import species
    >>> species.SpeciesInit()
+
+A configuration file with default values is automatically created when `species` is initiated and the configuration file is not present in the working folder.
 
 .. tip::
    The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
