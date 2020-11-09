@@ -36,19 +36,25 @@ And running the setup script to install the package and its dependencies:
     $ python setup.py install
 
 .. important::
-   If an error occurs when running ``setup.py`` then update ``pip`` to the latest version:
+   If an error occurs when running ``setup.py`` then possibly ``pip`` needs to be updated the latest version:
 
    .. code-block:: console
 
        $ pip install --upgrade pip
 
-Once a local copy of the repository exists, new commits can be pulled from Github with:
+Alternatively to running the ``setup.py`` file, the folder where ``species`` is located can also be added to the ``PYTHONPATH`` environmental variable such that the package is found by Python. The command may depend on the OS that is used, but is often something like:
+
+.. code-block:: console
+
+    $ export PYTHONPATH=$PYTHONPATH:/path/to/species
+
+New commits can be pulled from Github once a local copy of the repository exists:
 
 .. code-block:: console
 
     $ git pull origin master
 
-Do you want to makes changes to the code? Then please fork the `species` repository on the Github page and clone your own fork instead of the main repository. Contributions and pull requests are very welcome (see :ref:`contributing` section).
+Do you want to make changes to the code? Please fork the `species` repository on the Github page and clone your own fork instead of the main repository. Contributions and pull requests are very welcome (see :ref:`contributing` section).
 
 Testing `species`
 -----------------

@@ -501,8 +501,8 @@ class FitModel:
                  - The size distribution is parameterized with a maximum radius (``powerlaw_max``
                    in um) and a power-law exponent (``powerlaw_exp``, dimensionless). The
                    minimum radius is fixed to 1 nm. The grid of cross sections has been calculated
-                   for maximum radii between 0.01 and 10 um, and power-law exponents between -10
-                   and 0.
+                   for maximum radii between 0.01 and 100 um, and power-law exponents between -10
+                   and 10.
 
                  - The extinction (``powerlaw_ext``) is fitted in the V band (A_V in mag) and the
                    wavelength-dependent extinction cross sections are interpolated from a
@@ -510,7 +510,7 @@ class FitModel:
 
                  - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
                    should be provided in the ``bounds`` dictionary, for example ``'powerlaw_max':
-                   (0.01, 10.), 'powerlaw_exp': (-10., 0.), 'powerlaw_ext': (0., 5.)}``.
+                   (0.01, 100.), 'powerlaw_exp': (-10., 10.), 'powerlaw_ext': (0., 5.)}``.
 
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
                    log-uniform prior for ``powerlaw_max``.

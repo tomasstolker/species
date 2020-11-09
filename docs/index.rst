@@ -3,7 +3,7 @@
 Documentation for *species*
 ===========================
 
-*species* is a toolkit for spectral and photometric analysis of planetary and substellar atmospheres. The package has been developed and is maintained by |stolker|.
+*species* is a toolkit for atmospheric characterization of self-luminous exoplanets and brown dwarfs. The package has been developed and is maintained by |stolker|.
 
 .. |stolker| raw:: html
 
@@ -22,6 +22,7 @@ Documentation for *species*
 
    overview
    configuration
+   database
    tutorials
    modules
 
