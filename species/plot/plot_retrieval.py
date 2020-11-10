@@ -272,10 +272,10 @@ def plot_pt_profile(tag: str,
             # TODO is this correct?
             optical_depth += np.sum(radtrans.rt_object.tau_cloud[0, :, :, :], axis=1)
 
-            if radtrans.rt_object.tau_cloud.shape[0] != 0:
+            if radtrans.rt_object.tau_cloud.shape[0] != 1:
                 raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
 
-            if radtrans.rt_object.tau_cloud.shape[2] != 0:
+            if radtrans.rt_object.tau_cloud.shape[2] != 1:
                 raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
 
             ax2 = ax.twiny()
