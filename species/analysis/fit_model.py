@@ -820,16 +820,19 @@ class FitModel:
         self.fix_param = {}
         del_param = []
 
-        for item in self.bounds:
-            if self.bounds[item][0] == self.bounds[item][1]:
-                self.fix_param[item] = self.bounds[item][0]
-                del_param.append(item)
+        for key, value in self.bounds.items():
+            if value[0] == value[1]:
+                self.fix_param[key] = value[0]
+                del_param.append(key)
 
-        print(self.fix_param)
+        if del_param:
+            print(f'Fixing {len(del_param)} parameters:')
 
-        for item in del_param:
-            self.modelpar.remove(item)
-            del self.bounds[item]
+            for item in del_param:
+                print(f'   - {item} = {self.fix_param[item]}')
+
+                self.modelpar.remove(item)
+                del self.bounds[item]
 
         print(f'Fitting {len(self.modelpar)} parameters:')
 
@@ -1404,9 +1407,22 @@ class FitModel:
 
         species_db = database.Database()
 
+        ln_prob = samples[:, -1]
+        samples = samples[:, :-1]
+
+        # Adding the fixed parameters to the samples
+
+        for key, value in self.fix_param.items():
+            self.modelpar.append(key)
+
+            app_param = np.full(samples.shape[0], value)
+            app_param = app_param[..., np.newaxis]
+
+            samples = np.append(samples, app_param, axis=1)
+
         species_db.add_samples(sampler='multinest',
-                               samples=samples[:, :-1],
-                               ln_prob=samples[:, -1],
+                               samples=samples,
+                               ln_prob=ln_prob,
                                mean_accept=None,
                                spectrum=('model', self.model),
                                tag=tag,
