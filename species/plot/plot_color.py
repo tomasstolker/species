@@ -333,6 +333,9 @@ def plot_color_magnitude(boxes: list,
             magnitude = item.magnitude
             names = item.names
 
+            if isinstance(sptype, list):
+                sptype = np.array(sptype)
+
             if item.object_type in ['field', None]:
                 indices = np.where(sptype != 'None')[0]
 
@@ -799,6 +802,9 @@ def plot_color_color(boxes: list,
             names = item.names
             color1 = item.color1
             color2 = item.color2
+
+            if isinstance(sptype, list):
+                sptype = np.array(sptype)
 
             if item.object_type in ['field', None]:
                 indices = np.where(sptype != 'None')[0]
