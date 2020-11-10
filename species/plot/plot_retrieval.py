@@ -252,13 +252,31 @@ def plot_pt_profile(tag: str,
 
         if extra_axis == 'photosphere':
             radtrans.rt_object.calc_opt_depth(10.**median['logg'])
+            radtrans.rt_object.calc_tau_cloud(10.**median['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem*1e-4  # (um)
 
+            # From Paul: The first axis of total_tay is the coordinate of the cumulative opacity
+            # distribution function (ranging from 0 to 1). A correct average is obtained by
+            # multiplying the first axis with self.w_gauss, then summing them. This is then the
+            # actual wavelength-mean.
+
             # From petitRADTRANS: Only use 0 index for species because for lbl or
             # test_ck_shuffle_comp = True everything has been moved into the 0th index
-            # TODO What is the first axis? Take the mean?
-            optical_depth = np.mean(radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
+
+            # Extract the optical depth of the line species
+            w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
+            optical_depth = np.sum(w_gauss*radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
+
+            # Add the optical depth of the cloud species
+            # TODO is this correct?
+            optical_depth += np.sum(radtrans.rt_object.tau_cloud[0, :, :, :], axis=1)
+
+            if radtrans.rt_object.tau_cloud.shape[0] != 0:
+                raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
+
+            if radtrans.rt_object.tau_cloud.shape[2] != 0:
+                raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
 
             ax2 = ax.twiny()
 
