@@ -379,7 +379,9 @@ class FitModel:
         model : str
             Atmospheric model (e.g. 'bt-settl', 'exo-rem', 'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors.
+            The boundaries that are used for the uniform priors. Fixing a parameter is possible by
+            providing the same value as lower and upper boundary of the parameter, for example,
+            ``bounds={'logg': (4., 4.)``.
 
             Atmospheric model parameters (e.g. ``model='bt-settl'``):
 
@@ -815,6 +817,20 @@ class FitModel:
         if 'ism_red' in self.bounds:
             self.modelpar.append('ism_red')
 
+        self.fix_param = {}
+        del_param = []
+
+        for item in self.bounds:
+            if self.bounds[item][0] == self.bounds[item][1]:
+                self.fix_param[item] = self.bounds[item][0]
+                del_param.append(item)
+
+        print(self.fix_param)
+
+        for item in del_param:
+            self.modelpar.remove(item)
+            del self.bounds[item]
+
         print(f'Fitting {len(self.modelpar)} parameters:')
 
         for item in self.modelpar:
@@ -1114,6 +1130,9 @@ class FitModel:
 
                 else:
                     param_dict[item] = cube[cube_index[item]]
+
+            for item in self.fix_param:
+                param_dict[item] = self.fix_param[item]
 
             if self.model == 'planck' and self.n_planck > 1:
                 for i in range(self.n_planck-1):
