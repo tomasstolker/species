@@ -739,6 +739,15 @@ class FitModel:
             self.modelspec = None
             self.n_corr_par = 0
 
+        # Get the parameter order if interpolate_grid is used
+
+        if self.model != 'planck' and self.model != 'powerlaw':
+            readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
+            self.param_interp = readmodel.get_parameters()
+
+        else:
+            self.param_interp = None
+
         # Include blackbody disk
 
         self.diskphot = []
@@ -1168,6 +1177,15 @@ class FitModel:
 
                 if item not in err_offset:
                     err_offset[item] = None
+
+            if self.param_interp is not None:
+                # Sort the parameters in the correct order for spectrum_interp because
+                # spectrum_interp creates a list in the order of the keys in param_dict
+                param_tmp = param_dict.copy()
+
+                param_dict = {}
+                for item in self.param_interp:
+                    param_dict[item] = param_tmp[item]
 
             ln_like = 0.
 
