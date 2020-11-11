@@ -379,7 +379,9 @@ class FitModel:
         model : str
             Atmospheric model (e.g. 'bt-settl', 'exo-rem', 'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors.
+            The boundaries that are used for the uniform priors. Fixing a parameter is possible by
+            providing the same value as lower and upper boundary of the parameter, for example,
+            ``bounds={'logg': (4., 4.)``.
 
             Atmospheric model parameters (e.g. ``model='bt-settl'``):
 
@@ -737,6 +739,15 @@ class FitModel:
             self.modelspec = None
             self.n_corr_par = 0
 
+        # Get the parameter order if interpolate_grid is used
+
+        if self.model != 'planck' and self.model != 'powerlaw':
+            readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
+            self.param_interp = readmodel.get_parameters()
+
+        else:
+            self.param_interp = None
+
         # Include blackbody disk
 
         self.diskphot = []
@@ -814,6 +825,23 @@ class FitModel:
 
         if 'ism_red' in self.bounds:
             self.modelpar.append('ism_red')
+
+        self.fix_param = {}
+        del_param = []
+
+        for key, value in self.bounds.items():
+            if value[0] == value[1]:
+                self.fix_param[key] = value[0]
+                del_param.append(key)
+
+        if del_param:
+            print(f'Fixing {len(del_param)} parameters:')
+
+            for item in del_param:
+                print(f'   - {item} = {self.fix_param[item]}')
+
+                self.modelpar.remove(item)
+                del self.bounds[item]
 
         print(f'Fitting {len(self.modelpar)} parameters:')
 
@@ -1115,6 +1143,9 @@ class FitModel:
                 else:
                     param_dict[item] = cube[cube_index[item]]
 
+            for item in self.fix_param:
+                param_dict[item] = self.fix_param[item]
+
             if self.model == 'planck' and self.n_planck > 1:
                 for i in range(self.n_planck-1):
                     if param_dict[f'teff_{i+1}'] > param_dict[f'teff_{i}']:
@@ -1146,6 +1177,15 @@ class FitModel:
 
                 if item not in err_offset:
                     err_offset[item] = None
+
+            if self.param_interp is not None:
+                # Sort the parameters in the correct order for spectrum_interp because
+                # spectrum_interp creates a list in the order of the keys in param_dict
+                param_tmp = param_dict.copy()
+
+                param_dict = {}
+                for item in self.param_interp:
+                    param_dict[item] = param_tmp[item]
 
             ln_like = 0.
 
@@ -1385,9 +1425,22 @@ class FitModel:
 
         species_db = database.Database()
 
+        ln_prob = samples[:, -1]
+        samples = samples[:, :-1]
+
+        # Adding the fixed parameters to the samples
+
+        for key, value in self.fix_param.items():
+            self.modelpar.append(key)
+
+            app_param = np.full(samples.shape[0], value)
+            app_param = app_param[..., np.newaxis]
+
+            samples = np.append(samples, app_param, axis=1)
+
         species_db.add_samples(sampler='multinest',
-                               samples=samples[:, :-1],
-                               ln_prob=samples[:, -1],
+                               samples=samples,
+                               ln_prob=ln_prob,
                                mean_accept=None,
                                spectrum=('model', self.model),
                                tag=tag,

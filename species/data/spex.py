@@ -11,7 +11,6 @@ import pandas as pd
 from astropy.io.votable import parse_single_table
 
 from species.analysis import photometry
-from species.read import read_filter
 from species.util import data_util, query_util
 
 
@@ -70,15 +69,27 @@ def add_spex(input_path, database):
 
     for i, item in enumerate(url):
         if twomass[i] not in unique_id:
-            xml_file_1 = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
+
+            if isinstance(twomass[i], str):
+                xml_file_1 = os.path.join(data_path, twomass[i]+'.xml')
+            else:
+                # Use decode for backward compatibility
+                xml_file_1 = os.path.join(data_path, twomass[i].decode('utf-8')+'.xml')
 
             if not os.path.isfile(xml_file_1):
-                urllib.request.urlretrieve(item.decode('utf-8'), xml_file_1)
+                if isinstance(item, str):
+                    urllib.request.urlretrieve(item, xml_file_1)
+                else:
+                    urllib.request.urlretrieve(item.decode('utf-8'), xml_file_1)
 
             table = parse_single_table(xml_file_1)
             name = table.array['ID']
-            name = name[0].decode('utf-8')
             url = table.array['access_url']
+
+            if isinstance(name[0], str):
+                name = name[0]
+            else:
+                name = name[0].decode('utf-8')
 
             print_message = f'Downloading SpeX Prism Spectral Library... {name}'
             print(f'\r{print_message:<72}', end='')
@@ -116,9 +127,14 @@ def add_spex(input_path, database):
             h_mag = table.get_field_by_id('hmag').value
             ks_mag = table.get_field_by_id('ksmag').value
 
-            j_mag = j_mag.decode('utf-8')
-            h_mag = h_mag.decode('utf-8')
-            ks_mag = ks_mag.decode('utf-8')
+            if not isinstance(j_mag, str):
+                j_mag = j_mag.decode('utf-8')
+
+            if not isinstance(h_mag, str):
+                h_mag = h_mag.decode('utf-8')
+
+            if not isinstance(ks_mag, str):
+                ks_mag = ks_mag.decode('utf-8')
 
             if j_mag == '':
                 j_mag = np.nan
@@ -136,19 +152,27 @@ def add_spex(input_path, database):
                 ks_mag = float(ks_mag)
 
             name = table.get_field_by_id('name').value
-            name = name.decode('utf-8')
+
+            if not isinstance(name, str):
+                name = name.decode('utf-8')
 
             twomass_id = table.get_field_by_id('name2m').value
-            twomass_id = twomass_id.decode('utf-8')
+
+            if not isinstance(twomass_id, str):
+                twomass_id = twomass_id.decode('utf-8')
 
             try:
                 sptype = table.get_field_by_id('nirspty').value
-                sptype = sptype.decode('utf-8')
+
+                if not isinstance(sptype, str):
+                    sptype = sptype.decode('utf-8')
 
             except KeyError:
                 try:
                     sptype = table.get_field_by_id('optspty').value
-                    sptype = sptype.decode('utf-8')
+
+                    if not isinstance(sptype, str):
+                        sptype = sptype.decode('utf-8')
 
                 except KeyError:
                     sptype = 'None'
@@ -166,7 +190,8 @@ def add_spex(input_path, database):
             simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
 
             if simbad_id is not None:
-                simbad_id = simbad_id.decode('utf-8')
+                if not isinstance(simbad_id, str):
+                    simbad_id = simbad_id.decode('utf-8')
 
                 dist_select = distance_data.loc[distance_data['object'] == simbad_id]
 
