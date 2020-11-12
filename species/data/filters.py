@@ -76,6 +76,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         wavelength, transmission, _, _ = np.loadtxt('VisAO_Ys_filter_curve.dat', unpack=True)
 
+        # Remove wavelengths with zero transmission
         wavelength = wavelength[:-7]
         transmission = transmission[:-7]
 
