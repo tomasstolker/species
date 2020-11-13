@@ -97,7 +97,10 @@ def add_spex(input_path, database):
             xml_file_2 = os.path.join(data_path, f'spex_{name}.xml')
 
             if not os.path.isfile(xml_file_2):
-                urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file_2)
+                if isinstance(url[0], str):
+                    urllib.request.urlretrieve(url[0], xml_file_2)
+                else:
+                    urllib.request.urlretrieve(url[0].decode('utf-8'), xml_file_2)
 
             unique_id.append(twomass[i])
 

@@ -20,6 +20,9 @@ And to update to the most recent version:
 
    $ pip install --upgrade species
 
+.. important::
+   Currently it is recommended to install *species* from Github (see below) in order to benefit from the most recent implementations. The available package on PyPI is also stable but it usually trails behind the version on Github.
+
 Installation from Github
 ------------------------
 
