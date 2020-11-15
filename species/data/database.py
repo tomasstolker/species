@@ -1378,7 +1378,7 @@ class Database:
             Number of burnin steps. No burnin is removed if set to ``None``.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. Full spectrum is used if set to ``None``.
-        spec_res : float
+        spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
             is applied if set to ``None``.
 
@@ -1894,31 +1894,30 @@ class Database:
                     elif radtrans['pressure_grid'] == 'clouds':
                         rt_object.setup_opa_structure(pressure[::24])
 
-                print(f'Calculating mass fractions for {cloud_item[:-6]} clouds...',
-                      end='', flush=True)
+                desc = f'Calculating mass fractions of {cloud_item[:-6]}'
 
-                for j, sample_item in enumerate(samples):
-                    sample_dict = retrieval_util.list_to_dict(parameters, sample_item)
+                for j in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+                    sample_dict = retrieval_util.list_to_dict(parameters, samples[j, ])
 
                     if radtrans['pt_profile'] == 'molliere':
                         upper_temp = np.array([sample_dict['t1'],
                                                sample_dict['t2'],
                                                sample_dict['t3']])
 
-                        temp, _, _ = retrieval_util.pt_ret_model(upper_temp,
-                                                                 10.**sample_dict['log_delta'],
-                                                                 sample_dict['alpha'],
-                                                                 sample_dict['tint'],
-                                                                 pressure,
-                                                                 sample_dict['metallicity'],
-                                                                 sample_dict['c_o_ratio'])
+                        temp, _ = retrieval_util.pt_ret_model(upper_temp,
+                                                              10.**sample_dict['log_delta'],
+                                                              sample_dict['alpha'],
+                                                              sample_dict['tint'],
+                                                              pressure,
+                                                              sample_dict['metallicity'],
+                                                              sample_dict['c_o_ratio'])
 
                     elif radtrans['pt_profile'] == 'free' or radtrans['pt_profile'] == 'monotonic':
                         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
                         knot_temp = []
-                        for i in range(15):
-                            knot_temp.append(sample_dict[f't{i}'])
+                        for k in range(15):
+                            knot_temp.append(sample_dict[f't{k}'])
 
                         knot_temp = np.asarray(knot_temp)
 
@@ -1964,8 +1963,6 @@ class Database:
 
                     dset.attrs['n_param'] = n_param
                     dset.attrs[f'parameter{n_param-1}'] = f'{cloud_item[:-6].lower()}_fraction'
-
-                print(' [DONE]')
 
         if inc_teff:
             print('Calculating Teff from the posterior samples... ')
