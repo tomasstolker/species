@@ -18,7 +18,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
    tutorials/color_magnitude_narrowband.ipynb
    tutorials/atmospheric_models.ipynb
    tutorials/data_model.ipynb
-   tutorials/photometric_calibration.ipynb
+   tutorials/flux_calibration.ipynb
    tutorials/fitting_model_spectra.ipynb
 
 .. important::
