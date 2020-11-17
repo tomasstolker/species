@@ -264,7 +264,7 @@ class ReadCalibration:
     def get_magnitude(self,
                       model_param: Optional[Dict[str, float]] = None,
                       distance: Optional[Tuple[float, float]] = None) -> Tuple[
-                          Tuple[float, float], Tuple[Optional[float], Optional[float]]]:
+                          Tuple[float, Optional[float]], Tuple[Optional[float], Optional[float]]]:
         """
         Function for calculating the apparent magnitude for the ``filter_name``.
 
@@ -286,9 +286,14 @@ class ReadCalibration:
 
         specbox = self.get_spectrum(model_param=model_param)
 
+        if np.count_nonzero(specbox.error) == 0:
+            error = None
+        else:
+            error = specbox.error
+
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_magnitude(specbox.wavelength,
                                              specbox.flux,
-                                             error=specbox.error,
+                                             error=error,
                                              distance=distance)

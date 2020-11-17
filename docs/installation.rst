@@ -45,7 +45,7 @@ And running the setup script to install the package and its dependencies:
 
        $ pip install --upgrade pip
 
-Alternatively to running the ``setup.py`` file, the folder where ``species`` is located can also be added to the ``PYTHONPATH`` environmental variable such that the package is found by Python. The command may depend on the OS that is used, but is often something like:
+Alternatively to running the ``setup.py`` file, the folder where ``species`` is located can also be added to the ``PYTHONPATH`` environment variable such that the package is found by Python. The command may depend on the OS that is used, but is often something like:
 
 .. code-block:: console
 
