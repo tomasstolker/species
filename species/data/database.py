@@ -1550,10 +1550,10 @@ class Database:
             else:
                 readmodel = read_model.ReadModel(spectrum_name, filter_name=filter_name)
 
-        # elif spectrum_type == 'calibration':
-        #     readcalib = read_calibration.ReadCalibration(spectrum_name, None)
+        elif spectrum_type == 'calibration':
+            readcalib = read_calibration.ReadCalibration(spectrum_name, filter_name=filter_name)
 
-        mcmc_phot = np.zeros((samples.shape[0], 1))
+        mcmc_phot = np.zeros((samples.shape[0]))
 
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC photometry'):
             model_param = {}
@@ -1569,13 +1569,14 @@ class Database:
 
                     app_mag, _ = synphot.spectrum_to_magnitude(pl_box.wavelength, pl_box.flux)
 
-                    mcmc_phot[i, 0] = app_mag[0]
+                    mcmc_phot[i] = app_mag[0]
 
                 else:
-                    mcmc_phot[i, 0], _ = readmodel.get_magnitude(model_param)
+                    mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
 
-            # elif spectrum_type == 'calibration':
-            #     specbox = readcalib.get_spectrum(model_param)
+            elif spectrum_type == 'calibration':
+                app_mag, _ = readcalib.get_magnitude(model_param=model_param, distance=None)
+                mcmc_phot[i] = app_mag[0]
 
         return mcmc_phot
 

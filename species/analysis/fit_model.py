@@ -742,7 +742,7 @@ class FitModel:
         # Get the parameter order if interpolate_grid is used
 
         if self.model != 'planck' and self.model != 'powerlaw':
-            readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
+            readmodel = read_model.ReadModel(self.model)
             self.param_interp = readmodel.get_parameters()
 
         else:
