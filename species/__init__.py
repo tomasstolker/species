@@ -40,7 +40,7 @@ from species.plot.plot_color import plot_color_magnitude, \
 
 from species.plot.plot_mcmc import plot_posterior, \
                                    plot_walkers, \
-                                   plot_photometry, \
+                                   plot_mag_posterior, \
                                    plot_size_distributions, \
                                    plot_extinction
 

@@ -591,13 +591,13 @@ def plot_posterior(tag: str,
 
 
 @typechecked
-def plot_photometry(tag: str,
-                    filter_name: str,
-                    burnin: int = None,
-                    xlim: Tuple[float, float] = None,
-                    output: str = 'photometry.pdf') -> None:
+def plot_mag_posterior(tag: str,
+                       filter_name: str,
+                       burnin: int = None,
+                       xlim: Tuple[float, float] = None,
+                       output: str = 'mag_posterior.pdf') -> None:
     """
-    Function to plot the posterior distribution of the synthetic photometry.
+    Function to plot the posterior distribution of the synthetic magnitudes.
 
     Parameters
     ----------
@@ -632,9 +632,9 @@ def plot_photometry(tag: str,
     fig = corner.corner(samples,
                         labels=['Magnitude'],
                         quantiles=[0.16, 0.5, 0.84],
-                        label_kwargs={'fontsize': 13},
+                        label_kwargs={'fontsize': 13.},
                         show_titles=True,
-                        title_kwargs={'fontsize': 12},
+                        title_kwargs={'fontsize': 12.},
                         title_fmt='.2f')
 
     axes = np.array(fig.axes).reshape((1, 1))
