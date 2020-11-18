@@ -296,12 +296,12 @@ def plot_posterior(tag: str,
 
     # Use only last axis for parameter dimensions
     for i in range(ndim):
-        if np.amin(samples[:, :, i]) == np.amax(samples[:, :, i]):
+        if np.amin(samples[..., i]) == np.amax(samples[..., i]):
             index_del.append(i)
         else:
             index_sel.append(i)
 
-    samples = samples[:, :, index_sel]
+    samples = samples[..., index_sel]
 
     for i in range(len(index_del)-1, -1, -1):
         del labels[index_del[i]]
