@@ -10,6 +10,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.colorbar import Colorbar
+from matplotlib.colors import LogNorm
+from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
@@ -45,10 +48,7 @@ def plot_pt_profile(tag: str,
     output : str
         Output filename.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
-        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
-        instance is sufficiently broad to cover all the photometric and spectroscopic data of
-        ``inc_phot`` and ``inc_spec``. Not used if set to ``None``.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     extra_axis : str, None
         The quantify that is plotted at the top axis ('photosphere', 'grains', None).
 
@@ -64,7 +64,7 @@ def plot_pt_profile(tag: str,
     cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
     species_db = database.Database()
-    box = species_db.get_samples(tag, burnin=0)
+    box = species_db.get_samples(tag)
 
     parameters = np.asarray(box.parameters)
     samples = box.samples
@@ -168,7 +168,7 @@ def plot_pt_profile(tag: str,
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
 
     if pt_profile == 'molliere':
-        temp, _= retrieval_util.pt_ret_model(
+        temp, _ = retrieval_util.pt_ret_model(
             np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
             median['alpha'], median['tint'], pressure, median['metallicity'], median['c_o_ratio'])
 
@@ -312,8 +312,9 @@ def plot_pt_profile(tag: str,
 
         elif extra_axis == 'grains':
 
-            if 'fe_fraction' in median or 'mgsio3_fraction' in median or 'al2o3_fraction' in median \
-                    or 'na2s_fraction' in median or 'kcl_fraction' in median:
+            if 'fe_fraction' in median or 'mgsio3_fraction' in median or \
+                    'al2o3_fraction' in median or 'na2s_fraction' in median or \
+                    'kcl_fraction' in median:
                 ax2 = ax.twiny()
 
                 ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
@@ -381,6 +382,165 @@ def plot_pt_profile(tag: str,
         if extra_axis is not None:
             warnings.warn('The argument of extra_axis is ignored because radtrans does not '
                           'contain a ReadRadtrans object.')
+
+    plt.savefig(output, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+
+    print(' [DONE]')
+
+
+@typechecked
+def plot_opacities(tag: str,
+                   offset: Optional[Tuple[float, float]] = None,
+                   output: str = 'opacities.pdf',
+                   radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> None:
+    """
+    Function to plot the posterior distribution.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the posterior samples.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label.
+    output : str
+        Output filename.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    # print(radtrans.rt_object.__dict__.keys())
+
+    print(f'Plotting opacities: {output}...', end='', flush=True)
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+    median = box.median_sample
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.5)
+
+    plt.figure(1, figsize=(4., 6.))
+    gridsp = mpl.gridspec.GridSpec(2, 2, width_ratios=[4, 0.25])
+    gridsp.update(wspace=0.1, hspace=0.1, left=0, right=1, bottom=0, top=1)
+
+    ax1 = plt.subplot(gridsp[0, 0])
+    ax2 = plt.subplot(gridsp[1, 0])
+    ax3 = plt.subplot(gridsp[0, 1])
+    ax4 = plt.subplot(gridsp[1, 1])
+
+    radtrans.get_model(median)
+
+    wavelength, opacity = radtrans.rt_object.get_opa(radtrans.rt_object.temp)
+
+    wavelength *= 1e4  # (um)
+
+    opacity_line = np.zeros((radtrans.rt_object.freq.shape[0], radtrans.rt_object.press.shape[0]))
+
+    for item in opacity.values():
+        opacity_line += item
+
+    opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
+
+    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=False)
+
+    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax3.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax3.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax4.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax4.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax1.xaxis.set_major_locator(MultipleLocator(1.))
+    ax2.xaxis.set_major_locator(MultipleLocator(1.))
+
+    ax1.xaxis.set_minor_locator(MultipleLocator(0.2))
+    ax2.xaxis.set_minor_locator(MultipleLocator(0.2))
+
+    # ax1.yaxis.set_major_locator(LogLocator(base=10.))
+    # ax2.yaxis.set_major_locator(LogLocator(base=10.))
+    # ax3.yaxis.set_major_locator(LogLocator(base=10.))
+    # ax4.yaxis.set_major_locator(LogLocator(base=10.))
+
+    # ax1.yaxis.set_minor_locator(LogLocator(base=1.))
+    # ax2.yaxis.set_minor_locator(LogLocator(base=1.))
+    # ax3.yaxis.set_minor_locator(LogLocator(base=1.))
+    # ax4.yaxis.set_minor_locator(LogLocator(base=1.))
+
+    xx, yy = np.meshgrid(wavelength, 1e-6*radtrans.rt_object.press)
+
+    fig = ax1.pcolormesh(xx, yy, np.transpose(opacity_line), cmap='viridis', shading='gouraud',
+                         norm=LogNorm(vmin=1e-6*np.amax(opacity_line), vmax=np.amax(opacity_line)))
+
+    cb = Colorbar(ax=ax3, mappable=fig, orientation='vertical', ticklocation='right')
+    cb.ax.set_ylabel('Line opacity (cm$^2$/g)', rotation=270, labelpad=20, fontsize=11)
+
+    fig = ax2.pcolormesh(xx, yy, np.transpose(opacity_cont), cmap='viridis', shading='gouraud',
+                         norm=LogNorm(vmin=1e-6*np.amax(opacity_cont), vmax=np.amax(opacity_cont)))
+
+    cb = Colorbar(ax=ax4, mappable=fig, orientation='vertical', ticklocation='right')
+    cb.ax.set_ylabel('Continuum opacity (cm$^2$/g)', rotation=270, labelpad=20, fontsize=11)
+
+    ax1.set_ylabel('Pressure (bar)', fontsize=13)
+
+    ax2.set_xlabel('Wavelength (µm)', fontsize=13)
+    ax2.set_ylabel('Pressure (bar)', fontsize=13)
+
+    ax1.set_xlim(wavelength[0], wavelength[-1])
+    ax2.set_xlim(wavelength[0], wavelength[-1])
+
+    ax1.set_ylim(radtrans.rt_object.press[-1]*1e-6, radtrans.rt_object.press[0]*1e-6)
+    ax2.set_ylim(radtrans.rt_object.press[-1]*1e-6, radtrans.rt_object.press[0]*1e-6)
+
+    if offset is not None:
+        ax1.get_xaxis().set_label_coords(0.5, offset[0])
+        ax1.get_yaxis().set_label_coords(offset[1], 0.5)
+
+        ax2.get_xaxis().set_label_coords(0.5, offset[0])
+        ax2.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax1.get_xaxis().set_label_coords(0.5, -0.1)
+        ax1.get_yaxis().set_label_coords(-0.14, 0.5)
+
+        ax2.get_xaxis().set_label_coords(0.5, -0.1)
+        ax2.get_yaxis().set_label_coords(-0.14, 0.5)
+
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
+    ax3.set_yscale('log')
+    ax4.set_yscale('log')
 
     plt.savefig(output, bbox_inches='tight')
     plt.clf()
