@@ -40,11 +40,11 @@ def plot_pt_profile(tag: str,
     random : int
         Number of randomly selected samples from the posterior.
     xlim : tuple(float, float), None
-        Limits of the wavelength axis.
+        Limits of the temperature axis. Default values are used if set to ``None``.
     ylim : tuple(float, float), None
-        Limits of the flux axis.
+        Limits of the pressure axis. Default values are used if set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label.
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
         Output filename.
     radtrans : read_radtrans.ReadRadtrans, None
@@ -396,14 +396,14 @@ def plot_opacities(tag: str,
                    output: str = 'opacities.pdf',
                    radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> None:
     """
-    Function to plot the posterior distribution.
+    Function to plot the line and continuum opacity structure from the median posterior samples.
 
     Parameters
     ----------
     tag : str
         Database tag with the posterior samples.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label.
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
         Output filename.
     radtrans : read_radtrans.ReadRadtrans, None
@@ -414,8 +414,6 @@ def plot_opacities(tag: str,
     NoneType
         None
     """
-
-    # print(radtrans.rt_object.__dict__.keys())
 
     print(f'Plotting opacities: {output}...', end='', flush=True)
 
@@ -498,15 +496,17 @@ def plot_opacities(tag: str,
     # ax3.yaxis.set_minor_locator(LogLocator(base=1.))
     # ax4.yaxis.set_minor_locator(LogLocator(base=1.))
 
-    xx, yy = np.meshgrid(wavelength, 1e-6*radtrans.rt_object.press)
+    xx_grid, yy_grid = np.meshgrid(wavelength, 1e-6*radtrans.rt_object.press)
 
-    fig = ax1.pcolormesh(xx, yy, np.transpose(opacity_line), cmap='viridis', shading='gouraud',
+    fig = ax1.pcolormesh(xx_grid, yy_grid, np.transpose(opacity_line),
+                         cmap='viridis', shading='gouraud',
                          norm=LogNorm(vmin=1e-6*np.amax(opacity_line), vmax=np.amax(opacity_line)))
 
     cb = Colorbar(ax=ax3, mappable=fig, orientation='vertical', ticklocation='right')
     cb.ax.set_ylabel('Line opacity (cm$^2$/g)', rotation=270, labelpad=20, fontsize=11)
 
-    fig = ax2.pcolormesh(xx, yy, np.transpose(opacity_cont), cmap='viridis', shading='gouraud',
+    fig = ax2.pcolormesh(xx_grid, yy_grid, np.transpose(opacity_cont),
+                         cmap='viridis', shading='gouraud',
                          norm=LogNorm(vmin=1e-6*np.amax(opacity_cont), vmax=np.amax(opacity_cont)))
 
     cb = Colorbar(ax=ax4, mappable=fig, orientation='vertical', ticklocation='right')
