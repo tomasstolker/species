@@ -4,12 +4,14 @@ atmospheric retrieval code can be found in Mollière et al. (2019) and in the on
 documentation (https://petitradtrans.readthedocs.io).
 """
 
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.ticker import MultipleLocator
+from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.analysis import photometry
@@ -274,6 +276,32 @@ class ReadRadtrans:
             flux = retrieval_util.convolve(wavelength, flux, spec_res)
 
         if plot_contribution is not None:
+            # TODO
+            self.rt_object.calc_opt_depth(10.**model_param['logg'])
+            self.rt_object.calc_tau_cloud(10.**model_param['logg'])
+
+            # From Paul: The first axis of total_tay is the coordinate of the cumulative opacity
+            # distribution function (ranging from 0 to 1). A correct average is obtained by
+            # multiplying the first axis with self.w_gauss, then summing them. This is then the
+            # actual wavelength-mean.
+
+            # From petitRADTRANS: Only use 0 index for species because for lbl or
+            # test_ck_shuffle_comp = True everything has been moved into the 0th index
+
+            # Extract the optical depth of the line species
+            w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
+            optical_depth = np.sum(w_gauss*self.rt_object.total_tau[:, :, 0, :], axis=0)
+
+            # Add the optical depth of the cloud species
+            # TODO is this correct?
+            # optical_depth += np.sum(self.rt_object.tau_cloud[0, :, :, :], axis=1)
+
+            if self.rt_object.tau_cloud.shape[0] != 1:
+                raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
+
+            if self.rt_object.tau_cloud.shape[2] != 1:
+                raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
+
             mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
             mpl.rcParams['font.family'] = 'serif'
 
@@ -300,10 +328,20 @@ class ReadRadtrans:
             ax.get_yaxis().set_label_coords(-0.07, 0.5)
 
             ax.set_yscale('log')
-            ax.set_xscale('log')
+
+            ax.xaxis.set_major_locator(MultipleLocator(1.))
+            ax.xaxis.set_minor_locator(MultipleLocator(0.2))
 
             xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure[::3])
-            ax.contourf(xx_grid, yy_grid, emission_contr, 30, cmap=plt.cm.bone_r)
+            ax.pcolormesh(xx_grid, yy_grid, emission_contr, cmap=plt.cm.bone_r, shading='gouraud',)
+
+            photo_press = np.zeros(wavelength.shape[0])
+
+            for i in range(photo_press.shape[0]):
+                press_interp = interp1d(optical_depth[i, :], self.rt_object.press)
+                photo_press[i] = press_interp(1.)*1e-6  # cgs to (bar)
+
+            ax.plot(wavelength, photo_press, lw=0.5, color='gray')
 
             ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
             ax.set_ylim(np.amax(self.pressure[::3]), np.amin(self.pressure[::3]))

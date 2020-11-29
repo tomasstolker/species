@@ -251,6 +251,7 @@ def plot_pt_profile(tag: str,
         radtrans.get_model(median)
 
         if extra_axis == 'photosphere':
+            # TODO does calc_opt_depth also include continuum opacities?
             radtrans.rt_object.calc_opt_depth(10.**median['logg'])
             radtrans.rt_object.calc_tau_cloud(10.**median['logg'])
 
