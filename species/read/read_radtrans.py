@@ -276,7 +276,6 @@ class ReadRadtrans:
             flux = retrieval_util.convolve(wavelength, flux, spec_res)
 
         if plot_contribution is not None:
-            # TODO
             self.rt_object.calc_opt_depth(10.**model_param['logg'])
             self.rt_object.calc_tau_cloud(10.**model_param['logg'])
 
@@ -288,19 +287,18 @@ class ReadRadtrans:
             # From petitRADTRANS: Only use 0 index for species because for lbl or
             # test_ck_shuffle_comp = True everything has been moved into the 0th index
 
-            # Extract the optical depth of the line species
+            # TODO Extract the optical depth of the line species
             w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
             optical_depth = np.sum(w_gauss*self.rt_object.total_tau[:, :, 0, :], axis=0)
 
             # Add the optical depth of the cloud species
-            # TODO is this correct?
             # optical_depth += np.sum(self.rt_object.tau_cloud[0, :, :, :], axis=1)
 
-            if self.rt_object.tau_cloud.shape[0] != 1:
-                raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
+            # if self.rt_object.tau_cloud.shape[0] != 1:
+            #     raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
 
-            if self.rt_object.tau_cloud.shape[2] != 1:
-                raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
+            # if self.rt_object.tau_cloud.shape[2] != 1:
+            #     raise ValueError(f'Unexpected shape? {self.rt_object.tau_cloud.shape}.')
 
             mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
             mpl.rcParams['font.family'] = 'serif'
