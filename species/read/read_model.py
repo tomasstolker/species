@@ -628,10 +628,14 @@ class ReadModel:
 
             flux += spectres.spectres(self.wl_points, planck_box.wavelength, planck_box.flux)
 
-        if smooth:
+        if smooth and spec_res is not None:
             flux = read_util.smooth_spectrum(wavelength=self.wl_points,
                                              flux=flux,
                                              spec_res=spec_res)
+
+        elif smooth and spec_res is None:
+            warnings.warn('Smoothing of a spectrum (smooth=True) is only possible when setting '
+                          'the argument of \'spec_res\'.')
 
         if wavel_resample is not None:
             flux = spectres.spectres(wavel_resample,
