@@ -48,7 +48,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
     ----------
     temp_3 : np.ndarray, None
         Array with three temperature points that are added on top of the radiative Eddington
-        structure (i.e. above tau = 0.1). The temperature knots are connected with a spline
+        structure (i.e. above tau = 0.1). The temperature nodes are connected with a spline
         interpolation and a prior is used such that t1 < t2 < t3 < t_connect. The three
         temperature points are not used if set to ``None``.
     delta : float
@@ -262,9 +262,10 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
 @typechecked
 def pt_spline_interp(knot_press: np.ndarray,
                      knot_temp: np.ndarray,
-                     pressure: np.ndarray) -> np.ndarray:
+                     pressure: np.ndarray,
+                     pt_smooth: float) -> np.ndarray:
     """
-    Function for interpolating the P/T knots with a PCHIP 1-D monotonic cubic interpolation. The
+    Function for interpolating the P-T nodes with a PCHIP 1-D monotonic cubic interpolation. The
     interpolated temperature is smoothed with a Gaussian kernel of width 0.3 dex in pressure
     (see Piette & Madhusudhan 2020).
 
@@ -276,6 +277,11 @@ def pt_spline_interp(knot_press: np.ndarray,
         Temperature knots (K).
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is interpolated.
+    pt_smooth : float
+        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
+        temperature nodes of the P-T profile. The argument is given as log10(P/bar) with the
+        default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        set to 0.3 dex.
 
     Returns
     -------
@@ -293,7 +299,7 @@ def pt_spline_interp(knot_press: np.ndarray,
     if np.std(np.diff(log_press))/log_diff > 1e-6:
         raise ValueError('Expecting equally spaced pressures in log space.')
 
-    return gaussian_filter(temp_interp, sigma=0.3/log_diff, mode='nearest')
+    return gaussian_filter(temp_interp, sigma=pt_smooth/log_diff, mode='nearest')
 
 
 @typechecked
@@ -301,10 +307,10 @@ def create_pt_profile(cube,
                       cube_index: Dict[str, float],
                       pt_profile: str,
                       pressure: np.ndarray,
-                      knot_press: Optional[np.ndarray]) -> Tuple[np.ndarray,
-                                                                 Optional[np.ndarray]]:
+                      knot_press: Optional[np.ndarray],
+                      pt_smooth: float) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
-    Function for creating the P/T profile.
+    Function for creating the P-T profile.
 
     Parameters
     ----------
@@ -320,6 +326,11 @@ def create_pt_profile(cube,
     knot_press : np.ndarray, None
         Pressure knots (bar), which are required when the argument of ``pt_profile`` is either
         'free' or 'monotonic'.
+    pt_smooth : float
+        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
+        temperature nodes of the P-T profile. The argument is given as log10(P/bar) with the
+        default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        set to 0.3 dex.
 
     Returns
     -------
@@ -358,7 +369,7 @@ def create_pt_profile(cube,
 
         knot_temp = np.asarray(knot_temp)
 
-        temp = pt_spline_interp(knot_press, knot_temp, pressure)
+        temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
 
     return temp, knot_temp
 
@@ -1312,7 +1323,7 @@ def find_cloud_deck(composition: str,
                     mmw: float = 2.33,
                     plotting: bool = False) -> float:
     """
-    Function to find the base of the cloud deck by intersecting the P/T profile with the
+    Function to find the base of the cloud deck by intersecting the P-T profile with the
     saturation vapor pressure.
 
     Parameters

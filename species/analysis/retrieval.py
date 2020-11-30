@@ -432,7 +432,8 @@ class AtmosphericRetrieval:
                       live_points: int = 2000,
                       resume: bool = False,
                       plotting: bool = False,
-                      check_isothermal: bool = False) -> None:
+                      check_isothermal: bool = False,
+                      pt_smooth: float = 0.3) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -471,6 +472,11 @@ class AtmosphericRetrieval:
             Plot sample results for testing.
         check_isothermal : bool
             Check if there is an isothermal region below 1 bar. If so, discard the sample.
+        pt_smooth : float
+            Standard deviation of the Gaussian kernel that is used for smoothing the sampled
+            temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
+            `pt_profile='monotonic'`. The argument is given as log10(P/bar) with the default
+            value set to 0.3 dex.
 
         Returns
         -------
@@ -1020,7 +1026,7 @@ class AtmosphericRetrieval:
             if calc_tau_cloud:
                 # Create the P-T profile
                 temperature, knot_temp = retrieval_util.create_pt_profile(
-                    cube, cube_index, pt_profile, self.pressure, knot_press)
+                    cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
 
                 if 'log_p_quench' in cube_index:
                     # Quenching pressure (bar)
@@ -1041,7 +1047,7 @@ class AtmosphericRetrieval:
             # Create the P-T profile
 
             temp, knot_temp = retrieval_util.create_pt_profile(
-                cube, cube_index, pt_profile, self.pressure, knot_press)
+                cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
 
             if check_isothermal:
                 # Get knot indices where the pressure is larger than 1 bar
