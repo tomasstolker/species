@@ -419,6 +419,11 @@ class AtmosphericRetrieval:
                 self.parameters.append(f'corr_len_{item}')
                 self.parameters.append(f'corr_amp_{item}')
 
+        # Add P-T smoothin parameters
+
+        if 'pt_smooth' in bounds:
+            self.parameters.append('pt_smooth')
+
         # List all parameters
 
         print(f'Fitting {len(self.parameters)} parameters:')
