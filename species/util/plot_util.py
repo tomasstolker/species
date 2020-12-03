@@ -308,6 +308,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('log_powerlaw_c')
         param[index] = r'$\mathregular{log}\,c$'
 
+    if 'pt_smooth' in param:
+        index = param.index('pt_smooth')
+        param[index] = r'$\gamma$'
+
     return param
 
 
@@ -499,6 +503,11 @@ def quantity_unit(param: List[str],
         quantity.append('powerlaw_ext')
         unit.append(None)
         label.append(r'$\mathregular{A}_\mathregular{V}$')
+
+    if 'pt_smooth' in param:
+        quantity.append('pt_smooth')
+        unit.append(None)
+        label.append('$\gamma$')
 
     return quantity, unit, label
 

@@ -1295,8 +1295,11 @@ class Database:
 
             prob_sample[par_key] = par_value
 
-        if dset.attrs.__contains__('distance'):
+        if 'distance' in dset.attrs:
             prob_sample['distance'] = dset.attrs['distance']
+
+        if 'pt_smooth' in dset.attrs:
+            prob_sample['pt_smooth'] = dset.attrs['pt_smooth']
 
         h5_file.close()
 
@@ -1354,8 +1357,11 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if dset.attrs.__contains__('distance'):
+            if 'distance' in dset.attrs:
                 median_sample['distance'] = dset.attrs['distance']
+
+            if 'pt_smooth' in dset.attrs:
+                median_sample['pt_smooth'] = dset.attrs['pt_smooth']
 
         return median_sample
 
@@ -1426,7 +1432,7 @@ class Database:
             warnings.warn('Smoothing of the spectral resolution is not implemented for calibration '
                           'spectra.')
 
-        if dset.attrs.__contains__('distance'):
+        if 'distance' in dset.attrs:
             distance = dset.attrs['distance']
         else:
             distance = None
@@ -1532,7 +1538,7 @@ class Database:
         spectrum_type = dset.attrs['type']
         spectrum_name = dset.attrs['spectrum']
 
-        if dset.attrs.__contains__('distance'):
+        if 'distance' in dset.attrs:
             distance = dset.attrs['distance']
         else:
             distance = None
@@ -1714,6 +1720,10 @@ class Database:
         dset = h5_file[f'results/fit/{tag}/samples']
         ln_prob = np.asarray(h5_file[f'results/fit/{tag}/ln_prob'])
 
+        attributes = {}
+        for item in dset.attrs:
+            attributes[item] = dset.attrs[item]
+
         spectrum = dset.attrs['spectrum']
 
         if 'n_param' in dset.attrs:
@@ -1754,7 +1764,8 @@ class Database:
                               samples=samples,
                               ln_prob=ln_prob,
                               prob_sample=prob_sample,
-                              median_sample=median_sample)
+                              median_sample=median_sample,
+                              attributes=attributes)
 
     @typechecked
     def add_retrieval(self,
@@ -1858,6 +1869,9 @@ class Database:
             dset.attrs['pt_profile'] = radtrans['pt_profile']
             dset.attrs['chemistry'] = radtrans['chemistry']
 
+            if 'pt_smooth' in radtrans:
+                dset.attrs['pt_smooth'] = radtrans['pt_smooth']
+
         print(' [DONE]')
 
         rt_object = None
@@ -1922,7 +1936,13 @@ class Database:
 
                         knot_temp = np.asarray(knot_temp)
 
-                        temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+                        if 'pt_smooth' in sample_dict:
+                            pt_smooth = sample_dict['pt_smooth']
+                        else:
+                            pt_smooth = radtrans['pt_smooth']
+
+                        temp = retrieval_util.pt_spline_interp(
+                            knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
                     # Set the quenching pressure (bar)
 
@@ -2065,10 +2085,15 @@ class Database:
         else:
             pressure_grid = 'smaller'
 
-        if dset.attrs.__contains__('distance'):
+        if 'distance' in dset.attrs:
             distance = dset.attrs['distance']
         else:
             distance = None
+
+        if 'pt_smooth' in dset.attrs:
+            pt_smooth = dset.attrs['pt_smooth']
+        else:
+            pt_smooth = None
 
         samples = np.asarray(dset)
 
@@ -2163,6 +2188,7 @@ class Database:
                                                      quenching=quenching,
                                                      spec_res=spec_res,
                                                      distance=distance,
+                                                     pt_smooth=pt_smooth,
                                                      read_rad=read_rad,
                                                      sample=item)
 

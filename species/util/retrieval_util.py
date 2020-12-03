@@ -263,7 +263,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
 def pt_spline_interp(knot_press: np.ndarray,
                      knot_temp: np.ndarray,
                      pressure: np.ndarray,
-                     pt_smooth: float) -> np.ndarray:
+                     pt_smooth: float = 0.3) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic cubic interpolation. The
     interpolated temperature is smoothed with a Gaussian kernel of width 0.3 dex in pressure
@@ -279,7 +279,7 @@ def pt_spline_interp(knot_press: np.ndarray,
         Pressure points (bar) at which the temperatures is interpolated.
     pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. The argument is given as log10(P/bar) with the
+        temperature nodes of the P-T profile. The argument should be given as log10(P/bar) with the
         default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
         set to 0.3 dex.
 
@@ -308,7 +308,7 @@ def create_pt_profile(cube,
                       pt_profile: str,
                       pressure: np.ndarray,
                       knot_press: Optional[np.ndarray],
-                      pt_smooth: float) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+                      pt_smooth: float = 0.3) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Function for creating the P-T profile.
 
@@ -328,7 +328,7 @@ def create_pt_profile(cube,
         'free' or 'monotonic'.
     pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. The argument is given as log10(P/bar) with the
+        temperature nodes of the P-T profile. The argument should be given as log10(P/bar) with the
         default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
         set to 0.3 dex.
 

@@ -702,6 +702,7 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        quenching: np.bool_,
                        spec_res: float,
                        distance: Optional[float],
+                       pt_smooth: Optional[float],
                        read_rad: read_radtrans.ReadRadtrans,
                        sample: np.ndarray) -> box.ModelBox:
     """
@@ -723,8 +724,12 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         Use a quenching pressure for CH4/CO.
     spec_res : float
         Spectral resolution.
-    distance: float, None
+    distance : float, None
         Distance (pc).
+    pt_smooth : float
+        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
+        temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
+        `pt_profile='monotonic'`. The argument should be given as log10(P/bar).
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -788,6 +793,9 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
 
     if 'ism_red' in indices:
         model_param['ism_red'] = sample[indices['ism_red']]
+
+    if pt_smooth is not None:
+        model_param['pt_smooth'] = pt_smooth
 
     model_box = read_rad.get_model(model_param, spec_res=spec_res)
 

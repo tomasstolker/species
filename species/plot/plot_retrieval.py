@@ -73,6 +73,10 @@ def plot_pt_profile(tag: str,
     indices = np.random.randint(samples.shape[0], size=random)
     samples = samples[indices, ]
 
+    param_index = {}
+    for item in parameters:
+        param_index[item] = np.argwhere(parameters == item)[0][0]
+
     mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
     mpl.rcParams['font.family'] = 'serif'
 
@@ -130,13 +134,6 @@ def plot_pt_profile(tag: str,
     if 'tint' in parameters:
         pt_profile = 'molliere'
 
-        tint_index = np.argwhere(parameters == 'tint')[0]
-        t1_index = np.argwhere(parameters == 't1')[0]
-        t2_index = np.argwhere(parameters == 't2')[0]
-        t3_index = np.argwhere(parameters == 't3')[0]
-        alpha_index = np.argwhere(parameters == 'alpha')[0]
-        log_delta_index = np.argwhere(parameters == 'log_delta')[0]
-
     else:
         pt_profile = 'free'
 
@@ -148,22 +145,29 @@ def plot_pt_profile(tag: str,
 
     for item in samples:
         if pt_profile == 'molliere':
-            metallicity_index = np.argwhere(parameters == 'metallicity')[0]
-            c_o_ratio_index = np.argwhere(parameters == 'c_o_ratio')[0]
+            t3_param = np.array([item[param_index['t1']],
+                                 item[param_index['t2']],
+                                 item[param_index['t3']]])
 
             temp, _ = retrieval_util.pt_ret_model(
-                np.array([item[t1_index][0], item[t2_index][0], item[t3_index][0]]),
-                10.**item[log_delta_index][0], item[alpha_index][0], item[tint_index][0], pressure,
-                item[metallicity_index][0], item[c_o_ratio_index][0])
+                t3_param, 10.**item[param_index['log_delta']], item[param_index['alpha']],
+                item[param_index['tint']], pressure, item[param_index['metallicity']],
+                item[param_index['c_o_ratio']])
 
         elif pt_profile == 'free':
             knot_temp = []
             for i in range(15):
-                knot_temp.append(item[temp_index[i]][0])
+                knot_temp.append(item[temp_index[i]])
 
             knot_temp = np.asarray(knot_temp)
 
-            temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+            if 'pt_smooth' in parameters:
+                pt_smooth = item[param_index['pt_smooth']]
+            else:
+                pt_smooth = box.attributes['pt_smooth']
+
+            temp = retrieval_util.pt_spline_interp(
+                knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
 
@@ -181,7 +185,13 @@ def plot_pt_profile(tag: str,
 
         ax.plot(knot_temp, knot_press, 'o', ms=5., mew=0., color='tomato', zorder=3.)
 
-        temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, pressure)
+        if 'pt_smooth' in parameters:
+            pt_smooth = median[param_index['pt_smooth']]
+        else:
+            pt_smooth = box.attributes['pt_smooth']
+
+        temp = retrieval_util.pt_spline_interp(
+            knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 

@@ -175,7 +175,12 @@ class ReadRadtrans:
 
             knot_temp = np.asarray(knot_temp)
 
-            temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
+            if 'pt_smooth' in model_param:
+                temp = retrieval_util.pt_spline_interp(
+                    knot_press, knot_temp, self.pressure, pt_smooth=model_param['pt_smooth'])
+
+            else:
+                temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
         if 'log_p_quench' in model_param:
             log_p_quench = model_param['log_p_quench']
@@ -241,6 +246,7 @@ class ReadRadtrans:
 
         else:
             abund = {}
+
             for ab_item in self.rt_object.line_species:
                 abund[ab_item] = model_param[ab_item]
 

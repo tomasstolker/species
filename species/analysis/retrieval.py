@@ -254,6 +254,10 @@ class AtmosphericRetrieval:
 
         self.parameters = []
 
+        # Initiate the optional P-T smoothing parameter
+
+        self.pt_smooth = None
+
     @typechecked
     def set_parameters(self,
                        bounds: dict,
@@ -475,7 +479,7 @@ class AtmosphericRetrieval:
         pt_smooth : float
             Standard deviation of the Gaussian kernel that is used for smoothing the sampled
             temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
-            `pt_profile='monotonic'`. The argument is given as log10(P/bar) with the default
+            `pt_profile='monotonic'`. The argument should be given as log10(P/bar) with the default
             value set to 0.3 dex.
 
         Returns
@@ -556,6 +560,10 @@ class AtmosphericRetrieval:
             if 'o_h_ratio' in bounds:
                 del bounds['o_h_ratio']
 
+        # Update the P-T smoothing parameter
+
+        self.pt_smooth = pt_smooth
+
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
 
@@ -590,8 +598,11 @@ class AtmosphericRetrieval:
             rt_object.setup_opa_structure(self.pressure[::24])
             print('Number of pressure levels used with the radiative transfer: variable}')
 
+        # Create the knot pressures
+
         if pt_profile in ['free', 'monotonic']:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
+
         else:
             knot_press = None
 
@@ -618,6 +629,7 @@ class AtmosphericRetrieval:
             """
 
             # Surface gravity log10(g/cgs)
+
             if 'logg' in bounds:
                 logg = bounds['logg'][0] + (bounds['logg'][1]-bounds['logg'][0])*cube[cube_index['logg']]
             else:
@@ -627,6 +639,7 @@ class AtmosphericRetrieval:
             cube[cube_index['logg']] = logg
 
             # Planet radius (Rjup)
+
             if 'radius' in bounds:
                 radius = bounds['radius'][0] + (bounds['radius'][1]-bounds['radius'][0])*cube[cube_index['radius']]
             else:
@@ -665,6 +678,7 @@ class AtmosphericRetrieval:
 
                 # alpha: power law index in tau = delta * press_cgs**alpha
                 # see Eq. 1 in Mollière et al. (2020)
+
                 if 'alpha' in bounds:
                     alpha = bounds['alpha'][0] + (bounds['alpha'][1]-bounds['alpha'][0])*cube[cube_index['alpha']]
                 else:
@@ -773,6 +787,7 @@ class AtmosphericRetrieval:
                     cube[cube_index['K_burrows']] = log_x_k_abund
 
             # CO/CH4 quenching pressure (bar)
+
             if quenching:
                 if 'log_p_quench' in bounds:
                     log_p_quench = bounds['log_p_quench'][0] + (bounds['log_p_quench'][1]-bounds['log_p_quench'][0])*cube[cube_index['log_p_quench']]
@@ -944,6 +959,11 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['ism_red']] = ism_red
 
+            # Standard deviation of the Gaussian kernel for smoothing the P-T profile
+
+            if 'pt_smooth' in bounds:
+                cube[cube_index['pt_smooth']] = bounds['pt_smooth'][0] + (bounds['pt_smooth'][1]-bounds['pt_smooth'][0])*cube[cube_index['pt_smooth']]
+
         @typechecked
         def loglike(cube,
                     n_dim: int,
@@ -1020,6 +1040,13 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 if item[:-3].lower()+'_tau' in bounds:
                     calc_tau_cloud = True
+
+            # Read the P-T smoothing parameter or use the argument of run_multinest otherwise
+
+            if 'pt_smooth' in cube_index:
+                pt_smooth = cube[cube_index['pt_smooth']]
+            else:
+                pt_smooth = self.pt_smooth
 
             # Prepare the scaling based on the cloud optical depth
 
@@ -1318,6 +1345,9 @@ class AtmosphericRetrieval:
         radtrans_dict['pt_profile'] = pt_profile
         radtrans_dict['pressure_grid'] = self.pressure_grid
         radtrans_dict['wavel_range'] = self.wavel_range
+
+        if 'pt_smooth' not in bounds:
+            radtrans_dict['pt_smooth'] = self.pt_smooth
 
         with open(radtrans_filename, 'w', encoding='utf-8') as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
