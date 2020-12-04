@@ -25,7 +25,7 @@ def add_atmo(input_path: str,
              spec_res: Optional[float]) -> None:
     """
     Function for adding the ATMO 2020 atmospheric models to the database. The spectra have been
-    calculated with equilibrium chemistry and solar metallicity in the Teff range from 200 to 
+    calculated with equilibrium chemistry and solar metallicity in the Teff range from 200 to
     3000 K. The spectra have been downloaded from the Theoretical spectra web server
     (http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq) and resampled
     to a spectral resolution of 5000 from 0.3 to 100 um.

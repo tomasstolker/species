@@ -141,7 +141,7 @@ class ReadSpectrum:
                 if 'name' in attrs:
                     if isinstance(dset.attrs['name'], str):
                         list_name.append(dset.attrs['name'])
-                    else:                        
+                    else:
                         list_name.append(dset.attrs['name'].decode('utf-8'))
                 else:
                     list_name.append('')

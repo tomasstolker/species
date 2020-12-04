@@ -143,8 +143,9 @@ def update_spectra(objectbox: box.ObjectBox,
 
             if f'error_{key}' in model_param:
                 error = 10.**model_param[f'error_{key}']
+                log_msg = f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...'
 
-                print(f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...', end='', flush=True)
+                print(log_msg, end='', flush=True)
                 spec_tmp[:, 2] += error
                 print(' [DONE]')
 
