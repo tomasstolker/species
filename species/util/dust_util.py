@@ -13,6 +13,7 @@ import numpy as np
 
 from typeguard import typechecked
 from scipy.interpolate import interp1d, interp2d
+from scipy.stats import lognorm
 
 from species.data import database
 from species.read import read_filter
@@ -75,36 +76,55 @@ def log_normal_distribution(radius_g: float,
         Grain radii (um).
     """
 
-    # Create bins across a broad radius range to make sure that the full distribution is captured
-    r_test = np.logspace(-20., 20., 1000)  # (um)
+    # # Create bins across a broad radius range to make sure that the full distribution is captured
+    # r_test = np.logspace(-20., 20., 1000)  # (um)
+    #
+    # # Create a size distribution for extracting the approximate minimum and maximum radius
+    # dn_dr = np.exp(-np.log(r_test/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
+    #     (r_test*np.sqrt(2.*np.pi)*np.log(sigma_g))
+    #
+    # # Select the radii for which dn/dr is larger than 0.1% of the maximum dn/dr
+    # indices = np.where(dn_dr/np.amax(dn_dr) > 0.001)[0]
+    #
+    # # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
+    # r_bins = np.logspace(np.log10(r_test[indices[0]]),
+    #                      np.log10(r_test[indices[-1]]),
+    #                      n_bins+1)  # (um)
+    #
+    # # Width of the radius bins (um)
+    # r_width = np.diff(r_bins)
+    #
+    # # Grains radii (um) at which the size distribution is sampled
+    # radii = (r_bins[1:]+r_bins[:-1])/2.
+    #
+    # # Number of grains per radius bin, normalized to an integrated value of 1 grain
+    # dn_dr = np.exp(-np.log(radii/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
+    #     (radii*np.sqrt(2.*np.pi)*np.log(sigma_g))
+    #
+    # # Total of grains to one
+    # # n_grains = np.sum(r_width*dn_dr)
+    #
+    # # Normalize the size distribution to 1 grain
+    # # dn_dr /= n_grains
+    #
+    # return dn_dr, r_width, radii
 
-    # Create a size distribution for extracting the approximate minimum and maximum radius
-    dn_dr = np.exp(-np.log(r_test/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
-        (r_test*np.sqrt(2.*np.pi)*np.log(sigma_g))
+    # Get the radius interval which contains 99.999% of the distribution
+    interval = lognorm.interval(1.-1e-5, np.log(sigma_g), loc=0., scale=radius_g)
 
-    # Select the radii for which dn/dr is larger than 0.1% of the maximum dn/dr
-    indices = np.where(dn_dr/np.amax(dn_dr) > 0.001)[0]
-
-    # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
-    r_bins = np.logspace(np.log10(r_test[indices[0]]),
-                         np.log10(r_test[indices[-1]]),
-                         n_bins+1)  # (um)
+    # Create bin boundaries (um), so +1 because there are n_bins+1 bin boundaries
+    r_bins = np.logspace(np.log10(interval[0]), np.log10(interval[1]), n_bins+1)
 
     # Width of the radius bins (um)
     r_width = np.diff(r_bins)
 
-    # Grains radii (um) at which the size distribution is sampled
+    # Grain radii (um) at which the size distribution is sampled
     radii = (r_bins[1:]+r_bins[:-1])/2.
 
     # Number of grains per radius bin, normalized to an integrated value of 1 grain
-    dn_dr = np.exp(-np.log(radii/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
-        (radii*np.sqrt(2.*np.pi)*np.log(sigma_g))
-
-    # Total of grains to one
-    # n_grains = np.sum(r_width*dn_dr)
-
-    # Normalize the size distribution to 1 grain
-    # dn_dr /= n_grains
+    # The log-normal distribution from Ackerman & Marley 2001 gives the same
+    # result as scipy.stats.lognorm.pdf with s = log(sigma_g) and scale=radius_g
+    dn_dr = lognorm.pdf(radii, s=np.log(sigma_g), loc=0., scale=radius_g)
 
     return dn_dr, r_width, radii
 
