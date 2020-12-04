@@ -14,6 +14,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.colors import LogNorm
 from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
+from scipy.stats import lognorm
 from typeguard import typechecked
 
 from species.data import database
@@ -261,9 +262,8 @@ def plot_pt_profile(tag: str,
         radtrans.get_model(median)
 
         if extra_axis == 'photosphere':
-            # TODO does calc_opt_depth also include continuum opacities?
+            # Calculate the total optical depth (line and continuum opacities)
             radtrans.rt_object.calc_opt_depth(10.**median['logg'])
-            radtrans.rt_object.calc_tau_cloud(10.**median['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem*1e-4  # (um)
 
@@ -271,23 +271,11 @@ def plot_pt_profile(tag: str,
             # distribution function (ranging from 0 to 1). A correct average is obtained by
             # multiplying the first axis with self.w_gauss, then summing them. This is then the
             # actual wavelength-mean.
+            w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
 
             # From petitRADTRANS: Only use 0 index for species because for lbl or
             # test_ck_shuffle_comp = True everything has been moved into the 0th index
-
-            # Extract the optical depth of the line species
-            w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
             optical_depth = np.sum(w_gauss*radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
-
-            # Add the optical depth of the cloud species
-            # TODO is this correct?
-            optical_depth += np.sum(radtrans.rt_object.tau_cloud[0, :, :, :], axis=1)
-
-            if radtrans.rt_object.tau_cloud.shape[0] != 1:
-                raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
-
-            if radtrans.rt_object.tau_cloud.shape[2] != 1:
-                raise ValueError(f'Unexpected shape? {radtrans.rt_object.tau_cloud.shape}.')
 
             ax2 = ax.twiny()
 
@@ -552,6 +540,130 @@ def plot_opacities(tag: str,
     ax2.set_yscale('log')
     ax3.set_yscale('log')
     ax4.set_yscale('log')
+
+    plt.savefig(output, bbox_inches='tight')
+    plt.clf()
+    plt.close()
+
+    print(' [DONE]')
+
+
+@typechecked
+def plot_clouds(tag: str,
+                offset: Optional[Tuple[float, float]] = None,
+                output: str = 'clouds.pdf',
+                radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+                composition: str = 'MgSiO3') -> None:
+    """
+    Function to plot the size distributions for a given cloud composition as function as pressure.
+    The size distributions are calculated for the median sample by using the radius_g (as function
+    of pressure) and sigma_g.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the posterior samples.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+    output : str
+        Output filename.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+    composition : str
+        Cloud composition (e.g. 'MgSiO3', 'Fe', 'Al2O3', 'Na2S', 'KCl').
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+    median = box.median_sample
+
+    if f'{composition.lower()}_fraction' not in median:
+        raise ValueError(f'The mass fraction of the {composition} clouds is not found. The median '
+                         f'sample contains the following parameters: {list(median.keys())}')
+
+    print(f'Plotting {composition} clouds: {output}...', end='', flush=True)
+
+    mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
+    mpl.rcParams['font.family'] = 'serif'
+
+    plt.rc('axes', edgecolor='black', linewidth=2.5)
+
+    plt.figure(1, figsize=(4., 3.))
+    gridsp = mpl.gridspec.GridSpec(1, 2, width_ratios=[4, 0.25])
+    gridsp.update(wspace=0.1, hspace=0., left=0, right=1, bottom=0, top=1)
+
+    ax1 = plt.subplot(gridsp[0, 0])
+    ax2 = plt.subplot(gridsp[0, 1])
+
+    radtrans.get_model(median)
+
+    cloud_index = radtrans.rt_object.cloud_species.index(f'{composition}(c)')
+    radius_g = radtrans.rt_object.r_g[:, cloud_index]*1e4  # (cm) -> (um)
+    sigma_g = median['sigma_lnorm']
+
+    r_bins = np.logspace(-4., 2., 1000)
+    radii = (r_bins[1:]+r_bins[:-1])/2.
+
+    dn_dr = np.zeros((radius_g.shape[0], radii.shape[0]))
+
+    for i, item in enumerate(radius_g):
+        dn_dr[i, ] = lognorm.pdf(radii, s=np.log(sigma_g), loc=0., scale=item)
+
+    ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=True)
+
+    ax1.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True, labelbottom=True)
+
+    ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
+                    direction='in', width=1, length=5, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    ax2.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
+                    direction='in', width=1, length=3, labelsize=12, top=True,
+                    bottom=True, left=True, right=True)
+
+    xx_grid, yy_grid = np.meshgrid(radii, 1e-6*radtrans.rt_object.press)
+
+    fig = ax1.pcolormesh(xx_grid, yy_grid, dn_dr, cmap='viridis', shading='auto',
+                         norm=LogNorm(vmin=1e-10*np.amax(dn_dr), vmax=np.amax(dn_dr)))
+
+    cb = Colorbar(ax=ax2, mappable=fig, orientation='vertical', ticklocation='right')
+    cb.ax.set_ylabel('dn/dr', rotation=270, labelpad=20, fontsize=11)
+
+    for item in radtrans.rt_object.press*1e-6:  # (bar)
+        ax1.axhline(item, ls='-', lw=0.1, color='white')
+
+    for item in radtrans.rt_object.cloud_radii*1e4:  # (um)
+        ax1.axvline(item, ls='-', lw=0.1, color='white')
+
+    ax1.text(0.07, 0.07, f'$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}', ha='left',
+             va='bottom', transform=ax1.transAxes, color='black', fontsize=13.)
+
+    ax1.set_ylabel('Pressure (bar)', fontsize=13)
+    ax1.set_xlabel('Grain radius (µm)', fontsize=13)
+
+    ax1.set_xlim(radii[0], radii[-1])
+    ax1.set_ylim(radtrans.rt_object.press[-1]*1e-6, radtrans.rt_object.press[0]*1e-6)
+
+    if offset is not None:
+        ax1.get_xaxis().set_label_coords(0.5, offset[0])
+        ax1.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax1.get_xaxis().set_label_coords(0.5, -0.1)
+        ax1.get_yaxis().set_label_coords(-0.15, 0.5)
+
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
 
     plt.savefig(output, bbox_inches='tight')
     plt.clf()

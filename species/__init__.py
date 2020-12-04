@@ -44,8 +44,9 @@ from species.plot.plot_mcmc import plot_posterior, \
                                    plot_size_distributions, \
                                    plot_extinction
 
-from species.plot.plot_retrieval import plot_pt_profile, \
-                                        plot_opacities
+from species.plot.plot_retrieval import plot_clouds, \
+                                        plot_opacities, \
+                                        plot_pt_profile
 
 from species.plot.plot_spectrum import plot_spectrum
 
