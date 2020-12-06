@@ -310,7 +310,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'pt_smooth' in param:
         index = param.index('pt_smooth')
-        param[index] = r'$\gamma$'
+        param[index] = r'$\sigma_\mathregular{P-T}$'
 
     return param
 
@@ -507,7 +507,7 @@ def quantity_unit(param: List[str],
     if 'pt_smooth' in param:
         quantity.append('pt_smooth')
         unit.append(None)
-        label.append('$\gamma$')
+        label.append(r'$\sigma_\mathregular{P-T}$')
 
     return quantity, unit, label
 
