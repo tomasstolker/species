@@ -187,7 +187,7 @@ def plot_pt_profile(tag: str,
         ax.plot(knot_temp, knot_press, 'o', ms=5., mew=0., color='tomato', zorder=3.)
 
         if 'pt_smooth' in parameters:
-            pt_smooth = median[param_index['pt_smooth']]
+            pt_smooth = median['pt_smooth']
         else:
             pt_smooth = box.attributes['pt_smooth']
 

@@ -2090,11 +2090,6 @@ class Database:
         else:
             distance = None
 
-        if 'pt_smooth' in dset.attrs:
-            pt_smooth = dset.attrs['pt_smooth']
-        else:
-            pt_smooth = None
-
         samples = np.asarray(dset)
 
         if random is not None:
@@ -2108,60 +2103,16 @@ class Database:
         parameters = np.asarray(parameters)
 
         indices = {}
-        indices['logg'] = np.argwhere(parameters == 'logg')[0][0]
-        indices['radius'] = np.argwhere(parameters == 'radius')[0][0]
+        for item in parameters:
+            indices[item] = np.argwhere(parameters == item)[0][0]
 
         line_species = []
         for i in range(n_line_species):
             line_species.append(dset.attrs[f'line_species{i}'])
 
-        if chemistry == 'free':
-            for item in line_species:
-                indices[item] = np.argwhere(parameters == item)[0][0]
-
         cloud_species = []
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f'cloud_species{i}'])
-
-        for item in cloud_species:
-            cloud_fraction = f'{item[:-6].lower()}_fraction'
-            cloud_tau = f'{item[:-6].lower()}_tau'
-
-            if cloud_fraction in parameters:
-                indices[cloud_fraction] = np.argwhere(parameters == cloud_fraction)[0][0]
-
-            elif cloud_tau in parameters:
-                indices[cloud_tau] = np.argwhere(parameters == cloud_tau)[0][0]
-
-        if chemistry == 'equilibrium':
-            indices['metallicity'] = np.argwhere(parameters == 'metallicity')[0][0]
-            indices['c_o_ratio'] = np.argwhere(parameters == 'c_o_ratio')[0][0]
-
-        if quenching:
-            indices['log_p_quench'] = np.argwhere(parameters == 'log_p_quench')[0][0]
-
-        if pt_profile == 'molliere':
-            indices['tint'] = np.argwhere(parameters == 'tint')[0][0]
-            indices['t1'] = np.argwhere(parameters == 't1')[0][0]
-            indices['t2'] = np.argwhere(parameters == 't2')[0][0]
-            indices['t3'] = np.argwhere(parameters == 't3')[0][0]
-            indices['alpha'] = np.argwhere(parameters == 'alpha')[0][0]
-            indices['log_delta'] = np.argwhere(parameters == 'log_delta')[0][0]
-
-        elif pt_profile in ['free', 'monotonic']:
-            for i in range(15):
-                indices[f't{i}'] = np.argwhere(parameters == f't{i}')[0][0]
-
-        if len(cloud_species) > 0:
-            indices['fsed'] = np.argwhere(parameters == 'fsed')[0][0]
-            indices['kzz'] = np.argwhere(parameters == 'kzz')[0][0]
-            indices['sigma_lnorm'] = np.argwhere(parameters == 'sigma_lnorm')[0][0]
-
-        if 'ism_ext' in parameters:
-            indices['ism_ext'] = np.argwhere(parameters == 'ism_ext')[0][0]
-
-        if 'ism_red' in parameters:
-            indices['ism_red'] = np.argwhere(parameters == 'ism_red')[0][0]
 
         # After creating and instance of ReadRadtrans, the cloud_species have been
         # shortened to 'Fe(c)' and 'MgSiO3(c)'
@@ -2180,6 +2131,11 @@ class Database:
         boxes = []
 
         for i, item in enumerate(samples):
+            if 'pt_smooth' in dset.attrs:
+                pt_smooth = dset.attrs['pt_smooth']
+            else:
+                pt_smooth = item[indices['pt_smooth']]
+
             model_box = data_util.retrieval_spectrum(indices=indices,
                                                      chemistry=chemistry,
                                                      pt_profile=pt_profile,
