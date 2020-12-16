@@ -595,16 +595,21 @@ def plot_size_distributions(tag: str,
 
     for i in range(samples.shape[0]):
         if 'lognorm_radius' in box.parameters:
-            dn_dr, _, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
+            dn_grains, r_width, radii = \
+                dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
 
-            # Set the number density to zero for grain radii smaller than 1 nm
-            dn_dr[radii < 1e-3] = 0.
+            # Exclude radii smaller than 1 nm
+            indices = np.argwhere(radii >= 1e-3)
+
+            dn_grains = dn_grains[indices]
+            r_width = r_width[indices]
+            radii = radii[indices]
 
         elif 'powerlaw_max' in box.parameters:
-            dn_dr, _, radii = dust_util.power_law_distribution(
-                exponent[i], 1e-3, 10.**r_max[i], 1000)
+            dn_grains, r_width, radii = \
+                dust_util.power_law_distribution(exponent[i], 1e-3, 10.**r_max[i], 1000)
 
-        ax.plot(radii, dn_dr, ls='-', lw=0.5, color='black', alpha=0.5)
+        ax.plot(radii, dn_grains/r_width, ls='-', lw=0.5, color='black', alpha=0.5)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

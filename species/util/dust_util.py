@@ -69,64 +69,42 @@ def log_normal_distribution(radius_g: float,
     Returns
     -------
     np.ndarray
-        Number of grains per radius bin, normalized to an integrated value of 1 grain.
+        Number of grains in each radius bin, normalized to a total of 1 grain.
     np.ndarray
         Widths of the radius bins (um).
     np.ndarray
         Grain radii (um).
     """
 
-    # # Create bins across a broad radius range to make sure that the full distribution is captured
-    # r_test = np.logspace(-20., 20., 1000)  # (um)
-    #
-    # # Create a size distribution for extracting the approximate minimum and maximum radius
-    # dn_dr = np.exp(-np.log(r_test/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
-    #     (r_test*np.sqrt(2.*np.pi)*np.log(sigma_g))
-    #
-    # # Select the radii for which dn/dr is larger than 0.1% of the maximum dn/dr
-    # indices = np.where(dn_dr/np.amax(dn_dr) > 0.001)[0]
-    #
-    # # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
-    # r_bins = np.logspace(np.log10(r_test[indices[0]]),
-    #                      np.log10(r_test[indices[-1]]),
-    #                      n_bins+1)  # (um)
-    #
-    # # Width of the radius bins (um)
-    # r_width = np.diff(r_bins)
-    #
-    # # Grains radii (um) at which the size distribution is sampled
-    # radii = (r_bins[1:]+r_bins[:-1])/2.
-    #
-    # # Number of grains per radius bin, normalized to an integrated value of 1 grain
-    # dn_dr = np.exp(-np.log(radii/radius_g)**2./(2.*np.log(sigma_g)**2.)) / \
-    #     (radii*np.sqrt(2.*np.pi)*np.log(sigma_g))
-    #
-    # # Total of grains to one
-    # # n_grains = np.sum(r_width*dn_dr)
-    #
-    # # Normalize the size distribution to 1 grain
-    # # dn_dr /= n_grains
-    #
-    # return dn_dr, r_width, radii
+    if sigma_g == 1.:
+        # The log-normal distribution is equal to a delta function with sigma_g = 1
+        radii = np.array([radius_g])
+        r_width = np.array([np.nan])
+        dn_grains = np.array([1.])
 
-    # Get the radius interval which contains 99.999% of the distribution
-    interval = lognorm.interval(1.-1e-5, np.log(sigma_g), loc=0., scale=radius_g)
+    else:
+        # Get the radius interval which contains 99.999% of the distribution
+        interval = lognorm.interval(1.-1e-5, np.log(sigma_g), loc=0., scale=radius_g)
 
-    # Create bin boundaries (um), so +1 because there are n_bins+1 bin boundaries
-    r_bins = np.logspace(np.log10(interval[0]), np.log10(interval[1]), n_bins+1)
+        # Create bin boundaries (um), so +1 because there are n_bins+1 bin boundaries
+        r_bins = np.logspace(np.log10(interval[0]), np.log10(interval[1]), n_bins+1)
 
-    # Width of the radius bins (um)
-    r_width = np.diff(r_bins)
+        # Width of the radius bins (um)
+        r_width = np.diff(r_bins)
 
-    # Grain radii (um) at which the size distribution is sampled
-    radii = (r_bins[1:]+r_bins[:-1])/2.
+        # Grain radii (um) at which the size distribution is sampled
+        radii = (r_bins[1:]+r_bins[:-1])/2.
 
-    # Number of grains per radius bin, normalized to an integrated value of 1 grain
-    # The log-normal distribution from Ackerman & Marley 2001 gives the same
-    # result as scipy.stats.lognorm.pdf with s = log(sigma_g) and scale=radius_g
-    dn_dr = lognorm.pdf(radii, s=np.log(sigma_g), loc=0., scale=radius_g)
+        # Number of grains per radius bin width, normalized to an integrated value of
+        # 1 grain, that is, np.sum(dn_dr*r_width) = 1
+        # The log-normal distribution from Ackerman & Marley 2001 gives the same
+        # result as scipy.stats.lognorm.pdf with s = log(sigma_g) and scale=radius_g
+        dn_dr = lognorm.pdf(radii, s=np.log(sigma_g), loc=0., scale=radius_g)
 
-    return dn_dr, r_width, radii
+        # Number of grains for each radius bin
+        dn_grains = dn_dr*r_width
+
+    return dn_grains, r_width, radii
 
 
 @typechecked
@@ -151,7 +129,7 @@ def power_law_distribution(exponent: float,
     Returns
     -------
     np.ndarray
-        Number of grains per radius bin, normalized to an integrated value of 1 grain.
+        Number of grains in each radius bin, normalized to a total of 1 grain.
     np.ndarray
         Widths of the radius bins (um).
     np.ndarray
@@ -167,21 +145,20 @@ def power_law_distribution(exponent: float,
     # Grains radii (um) at which the size distribution is sampled
     radii = (r_bins[1:]+r_bins[:-1])/2.
 
-    # Number of grains per radius bin
+    # Number of grains per radius bins size
     dn_dr = radii**exponent
 
-    # Total of grains to one
-    n_grains = np.sum(r_width*dn_dr)
-
     # Normalize the size distribution to 1 grain
-    dn_dr /= n_grains
+    dn_dr /= np.sum(r_width*dn_dr)
 
-    return dn_dr, r_width, radii
+    # Number of grains for each radius bin
+    dn_grains = dn_dr*r_width
+
+    return dn_grains, r_width, radii
 
 
 @typechecked
-def dust_cross_section(dn_dr: np.ndarray,
-                       r_width: np.ndarray,
+def dust_cross_section(dn_grains: np.ndarray,
                        radii: np.ndarray,
                        wavelength: float,
                        n_index: float,
@@ -191,10 +168,8 @@ def dust_cross_section(dn_dr: np.ndarray,
 
     Parameters
     ----------
-    dn_dr : np.ndarray
-        Number of grains per radius bin, normalized to an integrated value of 1 grain.
-    r_width : np.ndarray
-        Widths of the radius bins (um).
+    dn_grains : np.ndarray
+        Number of grains in each radius bin, normalized to a total of 1 grain.
     radii : np.ndarray
         Grain radii (um).
     wavelength : float
@@ -213,8 +188,6 @@ def dust_cross_section(dn_dr: np.ndarray,
     c_ext = 0.
 
     for i, item in enumerate(radii):
-        # mean_radius = (r_lognorm[i+1]+r_lognorm[i]) / 2.  # (um)
-
         # From the PyMieScatt documentation: When using PyMieScatt, pay close attention to
         # the units of the your inputs and outputs. Wavelength and particle diameters are
         # always in nanometers, efficiencies are unitless, cross-sections are in nm2,
@@ -226,7 +199,7 @@ def dust_cross_section(dn_dr: np.ndarray,
                               asCrossSection=False)
 
         if 'Qext' in mie:
-            c_ext += np.pi*item**2*mie['Qext']*dn_dr[i]*r_width[i]  # (um2)
+            c_ext += np.pi*item**2*mie['Qext']*dn_grains[i]  # (um2)
 
         else:
             raise ValueError('Qext not found in the PyMieScatt dictionary.')
@@ -272,7 +245,7 @@ def calc_reddening(filters_color: Tuple[str, str],
 
     filters = [extinction[0], filters_color[0], filters_color[1]]
 
-    dn_dr, r_width, radii = log_normal_distribution(radius_g, 2., 100)
+    dn_grains, _, radii = log_normal_distribution(radius_g, 2., 100)
 
     c_ext = {}
 
@@ -289,16 +262,14 @@ def calc_reddening(filters_color: Tuple[str, str],
                 # Average cross section of the three axes
 
                 if i == 0:
-                    c_ext[item] = dust_cross_section(dn_dr,
-                                                     r_width,
+                    c_ext[item] = dust_cross_section(dn_grains,
                                                      radii,
                                                      data[wavel_index, 0],
                                                      data[wavel_index, 1],
                                                      data[wavel_index, 2]) / 3.
 
                 else:
-                    c_ext[item] += dust_cross_section(dn_dr,
-                                                      r_width,
+                    c_ext[item] += dust_cross_section(dn_grains,
                                                       radii,
                                                       data[wavel_index, 0],
                                                       data[wavel_index, 1],
@@ -316,8 +287,7 @@ def calc_reddening(filters_color: Tuple[str, str],
 
             wavel_index = (np.abs(data[:, 0] - filter_wavel)).argmin()
 
-            c_ext[item] += dust_cross_section(dn_dr,
-                                              r_width,
+            c_ext[item] += dust_cross_section(dn_grains,
                                               radii,
                                               data[wavel_index, 0],
                                               data[wavel_index, 1],
