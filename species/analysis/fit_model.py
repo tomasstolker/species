@@ -805,6 +805,26 @@ class FitModel:
                     self.modelpar.append(f'error_{item}')
                     self.bounds[f'error_{item}'] = (bounds[item][1][0], bounds[item][1][1])
 
+                    if self.bounds[f'error_{item}'][0] < 0.:
+                        warnings.warn(f'The lower bound of \'error_{item}\' is smaller than 0. The '
+                                      f'error inflation should be given relative to the model fluxes '
+                                      f'so the boundaries are typically between 0 and 1.')
+
+                    if self.bounds[f'error_{item}'][1] < 0.:
+                        warnings.warn(f'The upper bound of \'error_{item}\' is smaller than 0. The '
+                                      f'error inflation should be given relative to the model fluxes '
+                                      f'so the boundaries are typically between 0 and 1.')
+
+                    if self.bounds[f'error_{item}'][0] > 1.:
+                        warnings.warn(f'The lower bound of \'error_{item}\' is larger than 1. The '
+                                      f'error inflation should be given relative to the model fluxes '
+                                      f'so the boundaries are typically between 0 and 1.')
+
+                    if self.bounds[f'error_{item}'][1] > 1.:
+                        warnings.warn(f'The upper bound of \'error_{item}\' is larger than 1. The '
+                                      f'error inflation should be given relative to the model fluxes '
+                                      f'so the boundaries are typically between 0 and 1.')
+
                 if item in self.bounds:
                     del self.bounds[item]
 
@@ -955,8 +975,8 @@ class FitModel:
                 guess[f'scaling_{item}'] = guess[item][0]
 
             if f'error_{item}' in self.bounds:
-                sigma[f'error_{item}'] = 0.1  # (dex)
-                guess[f'error_{item}'] = guess[item][1]  # (dex)
+                sigma[f'error_{item}'] = 0.1
+                guess[f'error_{item}'] = guess[item][1]
 
             if item in guess:
                 del guess[item]
