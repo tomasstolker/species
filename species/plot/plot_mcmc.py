@@ -65,7 +65,7 @@ def plot_walkers(tag: str,
                          f'for plotting the walkers. The plot_walkers function can only be '
                          f'used after running the MCMC with run_mcmc and not after running '
                          f'MultiNest with run_multinest.')
-        
+
     ndim = samples.shape[-1]
 
     plt.figure(1, figsize=(6, ndim*1.5))
@@ -367,6 +367,13 @@ def plot_posterior(tag: str,
             luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
                 constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
+            if 'disk_teff' in samples_box.parameters and 'disk_radius' in samples_box.parameters:
+                teff_index = np.argwhere(np.array(samples_box.parameters) == 'disk_teff')[0]
+                radius_index = np.argwhere(np.array(samples_box.parameters) == 'disk_radius')[0]
+
+                luminosity += 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+                    constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
+
             samples = np.append(samples, np.log10(luminosity), axis=-1)
             samples_box.parameters.append('luminosity')
             ndim += 1
@@ -466,25 +473,6 @@ def plot_posterior(tag: str,
             index_sel.append(i)
 
     samples = samples[:, index_sel]
-
-    for i in range(len(index_del)-1, -1, -1):
-        del labels[index_del[i]]
-
-    ndim -= len(index_del)
-
-    # Check if parameter values were fixed
-
-    index_sel = []
-    index_del = []
-
-    # Use only last axis for parameter dimensions
-    for i in range(ndim):
-        if np.amin(samples[..., i]) == np.amax(samples[..., i]):
-            index_del.append(i)
-        else:
-            index_sel.append(i)
-
-    samples = samples[..., index_sel]
 
     for i in range(len(index_del)-1, -1, -1):
         del labels[index_del[i]]
@@ -669,7 +657,7 @@ def plot_size_distributions(tag: str,
                             offset: Optional[Tuple[float, float]] = None,
                             output: str = 'size_distributions.pdf') -> None:
     """
-    Function to plot random samples of the log-normal or power-law size distribution.
+    Function to plot random samples of the log-normal or power-law size distributions.
 
     Parameters
     ----------
@@ -771,13 +759,21 @@ def plot_size_distributions(tag: str,
 
     for i in range(samples.shape[0]):
         if 'lognorm_radius' in box.parameters:
-            dn_dr, _, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
+            dn_grains, r_width, radii = \
+                dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
+
+            # Exclude radii smaller than 1 nm
+            indices = np.argwhere(radii >= 1e-3)
+
+            dn_grains = dn_grains[indices]
+            r_width = r_width[indices]
+            radii = radii[indices]
 
         elif 'powerlaw_max' in box.parameters:
-            dn_dr, _, radii = dust_util.power_law_distribution(
-                exponent[i], 1e-3, 10.**r_max[i], 1000)
+            dn_grains, r_width, radii = \
+                dust_util.power_law_distribution(exponent[i], 1e-3, 10.**r_max[i], 1000)
 
-        ax.plot(radii, dn_dr, ls='-', lw=0.5, color='black', alpha=0.5)
+        ax.plot(radii, dn_grains/r_width, ls='-', lw=0.5, color='black', alpha=0.5)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()

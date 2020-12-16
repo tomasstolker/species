@@ -550,7 +550,7 @@ class Database:
                                            Tuple[str,
                                                  Optional[str],
                                                  Optional[float]]]] = None,
-                   deredden: Dict[str, float] = None) -> None:
+                   deredden: Union[Dict[str, float], float] = None) -> None:
         """
         Function for adding the photometric and/or spectroscopic data of an object to the database.
 
@@ -584,7 +584,7 @@ class Database:
             50.)}``. No covariance data is stored if set to None, for example, ``{'SPHERE':
             ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter is ignored if set to None.
             For GRAVITY data, the same FITS file can be provided as spectrum and covariance matrix.
-        deredden : dict, None
+        deredden : dict, float, None
             Dictionary with ``spectrum`` and ``app_mag`` names that will de dereddened with the
             provided A_V. For example, ``deredden={'SPHERE': 1.5, 'Keck/NIRC2.J': 1.5}`` will
             deredden the provided spectrum named 'SPHERE' and the Keck/NIRC2 J-band photometry with
@@ -641,12 +641,16 @@ class Database:
 
         if app_mag is not None:
             for mag_item in app_mag:
-                if mag_item in deredden:
+                if isinstance(deredden, float) or mag_item in deredden:
                     read_filt = read_filter.ReadFilter(mag_item)
                     filter_profile = read_filt.get_filter()
 
-                    ext_mag = dust_util.ism_extinction(deredden[mag_item], 3.1,
-                                                       filter_profile[:, 0])
+                    if isinstance(deredden, float):
+                        ext_mag = dust_util.ism_extinction(deredden, 3.1, filter_profile[:, 0])
+
+                    else:
+                        ext_mag = dust_util.ism_extinction(deredden[mag_item], 3.1,
+                                                           filter_profile[:, 0])
 
                     synphot = photometry.SyntheticPhotometry(mag_item)
 
@@ -730,7 +734,10 @@ class Database:
                     print(f'      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- '
                           f'{error[mag_item]:.2e}')
 
-                    if mag_item in deredden:
+                    if isinstance(deredden, float):
+                        print(f'      - Dereddening A_V: {deredden}')
+
+                    elif mag_item in deredden:
                         print(f'      - Dereddening A_V: {deredden[mag_item]}')
 
                     data = np.asarray([app_mag[mag_item][0],
@@ -758,7 +765,10 @@ class Database:
                         mag_list.append(app_mag_item[0])
                         mag_err_list.append(app_mag_item[1])
 
-                        if mag_item in deredden:
+                        if isinstance(deredden, float):
+                            print(f'      - Dereddening A_V: {deredden}')
+
+                        elif mag_item in deredden:
                             print(f'      - Dereddening A_V: {deredden[mag_item]}')
 
                     data = np.asarray([mag_list,
@@ -774,7 +784,7 @@ class Database:
 
         if flux_density is not None:
             for flux_item in flux_density:
-                if flux_item in deredden:
+                if isinstance(deredden, float) or flux_item in deredden:
                     warnings.warn(f'The deredden parameter is not supported by flux_density. '
                                   f'Please use app_mag instead or contact Tomas Stolker and ask '
                                   f'if the flux_density support can be added. Ignoring the '
@@ -856,7 +866,11 @@ class Database:
                     print('   - Spectrum:')
                     read_spec[key] = data
 
-                if key in deredden:
+                if isinstance(deredden, float):
+                    ext_mag = dust_util.ism_extinction(deredden, 3.1, read_spec[key][:, 0])
+                    read_spec[key][:, 1] *= 10.**(0.4*ext_mag)
+
+                elif key in deredden:
                     ext_mag = dust_util.ism_extinction(deredden[key], 3.1, read_spec[key][:, 0])
                     read_spec[key][:, 1] *= 10.**(0.4*ext_mag)
 
@@ -871,7 +885,10 @@ class Database:
                 print(f'      - Mean flux (W m-2 um-1): {np.mean(flux):.2e}')
                 print(f'      - Mean error (W m-2 um-1): {np.mean(error):.2e}')
 
-                if key in deredden:
+                if isinstance(deredden, float):
+                    print(f'      - Dereddening A_V: {deredden}')
+
+                elif key in deredden:
                     print(f'      - Dereddening A_V: {deredden[key]}')
 
             # Read covariance matrix

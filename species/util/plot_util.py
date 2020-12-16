@@ -298,15 +298,15 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'log_powerlaw_a' in param:
         index = param.index('log_powerlaw_a')
-        param[index] = r'$\mathregular{log}\,a$'
+        param[index] = r'$a_\mathregular{powerlaw}$'
 
     if 'log_powerlaw_b' in param:
         index = param.index('log_powerlaw_b')
-        param[index] = r'$\mathregular{log}\,b$'
+        param[index] = r'$b_\mathregular{powerlaw}$'
 
     if 'log_powerlaw_c' in param:
         index = param.index('log_powerlaw_c')
-        param[index] = r'$\mathregular{log}\,c$'
+        param[index] = r'$c_\mathregular{powerlaw}$'
 
     if 'pt_smooth' in param:
         index = param.index('pt_smooth')
