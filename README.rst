@@ -1,7 +1,7 @@
 *species*
 =========
 
-**s**\ pectral and **p**\ hotometric **e**\ xamination **c**\ ode for **i**\ nvestigating **e**\ xoplanet and **s**\ ubstellar atmospheres
+**spe**\ctral **c**\ haracterization and **i**\ nference for **e**\ xoplanet **s**\ cience
 
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
@@ -27,7 +27,7 @@
 .. image:: https://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
     :target: https://arxiv.org/abs/1912.13316
 
-*species* is a toolkit for atmospheric characterization of exoplanets and brown dwarfs. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data from various resources such as spectral and photometric libraries, atmospheric models, and evolutionary tracks. There are tools available for grid retrievals with Bayesian inference, color-magnitude diagrams, spectral and photometric calibration, and synthetic photometry. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+*species* is a toolkit for atmospheric characterization of directly imaged exoplanets and brown dwarfs. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for grid and free atmospheric retrievals with Bayesian inference, color-magnitude and color-color diagrams, spectral and photometric calibration, and synthetic photometry. The package is has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------
@@ -42,11 +42,11 @@ Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A.
 Contributing
 ------------
 
-Contributions are welcome, please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
+Contributions are welcome so please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
 
 License
 -------
 
-Copyright 2018-2020 Tomas Stolker
+Copyright 2018-2021 Tomas Stolker
 
 *species* is distributed under the MIT License. See the LICENSE file for the terms and conditions.
