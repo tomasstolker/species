@@ -141,7 +141,7 @@ def lnlike(param: np.ndarray,
 
     param_dict = {}
     spec_scaling = {}
-    err_offset = {}
+    err_scaling = {}
     corr_len = {}
     corr_amp = {}
 
@@ -150,7 +150,7 @@ def lnlike(param: np.ndarray,
             spec_scaling[item[8:]] = param[param_index[item]]
 
         elif item[:6] == 'error_' and item[6:] in spectrum:
-            err_offset[item[6:]] = param[param_index[item]]
+            err_scaling[item[6:]] = param[param_index[item]]
 
         elif item[:9] == 'corr_len_' and item[9:] in spectrum:
             corr_len[item[9:]] = 10.**param[param_index[item]]  # (um)
@@ -175,8 +175,8 @@ def lnlike(param: np.ndarray,
         if item not in spec_scaling:
             spec_scaling[item] = 1.
 
-        if item not in err_offset:
-            err_offset[item] = None
+        if item not in err_scaling:
+            err_scaling[item] = None
 
     ln_like = 0.
 
@@ -205,15 +205,42 @@ def lnlike(param: np.ndarray,
                 ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
 
     for i, item in enumerate(spectrum.keys()):
+        # Calculate or interpolate the model spectrum
+        if model == 'planck':
+            # Calculate a blackbody spectrum
+            readplanck = read_planck.ReadPlanck((0.9*spectrum[item][0][0, 0],
+                                                 1.1*spectrum[item][0][-1, 0]))
+
+            model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
+
+            # Resample the spectrum to the observed wavelengths
+            model_flux = spectres.spectres(spectrum[item][0][:, 0],
+                                           model_box.wavelength,
+                                           model_box.flux)
+
+        else:
+            # Interpolate the model spectrum
+            model_flux = modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
+
+            # Scale the spectrum by the (radius/distance)^2
+            model_flux *= flux_scaling
+
+        # Scale the spectrum data
         data_flux = spec_scaling[item]*spectrum[item][0][:, 1]
 
-        if err_offset[item] is None:
+        if err_scaling[item] is None:
+            # Variance without error inflation
             data_var = spectrum[item][0][:, 2]**2
+
         else:
-            data_var = (spectrum[item][0][:, 2] + 10.**err_offset[item])**2
+            # Variance with error inflation (see Piette & Madhusudhan 2020)
+            data_var = spectrum[item][0][:, 2]**2 + (err_scaling[item]*model_flux)**2
 
         if spectrum[item][2] is not None:
-            if err_offset[item] is None:
+            # The inverted covariance matrix is available
+
+            if err_scaling[item] is None:
+                # Use the inverted covariance matrix directly
                 data_cov_inv = spectrum[item][2]
 
             else:
@@ -221,30 +248,17 @@ def lnlike(param: np.ndarray,
                 sigma_ratio = np.sqrt(data_var) / spectrum[item][0][:, 2]
                 sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
-                # Calculate the inversion of the infalted covariances
+                # Calculate the inverted matrix of the inflated covariances
                 data_cov_inv = np.linalg.inv(spectrum[item][1]*sigma_i*sigma_j)
 
-        if model == 'planck':
-            readplanck = read_planck.ReadPlanck((0.9*spectrum[item][0][0, 0],
-                                                 1.1*spectrum[item][0][-1, 0]))
-
-            model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
-
-            model_flux = spectres.spectres(spectrum[item][0][:, 0],
-                                           model_box.wavelength,
-                                           model_box.flux)
-
-        else:
-            model_flux = modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
-            model_flux *= flux_scaling
-
         if spectrum[item][2] is not None:
+            # Calculate the log-likelihood with the covariance matrix
             dot_tmp = np.dot(data_flux-model_flux, np.dot(data_cov_inv, data_flux-model_flux))
             ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
         else:
             if item in fit_corr:
-                # Covariance model (Wang et al. 2020)
+                # Calculate the log-likelihood with the covariance model (see Wang et al. 2020)
                 wavel = spectrum[item][0][:, 0]  # (um)
                 wavel_j, wavel_i = np.meshgrid(wavel, wavel)
 
@@ -261,6 +275,8 @@ def lnlike(param: np.ndarray,
                 ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
 
             else:
+                # Calculate the log-likelihood without the covariance matrix but with the
+                # normalization term in case of the errors are inflated
                 ln_like += np.nansum(-0.5 * (data_flux-model_flux)**2 / data_var -
                                      0.5 * np.log(2.*np.pi*data_var))
 
@@ -511,7 +527,7 @@ class FitModel:
                    pre-tabulated grid.
 
                  - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
-                   should be provided in the ``bounds`` dictionary, for example ``'powerlaw_max':
+                   should be provided in the ``bounds`` dictionary, for example ``{'powerlaw_max':
                    (0.01, 100.), 'powerlaw_exp': (-10., 10.), 'powerlaw_ext': (0., 5.)}``.
 
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
@@ -1087,37 +1103,41 @@ class FitModel:
                              n_dim: int,
                              n_param: int) -> np.float64:
             """
-            Function for the logarithm of the likelihood, computed from the parameter cube.
+            Function for calculating the log-likelihood for the sampled parameter cube.
 
             Parameters
             ----------
             cube : pymultinest.run.LP_c_double
                 Unit cube.
             n_dim : int
-                Number of dimensions.
+                Number of dimensions. This parameter is mandatory but not used by the function.
             n_param : int
-                Number of parameters.
+                Number of parameters. This parameter is mandatory but not used by the function.
 
             Returns
             -------
             float
-                Log likelihood.
+                Log-likelihood.
             """
 
-            param_dict = {}
+            # Initilize dictionaries for different parameter types
+
             spec_scaling = {}
-            err_offset = {}
+            err_scaling = {}
             corr_len = {}
             corr_amp = {}
             dust_param = {}
             disk_param = {}
+            param_dict = {}
 
             for item in self.bounds:
+                # Add the parameters from the cube to their dictionaries
+
                 if item[:8] == 'scaling_' and item[8:] in self.spectrum:
                     spec_scaling[item[8:]] = cube[cube_index[item]]
 
                 elif item[:6] == 'error_' and item[6:] in self.spectrum:
-                    err_offset[item[6:]] = cube[cube_index[item]]  # log10(um)
+                    err_scaling[item[6:]] = cube[cube_index[item]]
 
                 elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
                     corr_len[item[9:]] = 10.**cube[cube_index[item]]  # (um)
@@ -1144,7 +1164,37 @@ class FitModel:
                     param_dict[item] = cube[cube_index[item]]
 
             for item in self.fix_param:
-                param_dict[item] = self.fix_param[item]
+                # Add the fixed parameters to their dictionaries
+
+                if item[:8] == 'scaling_' and item[8:] in self.spectrum:
+                    spec_scaling[item[8:]] = self.fix_param[item]
+
+                elif item[:6] == 'error_' and item[6:] in self.spectrum:
+                    err_scaling[item[6:]] = self.fix_param[item]
+
+                elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
+                    corr_len[item[9:]] = self.fix_param[item]  # (um)
+
+                elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
+                    corr_amp[item[9:]] = self.fix_param[item]
+
+                elif item[:8] == 'lognorm_':
+                    dust_param[item] = self.fix_param[item]
+
+                elif item[:9] == 'powerlaw_':
+                    dust_param[item] = self.fix_param[item]
+
+                elif item[:4] == 'ism_':
+                    dust_param[item] = self.fix_param[item]
+
+                elif item == 'disk_teff':
+                    disk_param['teff'] = self.fix_param[item]
+
+                elif item == 'disk_radius':
+                    disk_param['radius'] = self.fix_param[item]
+
+                else:
+                    param_dict[item] = self.fix_param[item]
 
             if self.model == 'planck' and self.n_planck > 1:
                 for i in range(self.n_planck-1):
@@ -1175,8 +1225,8 @@ class FitModel:
                 if item not in spec_scaling:
                     spec_scaling[item] = 1.
 
-                if item not in err_offset:
-                    err_offset[item] = None
+                if item not in err_scaling:
+                    err_scaling[item] = None
 
             if self.param_interp is not None:
                 # Sort the parameters in the correct order for spectrum_interp because
@@ -1287,15 +1337,43 @@ class FitModel:
                         ln_like += -0.5 * np.log(2.*np.pi*phot_var)
 
             for i, item in enumerate(self.spectrum.keys()):
+                # Calculate or interpolate the model spectrum
+
+                if self.model == 'planck':
+                    # Calculate a blackbody spectrum
+                    readplanck = read_planck.ReadPlanck((0.9*self.spectrum[item][0][0, 0],
+                                                         1.1*self.spectrum[item][0][-1, 0]))
+
+                    model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
+
+                    # Resample the spectrum to the observed wavelengths
+                    model_flux = spectres.spectres(self.spectrum[item][0][:, 0],
+                                                   model_box.wavelength,
+                                                   model_box.flux)
+
+                else:
+                    # Interpolate the model spectrum from the grid
+                    model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
+
+                    # Scale the spectrum by (radius/distance)^2
+                    model_flux *= flux_scaling
+
+                # Scale the spectrum data
                 data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
 
-                if err_offset[item] is None:
+                if err_scaling[item] is None:
+                    # Variance without error inflation
                     data_var = self.spectrum[item][0][:, 2]**2
+
                 else:
-                    data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
+                    # Variance with error inflation (see Piette & Madhusudhan 2020)
+                    data_var = self.spectrum[item][0][:, 2]**2 + (err_scaling[item]*model_flux)**2
 
                 if self.spectrum[item][2] is not None:
-                    if err_offset[item] is None:
+                    # The inverted covariance matrix is available
+
+                    if err_scaling[item] is None:
+                        # Use the inverted covariance matrix directly
                         data_cov_inv = self.spectrum[item][2]
 
                     else:
@@ -1303,28 +1381,16 @@ class FitModel:
                         sigma_ratio = np.sqrt(data_var) / self.spectrum[item][0][:, 2]
                         sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
-                        # Calculate the inversion of the infalted covariances
+                        # Calculate the inverted matrix of the inflated covariances
                         data_cov_inv = np.linalg.inv(self.spectrum[item][1]*sigma_i*sigma_j)
-
-                if self.model == 'planck':
-                    readplanck = read_planck.ReadPlanck((0.9*self.spectrum[item][0][0, 0],
-                                                         1.1*self.spectrum[item][0][-1, 0]))
-
-                    model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
-
-                    model_flux = spectres.spectres(self.spectrum[item][0][:, 0],
-                                                   model_box.wavelength,
-                                                   model_box.flux)
-
-                else:
-                    model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
-                    model_flux *= flux_scaling
 
                 if disk_param:
                     model_tmp = self.diskspec[i].spectrum_interp([disk_param['teff']])[0, :]
 
-                    model_flux += model_tmp * (disk_param['radius']*constants.R_JUP)**2 / \
+                    model_tmp *= (disk_param['radius']*constants.R_JUP)**2 / \
                         (self.distance[0]*constants.PARSEC)**2
+
+                    model_flux += model_tmp
 
                 if 'lognorm_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
@@ -1335,6 +1401,7 @@ class FitModel:
 
                 elif 'powerlaw_ext' in dust_param:
                     for j, cross_item in enumerate(self.cross_sections[item]):
+                        # For loop over all wavelengths of a spectrum
                         cross_tmp = cross_item(dust_param['powerlaw_exp'],
                                                10.**dust_param['powerlaw_max'])[0]
 

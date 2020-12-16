@@ -230,7 +230,7 @@ def plot_spectrum(boxes: list,
         ax1.set_xlabel('Wavelength (µm)', fontsize=13)
 
     if filters is not None:
-        ax2.set_ylabel('Transmission', fontsize=13)
+        ax2.set_ylabel('T$_\lambda$', fontsize=13)
 
     if residuals is not None:
         if quantity == 'flux density':

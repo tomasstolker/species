@@ -65,7 +65,7 @@ def plot_walkers(tag: str,
                          f'for plotting the walkers. The plot_walkers function can only be '
                          f'used after running the MCMC with run_mcmc and not after running '
                          f'MultiNest with run_multinest.')
-        
+
     ndim = samples.shape[-1]
 
     plt.figure(1, figsize=(6, ndim*1.5))
@@ -202,6 +202,13 @@ def plot_posterior(tag: str,
             luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
                 constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
+            if 'disk_teff' in box.parameters and 'disk_radius' in box.parameters:
+                teff_index = np.argwhere(np.array(box.parameters) == 'disk_teff')[0]
+                radius_index = np.argwhere(np.array(box.parameters) == 'disk_radius')[0]
+
+                luminosity += 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+                    constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
+
             samples = np.append(samples, np.log10(luminosity), axis=-1)
             box.parameters.append('luminosity')
             ndim += 1
@@ -283,10 +290,6 @@ def plot_posterior(tag: str,
         else:
             warnings.warn('Samples with the log(g) and radius are required for \'inc_mass=True\'.')
 
-    if isinstance(title_fmt, list) and len(title_fmt) != ndim:
-        raise ValueError(f'The number of items in the list of \'title_fmt\' ({len(title_fmt)}) is '
-                         f'not equal to the number of dimensions of the samples ({ndim}).')
-
     labels = plot_util.update_labels(box.parameters)
 
     # Check if parameter values were fixed
@@ -307,6 +310,10 @@ def plot_posterior(tag: str,
         del labels[index_del[i]]
 
     ndim -= len(index_del)
+
+    if isinstance(title_fmt, list) and len(title_fmt) != ndim:
+        raise ValueError(f'The number of items in the list of \'title_fmt\' ({len(title_fmt)}) is '
+                         f'not equal to the number of dimensions of the samples ({ndim}).')
 
     samples = samples.reshape((-1, ndim))
 
@@ -486,7 +493,7 @@ def plot_size_distributions(tag: str,
                             offset: Optional[Tuple[float, float]] = None,
                             output: str = 'size_distributions.pdf') -> None:
     """
-    Function to plot random samples of the log-normal or power-law size distribution.
+    Function to plot random samples of the log-normal or power-law size distributions.
 
     Parameters
     ----------
@@ -589,6 +596,9 @@ def plot_size_distributions(tag: str,
     for i in range(samples.shape[0]):
         if 'lognorm_radius' in box.parameters:
             dn_dr, _, radii = dust_util.log_normal_distribution(10.**log_r_g[i], sigma_g[i], 1000)
+
+            # Set the number density to zero for grain radii smaller than 1 nm
+            dn_dr[radii < 1e-3] = 0.
 
         elif 'powerlaw_max' in box.parameters:
             dn_dr, _, radii = dust_util.power_law_distribution(

@@ -52,7 +52,7 @@ def plot_color_magnitude(boxes: list,
     objects : list(tuple(str, str, str, str), ),
               list(tuple(str, str, str, str, dict, dict), ), None
         Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter names for the color, and the filter names for the absolute magnitude. Optionally, a
+        filter names for the color, and the filter name for the absolute magnitude. Optionally, a
         dictionary with keyword arguments can be provided for the object's marker and label,
         respectively. For example, ``{'marker': 'o', 'ms': 10}`` for the marker and
         ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the label. Not used if set to

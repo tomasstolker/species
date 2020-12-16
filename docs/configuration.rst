@@ -21,14 +21,14 @@ In this case the database is stored in the working folder and an absolute path p
          >>> import os
          >>> os.getcwd()
 
-The workflow with *species* is now initiated with :class:`~species.core.setup.SpeciesInit`:
+The workflow with *species* can now be initiated with the :class:`~species.core.setup.SpeciesInit` class:
 
 .. code-block:: python
 
    >>> import species
    >>> species.SpeciesInit()
 
-A configuration file with default values is automatically created when `species` is initiated and the configuration file is not present in the working folder.
+Alternatively, a configuration file with default values is automatically created when `species` is initiated and the configuration file is not present in the working folder.
 
 .. tip::
    The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.

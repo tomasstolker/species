@@ -5,13 +5,13 @@ Utility functions for reading data.
 import math
 import warnings
 
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.ndimage.filters import gaussian_filter
+from typeguard import typechecked
 
 from species.core import box, constants
 from species.read import read_model, read_planck
@@ -96,21 +96,27 @@ def add_luminosity(modelbox):
 
 @typechecked
 def update_spectra(objectbox: box.ObjectBox,
-                   model_param: Dict[str, float]) -> box.ObjectBox:
+                   model_param: Dict[str, float],
+                   model: Optional[str] = None) -> box.ObjectBox:
     """
-    Function for applying a best-fit scaling and/or error inflation to the spectra of an object.
+    Function for applying a flux scaling and/or error inflation to the spectra of an
+    :class:`~species.core.box.ObjectBox`.
 
     Parameters
     ----------
     objectbox : species.core.box.ObjectBox
         Box with the object's data, including the spectra.
     model_param : dict
-        Model parameter values. Should contain the scaling and/or error inflation values.
+        Dictionary with the model parameters. Should contain the value(s) of the flux scaling
+        and/or the error inflation.
+    model : str, None
+        Name of the atmospheric model. Only required for inflating the errors. Otherwise, the
+        argument can be set to ``None``.
 
     Returns
     -------
     species.core.box.ObjectBox
-        The input box with the scaled and/or error inflated spectra.
+        The input box which includes the spectra with the scaled fluxes and/or inflated errors.
     """
 
     if objectbox.flux is not None:
@@ -129,26 +135,41 @@ def update_spectra(objectbox: box.ObjectBox,
             objectbox.flux[key] = value
 
     if objectbox.spectrum is not None:
+        # Check if there are any spectra
 
         for key, value in objectbox.spectrum.items():
+            # Get the spectrum (3 columns)
             spec_tmp = value[0]
 
             if f'scaling_{key}' in model_param:
+                # Scale the flux of the spectrum
                 scaling = model_param[f'scaling_{key}']
 
                 print(f'Scaling the flux of {key}: {scaling:.2f}...', end='', flush=True)
                 spec_tmp[:, 1] *= model_param[f'scaling_{key}']
-                # spec_tmp[:, 2] *= model_param[f'scaling_{key}']
                 print(' [DONE]')
 
             if f'error_{key}' in model_param:
-                error = 10.**model_param[f'error_{key}']
-                log_msg = f'Inflating the error of {key} (W m-2 um-1): {error:.2e}...'
+                # Calculate the model spectrum
+                wavel_range = (0.9*spec_tmp[0, 0], 1.1*spec_tmp[-1, 0])
+                readmodel = read_model.ReadModel('atmo', wavel_range=wavel_range)
+
+                model = readmodel.get_model(model_param,
+                                            spec_res=value[3],
+                                            wavel_resample=spec_tmp[:, 0],
+                                            smooth=True)
+
+                # Scale the errors relative to the model spectrum
+                err_scaling = model_param[f'error_{key}']
+                log_msg = f'Inflating the error of {key}: {err_scaling:.2e}...'
 
                 print(log_msg, end='', flush=True)
-                spec_tmp[:, 2] += error
+                spec_tmp[:, 2] = np.sqrt(spec_tmp[:, 2]**2 + (err_scaling*model.flux)**2)
                 print(' [DONE]')
 
+            # Store the spectra with the scaled fluxes and/or errors
+            # The other three elements (i.e. the covariance matrix, the inverted covariance matrix,
+            # and the spectral resolution) remain unaffected
             objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
 
     return objectbox
