@@ -28,7 +28,6 @@ species.core.setup module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

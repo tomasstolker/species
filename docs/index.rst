@@ -3,11 +3,11 @@
 Documentation for *species*
 ===========================
 
-*species* is a toolkit for atmospheric characterization of self-luminous exoplanets and brown dwarfs. The package has been developed and is maintained by |stolker|.
+*species* is a toolkit for atmospheric characterization of directly imaged exoplanets. The package has been developed and is maintained by |stolker|.
 
 .. |stolker| raw:: html
 
-	<a href="https://people.phys.ethz.ch/~stolkert/" target="_blank">Tomas Stolker</a>
+	<a href="https://home.strw.leidenuniv.nl/~stolker/" target="_blank">Tomas Stolker</a>
 
 .. toctree::
    :maxdepth: 2
