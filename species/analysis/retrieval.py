@@ -684,7 +684,7 @@ class AtmosphericRetrieval:
 
             cube[cube_index['radius']] = radius
 
-            if pt_profile ['molliere', 'mod-molliere']:
+            if pt_profile in ['molliere', 'mod-molliere']:
 
                 # Internal temperature (K) of the Eddington approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
