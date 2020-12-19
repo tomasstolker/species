@@ -36,7 +36,6 @@ species.analysis.retrieval module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

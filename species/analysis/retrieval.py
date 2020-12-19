@@ -7,7 +7,7 @@ import os
 import json
 import time
 
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,7 +41,8 @@ class AtmosphericRetrieval:
                  scattering: bool = True,
                  inc_spec: Union[bool, List[str]] = True,
                  inc_phot: Union[bool, List[str]] = False,
-                 pressure_grid: str = 'smaller') -> None:
+                 pressure_grid: str = 'smaller',
+                 weights: Optional[Dict[str, float]] = None) -> None:
         """
         Parameters
         ----------
@@ -79,6 +80,11 @@ class AtmosphericRetrieval:
             cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
             faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
             test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        weights : dict(str, float), None
+            Weights to be applied to the log-likelihood components of the different spectroscopic
+            and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
+            parameter can for example be used to bias the weighting of the photometric data points.
+            An equal weighting is applied if the argument is set to ``None``.
 
         Returns
         -------
@@ -258,6 +264,31 @@ class AtmosphericRetrieval:
 
         self.pt_smooth = None
 
+        # Weighting of the photometric and spectroscopic data
+
+        print('Weights for the log-likelihood function:')
+
+        if weights is None:
+            self.weights = {}
+        else:
+            self.weights = weights
+
+        for item in inc_spec:
+            if item not in self.weights:
+                self.weights[item] = 1.
+            else:
+                self.weights[item] /= float(self.spectrum[item][0].shape[0])
+
+            print(f'   - {item} = {self.weights[item]:.2e}')
+
+        for item in inc_phot:
+            if item not in self.weights:
+                self.weights[item] = 1.
+            else:
+                self.weights[item] = weights[item]
+
+            print(f'   - {item} = {self.weights[item]:.2e}')
+
     @typechecked
     def set_parameters(self,
                        bounds: dict,
@@ -309,7 +340,7 @@ class AtmosphericRetrieval:
 
         # P-T profile parameters
 
-        if pt_profile == 'molliere' or pt_profile == 'mod-molliere':
+        if pt_profile in ['molliere', 'mod-molliere']:
             self.parameters.append('tint')
             self.parameters.append('alpha')
             self.parameters.append('log_delta')
@@ -653,7 +684,7 @@ class AtmosphericRetrieval:
 
             cube[cube_index['radius']] = radius
 
-            if pt_profile == 'molliere' or pt_profile == 'mod-molliere':
+            if pt_profile ['molliere', 'mod-molliere']:
 
                 # Internal temperature (K) of the Eddington approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
@@ -1251,6 +1282,9 @@ class AtmosphericRetrieval:
                 # Difference between the observed and modeled spectrum
                 flux_diff = flux_rebinned - scaling[item]*data_flux
 
+                # Shortcut for the weight
+                weight = self.weights[item]
+
                 if self.spectrum[item][2] is not None:
                     # Use the inverted covariance matrix
 
@@ -1267,7 +1301,8 @@ class AtmosphericRetrieval:
 
                     # Use the inverted covariance matrix
                     dot_tmp = np.dot(flux_diff, np.dot(data_cov_inv, flux_diff))
-                    ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+                    ln_like += -0.5 * weight * dot_tmp - \
+                        0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
 
                 else:
                     if item in fit_corr:
@@ -1283,11 +1318,13 @@ class AtmosphericRetrieval:
 
                         dot_tmp = np.dot(flux_diff, np.dot(np.linalg.inv(cov_matrix), flux_diff))
 
-                        ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+                        ln_like += -0.5 * weight * dot_tmp - \
+                            0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
 
                     else:
                         # Calculate the log-likelihood without the covariance matrix
-                        ln_like += -0.5*np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
+                        ln_like += -0.5 * weight * \
+                            np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[item]*data_flux, yerr=np.sqrt(data_var),
@@ -1299,6 +1336,9 @@ class AtmosphericRetrieval:
                 # Calculate the photometric flux from the model spectrum
                 phot_flux, _ = self.synphot[i].spectrum_to_flux(wlen_micron, flux_lambda)
 
+                # Shortcut for weight
+                weight = self.weights[self.synphot[i].filter_name]
+
                 if plotting:
                     read_filt = read_filter.ReadFilter(self.synphot[i].filter_name)
 
@@ -1307,7 +1347,7 @@ class AtmosphericRetrieval:
 
                 if obj_item.ndim == 1:
                     # Filter with one flux
-                    ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
+                    ln_like += -0.5 * weight * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
 
                     if plotting:
                         plt.errorbar(read_filt.mean_wavelength(), obj_item[0], xerr=read_filt.filter_fwhm(),
@@ -1316,7 +1356,7 @@ class AtmosphericRetrieval:
                 else:
                     # Filter with multiple fluxes
                     for j in range(obj_item.shape[1]):
-                        ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
+                        ln_like += -0.5 * weight * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
 
             if plotting:
                 plt.plot(wlen_micron, flux_smooth, color='black', zorder=-20)
