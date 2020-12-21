@@ -17,7 +17,7 @@ class TestIsochrone:
 
         filename = 'model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
-        url = 'https://people.phys.ethz.ch/~stolkert/species/model.AMES-Cond-2000.M-0.0.NaCo.Vega'
+        url = 'https://home.strw.leidenuniv.nl/~stolker/species/model.AMES-Cond-2000.M-0.0.NaCo.Vega'
 
         urllib.request.urlretrieve(url, filename)
 
