@@ -6,7 +6,7 @@
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
 
-.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7%2C%203.8-yellow.svg?style=flat
+.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7%2C%203.8-orange.svg?style=flat
     :target: https://pypi.python.org/pypi/species
 
 .. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
@@ -21,11 +21,17 @@
 .. image:: https://www.codefactor.io/repository/github/tomasstolker/species/badge
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
 
-.. image:: https://img.shields.io/badge/license-MIT-blue.svg?style=flat
-    :target: https://github.com/tomasstolker/species/blob/master/LICENSE
+.. image:: https://img.shields.io/github/commit-activity/m/tomasstolker/species
+   :alt: GitHub commit activity
 
-.. image:: https://img.shields.io/badge/arXiv-1912.13316-orange.svg?style=flat
-    :target: https://arxiv.org/abs/1912.13316
+.. image:: https://img.shields.io/github/issues-pr-closed/tomasstolker/species
+   :alt: GitHub closed pull requests
+
+.. image:: https://img.shields.io/github/license/tomasstolker/species
+   :alt: GitHub
+
+.. image:: https://img.shields.io/badge/arXiv-1912.13316-blueviolet.svg?style=flat
+   :target: https://arxiv.org/abs/1912.13316
 
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets and brown dwarfs. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for grid and free atmospheric retrievals with Bayesian inference, color-magnitude and color-color diagrams, spectral and photometric calibration, and synthetic photometry. The package is has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
