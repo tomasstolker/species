@@ -5,7 +5,6 @@ Installation
 
 *species* is compatible with Python 3.6/3.7/3.8 and is available in the |pypi| and on |github|.
 
-
 Installation from PyPI
 ----------------------
 
