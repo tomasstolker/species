@@ -6,7 +6,7 @@ About
 Questions & feedback
 --------------------
 
-*species* is developed by Tomas Stolker (tomas.stolker@phys.ethz.ch). Feel free to send an email for questions, comments, or suggestions.
+*species* is developed by Tomas Stolker (stolker@strw.leidenuniv.nl). Feel free to send an email for questions, comments, or suggestions.
 
 Attribution
 -----------
@@ -16,4 +16,4 @@ Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A.
 Logo
 ----
 
-Are you presenting results obtained with `species` in a talk or poster? Please consider using the `logo <https://people.phys.ethz.ch/~stolkert/species/species_logo.zip>`_ that is available in PDF and PNG format.
+Are you presenting results obtained with `species` in a talk or poster? Please consider using the `logo <https://home.strw.leidenuniv.nl/~stolker/species/species_logo.zip>`_ that is available in PDF and PNG format.

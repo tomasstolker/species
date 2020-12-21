@@ -86,7 +86,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         os.remove('VisAO_Ys_filter_curve.dat')
 
     elif filter_id == 'ALMA/band6':
-        url = 'https://people.phys.ethz.ch/~stolkert/species/alma_band6.dat'
+        url = 'https://home.strw.leidenuniv.nl/~stolker/species/alma_band6.dat'
         urllib.request.urlretrieve(url, 'alma_band6.dat')
 
         wavelength, transmission = np.loadtxt('alma_band6.dat', unpack=True)
@@ -96,7 +96,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         os.remove('alma_band6.dat')
 
     elif filter_id == 'ALMA/band7':
-        url = 'https://people.phys.ethz.ch/~stolkert/species/alma_band7.dat'
+        url = 'https://home.strw.leidenuniv.nl/~stolker/species/alma_band7.dat'
         urllib.request.urlretrieve(url, 'alma_band7.dat')
 
         wavelength, transmission = np.loadtxt('alma_band7.dat', unpack=True)

@@ -31,7 +31,7 @@ def add_spex(input_path, database):
         None
     """
 
-    distance_url = 'https://people.phys.ethz.ch/~stolkert/species/distance.dat'
+    distance_url = 'https://home.strw.leidenuniv.nl/~stolker/species/distance.dat'
     distance_file = os.path.join(input_path, 'distance.dat')
 
     if not os.path.isfile(distance_file):

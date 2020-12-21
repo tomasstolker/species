@@ -36,7 +36,7 @@ def add_optical_constants(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/optical_constants.zip'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/optical_constants.zip'
 
     data_file = os.path.join(input_path, 'optical_constants.zip')
 
@@ -116,7 +116,7 @@ def add_cross_sections(input_path: str,
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/lognorm_mgsio3_c_ext.fits'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/lognorm_mgsio3_c_ext.fits'
 
     data_file = os.path.join(input_path, 'lognorm_mgsio3_c_ext.fits')
 
@@ -150,7 +150,7 @@ def add_cross_sections(input_path: str,
         data_range = f'{np.amin(hdu_list[3].data)} - {np.amax(hdu_list[3].data)}'
         print(f'   - Geometric standard deviation range: {data_range}')
 
-    url = 'https://people.phys.ethz.ch/~stolkert/species/powerlaw_mgsio3_c_ext.fits'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/powerlaw_mgsio3_c_ext.fits'
 
     data_file = os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')
 

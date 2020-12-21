@@ -28,7 +28,6 @@ species.analysis.photometry module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

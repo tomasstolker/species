@@ -6,7 +6,7 @@
 .. image:: https://badge.fury.io/py/species.svg
     :target: https://badge.fury.io/py/species
 
-.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7-yellow.svg?style=flat
+.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7%2C%203.8-yellow.svg?style=flat
     :target: https://pypi.python.org/pypi/species
 
 .. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
@@ -37,7 +37,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Attribution
 -----------
 
-Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A...635A.182S/abstract>`_ whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* benefits from. The *species* logo is `available <https://people.phys.ethz.ch/~stolkert/species/species_logo.zip>`_ for use in presentations.
+Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A...635A.182S/abstract>`_ whenever results from *species* are used in a publication. Please also make sure to give credit to the relevant papers regarding the use of the publicly available data that *species* benefits from. The *species* logo is `available <https://home.strw.leidenuniv.nl/~stolker/species/species_logo.zip>`_ for use in presentations.
 
 Contributing
 ------------
