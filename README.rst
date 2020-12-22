@@ -3,37 +3,28 @@
 
 **spe**\ctral **c**\ haracterization and **i**\ nference for **e**\ xoplanet **s**\ cience
 
-.. image:: https://badge.fury.io/py/species.svg
-   :target: https://badge.fury.io/py/species
-
-.. image:: https://img.shields.io/badge/Python-3.6%2C%203.7%2C%203.8-orange.svg?style=flat
+.. image:: https://img.shields.io/pypi/v/species
    :target: https://pypi.python.org/pypi/species
 
-.. image:: https://travis-ci.org/tomasstolker/species.svg?branch=master
+.. image:: https://img.shields.io/pypi/pyversions/species
+   :target: https://pypi.python.org/pypi/species
+
+.. image:: https://img.shields.io/travis/tomasstolker/species
    :target: https://travis-ci.org/tomasstolker/species
 
-.. image:: https://readthedocs.org/projects/species/badge/?version=latest
-   :target: http://species.readthedocs.io/en/latest/?badge=latest
+.. image:: https://img.shields.io/readthedocs/species
+   :target: http://species.readthedocs.io
 
-.. image:: https://coveralls.io/repos/github/tomasstolker/species/badge.svg
+.. image:: https://img.shields.io/coveralls/github/tomasstolker/species
    :target: https://coveralls.io/github/tomasstolker/species
 
-.. image:: https://www.codefactor.io/repository/github/tomasstolker/species/badge
+.. image:: https://img.shields.io/codefactor/grade/github/tomasstolker/species
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
-
-.. image:: https://img.shields.io/github/commit-activity/m/tomasstolker/species
-   :target: https://github.com/tomasstolker/species/commits/master
-
-.. image:: https://img.shields.io/github/issues-pr-closed/tomasstolker/species
-   :target: https://github.com/tomasstolker/species/pulls?q=is%3Apr+is%3Aclosed
 
 .. image:: https://img.shields.io/github/license/tomasstolker/species
    :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
-.. image:: https://img.shields.io/badge/arXiv-1912.13316-blueviolet.svg?style=flat
-   :target: https://arxiv.org/abs/1912.13316
-
-*species* is a toolkit for atmospheric characterization of directly imaged exoplanets and brown dwarfs. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for grid and free atmospheric retrievals with Bayesian inference, color-magnitude and color-color diagrams, spectral and photometric calibration, and synthetic photometry. The package is has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+*species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for both grid retrievals and free retrievals with Bayesian inference, color-magnitude and color-color diagrams, spectral and photometric calibration, and synthetic photometry. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------
