@@ -276,16 +276,12 @@ class AtmosphericRetrieval:
         for item in inc_spec:
             if item not in self.weights:
                 self.weights[item] = 1.
-            else:
-                self.weights[item] /= float(self.spectrum[item][0].shape[0])
 
             print(f'   - {item} = {self.weights[item]:.2e}')
 
         for item in inc_phot:
             if item not in self.weights:
                 self.weights[item] = 1.
-            else:
-                self.weights[item] = weights[item]
 
             print(f'   - {item} = {self.weights[item]:.2e}')
 
