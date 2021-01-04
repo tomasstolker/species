@@ -140,7 +140,7 @@ class ReadFilter:
         Returns
         -------
         float
-            Filter full width at half maximum (um).
+            Full width at half maximum (um).
         """
 
         data = self.get_filter()
@@ -156,9 +156,26 @@ class ReadFilter:
         return root2 - root1
 
     @typechecked
+    def effective_width(self) -> np.float32:
+        """
+        Calculate the effective width of the filter profile. The effective width is equivalent to
+        the horizontal size of a rectangle with height equal to the maximum transmission and with
+        the same area as the one covered by the filter profile.
+
+        Returns
+        -------
+        float
+            Effective width (um).
+        """
+
+        data = self.get_filter()
+
+        return np.trapz(data[:, 1], data[:, 0]) / np.amax(data[:, 1])
+
+    @typechecked
     def detector_type(self) -> str:
         """
-        Function for returning the detector type.
+        Return the detector type.
 
         Returns
         -------

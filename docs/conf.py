@@ -171,7 +171,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'species', 'species Documentation',
-     author, 'species', 'Toolkit for atmospheric characterization of exoplanets and brown dwarf',
+     author, 'species', 'Toolkit for atmospheric characterization of directly imaged exoplanets',
      'Miscellaneous'),
 ]
 
