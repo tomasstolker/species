@@ -52,7 +52,7 @@ def add_ames_cond(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'ames-cond.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/ames-cond.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/ames-cond.tgz'
 
     data_folder = os.path.join(input_path, 'ames-cond/')
     data_file = os.path.join(input_path, input_file)

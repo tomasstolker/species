@@ -53,7 +53,7 @@ def add_ames_dusty(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'ames-dusty.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/ames-dusty.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/ames-dusty.tgz'
 
     data_folder = os.path.join(input_path, 'ames-dusty/')
     data_file = os.path.join(input_path, input_file)

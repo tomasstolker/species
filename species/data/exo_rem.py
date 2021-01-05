@@ -50,7 +50,7 @@ def add_exo_rem(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'exo-rem.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/exo-rem.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/exo-rem.tgz'
 
     data_folder = os.path.join(input_path, 'exo-rem/')
     data_file = os.path.join(input_path, input_file)

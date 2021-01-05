@@ -59,7 +59,7 @@ def add_btcond(input_path: str,
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-cond.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/bt-cond.tgz'
 
     if not os.path.isfile(data_file):
         print('Downloading BT-Cond model spectra (162 MB)...', end='', flush=True)

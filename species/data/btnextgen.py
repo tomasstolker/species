@@ -52,7 +52,7 @@ def add_btnextgen(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'bt-nextgen.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-nextgen.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/bt-nextgen.tgz'
 
     data_folder = os.path.join(input_path, 'bt-nextgen/')
     data_file = os.path.join(input_path, input_file)

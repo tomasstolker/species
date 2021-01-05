@@ -302,7 +302,7 @@ def add_petitcode_hot_clear(input_path: str,
 
     data_folder = os.path.join(input_path, 'petitcode-hot-clear/')
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/petitcode-hot-clear.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/petitcode-hot-clear.tgz'
 
     data_file = os.path.join(input_path, 'petitcode-hot-clear.tgz')
 
@@ -427,7 +427,7 @@ def add_petitcode_hot_cloudy(input_path: str,
 
     data_folder = os.path.join(input_path, 'petitcode-hot-cloudy/')
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/petitcode-hot-cloudy.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/petitcode-hot-cloudy.tgz'
 
     data_file = os.path.join(input_path, 'petitcode-hot-cloudy.tgz')
 
