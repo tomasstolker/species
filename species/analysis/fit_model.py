@@ -726,8 +726,11 @@ class FitModel:
                     self.modelpar.append(f'corr_len_{item}')
                     self.modelpar.append(f'corr_amp_{item}')
 
-                    self.bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len) (um)
-                    self.bounds[f'corr_amp_{item}'] = (0., 1.)
+                    if f'corr_len_{item}' not in self.bounds:
+                        self.bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len/um)
+
+                    if f'corr_amp_{item}' not in self.bounds:
+                        self.bounds[f'corr_amp_{item}'] = (0., 1.)
 
                     self.n_corr_par += 2
 
@@ -963,8 +966,8 @@ class FitModel:
 
         for item in self.spectrum:
             if item in self.fit_corr:
-                sigma[f'corr_len_{item}'] = 0.01  # (dex)
-                guess[f'corr_len_{item}'] = None  # (um)
+                sigma[f'corr_len_{item}'] = 0.01  # log10(corr_len/um)
+                guess[f'corr_len_{item}'] = None  # log10(corr_len/um)
 
                 sigma[f'corr_amp_{item}'] = 0.1
                 guess[f'corr_amp_{item}'] = None

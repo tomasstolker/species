@@ -1,4 +1,4 @@
-.PHONY: help pypi ppypi-test docs coverage test clean
+.PHONY: help pypi pypi-test docs coverage test clean
 
 help:
 	@echo "pypi - submit package to the PyPI server"
@@ -29,7 +29,7 @@ docs:
 	$(MAKE) -C docs html
 
 coverage:
-	coverage run -m pytest
+	coverage run --source=species -m pytest
 	coverage report -m
 
 test:

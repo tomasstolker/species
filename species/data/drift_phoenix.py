@@ -53,7 +53,7 @@ def add_drift_phoenix(input_path: str,
         os.makedirs(input_path)
 
     input_file = 'drift-phoenix.tgz'
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/drift-phoenix.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/drift-phoenix.tgz'
 
     data_folder = os.path.join(input_path, 'drift-phoenix/')
     data_file = os.path.join(input_path, input_file)

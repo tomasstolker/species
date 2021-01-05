@@ -59,7 +59,7 @@ def add_btsettl(input_path: str,
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl-cifist.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/bt-settl-cifist.tgz'
 
     if not os.path.isfile(data_file):
         print('Downloading Bt-Settl model spectra (578 MB)...', end='', flush=True)

@@ -56,4 +56,4 @@ class TestCalibration:
         app_mag, abs_mag = read_calib.get_magnitude(model_param=self.model_param)
 
         assert app_mag[0] == 0.03
-        assert abs_mag[0] == None
+        assert abs_mag[0] is None

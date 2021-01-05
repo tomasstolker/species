@@ -57,7 +57,7 @@ def add_blackbody(input_path: str,
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/blackbody.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/blackbody.tgz'
 
     if not os.path.isfile(data_file):
         print('Downloading blackbody model spectra (46 MB)...', end='', flush=True)

@@ -60,10 +60,10 @@ def add_btsettl(input_path: str,
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = 'https://people.phys.ethz.ch/~ipa/tstolker/bt-settl.tgz'
+    url = 'https://home.strw.leidenuniv.nl/~stolker/species/bt-settl.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading Bt-Settl model spectra (227 MB)...', end='', flush=True)
+        print('Downloading BT-Settl model spectra (227 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
