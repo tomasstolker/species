@@ -1080,13 +1080,14 @@ class AtmosphericRetrieval:
             else:
                 pt_smooth = self.pt_smooth
 
+            # Create the P-T profile
+
+            temperature, knot_temp = retrieval_util.create_pt_profile(
+                cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
+
             # Prepare the scaling based on the cloud optical depth
 
             if calc_tau_cloud:
-                # Create the P-T profile
-                temperature, knot_temp = retrieval_util.create_pt_profile(
-                    cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
-
                 if 'log_p_quench' in cube_index:
                     # Quenching pressure (bar)
                     quench_pressure = 10.**cube[cube_index['log_p_quench']]
@@ -1103,10 +1104,7 @@ class AtmosphericRetrieval:
                 # Extract the mean molecular weight
                 mmw = abund_in['MMW']
 
-            # Create the P-T profile
-
-            temp, knot_temp = retrieval_util.create_pt_profile(
-                cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
+            # Check for isothermal regions
 
             if check_isothermal:
                 # Get knot indices where the pressure is larger than 1 bar
@@ -1124,6 +1122,8 @@ class AtmosphericRetrieval:
                     # Return zero probability if there is a temperature step smaller than 10 K
                     return -np.inf
 
+            # Penalize P-T profiles with oscillations
+
             if pt_profile == 'free':
                 temp_sum = np.sum((knot_temp[2:] + knot_temp[:-2] - 2.*knot_temp[1:-1])**2.)
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
@@ -1137,6 +1137,7 @@ class AtmosphericRetrieval:
                 return -np.inf
 
             # Set the quenching pressure
+
             if quenching:
                 log_p_quench = cube[cube_index['log_p_quench']]
             else:
