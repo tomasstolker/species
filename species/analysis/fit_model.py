@@ -10,14 +10,9 @@ from typing import Optional, Union, List, Tuple, Dict
 from multiprocessing import Pool, cpu_count
 
 import emcee
-import spectres
 import numpy as np
-
-# Installation of MultiNest is not possible on readthedocs
-try:
-    import pymultinest
-except:
-    warnings.warn('PyMultiNest could not be imported.')
+import spectres
+import ultranest
 
 from typeguard import typechecked
 
@@ -26,6 +21,9 @@ from species.data import database
 from species.core import constants
 from species.read import read_model, read_object, read_planck, read_filter
 from species.util import read_util, dust_util
+
+
+warnings.filterwarnings('always', category=DeprecationWarning)
 
 
 @typechecked
@@ -440,7 +438,7 @@ class FitModel:
                  - The :func:`~species.plot.plot_mcmc.plot_photometry` function can be used to
                    calculate synthetic photometry and error bars from the posterior distribution.
 
-                 - Only supported by ``run_multinest``.
+                 - Only supported by ``run_ultranest``.
 
             Calibration parameters:
 
@@ -482,7 +480,7 @@ class FitModel:
                    ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
                    'ism_red': (0., 20.)}``.
 
-                 - Only supported by ``run_multinest``.
+                 - Only supported by ``run_ultranest``.
 
             Log-normal size distribution:
 
@@ -508,7 +506,7 @@ class FitModel:
                  - A uniform prior is used for ``lognorm_sigma`` and ``lognorm_ext``, and a
                    log-uniform prior for ``lognorm_radius``.
 
-                 - Only supported by ``run_multinest``.
+                 - Only supported by ``run_ultranest``.
 
             Power-law size distribution:
 
@@ -533,7 +531,7 @@ class FitModel:
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
                    log-uniform prior for ``powerlaw_max``.
 
-                 - Only supported by ``run_multinest``.
+                 - Only supported by ``run_ultranest``.
 
             Blackbody disk emission:
 
@@ -544,7 +542,7 @@ class FitModel:
                    For example, ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
                    'logg': (3.5, 4.5), 'disk_teff': (100., 2000.), 'disk_radius': (1., 100.)}``.
 
-                 - Only supported by ``run_multinest``.
+                 - Only supported by ``run_ultranest``.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none
@@ -804,29 +802,29 @@ class FitModel:
                     self.bounds[f'scaling_{item}'] = (bounds[item][0][0], bounds[item][0][1])
 
                 if bounds[item][1] is not None:
-                    # Add the error offset parameters
+                    # Add the error inflation parameters
                     self.modelpar.append(f'error_{item}')
                     self.bounds[f'error_{item}'] = (bounds[item][1][0], bounds[item][1][1])
 
                     if self.bounds[f'error_{item}'][0] < 0.:
-                        warnings.warn(f'The lower bound of \'error_{item}\' is smaller than 0. The '
-                                      f'error inflation should be given relative to the model fluxes '
-                                      f'so the boundaries are typically between 0 and 1.')
+                        warnings.warn(f'The lower bound of \'error_{item}\' is smaller than 0. '
+                                      f'The error inflation should be given relative to the model '
+                                      f'fluxes  so the boundaries are typically between 0 and 1.')
 
                     if self.bounds[f'error_{item}'][1] < 0.:
-                        warnings.warn(f'The upper bound of \'error_{item}\' is smaller than 0. The '
-                                      f'error inflation should be given relative to the model fluxes '
-                                      f'so the boundaries are typically between 0 and 1.')
+                        warnings.warn(f'The upper bound of \'error_{item}\' is smaller than 0. '
+                                      f'The error inflation should be given relative to the model '
+                                      f'fluxes so the boundaries are typically between 0 and 1.')
 
                     if self.bounds[f'error_{item}'][0] > 1.:
                         warnings.warn(f'The lower bound of \'error_{item}\' is larger than 1. The '
-                                      f'error inflation should be given relative to the model fluxes '
-                                      f'so the boundaries are typically between 0 and 1.')
+                                      f'error inflation should be given relative to the model '
+                                      f'fluxes so the boundaries are typically between 0 and 1.')
 
                     if self.bounds[f'error_{item}'][1] > 1.:
                         warnings.warn(f'The upper bound of \'error_{item}\' is larger than 1. The '
-                                      f'error inflation should be given relative to the model fluxes '
-                                      f'so the boundaries are typically between 0 and 1.')
+                                      f'error inflation should be given relative to the model '
+                                      f'fluxes so the boundaries are typically between 0 and 1.')
 
                 if item in self.bounds:
                     del self.bounds[item]
@@ -904,10 +902,10 @@ class FitModel:
                  prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run the MCMC sampler of ``emcee``. The functionalities of ``run_mcmc`` are
-        more limited than :func:`~species.analysis.fit_model.FitModel.run_multinest` and
-        ``run_multinest`` provides more robust results when sampling multimodal posterior
+        more limited than :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
+        ``run_ultranest`` provides more robust results when sampling multimodal posterior
         distributions and has the additional advantage of returning the model evidence. Therefore,
-        it is recommended to use ``run_multinest`` instead of ``run_mcmc``.
+        it is recommended to use ``run_ultranest`` instead of ``run_mcmc``.
 
         Parameters
         ----------
@@ -1038,34 +1036,31 @@ class FitModel:
                                spec_labels=spec_labels)
 
     @typechecked
-    def run_multinest(self,
+    def run_ultranest(self,
                       tag: str,
-                      n_live_points: int = 1000,
-                      output: str = 'multinest/',
+                      n_live_points: Optional[int] = None,
+                      min_num_live_points=400,
+                      output: str = 'ultranest/',
                       prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
-        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
-        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
-        has to to be build manually. See the ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
-        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
-        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
-        set before importing the ``species`` package, for example:
-
-        .. code-block:: python
-
-            >>> import os
-            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
-            >>> import species
+        Function to run ``UltraNest`` for constructing the posterior probability distributions
+        on model parameters are constructed and computing the marginal likelihood (i.e. evidence).
 
         Parameters
         ----------
         tag : str
             Database tag where the samples will be stored.
         n_live_points : int
-            Number of live points.
+            DEPRECATED: Number of live points. Please use ``min_num_live_points`` instead because
+            of change from ``PyMultiNest`` to ``UltraNest``.
+        min_num_live_points : int
+            Minimum number of live points. The default of 400 is a reasonable number. In principle,
+            choosing a very low number allows nested sampling to make very few iterations and go to
+            the peak quickly. However, the space will be poorly sampled, giving a large region and
+            thus low efficiency, and potentially not seeing interesting modes. Therefore, a value
+            above 100 is typically useful.
         output : str
-            Path that is used for the output files from MultiNest.
+            Path that is used for the output files from ``UltraNest``.
         prior : dict(str, tuple(float, float)), None
             Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
             for any of the atmosphere or calibration parameters, e.g.
@@ -1081,6 +1076,15 @@ class FitModel:
 
         print('Running nested sampling...')
 
+        # Print warning if n_live_points from PyMultiNest is used
+
+        if n_live_points is not None:
+            warnings.warn('The \'n_live_points\' parameter has been deprecated because UltraNest '
+                          'is used instead of PyMultiNest. UltraNest can be executed with the '
+                          '\'run_ultranest\' method of \'FitModel\' and uses the '
+                          '\'min_num_live_points\' parameter (see documentation for details).',
+                          DeprecationWarning)
+
         # Create the output folder if required
 
         if not os.path.exists(output):
@@ -1093,9 +1097,7 @@ class FitModel:
             cube_index[item] = i
 
         @typechecked
-        def lnprior_multinest(cube,
-                              n_dim: int,
-                              n_param: int) -> None:
+        def lnprior_ultranest(cube) -> np.ndarray:
             """
             Function to transform the unit cube into the parameter cube. It is not clear how to
             pass additional arguments to the function, therefore it is placed here and not merged
@@ -1103,39 +1105,33 @@ class FitModel:
 
             Parameters
             ----------
-            cube : pymultinest.run.LP_c_double
-                Unit cube.
-            n_dim : int
-                Number of dimensions.
-            n_param : int
-                Number of parameters.
+            cube : np.ndarray
+                Array with unit parameters.
 
             Returns
             -------
-            NoneType
-                None
+            np.ndarray
+                Array with physical parameters.
             """
+
+            params = cube.copy()
 
             for item in cube_index:
                 # Uniform priors for all parameters
-                cube[cube_index[item]] = self.bounds[item][0] + \
-                    (self.bounds[item][1]-self.bounds[item][0])*cube[cube_index[item]]
+                params[cube_index[item]] = self.bounds[item][0] + \
+                    (self.bounds[item][1]-self.bounds[item][0])*params[cube_index[item]]
+
+            return params
 
         @typechecked
-        def lnlike_multinest(cube,
-                             n_dim: int,
-                             n_param: int) -> np.float64:
+        def lnlike_ultranest(params) -> np.float64:
             """
             Function for calculating the log-likelihood for the sampled parameter cube.
 
             Parameters
             ----------
-            cube : pymultinest.run.LP_c_double
-                Unit cube.
-            n_dim : int
-                Number of dimensions. This parameter is mandatory but not used by the function.
-            n_param : int
-                Number of parameters. This parameter is mandatory but not used by the function.
+            params : np.ndarray
+                Array with physical parameters.
 
             Returns
             -------
@@ -1154,37 +1150,37 @@ class FitModel:
             param_dict = {}
 
             for item in self.bounds:
-                # Add the parameters from the cube to their dictionaries
+                # Add the parameters from the params to their dictionaries
 
                 if item[:8] == 'scaling_' and item[8:] in self.spectrum:
-                    spec_scaling[item[8:]] = cube[cube_index[item]]
+                    spec_scaling[item[8:]] = params[cube_index[item]]
 
                 elif item[:6] == 'error_' and item[6:] in self.spectrum:
-                    err_scaling[item[6:]] = cube[cube_index[item]]
+                    err_scaling[item[6:]] = params[cube_index[item]]
 
                 elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
-                    corr_len[item[9:]] = 10.**cube[cube_index[item]]  # (um)
+                    corr_len[item[9:]] = 10.**params[cube_index[item]]  # (um)
 
                 elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
-                    corr_amp[item[9:]] = cube[cube_index[item]]
+                    corr_amp[item[9:]] = params[cube_index[item]]
 
                 elif item[:8] == 'lognorm_':
-                    dust_param[item] = cube[cube_index[item]]
+                    dust_param[item] = params[cube_index[item]]
 
                 elif item[:9] == 'powerlaw_':
-                    dust_param[item] = cube[cube_index[item]]
+                    dust_param[item] = params[cube_index[item]]
 
                 elif item[:4] == 'ism_':
-                    dust_param[item] = cube[cube_index[item]]
+                    dust_param[item] = params[cube_index[item]]
 
                 elif item == 'disk_teff':
-                    disk_param['teff'] = cube[cube_index[item]]
+                    disk_param['teff'] = params[cube_index[item]]
 
                 elif item == 'disk_radius':
-                    disk_param['radius'] = cube[cube_index[item]]
+                    disk_param['radius'] = params[cube_index[item]]
 
                 else:
-                    param_dict[item] = cube[cube_index[item]]
+                    param_dict[item] = params[cube_index[item]]
 
             for item in self.fix_param:
                 # Add the fixed parameters to their dictionaries
@@ -1265,13 +1261,13 @@ class FitModel:
             if prior is not None:
                 for key, value in prior.items():
                     if key == 'mass':
-                        mass = read_util.get_mass(cube[cube_index['logg']],
-                                                  cube[cube_index['radius']])
+                        mass = read_util.get_mass(params[cube_index['logg']],
+                                                  params[cube_index['radius']])
 
                         ln_like += -0.5 * (mass - value[0])**2 / value[1]**2
 
                     else:
-                        ln_like += -0.5 * (cube[cube_index[key]] - value[0])**2 / value[1]**2
+                        ln_like += -0.5 * (params[cube_index[key]] - value[0])**2 / value[1]**2
 
             if 'lognorm_ext' in dust_param:
                 cross_tmp = self.cross_sections['Generic/Bessell.V'](
@@ -1471,52 +1467,57 @@ class FitModel:
 
             return ln_like
 
-        pymultinest.run(lnlike_multinest,
-                        lnprior_multinest,
-                        len(self.modelpar),
-                        outputfiles_basename=output,
-                        resume=False,
-                        n_live_points=n_live_points)
+        sampler = ultranest.ReactiveNestedSampler(self.modelpar,
+                                                  lnlike_ultranest,
+                                                  transform=lnprior_ultranest,
+                                                  resume='subfolder',
+                                                  log_dir=output)
 
-        # Create the Analyzer object
-        analyzer = pymultinest.analyse.Analyzer(len(self.modelpar), outputfiles_basename=output)
+        result = sampler.run(show_status=True,
+                             viz_callback=False,
+                             min_num_live_points=min_num_live_points)
 
-        # Get a dictionary with the ln(Z) and its errors, the individual modes and their parameters
-        # quantiles of the parameter posteriors
-        stats = analyzer.get_stats()
+        # Log-evidence
 
-        # Nested sampling global log-evidence
-        ln_z = stats['nested sampling global log-evidence']
-        ln_z_error = stats['nested sampling global log-evidence error']
-        print(f'Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+        ln_z = result['logz']
+        ln_z_error = result['logzerr']
+        print(f'Log-evidence = {ln_z:.2f} +/- {ln_z_error:.2f}')
 
-        # Nested sampling global log-evidence
-        ln_z = stats['nested importance sampling global log-evidence']
-        ln_z_error = stats['nested importance sampling global log-evidence error']
-        print(f'Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+        # Best-fit parameters
 
-        # Get the best-fit (highest likelihood) point
-        print('Sample with the highest likelihood:')
-        best_params = analyzer.get_best_fit()
+        print('Best-fit parameters (mean +/- std):')
 
-        max_lnlike = best_params['log_likelihood']
+        for i, item in enumerate(self.modelpar):
+            mean = np.mean(result['samples'][:, i])
+            std = np.std(result['samples'][:, i])
+
+            print(f'   - {item} = {mean:.2e} +/- {std:.2e}')
+
+        # Maximum likelihood sample
+
+        print('Maximum likelihood sample:')
+
+        max_lnlike = result['maximum_likelihood']['logl']
         print(f'   - Log-likelihood = {max_lnlike:.2f}')
 
-        for i, item in enumerate(best_params['parameters']):
+        for i, item in enumerate(result['maximum_likelihood']['point']):
             print(f'   - {self.modelpar[i]} = {item:.2f}')
 
-        # Get the posterior samples
-        samples = analyzer.get_equal_weighted_posterior()
+        # Create a list with scaling labels
 
         spec_labels = []
         for item in self.spectrum:
             if f'scaling_{item}' in self.bounds:
                 spec_labels.append(f'scaling_{item}')
 
-        species_db = database.Database()
+        # Posterior samples
+        samples = result['samples']
 
-        ln_prob = samples[:, -1]
-        samples = samples[:, :-1]
+        # Log-likelihood
+        ln_prob = result['weighted_samples']['logl']
+
+        # species database
+        species_db = database.Database()
 
         # Adding the fixed parameters to the samples
 
@@ -1528,7 +1529,7 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
-        species_db.add_samples(sampler='multinest',
+        species_db.add_samples(sampler='ultranest',
                                samples=samples,
                                ln_prob=ln_prob,
                                mean_accept=None,
@@ -1537,3 +1538,6 @@ class FitModel:
                                modelpar=self.modelpar,
                                distance=self.distance[0],
                                spec_labels=spec_labels)
+
+    # Required for backward compatibility
+    run_multinest = run_ultranest
