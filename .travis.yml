@@ -9,6 +9,7 @@ python:
 
 before_install:
   - sudo apt-get install pandoc
+  - pip install cython
 
 install:
   - pip install -r requirements.txt
