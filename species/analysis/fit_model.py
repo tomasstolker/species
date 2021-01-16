@@ -1044,7 +1044,7 @@ class FitModel:
                       prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
         Function to run ``UltraNest`` for constructing the posterior probability distributions
-        on model parameters are constructed and computing the marginal likelihood (i.e. evidence).
+        on model parameters and computing the marginal likelihood (i.e. "evidence").
 
         Parameters
         ----------
@@ -1052,13 +1052,14 @@ class FitModel:
             Database tag where the samples will be stored.
         n_live_points : int
             DEPRECATED: Number of live points. Please use ``min_num_live_points`` instead because
-            of change from ``PyMultiNest`` to ``UltraNest``.
+            of the change from ``PyMultiNest`` to ``UltraNest``.
         min_num_live_points : int
-            Minimum number of live points. The default of 400 is a reasonable number. In principle,
-            choosing a very low number allows nested sampling to make very few iterations and go to
-            the peak quickly. However, the space will be poorly sampled, giving a large region and
-            thus low efficiency, and potentially not seeing interesting modes. Therefore, a value
-            above 100 is typically useful.
+            Minimum number of live points. The default of 400 is a reasonable number (see
+            https://johannesbuchner.github.io/UltraNest/issues.html). In principle, choosing a very
+            low number allows nested sampling to make very few iterations and go to the peak
+            quickly. However, the space will be poorly sampled, giving a large region and thus low
+            efficiency, and potentially not seeing interesting modes. Therefore, a value above 100
+            is typically useful.
         output : str
             Path that is used for the output files from ``UltraNest``.
         prior : dict(str, tuple(float, float)), None
