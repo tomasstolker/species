@@ -1038,8 +1038,8 @@ class FitModel:
     @typechecked
     def run_ultranest(self,
                       tag: str,
-                      n_live_points: Optional[int] = None,
                       min_num_live_points=400,
+                      n_live_points: Optional[int] = None,
                       output: str = 'ultranest/',
                       prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
         """
@@ -1050,9 +1050,6 @@ class FitModel:
         ----------
         tag : str
             Database tag where the samples will be stored.
-        n_live_points : int
-            DEPRECATED: Number of live points. Please use ``min_num_live_points`` instead because
-            of the change from ``PyMultiNest`` to ``UltraNest``.
         min_num_live_points : int
             Minimum number of live points. The default of 400 is a reasonable number (see
             https://johannesbuchner.github.io/UltraNest/issues.html). In principle, choosing a very
@@ -1060,6 +1057,9 @@ class FitModel:
             quickly. However, the space will be poorly sampled, giving a large region and thus low
             efficiency, and potentially not seeing interesting modes. Therefore, a value above 100
             is typically useful.
+        n_live_points : int
+            DEPRECATED: Number of live points. Please use ``min_num_live_points`` instead because
+            of the change from ``PyMultiNest`` to ``UltraNest``.
         output : str
             Path that is used for the output files from ``UltraNest``.
         prior : dict(str, tuple(float, float)), None
@@ -1098,7 +1098,7 @@ class FitModel:
             cube_index[item] = i
 
         @typechecked
-        def lnprior_ultranest(cube) -> np.ndarray:
+        def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
             Function to transform the unit cube into the parameter cube. It is not clear how to
             pass additional arguments to the function, therefore it is placed here and not merged
@@ -1125,7 +1125,7 @@ class FitModel:
             return params
 
         @typechecked
-        def lnlike_ultranest(params) -> np.float64:
+        def lnlike_ultranest(params: np.ndarray) -> np.float64:
             """
             Function for calculating the log-likelihood for the sampled parameter cube.
 
