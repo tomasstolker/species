@@ -644,7 +644,7 @@ def plot_clouds(tag: str,
     for item in radtrans.rt_object.cloud_radii*1e4:  # (um)
         ax1.axvline(item, ls='-', lw=0.1, color='white')
 
-    ax1.text(0.07, 0.07, f'$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}', ha='left',
+    ax1.text(0.07, 0.07, fr'$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}', ha='left',
              va='bottom', transform=ax1.transAxes, color='black', fontsize=13.)
 
     ax1.set_ylabel('Pressure (bar)', fontsize=13)

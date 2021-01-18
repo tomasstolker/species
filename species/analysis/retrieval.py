@@ -28,7 +28,7 @@ os.environ['OMP_NUM_THREADS'] = '1'
 
 class AtmosphericRetrieval:
     """
-    Class for atmospheric retrieval with ``petitRADTRANS``.
+    Class for atmospheric retrieval with ``petitRADTRANS`` and Bayesian inference.
     """
 
     @typechecked
