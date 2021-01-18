@@ -8,6 +8,7 @@ python:
   - 3.8
 
 before_install:
+  - pip install cython
   - sudo apt-get install pandoc
   - sudo apt-get install cmake
   - sudo apt-get install gfortran

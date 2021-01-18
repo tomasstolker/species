@@ -1172,13 +1172,14 @@ class Database:
         Parameters
         ----------
         sampler : str
-            Sampler ('emcee' or 'multinest').
+            Sampler ('emcee', 'multinest', or 'ultranest').
         samples : np.ndarray
             Samples of the posterior.
         ln_prob : np.ndarray
             Log posterior for each sample.
         mean_accept : float, None
-            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'mulitinest'.
+            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'multinest' or
+            'ultranest'.
         spectrum : tuple(str, str)
             Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
             'drift-phoenix').
@@ -1719,7 +1720,7 @@ class Database:
         burnin : int, None
             Number of burnin samples to exclude. All samples are selected if set to ``None``.
             The parameter is only required for samples obtained with ``emcee`` and is therefore
-            not used for samples obtained with ``MultiNest``.
+            not used for samples obtained with ``MultiNest`` or ``UltraNest``.
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.

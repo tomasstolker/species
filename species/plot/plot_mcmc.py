@@ -64,7 +64,7 @@ def plot_walkers(tag: str,
         raise ValueError(f'The samples of \'{tag}\' have only 2 dimensions whereas 3 are required '
                          f'for plotting the walkers. The plot_walkers function can only be '
                          f'used after running the MCMC with run_mcmc and not after running '
-                         f'MultiNest with run_multinest.')
+                         f'run_ultranest or run_multinest.')
 
     ndim = samples.shape[-1]
 

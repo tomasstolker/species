@@ -1,12 +1,12 @@
 .PHONY: help pypi pypi-test docs coverage test clean
 
 help:
-	@echo "pypi - submit package to the PyPI server"
-	@echo "pypi-test - submit package to the TestPyPI server"
+	@echo "pypi - submit to PyPI server"
+	@echo "pypi-test - submit to TestPyPI server"
 	@echo "docs - generate Sphinx documentation"
 	@echo "coverage - check code coverage"
-	@echo "test - run test cases"
-	@echo "clean - remove all artifacts"
+	@echo "test - run unit tests"
+	@echo "clean - remove artifacts"
 
 pypi:
 	python setup.py sdist bdist_wheel
