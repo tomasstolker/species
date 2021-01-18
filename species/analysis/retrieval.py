@@ -1082,7 +1082,7 @@ class AtmosphericRetrieval:
 
             # Create the P-T profile
 
-            temperature, knot_temp = retrieval_util.create_pt_profile(
+            temp, knot_temp = retrieval_util.create_pt_profile(
                 cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
 
             # Prepare the scaling based on the cloud optical depth
@@ -1097,7 +1097,7 @@ class AtmosphericRetrieval:
                 # Interpolate the abundances, following chemical equilibrium
                 abund_in = interpol_abundances(np.full(self.pressure.size, cube[cube_index['c_o_ratio']]),
                                                np.full(self.pressure.size, cube[cube_index['metallicity']]),
-                                               temperature,
+                                               temp,
                                                self.pressure,
                                                Pquench_carbon=quench_pressure)
 
