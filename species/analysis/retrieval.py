@@ -869,12 +869,21 @@ class AtmosphericRetrieval:
                             (bounds['fe_fraction'][1] - bounds['fe_fraction'][0]) * \
                             cube[cube_index['fe_fraction']]
 
+                        cube[cube_index['fe_fraction']] = fe_fraction
+
+                    elif 'fe_tau' in bounds:
+                        fe_tau = bounds['fe_tau'][0] + \
+                            (bounds['fe_tau'][1] - bounds['fe_tau'][0]) * \
+                            cube[cube_index['fe_tau']]
+
+                        cube[cube_index['fe_tau']] = fe_tau
+
                     else:
                         # Default: 0.05 - 1.
                         fe_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['fe_fraction']]
 
-                    cube[cube_index['fe_fraction']] = fe_fraction
+                        cube[cube_index['fe_fraction']] = fe_fraction
 
                 if 'MgSiO3(c)' in self.cloud_species:
 
@@ -883,12 +892,21 @@ class AtmosphericRetrieval:
                             (bounds['mgsio3_fraction'][1] - bounds['mgsio3_fraction'][0]) * \
                             cube[cube_index['mgsio3_fraction']]
 
+                        cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+
+                    elif 'mgsio3_tau' in bounds:
+                        mgsio3_tau = bounds['mgsio3_tau'][0] + \
+                            (bounds['mgsio3_tau'][1] - bounds['mgsio3_tau'][0]) * \
+                            cube[cube_index['mgsio3_tau']]
+
+                        cube[cube_index['mgsio3_tau']] = mgsio3_tau
+
                     else:
                         # Default: 0.05 - 1.
                         mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['mgsio3_fraction']]
 
-                    cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+                        cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
 
                 if 'Al2O3(c)' in self.cloud_species:
 
@@ -920,12 +938,21 @@ class AtmosphericRetrieval:
                             (bounds['na2s_fraction'][1] - bounds['na2s_fraction'][0]) * \
                             cube[cube_index['na2s_fraction']]
 
+                        cube[cube_index['na2s_fraction']] = na2s_fraction
+
+                    elif 'na2s_tau' in bounds:
+                        na2s_tau = bounds['na2s_tau'][0] + \
+                            (bounds['na2s_tau'][1] - bounds['na2s_tau'][0]) * \
+                            cube[cube_index['na2s_tau']]
+
+                        cube[cube_index['na2s_tau']] = na2s_tau
+
                     else:
                         # Default: 0.05 - 1.
                         na2s_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['na2s_fraction']]
 
-                    cube[cube_index['na2s_fraction']] = na2s_fraction
+                        cube[cube_index['na2s_fraction']] = na2s_fraction
 
                 if 'KCL(c)' in self.cloud_species:
 
@@ -934,12 +961,21 @@ class AtmosphericRetrieval:
                             (bounds['kcl_fraction'][1] - bounds['kcl_fraction'][0]) * \
                             cube[cube_index['kcl_fraction']]
 
+                        cube[cube_index['kcl_fraction']] = kcl_fraction
+
+                    elif 'kcl_tau' in bounds:
+                        kcl_tau = bounds['kcl_tau'][0] + \
+                            (bounds['kcl_tau'][1] - bounds['kcl_tau'][0]) * \
+                            cube[cube_index['kcl_tau']]
+
+                        cube[cube_index['kcl_tau']] = kcl_tau
+
                     else:
                         # Default: 0.05 - 1.
                         kcl_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
                             cube[cube_index['kcl_fraction']]
 
-                    cube[cube_index['kcl_fraction']] = kcl_fraction
+                        cube[cube_index['kcl_fraction']] = kcl_fraction
 
             # Add flux scaling parameter if the boundaries are provided
 
