@@ -8,6 +8,7 @@ matplotlib ~= 3.3.0
 numpy ~= 1.19.0
 pandas ~= 1.1.0
 PyMieScatt ~= 1.8.0
+pymultinest ~= 2.9
 scipy ~= 1.5.0
 spectres ~= 2.1.0
 tqdm ~= 4.56.0
