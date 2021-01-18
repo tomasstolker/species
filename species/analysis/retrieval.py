@@ -465,7 +465,7 @@ class AtmosphericRetrieval:
                       quenching: bool = True,
                       pt_profile: str = 'molliere',
                       fit_corr: Optional[List[str]] = None,
-                      live_points: int = 2000,
+                      n_live_points: int = 2000,
                       resume: bool = False,
                       plotting: bool = False,
                       check_isothermal: bool = False,
@@ -500,7 +500,7 @@ class AtmosphericRetrieval:
         fit_corr : list(str), None
             List with spectrum names for which the correlation length and fractional amplitude are
             fitted (see Wang et al. 2020).
-        live_points : int
+        n_live_points : int
             Number of live points.
         resume : bool
             Resume from a previous run.
@@ -1406,5 +1406,5 @@ class AtmosphericRetrieval:
                         verbose=True,
                         const_efficiency_mode=True,
                         sampling_efficiency=0.05,
-                        n_live_points=live_points,
+                        n_live_points=n_live_points,
                         evidence_tolerance=0.5)
