@@ -444,7 +444,7 @@ class FitModel:
                  - The :func:`~species.plot.plot_mcmc.plot_photometry` function can be used to
                    calculate synthetic photometry and error bars from the posterior distribution.
 
-                 - Only supported by ``run_ultranest``.
+                 - Only supported by ``run_ultranest`` and ``run_multinest``.
 
             Calibration parameters:
 
@@ -486,7 +486,7 @@ class FitModel:
                    ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
                    'ism_red': (0., 20.)}``.
 
-                 - Only supported by ``run_ultranest``.
+                 - Only supported by ``run_ultranest`` and ``run_multinest``.
 
             Log-normal size distribution:
 
@@ -512,7 +512,7 @@ class FitModel:
                  - A uniform prior is used for ``lognorm_sigma`` and ``lognorm_ext``, and a
                    log-uniform prior for ``lognorm_radius``.
 
-                 - Only supported by ``run_ultranest``.
+                 - Only supported by ``run_ultranest`` and ``run_multinest``.
 
             Power-law size distribution:
 
@@ -537,7 +537,7 @@ class FitModel:
                  - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
                    log-uniform prior for ``powerlaw_max``.
 
-                 - Only supported by ``run_ultranest``.
+                 - Only supported by ``run_ultranest`` and ``run_multinest``.
 
             Blackbody disk emission:
 
@@ -548,7 +548,7 @@ class FitModel:
                    For example, ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
                    'logg': (3.5, 4.5), 'disk_teff': (100., 2000.), 'disk_radius': (1., 100.)}``.
 
-                 - Only supported by ``run_ultranest``.
+                 - Only supported by ``run_ultranest`` and ``run_multinest``.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either all (``True``) or none
@@ -915,9 +915,11 @@ class FitModel:
         """
         Function to run the MCMC sampler of ``emcee``. The functionalities of ``run_mcmc`` are
         more limited than :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
-        ``run_ultranest`` provides more robust results when sampling multimodal posterior
-        distributions and has the additional advantage of returning the model evidence. Therefore,
-        it is recommended to use ``run_ultranest`` instead of ``run_mcmc``.
+        :func:`~species.analysis.fit_model.FitModel.run_multinest`. Furthermore, ``run_ultranest``
+        ``run_multinest`` provide more robust results when sampling multimodal posterior
+        distributions and have the additional advantage of returning the marginal likelihood (i.e.
+        "evidence"). Therefore, it is recommended to use ``run_ultranest`` or ``run_multinest``
+        instead of ``run_mcmc``.
 
         Parameters
         ----------
@@ -1413,7 +1415,9 @@ class FitModel:
         of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
         Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
         set before importing the ``species`` package, for example:
+
         .. code-block:: python
+
             >>> import os
             >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
             >>> import species
