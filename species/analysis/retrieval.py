@@ -1187,6 +1187,7 @@ class AtmosphericRetrieval:
                 # Cloudy atmosphere
 
                 cloud_fractions = {}
+
                 for item in self.cloud_species:
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
                         cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]

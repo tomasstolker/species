@@ -61,7 +61,7 @@ def plot_pt_profile(tag: str,
 
     print(f'Plotting the P-T profiles: {output}...', end='', flush=True)
 
-    cloud_species = ['Fe(c)', 'MgSio3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
+    cloud_species = ['Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
     cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
     species_db = database.Database()
