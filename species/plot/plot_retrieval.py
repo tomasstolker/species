@@ -267,7 +267,7 @@ def plot_pt_profile(tag: str,
 
             wavelength = radtrans.rt_object.lambda_angstroem*1e-4  # (um)
 
-            # From Paul: The first axis of total_tay is the coordinate of the cumulative opacity
+            # From Paul: The first axis of total_tau is the coordinate of the cumulative opacity
             # distribution function (ranging from 0 to 1). A correct average is obtained by
             # multiplying the first axis with self.w_gauss, then summing them. This is then the
             # actual wavelength-mean.
