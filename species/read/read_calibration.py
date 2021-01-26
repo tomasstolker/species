@@ -2,17 +2,17 @@
 Module with reading functionalities for calibration spectra.
 """
 
-import os
 import configparser
+import os
 
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import h5py
-import spectres
 import numpy as np
+import spectres
 
-from typeguard import typechecked
 from scipy.optimize import curve_fit
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box
@@ -35,8 +35,8 @@ class ReadCalibration:
         tag : str
             Database tag of the calibration spectrum.
         filter_name : str, None
-            Filter name that is used for the wavelength range. Full spectrum is used if set to
-            ``None``.
+            Filter that is used for the wavelength range. The full spectrum is read if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -65,18 +65,26 @@ class ReadCalibration:
     def resample_spectrum(self,
                           wavel_points: np.ndarray,
                           model_param: Optional[Dict[str, float]] = None,
+                          spec_res: Optional[float] = None,
                           apply_mask: bool = False) -> box.SpectrumBox:
         """
-        Function for resampling of a spectrum and uncertainties onto a new wavelength grid.
+        Function for resampling the spectrum and optional uncertainties onto a new wavelength grid.
 
         Parameters
         ----------
         wavel_points : np.ndarray
-            Wavelength points (um).
+            Wavelengths (um).
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
+            Dictionary with the model parameters, which should only contain the ``'scaling'``
+            keyword. No scaling is applied if the argument of ``model_param`` is set to ``None``.
+        spec_res : float, None
+            Spectral resolution that is used for smoothing the spectrum before resampling the
+            wavelengths. No smoothing is applied if the argument is set to ``None``. The smoothing
+            can only be applied ti spectra with a constant spectral resolution (which is the case
+            for all model spectra that are compatible with ``species``) or a constant wavelength
+            spacing. The first smoothing approach is fastest.
         apply_mask : bool
-            Exclude negative values and NaN values.
+            Exclude negative values and NaNs.
 
         Returns
         -------
@@ -85,6 +93,11 @@ class ReadCalibration:
         """
 
         calibbox = self.get_spectrum()
+
+        if spec_res is not None:
+            calibbox.flux = read_util.smooth_spectrum(wavelength=calibbox.wavelength,
+                                                      flux=calibbox.flux,
+                                                      spec_res=spec_res)
 
         if apply_mask:
             indices = np.where(calibbox.flux > 0.)[0]
