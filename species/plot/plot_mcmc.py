@@ -133,6 +133,7 @@ def plot_posterior(tag: str,
                    inc_luminosity: bool = False,
                    inc_mass: bool = False,
                    inc_pt_param: bool = False,
+                   inc_loglike: bool = False,
                    output: str = 'posterior.pdf') -> None:
     """
     Function to plot the posterior distribution of the fitted parameters.
@@ -166,6 +167,8 @@ def plot_posterior(tag: str,
     inc_pt_param : bool
         Include the parameters of the pressure-temperature profile. Only used if the ``tag``
         contains samples obtained with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+    inc_loglike : bool
+        Include the log10 of the likelihood as additional parameter in the corner plot.
     output : str
         Output filename.
 
@@ -454,6 +457,26 @@ def plot_posterior(tag: str,
 
         else:
             warnings.warn('Samples with the log(g) and radius are required for \'inc_mass=True\'.')
+
+    if inc_loglike:
+        # Get ln(L) of the samples
+        ln_prob = samples_box.ln_prob[..., np.newaxis]
+
+        # Normalized by the maximum ln(L)
+        ln_prob -= np.amax(ln_prob)
+
+        # Convert ln(L) to log10(L)
+        log_prob = ln_prob*np.exp(1.)
+
+        # Convert log10(L) to L
+        prob = 10.**log_prob
+
+        # Normalize to an integrated probability of 1
+        prob /= np.sum(prob)
+
+        samples = np.append(samples, np.log10(prob), axis=-1)
+        samples_box.parameters.append('log_prob')
+        ndim += 1
 
     if isinstance(title_fmt, list) and len(title_fmt) != ndim:
         raise ValueError(f'The number of items in the list of \'title_fmt\' ({len(title_fmt)}) is '

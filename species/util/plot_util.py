@@ -312,6 +312,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('pt_smooth')
         param[index] = r'$\sigma_\mathregular{P-T}$'
 
+    if 'log_prob' in param:
+        index = param.index('log_prob')
+        param[index] = r'$\log\,L$'
+
     return param
 
 
