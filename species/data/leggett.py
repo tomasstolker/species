@@ -154,10 +154,10 @@ def add_leggett(input_path,
     dset = database.create_dataset(group+'/sptype', (np.size(sptype), ), dtype=dtype)
     dset[...] = sptype
 
-    none_data = np.repeat('None', np.size(name))
+    flag = np.repeat('null', np.size(name))
 
-    dset = database.create_dataset(group+'/flag', (np.size(none_data), ), dtype=dtype)
-    dset[...] = none_data
+    dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
+    dset[...] = flag
 
     database.create_dataset(group+'/distance', data=distance)
     database.create_dataset(group+'/distance_error', data=distance_error)

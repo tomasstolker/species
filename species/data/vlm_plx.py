@@ -66,7 +66,7 @@ def add_vlm_plx(input_path,
     sptype_nir = np.core.defchararray.strip(sptype_nir)
 
     for i, item in enumerate(sptype):
-        if item == 'None':
+        if item == 'null':
             sptype[i] = sptype_nir[i]
 
     flag = phot_data['FLAG']
