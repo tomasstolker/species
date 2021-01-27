@@ -65,8 +65,10 @@ def add_leggett(input_path,
 
     name = np.asarray(dataframe['Name'])
 
+    # Near-infrared spectral type
     sptype = np.asarray(dataframe['Type'])
     sptype = data_util.update_sptype(sptype)
+    sptype = np.asarray(sptype)
 
     mag_y = np.asarray(dataframe['Y'])
     mag_j = np.asarray(dataframe['J'])
@@ -152,10 +154,10 @@ def add_leggett(input_path,
     dset = database.create_dataset(group+'/sptype', (np.size(sptype), ), dtype=dtype)
     dset[...] = sptype
 
-    flag = np.repeat('null', np.size(name))
+    none_data = np.repeat('None', np.size(name))
 
-    dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
-    dset[...] = flag
+    dset = database.create_dataset(group+'/flag', (np.size(none_data), ), dtype=dtype)
+    dset[...] = none_data
 
     database.create_dataset(group+'/distance', data=distance)
     database.create_dataset(group+'/distance_error', data=distance_error)

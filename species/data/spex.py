@@ -5,16 +5,20 @@ Module for adding the SpeX Prism Spectral Libraries to the database.
 import os
 import urllib.request
 
+import h5py
 import numpy as np
 import pandas as pd
 
 from astropy.io.votable import parse_single_table
+from typeguard import typechecked
 
 from species.analysis import photometry
 from species.util import data_util, query_util
 
 
-def add_spex(input_path, database):
+@typechecked
+def add_spex(input_path: str,
+             database: h5py._hl.files.File) -> None:
     """
     Function for adding the SpeX Prism Spectral Library to the database.
 
@@ -67,6 +71,8 @@ def add_spex(input_path, database):
 
     unique_id = []
 
+    print_message = ''
+
     for i, item in enumerate(url):
         if twomass[i] not in unique_id:
 
@@ -91,8 +97,11 @@ def add_spex(input_path, database):
             else:
                 name = name[0].decode('utf-8')
 
+            empty_message = len(print_message) * ' '
+            print(f'\r{empty_message}', end='')
+
             print_message = f'Downloading SpeX Prism Spectral Library... {name}'
-            print(f'\r{print_message:<72}', end='')
+            print(f'\r{print_message}', end='')
 
             xml_file_2 = os.path.join(data_path, f'spex_{name}.xml')
 
@@ -104,8 +113,11 @@ def add_spex(input_path, database):
 
             unique_id.append(twomass[i])
 
+    empty_message = len(print_message) * ' '
+    print(f'\r{empty_message}', end='')
+
     print_message = 'Downloading SpeX Prism Spectral Library... [DONE]'
-    print(f'\r{print_message:<72}')
+    print(f'\r{print_message}')
 
     h_twomass = photometry.SyntheticPhotometry('2MASS/2MASS.H')
 
@@ -164,30 +176,38 @@ def add_spex(input_path, database):
             if not isinstance(twomass_id, str):
                 twomass_id = twomass_id.decode('utf-8')
 
-            try:
-                sptype = table.get_field_by_id('nirspty').value
+            # Optical spectral type
 
-                if not isinstance(sptype, str):
-                    sptype = sptype.decode('utf-8')
+            try:
+                sptype_opt = table.get_field_by_id('optspty').value
+
+                if not isinstance(sptype_opt, str):
+                    sptype_opt = sptype_opt.decode('utf-8')
+
+                sptype_opt = data_util.update_sptype(np.array([sptype_opt]))[0]
 
             except KeyError:
-                try:
-                    sptype = table.get_field_by_id('optspty').value
+                sptype_opt = None
 
-                    if not isinstance(sptype, str):
-                        sptype = sptype.decode('utf-8')
+            # Near-infrared spectral type
 
-                except KeyError:
-                    sptype = 'None'
+            try:
+                sptype_nir = table.get_field_by_id('nirspty').value
 
-            sptype = data_util.update_sptype(np.array([sptype]))[0].strip()
+                if not isinstance(sptype_nir, str):
+                    sptype_nir = sptype_nir.decode('utf-8')
+
+                sptype_nir = data_util.update_sptype(np.array([sptype_nir]))[0]
+
+            except KeyError:
+                sptype_nir = None
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None, zp_flux=h_zp)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
             flux *= h_flux/phot[0]  # (W m-2 um-1)
 
-            spdata = np.vstack([wavelength, flux, error])
+            spdata = np.column_stack([wavelength, flux, error])
 
             # simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')
             simbad_id = query_util.get_simbad(f'2MASS {twomass_id}')
@@ -199,27 +219,35 @@ def add_spex(input_path, database):
                 dist_select = distance_data.loc[distance_data['object'] == simbad_id]
 
                 if not dist_select.empty:
-                    distance = (dist_select['distance'], dist_select['distance_error'])
+                    distance = (dist_select['distance'].values[0],
+                                dist_select['distance_error'].values[0])
+
                 else:
                     distance = (np.nan, np.nan)
 
             else:
                 distance = (np.nan, np.nan)
 
-            if sptype[0] in ['M', 'L', 'T'] and len(sptype) == 2:
-                print_message = f'Adding SpeX Prism Spectral Library... {name}'
-                print(f'\r{print_message:<72}', end='')
+            print_message = f'Adding SpeX Prism Spectral Library... {name}'
+            print(f'\r{print_message:<72}', end='')
 
-                dset = database.create_dataset(f'spectra/spex/{name}', data=spdata)
+            dset = database.create_dataset(f'spectra/spex/{name}', data=spdata)
 
-                dset.attrs['name'] = str(name).encode()
-                dset.attrs['sptype'] = str(sptype).encode()
-                dset.attrs['simbad'] = str(simbad_id).encode()
-                dset.attrs['2MASS/2MASS.J'] = j_mag
-                dset.attrs['2MASS/2MASS.H'] = h_mag
-                dset.attrs['2MASS/2MASS.Ks'] = ks_mag
-                dset.attrs['distance'] = distance[0]  # (pc)
-                dset.attrs['distance_error'] = distance[1]  # (pc)
+            dset.attrs['name'] = str(name).encode()
+            
+            if sptype_opt is not None:
+                dset.attrs['sptype'] = str(sptype_opt).encode()
+            elif sptype_nir is not None:    
+                dset.attrs['sptype'] = str(sptype_nir).encode()
+            else:
+                dset.attrs['sptype'] = str('None').encode()
+
+            dset.attrs['simbad'] = str(simbad_id).encode()
+            dset.attrs['2MASS/2MASS.J'] = j_mag
+            dset.attrs['2MASS/2MASS.H'] = h_mag
+            dset.attrs['2MASS/2MASS.Ks'] = ks_mag
+            dset.attrs['distance'] = distance[0]  # (pc)
+            dset.attrs['distance_error'] = distance[1]  # (pc)
 
     print_message = 'Adding SpeX Prism Spectral Library... [DONE]'
     print(f'\r{print_message:<72}')
