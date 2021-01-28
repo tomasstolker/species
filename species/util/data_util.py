@@ -2,19 +2,21 @@
 Utility functions for data processing.
 """
 
-from typing import Optional, List
+from typing import List, Optional
 
 import h5py
 import numpy as np
 
+from scipy.interpolate import griddata
 from typeguard import typechecked
 
-from scipy.interpolate import griddata
 
-
-def update_sptype(sptypes):
+@typechecked
+def update_sptype(sptypes: np.ndarray) -> List[str]:
     """
-    Function to update a list with spectral types to two characters (e.g., M8, L3, or T1).
+    Function to update a list with spectral types to two characters (e.g., M8, L3, or T1). The
+    spectral to is set to NaN in case the first character is not recognized or the second character
+    is not a numerical value.
 
     Parameters
     ----------
@@ -23,29 +25,30 @@ def update_sptype(sptypes):
 
     Returns
     -------
-    np.ndarray
-        Updated spectral types.
+    list(str)
+        Output spectral types.
     """
 
     sptype_list = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y']
 
+    sptypes_updated = []
+
     for i, spt_item in enumerate(sptypes):
+
         if spt_item == 'None':
-            pass
+            sptypes_updated.append('None')
 
         elif spt_item == 'null':
-            sptypes[i] = 'None'
+            sptypes_updated.append('None')
 
         else:
-            for list_item in sptype_list:
-                try:
-                    sp_index = spt_item.index(list_item)
-                    sptypes[i] = spt_item[sp_index:sp_index+2]
+            if len(spt_item) > 1 and spt_item[0] in sptype_list and spt_item[1].isnumeric():
+                sptypes_updated.append(spt_item[:2])
 
-                except ValueError:
-                    pass
+            else:
+                sptypes_updated.append('None')
 
-    return sptypes
+    return sptypes_updated
 
 
 def update_filter(filter_in):

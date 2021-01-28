@@ -1,3 +1,5 @@
+from species.analysis.empirical import CompareSpectra
+
 from species.analysis.fit_model import FitModel
 
 from species.analysis.fit_spectrum import FitSpectrum
@@ -34,6 +36,9 @@ from species.core.setup import SpeciesInit
 from species.data.companions import get_data
 
 from species.data.database import Database
+
+from species.plot.plot_empirical import plot_statistic, \
+                                        plot_empirical_spectra
 
 from species.plot.plot_color import plot_color_magnitude, \
                                     plot_color_color

@@ -2,8 +2,8 @@
 Module with reading functionalities for spectral libraries.
 """
 
-import os
 import configparser
+import os
 
 from typing import List
 
@@ -70,6 +70,9 @@ class ReadSpectrum:
         sptypes : list(str), None
             Spectral types to select from a library. The spectral types should be indicated with
             two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
+            For each object in the ``spec_library``, the requested ``sptypes`` are first compared
+            with the optical spectral type and, if not available, secondly the near-infrared
+            spectral type.
         exclude_nan : bool
             Exclude wavelength points for which the flux is NaN.
 

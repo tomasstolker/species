@@ -59,15 +59,15 @@ def add_vlm_plx(input_path,
     name = phot_data['NAME']
     name = np.core.defchararray.strip(name)
 
-    sptype = phot_data['ISPTSTR']
+    sptype = phot_data['OSPTSTR']
     sptype = np.core.defchararray.strip(sptype)
 
-    sptype_op = phot_data['OSPTSTR']
-    sptype_op = np.core.defchararray.strip(sptype_op)
+    sptype_nir = phot_data['ISPTSTR']
+    sptype_nir = np.core.defchararray.strip(sptype_nir)
 
     for i, item in enumerate(sptype):
         if item == 'null':
-            sptype[i] = sptype_op[i]
+            sptype[i] = sptype_nir[i]
 
     flag = phot_data['FLAG']
     flag = np.core.defchararray.strip(flag)

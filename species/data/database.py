@@ -20,7 +20,8 @@ from species.analysis import photometry
 from species.core import box
 from species.data import ames_cond, ames_dusty, atmo, blackbody, btcond, btcond_feh, btnextgen, \
                          btsettl, btsettl_cifist, companions, drift_phoenix, dust, exo_rem, \
-                         filters, irtf, isochrones, leggett, petitcode, spex, vega, vlm_plx
+                         filters, irtf, isochrones, leggett, petitcode, spex, vega, vlm_plx, \
+                         kesseli2017
 from species.read import read_calibration, read_filter, read_model, read_planck
 from species.util import data_util, dust_util, read_util
 
@@ -1117,7 +1118,7 @@ class Database:
         Parameters
         ----------
         spec_library : str
-            Spectral library ('irtf' or 'spex').
+            Spectral library ('irtf', 'spex', 'kesseli+2017').
         sptypes : list(str)
             Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
 
@@ -1143,6 +1144,9 @@ class Database:
 
         elif spec_library[0:5] == 'spex':
             spex.add_spex(self.input_path, h5_file)
+
+        elif spec_library[0:12] == 'kesseli+2017':
+            kesseli2017.add_kesseli2017(self.input_path, h5_file)
 
         h5_file.close()
 
@@ -1762,3 +1766,79 @@ class Database:
                               ln_prob=ln_prob,
                               prob_sample=prob_sample,
                               median_sample=median_sample)
+
+    @typechecked
+    def add_empirical(self,
+                      tag: str,
+                      names: List[str],
+                      sptypes: List[str],
+                      goodness_of_fit: List[float],
+                      flux_scaling: List[float],
+                      av_ext: List[float],
+                      rad_vel: List[float],
+                      object_name: str,
+                      spec_name: str,
+                      spec_library: str) -> None:
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag where the results will be stored.
+        names : list(str)
+            Array with the names of the empirical spectra.
+        sptypes : list(str)
+            Array with the spectral types of ``names``.
+        goodness_of_fit : list(float)
+            Array with the goodness-of-fit values.
+        flux_scaling : list(float)
+            Array with the best-fit scaling values to match the library spectra with the data.
+        av_ext : list(float)
+            Array with the visual extinctions A_V.
+        rad_vel : list(float)
+            Array with the radial velocities (km s-1).
+        object_name : str
+            Object name as stored in the database with
+            :func:`~species.data.database.Database.add_object` or
+            :func:`~species.data.database.Database.add_companion`.
+        spec_name : str
+            Name of the spectrum that is stored at the object data of ``object_name``.
+        spec_library : str
+            Name of the spectral library that was used for the empirical comparison.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, 'a') as h5_file:
+
+            if 'results' not in h5_file:
+                h5_file.create_group('results')
+
+            if 'results/empirical' not in h5_file:
+                h5_file.create_group('results/empirical')
+
+            if f'results/empirical/{tag}' in h5_file:
+                del h5_file[f'results/empirical/{tag}']
+
+            dtype = h5py.special_dtype(vlen=str)
+
+            dset = h5_file.create_dataset(f'results/empirical/{tag}/names',
+                                          (np.size(names), ), dtype=dtype)
+
+            dset[...] = names
+
+            dset.attrs['object_name'] = str(object_name)
+            dset.attrs['spec_name'] = str(spec_name)
+            dset.attrs['spec_library'] = str(spec_library)
+
+            dset = h5_file.create_dataset(f'results/empirical/{tag}/sptypes',
+                                          (np.size(sptypes), ), dtype=dtype)
+
+            dset[...] = sptypes
+
+            h5_file.create_dataset(f'results/empirical/{tag}/goodness_of_fit', data=goodness_of_fit)
+            h5_file.create_dataset(f'results/empirical/{tag}/flux_scaling', data=flux_scaling)
+            h5_file.create_dataset(f'results/empirical/{tag}/av_ext', data=av_ext)
+            h5_file.create_dataset(f'results/empirical/{tag}/rad_vel', data=rad_vel)
