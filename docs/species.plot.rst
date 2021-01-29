@@ -12,6 +12,14 @@ species.plot.plot\_color module
    :undoc-members:
    :show-inheritance:
 
+species.plot.plot\_empirical module
+-----------------------------------
+
+.. automodule:: species.plot.plot_empirical
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.plot.plot\_mcmc module
 ------------------------------
 

@@ -4,6 +4,14 @@ species.analysis package
 Submodules
 ----------
 
+species.analysis.empirical module
+---------------------------------
+
+.. automodule:: species.analysis.empirical
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.analysis.fit\_model module
 ----------------------------------
 

@@ -62,7 +62,7 @@ def add_btsettl(input_path: str,
     url = 'https://home.strw.leidenuniv.nl/~stolker/species/bt-settl-cifist.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading Bt-Settl model spectra (578 MB)...', end='', flush=True)
+        print('Downloading BT-Settl model spectra (578 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
