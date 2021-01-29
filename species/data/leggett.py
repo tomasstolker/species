@@ -65,8 +65,10 @@ def add_leggett(input_path,
 
     name = np.asarray(dataframe['Name'])
 
+    # Near-infrared spectral type
     sptype = np.asarray(dataframe['Type'])
     sptype = data_util.update_sptype(sptype)
+    sptype = np.asarray(sptype)
 
     mag_y = np.asarray(dataframe['Y'])
     mag_j = np.asarray(dataframe['J'])

@@ -9,17 +9,23 @@ import numpy as np
 from typeguard import typechecked
 
 
-def sptype_substellar(sptype,
-                      shape):
+@typechecked
+def sptype_substellar(sptype: np.ndarray,
+                      shape: Tuple[int]) -> np.ndarray:
     """
+    Function for mapping the spectral types of substellar objects (M, L, T, and Y) to numbers.
+
     Parameters
     ----------
-    sptype :
-    shape :
+    sptype : np.ndarray
+        Array with spectral types.
+    shape : tuple(int)
+        Shape (1D) of the output array
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
+        Array with spectral types mapped to numbers.
     """
 
     spt_disc = np.zeros(shape)
@@ -53,17 +59,23 @@ def sptype_substellar(sptype,
     return spt_disc
 
 
-def sptype_stellar(sptype,
-                   shape):
+@typechecked
+def sptype_stellar(sptype: np.ndarray,
+                   shape: Tuple[int]) -> np.ndarray:
     """
+    Function for mapping all spectral types (O through Y) to numbers.
+
     Parameters
     ----------
-    sptype :
-    shape :
+    sptype : np.ndarray
+        Array with spectral types.
+    shape : tuple(int)
+        Shape (1D) of the output array
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
+        Array with spectral types mapped to numbers.
     """
 
     spt_disc = np.zeros(shape)

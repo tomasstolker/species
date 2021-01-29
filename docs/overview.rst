@@ -13,7 +13,7 @@ Supported data
 
 The *species* toolkit benefits from publicly available data resources such as photometric and spectral libraries, atmospheric model spectra, evolutionary tracks, and photometry of directly imaged planets and brown dwarfs. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and manipulate the data.
 
-The following data are currently supported:
+The following data and models are currently supported:
 
 **Atmospheric model spectra**
 
@@ -33,6 +33,7 @@ The following data are currently supported:
 
 - `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
 - `SpeX Prism Spectral Libraries <http://pono.ucsd.edu/~adam/browndwarfs/spexprism/index_old.html>`_
+- `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K/abstract>`_
 
 **Photometric libraries**
 
@@ -71,3 +72,4 @@ After adding the relevant data to the database, the user can take advantage of t
 - Creating color-color diagrams (see :class:`~species.read.read_color.ReadColorColor` and :class:`~species.plot.plot_color.plot_color_color`).
 - Computing synthetic fluxes from isochrones and model spectra (see :class:`~species.read.read_isochrone.ReadIsochrone`)
 - Flux calibration of photometric and spectroscopic data (see :class:`~species.read.read_calibration.ReadCalibration`, :class:`~species.analysis.fit_model.FitModel`, and :class:`~species.analysis.fit_spectrum.FitSpectrum`).
+- Empirical comparison of spectra to infer the spectral type (see :class:`~species.analysis.empirical.CompareSpectra`).

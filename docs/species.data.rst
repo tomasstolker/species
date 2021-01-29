@@ -140,6 +140,14 @@ species.data.isochrones module
    :undoc-members:
    :show-inheritance:
 
+species.data.kesseli2017 module
+-------------------------------
+
+.. automodule:: species.data.kesseli2017
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.leggett module
 ---------------------------
 

@@ -218,7 +218,8 @@ def create_wavelengths(wavel_range: Tuple[Union[float, np.float32], Union[float,
 def smooth_spectrum(wavelength: np.ndarray,
                     flux: np.ndarray,
                     spec_res: float,
-                    size: int = 11) -> np.ndarray:
+                    size: int = 11,
+                    force_smooth: bool = False) -> np.ndarray:
     """
     Function for smoothing a spectrum with a Gaussian kernel to a fixed spectral resolution. The
     kernel size is set to 5 times the FWHM of the Gaussian. The FWHM of the Gaussian is equal
@@ -237,6 +238,8 @@ def smooth_spectrum(wavelength: np.ndarray,
         Spectral resolution.
     size : int
         Kernel size (odd integer).
+    force_smooth : bool
+        Force smoothing for constant spectral resolution
 
     Returns
     -------
@@ -253,7 +256,7 @@ def smooth_spectrum(wavelength: np.ndarray,
     spacing = np.mean(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
     spacing_std = np.std(2.*np.diff(wavelength)/(wavelength[1:]+wavelength[:-1]))
 
-    if spacing_std/spacing < 1e-2:
+    if spacing_std/spacing < 1e-2 or force_smooth:
         # see retrieval_util.convolve
         sigma_lsf = 1./spec_res/(2.*np.sqrt(2.*np.log(2.)))
         flux_smooth = gaussian_filter(flux, sigma=sigma_lsf/spacing, mode='nearest')

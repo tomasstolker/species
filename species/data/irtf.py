@@ -31,7 +31,7 @@ def add_irtf(input_path: str,
         Path of the data folder.
     database : h5py._hl.files.File
         Database.
-    sptypes : list(str, ), None
+    sptypes : list(str), None
         List with the spectral types ('F', 'G', 'K', 'M', 'L', 'T'). All spectral types are
         included if set to ``None``.
 
@@ -110,6 +110,8 @@ def add_irtf(input_path: str,
 
     database.create_group('spectra/irtf')
 
+    print_message = ''
+
     for item in sptypes:
         for root, _, files in os.walk(data_folder[item]):
 
@@ -130,8 +132,11 @@ def add_irtf(input_path: str,
                     spt_split = sptype.split()
 
                     if item in ['L', 'T'] or spt_split[1][0] == 'V':
+                        empty_message = len(print_message) * ' '
+                        print(f'\r{empty_message}', end='')
+
                         print_message = f'Adding IRTF Spectral Library... {name}'
-                        print(f'\r{print_message:<70}', end='')
+                        print(f'\r{print_message}', end='')
 
                         simbad_id = query_util.get_simbad(name)
 
@@ -161,7 +166,10 @@ def add_irtf(input_path: str,
                         dset.attrs['distance'] = distance[0]
                         dset.attrs['distance_error'] = distance[1]
 
+    empty_message = len(print_message) * ' '
+    print(f'\r{empty_message}', end='')
+
     print_message = 'Adding IRTF Spectral Library... [DONE]'
-    print(f'\r{print_message:<70}')
+    print(f'\r{print_message}')
 
     database.close()
