@@ -873,7 +873,7 @@ class FitModel:
         del_param = []
 
         for key, value in self.bounds.items():
-            if value[0] == value[1]:
+            if value[0] == value[1] and value[0] is not None and value[1] is not None:
                 self.fix_param[key] = value[0]
                 del_param.append(key)
 
@@ -1545,8 +1545,6 @@ class FitModel:
             if f'scaling_{item}' in self.bounds:
                 spec_labels.append(f'scaling_{item}')
 
-        species_db = database.Database()
-
         ln_prob = samples[:, -1]
         samples = samples[:, :-1]
 
@@ -1560,15 +1558,30 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
-        species_db.add_samples(sampler='multinest',
-                               samples=samples,
-                               ln_prob=ln_prob,
-                               mean_accept=None,
-                               spectrum=('model', self.model),
-                               tag=tag,
-                               modelpar=self.modelpar,
-                               distance=self.distance[0],
-                               spec_labels=spec_labels)
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Add samples to the database
+
+        if mpi_rank == 0:
+            # Writing the samples to the database is only possible when using a single 
+            species_db = database.Database()
+
+            species_db.add_samples(sampler='multinest',
+                                   samples=samples,
+                                   ln_prob=ln_prob,
+                                   mean_accept=None,
+                                   spectrum=('model', self.model),
+                                   tag=tag,
+                                   modelpar=self.modelpar,
+                                   distance=self.distance[0],
+                                   spec_labels=spec_labels)
 
     @typechecked
     def run_ultranest(self,
@@ -1716,9 +1729,6 @@ class FitModel:
         # Log-likelihood
         ln_prob = result['weighted_samples']['logl']
 
-        # species database
-        species_db = database.Database()
-
         # Adding the fixed parameters to the samples
 
         for key, value in self.fix_param.items():
@@ -1729,12 +1739,27 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
-        species_db.add_samples(sampler='ultranest',
-                               samples=samples,
-                               ln_prob=ln_prob,
-                               mean_accept=None,
-                               spectrum=('model', self.model),
-                               tag=tag,
-                               modelpar=self.modelpar,
-                               distance=self.distance[0],
-                               spec_labels=spec_labels)
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Add samples to the database
+
+        if mpi_rank == 0:
+            # Writing the samples to the database is only possible when using a single process
+            species_db = database.Database()
+
+            species_db.add_samples(sampler='ultranest',
+                                   samples=samples,
+                                   ln_prob=ln_prob,
+                                   mean_accept=None,
+                                   spectrum=('model', self.model),
+                                   tag=tag,
+                                   modelpar=self.modelpar,
+                                   distance=self.distance[0],
+                                   spec_labels=spec_labels)
