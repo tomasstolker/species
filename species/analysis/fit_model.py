@@ -368,8 +368,9 @@ def lnprob(param: np.ndarray,
 
 class FitModel:
     """
-    Class for fitting atmospheric model spectra or blackbody spectra to photometric and/or
-    spectroscopic data.
+    Class for fitting atmospheric model spectra to spectroscopic and/or photometric data, and using
+    Bayesian inference (``UltraNest``, ``MultiNest``, or `emcee`) to estimate posterior
+    distributions and marginalized likelihoods (i.e. "evidence").
     """
 
     @typechecked
@@ -1037,17 +1038,30 @@ class FitModel:
             if f'scaling_{item}' in self.bounds:
                 spec_labels.append(f'scaling_{item}')
 
-        species_db = database.Database()
+        # Get the MPI rank of the process
 
-        species_db.add_samples(sampler='emcee',
-                               samples=ens_sampler.chain,
-                               ln_prob=ens_sampler.lnprobability,
-                               mean_accept=np.mean(ens_sampler.acceptance_fraction),
-                               spectrum=('model', self.model),
-                               tag=tag,
-                               modelpar=self.modelpar,
-                               distance=self.distance[0],
-                               spec_labels=spec_labels)
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Add samples to the database
+
+        if mpi_rank == 0:
+            # Writing the samples to the database is only possible when using a single 
+            species_db = database.Database()
+
+            species_db.add_samples(sampler='emcee',
+                                   samples=ens_sampler.chain,
+                                   ln_prob=ens_sampler.lnprobability,
+                                   mean_accept=np.mean(ens_sampler.acceptance_fraction),
+                                   spectrum=('model', self.model),
+                                   tag=tag,
+                                   modelpar=self.modelpar,
+                                   distance=self.distance[0],
+                                   spec_labels=spec_labels)
 
     @typechecked
     def lnlike_func(self,
