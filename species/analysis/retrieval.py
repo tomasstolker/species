@@ -446,10 +446,15 @@ class AtmosphericRetrieval:
                 self.parameters.append(f'corr_len_{item}')
                 self.parameters.append(f'corr_amp_{item}')
 
-        # Add P-T smoothin parameters
+        # Add P-T smoothing parameter
 
         if 'pt_smooth' in bounds:
             self.parameters.append('pt_smooth')
+
+        # Add cloud optical depth parameter
+
+        if 'tau_cloud' in bounds:
+            self.parameters.append('tau_cloud')
 
         # List all parameters
 
@@ -901,6 +906,13 @@ class AtmosphericRetrieval:
 
                         cube[cube_index['mgsio3_tau']] = mgsio3_tau
 
+                    elif 'tau_cloud' in bounds and len(self.cloud_species) == 1:
+                        tau_cloud = bounds['tau_cloud'][0] + \
+                            (bounds['tau_cloud'][1] - bounds['tau_cloud'][0]) * \
+                            cube[cube_index['tau_cloud']]
+
+                        cube[cube_index['tau_cloud']] = tau_cloud
+
                     else:
                         # Default: 0.05 - 1.
                         mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
@@ -1200,6 +1212,9 @@ class AtmosphericRetrieval:
                             abund_in, item, params[f'{item[:-3].lower()}_tau'],
                             pressure_grid=self.pressure_grid)
 
+                    elif 'cloud_tau' in self.parameters and len(self.cloud_species) == 1:
+                        cloud_fractions[item] = 0.
+
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
                                                              cloud_fractions)
@@ -1211,7 +1226,8 @@ class AtmosphericRetrieval:
                     cube[cube_index['metallicity']], log_p_quench, log_x_base,
                     cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
-                    pressure_grid=self.pressure_grid, plotting=plotting, contribution=False)
+                    pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
+                    tau_cloud=cube[cube_index['tau_cloud']])
 
                 # except:
                 #     return -np.inf
