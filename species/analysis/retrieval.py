@@ -665,9 +665,6 @@ class AtmosphericRetrieval:
                 None
             """
 
-            print(self.parameters)
-            print(self.cloud_species)
-
             # Surface gravity log10(g/cgs)
 
             if 'logg' in bounds:
@@ -893,9 +890,6 @@ class AtmosphericRetrieval:
 
                         cube[cube_index['fe_fraction']] = fe_fraction
 
-                print(self.cloud_species)
-                print(bounds)
-
                 if 'MgSiO3(c)' in self.cloud_species:
 
                     if 'mgsio3_fraction' in bounds:
@@ -913,12 +907,10 @@ class AtmosphericRetrieval:
                         cube[cube_index['mgsio3_tau']] = mgsio3_tau
 
                     elif 'tau_clouds' in bounds and len(self.cloud_species) == 1:
-                        print('ok')
                         tau_clouds = bounds['tau_clouds'][0] + \
                             (bounds['tau_clouds'][1] - bounds['tau_clouds'][0]) * \
                             cube[cube_index['tau_clouds']]
 
-                        print(tau_clouds)
                         cube[cube_index['tau_clouds']] = tau_clouds
 
                     else:
@@ -1207,9 +1199,8 @@ class AtmosphericRetrieval:
                 # Cloudy atmosphere
 
                 cloud_fractions = {}
-                print(self.parameters)
-                print(self.cloud_species)
-                print(len(self.cloud_species))
+
+                print('ok1')
 
                 for item in self.cloud_species:
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
@@ -1224,10 +1215,12 @@ class AtmosphericRetrieval:
                             pressure_grid=self.pressure_grid)
 
                     elif 'tau_clouds' in self.parameters and len(self.cloud_species) == 1:
+                        print('ok2')
                         cloud_fractions[item] = 0.
 
+                print('ok3')
                 print(cloud_fractions[item])
-
+                print('ok4')
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
                                                              cloud_fractions)
