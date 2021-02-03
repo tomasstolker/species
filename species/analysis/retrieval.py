@@ -381,7 +381,7 @@ class AtmosphericRetrieval:
             if 'MgSiO3(c)_cd' in self.cloud_species:
                 if 'mgsio3_tau' in bounds:
                     self.parameters.append('mgsio3_tau')
-                else:
+                elif 'tau_cloud' not in bounds:
                     self.parameters.append('mgsio3_fraction')
 
             if 'Al2O3(c)_cd' in self.cloud_species:
