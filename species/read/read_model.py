@@ -356,6 +356,17 @@ class ReadModel:
             dust_radius = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/radius_g'])
             dust_sigma = np.asarray(h5_file['dust/lognorm/mgsio3/crystalline/sigma_g'])
 
+        if wavelength[0] < dust_wavel[0]:
+            raise ValueError(f'The shortest wavelength ({wavelength[0]:.2e} um) for which the '
+                             f'spectrum will be calculated is smaller than the shortest '
+                             f'wavelength ({dust_wavel[0]:.2e} um) of the grid with dust cross '
+                             f'sections.')
+
+        if wavelength[-1] > dust_wavel[-1]:
+            raise ValueError(f'The longest wavelength ({wavelength[-1]:.2e} um) for which the '
+                             f'spectrum  will be calculated is larger than the longest wavelength '
+                             f'({dust_wavel[-1]:.2e} um) of the grid with dust cross sections.')
+
         dust_interp = RegularGridInterpolator((dust_wavel, dust_radius, dust_sigma),
                                               dust_cross,
                                               method='linear',
@@ -437,6 +448,17 @@ class ReadModel:
                                               dust_cross,
                                               method='linear',
                                               bounds_error=True)
+
+        if wavelength[0] < dust_wavel[0]:
+            raise ValueError(f'The shortest wavelength ({wavelength[0]:.2e} um) for which the '
+                             f'spectrum will be calculated is smaller than the shortest '
+                             f'wavelength ({dust_wavel[0]:.2e} um) of the grid with dust cross '
+                             f'sections.')
+
+        if wavelength[-1] > dust_wavel[-1]:
+            raise ValueError(f'The longest wavelength ({wavelength[-1]:.2e} um) for which the '
+                             f'spectrum  will be calculated is larger than the longest wavelength '
+                             f'({dust_wavel[-1]:.2e} um) of the grid with dust cross sections.')
 
         read_filt = read_filter.ReadFilter('Generic/Bessell.V')
         filt_trans = read_filt.get_filter()
