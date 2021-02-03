@@ -1200,8 +1200,6 @@ class AtmosphericRetrieval:
 
                 cloud_fractions = {}
 
-                print('ok1')
-
                 for item in self.cloud_species:
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
                         cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
@@ -1215,19 +1213,11 @@ class AtmosphericRetrieval:
                             pressure_grid=self.pressure_grid)
 
                     elif 'tau_clouds' in self.parameters and len(self.cloud_species) == 1:
-                        print('ok2')
                         cloud_fractions[item] = 0.
 
-                print('ok3')
-                print(cloud_fractions[item])
-                print('ok4')
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
                                                              cloud_fractions)
-
-                print(log_x_base)
-
-                print('tau', cube[cube_index['tau_clouds']])
 
                 # The try-except is required to catch numerical precision errors with the clouds
                 # try:
