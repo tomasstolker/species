@@ -907,10 +907,12 @@ class AtmosphericRetrieval:
                         cube[cube_index['mgsio3_tau']] = mgsio3_tau
 
                     elif 'tau_cloud' in bounds and len(self.cloud_species) == 1:
+                        print('ok')
                         tau_cloud = bounds['tau_cloud'][0] + \
                             (bounds['tau_cloud'][1] - bounds['tau_cloud'][0]) * \
                             cube[cube_index['tau_cloud']]
 
+                        print(tau_cloud)
                         cube[cube_index['tau_cloud']] = tau_cloud
 
                     else:
@@ -1199,6 +1201,9 @@ class AtmosphericRetrieval:
                 # Cloudy atmosphere
 
                 cloud_fractions = {}
+                print(self.parameters)
+                print(self.cloud_species)
+                print(len(self.cloud_species))
 
                 for item in self.cloud_species:
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
