@@ -665,6 +665,9 @@ class AtmosphericRetrieval:
                 None
             """
 
+            print(self.parameters)
+            print(self.cloud_species)
+
             # Surface gravity log10(g/cgs)
 
             if 'logg' in bounds:
@@ -889,6 +892,9 @@ class AtmosphericRetrieval:
                             cube[cube_index['fe_fraction']]
 
                         cube[cube_index['fe_fraction']] = fe_fraction
+
+                print(self.cloud_species)
+                print(bounds)
 
                 if 'MgSiO3(c)' in self.cloud_species:
 
