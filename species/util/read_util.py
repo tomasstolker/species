@@ -152,19 +152,19 @@ def update_spectra(objectbox: box.ObjectBox,
             if f'error_{key}' in model_param:
                 # Calculate the model spectrum
                 wavel_range = (0.9*spec_tmp[0, 0], 1.1*spec_tmp[-1, 0])
-                readmodel = read_model.ReadModel('atmo', wavel_range=wavel_range)
+                readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
 
-                model = readmodel.get_model(model_param,
-                                            spec_res=value[3],
-                                            wavel_resample=spec_tmp[:, 0],
-                                            smooth=True)
+                model_box = readmodel.get_model(model_param,
+                                                spec_res=value[3],
+                                                wavel_resample=spec_tmp[:, 0],
+                                                smooth=True)
 
                 # Scale the errors relative to the model spectrum
                 err_scaling = model_param[f'error_{key}']
                 log_msg = f'Inflating the error of {key}: {err_scaling:.2e}...'
 
                 print(log_msg, end='', flush=True)
-                spec_tmp[:, 2] = np.sqrt(spec_tmp[:, 2]**2 + (err_scaling*model.flux)**2)
+                spec_tmp[:, 2] = np.sqrt(spec_tmp[:, 2]**2 + (err_scaling*model_box.flux)**2)
                 print(' [DONE]')
 
             # Store the spectra with the scaled fluxes and/or errors

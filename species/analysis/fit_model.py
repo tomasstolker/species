@@ -369,7 +369,7 @@ def lnprob(param: np.ndarray,
 class FitModel:
     """
     Class for fitting atmospheric model spectra to spectroscopic and/or photometric data, and using
-    Bayesian inference (``UltraNest``, ``MultiNest``, or `emcee`) to estimate posterior
+    Bayesian inference (``UltraNest``, ``MultiNest``, or ``emcee``) to estimate posterior
     distributions and marginalized likelihoods (i.e. "evidence").
     """
 
