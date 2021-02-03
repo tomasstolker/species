@@ -381,7 +381,7 @@ class AtmosphericRetrieval:
             if 'MgSiO3(c)_cd' in self.cloud_species:
                 if 'mgsio3_tau' in bounds:
                     self.parameters.append('mgsio3_tau')
-                elif 'tau_cloud' not in bounds:
+                elif 'tau_clouds' not in bounds:
                     self.parameters.append('mgsio3_fraction')
 
             if 'Al2O3(c)_cd' in self.cloud_species:
@@ -453,8 +453,8 @@ class AtmosphericRetrieval:
 
         # Add cloud optical depth parameter
 
-        if 'tau_cloud' in bounds:
-            self.parameters.append('tau_cloud')
+        if 'tau_clouds' in bounds:
+            self.parameters.append('tau_clouds')
 
         # List all parameters
 
@@ -906,14 +906,14 @@ class AtmosphericRetrieval:
 
                         cube[cube_index['mgsio3_tau']] = mgsio3_tau
 
-                    elif 'tau_cloud' in bounds and len(self.cloud_species) == 1:
+                    elif 'tau_clouds' in bounds and len(self.cloud_species) == 1:
                         print('ok')
-                        tau_cloud = bounds['tau_cloud'][0] + \
-                            (bounds['tau_cloud'][1] - bounds['tau_cloud'][0]) * \
-                            cube[cube_index['tau_cloud']]
+                        tau_clouds = bounds['tau_clouds'][0] + \
+                            (bounds['tau_clouds'][1] - bounds['tau_clouds'][0]) * \
+                            cube[cube_index['tau_clouds']]
 
-                        print(tau_cloud)
-                        cube[cube_index['tau_cloud']] = tau_cloud
+                        print(tau_clouds)
+                        cube[cube_index['tau_clouds']] = tau_clouds
 
                     else:
                         # Default: 0.05 - 1.
@@ -1217,7 +1217,7 @@ class AtmosphericRetrieval:
                             abund_in, item, params[f'{item[:-3].lower()}_tau'],
                             pressure_grid=self.pressure_grid)
 
-                    elif 'cloud_tau' in self.parameters and len(self.cloud_species) == 1:
+                    elif 'tau_clouds' in self.parameters and len(self.cloud_species) == 1:
                         cloud_fractions[item] = 0.
 
                 print(cloud_fractions[item])
@@ -1228,7 +1228,7 @@ class AtmosphericRetrieval:
 
                 print(log_x_base)
 
-                print('tau', cube[cube_index['tau_cloud']])
+                print('tau', cube[cube_index['tau_clouds']])
 
                 # The try-except is required to catch numerical precision errors with the clouds
                 # try:
@@ -1238,7 +1238,7 @@ class AtmosphericRetrieval:
                     cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
-                    tau_cloud=cube[cube_index['tau_cloud']])
+                    tau_clouds=cube[cube_index['tau_clouds']])
 
                 # except:
                 #     return -np.inf
