@@ -880,6 +880,8 @@ def calc_spectrum_clouds(rt_object,
     if pressure_grid == 'clouds':
         rt_object.setup_opa_structure(pressure)
 
+    print('okok', abundances)
+
     # Calculate the emission spectrum
     rt_object.calc_flux(temperature,
                         abundances,

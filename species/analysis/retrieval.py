@@ -1215,9 +1215,15 @@ class AtmosphericRetrieval:
                     elif 'tau_clouds' in self.parameters and len(self.cloud_species) == 1:
                         cloud_fractions[item] = 0.
 
+                print('ok1', cloud_fractions)
+
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
                                                              cloud_fractions)
+
+                print('ok2', log_x_base)
+
+                print('tau', cube[cube_index['tau_clouds']])
 
                 # The try-except is required to catch numerical precision errors with the clouds
                 # try:
