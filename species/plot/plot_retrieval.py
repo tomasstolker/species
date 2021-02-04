@@ -221,35 +221,35 @@ def plot_pt_profile(tag: str,
                     abund_in, item, median[f'{item[:-3].lower()}_tau'],
                     pressure_grid=radtrans.pressure_grid)
 
-        if 'fe_fraction' in median:
+        if 'Fe(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_Fe_comb(median['metallicity'],
                                                                        median['c_o_ratio'],
                                                                        MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:blue', zorder=2)
 
-        if 'mgsio3_fraction' in median:
+        if 'MgSiO3(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(median['metallicity'],
                                                                       median['c_o_ratio'],
                                                                       MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:orange', zorder=2)
 
-        if 'al2o3_fraction' in median:
+        if 'Al2O3(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(median['metallicity'],
                                                                      median['c_o_ratio'],
                                                                      MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:green', zorder=2)
 
-        if 'na2s_fraction' in median:
+        if 'Na2S(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_Na2S(median['metallicity'],
                                                                     median['c_o_ratio'],
                                                                     MMW=np.mean(abund_in['MMW']))
 
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:cyan', zorder=2)
 
-        if 'kcl_fraction' in median:
+        if 'KCL(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_KCl(median['metallicity'],
                                                                    median['c_o_ratio'],
                                                                    MMW=np.mean(abund_in['MMW']))
@@ -257,7 +257,6 @@ def plot_pt_profile(tag: str,
             ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:pink', zorder=2)
 
     if radtrans is not None:
-
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
         radtrans.get_model(median)
 
@@ -311,9 +310,7 @@ def plot_pt_profile(tag: str,
 
         elif extra_axis == 'grains':
 
-            if 'fe_fraction' in median or 'mgsio3_fraction' in median or \
-                    'al2o3_fraction' in median or 'na2s_fraction' in median or \
-                    'kcl_fraction' in median:
+            if len(radtrans.cloud_species) > 0:
                 ax2 = ax.twiny()
 
                 ax2.tick_params(axis='both', which='major', colors='black', labelcolor='black',
@@ -342,40 +339,12 @@ def plot_pt_profile(tag: str,
                 else:
                     ax2.get_xaxis().set_label_coords(0.5, 1.06)
 
-            if 'fe_fraction' in median:
-                cloud_index = radtrans.rt_object.cloud_species.index('Fe(c)')
+            for item in radtrans.cloud_species:
+                cloud_index = radtrans.rt_object.cloud_species.index(item)
 
                 # Convert from (cm) to (um)
                 ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
                          lw=0.8, color='tab:blue')
-
-            if 'mgsio3_fraction' in median:
-                cloud_index = radtrans.rt_object.cloud_species.index('MgSiO3(c)')
-
-                # Convert from (cm) to (um)
-                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color='tab:orange')
-
-            if 'al2o3_fraction' in median:
-                cloud_index = radtrans.rt_object.cloud_species.index('Al2O3(c)')
-
-                # Convert from (cm) to (um)
-                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color='tab:green')
-
-            if 'na2s_fraction' in median:
-                cloud_index = radtrans.rt_object.cloud_species.index('Na2S(c)')
-
-                # Convert from (cm) to (um)
-                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color='tab:cyan')
-
-            if 'kcl_fraction' in median:
-                cloud_index = radtrans.rt_object.cloud_species.index('KCl(c)')
-
-                # Convert from (cm) to (um)
-                ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color='tab:pink')
 
     else:
         if extra_axis is not None:
@@ -582,7 +551,7 @@ def plot_clouds(tag: str,
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    if f'{composition.lower()}_fraction' not in median:
+    if f'{composition.lower()}_fraction' not in median and 'tau_cloud' not in median:
         raise ValueError(f'The mass fraction of the {composition} clouds is not found. The median '
                          f'sample contains the following parameters: {list(median.keys())}')
 

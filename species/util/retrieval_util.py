@@ -704,9 +704,9 @@ def calc_spectrum_clouds(rt_object,
                          pressure_grid: str = 'smaller',
                          plotting: bool = False,
                          contribution: bool = False,
-                         tau_clouds: Optional[float] = None) -> Tuple[np.ndarray,
-                                                                      np.ndarray,
-                                                                      Optional[np.ndarray]]:
+                         tau_cloud: Optional[float] = None) -> Tuple[np.ndarray,
+                                                                     np.ndarray,
+                                                                     Optional[np.ndarray]]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere. Currently, the function
     only supports equilibrium chemistry (i.e. ``chemistry='equilibrium'``).
@@ -750,7 +750,7 @@ def calc_spectrum_clouds(rt_object,
         Create plots.
     contribution : bool
         Calculate the emission contribution.
-    tau_clouds : float, None
+    tau_cloud : float, None
         Total cloud optical that will be used for scaling the cloud mass fractions. The mass
         fractions will not be scaled if the parameter is set to ``None``.
 
@@ -895,7 +895,7 @@ def calc_spectrum_clouds(rt_object,
                         kappa_zero=None,
                         gamma_scat=None,
                         add_cloud_scat_as_abs=False,
-                        hack_cloud_photospheric_tau=tau_clouds)
+                        hack_cloud_photospheric_tau=tau_cloud)
 
     wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
     wlen = constants.LIGHT*1e2/rt_object.freq

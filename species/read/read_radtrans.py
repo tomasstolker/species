@@ -194,6 +194,8 @@ class ReadRadtrans:
                 cloud_param_frac = f'{item[:-3].lower()}_fraction'
                 cloud_param_tau = f'{item[:-3].lower()}_tau'
 
+                tau_cloud = None
+
                 if cloud_param_frac in model_param:
                     cloud_fractions[item] = model_param[cloud_param_frac]
 
@@ -226,6 +228,11 @@ class ReadRadtrans:
                         'equilibrium', abund_in, item, model_param[cloud_param_tau],
                         pressure_grid=self.pressure_grid)
 
+                elif 'tau_cloud' in model_param and len(self.cloud_species) == 1:
+                    cloud_fractions[item] = 0.
+
+                    tau_cloud = model_param['tau_cloud']
+
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],
                                                          cloud_fractions)
@@ -235,7 +242,7 @@ class ReadRadtrans:
                 model_param['metallicity'], log_p_quench, log_x_base, model_param['fsed'],
                 model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
                 chemistry='equilibrium', pressure_grid=self.pressure_grid,
-                plotting=False, contribution=contribution)
+                plotting=False, contribution=contribution, tau_cloud=tau_cloud)
 
         elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
