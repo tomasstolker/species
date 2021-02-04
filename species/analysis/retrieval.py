@@ -1230,7 +1230,7 @@ class AtmosphericRetrieval:
                     cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
-                    tau_cloud=10.**tau_cloud)
+                    tau_cloud=10.**log_tau_cloud)
 
                 # except:
                 #     return -np.inf
