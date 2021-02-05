@@ -801,8 +801,8 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     if pt_smooth is not None:
         model_param['pt_smooth'] = pt_smooth
 
-    if 'tau_cloud' in indices:
-        model_param['tau_cloud'] = sample[indices['tau_cloud']]
+    if 'log_tau_cloud' in indices:
+        model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
 
     model_box = read_rad.get_model(model_param, spec_res=spec_res)
 

@@ -551,7 +551,7 @@ def plot_clouds(tag: str,
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    if f'{composition.lower()}_fraction' not in median and 'tau_cloud' not in median:
+    if f'{composition.lower()}_fraction' not in median and 'log_tau_cloud' not in median:
         raise ValueError(f'The mass fraction of the {composition} clouds is not found. The median '
                          f'sample contains the following parameters: {list(median.keys())}')
 

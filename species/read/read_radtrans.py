@@ -233,6 +233,11 @@ class ReadRadtrans:
 
                     tau_cloud = model_param['tau_cloud']
 
+                elif 'log_tau_cloud' in model_param and len(self.cloud_species) == 1:
+                    cloud_fractions[item] = 0.
+
+                    tau_cloud = 10.**model_param['log_tau_cloud']
+
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],
                                                          cloud_fractions)
