@@ -1217,8 +1217,6 @@ class AtmosphericRetrieval:
                     elif 'log_tau_cloud' in self.parameters and len(self.cloud_species) == 1:
                         cloud_fractions[item] = 0.
                         log_tau_cloud = cube[cube_index['log_tau_cloud']]
-                        print('tau cloud', log_tau_cloud, 10.**log_tau_cloud)
-                        print(cloud_fractions)
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
