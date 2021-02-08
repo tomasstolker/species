@@ -328,6 +328,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('log_prob')
         param[index] = r'$\log\,L$'
 
+    if 'log_tau_cloud' in param:
+        index = param.index('log_tau_cloud')
+        param[index] = rf'$\log\,\tau_\mathregular{{cloud}}$'
+
     return param
 
 
