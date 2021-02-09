@@ -1201,7 +1201,7 @@ class AtmosphericRetrieval:
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
-                    log_tau_cloud = None
+                    tau_cloud = None
 
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
                         cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
@@ -1216,7 +1216,7 @@ class AtmosphericRetrieval:
 
                     elif 'log_tau_cloud' in self.parameters and len(self.cloud_species) == 1:
                         cloud_fractions[item] = 0.
-                        log_tau_cloud = cube[cube_index['log_tau_cloud']]
+                        tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
@@ -1230,7 +1230,7 @@ class AtmosphericRetrieval:
                     cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
-                    tau_cloud=10.**log_tau_cloud)
+                    tau_cloud=tau_cloud)
 
                 # except:
                 #     return -np.inf
