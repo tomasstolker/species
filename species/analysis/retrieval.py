@@ -525,10 +525,23 @@ class AtmosphericRetrieval:
             None
         """
 
-        # Check if the output folder exists
+        # Get the MPI rank of the process
 
-        if not os.path.exists(self.output_folder):
-            raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Create the output folder if required
+
+        if mpi_rank == 0 and not os.path.exists(self.output_folder):
+            print(f'Creating output folder: {self.output_folder}')
+            os.mkdir(self.output_folder)
+
+        # if not os.path.exists(self.output_folder):
+        #     raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
 
         # Import petitRADTRANS and interpol_abundances here because it is slow
 
