@@ -870,6 +870,15 @@ class FitModel:
         if 'ism_red' in self.bounds:
             self.modelpar.append('ism_red')
 
+        if 'veil_a' in self.bounds:
+            self.modelpar.append('veil_a')
+
+        if 'veil_b' in self.bounds:
+            self.modelpar.append('veil_b')
+
+        if 'veil_ref' in self.bounds:
+            self.modelpar.append('veil_ref')
+
         self.fix_param = {}
         del_param = []
 
@@ -1096,6 +1105,7 @@ class FitModel:
         dust_param = {}
         disk_param = {}
         param_dict = {}
+        veil_param = {}
 
         for item in self.bounds:
             # Add the parameters from the params to their dictionaries
@@ -1126,6 +1136,15 @@ class FitModel:
 
             elif item == 'disk_radius':
                 disk_param['radius'] = params[self.cube_index[item]]
+
+            elif item == 'veil_a':
+                veil_param['veil_a'] = params[self.cube_index[item]]
+
+            elif item == 'veil_b':
+                veil_param['veil_b'] = params[self.cube_index[item]]
+
+            elif item == 'veil_ref':
+                veil_param['veil_ref'] = params[self.cube_index[item]]
 
             else:
                 param_dict[item] = params[self.cube_index[item]]
@@ -1325,6 +1344,16 @@ class FitModel:
                 # Scale the spectrum by (radius/distance)^2
                 model_flux *= flux_scaling
 
+            # Veiling
+            if 'veil_a' in veil_param and 'veil_b' in veil_param and 'veil_ref' in veil_param:
+                if item == 'MUSE':
+                    lambda_ref = 0.5 # (um)
+
+                    veil_flux = veil_param['veil_ref'] + veil_param['veil_b'] * \
+                        (self.spectrum[item][0][:, 0] - lambda_ref)
+
+                    model_flux = veil_param['veil_a']*model_flux + veil_flux
+
             # Scale the spectrum data
             data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
 
@@ -1459,9 +1488,18 @@ class FitModel:
 
         print('Running nested sampling with MultiNest...')
 
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
         # Create the output folder if required
 
-        if not os.path.exists(output):
+        if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
         @typechecked
@@ -1644,9 +1682,18 @@ class FitModel:
         #                   '\'min_num_live_points\' parameter (see documentation for details).',
         #                   DeprecationWarning)
 
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
         # Create the output folder if required
 
-        if not os.path.exists(output):
+        if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
         @typechecked

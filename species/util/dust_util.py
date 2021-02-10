@@ -295,10 +295,8 @@ def calc_reddening(filters_color: Tuple[str, str],
 
     h5_file.close()
 
-    n_grains = extinction[1]/c_ext[extinction[0]]/2.5/np.log10(np.exp(1.))
-
-    return 2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[0]] * n_grains, \
-        2.5 * np.log10(np.exp(1.)) * c_ext[filters_color[1]] * n_grains
+    return extinction[1] * c_ext[filters_color[0]] / c_ext[extinction[0]], \
+        extinction[1] * c_ext[filters_color[1]] / c_ext[extinction[0]]
 
 
 @typechecked

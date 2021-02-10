@@ -190,9 +190,9 @@ class ReadFilter:
                 det_type = dset.attrs['det_type']
 
             else:
-                warnings.warn('Detector type not found. The database was probably created '
-                              'before the detector type was introduced in species (v0.3.1). '
-                              'Assuming an energy-counting detector.')
+                warnings.warn(f'Detector type not found for {self.filter_name}. The database '
+                              f'was probably created before the detector type was introduced '
+                              f'in species (v0.3.1). Assuming an energy-counting detector.')
 
                 det_type = 'energy'
 

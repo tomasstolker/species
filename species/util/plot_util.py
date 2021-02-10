@@ -288,6 +288,18 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('log_powerlaw_c')
         param[index] = r'$c_\mathregular{powerlaw}$'
 
+    if 'veil_a' in param:
+        index = param.index('veil_a')
+        param[index] = r'$a_\mathregular{veil}$'
+
+    if 'veil_b' in param:
+        index = param.index('veil_b')
+        param[index] = r'$b_\mathregular{veil}$'
+
+    if 'veil_ref' in param:
+        index = param.index('veil_ref')
+        param[index] = r'$F_\mathregular{ref, veil}$'
+
     return param
 
 

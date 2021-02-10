@@ -572,7 +572,8 @@ class ReadModel:
 
         extra_param = ['radius', 'distance', 'mass', 'luminosity', 'lognorm_radius',
                        'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_max',
-                       'powerlaw_exp', 'powerlaw_ext', 'disk_teff', 'disk_radius']
+                       'powerlaw_exp', 'powerlaw_ext', 'disk_teff', 'disk_radius',
+                       'veil_a', 'veil_b', 'veil_ref']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -752,6 +753,14 @@ class ReadModel:
                                    flux=flux,
                                    parameters=model_param,
                                    quantity=quantity)
+
+        if 'veil_a' in model_param and 'veil_b' in model_param and 'veil_ref' in model_param:
+            lambda_ref = 0.5 # (um)
+
+            veil_flux =  model_param['veil_ref'] + \
+                model_param['veil_b']*(model_box.wavelength - lambda_ref)
+
+            model_box.flux = model_param['veil_a']*model_box.flux + veil_flux
 
         if 'lognorm_radius' in model_param and 'lognorm_sigma' in model_param and \
                 'lognorm_ext' in model_param:
