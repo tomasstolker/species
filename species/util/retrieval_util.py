@@ -704,8 +704,8 @@ def calc_spectrum_clouds(rt_object,
                          pressure_grid: str = 'smaller',
                          plotting: bool = False,
                          contribution: bool = False,
-                         tau_cloud: Optional[float] = None) -> Tuple[np.ndarray,
-                                                                     np.ndarray,
+                         tau_cloud: Optional[float] = None) -> Tuple[Optional[np.ndarray],
+                                                                     Optional[np.ndarray],
                                                                      Optional[np.ndarray]]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere. Currently, the function
@@ -756,9 +756,9 @@ def calc_spectrum_clouds(rt_object,
 
     Returns
     -------
-    np.ndarray
+    np.ndarray, None
         Wavelength (um).
-    np.ndarray
+    np.ndarray, None
         Flux (W m-2 um-1).
     np.ndarray, None
         Emission contribution.
@@ -881,36 +881,42 @@ def calc_spectrum_clouds(rt_object,
         rt_object.setup_opa_structure(pressure)
 
     # Calculate the emission spectrum
-    rt_object.calc_flux(temperature,
-                        abundances,
-                        10.**logg,
-                        mmw,
-                        sigma_lnorm=sigma_lnorm,
-                        Kzz=Kzz_use,
-                        fsed=fseds,
-                        radius=None,
-                        contribution=contribution,
-                        gray_opacity=None,
-                        Pcloud=None,
-                        kappa_zero=None,
-                        gamma_scat=None,
-                        add_cloud_scat_as_abs=False,
-                        hack_cloud_photospheric_tau=tau_cloud)
+    check_scaling = rt_object.calc_flux(temperature,
+                                        abundances,
+                                        10.**logg,
+                                        mmw,
+                                        sigma_lnorm=sigma_lnorm,
+                                        Kzz=Kzz_use,
+                                        fsed=fseds,
+                                        radius=None,
+                                        contribution=contribution,
+                                        gray_opacity=None,
+                                        Pcloud=None,
+                                        kappa_zero=None,
+                                        gamma_scat=None,
+                                        add_cloud_scat_as_abs=False,
+                                        hack_cloud_photospheric_tau=tau_cloud)
 
-    wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
-    wlen = constants.LIGHT*1e2/rt_object.freq
-    flux = rt_object.flux
+    if check_scaling is None:
+        wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
+        wlen = constants.LIGHT*1e2/rt_object.freq
+        flux = rt_object.flux
 
-    # Convert flux f_nu to f_lambda
-    f_lambda = flux*constants.LIGHT*1e2/wlen**2.
+        # Convert flux f_nu to f_lambda
+        f_lambda = flux*constants.LIGHT*1e2/wlen**2.
 
-    # Convert from ergs to Joule
-    f_lambda = f_lambda * 1e-7
+        # Convert from ergs to Joule
+        f_lambda = f_lambda * 1e-7
 
-    # Optionally return the emission contribution
-    if contribution:
-        contr_em = rt_object.contr_em
+        # Optionally return the emission contribution
+        if contribution:
+            contr_em = rt_object.contr_em
+        else:
+            contr_em = None
+
     else:
+        wlen_micron = None
+        f_lambda = None
         contr_em = None
 
     return wlen_micron, f_lambda, contr_em
@@ -1132,9 +1138,9 @@ def log_x_cloud_base(c_o_ratio: float,
     metallicity : float
         Metallicity, [Fe/H].
     cloud_fractions : dict
-        Dictionary with mass fractions at the cloud base, relative to the maximum values allowed
-        from elemental abundances. The dictionary keys are the cloud species without the structure
-        and shape index (e.g. Na2S(c) instead of Na2S(c)_cd).
+        Dictionary with the log10 mass fractions at the cloud base, relative to the maximum values
+        allowed from elemental abundances. The dictionary keys are the cloud species without the
+        structure and shape index (e.g. Na2S(c) instead of Na2S(c)_cd).
 
     Returns
     -------

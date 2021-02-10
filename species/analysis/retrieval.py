@@ -1248,6 +1248,9 @@ class AtmosphericRetrieval:
                 # except:
                 #     return -np.inf
 
+                if wlen_micron is None and flux_lambda is None:
+                    return -np.inf
+
             else:
                 # Clear atmosphere
 
