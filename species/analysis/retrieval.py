@@ -458,8 +458,8 @@ class AtmosphericRetrieval:
 
             if len(self.cloud_species) > 1:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = self.cloud_species[0][:-6].lower()
-                    cloud_2 = item[:-6].lower()
+                    cloud_1 = item[:-6].lower()
+                    cloud_2 = self.cloud_species[0][:-6].lower()
 
                     self.parameters.append(f'{cloud_1}_{cloud_2}_ratio')
 
@@ -893,8 +893,8 @@ class AtmosphericRetrieval:
 
                     if len(self.cloud_species) > 1:
                         for item in self.cloud_species[1:]:
-                            cloud_1 = self.cloud_species[0][:-3].lower()
-                            cloud_2 = item[:-3].lower()
+                            cloud_1 = item[:-3].lower()
+                            cloud_2 = self.cloud_species[0][:-3].lower()
 
                             mass_ratio = bounds[f'{cloud_1}_{cloud_2}_ratio'][0] + \
                                 (bounds[f'{cloud_1}_{cloud_2}_ratio'][1] - bounds[f'{cloud_1}_{cloud_2}_ratio'][0]) * \
@@ -1254,8 +1254,8 @@ class AtmosphericRetrieval:
                             cloud_fractions[item] = 0.
 
                         else:
-                            cloud_1 = self.cloud_species[0][:-3].lower()
-                            cloud_2 = item[:-3].lower()
+                            cloud_1 = item[:-3].lower()
+                            cloud_2 = self.cloud_species[0][:-3].lower()
 
                             cloud_fractions[item] = np.log10(cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']])
 
