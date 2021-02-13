@@ -2125,73 +2125,97 @@ class Database:
     @staticmethod
     @typechecked
     def get_retrieval_spectra(tag: str,
-                              random: Optional[int],
+                              random: int,
                               wavel_range: Union[Tuple[float, float], str],
                               spec_res: Optional[float] = None) -> Tuple[
                                   List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
-        Function for extracting random spectra from the atmospheric retrieval posterior.
+        Function for extracting random spectra from the posterior distribution obtained with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
         Parameters
         ----------
         tag : str
             Database tag with the posterior samples.
         random : int, None
-            Number of randomly selected samples. All samples are used if set to ``None``.
+            Number of randomly selected samples.
         wavel_range : tuple(float, float), str
             Wavelength range (um) or filter name.
         spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied when set to ``None``.
+            is applied when the argument is set to ``None``.
 
         Returns
         -------
-        list(box.ModelBox, )
+        list(box.ModelBox)
             Boxes with the randomly sampled spectra.
         read_radtrans.Radtrans
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
+
+        # Open configuration file
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
         config = configparser.ConfigParser()
         config.read_file(open(config_file))
 
+        # Read path of the HDF5 database
+
         database_path = config['species']['database']
 
+        # Open the HDF5 database
+
         h5_file = h5py.File(database_path, 'r')
+
+        # Read the posterior samples
+
         dset = h5_file[f'results/fit/{tag}/samples']
+        samples = np.asarray(dset)
+
+        # Select random samples
+
+        random_indices = np.random.randint(samples.shape[0], size=random)
+        samples = samples[random_indices, :]
+
+        # Get number of model parameters
 
         if 'n_param' in dset.attrs:
             n_param = dset.attrs['n_param']
         elif 'nparam' in dset.attrs:
             n_param = dset.attrs['nparam']
 
+        # Get number of line and cloud species
+
         n_line_species = dset.attrs['n_line_species']
         n_cloud_species = dset.attrs['n_cloud_species']
 
         # Convert numpy boolean to regular boolean
+
         scattering = bool(dset.attrs['scattering'])
 
-        quenching = dset.attrs['quenching']
-        pt_profile = dset.attrs['pt_profile']
+        # Get chemistry attributes
+
         chemistry = dset.attrs['chemistry']
+        quenching = dset.attrs['quenching']
+
+        # Get P-T profile attributes
+
+        pt_profile = dset.attrs['pt_profile']
 
         if 'pressure_grid' in dset.attrs:
             pressure_grid = dset.attrs['pressure_grid']
         else:
             pressure_grid = 'smaller'
 
+        # Get distance
+
         if 'distance' in dset.attrs:
             distance = dset.attrs['distance']
         else:
             distance = None
 
-        samples = np.asarray(dset)
-
-        if random is not None:
-            random_indices = np.random.randint(samples.shape[0], size=random)
-            samples = samples[random_indices, :]
+        # Get model parameters
 
         parameters = []
         for i in range(n_param):
@@ -2199,20 +2223,27 @@ class Database:
 
         parameters = np.asarray(parameters)
 
+        # Create dictionary with array indices of the model parameters
+
         indices = {}
         for item in parameters:
             indices[item] = np.argwhere(parameters == item)[0][0]
+
+        # Create list with line species
 
         line_species = []
         for i in range(n_line_species):
             line_species.append(dset.attrs[f'line_species{i}'])
 
+        # Create list with cloud species
+
         cloud_species = []
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f'cloud_species{i}'])
 
-        # After creating and instance of ReadRadtrans, the cloud_species have been
-        # shortened to 'Fe(c)' and 'MgSiO3(c)'
+        # Create an instance of ReadRadtrans
+        # Afterwards, the names of the cloud_species have been shortened
+        # from e.g. 'MgSiO3(c)_cd' to 'MgSiO3(c)'
 
         read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
                                               cloud_species=cloud_species,
@@ -2220,18 +2251,23 @@ class Database:
                                               wavel_range=wavel_range,
                                               pressure_grid=pressure_grid)
 
-        n_total = samples.shape[0]
-
         # pool = multiprocessing.Pool(os.cpu_count())
-
         # processes = []
+
+        # Initiate empty list for ModelBox objects
+
         boxes = []
 
         for i, item in enumerate(samples):
+            print(f'\rGetting posterior spectra {i+1}/{random}...', end='')
+
+            # Get the P-T smoothing parameter
             if 'pt_smooth' in dset.attrs:
                 pt_smooth = dset.attrs['pt_smooth']
             else:
                 pt_smooth = item[indices['pt_smooth']]
+
+            # Calculate the petitRADTRANS spectrum
 
             model_box = data_util.retrieval_spectrum(indices=indices,
                                                      chemistry=chemistry,
@@ -2245,9 +2281,9 @@ class Database:
                                                      read_rad=read_rad,
                                                      sample=item)
 
-            boxes.append(model_box)
+            # Add the ModelBox to the list
 
-            print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
+            boxes.append(model_box)
 
             # proc = pool.apply_async(data_util.retrieval_spectrum,
             #                         args=(indices,
@@ -2263,12 +2299,14 @@ class Database:
             # processes.append(proc)
 
         # pool.close()
-
+        #
         # for i, item in enumerate(processes):
         #     boxes.append(item.get(timeout=30))
-        #     print(f'\rGetting posterior spectra {i+1}/{n_total}...', end='', flush=True)
+        #     print(f'\rGetting posterior spectra {i+1}/{random}...', end='', flush=True)
 
         print(' [DONE]')
+
+        # Close the HDF5 database
 
         h5_file.close()
 

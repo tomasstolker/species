@@ -764,6 +764,19 @@ def calc_spectrum_clouds(rt_object,
         Emission contribution.
     """
 
+    # from petitRADTRANS.radtrans import Radtrans
+    #
+    # rt_object = Radtrans(line_species=['CO_all_iso', 'H2O', 'CH4', 'NH3', 'CO2', 'H2S', 'Na', 'K', 'PH3', 'VO', 'TiO', 'FeH'],
+    #                      rayleigh_species=['H2', 'He'],
+    #                      cloud_species=['MgSiO3(c)_cd'],
+    #                      continuum_opacities=['H2-H2', 'H2-He'],
+    #                      wlen_bords_micron=(0.8, 6.),
+    #                      mode='c-k',
+    #                      test_ck_shuffle_comp=True,
+    #                      do_scat_emis=True)
+    #
+    # rt_object.setup_opa_structure(pressure[::3])
+
     # Import interpol_abundances here because it slows down importing species otherwise.
     # Importing interpol_abundances is only slow the first time, which occurs at the start
     # of the run_multinest method of AtmosphericRetrieval
@@ -776,7 +789,7 @@ def calc_spectrum_clouds(rt_object,
                                    np.full(pressure.shape, metallicity),
                                    temperature,
                                    pressure,
-                                   Pquench_carbon=1e1**log_p_quench)
+                                   Pquench_carbon=10.**log_p_quench)
 
     # Extract the mean molecular weight
     mmw = abund_in['MMW']

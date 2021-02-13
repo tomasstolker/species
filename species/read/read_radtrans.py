@@ -64,10 +64,14 @@ class ReadRadtrans:
             None
         """
 
+        # Set several of the required ReadRadtrans attributes
+
         self.filter_name = filter_name
         self.wavel_range = wavel_range
         self.scattering = scattering
         self.pressure_grid = pressure_grid
+
+        # Set the wavelength range
 
         if self.filter_name is not None:
             transmission = read_filter.ReadFilter(self.filter_name)
@@ -77,10 +81,14 @@ class ReadRadtrans:
         elif self.wavel_range is None:
             self.wavel_range = (0.8, 10.)
 
+        # Set the list with line species
+
         if line_species is None:
             self.line_species = []
         else:
             self.line_species = line_species
+
+        # Set the list with cloud species and the number of P-T points
 
         if cloud_species is None:
             self.cloud_species = []
@@ -92,6 +100,7 @@ class ReadRadtrans:
             n_pressure = 180
 
         # Create 180 pressure layers in log space
+
         self.pressure = np.logspace(-6, 3, n_pressure)
 
         # Import petitRADTRANS here because it is slow
@@ -111,7 +120,7 @@ class ReadRadtrans:
                                   test_ck_shuffle_comp=self.scattering,
                                   do_scat_emis=self.scattering)
 
-        # Create the RT arrays
+        # Setup the opacity arrays
 
         if self.pressure_grid == 'standard':
             self.rt_object.setup_opa_structure(self.pressure)
@@ -129,7 +138,7 @@ class ReadRadtrans:
                   wavel_resample: Optional[np.ndarray] = None,
                   plot_contribution: Optional[str] = None) -> box.ModelBox:
         """
-        Function for calculating a model spectrum.
+        Function for calculating a model spectrum with petitRADTRANS.
 
         Parameters
         ----------
@@ -137,28 +146,32 @@ class ReadRadtrans:
             Dictionary with the model parameters and values.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. No smoothing is
-            applied when set to ``None``.
+            applied when the argument is set to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum is resampled. The original wavelengths
-            points are used if set to ``None``.
+            points are used if the argument is set to ``None``.
         plot_contribution : str, None
-            Filename for the plot with the emission contribution. The plot is not created if set
-            to ``None``.
+            Filename for the plot with the emission contribution. The plot is not created if the
+            argument is set to ``None``.
 
         Returns
         -------
         species.core.box.ModelBox
-            Box with the model spectrum.
+            Box with the petitRADTRANS model spectrum.
         """
 
         if spec_res is not None and wavel_resample is not None:
             raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
                              'simultaneously. Please set one of them to None.')
 
+        # Set contribution boolean
+
         if plot_contribution:
             contribution = True
         else:
             contribution = False
+
+        # Create the P-T profile
 
         if 'tint' in model_param:
             temp, _ = retrieval_util.pt_ret_model(
@@ -182,10 +195,15 @@ class ReadRadtrans:
             else:
                 temp = retrieval_util.pt_spline_interp(knot_press, knot_temp, self.pressure)
 
+        # Set the log quenching pressure, log(P/bar)
+
         if 'log_p_quench' in model_param:
             log_p_quench = model_param['log_p_quench']
         else:
             log_p_quench = -10.
+
+        # Create the dictionary with the mass fractions of the clouds relative to the maximum
+        # values allowed from elemental abundances
 
         if len(self.cloud_species) > 0:
             cloud_fractions = {}
@@ -200,17 +218,20 @@ class ReadRadtrans:
                     cloud_fractions[item] = model_param[cloud_param_frac]
 
                 elif cloud_param_tau in model_param:
+                    # Quenching pressure (bar)
+
                     if 'log_p_quench' in model_param:
-                        # Quenching pressure (bar)
                         quench_pressure = 10.**model_param['log_p_quench']
                     else:
                         quench_pressure = None
 
                     # Import the chemistry module here because it is slow
+
                     from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
                         import interpol_abundances
 
                     # Interpolate the abundances, following chemical equilibrium
+
                     abund_in = interpol_abundances(np.full(self.pressure.size,
                                                            model_param['c_o_ratio']),
                                                    np.full(self.pressure.size,
@@ -220,25 +241,37 @@ class ReadRadtrans:
                                                    Pquench_carbon=quench_pressure)
 
                     # Extract the mean molecular weight
+
                     mmw = abund_in['MMW']
 
                     # Calculate the scaled mass fraction of the clouds
+
                     cloud_fractions[item] = retrieval_util.scale_cloud_abund(
                         model_param, self.rt_object, self.pressure, temp, mmw,
                         'equilibrium', abund_in, item, model_param[cloud_param_tau],
                         pressure_grid=self.pressure_grid)
 
                 elif 'tau_cloud' in model_param and len(self.cloud_species) == 1:
+                    # Set the log mass fraction to zero and use the optical depth parameter to
+                    # scale the cloud mass fraction with petitRADTRANS
+
                     cloud_fractions[item] = 0.
                     tau_cloud = model_param['tau_cloud']
 
                 elif 'log_tau_cloud' in model_param and len(self.cloud_species) == 1:
+                    # Set the log mass fraction to zero and use the optical depth parameter to
+                    # scale the cloud mass fraction with petitRADTRANS
+
                     cloud_fractions[item] = 0.
                     tau_cloud = 10.**model_param['log_tau_cloud']
+
+            # Create a dictionary with the log mass fractions at the cloud base
 
             log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
                                                          model_param['metallicity'],
                                                          cloud_fractions)
+
+            # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
                 self.rt_object, self.pressure, temp, model_param['c_o_ratio'],
@@ -248,6 +281,8 @@ class ReadRadtrans:
                 plotting=False, contribution=contribution, tau_cloud=tau_cloud)
 
         elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
+            # Calculate the petitRADTRANS spectrum for a clear atmosphere
+
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'],
                 model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
@@ -266,13 +301,19 @@ class ReadRadtrans:
                 chemistry='free', contribution=contribution)
 
         if 'radius' in model_param:
+            # Calculate the planet mass from log(g) and radius
+
             model_param['mass'] = read_util.get_mass(model_param['logg'], model_param['radius'])
 
             if 'distance' in model_param:
+                # Use the radius and distance to scale the fluxes to the observer
+
                 scaling = (model_param['radius']*constants.R_JUP)**2 / \
                           (model_param['distance']*constants.PARSEC)**2
 
                 flux *= scaling
+
+        # Apply ISM extinction
 
         if 'ism_ext' in model_param:
             if 'ism_red' in model_param:
@@ -287,13 +328,14 @@ class ReadRadtrans:
                                            model_param['ism_ext'],
                                            ism_reddening)
 
+        # Convolve the spectrum  with a Gaussian LSF
+
         if spec_res is not None:
-            # convolve with Gaussian LSF
             flux = retrieval_util.convolve(wavelength, flux, spec_res)
 
         if plot_contribution is not None:
             # Calculate the total optical depth (line and continuum opacities)
-            self.rt_object.calc_opt_depth(10.**model_param['logg'])
+            # self.rt_object.calc_opt_depth(10.**model_param['logg'])
 
             # From Paul: The first axis of total_tay is the coordinate of the cumulative opacity
             # distribution function (ranging from 0 to 1). A correct average is obtained by

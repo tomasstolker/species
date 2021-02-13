@@ -745,13 +745,21 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         Box with the petitRADTRANS spectrum.
     """
 
+    # Initiate parameter dictionary
+
     model_param = {}
+
+    # Add log(g) and radius
 
     model_param['logg'] = sample[indices['logg']]
     model_param['radius'] = sample[indices['radius']]
 
+    # Add distance
+
     if distance is not None:
         model_param['distance'] = distance
+
+    # Add P-T profile parameters
 
     if pt_profile == 'molliere':
         model_param['t1'] = sample[indices['t1']]
@@ -765,8 +773,10 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         for j in range(15):
             model_param[f't{j}'] = sample[indices[f't{j}']]
 
-    if quenching:
-        model_param['log_p_quench'] = sample[indices['log_p_quench']]
+    if pt_smooth is not None:
+        model_param['pt_smooth'] = pt_smooth
+
+    # Add chemistry parameters
 
     if chemistry == 'equilibrium':
         model_param['c_o_ratio'] = sample[indices['c_o_ratio']]
@@ -775,6 +785,11 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     elif chemistry == 'free':
         for species_item in line_species:
             model_param[species_item] = sample[indices[species_item]]
+
+    if quenching:
+        model_param['log_p_quench'] = sample[indices['log_p_quench']]
+
+    # Add cloud parameters
 
     if len(cloud_species) > 0:
         model_param['fsed'] = sample[indices['fsed']]
@@ -792,19 +807,22 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
             if cloud_param in indices:
                 model_param[cloud_param] = sample[indices[cloud_param]]
 
+    if 'log_tau_cloud' in indices:
+        model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
+
+    # Add extinction parameters
+
     if 'ism_ext' in indices:
         model_param['ism_ext'] = sample[indices['ism_ext']]
 
     if 'ism_red' in indices:
         model_param['ism_red'] = sample[indices['ism_red']]
 
-    if pt_smooth is not None:
-        model_param['pt_smooth'] = pt_smooth
-
-    if 'log_tau_cloud' in indices:
-        model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
+    # Calculate spectrum
 
     model_box = read_rad.get_model(model_param, spec_res=spec_res)
+
+    # Set content type of the ModelBox
 
     model_box.type = 'mcmc'
 

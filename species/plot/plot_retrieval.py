@@ -262,7 +262,7 @@ def plot_pt_profile(tag: str,
 
         if extra_axis == 'photosphere':
             # Calculate the total optical depth (line and continuum opacities)
-            radtrans.rt_object.calc_opt_depth(10.**median['logg'])
+            # radtrans.rt_object.calc_opt_depth(10.**median['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem*1e-4  # (um)
 

@@ -456,6 +456,13 @@ class AtmosphericRetrieval:
         if 'log_tau_cloud' in bounds:
             self.parameters.append('log_tau_cloud')
 
+            if len(self.cloud_species) > 1:
+                for item in self.cloud_species[1:]:
+                    cloud_1 = self.cloud_species[0][:-6].lower()
+                    cloud_2 = item[:-6].lower()
+
+                    self.parameters.append(f'{cloud_1}_{cloud_2}_ratio')
+
         # List all parameters
 
         print(f'Fitting {len(self.parameters)} parameters:')
@@ -877,130 +884,142 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['sigma_lnorm']] = sigma_lnorm
 
-                # Cloud mass fractions at the cloud base, relative to the maximum values allowed
-                # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
+                if 'log_tau_cloud' in bounds:
+                    log_tau_cloud = bounds['log_tau_cloud'][0] + \
+                        (bounds['log_tau_cloud'][1] - bounds['log_tau_cloud'][0]) * \
+                        cube[cube_index['log_tau_cloud']]
 
-                if 'Fe(c)' in self.cloud_species:
+                    cube[cube_index['log_tau_cloud']] = log_tau_cloud
 
-                    if 'fe_fraction' in bounds:
-                        fe_fraction = bounds['fe_fraction'][0] + \
-                            (bounds['fe_fraction'][1] - bounds['fe_fraction'][0]) * \
-                            cube[cube_index['fe_fraction']]
+                    if len(self.cloud_species) > 1:
+                        for item in self.cloud_species[1:]:
+                            cloud_1 = self.cloud_species[0][:-3].lower()
+                            cloud_2 = item[:-3].lower()
 
-                        cube[cube_index['fe_fraction']] = fe_fraction
+                            mass_ratio = bounds[f'{cloud_1}_{cloud_2}_ratio'][0] + \
+                                (bounds[f'{cloud_1}_{cloud_2}_ratio'][1] - bounds[f'{cloud_1}_{cloud_2}_ratio'][0]) * \
+                                cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']]
 
-                    elif 'fe_tau' in bounds:
-                        fe_tau = bounds['fe_tau'][0] + \
-                            (bounds['fe_tau'][1] - bounds['fe_tau'][0]) * \
-                            cube[cube_index['fe_tau']]
+                            cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']] = mass_ratio
 
-                        cube[cube_index['fe_tau']] = fe_tau
+                else:
+                    # Cloud mass fractions at the cloud base, relative to the maximum values allowed
+                    # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
 
-                    else:
-                        # Default: 0.05 - 1.
-                        fe_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                            cube[cube_index['fe_fraction']]
+                    if 'Fe(c)' in self.cloud_species:
 
-                        cube[cube_index['fe_fraction']] = fe_fraction
+                        if 'fe_fraction' in bounds:
+                            fe_fraction = bounds['fe_fraction'][0] + \
+                                (bounds['fe_fraction'][1] - bounds['fe_fraction'][0]) * \
+                                cube[cube_index['fe_fraction']]
 
-                if 'MgSiO3(c)' in self.cloud_species:
+                            cube[cube_index['fe_fraction']] = fe_fraction
 
-                    if 'mgsio3_fraction' in bounds:
-                        mgsio3_fraction = bounds['mgsio3_fraction'][0] + \
-                            (bounds['mgsio3_fraction'][1] - bounds['mgsio3_fraction'][0]) * \
-                            cube[cube_index['mgsio3_fraction']]
+                        elif 'fe_tau' in bounds:
+                            fe_tau = bounds['fe_tau'][0] + \
+                                (bounds['fe_tau'][1] - bounds['fe_tau'][0]) * \
+                                cube[cube_index['fe_tau']]
 
-                        cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+                            cube[cube_index['fe_tau']] = fe_tau
 
-                    elif 'mgsio3_tau' in bounds:
-                        mgsio3_tau = bounds['mgsio3_tau'][0] + \
-                            (bounds['mgsio3_tau'][1] - bounds['mgsio3_tau'][0]) * \
-                            cube[cube_index['mgsio3_tau']]
+                        else:
+                            # Default: 0.05 - 1.
+                            fe_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index['fe_fraction']]
 
-                        cube[cube_index['mgsio3_tau']] = mgsio3_tau
+                            cube[cube_index['fe_fraction']] = fe_fraction
 
-                    elif 'log_tau_cloud' in bounds and len(self.cloud_species) == 1:
-                        log_tau_cloud = bounds['log_tau_cloud'][0] + \
-                            (bounds['log_tau_cloud'][1] - bounds['log_tau_cloud'][0]) * \
-                            cube[cube_index['log_tau_cloud']]
+                    if 'MgSiO3(c)' in self.cloud_species:
 
-                        cube[cube_index['log_tau_cloud']] = log_tau_cloud
+                        if 'mgsio3_fraction' in bounds:
+                            mgsio3_fraction = bounds['mgsio3_fraction'][0] + \
+                                (bounds['mgsio3_fraction'][1] - bounds['mgsio3_fraction'][0]) * \
+                                cube[cube_index['mgsio3_fraction']]
 
-                    else:
-                        # Default: 0.05 - 1.
-                        mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                            cube[cube_index['mgsio3_fraction']]
+                            cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
 
-                        cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
+                        elif 'mgsio3_tau' in bounds:
+                            mgsio3_tau = bounds['mgsio3_tau'][0] + \
+                                (bounds['mgsio3_tau'][1] - bounds['mgsio3_tau'][0]) * \
+                                cube[cube_index['mgsio3_tau']]
 
-                if 'Al2O3(c)' in self.cloud_species:
+                            cube[cube_index['mgsio3_tau']] = mgsio3_tau
 
-                    if 'al2o3_fraction' in bounds:
-                        al2o3_fraction = bounds['al2o3_fraction'][0] + \
-                            (bounds['al2o3_fraction'][1] - bounds['al2o3_fraction'][0]) * \
-                            cube[cube_index['al2o3_fraction']]
+                        else:
+                            # Default: 0.05 - 1.
+                            mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index['mgsio3_fraction']]
 
-                        cube[cube_index['al2o3_fraction']] = al2o3_fraction
+                            cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
 
-                    elif 'al2o3_tau' in bounds:
-                        al2o3_tau = bounds['al2o3_tau'][0] + \
-                            (bounds['al2o3_tau'][1] - bounds['al2o3_tau'][0]) * \
-                            cube[cube_index['al2o3_tau']]
+                    if 'Al2O3(c)' in self.cloud_species:
 
-                        cube[cube_index['al2o3_tau']] = al2o3_tau
+                        if 'al2o3_fraction' in bounds:
+                            al2o3_fraction = bounds['al2o3_fraction'][0] + \
+                                (bounds['al2o3_fraction'][1] - bounds['al2o3_fraction'][0]) * \
+                                cube[cube_index['al2o3_fraction']]
 
-                    else:
-                        # Default: 0.05 - 1.
-                        al2o3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                            cube[cube_index['al2o3_fraction']]
+                            cube[cube_index['al2o3_fraction']] = al2o3_fraction
 
-                        cube[cube_index['al2o3_fraction']] = al2o3_fraction
+                        elif 'al2o3_tau' in bounds:
+                            al2o3_tau = bounds['al2o3_tau'][0] + \
+                                (bounds['al2o3_tau'][1] - bounds['al2o3_tau'][0]) * \
+                                cube[cube_index['al2o3_tau']]
 
-                if 'Na2S(c)' in self.cloud_species:
+                            cube[cube_index['al2o3_tau']] = al2o3_tau
 
-                    if 'na2s_fraction' in bounds:
-                        na2s_fraction = bounds['na2s_fraction'][0] + \
-                            (bounds['na2s_fraction'][1] - bounds['na2s_fraction'][0]) * \
-                            cube[cube_index['na2s_fraction']]
+                        else:
+                            # Default: 0.05 - 1.
+                            al2o3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index['al2o3_fraction']]
 
-                        cube[cube_index['na2s_fraction']] = na2s_fraction
+                            cube[cube_index['al2o3_fraction']] = al2o3_fraction
 
-                    elif 'na2s_tau' in bounds:
-                        na2s_tau = bounds['na2s_tau'][0] + \
-                            (bounds['na2s_tau'][1] - bounds['na2s_tau'][0]) * \
-                            cube[cube_index['na2s_tau']]
+                    if 'Na2S(c)' in self.cloud_species:
 
-                        cube[cube_index['na2s_tau']] = na2s_tau
+                        if 'na2s_fraction' in bounds:
+                            na2s_fraction = bounds['na2s_fraction'][0] + \
+                                (bounds['na2s_fraction'][1] - bounds['na2s_fraction'][0]) * \
+                                cube[cube_index['na2s_fraction']]
 
-                    else:
-                        # Default: 0.05 - 1.
-                        na2s_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                            cube[cube_index['na2s_fraction']]
+                            cube[cube_index['na2s_fraction']] = na2s_fraction
 
-                        cube[cube_index['na2s_fraction']] = na2s_fraction
+                        elif 'na2s_tau' in bounds:
+                            na2s_tau = bounds['na2s_tau'][0] + \
+                                (bounds['na2s_tau'][1] - bounds['na2s_tau'][0]) * \
+                                cube[cube_index['na2s_tau']]
 
-                if 'KCL(c)' in self.cloud_species:
+                            cube[cube_index['na2s_tau']] = na2s_tau
 
-                    if 'kcl_fraction' in bounds:
-                        kcl_fraction = bounds['kcl_fraction'][0] + \
-                            (bounds['kcl_fraction'][1] - bounds['kcl_fraction'][0]) * \
-                            cube[cube_index['kcl_fraction']]
+                        else:
+                            # Default: 0.05 - 1.
+                            na2s_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index['na2s_fraction']]
 
-                        cube[cube_index['kcl_fraction']] = kcl_fraction
+                            cube[cube_index['na2s_fraction']] = na2s_fraction
 
-                    elif 'kcl_tau' in bounds:
-                        kcl_tau = bounds['kcl_tau'][0] + \
-                            (bounds['kcl_tau'][1] - bounds['kcl_tau'][0]) * \
-                            cube[cube_index['kcl_tau']]
+                    if 'KCL(c)' in self.cloud_species:
 
-                        cube[cube_index['kcl_tau']] = kcl_tau
+                        if 'kcl_fraction' in bounds:
+                            kcl_fraction = bounds['kcl_fraction'][0] + \
+                                (bounds['kcl_fraction'][1] - bounds['kcl_fraction'][0]) * \
+                                cube[cube_index['kcl_fraction']]
 
-                    else:
-                        # Default: 0.05 - 1.
-                        kcl_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                            cube[cube_index['kcl_fraction']]
+                            cube[cube_index['kcl_fraction']] = kcl_fraction
 
-                        cube[cube_index['kcl_fraction']] = kcl_fraction
+                        elif 'kcl_tau' in bounds:
+                            kcl_tau = bounds['kcl_tau'][0] + \
+                                (bounds['kcl_tau'][1] - bounds['kcl_tau'][0]) * \
+                                cube[cube_index['kcl_tau']]
+
+                            cube[cube_index['kcl_tau']] = kcl_tau
+
+                        else:
+                            # Default: 0.05 - 1.
+                            kcl_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index['kcl_fraction']]
+
+                            cube[cube_index['kcl_fraction']] = kcl_fraction
 
             # Add flux scaling parameter if the boundaries are provided
 
@@ -1214,8 +1233,6 @@ class AtmosphericRetrieval:
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
-                    tau_cloud = None
-
                     if f'{item[:-3].lower()}_fraction' in self.parameters:
                         cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
 
@@ -1227,9 +1244,20 @@ class AtmosphericRetrieval:
                             abund_in, item, params[f'{item[:-3].lower()}_tau'],
                             pressure_grid=self.pressure_grid)
 
-                    elif 'log_tau_cloud' in self.parameters and len(self.cloud_species) == 1:
-                        cloud_fractions[item] = 0.
-                        tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
+                tau_cloud = None
+
+                if 'log_tau_cloud' in self.parameters:
+                    tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
+
+                    for i, item in enumerate(self.cloud_species):
+                        if i == 0:
+                            cloud_fractions[item] = 0.
+
+                        else:
+                            cloud_1 = self.cloud_species[0][:-3].lower()
+                            cloud_2 = item[:-3].lower()
+
+                            cloud_fractions[item] = np.log10(cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']])
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
