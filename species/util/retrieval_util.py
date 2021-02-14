@@ -764,6 +764,7 @@ def calc_spectrum_clouds(rt_object,
         Emission contribution.
     """
 
+    # TODO remove this part
     # from petitRADTRANS.radtrans import Radtrans
     #
     # rt_object = Radtrans(line_species=['CO_all_iso', 'H2O', 'CH4', 'NH3', 'CO2', 'H2S', 'Na', 'K', 'PH3', 'VO', 'TiO', 'FeH'],
