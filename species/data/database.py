@@ -1965,6 +1965,8 @@ class Database:
             dset.attrs['quenching'] = radtrans['quenching']
             dset.attrs['pt_profile'] = radtrans['pt_profile']
             dset.attrs['chemistry'] = radtrans['chemistry']
+            dset.attrs['wavel_min'] = radtrans['wavel_range'][0]
+            dset.attrs['wavel_max'] = radtrans['wavel_range'][1]
 
             if 'pt_smooth' in radtrans:
                 dset.attrs['pt_smooth'] = radtrans['pt_smooth']
@@ -2126,7 +2128,7 @@ class Database:
     @typechecked
     def get_retrieval_spectra(tag: str,
                               random: int,
-                              wavel_range: Union[Tuple[float, float], str],
+                              wavel_range: Union[Tuple[float, float], str] = None,
                               spec_res: Optional[float] = None) -> Tuple[
                                   List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
@@ -2139,8 +2141,12 @@ class Database:
             Database tag with the posterior samples.
         random : int, None
             Number of randomly selected samples.
-        wavel_range : tuple(float, float), str
-            Wavelength range (um) or filter name.
+        wavel_range : tuple(float, float), str, None
+            Wavelength range (um) or filter name. The wavelength range from the retrieval is
+            adopted (i.e. the ``wavel_range`` parameter of
+            :class:`~species.analysis.retrieval.AtmosphericRetrieval`) when set to ``None``. It is
+            mandatory to set the argument to ``None`` in case the ``log_tau_cloud`` parameter has
+            been used with the retrieval.
         spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
             is applied when the argument is set to ``None``.
@@ -2214,6 +2220,10 @@ class Database:
             distance = dset.attrs['distance']
         else:
             distance = None
+
+        # Get wavelength range
+        if wavel_range is None:
+            wavel_range = (dset.attrs['wavel_min'], dset.attrs['wavel_max'])
 
         # Get model parameters
 
