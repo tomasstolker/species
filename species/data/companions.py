@@ -2,7 +2,7 @@
 Module for extracting data of directly imaged planets and brown dwarfs.
 """
 
-from typing import Union, Dict, Tuple, List
+from typing import Dict, List, Tuple, Union
 
 from typeguard import typechecked
 
@@ -255,6 +255,32 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/SPHERE.IRDIS_D_H23_3': (13.94, 0.17),  # Cheetham et al. 2018
                                         'Paranal/SPHERE.IRDIS_D_K12_1': (13.77, 0.17),  # Cheetham et al. 2018
                                         'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
-                                        'Paranal/NACO.Lp': (13.09, 0.17)}}}  # Cheetham et al. 2018
+                                        'Paranal/NACO.Lp': (13.09, 0.17)}},  # Cheetham et al. 2018
+
+            'TYC 8988 b': {'distance': (94.6, 0.3),
+                           'app_mag': {'Paranal/SPHERE.IRDIS_D_Y23_2': (17.03, 0.21),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_Y23_3': (16.67, 0.16),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_J23_2': (16.27, 0.08),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_J23_3': (15.73, 0.07),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_H23_2': (15.11, 0.08),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_H23_3': (14.78, 0.07),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_K12_1': (14.44, 0.04),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_D_K12_2': (14.07, 0.04),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_B_J': (15.73, 0.38),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_B_H': (15.87, 0.38),  # Bohn et al. 2019
+                                       'Paranal/SPHERE.IRDIS_B_Ks': (14.70, 0.14),  # Bohn et al. 2019
+                                       'Paranal/NACO.Lp': (13.30, 0.08),  # Bohn et al. 2019
+                                       'Paranal/NACO.Mp': (13.08, 0.20)}},  # Bohn et al. 2019
+
+            'TYC 8988 c': {'distance': (94.6, 0.3),
+                           'app_mag': {'Paranal/SPHERE.IRDIS_D_Y23_3': (22.37, 0.31),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_J23_2': (21.81, 0.22),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_J23_3': (21.17, 0.15),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_H23_2': (19.78, 0.08),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_H23_3': (19.32, 0.06),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_K12_1': (18.34, 0.04),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_K12_2': (17.85, 0.09),  # Bohn et al. 2020
+                                       'Paranal/SPHERE.IRDIS_B_H': (19.69, 0.23),  # Bohn et al. 2020
+                                       'Paranal/NACO.Lp': (16.29, 0.21)}}}  # Bohn et al. 2020
 
     return data

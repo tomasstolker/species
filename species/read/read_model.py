@@ -797,6 +797,11 @@ class ReadModel:
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
                 model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
 
+        if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
+            model_box.parameters['luminosity'] += 4. * np.pi * (
+                model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
+
         return model_box
 
     @typechecked
@@ -925,6 +930,11 @@ class ReadModel:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
                 model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
+
+        if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
+            model_box.parameters['luminosity'] += 4. * np.pi * (
+                model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
 
         return model_box
 

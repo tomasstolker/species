@@ -33,7 +33,7 @@ def update_sptype(sptypes: np.ndarray) -> List[str]:
 
     sptypes_updated = []
 
-    for i, spt_item in enumerate(sptypes):
+    for spt_item in sptypes:
 
         if spt_item == 'None':
             sptypes_updated.append('None')
