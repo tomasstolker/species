@@ -1257,7 +1257,7 @@ class AtmosphericRetrieval:
                             cloud_1 = item[:-3].lower()
                             cloud_2 = self.cloud_species[0][:-3].lower()
 
-                            cloud_fractions[item] = np.log10(cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']])
+                            cloud_fractions[item] = cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']]
 
                 log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
                                                              cube[cube_index['metallicity']],
