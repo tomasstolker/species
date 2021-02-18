@@ -375,7 +375,7 @@ class AtmosphericRetrieval:
             if 'Fe(c)_cd' in self.cloud_species:
                 if 'fe_tau' in bounds:
                     self.parameters.append('fe_tau')
-                else:
+                elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('fe_fraction')
 
             if 'MgSiO3(c)_cd' in self.cloud_species:
@@ -387,19 +387,19 @@ class AtmosphericRetrieval:
             if 'Al2O3(c)_cd' in self.cloud_species:
                 if 'al2o3_tau' in bounds:
                     self.parameters.append('al2o3_tau')
-                else:
+                elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('al2o3_fraction')
 
             if 'Na2S(c)_cd' in self.cloud_species:
                 if 'na2s_tau' in bounds:
                     self.parameters.append('na2s_tau')
-                else:
+                elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('na2s_fraction')
 
             if 'KCL(c)_cd' in self.cloud_species:
                 if 'kcl_tau' in bounds:
                     self.parameters.append('kcl_tau')
-                else:
+                elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('kcl_fraction')
 
             self.parameters.append('fsed')
