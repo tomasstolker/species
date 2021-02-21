@@ -251,6 +251,13 @@ def update_labels(param: List[str]) -> List[str]:
             index = param.index(f'{item}_tau')
             param[index] = rf'$\bar{{\tau}}_\mathregular{{{cloud_labels[i]}}}$'
 
+    for i, item_i in enumerate(cloud_species):
+        for j, item_j in enumerate(cloud_species):
+            if f'{item_i}_{item_j}_ratio' in param:
+                index = param.index(f'{item_i}_{item_j}_ratio')
+                param[index] = rf'$\log\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}/' \
+                               rf'\tilde{{X}}_\mathregular{{{cloud_labels[j]}}}$'
+
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
             param[i] = rf'$\mathregular{{a}}_\mathregular{{{item[8:]}}}$'

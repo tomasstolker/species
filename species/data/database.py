@@ -1876,7 +1876,7 @@ class Database:
         Parameters
         ----------
         tag : str
-            Database tag.
+            Database tag to store the posterior samples.
         output_folder : str
             Output folder that was used for the output files by ``MultiNest``.
         inc_teff : bool

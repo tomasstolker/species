@@ -251,19 +251,31 @@ class ReadRadtrans:
                         'equilibrium', abund_in, item, model_param[cloud_param_tau],
                         pressure_grid=self.pressure_grid)
 
-                elif 'tau_cloud' in model_param and len(self.cloud_species) == 1:
+                if 'log_tau_cloud' in model_param:
                     # Set the log mass fraction to zero and use the optical depth parameter to
                     # scale the cloud mass fraction with petitRADTRANS
 
-                    cloud_fractions[item] = 0.
+                    tau_cloud = 10.**model_param['log_tau_cloud']
+
+                elif 'tau_cloud' in model_param:
+                    # Set the log mass fraction to zero and use the optical depth parameter to
+                    # scale the cloud mass fraction with petitRADTRANS
+
                     tau_cloud = model_param['tau_cloud']
 
-                elif 'log_tau_cloud' in model_param and len(self.cloud_species) == 1:
-                    # Set the log mass fraction to zero and use the optical depth parameter to
-                    # scale the cloud mass fraction with petitRADTRANS
+                else:
+                    tau_cloud = None
 
-                    cloud_fractions[item] = 0.
-                    tau_cloud = 10.**model_param['log_tau_cloud']
+                if tau_cloud is not None:
+                    for i, item in enumerate(self.cloud_species):
+                        if i == 0:
+                            cloud_fractions[item] = 0.
+
+                        else:
+                            cloud_1 = item[:-3].lower()
+                            cloud_2 = self.cloud_species[0][:-3].lower()
+
+                            cloud_fractions[item] = np.log10(model_param[f'{cloud_1}_{cloud_2}_ratio'])
 
             # Create a dictionary with the log mass fractions at the cloud base
 

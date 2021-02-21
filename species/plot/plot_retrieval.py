@@ -64,6 +64,10 @@ def plot_pt_profile(tag: str,
     cloud_species = ['Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
     cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
+    cloud_color = {'Fe(c)': 'tab:blue', 'MgSiO3(c)': 'tab:orange',
+                   'Al2O3(c)': 'tab:green', 'Na2S(c)': 'tab:cyan',
+                   'KCl(c)': 'tab:pink'}
+
     species_db = database.Database()
     box = species_db.get_samples(tag)
 
@@ -226,35 +230,35 @@ def plot_pt_profile(tag: str,
                                                                        median['c_o_ratio'],
                                                                        MMW=np.mean(abund_in['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:blue', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color=cloud_color['Fe(c)'], zorder=2)
 
         if 'MgSiO3(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(median['metallicity'],
                                                                       median['c_o_ratio'],
                                                                       MMW=np.mean(abund_in['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:orange', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color=cloud_color['MgSiO3(c)'], zorder=2)
 
         if 'Al2O3(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(median['metallicity'],
                                                                      median['c_o_ratio'],
                                                                      MMW=np.mean(abund_in['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:green', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color=cloud_color['Al2O3(c)'], zorder=2)
 
         if 'Na2S(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_Na2S(median['metallicity'],
                                                                     median['c_o_ratio'],
                                                                     MMW=np.mean(abund_in['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:cyan', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color=cloud_color['Na2S(c)'], zorder=2)
 
         if 'KCL(c)' in radtrans.cloud_species:
             sat_press, sat_temp = retrieval_util.return_T_cond_KCl(median['metallicity'],
                                                                    median['c_o_ratio'],
                                                                    MMW=np.mean(abund_in['MMW']))
 
-            ax.plot(sat_temp, sat_press, '--', lw=0.8, color='tab:pink', zorder=2)
+            ax.plot(sat_temp, sat_press, '--', lw=0.8, color=cloud_color['KCL(c)'], zorder=2)
 
     if radtrans is not None:
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
@@ -344,7 +348,7 @@ def plot_pt_profile(tag: str,
 
                 # Convert from (cm) to (um)
                 ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color='tab:blue')
+                         lw=0.8, color=cloud_color[item])
 
     else:
         if extra_axis is not None:

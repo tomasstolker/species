@@ -810,6 +810,13 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     if 'log_tau_cloud' in indices:
         model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
 
+        if len(cloud_species) > 1:
+            for cloud_item in cloud_species[1:]:
+                cloud_1 = cloud_item[:-3].lower()
+                cloud_2 = cloud_species[0][:-3].lower()
+
+                model_param[f'{cloud_1}_{cloud_2}_ratio'] = sample[indices[f'{cloud_1}_{cloud_2}_ratio']]
+
     # Add extinction parameters
 
     if 'ism_ext' in indices:
