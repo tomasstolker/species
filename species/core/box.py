@@ -50,6 +50,8 @@ def create_box(boxtype,
         box.flux = kwargs['flux']
         box.parameters = kwargs['parameters']
         box.quantity = kwargs['quantity']
+        if 'contribution' in kwargs:
+            box.contribution = kwargs['contribution']
 
     elif boxtype == 'object':
         box = ObjectBox()
@@ -229,6 +231,7 @@ class ModelBox(Box):
         self.flux = None
         self.parameters = None
         self.quantity = None
+        self.contribution = None
 
 
 class ObjectBox(Box):

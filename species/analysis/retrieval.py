@@ -1,6 +1,6 @@
 """
-Module with a frontend for atmospheric retrieval with ``petitRADTRANS`` (see Mollière et al.
-2019). Details on the retrieval code are available at https://petitradtrans.readthedocs.io.
+Module with a frontend for atmospheric retrieval with the radiative transfer code
+``petitRADTRANS`` (see https://petitradtrans.readthedocs.io).
 """
 
 import os

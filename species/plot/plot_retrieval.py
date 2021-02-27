@@ -24,7 +24,7 @@ from species.util import retrieval_util
 
 @typechecked
 def plot_pt_profile(tag: str,
-                    random: int = 100,
+                    random: Optional[int] = 100,
                     xlim: Optional[Tuple[float, float]] = None,
                     ylim: Optional[Tuple[float, float]] = None,
                     offset: Optional[Tuple[float, float]] = None,
@@ -38,8 +38,9 @@ def plot_pt_profile(tag: str,
     ----------
     tag : str
         Database tag with the posterior samples.
-    random : int
-        Number of randomly selected samples from the posterior.
+    random : int, None
+        Number of randomly selected samples from the posterior. All samples are selected if
+        set to ``None``.
     xlim : tuple(float, float), None
         Limits of the temperature axis. Default values are used if set to ``None``.
     ylim : tuple(float, float), None
@@ -75,8 +76,9 @@ def plot_pt_profile(tag: str,
     samples = box.samples
     median = box.median_sample
 
-    indices = np.random.randint(samples.shape[0], size=random)
-    samples = samples[indices, ]
+    if random is not None:
+        indices = np.random.randint(samples.shape[0], size=random)
+        samples = samples[indices, ]
 
     param_index = {}
     for item in parameters:
@@ -148,7 +150,7 @@ def plot_pt_profile(tag: str,
 
         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
-    for item in samples:
+    for i, item in enumerate(samples):
         if pt_profile == 'molliere':
             t3_param = np.array([item[param_index['t1']],
                                  item[param_index['t2']],
@@ -175,6 +177,10 @@ def plot_pt_profile(tag: str,
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
+
+        # np.savetxt(f'output/pt_profile/pt_profile_{i:04d}.dat',
+        #            np.column_stack([pressure, temp]),
+        #            header='Pressure (bar) - Temperature (K)')
 
     if pt_profile == 'molliere':
         temp, _ = retrieval_util.pt_ret_model(
@@ -262,7 +268,12 @@ def plot_pt_profile(tag: str,
 
     if radtrans is not None:
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
-        radtrans.get_model(median)
+        model_box = radtrans.get_model(median)
+
+        contr_1d = np.sum(model_box.contribution, axis=1)
+        contr_1d = (contr_1d + ax.get_xlim()[0]) * 0.5 * ax.get_xlim()[1] / np.amax(contr_1d)
+
+        ax.plot(contr_1d, 1e-6*radtrans.rt_object.press, ls='--', lw=0.5, color='black')
 
         if extra_axis == 'photosphere':
             # Calculate the total optical depth (line and continuum opacities)
@@ -274,11 +285,21 @@ def plot_pt_profile(tag: str,
             # distribution function (ranging from 0 to 1). A correct average is obtained by
             # multiplying the first axis with self.w_gauss, then summing them. This is then the
             # actual wavelength-mean.
-            w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
 
-            # From petitRADTRANS: Only use 0 index for species because for lbl or
-            # test_ck_shuffle_comp = True everything has been moved into the 0th index
-            optical_depth = np.sum(w_gauss*radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
+            if radtrans.scattering:
+                w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
+
+                # From petitRADTRANS: Only use 0 index for species because for lbl or
+                # test_ck_shuffle_comp = True everything has been moved into the 0th index
+                optical_depth = np.sum(w_gauss*radtrans.rt_object.total_tau[:, :, 0, :], axis=0)
+
+            else:
+                # TODO Ask Paul if correct
+                w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis, np.newaxis]
+                optical_depth = np.sum(w_gauss*radtrans.rt_object.total_tau[:, :, :, :], axis=0)
+
+                # Sum over all species
+                optical_depth = np.sum(optical_depth, axis=1)
 
             ax2 = ax.twiny()
 
@@ -346,9 +367,18 @@ def plot_pt_profile(tag: str,
             for item in radtrans.cloud_species:
                 cloud_index = radtrans.rt_object.cloud_species.index(item)
 
+                label = ''
+                for char in item[:-3]:
+                    if char.isnumeric():
+                        label += f'$_{char}$'
+                    else:
+                        label += char
+
                 # Convert from (cm) to (um)
                 ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
-                         lw=0.8, color=cloud_color[item])
+                         lw=0.8, color=cloud_color[item], label=label)
+
+        ax2.legend(loc='upper right', frameon=False, fontsize=12.)
 
     else:
         if extra_axis is not None:

@@ -2321,3 +2321,64 @@ class Database:
         h5_file.close()
 
         return boxes, read_rad
+
+    @typechecked
+    def get_retrieval_teff(self,
+                           tag: str,
+                           random: int = 100) -> Tuple[float, float]:
+        """
+        Function for calculating Teff from randomly drawn samples of the posterior
+        distribution from :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        This requires the recalculation of the spectra across a broad wavelength
+        range (0.5-50 um).
+
+        Parameters
+        ----------
+        tag : str
+            Database tag with the posterior samples.
+        random : int
+            Number of randomly selected samples.
+
+        Returns
+        -------
+        float
+            Mean of Teff samples.
+        float
+            Standard deviation of Teff samples.
+        """
+
+        print(f'Calculating Teff from {random} posterior samples... ')
+
+        boxes, _ = self.get_retrieval_spectra(tag=tag,
+                                              random=random,
+                                              wavel_range=(0.5, 50.),
+                                              spec_res=500.)
+
+        teff = np.zeros(len(boxes))
+
+        for i, box_item in enumerate(boxes):
+            sample_distance = box_item.parameters['distance']*constants.PARSEC
+            sample_radius = box_item.parameters['radius']*constants.R_JUP
+
+            # Scaling for the flux back to the planet surface
+            sample_scale = (sample_distance/sample_radius)**2
+
+            # Blackbody flux: sigma * Teff^4
+            flux_int = simps(sample_scale*box_item.flux, box_item.wavelength)
+            teff[i] = (flux_int/constants.SIGMA_SB)**0.25
+
+            np.savetxt(f'output/spectrum/spectrum{i:04d}.dat',
+                       np.column_stack([box_item.wavelength, sample_scale*box_item.flux]),
+                       header='Wavelength (um) - Flux (W m-2 um-1)')
+
+        q_16, q_50, q_84 = np.percentile(teff, [16., 50., 84.])
+
+        print(f'Teff (K) = {q_50:.2f} -{q_50-q_16:.2f} +{q_84-q_50:.2f}')
+
+        with h5py.File(self.database, 'a') as h5_file:
+            print(f'Storing Teff as attribute of results/fit/{tag}/samples...', end='')
+            dset = h5_file[f'results/fit/{tag}/samples']
+            dset.attrs['teff'] = (q_50-q_16, q_50, q_84-q_50)
+            print(' [DONE]')
+
+        return np.mean(teff), np.std(teff)

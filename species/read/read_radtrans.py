@@ -166,10 +166,10 @@ class ReadRadtrans:
 
         # Set contribution boolean
 
-        if plot_contribution:
-            contribution = True
-        else:
-            contribution = False
+        # if plot_contribution:
+        #     contribution = True
+        # else:
+        #     contribution = False
 
         # Create the P-T profile
 
@@ -275,7 +275,7 @@ class ReadRadtrans:
                             cloud_1 = item[:-3].lower()
                             cloud_2 = self.cloud_species[0][:-3].lower()
 
-                            cloud_fractions[item] = np.log10(model_param[f'{cloud_1}_{cloud_2}_ratio'])
+                            cloud_fractions[item] = model_param[f'{cloud_1}_{cloud_2}_ratio']
 
             # Create a dictionary with the log mass fractions at the cloud base
 
@@ -290,7 +290,7 @@ class ReadRadtrans:
                 model_param['metallicity'], log_p_quench, log_x_base, model_param['fsed'],
                 model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
                 chemistry='equilibrium', pressure_grid=self.pressure_grid,
-                plotting=False, contribution=contribution, tau_cloud=tau_cloud)
+                plotting=False, contribution=True, tau_cloud=tau_cloud)
 
         elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
             # Calculate the petitRADTRANS spectrum for a clear atmosphere
@@ -299,7 +299,7 @@ class ReadRadtrans:
                 self.rt_object, self.pressure, temp, model_param['logg'],
                 model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
                 None, pressure_grid=self.pressure_grid, chemistry='equilibrium',
-                contribution=contribution)
+                contribution=True)
 
         else:
             abund = {}
@@ -310,7 +310,7 @@ class ReadRadtrans:
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
                 None, None, abund, pressure_grid=self.pressure_grid,
-                chemistry='free', contribution=contribution)
+                chemistry='free', contribution=True)
 
         if 'radius' in model_param:
             # Calculate the planet mass from log(g) and radius
@@ -349,15 +349,24 @@ class ReadRadtrans:
             # Calculate the total optical depth (line and continuum opacities)
             # self.rt_object.calc_opt_depth(10.**model_param['logg'])
 
-            # From Paul: The first axis of total_tay is the coordinate of the cumulative opacity
+            # From Paul: The first axis of total_tau is the coordinate of the cumulative opacity
             # distribution function (ranging from 0 to 1). A correct average is obtained by
             # multiplying the first axis with self.w_gauss, then summing them. This is then the
             # actual wavelength-mean.
-            w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
 
-            # From petitRADTRANS: Only use 0 index for species because for lbl or
-            # test_ck_shuffle_comp = True everything has been moved into the 0th index
-            optical_depth = np.sum(w_gauss*self.rt_object.total_tau[:, :, 0, :], axis=0)
+            if self.scattering:
+                # From petitRADTRANS: Only use 0 index for species because for lbl or
+                # test_ck_shuffle_comp = True everything has been moved into the 0th index
+                w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
+                optical_depth = np.sum(w_gauss*self.rt_object.total_tau[:, :, 0, :], axis=0)
+
+            else:
+                # TODO Ask Paul if correct
+                w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis, np.newaxis]
+                optical_depth = np.sum(w_gauss*self.rt_object.total_tau[:, :, :, :], axis=0)
+
+                # Sum over all species
+                optical_depth = np.sum(optical_depth, axis=1)
 
             mpl.rcParams['font.serif'] = ['Bitstream Vera Serif']
             mpl.rcParams['font.family'] = 'serif'
@@ -412,7 +421,8 @@ class ReadRadtrans:
                               wavelength=wavelength,
                               flux=flux,
                               parameters=model_param,
-                              quantity='flux')
+                              quantity='flux',
+                              contribution=emission_contr)
 
     @typechecked
     def get_flux(self,
