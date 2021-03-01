@@ -454,12 +454,12 @@ class FitModel:
                    for biases in the calibration: a scaling of the flux and a constant inflation of
                    the uncertainties.
 
-                 - For example, ``bounds={'SPHERE': ((0.8, 1.2), (-18., -14.))}`` if the scaling is
-                   fitted between 0.8 and 1.2, and the error is inflated with a value between 1e-18
-                   and 1e-14 W m-2 um-1.
+                 - For example, ``bounds={'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the scaling is
+                   fitted between 0.8 and 1.2, and the error is inflated (relative to the sampled
+                   model fluxes) with a value between 0 and 1.
 
                  - The dictionary key should be equal to the database tag of the spectrum. For
-                   example, ``{'SPHERE': ((0.8, 1.2), (-18., -14.))}`` if the spectrum is stored as
+                   example, ``{'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the spectrum is stored as
                    ``'SPHERE'`` with :func:`~species.data.database.Database.add_object`.
 
                  - Each of the two calibration parameters can be set to ``None`` in which case the

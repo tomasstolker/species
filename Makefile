@@ -43,10 +43,13 @@ clean:
 	rm -rf .pytest_cache/
 	rm -rf docs/_build/
 	rm -rf docs/tutorials/data/
+	rm -rf docs/tutorials/ultranest/
 	rm -rf docs/tutorials/.ipynb_checkpoints
 	rm -f docs/tutorials/species_config.ini
 	rm -f docs/tutorials/species_database.hdf5
 	rm -f docs/tutorials/*.png
+	rm -f docs/tutorials/*.fits
+	rm -f docs/tutorials/*.dat
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/

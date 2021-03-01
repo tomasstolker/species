@@ -41,14 +41,14 @@ def add_kesseli2017(input_path: str,
         os.makedirs(data_folder)
 
     if not os.path.isfile(data_file):
-        print('Downloading SDSS spectra from Kesseli et al. 2017 (25 MB)...', end='', flush=True)
+        print('Downloading SDSS spectra from Kesseli et al. 2017 (145 MB)...', end='', flush=True)
         urllib.request.urlretrieve(data_url, data_file)
         print(' [DONE]')
 
     if os.path.exists(data_folder):
         shutil.rmtree(data_folder)
 
-    print('Unpacking SDSS spectra from Kesseli et al. 2017 (25 MB)...', end='', flush=True)
+    print('Unpacking SDSS spectra from Kesseli et al. 2017 (145 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()

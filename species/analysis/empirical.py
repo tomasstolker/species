@@ -114,7 +114,13 @@ class CompareSpectra:
             species_db.add_spectrum(self.spec_library)
             h5_file = h5py.File(self.database, 'r')
 
+        # Read object spectrum
         obj_spec = self.object.get_spectrum()[self.spec_name][0]
+
+        # Read inverted covariance matrix
+        obj_inv_cov = self.object.get_spectrum()[self.spec_name][2]
+
+        # Read spectral resolution
         obj_res = self.object.get_spectrum()[self.spec_name][3]
 
         name_list = []
@@ -127,6 +133,7 @@ class CompareSpectra:
         print_message = ''
 
         for i, item in enumerate(h5_file[f'spectra/{self.spec_library}']):
+            # Read spectrum spectral type from library
             dset = h5_file[f'spectra/{self.spec_library}/{item}']
             item_sptype = dset.attrs['sptype'].decode('utf-8')
 
@@ -134,9 +141,12 @@ class CompareSpectra:
                 continue
 
             if sptypes is None or item_sptype[0] in sptypes:
+                # Convert HDF5 dataset into numpy array
                 spectrum = np.asarray(dset)
 
                 if wavel_range is not None:
+                    # Select subset of the spectrum
+
                     if wavel_range[0] is None:
                         indices = np.where((spectrum[:, 0] < wavel_range[1]))[0]
 
@@ -153,7 +163,6 @@ class CompareSpectra:
                                          'use a broader range as argument of \'wavel_range\'.')
 
                     spectrum = spectrum[indices, ]
-
                 empty_message = len(print_message)*' '
                 print(f'\r{empty_message}', end='')
 
@@ -162,16 +171,20 @@ class CompareSpectra:
 
                 for av_item in av_ext:
                     for rv_item in rad_vel:
+                        # Dust extinction
                         ism_ext = dust_util.ism_extinction(av_item, 3.1, spectrum[:, 0])
                         flux_scaling = 10.**(-0.4*ism_ext)
 
+                        # Shift wavelengths by RV
                         wavel_shifted = spectrum[:, 0] + spectrum[:, 0] * 1e3*rv_item / constants.LIGHT
 
+                        # Smooth spectrum
                         flux_smooth = read_util.smooth_spectrum(wavel_shifted,
                                                                 spectrum[:, 1]*flux_scaling,
                                                                 spec_res=obj_res,
                                                                 force_smooth=True)
 
+                        # Interpolate library spectrum to object wavelengths
                         interp_spec = interp1d(spectrum[:, 0],
                                                flux_smooth,
                                                kind='linear',
@@ -189,6 +202,12 @@ class CompareSpectra:
 
                         chi_sq = (obj_spec[indices, 1] - c_k*flux_resample) / obj_spec[indices, 2]
                         g_k = np.sum(w_i * chi_sq**2)
+
+                        # obj_inv_cov_crop = obj_inv_cov[indices, :]
+                        # obj_inv_cov_crop = obj_inv_cov_crop[:, indices]
+                        #
+                        # g_k = np.dot(obj_spec[indices, 1]-c_k*flux_resample,
+                        #     np.dot(obj_inv_cov_crop, obj_spec[indices, 1]-c_k*flux_resample))
 
                         name_list.append(item)
                         spt_list.append(item_sptype)

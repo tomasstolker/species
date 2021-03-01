@@ -4,7 +4,10 @@ docs/_build
 docs/tutorials/species_config.ini
 docs/tutorials/species_database.hdf5
 docs/tutorials/*.png
+docs/tutorials/*.fits
+docs/tutorials/*.dat
 docs/tutorials/data/*
+docs/tutorials/ultranest/*
 docs/tutorials/.ipynb_checkpoints/*
 build/
 dist/
