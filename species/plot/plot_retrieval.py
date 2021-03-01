@@ -275,6 +275,10 @@ def plot_pt_profile(tag: str,
 
         ax.plot(contr_1d, 1e-6*radtrans.rt_object.press, ls='--', lw=0.5, color='black')
 
+        # np.savetxt(f'output/contribution.dat',
+        #            np.column_stack([1e-6*radtrans.rt_object.press, contr_1d]),
+        #            header='Pressure (bar) - Contribution')
+
         if extra_axis == 'photosphere':
             # Calculate the total optical depth (line and continuum opacities)
             # radtrans.rt_object.calc_opt_depth(10.**median['logg'])
