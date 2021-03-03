@@ -5,8 +5,8 @@ Tutorials
 
 This page contains a list of tutorials which highlight some of the functionalities of `species`. These examples are also available as `Jupyter notebook <https://github.com/tomasstolker/species/tree/master/docs/tutorials>`_. Some of tutorials are still work in progress and more examples will be added in the future. Please contact Tomas Stolker if you have questions regarding a specific science case (see :ref:`about` section) or `create an issue <https://github.com/tomasstolker/species/issues>`_ if you encounter any problems with the tutorials.
 
-.. warning::
-   The last tutorial is somewhat outdated and incomplete because `species` has been under continuous development. If anything is unclear or causes an error, then please have a look at the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_, which is kept up-to-date, or contact Tomas Stolker (see :ref:`about` section).
+.. tip::
+   Details on the various classes, functions, and parameters can be found in the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_.
 
 .. toctree::
    :maxdepth: 1
