@@ -365,12 +365,12 @@ def plot_spectrum(boxes: list,
                             elif object_type == 'star':
                                 value = f'{param[item]*constants.R_JUP/constants.R_SUN:.1f}'
 
-                        elif item == 'mass':
-                            if object_type == 'planet':
-                                value = f'{param[item]:.0f}'
-
-                            elif object_type == 'star':
-                                value = f'{param[item]*constants.M_JUP/constants.M_SUN:.1f}'
+                        # elif item == 'mass':
+                        #     if object_type == 'planet':
+                        #         value = f'{param[item]:.0f}'
+                        #
+                        #     elif object_type == 'star':
+                        #         value = f'{param[item]*constants.M_JUP/constants.M_SUN:.1f}'
 
                         elif item == 'luminosity':
                             value = f'{np.log10(param[item]):.2f}'
@@ -514,6 +514,12 @@ def plot_spectrum(boxes: list,
                         plot_kwargs[j][key] = {'marker': 's', 'ms': 2., 'ls': 'none',
                                                'color': plot_obj[0].get_color()}
 
+                    elif 'marker' not in plot_kwargs[j][key]:
+                        # Plot the spectrum as a line without error bars
+                        # (e.g. when the spectrum has a high spectral resolution)
+                        plot_obj = ax1.plot(masked[:, 0], flux_scaling*masked[:, 1]/scaling,
+                                            **plot_kwargs[j][key])
+
                     else:
                         ax1.errorbar(masked[:, 0], flux_scaling*masked[:, 1]/scaling, yerr=flux_scaling*masked[:, 2]/scaling,
                                      zorder=2.5, **plot_kwargs[j][key])
@@ -549,11 +555,11 @@ def plot_spectrum(boxes: list,
                             for i in range(boxitem.flux[item].shape[1]):
 
                                 plot_obj = ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0, i]/scaling, xerr=fwhm/2.,
-                                             yerr=flux_scaling*boxitem.flux[item][1, i]/scaling, marker='s', ms=5, zorder=3)
+                                             yerr=flux_scaling*boxitem.flux[item][1, i]/scaling, marker='s', ms=5, zorder=3, color='black')
 
                         else:
                             plot_obj = ax1.errorbar(wavelength, flux_scaling*boxitem.flux[item][0]/scaling, xerr=fwhm/2.,
-                                         yerr=flux_scaling*boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3)
+                                         yerr=flux_scaling*boxitem.flux[item][1]/scaling, marker='s', ms=5, zorder=3, color='black')
 
                         plot_kwargs[j][item] = {'marker': 's', 'ms': 5., 'color': plot_obj[0].get_color()}
 

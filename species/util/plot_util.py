@@ -177,6 +177,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('luminosity_ratio')
         param[index] = r'$\mathregular{log}\,\mathregular{L_1}/\mathregular{L_2}$'
 
+    if 'luminosity_disk_planet' in param:
+        index = param.index('luminosity_disk_planet')
+        param[index] = r'$\mathregular{L_{disk}}/\mathregular{L_{atm}}$'
+
     if 'lognorm_radius' in param:
         index = param.index('lognorm_radius')
         param[index] = r'$\mathregular{log}\,\mathregular{r_g}$'
@@ -338,6 +342,18 @@ def update_labels(param: List[str]) -> List[str]:
     if 'log_tau_cloud' in param:
         index = param.index('log_tau_cloud')
         param[index] = rf'$\log\,\tau_\mathregular{{cloud}}$'
+
+    if 'veil_a' in param:
+        index = param.index('veil_a')
+        param[index] = r'$a_\mathregular{veil}$'
+
+    if 'veil_b' in param:
+        index = param.index('veil_b')
+        param[index] = r'$b_\mathregular{veil}$'
+
+    if 'veil_ref' in param:
+        index = param.index('veil_ref')
+        param[index] = r'$F_\mathregular{ref, veil}$'
 
     return param
 

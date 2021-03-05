@@ -226,6 +226,10 @@ class SyntheticPhotometry:
 
             error_flux = np.std(phot_random)
 
+        elif error is not None and np.any(np.isnan(error)):
+            warnings.warn('Spectum contains NaN so can not calculate the error.')
+            error_flux = None
+
         else:
             error_flux = None
 
@@ -295,6 +299,10 @@ class SyntheticPhotometry:
                 mag_random[i] = self.vega_mag - 2.5*np.log10(flux_random[0]/zp_flux)
 
             error_app_mag = np.std(mag_random)
+
+        elif error is not None and np.any(np.isnan(error)):
+            warnings.warn('Spectum contains NaN so can not calculate the error.')
+            error_app_mag = None
 
         else:
             error_app_mag = None

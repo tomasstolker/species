@@ -821,7 +821,7 @@ class Database:
             # Read spectra
 
             for key, value in spectrum.items():
-                if value[0].endswith('.fits'):
+                if value[0].endswith('.fits') or value[0].endswith('.fit'):
                     with fits.open(value[0]) as hdulist:
                         if 'INSTRU' in hdulist[0].header and \
                                 hdulist[0].header['INSTRU'] == 'GRAVITY':
@@ -898,7 +898,7 @@ class Database:
                 if value[1] is None:
                     read_cov[key] = None
 
-                elif value[1].endswith('.fits'):
+                elif value[1].endswith('.fits') or value[1].endswith('.fit'):
                     with fits.open(value[1]) as hdulist:
                         if 'INSTRU' in hdulist[0].header and \
                                 hdulist[0].header['INSTRU'] == 'GRAVITY':
@@ -1442,13 +1442,20 @@ class Database:
         else:
             n_error = 0
 
-        scaling = []
-        for i in range(n_scaling):
-            scaling.append(dset.attrs[f'scaling{i}'])
+        ignore_param = []
 
-        error = []
+        for i in range(n_scaling):
+            ignore_param.append(dset.attrs[f'scaling{i}'])
+
         for i in range(n_error):
-            error.append(dset.attrs[f'error{i}'])
+            ignore_param.append(dset.attrs[f'error{i}'])
+
+        for i in range(n_param):
+            if dset.attrs[f'parameter{i}'][:9] == 'corr_len_':
+                ignore_param.append(dset.attrs[f'parameter{i}'])
+
+            elif dset.attrs[f'parameter{i}'][:9] == 'corr_amp_':
+                ignore_param.append(dset.attrs[f'parameter{i}'])
 
         if spec_res is not None and spectrum_type == 'calibration':
             warnings.warn('Smoothing of the spectral resolution is not implemented for calibration '
@@ -1500,7 +1507,7 @@ class Database:
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC spectra'):
             model_param = {}
             for j in range(samples.shape[1]):
-                if param[j] not in scaling and param[j] not in error:
+                if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
             if distance:

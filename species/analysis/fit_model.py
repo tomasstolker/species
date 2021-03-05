@@ -383,7 +383,8 @@ class FitModel:
                                          List[Tuple[float, float]]]],
                  inc_phot: Union[bool, List[str]] = True,
                  inc_spec: Union[bool, List[str]] = True,
-                 fit_corr: Optional[List[str]] = None) -> None:
+                 fit_corr: Optional[List[str]] = None,
+                 weights: Optional[Dict[str, float]] = None) -> None:
         """
         The grid of spectra is linearly interpolated for each photometric point and spectrum while
         taking into account the filter profile, spectral resolution, and wavelength sampling.
@@ -453,12 +454,12 @@ class FitModel:
                    for biases in the calibration: a scaling of the flux and a constant inflation of
                    the uncertainties.
 
-                 - For example, ``bounds={'SPHERE': ((0.8, 1.2), (-18., -14.))}`` if the scaling is
-                   fitted between 0.8 and 1.2, and the error is inflated with a value between 1e-18
-                   and 1e-14 W m-2 um-1.
+                 - For example, ``bounds={'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the scaling is
+                   fitted between 0.8 and 1.2, and the error is inflated (relative to the sampled
+                   model fluxes) with a value between 0 and 1.
 
                  - The dictionary key should be equal to the database tag of the spectrum. For
-                   example, ``{'SPHERE': ((0.8, 1.2), (-18., -14.))}`` if the spectrum is stored as
+                   example, ``{'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the spectrum is stored as
                    ``'SPHERE'`` with :func:`~species.data.database.Database.add_object`.
 
                  - Each of the two calibration parameters can be set to ``None`` in which case the
@@ -563,6 +564,12 @@ class FitModel:
         fit_corr : list(str), None
             List with spectrum names for which the correlation length and fractional amplitude are
             fitted (see Wang et al. 2020).
+        weights : dict(str, float), None
+            Weights to be applied to the log-likelihood components of the different spectroscopic
+            and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
+            parameter can for example be used to bias the weighting of the photometric data points.
+            An equal weighting is applied if the argument is set to ``None``. Only supported by
+            ``run_ultranest`` and ``run_multinest``.
 
         Returns
         -------
@@ -870,6 +877,15 @@ class FitModel:
         if 'ism_red' in self.bounds:
             self.modelpar.append('ism_red')
 
+        if 'veil_a' in self.bounds:
+            self.modelpar.append('veil_a')
+
+        if 'veil_b' in self.bounds:
+            self.modelpar.append('veil_b')
+
+        if 'veil_ref' in self.bounds:
+            self.modelpar.append('veil_ref')
+
         self.fix_param = {}
         del_param = []
 
@@ -902,6 +918,27 @@ class FitModel:
         self.cube_index = {}
         for i, item in enumerate(self.modelpar):
             self.cube_index[item] = i
+
+        # Weighting of the photometric and spectroscopic data
+
+        print('Weights for the log-likelihood function:')
+
+        if weights is None:
+            self.weights = {}
+        else:
+            self.weights = weights
+
+        for item in inc_spec:
+            if item not in self.weights:
+                self.weights[item] = 1.
+
+            print(f'   - {item} = {self.weights[item]:.2e}')
+
+        for item in inc_phot:
+            if item not in self.weights:
+                self.weights[item] = 1.
+
+            print(f'   - {item} = {self.weights[item]:.2e}')
 
     @typechecked
     def run_mcmc(self,
@@ -1096,6 +1133,7 @@ class FitModel:
         dust_param = {}
         disk_param = {}
         param_dict = {}
+        veil_param = {}
 
         for item in self.bounds:
             # Add the parameters from the params to their dictionaries
@@ -1126,6 +1164,15 @@ class FitModel:
 
             elif item == 'disk_radius':
                 disk_param['radius'] = params[self.cube_index[item]]
+
+            elif item == 'veil_a':
+                veil_param['veil_a'] = params[self.cube_index[item]]
+
+            elif item == 'veil_b':
+                veil_param['veil_b'] = params[self.cube_index[item]]
+
+            elif item == 'veil_ref':
+                veil_param['veil_ref'] = params[self.cube_index[item]]
 
             else:
                 param_dict[item] = params[self.cube_index[item]]
@@ -1230,10 +1277,11 @@ class FitModel:
             n_grains = dust_param['powerlaw_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
 
         for i, obj_item in enumerate(self.objphot):
-            if self.modelphot[i] is not None:
-                phot_filter = self.modelphot[i].filter_name
-            else:
-                phot_filter = None
+            # Get filter name
+            phot_filter = self.modelphot[i].filter_name
+
+            # Shortcut for weight
+            weight = self.weights[phot_filter]
 
             if self.model == 'planck':
                 readplanck = read_planck.ReadPlanck(filter_name=phot_filter)
@@ -1286,10 +1334,10 @@ class FitModel:
                 if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
                     phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0]**2
 
-                ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / phot_var
+                ln_like += -0.5 * weight * (obj_item[0] - phot_flux)**2 / phot_var
 
                 # Only required when fitting an error inflation
-                ln_like += -0.5 * np.log(2.*np.pi*phot_var)
+                ln_like += -0.5 * weight * np.log(2.*np.pi*phot_var)
 
             else:
                 phot_var = obj_item[1, j]**2
@@ -1298,13 +1346,16 @@ class FitModel:
                     phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0, j]**2
 
                 for j in range(obj_item.shape[1]):
-                    ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / phot_var
+                    ln_like += -0.5 * weight * (obj_item[0, j] - phot_flux)**2 / phot_var
 
                     # Only required when fitting an error inflation
-                    ln_like += -0.5 * np.log(2.*np.pi*phot_var)
+                    ln_like += -0.5 * weight * np.log(2.*np.pi*phot_var)
 
         for i, item in enumerate(self.spectrum.keys()):
             # Calculate or interpolate the model spectrum
+
+            # Shortcut for the weight
+            weight = self.weights[item]
 
             if self.model == 'planck':
                 # Calculate a blackbody spectrum
@@ -1324,6 +1375,16 @@ class FitModel:
 
                 # Scale the spectrum by (radius/distance)^2
                 model_flux *= flux_scaling
+
+            # Veiling
+            if 'veil_a' in veil_param and 'veil_b' in veil_param and 'veil_ref' in veil_param:
+                if item == 'MUSE':
+                    lambda_ref = 0.5 # (um)
+
+                    veil_flux = veil_param['veil_ref'] + veil_param['veil_b'] * \
+                        (self.spectrum[item][0][:, 0] - lambda_ref)
+
+                    model_flux = veil_param['veil_a']*model_flux + veil_flux
 
             # Scale the spectrum data
             data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
@@ -1385,10 +1446,10 @@ class FitModel:
 
             if self.spectrum[item][2] is not None:
                 # Use the inverted covariance matrix
-                ln_like += -0.5 * np.dot(data_flux-model_flux,
+                ln_like += -0.5 * weight * np.dot(data_flux-model_flux,
                                          np.dot(data_cov_inv, data_flux-model_flux))
 
-                ln_like += -0.5 * np.nansum(np.log(2.*np.pi*data_var))
+                ln_like += -0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
 
             else:
                 if item in self.fit_corr:
@@ -1406,12 +1467,15 @@ class FitModel:
                     dot_tmp = np.dot(data_flux-model_flux,
                                      np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))
 
-                    ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+                    ln_like += -0.5 * weight * dot_tmp 
+                    ln_like += -0.5 * np.nansum(np.log(2.*np.pi*data_var))
 
                 else:
                     # Calculate the chi-square without a covariance matrix
-                    ln_like += np.nansum(-0.5 * (data_flux-model_flux)**2 / data_var -
-                                         0.5 * np.log(2.*np.pi*data_var))
+                    chi_sq = -0.5 * weight * (data_flux-model_flux)**2 / data_var
+                    chi_sq += -0.5 * weight * np.log(2.*np.pi*data_var)
+
+                    ln_like += np.nansum(chi_sq)
 
         return ln_like
 
@@ -1459,9 +1523,18 @@ class FitModel:
 
         print('Running nested sampling with MultiNest...')
 
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
         # Create the output folder if required
 
-        if not os.path.exists(output):
+        if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
         @typechecked
@@ -1644,9 +1717,18 @@ class FitModel:
         #                   '\'min_num_live_points\' parameter (see documentation for details).',
         #                   DeprecationWarning)
 
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
         # Create the output folder if required
 
-        if not os.path.exists(output):
+        if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
         @typechecked

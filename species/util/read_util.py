@@ -150,22 +150,28 @@ def update_spectra(objectbox: box.ObjectBox,
                 print(' [DONE]')
 
             if f'error_{key}' in model_param:
-                # Calculate the model spectrum
-                wavel_range = (0.9*spec_tmp[0, 0], 1.1*spec_tmp[-1, 0])
-                readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
+                if model is None:
+                    warnings.warn(f'The dictionary with model parameters contains the error '
+                                  f'inflation for {key} but the argument of \'model\' is set '
+                                  f'to None. Inflation of the errors is therefore not possible.')
 
-                model_box = readmodel.get_model(model_param,
-                                                spec_res=value[3],
-                                                wavel_resample=spec_tmp[:, 0],
-                                                smooth=True)
+                else:
+                    # Calculate the model spectrum
+                    wavel_range = (0.9*spec_tmp[0, 0], 1.1*spec_tmp[-1, 0])
+                    readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
 
-                # Scale the errors relative to the model spectrum
-                err_scaling = model_param[f'error_{key}']
-                log_msg = f'Inflating the error of {key}: {err_scaling:.2e}...'
+                    model_box = readmodel.get_model(model_param,
+                                                    spec_res=value[3],
+                                                    wavel_resample=spec_tmp[:, 0],
+                                                    smooth=True)
 
-                print(log_msg, end='', flush=True)
-                spec_tmp[:, 2] = np.sqrt(spec_tmp[:, 2]**2 + (err_scaling*model_box.flux)**2)
-                print(' [DONE]')
+                    # Scale the errors relative to the model spectrum
+                    err_scaling = model_param[f'error_{key}']
+                    log_msg = f'Inflating the error of {key}: {err_scaling:.2e}...'
+
+                    print(log_msg, end='', flush=True)
+                    spec_tmp[:, 2] = np.sqrt(spec_tmp[:, 2]**2 + (err_scaling*model_box.flux)**2)
+                    print(' [DONE]')
 
             # Store the spectra with the scaled fluxes and/or errors
             # The other three elements (i.e. the covariance matrix, the inverted covariance matrix,

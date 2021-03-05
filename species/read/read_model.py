@@ -544,7 +544,8 @@ class ReadModel:
 
         extra_param = ['radius', 'distance', 'mass', 'luminosity', 'lognorm_radius',
                        'lognorm_sigma', 'lognorm_ext', 'ism_ext', 'ism_red', 'powerlaw_max',
-                       'powerlaw_exp', 'powerlaw_ext', 'disk_teff', 'disk_radius']
+                       'powerlaw_exp', 'powerlaw_ext', 'disk_teff', 'disk_radius',
+                       'veil_a', 'veil_b', 'veil_ref']
 
         for key in self.get_parameters():
             if key not in model_param.keys():
@@ -725,6 +726,14 @@ class ReadModel:
                                    parameters=model_param,
                                    quantity=quantity)
 
+        if 'veil_a' in model_param and 'veil_b' in model_param and 'veil_ref' in model_param:
+            lambda_ref = 0.5 # (um)
+
+            veil_flux =  model_param['veil_ref'] + \
+                model_param['veil_b']*(model_box.wavelength - lambda_ref)
+
+            model_box.flux = model_param['veil_a']*model_box.flux + veil_flux
+
         if 'lognorm_radius' in model_param and 'lognorm_sigma' in model_param and \
                 'lognorm_ext' in model_param:
 
@@ -759,6 +768,11 @@ class ReadModel:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
                 model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
+
+        if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
+            model_box.parameters['luminosity'] += 4. * np.pi * (
+                model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
 
         return model_box
 
@@ -888,6 +902,11 @@ class ReadModel:
             model_box.parameters['luminosity'] = 4. * np.pi * (
                 model_box.parameters['radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
                 model_box.parameters['teff']**4. / constants.L_SUN  # (Lsun)
+
+        if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
+            model_box.parameters['luminosity'] += 4. * np.pi * (
+                model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
 
         return model_box
 

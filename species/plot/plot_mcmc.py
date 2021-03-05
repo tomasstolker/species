@@ -367,19 +367,28 @@ def plot_posterior(tag: str,
             teff_index = np.argwhere(np.array(samples_box.parameters) == 'teff')[0]
             radius_index = np.argwhere(np.array(samples_box.parameters) == 'radius')[0]
 
-            luminosity = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+            lum_planet = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
                 constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
             if 'disk_teff' in samples_box.parameters and 'disk_radius' in samples_box.parameters:
                 teff_index = np.argwhere(np.array(samples_box.parameters) == 'disk_teff')[0]
                 radius_index = np.argwhere(np.array(samples_box.parameters) == 'disk_radius')[0]
 
-                luminosity += 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
+                lum_disk = 4. * np.pi * (samples[..., radius_index]*constants.R_JUP)**2 * \
                     constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
-            samples = np.append(samples, np.log10(luminosity), axis=-1)
-            samples_box.parameters.append('luminosity')
-            ndim += 1
+                samples = np.append(samples, np.log10(lum_planet+lum_disk), axis=-1)
+                box.parameters.append('luminosity')
+                ndim += 1
+
+                samples = np.append(samples, lum_disk/lum_planet, axis=-1)
+                box.parameters.append('luminosity_disk_planet')
+                ndim += 1
+
+            else:
+                samples = np.append(samples, np.log10(lum_planet), axis=-1)
+                box.parameters.append('luminosity')
+                ndim += 1
 
         elif 'teff_0' in samples_box.parameters and 'radius_0' in samples_box.parameters:
             luminosity = 0.
