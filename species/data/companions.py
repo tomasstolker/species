@@ -22,7 +22,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
     """
 
     data = {'beta Pic b': {'distance': (19.75, 0.13),
-                           'app_mag': {'LCO/VisAO.Ys': (15.53, 0.34),  # Males et al. 2014,
+                           'app_mag': {'Magellan/VisAO.Ys': (15.53, 0.34),  # Males et al. 2014,
                                        'Paranal/NACO.J': (14.11, 0.21),  # Currie et al. 2013
                                        'Gemini/NICI.ED286': (13.18, 0.15),  # Males et al. 2014
                                        'Paranal/NACO.H': (13.32, 0.14),  # Currie et al. 2013
@@ -30,9 +30,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/NACO.NB374': (11.25, 0.23),  # Stolker et al. 2020
                                        'Paranal/NACO.Lp': (11.30, 0.06),  # Stolker et al. 2019
                                        'Paranal/NACO.NB405': (10.98, 0.05),  # Stolker et al. 2020
-                                       'Paranal/NACO.Mp': (11.10, 0.12),  # Stolker et al. 2019
-                                       'Paranal/SPHERE.IRDIS_D_K12_1': (12.568, 0.003),  # GRAVITY Collaboration et al. 2020
-                                       'Paranal/SPHERE.IRDIS_D_K12_2': (12.206, 0.002)}},  # GRAVITY Collaboration et al. 2020
+                                       'Paranal/NACO.Mp': (11.10, 0.12)}},  # Stolker et al. 2019
 
             'HIP 65426 b': {'distance': (109.21, 0.75),
                             'app_mag': {'Paranal/SPHERE.IRDIS_D_H23_2': (17.94, 0.05),  # Chauvin et al. 2017
