@@ -366,40 +366,42 @@ class AtmosphericRetrieval:
         # Cloud parameters
 
         if len(self.cloud_species) > 0:
-            if 'Fe(c)_cd' in self.cloud_species:
-                if 'fe_tau' in bounds:
-                    self.parameters.append('fe_tau')
+            if chemistry != 'free':
 
-                elif 'log_tau_cloud' not in bounds:
-                    self.parameters.append('fe_fraction')
+                if 'Fe(c)_cd' in self.cloud_species:
+                    if 'fe_tau' in bounds:
+                        self.parameters.append('fe_tau')
 
-            if 'MgSiO3(c)_cd' in self.cloud_species:
-                if 'mgsio3_tau' in bounds:
-                    self.parameters.append('mgsio3_tau')
+                    elif 'log_tau_cloud' not in bounds:
+                        self.parameters.append('fe_fraction')
 
-                elif 'log_tau_cloud' not in bounds:
-                    self.parameters.append('mgsio3_fraction')
+                if 'MgSiO3(c)_cd' in self.cloud_species:
+                    if 'mgsio3_tau' in bounds:
+                        self.parameters.append('mgsio3_tau')
 
-            if 'Al2O3(c)_cd' in self.cloud_species:
-                if 'al2o3_tau' in bounds:
-                    self.parameters.append('al2o3_tau')
+                    elif 'log_tau_cloud' not in bounds:
+                        self.parameters.append('mgsio3_fraction')
 
-                elif 'log_tau_cloud' not in bounds:
-                    self.parameters.append('al2o3_fraction')
+                if 'Al2O3(c)_cd' in self.cloud_species:
+                    if 'al2o3_tau' in bounds:
+                        self.parameters.append('al2o3_tau')
 
-            if 'Na2S(c)_cd' in self.cloud_species:
-                if 'na2s_tau' in bounds:
-                    self.parameters.append('na2s_tau')
+                    elif 'log_tau_cloud' not in bounds:
+                        self.parameters.append('al2o3_fraction')
 
-                elif 'log_tau_cloud' not in bounds:
-                    self.parameters.append('na2s_fraction')
+                if 'Na2S(c)_cd' in self.cloud_species:
+                    if 'na2s_tau' in bounds:
+                        self.parameters.append('na2s_tau')
 
-            if 'KCL(c)_cd' in self.cloud_species:
-                if 'kcl_tau' in bounds:
-                    self.parameters.append('kcl_tau')
+                    elif 'log_tau_cloud' not in bounds:
+                        self.parameters.append('na2s_fraction')
 
-                elif 'log_tau_cloud' not in bounds:
-                    self.parameters.append('kcl_fraction')
+                if 'KCL(c)_cd' in self.cloud_species:
+                    if 'kcl_tau' in bounds:
+                        self.parameters.append('kcl_tau')
+
+                    elif 'log_tau_cloud' not in bounds:
+                        self.parameters.append('kcl_fraction')
 
             self.parameters.append('fsed')
             self.parameters.append('kzz')
@@ -925,7 +927,7 @@ class AtmosphericRetrieval:
 
                             cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']] = mass_ratio
 
-                else:
+                elif chemistry == 'equilibrium':
                     # Cloud mass fractions at the cloud base, relative to the maximum values allowed
                     # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
 
