@@ -317,18 +317,6 @@ class AtmosphericRetrieval:
             None
         """
 
-        # Check if clouds are used in combination with equilibrium chemistry
-
-        if len(self.cloud_species) > 0 and chemistry != 'equilibrium':
-            raise ValueError('Clouds are currently only implemented in combination with '
-                             'equilibrium chemistry.')
-
-        # Check if the Mollière P-T profile is used in combination with equilibrium chemistry
-
-        if pt_profile == 'molliere' and chemistry != 'equilibrium':
-            raise ValueError('The \'molliere\' P-T parametrization can only be used in '
-                             'combination with equilibrium chemistry.')
-
         # Generic parameters
 
         self.parameters.append('logg')
@@ -366,6 +354,12 @@ class AtmosphericRetrieval:
             for item in self.line_species:
                 self.parameters.append(item)
 
+            for item in self.cloud_species:
+                self.parameters.append(item[:-3])
+
+            if 'c_o_ratio' in bounds:
+                self.parameters.append('c_o_ratio')
+
         if quenching:
             self.parameters.append('log_p_quench')
 
@@ -375,30 +369,35 @@ class AtmosphericRetrieval:
             if 'Fe(c)_cd' in self.cloud_species:
                 if 'fe_tau' in bounds:
                     self.parameters.append('fe_tau')
+
                 elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('fe_fraction')
 
             if 'MgSiO3(c)_cd' in self.cloud_species:
                 if 'mgsio3_tau' in bounds:
                     self.parameters.append('mgsio3_tau')
+
                 elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('mgsio3_fraction')
 
             if 'Al2O3(c)_cd' in self.cloud_species:
                 if 'al2o3_tau' in bounds:
                     self.parameters.append('al2o3_tau')
+
                 elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('al2o3_fraction')
 
             if 'Na2S(c)_cd' in self.cloud_species:
                 if 'na2s_tau' in bounds:
                     self.parameters.append('na2s_tau')
+
                 elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('na2s_fraction')
 
             if 'KCL(c)_cd' in self.cloud_species:
                 if 'kcl_tau' in bounds:
                     self.parameters.append('kcl_tau')
+
                 elif 'log_tau_cloud' not in bounds:
                     self.parameters.append('kcl_fraction')
 
@@ -532,6 +531,24 @@ class AtmosphericRetrieval:
             None
         """
 
+        # Check if quenching parameter is used with equilibrium chemistry
+
+        if quenching and chemistry != 'equilibrium':
+            raise ValueError('The \'quenching\' parameter can only be used in combination with '
+                             'chemistry=\'equilibrium\'.')
+
+        # Check if clouds are used in combination with equilibrium chemistry
+
+        # if len(self.cloud_species) > 0 and chemistry != 'equilibrium':
+        #     raise ValueError('Clouds are currently only implemented in combination with '
+        #                      'equilibrium chemistry.')
+
+        # Check if the Mollière P-T profile is used in combination with equilibrium chemistry
+
+        # if pt_profile == 'molliere' and chemistry != 'equilibrium':
+        #     raise ValueError('The \'molliere\' P-T parametrization can only be used in '
+        #                      'combination with equilibrium chemistry.')
+
         # Get the MPI rank of the process
 
         try:
@@ -576,10 +593,6 @@ class AtmosphericRetrieval:
                 bounds[f'corr_amp_{item}'] = (0., 1.)
 
         # Create list with parameters for MultiNest
-
-        if quenching and chemistry != 'equilibrium':
-            raise ValueError('The \'quenching\' parameter can only be used in combination with '
-                             'chemistry=\'equilibrium\'.')
 
         self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr)
 
@@ -842,6 +855,16 @@ class AtmosphericRetrieval:
 
                 elif 'K_burrows' in self.line_species:
                     cube[cube_index['K_burrows']] = log_x_k_abund
+
+                # log10 abundances of the cloud species
+
+                for item in self.cloud_species:
+                    if item in bounds:
+                        cube[cube_index[item]] = bounds[item][0] + (bounds[item][1]-bounds[item][0])*cube[cube_index[item]]
+
+                    else:
+                        # Default: -10. - 0. dex
+                        cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
             # CO/CH4 quenching pressure (bar)
 
@@ -1223,6 +1246,42 @@ class AtmosphericRetrieval:
             else:
                 log_p_quench = -10.
 
+            # Free chemistry mass fraction and abundance ratios
+
+            if chemistry == 'free':
+                # Create a dictionary with the mass fractions
+
+                log_x_abund = {}
+
+                for item in self.line_species:
+                    log_x_abund[item] = cube[cube_index[item]]
+
+                # Check if the sum of fractional abundances is smaller than unity
+
+                if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
+                    return -np.inf
+
+                # Check if the C/H and O/H ratios are within the prior boundaries
+
+                if 'c_h_ratio' in bounds or 'o_h_ratio' in bounds or 'c_o_ratio' in bounds:
+                    c_h_ratio, o_h_ratio, c_o_ratio = \
+                        retrieval_util.calc_metal_ratio(log_x_abund)
+
+                if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or
+                                              c_h_ratio > bounds['c_h_ratio'][1]):
+
+                    return -np.inf
+
+                if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or
+                                              o_h_ratio > bounds['o_h_ratio'][1]):
+
+                    return -np.inf
+
+                if 'c_o_ratio' in bounds and (c_o_ratio < bounds['c_o_ratio'][0] or
+                                              c_o_ratio > bounds['c_o_ratio'][1]):
+
+                    return -np.inf
+
             # Calculate the emission spectrum
 
             start = time.time()
@@ -1230,44 +1289,65 @@ class AtmosphericRetrieval:
             if len(self.cloud_species) > 0:
                 # Cloudy atmosphere
 
-                cloud_fractions = {}
-
-                for item in self.cloud_species:
-                    if f'{item[:-3].lower()}_fraction' in self.parameters:
-                        cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
-
-                    elif f'{item[:-3].lower()}_tau' in self.parameters:
-                        params = retrieval_util.cube_to_dict(cube, cube_index)
-
-                        cloud_fractions[item] = retrieval_util.scale_cloud_abund(
-                            params, rt_object, self.pressure, temp, mmw, chemistry,
-                            abund_in, item, params[f'{item[:-3].lower()}_tau'],
-                            pressure_grid=self.pressure_grid)
-
                 tau_cloud = None
 
-                if 'log_tau_cloud' in self.parameters:
-                    tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
+                if chemistry == 'equilibrium':
+                    cloud_fractions = {}
 
-                    for i, item in enumerate(self.cloud_species):
-                        if i == 0:
-                            cloud_fractions[item] = 0.
+                    for item in self.cloud_species:
+                        if f'{item[:-3].lower()}_fraction' in self.parameters:
+                            cloud_fractions[item] = cube[cube_index[f'{item[:-3].lower()}_fraction']]
 
-                        else:
-                            cloud_1 = item[:-3].lower()
-                            cloud_2 = self.cloud_species[0][:-3].lower()
+                        elif f'{item[:-3].lower()}_tau' in self.parameters:
+                            params = retrieval_util.cube_to_dict(cube, cube_index)
 
-                            cloud_fractions[item] = cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']]
+                            cloud_fractions[item] = retrieval_util.scale_cloud_abund(
+                                params, rt_object, self.pressure, temp, mmw, chemistry,
+                                abund_in, item, params[f'{item[:-3].lower()}_tau'],
+                                pressure_grid=self.pressure_grid)
 
-                log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
-                                                             cube[cube_index['metallicity']],
-                                                             cloud_fractions)
+                    if 'log_tau_cloud' in self.parameters:
+                        tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
+
+                        for i, item in enumerate(self.cloud_species):
+                            if i == 0:
+                                cloud_fractions[item] = 0.
+
+                            else:
+                                cloud_1 = item[:-3].lower()
+                                cloud_2 = self.cloud_species[0][:-3].lower()
+
+                                cloud_fractions[item] = cube[cube_index[f'{cloud_1}_{cloud_2}_ratio']]
+
+                    log_x_base = retrieval_util.log_x_cloud_base(cube[cube_index['c_o_ratio']],
+                                                                 cube[cube_index['metallicity']],
+                                                                 cloud_fractions)
+
+                    c_o_ratio = cube[cube_index['c_o_ratio']]
+                    metallicity = cube[cube_index['metallicity']]
+
+                    log_x_abund = None
+
+                elif chemistry == 'free':
+                    # Add the log10 mass fractions of the clouds to the dictionary
+
+                    log_x_base = {}
+
+                    for item in self.cloud_species:
+                        log_x_base[item[:-3]] = cube[cube_index[item]]
+
+                    # Calculate C/O ratio from abundances
+
+                    c_h_ratio, o_h_ratio, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+
+                    # TODO Force [Fe/H] = 0 for calculating the cloud base
+                    metallicity = 0.
 
                 # The try-except is required to catch numerical precision errors with the clouds
                 # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
-                    rt_object, self.pressure, temp, cube[cube_index['c_o_ratio']],
-                    cube[cube_index['metallicity']], log_p_quench, log_x_base,
+                    rt_object, self.pressure, temp, c_o_ratio, metallicity,
+                    log_p_quench, log_x_abund, log_x_base,
                     cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
@@ -1290,34 +1370,6 @@ class AtmosphericRetrieval:
                         contribution=False)
 
                 elif chemistry == 'free':
-                    # Create a dictionary with the mass fractions
-
-                    log_x_abund = {}
-                    for item in self.line_species:
-                        log_x_abund[item] = cube[cube_index[item]]
-
-                    # Check if the sum of fractional abundances is smaller than unity
-
-                    if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
-                        return -np.inf
-
-                    # Check if the C/H and O/H ratios are within the prior boundaries
-
-                    if 'c_h_ratio' or 'o_h_ratio' in bounds:
-                        c_h_ratio, o_h_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
-
-                    if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or
-                                                  c_h_ratio > bounds['c_h_ratio'][1]):
-
-                        return -np.inf
-
-                    if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or
-                                                  o_h_ratio > bounds['o_h_ratio'][1]):
-
-                        return -np.inf
-
-                    # Calculate the emission spectrum
-
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         None, None, None, log_x_abund, chemistry,

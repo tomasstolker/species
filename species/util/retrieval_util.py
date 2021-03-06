@@ -342,6 +342,12 @@ def create_pt_profile(cube,
 
     knot_temp = None
 
+    if 'metallicity' in cube_index:
+        metallicity = cube[cube_index['metallicity']]
+    else:
+        # TODO Force [Fe/H] = 0 with free abundances
+        metallicity = 0.
+
     if pt_profile == 'molliere':
         temp, _ = pt_ret_model(np.array([cube[cube_index['t1']],
                                          cube[cube_index['t2']],
@@ -350,7 +356,7 @@ def create_pt_profile(cube,
                                cube[cube_index['alpha']],
                                cube[cube_index['tint']],
                                pressure,
-                               cube[cube_index['metallicity']],
+                               metallicity,
                                cube[cube_index['c_o_ratio']])
 
     elif pt_profile == 'mod-molliere':
@@ -359,7 +365,7 @@ def create_pt_profile(cube,
                                cube[cube_index['alpha']],
                                cube[cube_index['tint']],
                                pressure,
-                               cube[cube_index['metallicity']],
+                               metallicity,
                                cube[cube_index['c_o_ratio']])
 
     elif pt_profile in ['free', 'monotonic']:
@@ -695,6 +701,7 @@ def calc_spectrum_clouds(rt_object,
                          c_o_ratio: float,
                          metallicity: float,
                          log_p_quench: float,
+                         log_x_abund: Optional[dict],
                          log_x_base: dict,
                          fsed: float,
                          Kzz: float,
@@ -708,8 +715,7 @@ def calc_spectrum_clouds(rt_object,
                                                                      Optional[np.ndarray],
                                                                      Optional[np.ndarray]]:
     """
-    Function to simulate an emission spectrum of a cloudy atmosphere. Currently, the function
-    only supports equilibrium chemistry (i.e. ``chemistry='equilibrium'``).
+    Function to simulate an emission spectrum of a cloudy atmosphere.
 
     Parameters
     ----------
@@ -725,6 +731,8 @@ def calc_spectrum_clouds(rt_object,
         Metallicity.
     log_p_quench : float
         Log10 of the quench pressure.
+    log_x_abund : dict, None
+        Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
     log_x_base : dict
         Dictionary with the log10 of the mass fractions at the cloud base.
     fsed : float
@@ -764,36 +772,39 @@ def calc_spectrum_clouds(rt_object,
         Emission contribution.
     """
 
-    # TODO remove this part
-    # from petitRADTRANS.radtrans import Radtrans
-    #
-    # rt_object = Radtrans(line_species=['CO_all_iso', 'H2O', 'CH4', 'NH3', 'CO2', 'H2S', 'Na', 'K', 'PH3', 'VO', 'TiO', 'FeH'],
-    #                      rayleigh_species=['H2', 'He'],
-    #                      cloud_species=['MgSiO3(c)_cd'],
-    #                      continuum_opacities=['H2-H2', 'H2-He'],
-    #                      wlen_bords_micron=(0.8, 6.),
-    #                      mode='c-k',
-    #                      test_ck_shuffle_comp=True,
-    #                      do_scat_emis=True)
-    #
-    # rt_object.setup_opa_structure(pressure[::3])
+    if chemistry == 'equilibrium':
+        # Import interpol_abundances here because it slows down importing species otherwise.
+        # Importing interpol_abundances is only slow the first time, which occurs at the start
+        # of the run_multinest method of AtmosphericRetrieval
 
-    # Import interpol_abundances here because it slows down importing species otherwise.
-    # Importing interpol_abundances is only slow the first time, which occurs at the start
-    # of the run_multinest method of AtmosphericRetrieval
+        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+            interpol_abundances
 
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-        interpol_abundances
+        # Interpolate the abundances, following chemical equilibrium
+        abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
+                                       np.full(pressure.shape, metallicity),
+                                       temperature,
+                                       pressure,
+                                       Pquench_carbon=10.**log_p_quench)
 
-    # Interpolate the abundances, following chemical equilibrium
-    abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
-                                   np.full(pressure.shape, metallicity),
-                                   temperature,
-                                   pressure,
-                                   Pquench_carbon=10.**log_p_quench)
+        # Extract the mean molecular weight
+        mmw = abund_in['MMW']
 
-    # Extract the mean molecular weight
-    mmw = abund_in['MMW']
+    elif chemistry == 'free':
+        # Free abundances
+
+        # Create a dictionary with all mass fractions
+        abund_in = mass_fractions(log_x_abund)
+
+        # Mean molecular weight
+        mmw = mean_molecular_weight(abund_in)
+
+        # Create arrays of constant atmosphere abundance
+        for item in abund_in:
+            abund_in[item] *= np.ones_like(pressure)
+
+        # Create an array of a constant mean molecular weight
+        mmw *= np.ones_like(pressure)
 
     p_base = {}
 
@@ -976,17 +987,23 @@ def mass_fractions(log_x_abund: dict) -> dict:
 
 
 @typechecked
-def calc_metal_ratio(log_x_abund: dict) -> Tuple[float, float]:
+def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float]:
     """
+    Function for calculating [C/H], [O/H], and C/O for a given set of abundances.
+
     Parameters
     ----------
     log_x_abund : dict
-        Dictionary with the log10 values of the mass fractions.
+        Dictionary with the log10 mass fractions.
 
     Returns
     -------
     float
+        Carbon-to-hydrogen ratio, relative to solar.
     float
+        Oxygen-to-hydrogen ratio, relative to solar.
+    float
+        Carbon-to-oxygen ratio.
     """
 
     # solar C/H from Asplund et al. (2009)
@@ -1053,7 +1070,9 @@ def calc_metal_ratio(log_x_abund: dict) -> Tuple[float, float]:
     if 'H2S' in abund:
         h_abund += 2. * abund['H2S'] * mmw/masses['H2S']
 
-    return np.log10(c_abund/h_abund/c_h_solar), np.log10(o_abund/h_abund/o_h_solar)
+    return np.log10(c_abund/h_abund/c_h_solar), \
+           np.log10(o_abund/h_abund/o_h_solar), \
+           c_abund/o_abund
 
 
 @typechecked
