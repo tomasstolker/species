@@ -807,6 +807,9 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
             if cloud_param in indices:
                 model_param[cloud_param] = sample[indices[cloud_param]]
 
+            if cloud_item in indices:
+                model_param[cloud_item] = sample[indices[cloud_item]]
+
     if 'log_tau_cloud' in indices:
         model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
 
@@ -815,7 +818,9 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                 cloud_1 = cloud_item[:-3].lower()
                 cloud_2 = cloud_species[0][:-3].lower()
 
-                model_param[f'{cloud_1}_{cloud_2}_ratio'] = sample[indices[f'{cloud_1}_{cloud_2}_ratio']]
+                cloud_ratio = f'{cloud_1}_{cloud_2}_ratio'
+
+                model_param[cloud_ratio] = sample[indices[cloud_ratio]]
 
     # Add extinction parameters
 

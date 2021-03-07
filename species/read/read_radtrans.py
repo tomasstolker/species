@@ -171,13 +171,55 @@ class ReadRadtrans:
         # else:
         #     contribution = False
 
+        # Determine chemistry type
+
+        check_free = True
+
+        for item in self.cloud_species:
+            if item not in model_param:
+                check_free = False
+
+        if check_free:
+            chemistry = 'free'
+
+        elif 'metallicity' in model_param and 'c_o_ratio' in model_param:
+            chemistry = 'equilibrium'
+
+        else:
+            raise ValueError('Chemistry type not recognized. Please check the dictionary with '
+                             'parameters of \'model_param\'.')
+
+        # C/O and [Fe/H]
+
+        if chemistry == 'equilibrium':
+            # Equilibrium chemistry
+            metallicity = model_param['metallicity']
+            c_o_ratio = model_param['c_o_ratio']
+
+            log_x_abund = None
+
+        elif chemistry == 'free':
+            # Free chemistry
+
+            # TODO Set [Fe/H] = 0 for P-T profile
+            metallicity = 0.
+
+            # Create a dictionary with the mass fractions
+
+            log_x_abund = {}
+
+            for item in self.line_species:
+                log_x_abund[item] = model_param[item]
+
+            _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+
         # Create the P-T profile
 
         if 'tint' in model_param:
             temp, _ = retrieval_util.pt_ret_model(
                 np.array([model_param['t1'], model_param['t2'], model_param['t3']]),
                 10.**model_param['log_delta'], model_param['alpha'], model_param['tint'],
-                self.pressure, model_param['metallicity'], model_param['c_o_ratio'])
+                self.pressure, metallicity, c_o_ratio)
 
         else:
             knot_press = np.logspace(np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15)
@@ -206,50 +248,40 @@ class ReadRadtrans:
         # values allowed from elemental abundances
 
         if len(self.cloud_species) > 0:
-            cloud_fractions = {}
+            tau_cloud = None
 
-            for item in self.cloud_species:
-                cloud_param_frac = f'{item[:-3].lower()}_fraction'
-                cloud_param_tau = f'{item[:-3].lower()}_tau'
+            if chemistry == 'equilibrium':
+                cloud_fractions = {}
 
-                tau_cloud = None
+                for item in self.cloud_species:
 
-                if cloud_param_frac in model_param:
-                    cloud_fractions[item] = model_param[cloud_param_frac]
+                    if f'{item[:-3].lower()}_fraction' in model_param:
+                        cloud_fractions[item] = model_param[f'{item[:-3].lower()}_fraction']
 
-                elif cloud_param_tau in model_param:
-                    # Quenching pressure (bar)
+                    elif f'{item[:-3].lower()}_tau' in model_param:
+                        # Import the chemistry module here because it is slow
 
-                    if 'log_p_quench' in model_param:
-                        quench_pressure = 10.**model_param['log_p_quench']
-                    else:
-                        quench_pressure = None
+                        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
+                            import interpol_abundances
 
-                    # Import the chemistry module here because it is slow
+                        # Interpolate the abundances, following chemical equilibrium
 
-                    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
-                        import interpol_abundances
+                        abund_in = interpol_abundances(np.full(self.pressure.size, c_o_ratio),
+                                                       np.full(self.pressure.size, metallicity),
+                                                       temp,
+                                                       self.pressure,
+                                                       Pquench_carbon=10.**log_p_quench)
 
-                    # Interpolate the abundances, following chemical equilibrium
+                        # Extract the mean molecular weight
 
-                    abund_in = interpol_abundances(np.full(self.pressure.size,
-                                                           model_param['c_o_ratio']),
-                                                   np.full(self.pressure.size,
-                                                           model_param['metallicity']),
-                                                   temp,
-                                                   self.pressure,
-                                                   Pquench_carbon=quench_pressure)
+                        mmw = abund_in['MMW']
 
-                    # Extract the mean molecular weight
+                        # Calculate the scaled mass fraction of the clouds
 
-                    mmw = abund_in['MMW']
-
-                    # Calculate the scaled mass fraction of the clouds
-
-                    cloud_fractions[item] = retrieval_util.scale_cloud_abund(
-                        model_param, self.rt_object, self.pressure, temp, mmw,
-                        'equilibrium', abund_in, item, model_param[cloud_param_tau],
-                        pressure_grid=self.pressure_grid)
+                        cloud_fractions[item] = retrieval_util.scale_cloud_abund(
+                            model_param, self.rt_object, self.pressure, temp, mmw,
+                            'equilibrium', abund_in, item, model_param[f'{item[:-3].lower()}_tau'],
+                            pressure_grid=self.pressure_grid)
 
                 if 'log_tau_cloud' in model_param:
                     # Set the log mass fraction to zero and use the optical depth parameter to
@@ -263,9 +295,6 @@ class ReadRadtrans:
 
                     tau_cloud = model_param['tau_cloud']
 
-                else:
-                    tau_cloud = None
-
                 if tau_cloud is not None:
                     for i, item in enumerate(self.cloud_species):
                         if i == 0:
@@ -277,19 +306,27 @@ class ReadRadtrans:
 
                             cloud_fractions[item] = model_param[f'{cloud_1}_{cloud_2}_ratio']
 
-            # Create a dictionary with the log mass fractions at the cloud base
+                # Create a dictionary with the log mass fractions at the cloud base
 
-            log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
-                                                         model_param['metallicity'],
-                                                         cloud_fractions)
+                log_x_base = retrieval_util.log_x_cloud_base(c_o_ratio,
+                                                             metallicity,
+                                                             cloud_fractions)
+
+            elif chemistry == 'free':
+                # Add the log10 mass fractions of the clouds to the dictionary
+
+                log_x_base = {}
+
+                for item in self.cloud_species:
+                    log_x_base[item[:-3]] = model_param[item]
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
-                self.rt_object, self.pressure, temp, model_param['c_o_ratio'],
-                model_param['metallicity'], log_p_quench, log_x_base, model_param['fsed'],
+                self.rt_object, self.pressure, temp, c_o_ratio, metallicity,
+                log_p_quench, log_x_abund, log_x_base, model_param['fsed'],
                 model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
-                chemistry='equilibrium', pressure_grid=self.pressure_grid,
+                chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud)
 
         elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
@@ -298,7 +335,7 @@ class ReadRadtrans:
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'],
                 model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
-                None, pressure_grid=self.pressure_grid, chemistry='equilibrium',
+                None, pressure_grid=self.pressure_grid, chemistry=chemistry,
                 contribution=True)
 
         else:
@@ -310,7 +347,7 @@ class ReadRadtrans:
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
                 None, None, abund, pressure_grid=self.pressure_grid,
-                chemistry='free', contribution=True)
+                chemistry=chemistry, contribution=True)
 
         if 'radius' in model_param:
             # Calculate the planet mass from log(g) and radius

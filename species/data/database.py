@@ -2374,9 +2374,9 @@ class Database:
             flux_int = simps(sample_scale*box_item.flux, box_item.wavelength)
             teff[i] = (flux_int/constants.SIGMA_SB)**0.25
 
-            np.savetxt(f'output/spectrum/spectrum{i:04d}.dat',
-                       np.column_stack([box_item.wavelength, sample_scale*box_item.flux]),
-                       header='Wavelength (um) - Flux (W m-2 um-1)')
+            # np.savetxt(f'output/spectrum/spectrum{i:04d}.dat',
+            #            np.column_stack([box_item.wavelength, sample_scale*box_item.flux]),
+            #            header='Wavelength (um) - Flux (W m-2 um-1)')
 
         q_16, q_50, q_84 = np.percentile(teff, [16., 50., 84.])
 

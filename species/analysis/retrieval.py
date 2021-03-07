@@ -357,9 +357,6 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 self.parameters.append(item[:-3])
 
-            if 'c_o_ratio' in bounds:
-                self.parameters.append('c_o_ratio')
-
         if quenching:
             self.parameters.append('log_p_quench')
 
@@ -1185,10 +1182,53 @@ class AtmosphericRetrieval:
             else:
                 pt_smooth = self.pt_smooth
 
+            # C/O and [Fe/H]
+
+            if chemistry == 'equilibrium':
+                metallicity = cube[cube_index['metallicity']]
+                c_o_ratio = cube[cube_index['c_o_ratio']]
+
+            elif chemistry == 'free':
+                # TODO Set [Fe/H] = 0 for P-T profile
+                metallicity = 0.
+
+                # Create a dictionary with the mass fractions
+
+                log_x_abund = {}
+
+                for item in self.line_species:
+                    log_x_abund[item] = cube[cube_index[item]]
+
+                # Check if the sum of fractional abundances is smaller than unity
+
+                if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
+                    return -np.inf
+
+                # Check if the C/H and O/H ratios are within the prior boundaries
+
+                c_h_ratio, o_h_ratio, c_o_ratio = \
+                    retrieval_util.calc_metal_ratio(log_x_abund)
+
+                if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or
+                                              c_h_ratio > bounds['c_h_ratio'][1]):
+
+                    return -np.inf
+
+                if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or
+                                              o_h_ratio > bounds['o_h_ratio'][1]):
+
+                    return -np.inf
+
+                if 'c_o_ratio' in bounds and (c_o_ratio < bounds['c_o_ratio'][0] or
+                                              c_o_ratio > bounds['c_o_ratio'][1]):
+
+                    return -np.inf
+
             # Create the P-T profile
 
             temp, knot_temp = retrieval_util.create_pt_profile(
-                cube, cube_index, pt_profile, self.pressure, knot_press, pt_smooth)
+                cube, cube_index, pt_profile, self.pressure, knot_press,
+                metallicity, c_o_ratio, pt_smooth)
 
             # Prepare the scaling based on the cloud optical depth
 
@@ -1248,42 +1288,6 @@ class AtmosphericRetrieval:
             else:
                 log_p_quench = -10.
 
-            # Free chemistry mass fraction and abundance ratios
-
-            if chemistry == 'free':
-                # Create a dictionary with the mass fractions
-
-                log_x_abund = {}
-
-                for item in self.line_species:
-                    log_x_abund[item] = cube[cube_index[item]]
-
-                # Check if the sum of fractional abundances is smaller than unity
-
-                if np.sum(10.**np.asarray(list(log_x_abund.values()))) > 1.:
-                    return -np.inf
-
-                # Check if the C/H and O/H ratios are within the prior boundaries
-
-                if 'c_h_ratio' in bounds or 'o_h_ratio' in bounds or 'c_o_ratio' in bounds:
-                    c_h_ratio, o_h_ratio, c_o_ratio = \
-                        retrieval_util.calc_metal_ratio(log_x_abund)
-
-                if 'c_h_ratio' in bounds and (c_h_ratio < bounds['c_h_ratio'][0] or
-                                              c_h_ratio > bounds['c_h_ratio'][1]):
-
-                    return -np.inf
-
-                if 'o_h_ratio' in bounds and (o_h_ratio < bounds['o_h_ratio'][0] or
-                                              o_h_ratio > bounds['o_h_ratio'][1]):
-
-                    return -np.inf
-
-                if 'c_o_ratio' in bounds and (c_o_ratio < bounds['c_o_ratio'][0] or
-                                              c_o_ratio > bounds['c_o_ratio'][1]):
-
-                    return -np.inf
-
             # Calculate the emission spectrum
 
             start = time.time()
@@ -1325,9 +1329,6 @@ class AtmosphericRetrieval:
                                                                  cube[cube_index['metallicity']],
                                                                  cloud_fractions)
 
-                    c_o_ratio = cube[cube_index['c_o_ratio']]
-                    metallicity = cube[cube_index['metallicity']]
-
                     log_x_abund = None
 
                 elif chemistry == 'free':
@@ -1337,13 +1338,6 @@ class AtmosphericRetrieval:
 
                     for item in self.cloud_species:
                         log_x_base[item[:-3]] = cube[cube_index[item]]
-
-                    # Calculate C/O ratio from abundances
-
-                    c_h_ratio, o_h_ratio, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
-
-                    # TODO Force [Fe/H] = 0 for calculating the cloud base
-                    metallicity = 0.
 
                 # The try-except is required to catch numerical precision errors with the clouds
                 # try:

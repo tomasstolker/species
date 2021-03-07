@@ -31,7 +31,7 @@ def multi_photometry(datatype: str,
         Data type ('model' or 'calibration').
     spectrum : str
         Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw', 'petitradtrans').
-    filters : list(str, )
+    filters : list(str)
         List with the filter names.
     parameters : dict
         Dictionary with the model parameters.

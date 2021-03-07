@@ -308,7 +308,9 @@ def create_pt_profile(cube,
                       pt_profile: str,
                       pressure: np.ndarray,
                       knot_press: Optional[np.ndarray],
-                      pt_smooth: float = 0.3) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+                      metallicity: float,
+                      c_o_ratio: float,
+                      pt_smooth: float = 0.3,) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Function for creating the P-T profile.
 
@@ -326,6 +328,10 @@ def create_pt_profile(cube,
     knot_press : np.ndarray, None
         Pressure knots (bar), which are required when the argument of ``pt_profile`` is either
         'free' or 'monotonic'.
+    metallicity : float
+        Metallicity [Fe/H].
+    c_o_ratio : float
+        Carbon-to-oxgen ratio.
     pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for smoothing the sampled
         temperature nodes of the P-T profile. The argument should be given as log10(P/bar) with the
@@ -342,12 +348,6 @@ def create_pt_profile(cube,
 
     knot_temp = None
 
-    if 'metallicity' in cube_index:
-        metallicity = cube[cube_index['metallicity']]
-    else:
-        # TODO Force [Fe/H] = 0 with free abundances
-        metallicity = 0.
-
     if pt_profile == 'molliere':
         temp, _ = pt_ret_model(np.array([cube[cube_index['t1']],
                                          cube[cube_index['t2']],
@@ -357,7 +357,7 @@ def create_pt_profile(cube,
                                cube[cube_index['tint']],
                                pressure,
                                metallicity,
-                               cube[cube_index['c_o_ratio']])
+                               c_o_ratio)
 
     elif pt_profile == 'mod-molliere':
         temp, _ = pt_ret_model(None,
@@ -366,7 +366,7 @@ def create_pt_profile(cube,
                                cube[cube_index['tint']],
                                pressure,
                                metallicity,
-                               cube[cube_index['c_o_ratio']])
+                               c_o_ratio)
 
     elif pt_profile in ['free', 'monotonic']:
         knot_temp = []
@@ -1071,8 +1071,7 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
         h_abund += 2. * abund['H2S'] * mmw/masses['H2S']
 
     return np.log10(c_abund/h_abund/c_h_solar), \
-           np.log10(o_abund/h_abund/o_h_solar), \
-           c_abund/o_abund
+        np.log10(o_abund/h_abund/o_h_solar), c_abund/o_abund
 
 
 @typechecked
@@ -1658,13 +1657,16 @@ def return_T_cond_Fe(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     masses = atomic_masses()
 
     T = np.linspace(100., 10000., 1000)
+
     # Taken from Ackerman & Marley (2001)
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(15.71 - 47664./x)
@@ -1692,13 +1694,16 @@ def return_T_cond_Fe_l(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     masses = atomic_masses()
 
     T = np.linspace(100., 10000., 1000)
+
     # Taken from Ackerman & Marley (2001)
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(9.86 - 37120./x)
@@ -1726,8 +1731,10 @@ def return_T_cond_Fe_comb(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     P1, T1 = return_T_cond_Fe(FeH, CO, MMW)
@@ -1759,13 +1766,16 @@ def return_T_cond_MgSiO3(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     masses = atomic_masses()
 
     T = np.linspace(100., 10000., 1000)
+
     # Taken from Ackerman & Marley (2001)
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(25.37 - 58663./x)
@@ -1796,9 +1806,9 @@ def return_T_cond_Al2O3(FeH: float,
     Returns
     -------
     np.ndarray
-        Array with the pressures (bar).
+        Saturation pressure (bar).
     np.ndarray
-        Array with the condensation temperatures (K).
+        Temperature (K).
     """
 
     # Return dictionary with atomic masses
@@ -1840,14 +1850,17 @@ def return_T_cond_Na2S(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     masses = atomic_masses()
 
     # Taken from Charnay+2018
     T = np.linspace(100., 10000., 1000)
+
     # This is the partial pressure of Na, so divide by factor 2 to get the partial pressure of
     # the hypothetical Na2S gas particles, this is OK: there are more S than Na atoms at solar
     # abundance ratios.
@@ -1878,14 +1891,17 @@ def return_T_cond_KCl(FeH: float,
 
     Returns
     -------
-    tuple(np.ndarray, np.ndarray)
-        Arrays with the saturation pressure and temperature.
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
     """
 
     masses = atomic_masses()
 
-    # Taken from Charnay+2018
     T = np.linspace(100., 10000., 1000)
+
+    # Taken from Charnay+2018
     P_vap = lambda x: 1e1**(7.611 - 11382./T)
 
     Xkcl = cloud_mass_fraction('KCL', FeH, CO)

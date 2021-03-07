@@ -63,7 +63,7 @@ def plot_pt_profile(tag: str,
     print(f'Plotting the P-T profiles: {output}...', end='', flush=True)
 
     cloud_species = ['Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
-    cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
+    # cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
     cloud_color = {'Fe(c)': 'tab:blue', 'MgSiO3(c)': 'tab:orange',
                    'Al2O3(c)': 'tab:green', 'Na2S(c)': 'tab:cyan',
@@ -95,21 +95,21 @@ def plot_pt_profile(tag: str,
 
     ax = plt.subplot(gridsp[0, 0])
 
-    top = True
-
-    for item in cloud_check:
-        if f'{item}_fraction' in median:
-            top = False
-
-        elif f'{item}_tau' in median:
-            top = False
+    # top = True
+    #
+    # for item in cloud_check:
+    #     if f'{item}_fraction' in median:
+    #         top = False
+    #
+    #     elif f'{item}_tau' in median:
+    #         top = False
 
     ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
-                   direction='in', width=1, length=5, labelsize=12, top=top,
+                   direction='in', width=1, length=5, labelsize=12, top=True,
                    bottom=True, left=True, right=True)
 
     ax.tick_params(axis='both', which='minor', colors='black', labelcolor='black',
-                   direction='in', width=1, length=3, labelsize=12, top=top,
+                   direction='in', width=1, length=3, labelsize=12, top=True,
                    bottom=True, left=True, right=True)
 
     ax.set_xlabel('Temperature (K)', fontsize=13)
@@ -151,6 +151,28 @@ def plot_pt_profile(tag: str,
         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
 
     for i, item in enumerate(samples):
+        # C/O and [Fe/H]
+
+        if box.attributes['chemistry'] == 'equilibrium':
+            metallicity = item[param_index['metallicity']]
+            c_o_ratio = item[param_index['c_o_ratio']]
+
+        elif box.attributes['chemistry'] == 'free':
+            # TODO Set [Fe/H] = 0
+            metallicity = 0.
+
+            # Create a dictionary with the mass fractions
+
+            log_x_abund = {}
+
+            for i in range(box.attributes['n_line_species']):
+                line_item = box.attributes[f'line_species{i}']
+                log_x_abund[line_item] = item[param_index[line_item]]
+
+            # Check if the C/H and O/H ratios are within the prior boundaries
+
+            _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+
         if pt_profile == 'molliere':
             t3_param = np.array([item[param_index['t1']],
                                  item[param_index['t2']],
@@ -158,8 +180,7 @@ def plot_pt_profile(tag: str,
 
             temp, _ = retrieval_util.pt_ret_model(
                 t3_param, 10.**item[param_index['log_delta']], item[param_index['alpha']],
-                item[param_index['tint']], pressure, item[param_index['metallicity']],
-                item[param_index['c_o_ratio']])
+                item[param_index['tint']], pressure, metallicity, c_o_ratio)
 
         elif pt_profile == 'free':
             knot_temp = []
@@ -181,6 +202,11 @@ def plot_pt_profile(tag: str,
         # np.savetxt(f'output/pt_profile/pt_profile_{i:04d}.dat',
         #            np.column_stack([pressure, temp]),
         #            header='Pressure (bar) - Temperature (K)')
+
+    if box.attributes['chemistry'] == 'free':
+        # TODO Set [Fe/H] = 0
+        median['metallicity'] = metallicity
+        median['c_o_ratio'] = c_o_ratio
 
     if pt_profile == 'molliere':
         temp, _ = retrieval_util.pt_ret_model(
@@ -206,7 +232,10 @@ def plot_pt_profile(tag: str,
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 
-    if 'metallicity' in parameters and 'c_o_ratio' in parameters:
+    # Add cloud condensation profiles
+
+    if extra_axis == 'grains' and 'metallicity' in median and 'c_o_ratio' in median:
+
         if 'log_p_quench' in median:
             quench_press = 10.**median['log_p_quench']
         else:
@@ -589,7 +618,9 @@ def plot_clouds(tag: str,
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    if f'{composition.lower()}_fraction' not in median and 'log_tau_cloud' not in median:
+    if f'{composition.lower()}_fraction' not in median and \
+       'log_tau_cloud' not in median and f'{composition}(c)' not in median:
+
         raise ValueError(f'The mass fraction of the {composition} clouds is not found. The median '
                          f'sample contains the following parameters: {list(median.keys())}')
 

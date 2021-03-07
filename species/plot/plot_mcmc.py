@@ -238,10 +238,16 @@ def plot_posterior(tag: str,
     if 'H2O' in samples_box.parameters:
         samples_box.parameters.append('c_h_ratio')
         samples_box.parameters.append('o_h_ratio')
+        # samples_box.parameters.append('c_o_ratio')
+
+        ndim += 2
 
         abund_index = {}
         for i, item in enumerate(samples_box.parameters):
-            if item == 'CO':
+            if item == 'CH4':
+                abund_index['CH4'] = i
+
+            elif item == 'CO':
                 abund_index['CO'] = i
 
             elif item == 'CO_all_iso':
@@ -250,23 +256,42 @@ def plot_posterior(tag: str,
             elif item == 'CO2':
                 abund_index['CO2'] = i
 
-            elif item == 'CH4':
-                abund_index['CH4'] = i
+            elif item == 'FeH':
+                abund_index['FeH'] = i
 
             elif item == 'H2O':
                 abund_index['H2O'] = i
 
-            elif item == 'NH3':
-                abund_index['NH3'] = i
-
             elif item == 'H2S':
                 abund_index['H2S'] = i
 
+            elif item == 'Na':
+                abund_index['Na'] = i
+
+            elif item == 'NH3':
+                abund_index['NH3'] = i
+
+            elif item == 'K':
+                abund_index['K'] = i
+
+            elif item == 'PH3':
+                abund_index['PH3'] = i
+
+            elif item == 'TiO':
+                abund_index['TiO'] = i
+
+            elif item == 'VO':
+                abund_index['VO'] = i
+
         c_h_ratio = np.zeros(samples.shape[0])
         o_h_ratio = np.zeros(samples.shape[0])
+        c_o_ratio = np.zeros(samples.shape[0])
 
         for i, item in enumerate(samples):
             abund = {}
+
+            if 'CH4' in samples_box.parameters:
+                abund['CH4'] = item[abund_index['CH4']]
 
             if 'CO' in samples_box.parameters:
                 abund['CO'] = item[abund_index['CO']]
@@ -277,19 +302,37 @@ def plot_posterior(tag: str,
             if 'CO2' in samples_box.parameters:
                 abund['CO2'] = item[abund_index['CO2']]
 
-            if 'CH4' in samples_box.parameters:
-                abund['CH4'] = item[abund_index['CH4']]
+            if 'FeH' in samples_box.parameters:
+                abund['FeH'] = item[abund_index['FeH']]
 
             if 'H2O' in samples_box.parameters:
                 abund['H2O'] = item[abund_index['H2O']]
 
-            if 'NH3' in samples_box.parameters:
-                abund['NH3'] = item[abund_index['NH3']]
-
             if 'H2S' in samples_box.parameters:
                 abund['H2S'] = item[abund_index['H2S']]
 
-            c_h_ratio[i], o_h_ratio[i] = retrieval_util.calc_metal_ratio(abund)
+            if 'Na' in samples_box.parameters:
+                abund['Na'] = item[abund_index['Na']]
+
+            if 'NH3' in samples_box.parameters:
+                abund['NH3'] = item[abund_index['NH3']]
+
+            if 'K' in samples_box.parameters:
+                abund['K'] = item[abund_index['K']]
+
+            if 'PH3' in samples_box.parameters:
+                abund['PH3'] = item[abund_index['PH3']]
+
+            if 'TiO' in samples_box.parameters:
+                abund['TiO'] = item[abund_index['TiO']]
+
+            if 'VO' in samples_box.parameters:
+                abund['VO'] = item[abund_index['VO']]
+
+            if 'VO' in samples_box.parameters:
+                abund['VO'] = item[abund_index['VO']]
+
+            c_h_ratio[i], o_h_ratio[i], c_o_ratio[i] = retrieval_util.calc_metal_ratio(abund)
 
     if vmr and samples_box.spectrum == 'petitradtrans' and \
             'metallicity' not in samples_box.parameters:
