@@ -3,7 +3,7 @@
 Tutorials
 =========
 
-This page contains a list of tutorials which highlight some of the functionalities of `species`. These examples are also available as `Jupyter notebook <https://github.com/tomasstolker/species/tree/master/docs/tutorials>`_. Some of tutorials are still work in progress and more examples will be added in the future. Please contact Tomas Stolker if you have questions regarding a specific science case (see :ref:`about` section) or `create an issue <https://github.com/tomasstolker/species/issues>`_ if you encounter any problems with the tutorials.
+This page contains a list of tutorials which highlight some of the functionalities of `species`. These examples are also available as `Jupyter notebook <https://github.com/tomasstolker/species/tree/master/docs/tutorials>`_. Please `create an issue <https://github.com/tomasstolker/species/issues>`_ if you encounter any problems with the tutorials.
 
 .. tip::
    Details on the various classes, functions, and parameters can be found in the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_.
