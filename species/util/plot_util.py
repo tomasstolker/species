@@ -135,7 +135,14 @@ def update_labels(param: List[str]) -> List[str]:
     """
 
     cloud_species = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
+
     cloud_labels = ['Fe', r'MgSiO_{3}', r'Al_{2}O_{3}', r'Na_{2}S', 'KCl']
+
+    abund_species = ['CO_all_iso', 'H2O', 'CH4', 'NH3', 'CO2', 'H2S', 'Na', 'K', 'PH3', 'VO',
+                     'TiO', 'FeH', 'MgSiO3(c)', 'Fe(c)',]
+
+    abund_labels = ['CO', 'H_{2}O', 'CH_{4}', 'NH_{3}', 'CO_{2}', 'H_{2}S', 'Na', 'K',
+                    'PH_{3}', 'VO', 'TiO', 'FeH', 'MgSiO_{3}', 'Fe']
 
     if 'teff' in param:
         index = param.index('teff')
@@ -242,7 +249,12 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('sigma_lnorm')
         param[index] = r'$\sigma_{g}$'
 
+    if 'log_kzz' in param:
+        index = param.index('log_kzz')
+        param[index] = r'$\log\,K_{zz}$'
+
     if 'kzz' in param:
+        # Backward compatibility
         index = param.index('kzz')
         param[index] = r'$\log\,K_{zz}$'
 
@@ -261,6 +273,11 @@ def update_labels(param: List[str]) -> List[str]:
                 index = param.index(f'{item_i}_{item_j}_ratio')
                 param[index] = rf'$\log\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}/' \
                                rf'\tilde{{X}}_\mathregular{{{cloud_labels[j]}}}$'
+
+    for i, item in enumerate(abund_species):
+        if item in param:
+            index = param.index(item)
+            param[index] = rf'$\log\,\mathregular{{{abund_labels[i]}}}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':

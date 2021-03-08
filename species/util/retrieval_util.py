@@ -580,7 +580,7 @@ def calc_spectrum_clear(rt_object,
                         logg: float,
                         c_o_ratio: Optional[float],
                         metallicity: Optional[float],
-                        log_p_quench: Optional[float],
+                        p_quench: Optional[float],
                         log_x_abund: Optional[dict],
                         chemistry: str,
                         pressure_grid: str = 'smaller',
@@ -599,12 +599,12 @@ def calc_spectrum_clear(rt_object,
         Array with the temperature points (K) corresponding to ``pressure``.
     logg : float
         Log10 of the surface gravity (cm s-2).
-    c_o_ratio : float
+    c_o_ratio : float, None
         Carbon-to-oxygen ratio.
-    metallicity : float
+    metallicity : float, None
         Metallicity.
-    log_p_quench : float
-        Log10 of the quench pressure.
+    p_quench : float, None
+        Quenching pressure (bar).
     log_x_abund : dict, None
         Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
     chemistry : str
@@ -644,7 +644,7 @@ def calc_spectrum_clear(rt_object,
                                        np.full(pressure.shape, metallicity),
                                        temperature,
                                        pressure,
-                                       Pquench_carbon=10.**log_p_quench)
+                                       Pquench_carbon=p_quench)
 
         # mean molecular weight
         mmw = abund_in['MMW']
@@ -700,7 +700,7 @@ def calc_spectrum_clouds(rt_object,
                          temperature: np.ndarray,
                          c_o_ratio: float,
                          metallicity: float,
-                         log_p_quench: float,
+                         p_quench: Optional[float],
                          log_x_abund: Optional[dict],
                          log_x_base: dict,
                          fsed: float,
@@ -729,8 +729,8 @@ def calc_spectrum_clouds(rt_object,
         Carbon-to-oxygen ratio.
     metallicity : float
         Metallicity.
-    log_p_quench : float
-        Log10 of the quench pressure.
+    p_quench : float, None
+        Quenching pressure (bar).
     log_x_abund : dict, None
         Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
     log_x_base : dict
@@ -785,7 +785,7 @@ def calc_spectrum_clouds(rt_object,
                                        np.full(pressure.shape, metallicity),
                                        temperature,
                                        pressure,
-                                       Pquench_carbon=10.**log_p_quench)
+                                       Pquench_carbon=p_quench)
 
         # Extract the mean molecular weight
         mmw = abund_in['MMW']
@@ -868,7 +868,8 @@ def calc_spectrum_clouds(rt_object,
         plt.xscale('log')
         plt.xlabel('Mass fraction')
         plt.ylabel('Pressure (bar)')
-        plt.axhline(10.**log_p_quench)
+        if p_quench is not None:
+            plt.axhline(p_quench, ls='--', color='black')
         plt.legend(loc='best')
         plt.savefig('abundances.pdf', bbox_inches='tight')
         plt.clf()
@@ -876,7 +877,7 @@ def calc_spectrum_clouds(rt_object,
         plt.plot(temperature, pressure, 'o', ls='none', ms=2.)
 
         for item in log_x_base:
-            plt.axhline(p_base[f'{item}(c)'], label=f'Cloud deck {item}')
+            plt.axhline(p_base[f'{item}(c)'], label=f'Cloud deck {item}', ls='--', color='black')
 
         plt.yscale('log')
         plt.ylim(1e3, 1e-6)
@@ -1534,13 +1535,23 @@ def scale_cloud_abund(params: Dict[str, float],
         rt_object.interpolate_species_opa(temperature)
 
         mmw_select = mmw.copy()
-        kzz_select = np.full(pressure.size, 10.**params['kzz'])
+
+        if 'log_kzz' in params:
+            kzz_select = np.full(pressure.size, 10.**params['log_kzz'])
+        else:
+            # Backward compatibility
+            kzz_select = np.full(pressure.size, 10.**params['kzz'])
 
     elif pressure_grid == 'smaller':
         rt_object.interpolate_species_opa(temperature[::3])
 
         mmw_select = mmw[::3]
-        kzz_select = np.full(pressure[::3].size, 10.**params['kzz'])
+
+        if 'log_kzz' in params:
+            kzz_select = np.full(pressure[::3].size, 10.**params['log_kzz'])
+        else:
+            # Backward compatibility
+            kzz_select = np.full(pressure[::3].size, 10.**params['kzz'])
 
     elif pressure_grid == 'clouds':
         # Reinitiate the pressure structure after make_half_pressure_better
@@ -1548,7 +1559,12 @@ def scale_cloud_abund(params: Dict[str, float],
         rt_object.interpolate_species_opa(temperature[indices])
 
         mmw_select = mmw[indices]
-        kzz_select = np.full(pressure[indices].size, 10.**params['kzz'])
+
+        if 'log_kzz' in params:
+            kzz_select = np.full(pressure[indices].size, 10.**params['log_kzz'])
+        else:
+            # Backward compatibility
+            kzz_select = np.full(pressure[indices].size, 10.**params['kzz'])
 
     # Set the continuum opacities to zero because calc_cloud_opacity adds to existing opacities
     rt_object.continuum_opa = np.zeros_like(rt_object.continuum_opa)
@@ -1948,3 +1964,82 @@ def convolve(input_wavel: np.ndarray,
     sigma_lsf_gauss_filter = sigma_lsf/spacing
 
     return gaussian_filter(input_flux, sigma=sigma_lsf_gauss_filter, mode='nearest')
+
+
+@typechecked
+def quench_pressure(cube,
+                    cube_index: Dict[str, int],
+                    pressure: np.ndarray,
+                    temperature: np.ndarray) -> Optional[float]:
+    """
+    Function to determine the CO/CH4 quenching pressure by intersecting the pressure-dependent
+    timescales of the vertical mixing and the CO/CH4 reaction rates.
+
+    Parameters
+    ----------
+    cube : LP_c_double
+        Unit cube.
+    cube_index : dict
+        Dictionary with the index of each parameter in the ``cube``.
+    pressure : np.ndarray
+        Array with the pressures (bar).
+    temperature : np.ndarray
+        Array with the temperatures (K) corresponding to ``pressure``.
+
+    Returns
+    -------
+    float, None
+        Quenching pressure (bar)
+    """
+
+    # Interpolate the equilibbrium abundances
+
+    co_array = np.full(pressure.shape[0], cube[cube_index['c_o_ratio']])
+    feh_array = np.full(pressure.shape[0], cube[cube_index['metallicity']])
+
+    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
+        interpol_abundances
+
+    abund_eq = interpol_abundances(
+        co_array, feh_array, temperature, pressure, Pquench_carbon=None)
+
+    # Surface gravity (m s-2)
+    gravity = 1e-2 * 10.**cube[cube_index['logg']]
+
+    # Mean molecular weight (kg)
+    mmw = abund_eq['MMW'] * constants.ATOMIC_MASS
+
+    # Pressure scale height (m)
+    h_scale = constants.BOLTZMANN * temperature / (mmw * gravity)
+
+    # Diffusion coefficient (m2 s-1)
+    kzz = 1e-4 * 10.**cube[cube_index['log_kzz']]
+
+    # Mixing timescale (s)
+    t_mix = h_scale**2 / kzz
+
+    # Chemical timescale (see Eq. 12 from Zahnle & Marley 2014)
+    metal = 10.**cube[cube_index['metallicity']]
+    t_chem = 1.5e-6 * pressure**-1. * metal**-0.7 * np.exp(42000./temperature)
+
+    # Determine pressure at which t_mix = t_chem
+
+    t_diff = t_mix - t_chem
+    diff_product = t_diff[1:] * t_diff[:-1]
+
+    # If t_mix and t_chem intersect then there is 1 negative value in diff_product
+    indices = diff_product < 0.
+
+    if np.sum(indices) == 1:
+        p_quench = (pressure[1:]+pressure[:-1])[indices]/2.
+        p_quench = p_quench[0]
+
+    elif np.sum(indices) == 0:
+        p_quench = None
+
+    else:
+        raise ValueError(f'Encountered unexpected number of indices '
+                         f'({np.sum(indices)}) when determining the intersection of '
+                         f't_mix and t_chem.')
+
+    return p_quench

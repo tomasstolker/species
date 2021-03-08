@@ -289,7 +289,7 @@ class AtmosphericRetrieval:
     def set_parameters(self,
                        bounds: dict,
                        chemistry: str,
-                       quenching: bool,
+                       quenching: Optional[str],
                        pt_profile: str,
                        fit_corr: List[str]) -> None:
         """
@@ -302,8 +302,8 @@ class AtmosphericRetrieval:
         chemistry : str
             The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
             of free abundances (but constant with altitude).
-        quenching : bool
-            Fitting a quenching pressure.
+        quenching : str, None
+            TODO Fitting a quenching pressure.
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
@@ -357,8 +357,15 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 self.parameters.append(item[:-3])
 
-        if quenching:
+        # Non-equilibrium chemistry
+
+        if quenching == 'pressure':
+            # Fit quenching pressure
             self.parameters.append('log_p_quench')
+
+        elif quenching == 'diffusion':
+            # Calculate quenching pressure from Kzz and timescales
+            pass
 
         # Cloud parameters
 
@@ -401,7 +408,7 @@ class AtmosphericRetrieval:
                         self.parameters.append('kcl_fraction')
 
             self.parameters.append('fsed')
-            self.parameters.append('kzz')
+            self.parameters.append('log_kzz')
             self.parameters.append('sigma_lnorm')
 
         # Add the flux scaling parameters
@@ -472,7 +479,7 @@ class AtmosphericRetrieval:
     def run_multinest(self,
                       bounds: dict,
                       chemistry: str = 'equilibrium',
-                      quenching: bool = True,
+                      quenching: Optional[str] = 'pressure',
                       pt_profile: str = 'molliere',
                       fit_corr: Optional[List[str]] = None,
                       n_live_points: int = 2000,
@@ -502,8 +509,8 @@ class AtmosphericRetrieval:
         chemistry : str
             The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
             of free abundances (but constant with altitude).
-        quenching : bool
-            Fitting a quenching pressure.
+        quenching : str, None
+            TODO Fitting a quenching pressure.
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
@@ -532,9 +539,15 @@ class AtmosphericRetrieval:
 
         # Check if quenching parameter is used with equilibrium chemistry
 
-        if quenching and chemistry != 'equilibrium':
+        if quenching is not None and chemistry != 'equilibrium':
             raise ValueError('The \'quenching\' parameter can only be used in combination with '
                              'chemistry=\'equilibrium\'.')
+
+        # Check quenching parameter
+
+        if quenching is not None and quenching not in ['pressure', 'diffusion']:
+            raise ValueError('The argument of \'quenching\' should by of the following: '
+                             '\'pressure\', \'diffusion\', or None.')
 
         # Check if clouds are used in combination with equilibrium chemistry
 
@@ -614,8 +627,8 @@ class AtmosphericRetrieval:
             if 'fsed' in bounds:
                 del bounds['fsed']
 
-            if 'kzz' in bounds:
-                del bounds['kzz']
+            if 'log_kzz' in bounds:
+                del bounds['log_kzz']
 
             if 'sigma_lnorm' in bounds:
                 del bounds['sigma_lnorm']
@@ -865,9 +878,9 @@ class AtmosphericRetrieval:
                         # Default: -10. - 0. dex
                         cube[cube_index[item]] = -10.*cube[cube_index[item]]
 
-            # CO/CH4 quenching pressure (bar)
+            # CO/CH4/H2O quenching pressure (bar)
 
-            if quenching:
+            if quenching == 'pressure':
                 if 'log_p_quench' in bounds:
                     log_p_quench = bounds['log_p_quench'][0] + (bounds['log_p_quench'][1]-bounds['log_p_quench'][0])*cube[cube_index['log_p_quench']]
                 else:
@@ -888,13 +901,13 @@ class AtmosphericRetrieval:
                 cube[cube_index['fsed']] = fsed
 
                 # Log10 of the eddy diffusion coefficient (cm2 s-1)
-                if 'kzz' in bounds:
-                    kzz = bounds['kzz'][0] + (bounds['kzz'][1]-bounds['kzz'][0])*cube[cube_index['kzz']]
+                if 'log_kzz' in bounds:
+                    log_kzz = bounds['log_kzz'][0] + (bounds['log_kzz'][1]-bounds['log_kzz'][0])*cube[cube_index['log_kzz']]
                 else:
                     # Default: 5 - 13
-                    kzz = 5. + 8.*cube[cube_index['kzz']]
+                    log_kzz = 5. + 8.*cube[cube_index['log_kzz']]
 
-                cube[cube_index['kzz']] = kzz
+                cube[cube_index['log_kzz']] = log_kzz
 
                 # Geometric standard deviation of the log-normal size distribution
                 if 'sigma_lnorm' in bounds:
@@ -1233,18 +1246,22 @@ class AtmosphericRetrieval:
             # Prepare the scaling based on the cloud optical depth
 
             if calc_tau_cloud:
-                if 'log_p_quench' in cube_index:
+                if quenching == 'pressure':
                     # Quenching pressure (bar)
-                    quench_pressure = 10.**cube[cube_index['log_p_quench']]
+                    p_quench = 10.**cube[cube_index['log_p_quench']]
+
+                elif quenching == 'diffusion':
+                    pass
+
                 else:
-                    quench_pressure = None
+                    p_quench = None
 
                 # Interpolate the abundances, following chemical equilibrium
                 abund_in = interpol_abundances(np.full(self.pressure.size, cube[cube_index['c_o_ratio']]),
                                                np.full(self.pressure.size, cube[cube_index['metallicity']]),
                                                temp,
                                                self.pressure,
-                                               Pquench_carbon=quench_pressure)
+                                               Pquench_carbon=p_quench)
 
                 # Extract the mean molecular weight
                 mmw = abund_in['MMW']
@@ -1283,10 +1300,17 @@ class AtmosphericRetrieval:
 
             # Set the quenching pressure
 
-            if quenching:
-                log_p_quench = cube[cube_index['log_p_quench']]
+            if quenching == 'pressure':
+                # Fit the quenching pressure
+                p_quench = 10.**cube[cube_index['log_p_quench']]
+
+            elif quenching == 'diffusion':
+                # Calculate the quenching pressure from timescales
+                p_quench = retrieval_util.quench_pressure(
+                    cube, cube_index, self.pressure, temp)
+
             else:
-                log_p_quench = -10.
+                p_quench = None
 
             # Calculate the emission spectrum
 
@@ -1343,8 +1367,8 @@ class AtmosphericRetrieval:
                 # try:
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, c_o_ratio, metallicity,
-                    log_p_quench, log_x_abund, log_x_base,
-                    cube[cube_index['fsed']], cube[cube_index['kzz']], cube[cube_index['logg']],
+                    p_quench, log_x_abund, log_x_base,
+                    cube[cube_index['fsed']], cube[cube_index['log_kzz']], cube[cube_index['logg']],
                     cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
                     tau_cloud=tau_cloud)
@@ -1362,7 +1386,7 @@ class AtmosphericRetrieval:
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']],
-                        log_p_quench, None, chemistry=chemistry, pressure_grid=self.pressure_grid,
+                        p_quench, None, chemistry=chemistry, pressure_grid=self.pressure_grid,
                         contribution=False)
 
                 elif chemistry == 'free':
