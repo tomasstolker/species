@@ -2,9 +2,10 @@
 Module for setting up species in the working folder.
 """
 
-import os
-import json
 import configparser
+import json
+import os
+import socket
 import urllib.request
 
 import h5py
@@ -40,7 +41,7 @@ class SpeciesInit:
             data = json.loads(contents)
             latest_version = data['info']['version']
 
-        except urllib.error.URLError:
+        except (urllib.error.URLError, socket.timeout):
             latest_version = None
 
         if latest_version is not None and species.__version__ != latest_version:
