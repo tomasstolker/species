@@ -35,11 +35,11 @@ class TestPlanck:
         modelbox = read_planck.get_spectrum({'teff': 2000., 'radius': 1., 'distance': 10.}, 100.)
 
         assert modelbox.model == 'planck'
-        assert modelbox.wavelength.shape == (42, )
-        assert modelbox.flux.shape == (42, )
+        assert modelbox.wavelength.shape == (204, )
+        assert modelbox.flux.shape == (204, )
 
-        assert np.sum(modelbox.wavelength) == pytest.approx(52.581084870804, rel=self.limit, abs=0.)
-        assert np.sum(modelbox.flux) == pytest.approx(8.32208902713122e-13, rel=self.limit, abs=0.)
+        assert np.sum(modelbox.wavelength) == pytest.approx(255.377278282184, rel=self.limit, abs=0.)
+        assert np.sum(modelbox.flux) == pytest.approx(4.0434750652879004e-12, rel=self.limit, abs=0.)
 
     def test_get_flux(self):
         read_planck = species.ReadPlanck(filter_name='MKO/NSFCam.J')
