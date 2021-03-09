@@ -173,13 +173,13 @@ class ReadRadtrans:
 
         # Determine chemistry type
 
-        check_free = True
+        check_free_abund = True
 
-        for item in self.cloud_species:
+        for item in self.line_species:
             if item not in model_param:
-                check_free = False
+                check_free_abund = False
 
-        if check_free:
+        if check_free_abund:
             chemistry = 'free'
 
         elif 'metallicity' in model_param and 'c_o_ratio' in model_param:
@@ -322,10 +322,17 @@ class ReadRadtrans:
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
+            if 'kzz' in model_param:
+                # Backward compatibility
+                log_kzz = model_param['kzz']
+
+            elif 'log_kzz' in model_param:
+                log_kzz = model_param['log_kzz']
+
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
                 self.rt_object, self.pressure, temp, c_o_ratio, metallicity,
                 log_p_quench, log_x_abund, log_x_base, model_param['fsed'],
-                model_param['kzz'], model_param['logg'], model_param['sigma_lnorm'],
+                log_kzz, model_param['logg'], model_param['sigma_lnorm'],
                 chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud)
 

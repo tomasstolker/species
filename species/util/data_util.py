@@ -703,7 +703,7 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        pt_profile: str,
                        line_species: List[str],
                        cloud_species: List[str],
-                       quenching: np.bool_,
+                       quenching: Optional[str],
                        spec_res: float,
                        distance: Optional[float],
                        pt_smooth: Optional[float],
@@ -724,8 +724,11 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         List with the line species.
     cloud_species : list(str)
         List with the cloud species.
-    quenching : bool
-        Use a quenching pressure for CH4/CO.
+    quenching : str, None
+        Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
+        parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
+        mixing and chemical timescales (``quenching='diffusion'``). The quenching is not applied
+        if the argument is set to ``None``.
     spec_res : float
         Spectral resolution.
     distance : float, None
@@ -786,15 +789,21 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         for species_item in line_species:
             model_param[species_item] = sample[indices[species_item]]
 
-    if quenching:
+    if quenching == 'pressure':
         model_param['log_p_quench'] = sample[indices['log_p_quench']]
 
     # Add cloud parameters
 
     if len(cloud_species) > 0:
         model_param['fsed'] = sample[indices['fsed']]
-        model_param['kzz'] = sample[indices['kzz']]
         model_param['sigma_lnorm'] = sample[indices['sigma_lnorm']]
+
+        if 'kzz' in indices:
+            # Backward compatibility
+            model_param['kzz'] = sample[indices['kzz']]
+
+        elif 'log_kzz' in indices:
+            model_param['log_kzz'] = sample[indices['log_kzz']]
 
         for cloud_item in cloud_species:
             cloud_param = f'{cloud_item[:-3].lower()}_fraction'

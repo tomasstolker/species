@@ -303,7 +303,10 @@ class AtmosphericRetrieval:
             The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
             of free abundances (but constant with altitude).
         quenching : str, None
-            TODO Fitting a quenching pressure.
+            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
+            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
+            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
+            applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
@@ -510,7 +513,10 @@ class AtmosphericRetrieval:
             The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
             of free abundances (but constant with altitude).
         quenching : str, None
-            TODO Fitting a quenching pressure.
+            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
+            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
+            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
+            applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile ('molliere', 'free', or
             'monotonic').
