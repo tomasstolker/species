@@ -263,8 +263,12 @@ class ReadCalibration:
 
         Returns
         -------
-        tuple(float, float)
-            Average flux and uncertainty (W m-2 um-1).
+        Returns
+        -------
+        float
+            Average flux (W m-2 um-1).
+        float
+            Uncertainty (W m-2 um-1).
         """
 
         specbox = self.get_spectrum(model_param=model_param)

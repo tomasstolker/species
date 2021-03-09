@@ -1,14 +1,22 @@
 """
-Box module.
+Module with classes for storing data in `Box` objects.
 """
+
+import numpy as np
+import spectres
+
+import species
 
 
 def create_box(boxtype,
                **kwargs):
     """
+    Function for creating a :class:`species.core.box.Box`.
+
     Returns
     -------
     species.core.box
+        Box with the data and parameters.
     """
 
     if boxtype == 'colormag':
@@ -119,7 +127,7 @@ def create_box(boxtype,
 
 class Box:
     """
-    Text
+    Class for generic methods that can be applied on all `Box` object.
     """
 
     def __init__(self):
@@ -132,6 +140,8 @@ class Box:
 
     def open_box(self):
         """
+        Method for inspecting the content of a `Box`.
+
         Returns
         -------
         NoneType
@@ -146,7 +156,7 @@ class Box:
 
 class ColorMagBox(Box):
     """
-    Text
+    Class for storing color-magnitude data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -169,7 +179,7 @@ class ColorMagBox(Box):
 
 class ColorColorBox(Box):
     """
-    Text
+    Class for storing color-color data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -191,7 +201,7 @@ class ColorColorBox(Box):
 
 class IsochroneBox(Box):
     """
-    Text
+    Class for storing isochrone data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -214,7 +224,7 @@ class IsochroneBox(Box):
 
 class ModelBox(Box):
     """
-    Text
+    Class for storing a model spectrum in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -233,10 +243,57 @@ class ModelBox(Box):
         self.quantity = None
         self.contribution = None
 
+    def smooth_spectrum(self,
+                        spec_res: float) -> None:
+        """
+        Method for smoothing the spectrum with a Gaussian kernel to the instrument resolution. The
+        method is best applied on an input spectrum with a logarithmic wavelength sampling (i.e.
+        constant spectral resolution). Alternatively, the wavelength sampling may be linear, but
+        the smoothing is slower in that case.
+
+        Parameters
+        ----------
+        spec_res : float
+            Spectral resolution that is used for the smoothing kernel.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.flux = species.util.read_util.smooth_spectrum(
+            self.wavelength, self.flux, spec_res)
+
+    def resample_spectrum(self,
+                          wavel_resample: np.ndarray) -> None:
+        """
+        Method for resampling the spectrum with ``spectres`` to a new wavelength grid.
+
+        Parameters
+        ----------
+        wavel_resample : np.ndarray
+            Wavelength points (um) to which the spectrum will be resampled.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.flux = spectres.spectres(wavel_resample,
+                                      self.wavelength,
+                                      self.flux,
+                                      spec_errs=None,
+                                      fill=np.nan,
+                                      verbose=True)
+
+        self.wavelength = wavel_resample
+
 
 class ObjectBox(Box):
     """
-    Text
+    Class for storing object data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -257,7 +314,7 @@ class ObjectBox(Box):
 
 class PhotometryBox(Box):
     """
-    Text
+    Class for storing photometric data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -279,7 +336,7 @@ class PhotometryBox(Box):
 
 class ResidualsBox(Box):
     """
-    Text
+    Class for storing best-fit residuals in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -297,7 +354,7 @@ class ResidualsBox(Box):
 
 class SamplesBox(Box):
     """
-    Text
+    Class for storing posterior samples in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -319,7 +376,7 @@ class SamplesBox(Box):
 
 class SpectrumBox(Box):
     """
-    Text
+    Class for storing spectral data in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):
@@ -342,7 +399,7 @@ class SpectrumBox(Box):
 
 class SynphotBox(Box):
     """
-    Text
+    Class for storing synthetic photometry in a :class:`species.core.box.Box`.
     """
 
     def __init__(self):

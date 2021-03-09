@@ -1393,9 +1393,12 @@ class Database:
                          random: int,
                          burnin: Optional[int] = None,
                          wavel_range: Optional[Union[Tuple[float, float], str]] = None,
-                         spec_res: Optional[float] = None) -> Union[List[box.ModelBox],
-                                                                    List[box.SpectrumBox]]:
+                         spec_res: Optional[float] = None,
+                         wavel_resample: Optional[np.ndarray] = None) -> \
+                             Union[List[box.ModelBox], List[box.SpectrumBox]]:
         """
+        Function for drawing random spectra from the sampled posterior distributions.
+
         Parameters
         ----------
         tag : str
@@ -1403,17 +1406,21 @@ class Database:
         random : int
             Number of random samples.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``.
+            Number of burnin steps. No burnin is removed if set to ``None``. Not required when
+            using nested sampling.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. Full spectrum is used if set to ``None``.
         spec_res : float, None
             Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied if set to ``None``.
+            is applied if the argument set to ``None``.
+        wavel_resample : np.ndarray, None
+            Wavelength points (um) to which the model spectrum will be resampled. The resampling is
+            applied after the optional smoothing to the resolution of ``spec_res``.
 
         Returns
         -------
         list(species.core.box.ModelBox)
-            Boxes with the randomly sampled spectra.
+            List with ``ModelBox`` objects.
         """
 
         if burnin is None:
@@ -1515,13 +1522,23 @@ class Database:
 
             if spectrum_type == 'model':
                 if spectrum_name == 'planck':
-                    specbox = readmodel.get_spectrum(model_param, spec_res)
+                    specbox = readmodel.get_spectrum(model_param,
+                                                     spec_res,
+                                                     smooth=True,
+                                                     wavel_resample=wavel_resample)
 
                 elif spectrum_name == 'powerlaw':
+                    if wavel_resample is not None:
+                        warnings.warn('The \'wavel_resample\' parameter is not support by the '
+                                      '\'powerlaw\' model so the argument will be ignored.')
+
                     specbox = read_util.powerlaw_spectrum(wavel_range, model_param)
 
                 else:
-                    specbox = readmodel.get_model(model_param, spec_res=spec_res, smooth=True)
+                    specbox = readmodel.get_model(model_param,
+                                                  spec_res=spec_res,
+                                                  wavel_resample=wavel_resample,
+                                                  smooth=True)
 
             elif spectrum_type == 'calibration':
                 specbox = readcalib.get_spectrum(model_param)
@@ -1536,22 +1553,32 @@ class Database:
     def get_mcmc_photometry(self,
                             tag: str,
                             filter_name: str,
-                            burnin: Optional[int] = None) -> np.ndarray:
+                            burnin: Optional[int] = None,
+                            phot_type: str = 'magnitude') -> np.ndarray:
         """
+        Function for calculating synthetic magnitudes or fluxes from the posterior samples.
+
         Parameters
         ----------
         tag : str
             Database tag with the posterior samples.
         filter_name : str
-            Filter name for which the photometry will be computed.
+            Filter name for which the synthetic photometry will be computed.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``.
+            Number of burnin steps. No burnin is removed if set to ``None``. Not required when
+            using nested sampling.
+        phot_type : str
+            Photometry type ('magnitude' or 'flux').
 
         Returns
         -------
         np.ndarray
-            Synthetic magnitudes.
+            Synthetic magnitudes or fluxes (W m-2 um-1).
         """
+
+        if phot_type not in ['magnitude', 'flux']:
+            raise ValueError('The argument of \'phot_type\' is not recognized and should be '
+                             'set to \'magnitude\' or \'flux\'.')
 
         if burnin is None:
             burnin = 0
@@ -1603,6 +1630,7 @@ class Database:
 
         for i in tqdm.tqdm(range(samples.shape[0]), desc='Getting MCMC photometry'):
             model_param = {}
+
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
@@ -1613,16 +1641,27 @@ class Database:
                 if spectrum_name == 'powerlaw':
                     pl_box = read_util.powerlaw_spectrum(synphot.wavel_range, model_param)
 
-                    app_mag, _ = synphot.spectrum_to_magnitude(pl_box.wavelength, pl_box.flux)
+                    if phot_type == 'magnitude':
+                        app_mag, _ = synphot.spectrum_to_magnitude(pl_box.wavelength, pl_box.flux)
+                        mcmc_phot[i] = app_mag[0]
 
-                    mcmc_phot[i] = app_mag[0]
+                    elif phot_type == 'flux':
+                        mcmc_phot[i], _ = synphot.spectrum_to_flux(pl_box.wavelength, pl_box.flux)
 
                 else:
-                    mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+                    if phot_type == 'magnitude':
+                        mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+
+                    elif phot_type == 'flux':
+                        mcmc_phot[i], _ = readmodel.get_flux(model_param)
 
             elif spectrum_type == 'calibration':
-                app_mag, _ = readcalib.get_magnitude(model_param=model_param, distance=None)
-                mcmc_phot[i] = app_mag[0]
+                if phot_type == 'magnitude':
+                    app_mag, _ = readcalib.get_magnitude(model_param=model_param, distance=None)
+                    mcmc_phot[i] = app_mag[0]
+
+                elif phot_type == 'flux':
+                    mcmc_phot[i], _ = readcalib.get_flux(model_param=model_param)
 
         return mcmc_phot
 

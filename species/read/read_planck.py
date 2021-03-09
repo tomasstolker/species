@@ -2,13 +2,14 @@
 Module with reading functionalities for Planck spectra.
 """
 
-import os
-import math
 import configparser
+import math
+import os
 
-from typing import Optional, Union, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import spectres
 
 from typeguard import typechecked
 
@@ -129,9 +130,12 @@ class ReadPlanck:
     def get_spectrum(self,
                      model_param: Dict[str, Union[float, List[float]]],
                      spec_res: float,
-                     smooth: bool = False) -> box.ModelBox:
+                     smooth: bool = False,
+                     wavel_resample: Optional[np.ndarray] = None) -> box.ModelBox:
         """
-        Function for calculating a Planck spectrum or a combination of multiple Planck spectra.
+        Function for calculating a Planck spectrum or a combination of multiple Planck spectra. The
+        spectrum is calculated at :math:`R = 500`. Afterwards, an optional smoothing and wavelength
+        resampling can be applied.
 
         Parameters
         ----------
@@ -141,8 +145,13 @@ class ReadPlanck:
             of multiple Planck functions, e.g.
             {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
         spec_res : float
-            Spectral resolution.
+            Spectral resolution that is used for smoothing the spectrum with a Gaussian kernel when
+            ``smooth=True``.
         smooth : bool
+            If ``True``, the spectrum is smoothed to the spectral resolution of ``spec_res``.
+        wavel_resample : np.ndarray, None
+            Wavelength points (um) to which the spectrum will be resampled. The resampling is
+            applied after the optional smoothing to ``spec_res`` when ``smooth=True``.
 
         Returns
         -------
@@ -153,7 +162,7 @@ class ReadPlanck:
         if 'teff' in model_param and isinstance(model_param['teff'], list):
             model_param = self.update_parameters(model_param)
 
-        wavel_points = read_util.create_wavelengths(self.wavel_range, spec_res)
+        wavel_points = read_util.create_wavelengths(self.wavel_range, 500.)
 
         n_planck = 0
 
@@ -197,6 +206,17 @@ class ReadPlanck:
                                    flux=flux,
                                    parameters=model_param,
                                    quantity='flux')
+
+        if wavel_resample is not None:
+            flux = spectres.spectres(wavel_resample,
+                                     wavel_points,
+                                     flux,
+                                     spec_errs=None,
+                                     fill=np.nan,
+                                     verbose=True)
+
+            model_box.wavelength = wavel_resample
+            model_box.flux = flux
 
         if n_planck == 1 and 'radius' in model_param:
             model_box.parameters['luminosity'] = 4. * np.pi * (
