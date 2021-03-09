@@ -60,11 +60,11 @@ def add_blackbody(input_path: str,
     url = 'https://home.strw.leidenuniv.nl/~stolker/species/blackbody.tgz'
 
     if not os.path.isfile(data_file):
-        print('Downloading blackbody model spectra (46 MB)...', end='', flush=True)
+        print('Downloading blackbody model spectra (56 MB)...', end='', flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(' [DONE]')
 
-    print('Unpacking blackbody model spectra (46 MB)...', end='', flush=True)
+    print('Unpacking blackbody model spectra (56 MB)...', end='', flush=True)
     tar = tarfile.open(data_file)
     tar.extractall(data_folder)
     tar.close()
@@ -90,7 +90,7 @@ def add_blackbody(input_path: str,
                         continue
 
                 print_message = f'Adding blackbody model spectra... {filename}'
-                print(f'\r{print_message:<62}', end='')
+                print(f'\r{print_message:<63}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
 
@@ -123,7 +123,7 @@ def add_blackbody(input_path: str,
                     flux.append(flux_resample)  # (W m-2 um-1)
 
     print_message = 'Adding blackbody model spectra... [DONE]'
-    print(f'\r{print_message:<62}')
+    print(f'\r{print_message:<63}')
 
     data_sorted = data_util.sort_data(np.asarray(teff),
                                       None,
