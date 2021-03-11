@@ -32,7 +32,8 @@ class ReadRadtrans:
                  scattering: bool = False,
                  wavel_range: Optional[Tuple[float, float]] = None,
                  filter_name: Optional[str] = None,
-                 pressure_grid: str = 'smaller') -> None:
+                 pressure_grid: str = 'smaller',
+                 res_mode: str = 'c-k') -> None:
         """
         Parameters
         ----------
@@ -57,6 +58,11 @@ class ReadRadtrans:
             cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
             faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
             test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        res_mode : str
+            Resolution mode ('c-k' or 'lbl'). The low-resolution mode ('c-k') calculates the
+            spectrum with the correlated-k assumption at :math:`\lambda/\Delta \lambda = 1000`. The
+            high-resolution mode ('lbl') calculates the spectrum with a line-by-line treatment at
+            :math:`\lambda/\Delta \lambda = 10^6`.
 
         Returns
         -------
@@ -116,7 +122,7 @@ class ReadRadtrans:
                                   cloud_species=self.cloud_species,
                                   continuum_opacities=['H2-H2', 'H2-He'],
                                   wlen_bords_micron=self.wavel_range,
-                                  mode='c-k',
+                                  mode=res_mode,
                                   test_ck_shuffle_comp=self.scattering,
                                   do_scat_emis=self.scattering)
 
@@ -138,7 +144,7 @@ class ReadRadtrans:
                   wavel_resample: Optional[np.ndarray] = None,
                   plot_contribution: Optional[str] = None) -> box.ModelBox:
         """
-        Function for calculating a model spectrum with petitRADTRANS.
+        Function for calculating a model spectrum with ``petitRADTRANS``.
 
         Parameters
         ----------
@@ -149,7 +155,8 @@ class ReadRadtrans:
             applied when the argument is set to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum is resampled. The original wavelengths
-            points are used if the argument is set to ``None``.
+            points are used if the argument is set to ``None``. This parameter hasn't been
+            implemented yet.
         plot_contribution : str, None
             Filename for the plot with the emission contribution. The plot is not created if the
             argument is set to ``None``.
@@ -201,7 +208,7 @@ class ReadRadtrans:
         elif chemistry == 'free':
             # Free chemistry
 
-            # TODO Set [Fe/H] = 0 for P-T profile
+            # TODO Set [Fe/H] = 0 for Molliere P-T profile and cloud condensation profiles
             metallicity = 0.
 
             # Create a dictionary with the mass fractions
@@ -384,7 +391,7 @@ class ReadRadtrans:
                                            model_param['ism_ext'],
                                            ism_reddening)
 
-        # Convolve the spectrum  with a Gaussian LSF
+        # Convolve the spectrum with a Gaussian LSF
 
         if spec_res is not None:
             flux = retrieval_util.convolve(wavelength, flux, spec_res)

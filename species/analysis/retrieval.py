@@ -1208,7 +1208,7 @@ class AtmosphericRetrieval:
                 c_o_ratio = cube[cube_index['c_o_ratio']]
 
             elif chemistry == 'free':
-                # TODO Set [Fe/H] = 0 for P-T profile
+                # TODO Set [Fe/H] = 0 for Molliere P-T profile and cloud condensation profiles
                 metallicity = 0.
 
                 # Create a dictionary with the mass fractions

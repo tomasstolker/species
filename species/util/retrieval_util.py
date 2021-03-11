@@ -29,7 +29,8 @@ def get_line_species() -> list:
     """
 
     return ['CH4', 'CO', 'CO_all_iso', 'CO2', 'H2O', 'H2S', 'HCN', 'K', 'K_lor_cut', 'K_burrows',
-            'NH3', 'Na', 'Na_lor_cut', 'Na_burrows', 'OH', 'PH3', 'TiO', 'VO', 'FeH']
+            'NH3', 'Na', 'Na_lor_cut', 'Na_burrows', 'OH', 'PH3', 'TiO', 'VO', 'FeH',
+            'H2O_main_iso', 'CH4_main_iso']
 
 
 @typechecked
@@ -42,7 +43,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
                  c_o_ratio: float,
                  conv: bool = True) -> Tuple[np.ndarray, float]:
     """
-    Self-luminous retrieval P-T model.
+    Pressure-temperature profile for a self-luminous atmosphere (see Mollière et al. 2020).
 
     Parameters
     ----------
@@ -478,8 +479,10 @@ def create_abund_dict(abund_in: dict,
         for item in line_species:
             if chemistry == 'equilibrium':
                 item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
+                item_replace = item_replace.replace('_Plez', '')
 
                 abund_out[item] = abund_in[item_replace][indices]
 
@@ -508,8 +511,10 @@ def create_abund_dict(abund_in: dict,
         for item in line_species:
             if chemistry == 'equilibrium':
                 item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
+                item_replace = item_replace.replace('_Plez', '')
 
                 abund_out[item] = abund_in[item_replace][::3]
 
@@ -538,8 +543,10 @@ def create_abund_dict(abund_in: dict,
         for item in line_species:
             if chemistry == 'equilibrium':
                 item_replace = item.replace('_all_iso', '')
+                item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
+                item_replace = item_replace.replace('_Plez', '')
 
                 abund_out[item] = abund_in[item_replace]
 
@@ -1007,27 +1014,27 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
         Carbon-to-oxygen ratio.
     """
 
-    # solar C/H from Asplund et al. (2009)
+    # Solar C/H from Asplund et al. (2009)
     c_h_solar = 10.**(8.43-12.)
 
-    # solar O/H from Asplund et al. (2009)
+    # Solar O/H from Asplund et al. (2009)
     o_h_solar = 10.**(8.69-12.)
 
-    # get the atomic masses
+    # Get the atomic masses
     masses = atomic_masses()
 
-    # create a dictionary with all mass fractions
+    # Create a dictionary with all mass fractions
     abund = mass_fractions(log_x_abund)
 
-    # calculate the mean molecular weight from the input mass fractions
+    # Calculate the mean molecular weight from the input mass fractions
     mmw = mean_molecular_weight(abund)
 
-    # initiate the C, H, and O abundance
+    # Initiate the C, H, and O abundance
     c_abund = 0.
     o_abund = 0.
     h_abund = 0.
 
-    # calculate the total C abundance
+    # Calculate the total C abundance
 
     if 'CO' in abund:
         c_abund += abund['CO'] * mmw/masses['CO']
@@ -1038,10 +1045,16 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     if 'CO2' in abund:
         c_abund += abund['CO2'] * mmw/masses['CO2']
 
+    if 'CO2_main_iso' in abund:
+        c_abund += abund['CO2_main_iso'] * mmw/masses['CO2']
+
     if 'CH4' in abund:
         c_abund += abund['CH4'] * mmw/masses['CH4']
 
-    # calculate the total O abundance
+    if 'CH4_main_iso' in abund:
+        c_abund += abund['CH4_main_iso'] * mmw/masses['CH4']
+
+    # Calculate the total O abundance
 
     if 'CO' in abund:
         o_abund += abund['CO'] * mmw/masses['CO']
@@ -1052,24 +1065,42 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     if 'CO2' in abund:
         o_abund += 2. * abund['CO2'] * mmw/masses['CO2']
 
+    if 'CO2_main_iso' in abund:
+        o_abund += 2. * abund['CO2_main_iso'] * mmw/masses['CO2']
+
     if 'H2O' in abund:
         o_abund += abund['H2O'] * mmw/masses['H2O']
 
-    # calculate the total H abundance
+    if 'H2O_main_iso' in abund:
+        o_abund += abund['H2O_main_iso'] * mmw/masses['H2O']
+
+    # Calculate the total H abundance
 
     h_abund += 2. * abund['H2'] * mmw/masses['H2']
 
     if 'CH4' in abund:
         h_abund += 4. * abund['CH4'] * mmw/masses['CH4']
 
+    if 'CH4_main_iso' in abund:
+        h_abund += 4. * abund['CH4_main_iso'] * mmw/masses['CH4']
+
     if 'H2O' in abund:
         h_abund += 2. * abund['H2O'] * mmw/masses['H2O']
+
+    if 'H2O_main_iso' in abund:
+        h_abund += 2. * abund['H2O_main_iso'] * mmw/masses['H2O']
 
     if 'NH3' in abund:
         h_abund += 3. * abund['NH3'] * mmw/masses['NH3']
 
+    if 'NH3_main_iso' in abund:
+        h_abund += 3. * abund['NH3_main_iso'] * mmw/masses['NH3']
+
     if 'H2S' in abund:
         h_abund += 2. * abund['H2S'] * mmw/masses['H2S']
+
+    if 'H2S_main_iso' in abund:
+        h_abund += 2. * abund['H2S_main_iso'] * mmw/masses['H2S']
 
     return np.log10(c_abund/h_abund/c_h_solar), \
         np.log10(o_abund/h_abund/o_h_solar), c_abund/o_abund
@@ -1104,6 +1135,12 @@ def mean_molecular_weight(abundances: dict) -> float:
 
         elif key in ['K_lor_cut', 'K_burrows']:
             mmw += abundances[key]/masses['K']
+
+        elif key == 'CH4_main_iso':
+            mmw += abundances[key]/masses['CH4']
+
+        elif key == 'H2O_main_iso':
+            mmw += abundances[key]/masses['H2O']
 
         else:
             mmw += abundances[key]/masses[key]
@@ -1243,7 +1280,7 @@ def atomic_masses() -> dict:
 
     masses = {}
 
-    # atoms
+    # Atoms
     masses['H'] = 1.
     masses['He'] = 4.
     masses['C'] = 12.
@@ -1267,21 +1304,29 @@ def atomic_masses() -> dict:
     masses['Fe'] = 55.8
     masses['Ni'] = 58.7
 
-    # molecules
+    # Molecules
     masses['H2'] = 2.
     masses['H2O'] = 18.
+    masses['H2O_main_iso'] = 18.
     masses['CH4'] = 16.
+    masses['CH4_main_iso'] = 16.
     masses['CO2'] = 44.
+    masses['CO2_main_iso'] = 44.
     masses['CO'] = 28.
     masses['CO_all_iso'] = 28.
     masses['NH3'] = 17.
+    masses['NH3_main_iso'] = 17.
     masses['HCN'] = 27.
     masses['C2H2,acetylene'] = 26.
     masses['PH3'] = 34.
+    masses['PH3_main_iso'] = 34.
     masses['H2S'] = 34.
+    masses['H2S_main_iso'] = 34.
     masses['VO'] = 67.
     masses['TiO'] = 64.
+    masses['TiO_all_iso_Plez'] = 64.
     masses['FeH'] = 57.
+    masses['FeH_main_iso'] = 57.
     masses['OH'] = 17.
 
     return masses
@@ -1938,7 +1983,7 @@ def convolve(input_wavel: np.ndarray,
     ----------
     input_wavel : np.ndarray
         Input wavelengths.
-    input_flux : np.ndarrau
+    input_flux : np.ndarray
         Input flux
     spec_res : float
         Spectral resolution of the Gaussian filter.
