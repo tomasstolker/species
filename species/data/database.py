@@ -2008,11 +2008,15 @@ class Database:
             dset.attrs['n_cloud_species'] = len(radtrans['cloud_species'])
 
             dset.attrs['scattering'] = radtrans['scattering']
-            dset.attrs['quenching'] = radtrans['quenching']
             dset.attrs['pt_profile'] = radtrans['pt_profile']
             dset.attrs['chemistry'] = radtrans['chemistry']
             dset.attrs['wavel_min'] = radtrans['wavel_range'][0]
             dset.attrs['wavel_max'] = radtrans['wavel_range'][1]
+
+            if radtrans['quenching'] is None:
+                dset.attrs['quenching'] = 'None'
+            else:
+                dset.attrs['quenching'] = radtrans['quenching']
 
             if 'pt_smooth' in radtrans:
                 dset.attrs['pt_smooth'] = radtrans['pt_smooth']
@@ -2249,7 +2253,11 @@ class Database:
         # Get chemistry attributes
 
         chemistry = dset.attrs['chemistry']
-        quenching = dset.attrs['quenching']
+
+        if dset.attrs['quenching'] == 'None':
+            quenching = None
+        else:
+            quenching = dset.attrs['quenching']
 
         # Get P-T profile attributes
 

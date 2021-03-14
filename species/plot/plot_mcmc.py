@@ -238,9 +238,9 @@ def plot_posterior(tag: str,
     if 'H2O' in samples_box.parameters:
         samples_box.parameters.append('c_h_ratio')
         samples_box.parameters.append('o_h_ratio')
-        # samples_box.parameters.append('c_o_ratio')
+        samples_box.parameters.append('c_o_ratio')
 
-        ndim += 2
+        ndim += 3
 
         abund_index = {}
         for i, item in enumerate(samples_box.parameters):
@@ -403,7 +403,7 @@ def plot_posterior(tag: str,
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 
     if 'H2O' in samples_box.parameters:
-        samples = np.column_stack((samples, c_h_ratio, o_h_ratio))
+        samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
 
     if inc_luminosity:
         if 'teff' in samples_box.parameters and 'radius' in samples_box.parameters:

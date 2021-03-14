@@ -584,7 +584,7 @@ def create_abund_dict(abund_in: dict,
 def calc_spectrum_clear(rt_object,
                         pressure: np.ndarray,
                         temperature: np.ndarray,
-                        logg: float,
+                        log_g: float,
                         c_o_ratio: Optional[float],
                         metallicity: Optional[float],
                         p_quench: Optional[float],
@@ -604,7 +604,7 @@ def calc_spectrum_clear(rt_object,
         Array with the pressure points (bar).
     temperature : np.ndarray
         Array with the temperature points (K) corresponding to ``pressure``.
-    logg : float
+    log_g : float
         Log10 of the surface gravity (cm s-2).
     c_o_ratio : float, None
         Carbon-to-oxygen ratio.
@@ -686,7 +686,7 @@ def calc_spectrum_clear(rt_object,
                                    indices=None)
 
     # calculate the emission spectrum
-    rt_object.calc_flux(temperature, abundances, 10.**logg, mmw, contribution=contribution)
+    rt_object.calc_flux(temperature, abundances, 10.**log_g, mmw, contribution=contribution)
 
     # convert frequency (Hz) to wavelength (cm)
     wavel = constants.LIGHT*1e2/rt_object.freq
@@ -711,8 +711,8 @@ def calc_spectrum_clouds(rt_object,
                          log_x_abund: Optional[dict],
                          log_x_base: dict,
                          fsed: float,
-                         Kzz: float,
-                         logg: float,
+                         log_kzz: float,
+                         log_g: float,
                          sigma_lnorm: float,
                          chemistry: str,
                          pressure_grid: str = 'smaller',
@@ -744,9 +744,9 @@ def calc_spectrum_clouds(rt_object,
         Dictionary with the log10 of the mass fractions at the cloud base.
     fsed : float
         Sedimentation parameter.
-    Kzz : float
-        Log 10 of the eddy diffusion coefficient (cm2 s-1).
-    logg : float
+    log_kzz : float
+        Log10 of the eddy diffusion coefficient (cm2 s-1).
+    log_g : float
         Log10 of the surface gravity (cm s-2).
     sigma_lnorm : float
         Geometric standard deviation of the log-normal size distribution.
@@ -843,7 +843,7 @@ def calc_spectrum_clouds(rt_object,
                                    pressure_grid=pressure_grid,
                                    indices=indices)
 
-    Kzz_use = np.full(pressure.shape, 10.**Kzz)
+    Kzz_use = np.full(pressure.shape, 10.**log_kzz)
 
     if pressure_grid == 'smaller':
         temperature = temperature[::3]
@@ -901,7 +901,7 @@ def calc_spectrum_clouds(rt_object,
             plt.ylim(1e3, 1e-6)
             plt.xlim(1e-10, 1.)
             log_x_base_item = log_x_base[item]
-            plt.title(f'fsed = {fsed:.2f}, lgK = {Kzz:.2f}, X_b = {log_x_base_item:.2f}')
+            plt.title(f'fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, X_b = {log_x_base_item:.2f}')
             plt.savefig(f'{item.lower()}_clouds.pdf', bbox_inches='tight')
             plt.clf()
 
@@ -916,7 +916,7 @@ def calc_spectrum_clouds(rt_object,
     # Calculate the emission spectrum
     check_scaling = rt_object.calc_flux(temperature,
                                         abundances,
-                                        10.**logg,
+                                        10.**log_g,
                                         mmw,
                                         sigma_lnorm=sigma_lnorm,
                                         Kzz=Kzz_use,
@@ -2012,24 +2012,30 @@ def convolve(input_wavel: np.ndarray,
 
 
 @typechecked
-def quench_pressure(cube,
-                    cube_index: Dict[str, int],
-                    pressure: np.ndarray,
-                    temperature: np.ndarray) -> Optional[float]:
+def quench_pressure(pressure: np.ndarray,
+                    temperature: np.ndarray,
+                    metallicity: float,
+                    c_o_ratio: float,
+                    log_g: float,
+                    log_kzz: float) -> Optional[float]:
     """
     Function to determine the CO/CH4 quenching pressure by intersecting the pressure-dependent
     timescales of the vertical mixing and the CO/CH4 reaction rates.
 
     Parameters
     ----------
-    cube : LP_c_double
-        Unit cube.
-    cube_index : dict
-        Dictionary with the index of each parameter in the ``cube``.
     pressure : np.ndarray
         Array with the pressures (bar).
     temperature : np.ndarray
         Array with the temperatures (K) corresponding to ``pressure``.
+    metallicity : float
+        Metallicity [Fe/H].
+    c_o_ratio : float
+        Carbon-to-oxygen ratio.
+    log_g : float
+        Log10 of the surface gravity (cm s-2).
+    log_kzz : float
+        Log10 of the eddy diffusion coefficient (cm2 s-1).
 
     Returns
     -------
@@ -2039,8 +2045,8 @@ def quench_pressure(cube,
 
     # Interpolate the equilibbrium abundances
 
-    co_array = np.full(pressure.shape[0], cube[cube_index['c_o_ratio']])
-    feh_array = np.full(pressure.shape[0], cube[cube_index['metallicity']])
+    co_array = np.full(pressure.shape[0], c_o_ratio)
+    feh_array = np.full(pressure.shape[0], metallicity)
 
     from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
         interpol_abundances
@@ -2049,7 +2055,7 @@ def quench_pressure(cube,
         co_array, feh_array, temperature, pressure, Pquench_carbon=None)
 
     # Surface gravity (m s-2)
-    gravity = 1e-2 * 10.**cube[cube_index['logg']]
+    gravity = 1e-2 * 10.**log_g
 
     # Mean molecular weight (kg)
     mmw = abund_eq['MMW'] * constants.ATOMIC_MASS
@@ -2058,13 +2064,13 @@ def quench_pressure(cube,
     h_scale = constants.BOLTZMANN * temperature / (mmw * gravity)
 
     # Diffusion coefficient (m2 s-1)
-    kzz = 1e-4 * 10.**cube[cube_index['log_kzz']]
+    kzz = 1e-4 * 10.**log_kzz
 
     # Mixing timescale (s)
     t_mix = h_scale**2 / kzz
 
     # Chemical timescale (see Eq. 12 from Zahnle & Marley 2014)
-    metal = 10.**cube[cube_index['metallicity']]
+    metal = 10.**metallicity
     t_chem = 1.5e-6 * pressure**-1. * metal**-0.7 * np.exp(42000./temperature)
 
     # Determine pressure at which t_mix = t_chem

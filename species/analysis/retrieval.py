@@ -1313,7 +1313,9 @@ class AtmosphericRetrieval:
             elif quenching == 'diffusion':
                 # Calculate the quenching pressure from timescales
                 p_quench = retrieval_util.quench_pressure(
-                    cube, cube_index, self.pressure, temp)
+                    self.pressure, temp, cube[cube_index['metallicity']],
+                    cube[cube_index['c_o_ratio']], cube[cube_index['logg']],
+                    cube[cube_index['log_kzz']])
 
             else:
                 p_quench = None
