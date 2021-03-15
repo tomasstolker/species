@@ -2315,6 +2315,10 @@ class Database:
                                               wavel_range=wavel_range,
                                               pressure_grid=pressure_grid)
 
+        # Set quenching attribute such that the parameter of get_model is not required
+
+        read_rad.quenching = quenching
+
         # pool = multiprocessing.Pool(os.cpu_count())
         # processes = []
 

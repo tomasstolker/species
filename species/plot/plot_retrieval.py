@@ -236,10 +236,16 @@ def plot_pt_profile(tag: str,
 
     if extra_axis == 'grains' and 'metallicity' in median and 'c_o_ratio' in median:
 
-        if 'log_p_quench' in median:
-            quench_press = 10.**median['log_p_quench']
+        if box.attributes['quenching'] == 'pressure':
+            p_quench = 10.**median['log_p_quench']
+
+        elif box.attributes['quenching'] == 'diffusion':
+            p_quench = retrieval_util.quench_pressure(
+                radtrans.rt_object.press, radtrans.rt_object.temp, median['metallicity'],
+                median['c_o_ratio'], median['logg'], median['log_kzz'])
+
         else:
-            quench_press = None
+            p_quench = None
 
         # Import interpol_abundances here because it is slow
 
@@ -250,7 +256,7 @@ def plot_pt_profile(tag: str,
                                        np.full(pressure.shape[0], median['metallicity']),
                                        temp,
                                        pressure,
-                                       Pquench_carbon=quench_press)
+                                       Pquench_carbon=p_quench)
 
         for item in cloud_species:
             if f'{item[:-3].lower()}_tau' in median:

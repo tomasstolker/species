@@ -12,6 +12,7 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_radtrans
+from species.util import retrieval_util
 
 
 @typechecked

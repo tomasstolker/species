@@ -4,6 +4,8 @@ atmospheric retrieval code can be found in Mollière et al. (2019) and in the on
 documentation (https://petitradtrans.readthedocs.io).
 """
 
+import warnings
+
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib as mpl
@@ -140,6 +142,7 @@ class ReadRadtrans:
     @typechecked
     def get_model(self,
                   model_param: Dict[str, float],
+                  quenching: Optional[str] = None,
                   spec_res: Optional[float] = None,
                   wavel_resample: Optional[np.ndarray] = None,
                   plot_contribution: Optional[str] = None) -> box.ModelBox:
@@ -150,6 +153,11 @@ class ReadRadtrans:
         ----------
         model_param : dict
             Dictionary with the model parameters and values.
+        quenching : str, None
+            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
+            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
+            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
+            applied if the argument is set to ``None``.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian kernel. No smoothing is
             applied when the argument is set to ``None``.
@@ -195,6 +203,19 @@ class ReadRadtrans:
         else:
             raise ValueError('Chemistry type not recognized. Please check the dictionary with '
                              'parameters of \'model_param\'.')
+
+        # Check quenching parameter
+
+        if not hasattr(self, 'quenching'):
+            self.quenching = quenching
+
+        if self.quenching is not None and chemistry != 'equilibrium':
+            raise ValueError('The \'quenching\' parameter can only be used in combination with '
+                             'chemistry=\'equilibrium\'.')
+
+        if self.quenching is not None and self.quenching not in ['pressure', 'diffusion']:
+            raise ValueError('The argument of \'quenching\' should by of the following: '
+                             '\'pressure\', \'diffusion\', or None.')
 
         # C/O and [Fe/H]
 
@@ -246,10 +267,21 @@ class ReadRadtrans:
 
         # Set the log quenching pressure, log(P/bar)
 
-        if 'log_p_quench' in model_param:
-            log_p_quench = model_param['log_p_quench']
+        if self.quenching == 'pressure':
+            p_quench = 10.**model_param['log_p_quench']
+
+        elif self.quenching == 'diffusion':
+            p_quench = retrieval_util.quench_pressure(
+                self.pressure, temp, model_param['metallicity'], model_param['c_o_ratio'],
+                model_param['logg'], model_param['log_kzz'])
+
         else:
-            log_p_quench = -10.
+            if 'log_p_quench' in model_param:
+                warnings.warn('The \'model_param\' dictionary contains the \'log_p_quench\' '
+                              'parameter but \'quenching=None\'. The quenching pressure from '
+                              'the dictionary is therefore ignored.')
+
+            p_quench = None
 
         # Create the dictionary with the mass fractions of the clouds relative to the maximum
         # values allowed from elemental abundances
@@ -277,7 +309,7 @@ class ReadRadtrans:
                                                        np.full(self.pressure.size, metallicity),
                                                        temp,
                                                        self.pressure,
-                                                       Pquench_carbon=10.**log_p_quench)
+                                                       Pquench_carbon=p_quench)
 
                         # Extract the mean molecular weight
 
@@ -338,7 +370,7 @@ class ReadRadtrans:
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
                 self.rt_object, self.pressure, temp, c_o_ratio, metallicity,
-                log_p_quench, log_x_abund, log_x_base, model_param['fsed'],
+                p_quench, log_x_abund, log_x_base, model_param['fsed'],
                 log_kzz, model_param['logg'], model_param['sigma_lnorm'],
                 chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud)
@@ -348,7 +380,7 @@ class ReadRadtrans:
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'],
-                model_param['c_o_ratio'], model_param['metallicity'], log_p_quench,
+                model_param['c_o_ratio'], model_param['metallicity'], p_quench,
                 None, pressure_grid=self.pressure_grid, chemistry=chemistry,
                 contribution=True)
 
