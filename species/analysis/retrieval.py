@@ -87,7 +87,10 @@ class AtmosphericRetrieval:
             parameter can for example be used to bias the weighting of the photometric data points.
             An equal weighting is applied if the argument is set to ``None``.
         lbl_species : list, None
-            TODO List with the line species. No line species are used if set to ``None``.
+            List with the line species that will be used for calculating line-by-line spectra for
+            the list of high-resolution spectra that are provided as argument of ``cross_corr``
+            when running :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`. The
+            argument can be set to ``None`` when ``cross_corr=None``.
 
         Returns
         -------
@@ -1435,8 +1438,8 @@ class AtmosphericRetrieval:
                     for item in self.cloud_species:
                         log_x_base[item[:-3]] = cube[cube_index[item]]
 
-                # The try-except is required to catch numerical precision errors with the clouds
-                # try:
+                # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
+
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, c_o_ratio, metallicity,
                     p_quench, log_x_abund, log_x_base,
@@ -1445,28 +1448,25 @@ class AtmosphericRetrieval:
                     pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
                     tau_cloud=tau_cloud)
 
-                # except:
-                #     return -np.inf
-
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                # Line-by-line spectra
+                # Calculate a cloudy spectrum for high-resolution data (i.e. line-by-line)
 
                 lbl_wavel = {}
                 lbl_flux = {}
 
-                for cc_item in cross_corr:
+                for item in cross_corr:
 
-                    lbl_wavel[cc_item], lbl_flux[cc_item], _ = retrieval_util.calc_spectrum_clouds(
-                        lbl_radtrans[cc_item], self.pressure, temp, c_o_ratio, metallicity,
+                    lbl_wavel[item], lbl_flux[item], _ = retrieval_util.calc_spectrum_clouds(
+                        lbl_radtrans[item], self.pressure, temp, c_o_ratio, metallicity,
                         p_quench, log_x_abund, log_x_base,
                         cube[cube_index['fsed']], cube[cube_index['log_kzz']], cube[cube_index['logg']],
                         cube[cube_index['sigma_lnorm']], chemistry=chemistry,
                         pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
                         tau_cloud=tau_cloud)
 
-                    if lbl_wavel[cc_item] is None and lbl_flux[cc_item] is None:
+                    if lbl_wavel[item] is None and lbl_flux[item] is None:
                         return -np.inf
 
             else:
@@ -1515,8 +1515,8 @@ class AtmosphericRetrieval:
 
             flux_lambda *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
-            for cc_item in cross_corr:
-                lbl_flux[cc_item] *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
+            for item in cross_corr:
+                lbl_flux[item] *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
             # Evaluate the spectra
 
