@@ -1451,7 +1451,7 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                # Calculate a cloudy spectrum for high-resolution data (i.e. line-by-line)
+                # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 
                 lbl_wavel = {}
                 lbl_flux = {}
@@ -1473,27 +1473,54 @@ class AtmosphericRetrieval:
                 # Clear atmosphere
 
                 if chemistry == 'equilibrium':
+                    # Calculate a clear spectrum for low- and medium-resolution data (i.e. corr-k)
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']],
                         p_quench, None, chemistry=chemistry, pressure_grid=self.pressure_grid,
                         contribution=False)
 
-                    # TODO Line-by-line spectra
+                    # Calculate clear spectra for high-resolution data (i.e. line-by-line)
 
                     lbl_wavel = {}
                     lbl_flux = {}
 
+                    for item in cross_corr:
+                        lbl_wavel[item], lbl_flux[item], _ = retrieval_util.calc_spectrum_clear(
+                            lbl_radtrans[item], self.pressure, temp, cube[cube_index['logg']],
+                            cube[cube_index['c_o_ratio']], cube[cube_index['metallicity']],
+                            p_quench, None, chemistry=chemistry, pressure_grid=self.pressure_grid,
+                            contribution=False)
+
                 elif chemistry == 'free':
+                    # Calculate a clear spectrum for low- and medium-resolution data (i.e. corr-k)
+
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         None, None, None, log_x_abund, chemistry,
                         pressure_grid=self.pressure_grid, contribution=False)
 
-                    # TODO Line-by-line spectra
+                    # Calculate clear spectra for high-resolution data (i.e. line-by-line)
 
                     lbl_wavel = {}
                     lbl_flux = {}
+
+                    for item in cross_corr:
+                        log_x_lbl = {}
+
+                        if 'CO_all_iso' in self.lbl_species:
+                            log_x_lbl['CO_all_iso'] = log_x_abund['CO_all_iso']
+
+                        if 'H2O_main_iso' in self.lbl_species:
+                            log_x_lbl['H2O_main_iso'] = log_x_abund['H2O']
+
+                        if 'CH4_main_iso' in self.lbl_species:
+                            log_x_lbl['CH4_main_iso'] = log_x_abund['CH4']
+
+                        lbl_wavel[item], lbl_flux[item], _ = retrieval_util.calc_spectrum_clear(
+                            lbl_radtrans[item], self.pressure, temp, cube[cube_index['logg']],
+                            None, None, None, log_x_lbl, chemistry,
+                            pressure_grid=self.pressure_grid, contribution=False)
 
             end = time.time()
 
