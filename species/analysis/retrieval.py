@@ -34,15 +34,16 @@ class AtmosphericRetrieval:
     @typechecked
     def __init__(self,
                  object_name: str,
-                 line_species: Optional[list],
-                 cloud_species: Optional[list],
+                 line_species: Optional[List[str]],
+                 cloud_species: Optional[List[str]],
                  output_folder: str,
                  wavel_range: Optional[Tuple[float, float]],
                  scattering: bool = True,
                  inc_spec: Union[bool, List[str]] = True,
                  inc_phot: Union[bool, List[str]] = False,
                  pressure_grid: str = 'smaller',
-                 weights: Optional[Dict[str, float]] = None) -> None:
+                 weights: Optional[Dict[str, float]] = None,
+                 lbl_species: Optional[List[str]] = None) -> None:
         """
         Parameters
         ----------
@@ -85,6 +86,8 @@ class AtmosphericRetrieval:
             and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
             parameter can for example be used to bias the weighting of the photometric data points.
             An equal weighting is applied if the argument is set to ``None``.
+        lbl_species : list, None
+            TODO List with the line species. No line species are used if set to ``None``.
 
         Returns
         -------
@@ -100,6 +103,7 @@ class AtmosphericRetrieval:
         self.scattering = scattering
         self.output_folder = output_folder
         self.pressure_grid = pressure_grid
+        self.lbl_species = lbl_species
 
         # Get object data
 
@@ -108,6 +112,8 @@ class AtmosphericRetrieval:
 
         print(f'Object: {self.object_name}')
         print(f'Distance: {self.distance}')
+
+        # Line species
 
         if self.line_species is None:
             print('Line species: None')
@@ -118,6 +124,8 @@ class AtmosphericRetrieval:
             for item in self.line_species:
                 print(f'   - {item}')
 
+        # Cloud species
+
         if self.cloud_species is None:
             print('Cloud species: None')
             self.cloud_species = []
@@ -127,7 +135,22 @@ class AtmosphericRetrieval:
             for item in self.cloud_species:
                 print(f'   - {item}')
 
+        # Line species (high-resolution / line-by-line)
+
+        if self.lbl_species is None:
+            print('Line-by-line species: None')
+            self.lbl_species = []
+
+        else:
+            print('Line-by-line species:')
+            for item in self.lbl_species:
+                print(f'   - {item}')
+
+        # Scattering
+
         print(f'Scattering: {self.scattering}')
+
+        # Get ObjectBox
 
         species_db = database.Database()
 
@@ -176,7 +199,6 @@ class AtmosphericRetrieval:
             if inc_spec:
                 # Select all filters if True
                 species_db = database.Database()
-                objectbox = species_db.get_object(object_name)
                 inc_spec = list(objectbox.spectrum.keys())
 
             else:
@@ -677,15 +699,39 @@ class AtmosphericRetrieval:
                              test_ck_shuffle_comp=self.scattering,
                              do_scat_emis=self.scattering)
 
+        lbl_radtrans = {}
+
+        for item in cross_corr:
+            lbl_wavel_range = (0.95*self.spectrum[item][0][0, 0], 1.05*self.spectrum[item][0][-1, 0])
+
+            lbl_cloud_species = self.cloud_species_full.copy()
+
+            lbl_radtrans[item] = Radtrans(line_species=self.lbl_species,
+                                          rayleigh_species=['H2', 'He'],
+                                          cloud_species=lbl_cloud_species,
+                                          continuum_opacities=['H2-H2', 'H2-He'],
+                                          wlen_bords_micron=lbl_wavel_range,
+                                          mode='lbl',
+                                          test_ck_shuffle_comp=self.scattering,
+                                          do_scat_emis=self.scattering)
+
         # Create the RT arrays
 
         if self.pressure_grid == 'standard':
-            rt_object.setup_opa_structure(self.pressure)
             print(f'Number of pressure levels used with the radiative transfer: {self.pressure.size}')
 
+            rt_object.setup_opa_structure(self.pressure)
+
+            for item in lbl_radtrans.values():
+                item.setup_opa_structure(self.pressure)
+
         elif self.pressure_grid == 'smaller':
-            rt_object.setup_opa_structure(self.pressure[::3])
             print(f'Number of pressure levels used with the radiative transfer: {self.pressure[::3].size}')
+
+            rt_object.setup_opa_structure(self.pressure[::3])
+
+            for item in lbl_radtrans.values():
+                item.setup_opa_structure(self.pressure[::3])
 
         elif self.pressure_grid == 'clouds':
             if len(self.cloud_species) == 0:
@@ -694,8 +740,12 @@ class AtmosphericRetrieval:
 
             # The pressure structure is reinitiated after the refinement around the cloud deck
             # so the current initializiation to 60 pressure points is not used
-            rt_object.setup_opa_structure(self.pressure[::24])
             print('Number of pressure levels used with the radiative transfer: variable}')
+
+            rt_object.setup_opa_structure(self.pressure[::24])
+
+            for item in lbl_radtrans.values():
+                item.setup_opa_structure(self.pressure[::24])
 
         # Create the knot pressures
 
@@ -1355,6 +1405,9 @@ class AtmosphericRetrieval:
                                 abund_in, item, params[f'{item[:-3].lower()}_tau'],
                                 pressure_grid=self.pressure_grid)
 
+                            if len(self.cross_corr) != 0:
+                                raise ValueError('Check if it works correctly with lbl species.')
+
                     if 'log_tau_cloud' in self.parameters:
                         tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
 
@@ -1398,6 +1451,24 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
+                # Line-by-line spectra
+
+                lbl_wavel = {}
+                lbl_flux = {}
+
+                for cc_item in cross_corr:
+
+                    lbl_wavel[cc_item], lbl_flux[cc_item], _ = retrieval_util.calc_spectrum_clouds(
+                        lbl_radtrans[cc_item], self.pressure, temp, c_o_ratio, metallicity,
+                        p_quench, log_x_abund, log_x_base,
+                        cube[cube_index['fsed']], cube[cube_index['log_kzz']], cube[cube_index['logg']],
+                        cube[cube_index['sigma_lnorm']], chemistry=chemistry,
+                        pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
+                        tau_cloud=tau_cloud)
+
+                    if lbl_wavel[cc_item] is None and lbl_flux[cc_item] is None:
+                        return -np.inf
+
             else:
                 # Clear atmosphere
 
@@ -1408,11 +1479,21 @@ class AtmosphericRetrieval:
                         p_quench, None, chemistry=chemistry, pressure_grid=self.pressure_grid,
                         contribution=False)
 
+                    # TODO Line-by-line spectra
+
+                    lbl_wavel = {}
+                    lbl_flux = {}
+
                 elif chemistry == 'free':
                     wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
                         rt_object, self.pressure, temp, cube[cube_index['logg']],
                         None, None, None, log_x_abund, chemistry,
                         pressure_grid=self.pressure_grid, contribution=False)
+
+                    # TODO Line-by-line spectra
+
+                    lbl_wavel = {}
+                    lbl_flux = {}
 
             end = time.time()
 
@@ -1426,10 +1507,30 @@ class AtmosphericRetrieval:
 
                 return -np.inf
 
-            # Scale the emitted spectrum to the observation
+            for item in lbl_flux.values():
+                if np.sum(np.isnan(item)) > 0:
+                    return -np.inf
+
+            # Scale the emitted spectra to the observation
+
             flux_lambda *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
 
+            for cc_item in cross_corr:
+                lbl_flux[cc_item] *= (cube[cube_index['radius']]*constants.R_JUP / (self.distance*constants.PARSEC))**2.
+
+            # Evaluate the spectra
+
             for i, item in enumerate(self.spectrum.keys()):
+                # Select model spectrum
+
+                if item in cross_corr:
+                    model_wavel = lbl_wavel[item]
+                    model_flux = lbl_flux[item]
+
+                else:
+                    model_wavel = wlen_micron
+                    model_flux = flux_lambda
+
                 # Shift the wavelengths of the data with the fitted calibration parameter
                 data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
 
@@ -1443,6 +1544,7 @@ class AtmosphericRetrieval:
                     data_var = (self.spectrum[item][0][:, 2] + 10.**err_offset[item])**2
 
                 # Apply ISM extinction to the model spectrum
+
                 if 'ism_ext' in self.parameters:
                     if 'ism_red' in self.parameters:
                         ism_reddening = cube[cube_index['ism_red']]
@@ -1451,18 +1553,23 @@ class AtmosphericRetrieval:
                         # Use default interstellar reddening (R_V = 3.1)
                         ism_reddening = 3.1
 
-                    flux_lambda = dust_util.apply_ism_ext(wlen_micron,
-                                                          flux_lambda,
-                                                          cube[cube_index['ism_ext']],
-                                                          ism_reddening)
+                    flux_ext = dust_util.apply_ism_ext(model_wavel,
+                                                       model_flux,
+                                                       cube[cube_index['ism_ext']],
+                                                       ism_reddening)
+
+                else:
+                    flux_ext = model_flux
 
                 # Convolve with Gaussian LSF
-                flux_smooth = retrieval_util.convolve(wlen_micron,
-                                                      flux_lambda,
+
+                flux_smooth = retrieval_util.convolve(model_wavel,
+                                                      flux_ext,
                                                       self.spectrum[item][3])
 
                 # Resample to the observation
-                flux_rebinned = rebin_give_width(wlen_micron,
+
+                flux_rebinned = rebin_give_width(model_wavel,
                                                  flux_smooth,
                                                  data_wavel,
                                                  self.spectrum[item][4])
@@ -1533,11 +1640,12 @@ class AtmosphericRetrieval:
                     # Cross-covariance
                     cross_cov = np.sum(data_flux_scaled * flux_rebinned) / n_wavel
 
-                    # Log-likelihood 
-                    ln_like += -0.5 * n_wavel * np.log(cc_var_dat - 2.*cross_cov + cc_var_mod)
+                    # Log-likelihood
+                    if cc_var_dat - 2.*cross_cov + cc_var_mod > 0.:
+                        ln_like += -0.5 * n_wavel * np.log(cc_var_dat - 2.*cross_cov + cc_var_mod)
 
-                    # The cross-covariance term may result in a logarithm of a negative value
-                    if np.isnan(ln_like):
+                    else:
+                        # Return -inf if logarithm of negative value
                         return -np.inf
 
                 if plotting:
@@ -1545,6 +1653,8 @@ class AtmosphericRetrieval:
                                  marker='o', ms=3, color='tab:blue', markerfacecolor='tab:blue', alpha=0.2)
 
                     plt.plot(data_wavel, flux_rebinned, marker='o', ms=3, color='tab:orange', alpha=0.2)
+
+            # Evaluate the photometric fluxes
 
             for i, obj_item in enumerate(self.objphot):
                 # Calculate the photometric flux from the model spectrum
@@ -1597,6 +1707,7 @@ class AtmosphericRetrieval:
         radtrans_dict = {}
         radtrans_dict['line_species'] = self.line_species
         radtrans_dict['cloud_species'] = self.cloud_species_full
+        radtrans_dict['lbl_species'] = self.lbl_species
         radtrans_dict['distance'] = self.distance
         radtrans_dict['scattering'] = self.scattering
         radtrans_dict['chemistry'] = chemistry
