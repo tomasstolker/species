@@ -2134,6 +2134,75 @@ class Database:
                     dset.attrs['n_param'] = n_param
                     dset.attrs[f'parameter{n_param-1}'] = f'{cloud_item[:-6].lower()}_fraction'
 
+        if radtrans['quenching'] == 'diffusion':
+            p_quench = np.zeros(samples.shape[0])
+
+            desc = f'Calculating quenching pressures'
+
+            for i in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+                # Convert list of parameters and samples into dictionary
+                sample_dict = retrieval_util.list_to_dict(parameters, samples[i, ])
+
+                # Recalculate the P-T profile from the sampled parameters
+
+                pressure = np.logspace(-6, 3, 180)  # (bar)
+
+                if radtrans['pt_profile'] == 'molliere':
+                    upper_temp = np.array([sample_dict['t1'],
+                                           sample_dict['t2'],
+                                           sample_dict['t3']])
+
+                    temp, _ = retrieval_util.pt_ret_model(upper_temp,
+                                                          10.**sample_dict['log_delta'],
+                                                          sample_dict['alpha'],
+                                                          sample_dict['tint'],
+                                                          pressure,
+                                                          sample_dict['metallicity'],
+                                                          sample_dict['c_o_ratio'])
+
+                elif radtrans['pt_profile'] == 'free' or radtrans['pt_profile'] == 'monotonic':
+                    knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+
+                    knot_temp = []
+                    for k in range(15):
+                        knot_temp.append(sample_dict[f't{k}'])
+
+                    knot_temp = np.asarray(knot_temp)
+
+                    if 'pt_smooth' in sample_dict:
+                        pt_smooth = sample_dict['pt_smooth']
+                    else:
+                        pt_smooth = radtrans['pt_smooth']
+
+                    temp = retrieval_util.pt_spline_interp(
+                        knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
+
+                # Calculate the quenching pressure
+
+                p_quench[i] = retrieval_util.quench_pressure(
+                    pressure, temp, sample_dict['metallicity'],
+                    sample_dict['c_o_ratio'], sample_dict['logg'],
+                    sample_dict['log_kzz'])
+
+            db_tag = f'results/fit/{tag}/samples'
+
+            with h5py.File(self.database, 'a') as h5_file:
+                dset_attrs = h5_file[db_tag].attrs
+
+                samples = np.asarray(h5_file[db_tag])
+                samples = np.append(samples, np.log10(p_quench[..., np.newaxis]), axis=1)
+
+                del h5_file[db_tag]
+                dset = h5_file.create_dataset(db_tag, data=samples)
+
+                for item in dset_attrs:
+                    dset.attrs[item] = dset_attrs[item]
+
+                n_param = dset_attrs['n_param'] + 1
+
+                dset.attrs['n_param'] = n_param
+                dset.attrs[f'parameter{n_param-1}'] = 'log_p_quench'
+
         if inc_teff:
             print('Calculating Teff from the posterior samples... ')
 
