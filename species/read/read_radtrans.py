@@ -1,7 +1,6 @@
 """
-Module for generating atmospheric model spectra with ``petitRADTRANS``. Details on this
-atmospheric retrieval code can be found in Mollière et al. (2019) and in the online
-documentation (https://petitradtrans.readthedocs.io).
+Module for generating atmospheric model spectra with ``petitRADTRANS``. Details on the
+radiative transfer code can be found in Mollière et al. (2019).
 """
 
 import warnings
@@ -11,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import spectres
 
 from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
@@ -162,9 +162,8 @@ class ReadRadtrans:
             Spectral resolution, achieved by smoothing with a Gaussian kernel. No smoothing is
             applied when the argument is set to ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum is resampled. The original wavelengths
-            points are used if the argument is set to ``None``. This parameter hasn't been
-            implemented yet.
+            Wavelength points (um) to which the spectrum will be resampled. The original
+            wavelengths points will be used if the argument is set to ``None``.
         plot_contribution : str, None
             Filename for the plot with the emission contribution. The plot is not created if the
             argument is set to ``None``.
@@ -174,10 +173,6 @@ class ReadRadtrans:
         species.core.box.ModelBox
             Box with the petitRADTRANS model spectrum.
         """
-
-        if spec_res is not None and wavel_resample is not None:
-            raise ValueError('The \'spec_res\' and \'wavel_resample\' parameters can not be used '
-                             'simultaneously. Please set one of them to None.')
 
         # Set contribution boolean
 
@@ -423,10 +418,7 @@ class ReadRadtrans:
                                            model_param['ism_ext'],
                                            ism_reddening)
 
-        # Convolve the spectrum with a Gaussian LSF
-
-        if spec_res is not None:
-            flux = retrieval_util.convolve(wavelength, flux, spec_res)
+        # Plot 2D emission contribution
 
         if plot_contribution is not None:
             # Calculate the total optical depth (line and continuum opacities)
@@ -498,6 +490,23 @@ class ReadRadtrans:
             plt.savefig(plot_contribution, bbox_inches='tight')
             plt.clf()
             plt.close()
+
+        # Convolve the spectrum with a Gaussian LSF
+
+        if spec_res is not None:
+            flux = retrieval_util.convolve(wavelength, flux, spec_res)
+
+        # Resample the spectrum
+
+        if wavel_resample is not None:
+            flux = spectres.spectres(wavel_resample,
+                                     wavelength,
+                                     flux,
+                                     spec_errs=None,
+                                     fill=np.nan,
+                                     verbose=True)
+
+            wavelength = wavel_resample
 
         return box.create_box(boxtype='model',
                               model='petitradtrans',
