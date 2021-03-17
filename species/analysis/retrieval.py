@@ -485,6 +485,7 @@ class AtmosphericRetrieval:
                       quenching: Optional[str] = 'pressure',
                       pt_profile: str = 'molliere',
                       fit_corr: Optional[List[str]] = None,
+                      cross_corr: Optional[List[str]] = None,
                       n_live_points: int = 2000,
                       resume: bool = False,
                       plotting: bool = False,
@@ -523,6 +524,11 @@ class AtmosphericRetrieval:
         fit_corr : list(str), None
             List with spectrum names for which the correlation length and fractional amplitude are
             fitted (see Wang et al. 2020).
+        cross_corr : list(str), None
+            List with spectrum names for which a cross-correlation to log-likelihood mapping is
+            calculated instead of the regular least-squares approach (see Brogi & Line 2019). This
+            cross-correlation approach can be applied on high-resolution spectra. Currently, this
+            option only supports spectra that have been shifted to the planet's rest frame.
         n_live_points : int
             Number of live points.
         resume : bool
@@ -609,6 +615,11 @@ class AtmosphericRetrieval:
             if item in fit_corr:
                 bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len/um)
                 bounds[f'corr_amp_{item}'] = (0., 1.)
+
+        # List with spectra that will be used for a cross-correlation instead of least-squares
+
+        if cross_corr is None:
+            cross_corr = []
 
         # Create list with parameters for MultiNest
 
@@ -1456,52 +1467,78 @@ class AtmosphericRetrieval:
                                                  data_wavel,
                                                  self.spectrum[item][4])
 
-                # Difference between the observed and modeled spectrum
-                flux_diff = flux_rebinned - scaling[item]*data_flux
+                if item not in cross_corr:
+                    # Difference between the observed and modeled spectrum
+                    flux_diff = flux_rebinned - scaling[item]*data_flux
 
-                # Shortcut for the weight
-                weight = self.weights[item]
+                    # Shortcut for the weight
+                    weight = self.weights[item]
 
-                if self.spectrum[item][2] is not None:
-                    # Use the inverted covariance matrix
+                    if self.spectrum[item][2] is not None:
+                        # Use the inverted covariance matrix
 
-                    if err_offset[item] is None:
-                        data_cov_inv = self.spectrum[item][2]
+                        if err_offset[item] is None:
+                            data_cov_inv = self.spectrum[item][2]
 
-                    else:
-                        # Ratio of the inflated and original uncertainties
-                        sigma_ratio = np.sqrt(data_var) / self.spectrum[item][0][:, 2]
-                        sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
+                        else:
+                            # Ratio of the inflated and original uncertainties
+                            sigma_ratio = np.sqrt(data_var) / self.spectrum[item][0][:, 2]
+                            sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
-                        # Calculate the inversion of the infalted covariances
-                        data_cov_inv = np.linalg.inv(self.spectrum[item][1]*sigma_i*sigma_j)
+                            # Calculate the inversion of the infalted covariances
+                            data_cov_inv = np.linalg.inv(self.spectrum[item][1]*sigma_i*sigma_j)
 
-                    # Use the inverted covariance matrix
-                    dot_tmp = np.dot(flux_diff, np.dot(data_cov_inv, flux_diff))
-                    ln_like += -0.5 * weight * dot_tmp - \
-                        0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
-
-                else:
-                    if item in fit_corr:
-                        # Covariance model (Wang et al. 2020)
-                        wavel_j, wavel_i = np.meshgrid(data_wavel, data_wavel)
-
-                        error = np.sqrt(data_var)  # (W m-2 um-1)
-                        error_j, error_i = np.meshgrid(error, error)
-
-                        cov_matrix = corr_amp[item]**2 * error_i * error_j * \
-                            np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
-                            (1.-corr_amp[item]**2) * np.eye(data_wavel.shape[0])*error_i**2
-
-                        dot_tmp = np.dot(flux_diff, np.dot(np.linalg.inv(cov_matrix), flux_diff))
-
+                        # Use the inverted covariance matrix
+                        dot_tmp = np.dot(flux_diff, np.dot(data_cov_inv, flux_diff))
                         ln_like += -0.5 * weight * dot_tmp - \
                             0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
 
                     else:
-                        # Calculate the log-likelihood without the covariance matrix
-                        ln_like += -0.5 * weight * \
-                            np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
+                        if item in fit_corr:
+                            # Covariance model (Wang et al. 2020)
+                            wavel_j, wavel_i = np.meshgrid(data_wavel, data_wavel)
+
+                            error = np.sqrt(data_var)  # (W m-2 um-1)
+                            error_j, error_i = np.meshgrid(error, error)
+
+                            cov_matrix = corr_amp[item]**2 * error_i * error_j * \
+                                np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
+                                (1.-corr_amp[item]**2) * np.eye(data_wavel.shape[0])*error_i**2
+
+                            dot_tmp = np.dot(flux_diff, np.dot(np.linalg.inv(cov_matrix), flux_diff))
+
+                            ln_like += -0.5 * weight * dot_tmp - \
+                                0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
+
+                        else:
+                            # Calculate the log-likelihood without the covariance matrix
+                            ln_like += -0.5 * weight * \
+                                np.sum(flux_diff**2/data_var + np.log(2.*np.pi*data_var))
+
+                else:
+                    # Cross-correlation to log(L) mapping
+                    # See Eq. 9 in Brogi & Line (2019)
+
+                    # Number of wavelengths
+                    n_wavel = float(data_flux.shape[0])
+
+                    # Apply the optional flux scaling to the data
+                    data_flux_scaled = scaling[item]*data_flux
+
+                    # Variance of the data and model
+
+                    cc_var_dat = np.sum((data_flux_scaled-np.mean(data_flux_scaled))**2) / n_wavel
+                    cc_var_mod = np.sum((flux_rebinned-np.mean(flux_rebinned))**2) / n_wavel
+
+                    # Cross-covariance
+                    cross_cov = np.sum(data_flux_scaled * flux_rebinned) / n_wavel
+
+                    # Log-likelihood 
+                    ln_like += -0.5 * n_wavel * np.log(cc_var_dat - 2.*cross_cov + cc_var_mod)
+
+                    # The cross-covariance term may result in a logarithm of a negative value
+                    if np.isnan(ln_like):
+                        return -np.inf
 
                 if plotting:
                     plt.errorbar(data_wavel, scaling[item]*data_flux, yerr=np.sqrt(data_var),
