@@ -433,9 +433,9 @@ def plot_pt_profile(tag: str,
 
 @typechecked
 def plot_opacities(tag: str,
+                   radtrans: read_radtrans.ReadRadtrans,
                    offset: Optional[Tuple[float, float]] = None,
-                   output: str = 'opacities.pdf',
-                   radtrans: Optional[read_radtrans.ReadRadtrans] = None) -> None:
+                   output: str = 'opacities.pdf') -> None:
     """
     Function to plot the line and continuum opacity structure from the median posterior samples.
 
@@ -447,8 +447,9 @@ def plot_opacities(tag: str,
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
         Output filename.
-    radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+    radtrans : read_radtrans.ReadRadtrans
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. The parameter is not used if
+        set to ``None``.
 
     Returns
     -------
@@ -487,7 +488,11 @@ def plot_opacities(tag: str,
     for item in opacity.values():
         opacity_line += item
 
-    opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
+    if not radtrans.scattering and len(radtrans.cloud_species) == 0:
+        opacity_cont = radtrans.rt_object.continuum_opa
+
+    else:
+        opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
 
     ax1.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                     direction='in', width=1, length=5, labelsize=12, top=True,
