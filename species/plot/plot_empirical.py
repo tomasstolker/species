@@ -125,6 +125,9 @@ def plot_statistic(tag: str,
 
     for i, item in enumerate(sptypes):
         for j in range(10):
+            if not isinstance(item, str):
+                item = item.decode('utf-8')
+
             if item == f'M{j}':
                 sptype_num[i] = float(j)
 
@@ -257,7 +260,12 @@ def plot_empirical_spectra(tag: str,
     obj_res = read_obj.get_spectrum()[spec_name][3]
 
     for i in range(n_spectra):
-        spectrum = np.asarray(h5_file[f'spectra/{spec_library}/{names[i]}'])
+        if isinstance(names[i], str):
+            name_item = names[i]
+        else:
+            name_item = names[i].decode('utf-8')
+
+        spectrum = np.asarray(h5_file[f'spectra/{spec_library}/{name_item}'])
 
         ism_ext = dust_util.ism_extinction(av_ext[i], 3.1, spectrum[:, 0])
         ext_scaling = 10.**(-0.4*ism_ext)

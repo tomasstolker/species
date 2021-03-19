@@ -135,7 +135,12 @@ class CompareSpectra:
         for i, item in enumerate(h5_file[f'spectra/{self.spec_library}']):
             # Read spectrum spectral type from library
             dset = h5_file[f'spectra/{self.spec_library}/{item}']
-            item_sptype = dset.attrs['sptype'].decode('utf-8')
+
+            if isinstance(dset.attrs['sptype'], str):
+                item_sptype = dset.attrs['sptype']
+            else:
+                # Use decode for backward compatibility
+                item_sptype = dset.attrs['sptype'].decode('utf-8')
 
             if item_sptype == 'None':
                 continue
@@ -163,6 +168,7 @@ class CompareSpectra:
                                          'use a broader range as argument of \'wavel_range\'.')
 
                     spectrum = spectrum[indices, ]
+
                 empty_message = len(print_message)*' '
                 print(f'\r{empty_message}', end='')
 
@@ -257,9 +263,15 @@ class CompareSpectra:
 
         print('Best-fitting spectra:')
 
-        for i in range(10):
-            print(f'   - G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, '
-                  f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s')
+        if len(gk_select) < 10:
+            for i in range(len(gk_select)):
+                print(f'   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, '
+                      f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s')
+
+        else:
+            for i in range(10):
+                print(f'   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, '
+                      f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s')
 
         species_db = database.Database()
 
