@@ -235,7 +235,7 @@ def plot_posterior(tag: str,
         for item in item_del:
             samples_box.parameters.remove(item)
 
-    if 'H2O' in samples_box.parameters:
+    if samples_box.attributes['chemistry'] == 'free':
         samples_box.parameters.append('c_h_ratio')
         samples_box.parameters.append('o_h_ratio')
         samples_box.parameters.append('c_o_ratio')
@@ -335,61 +335,61 @@ def plot_posterior(tag: str,
             c_h_ratio[i], o_h_ratio[i], c_o_ratio[i] = retrieval_util.calc_metal_ratio(abund)
 
     if vmr and samples_box.spectrum == 'petitradtrans' and \
-            'metallicity' not in samples_box.parameters:
+            samples_box.attributes['chemistry'] == 'free':
         print('Changing mass fractions to number fractions...', end='', flush=True)
 
-        # get all available line species
+        # Get all available line species
         line_species = retrieval_util.get_line_species()
 
-        # get the atommic and molecular masses
+        # Get the atomic and molecular masses
         masses = retrieval_util.atomic_masses()
 
-        # creates array for the updated samples
+        # Create array for the updated samples
         updated_samples = np.zeros(samples.shape)
 
-        for i, samples_item in enumerate(samples_box.samples):
-            # initiate a dictionary for the log10 mass fraction of the metals
+        for i, samples_item in enumerate(samples):
+            # Initiate a dictionary for the log10 mass fraction of the metals
             log_x_abund = {}
 
             for param_item in samples_box.parameters:
                 if param_item in line_species:
-                    # get the index of the parameter
+                    # Get the index of the parameter
                     param_index = samples_box.parameters.index(param_item)
 
-                    # store log10 mass fraction in the dictionary
+                    # Store log10 mass fraction in the dictionary
                     log_x_abund[param_item] = samples_item[param_index]
 
-            # create a dictionary with all mass fractions, including H2 and He
+            # Create a dictionary with all mass fractions, including H2 and He
             x_abund = retrieval_util.mass_fractions(log_x_abund)
 
-            # calculate the mean molecular weight from the input mass fractions
+            # Calculate the mean molecular weight from the input mass fractions
             mmw = retrieval_util.mean_molecular_weight(x_abund)
 
             for param_item in samples_box.parameters:
                 if param_item in line_species:
-                    # get the index of the parameter
+                    # Get the index of the parameter
                     param_index = samples_box.parameters.index(param_item)
 
-                    # overwrite the sample with the log10 number fraction
+                    # Overwrite the sample with the log10 number fraction
                     samples_item[param_index] = np.log10(10.**samples_item[param_index] *
                                                          mmw/masses[param_item])
 
-            # store the updated sample to the array
+            # Store the updated sample to the array
             updated_samples[i, ] = samples_item
 
-        # overwrite the samples in the SamplesBox
+        # Overwrite the samples in the SamplesBox
         samples_box.samples = updated_samples
 
         print(' [DONE]')
 
-    print(f'Median sample:')
+    print('Median sample:')
     for key, value in samples_box.median_sample.items():
         print(f'   - {key} = {value:.2f}')
 
     if samples_box.prob_sample is not None:
         par_val = tuple(samples_box.prob_sample.values())
 
-        print(f'Maximum posterior sample:')
+        print('Maximum posterior sample:')
         for key, value in samples_box.prob_sample.items():
             print(f'   - {key} = {value:.2f}')
 
@@ -421,16 +421,16 @@ def plot_posterior(tag: str,
                     constants.SIGMA_SB * samples[..., teff_index]**4. / constants.L_SUN
 
                 samples = np.append(samples, np.log10(lum_planet+lum_disk), axis=-1)
-                box.parameters.append('luminosity')
+                samples_box.parameters.append('luminosity')
                 ndim += 1
 
                 samples = np.append(samples, lum_disk/lum_planet, axis=-1)
-                box.parameters.append('luminosity_disk_planet')
+                samples_box.parameters.append('luminosity_disk_planet')
                 ndim += 1
 
             else:
                 samples = np.append(samples, np.log10(lum_planet), axis=-1)
-                box.parameters.append('luminosity')
+                samples_box.parameters.append('luminosity')
                 ndim += 1
 
         elif 'teff_0' in samples_box.parameters and 'radius_0' in samples_box.parameters:

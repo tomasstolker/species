@@ -646,30 +646,30 @@ def calc_spectrum_clear(rt_object,
         interpol_abundances
 
     if chemistry == 'equilibrium':
-        # chemical equilibrium
+        # Chemical equilibrium
         abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
                                        np.full(pressure.shape, metallicity),
                                        temperature,
                                        pressure,
                                        Pquench_carbon=p_quench)
 
-        # mean molecular weight
+        # Mean molecular weight
         mmw = abund_in['MMW']
 
     elif chemistry == 'free':
-        # free abundances
+        # Free abundances
 
-        # create a dictionary with all mass fractions
+        # Create a dictionary with all mass fractions
         abund_in = mass_fractions(log_x_abund)
 
-        # mean molecular weight
+        # Mean molecular weight
         mmw = mean_molecular_weight(abund_in)
 
-        # create arrays of constant atmosphere abundance
+        # Create arrays of constant atmosphere abundance
         for item in abund_in:
             abund_in[item] *= np.ones_like(pressure)
 
-        # create an array of a constant mean molecular weight
+        # Create an array of a constant mean molecular weight
         mmw *= np.ones_like(pressure)
 
     # Extract every three levels when pressure_grid is set to 'smaller'

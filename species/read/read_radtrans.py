@@ -200,7 +200,6 @@ class ReadRadtrans:
                              'parameters of \'model_param\'.')
 
         # Check quenching parameter
-
         if not hasattr(self, 'quenching'):
             self.quenching = quenching
 
@@ -370,7 +369,7 @@ class ReadRadtrans:
                 chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud)
 
-        elif 'c_o_ratio' in model_param and 'metallicity' in model_param:
+        elif chemistry == 'equilibrium':
             # Calculate the petitRADTRANS spectrum for a clear atmosphere
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
@@ -379,16 +378,16 @@ class ReadRadtrans:
                 None, pressure_grid=self.pressure_grid, chemistry=chemistry,
                 contribution=True)
 
-        else:
-            abund = {}
+        elif chemistry == 'free':
+            log_x_abund = {}
 
             for ab_item in self.rt_object.line_species:
-                abund[ab_item] = model_param[ab_item]
+                log_x_abund[ab_item] = model_param[ab_item]
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object, self.pressure, temp, model_param['logg'], None,
-                None, None, abund, pressure_grid=self.pressure_grid,
-                chemistry=chemistry, contribution=True)
+                None, None, log_x_abund, chemistry=chemistry,
+                pressure_grid=self.pressure_grid, contribution=True)
 
         if 'radius' in model_param:
             # Calculate the planet mass from log(g) and radius
