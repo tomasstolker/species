@@ -1761,7 +1761,8 @@ class Database:
     def get_samples(self,
                     tag: str,
                     burnin: Optional[int] = None,
-                    random: Optional[int] = None) -> box.SamplesBox:
+                    random: Optional[int] = None,
+                    write_json: Optional[str] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
@@ -1774,6 +1775,9 @@ class Database:
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.
+        write_json : str, None
+            Filename of a JSON file where the samples will be externally written. The samples will
+            not be stored in a JSON file if the argument is set to ``None``.
 
         Returns
         -------
@@ -1825,6 +1829,14 @@ class Database:
             prob_sample = None
 
         median_sample = self.get_median_sample(tag, burnin)
+
+        if write_json is not None:
+            samples_dict = {}
+            for i, item in enumerate(param):
+                samples_dict[item] = list(samples[:, i])
+
+            with open(write_json, 'w') as json_file:
+                json_file.write(json.dumps(samples_dict, indent=4))
 
         return box.create_box('samples',
                               spectrum=spectrum,
