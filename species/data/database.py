@@ -2246,7 +2246,7 @@ class Database:
     @staticmethod
     @typechecked
     def get_retrieval_spectra(tag: str,
-                              random: int,
+                              random: Optional[int],
                               wavel_range: Union[Tuple[float, float], str] = None,
                               spec_res: Optional[float] = None) -> Tuple[
                                   List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
@@ -2259,7 +2259,7 @@ class Database:
         tag : str
             Database tag with the posterior samples.
         random : int, None
-            Number of randomly selected samples.
+            Number of randomly selected samples. All samples are used if set to ``None``.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. The wavelength range from the retrieval is
             adopted (i.e. the ``wavel_range`` parameter of
