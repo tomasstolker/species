@@ -2300,8 +2300,9 @@ class Database:
 
         # Select random samples
 
-        random_indices = np.random.randint(samples.shape[0], size=random)
-        samples = samples[random_indices, :]
+        if random is not None:
+            random_indices = np.random.randint(samples.shape[0], size=random)
+            samples = samples[random_indices, :]
 
         # Get number of model parameters
 
