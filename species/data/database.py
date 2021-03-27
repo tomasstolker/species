@@ -1394,8 +1394,8 @@ class Database:
                          burnin: Optional[int] = None,
                          wavel_range: Optional[Union[Tuple[float, float], str]] = None,
                          spec_res: Optional[float] = None,
-                         wavel_resample: Optional[np.ndarray] = None) -> \
-                             Union[List[box.ModelBox], List[box.SpectrumBox]]:
+                         wavel_resample: Optional[np.ndarray] = None) -> Union[
+                             List[box.ModelBox], List[box.SpectrumBox]]:
         """
         Function for drawing random spectra from the sampled posterior distributions.
 
@@ -2097,10 +2097,7 @@ class Database:
 
                         knot_temp = np.asarray(knot_temp)
 
-                        if 'pt_smooth' in sample_dict:
-                            pt_smooth = sample_dict['pt_smooth']
-                        else:
-                            pt_smooth = radtrans['pt_smooth']
+                        pt_smooth = sample_dict.get('pt_smooth', radtrans['pt_smooth'])
 
                         temp = retrieval_util.pt_spline_interp(
                             knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
@@ -2149,7 +2146,7 @@ class Database:
         if radtrans['quenching'] == 'diffusion':
             p_quench = np.zeros(samples.shape[0])
 
-            desc = f'Calculating quenching pressures'
+            desc = 'Calculating quenching pressures'
 
             for i in tqdm.tqdm(range(samples.shape[0]), desc=desc):
                 # Convert list of parameters and samples into dictionary
@@ -2312,7 +2309,11 @@ class Database:
 
         # Select random samples
 
-        if random is not None:
+        if random is None:
+            # Required for the printed output in the for loop
+            random = samples.shape[0]
+
+        else:
             random_indices = np.random.randint(samples.shape[0], size=random)
             samples = samples[random_indices, :]
 
