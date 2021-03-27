@@ -255,7 +255,15 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                         'Paranal/SPHERE.IRDIS_D_K12_2': (13.45, 0.19),  # Cheetham et al. 2018
                                         'Paranal/NACO.Lp': (13.09, 0.17)}},  # Cheetham et al. 2018
 
-            'TYC 8988 b': {'distance': (94.6, 0.3),
+            'HD 13724 B': {'distance': (43.45, 0.03),
+                           'app_mag': {'Paranal/SPHERE.IRDIS_D_J23_2': (17.09, 0.16),  # Rickman et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_J23_3': (17.82, 0.32),  # Rickman et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_H23_2': (18.23, 0.40),  # Rickman et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_H23_3': (17.10, 0.05),  # Rickman et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_K12_1': (16.67, 0.18),  # Rickman et al. 2020
+                                       'Paranal/SPHERE.IRDIS_D_K12_2': (17.48, 0.46)}},  # Rickman et al. 2020
+
+            'TYC 8988 B': {'distance': (94.6, 0.3),
                            'app_mag': {'Paranal/SPHERE.IRDIS_D_Y23_2': (17.03, 0.21),  # Bohn et al. 2019
                                        'Paranal/SPHERE.IRDIS_D_Y23_3': (16.67, 0.16),  # Bohn et al. 2019
                                        'Paranal/SPHERE.IRDIS_D_J23_2': (16.27, 0.08),  # Bohn et al. 2019
@@ -270,7 +278,7 @@ def get_data() -> Dict[str, Dict[str, Union[Tuple[float, float],
                                        'Paranal/NACO.Lp': (13.30, 0.08),  # Bohn et al. 2019
                                        'Paranal/NACO.Mp': (13.08, 0.20)}},  # Bohn et al. 2019
 
-            'TYC 8988 c': {'distance': (94.6, 0.3),
+            'TYC 8988 C': {'distance': (94.6, 0.3),
                            'app_mag': {'Paranal/SPHERE.IRDIS_D_Y23_3': (22.37, 0.31),  # Bohn et al. 2020
                                        'Paranal/SPHERE.IRDIS_D_J23_2': (21.81, 0.22),  # Bohn et al. 2020
                                        'Paranal/SPHERE.IRDIS_D_J23_3': (21.17, 0.15),  # Bohn et al. 2020

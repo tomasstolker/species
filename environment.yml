@@ -1,0 +1,11 @@
+name: notebook
+channels:
+  - conda-forge
+dependencies:
+  - python=3.7
+  - pip
+  - ipython=7.10
+  - cython
+  - pip:
+    - -r file:requirements.txt
+    - species
