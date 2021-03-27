@@ -24,6 +24,9 @@
 .. image:: https://img.shields.io/github/license/tomasstolker/species
    :target: https://github.com/tomasstolker/species/blob/master/LICENSE
 
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/tomasstolker/species/HEAD
+
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for both grid retrievals and free retrievals with Bayesian inference, color-magnitude and color-color diagrams, empirical spectral analysis, spectral and photometric calibration, and synthetic photometry. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
