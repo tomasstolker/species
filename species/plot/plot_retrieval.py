@@ -488,7 +488,7 @@ def plot_opacities(tag: str,
     for item in opacity.values():
         opacity_line += item
 
-    if not radtrans.scattering and len(radtrans.cloud_species) == 0:
+    if not radtrans.scattering:
         opacity_cont = radtrans.rt_object.continuum_opa
 
     else:

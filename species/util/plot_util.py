@@ -139,10 +139,10 @@ def update_labels(param: List[str]) -> List[str]:
     cloud_labels = ['Fe', r'MgSiO_{3}', r'Al_{2}O_{3}', r'Na_{2}S', 'KCl']
 
     abund_species = ['CO_all_iso', 'H2O', 'CH4', 'NH3', 'CO2', 'H2S', 'Na', 'K', 'PH3', 'VO',
-                     'TiO', 'FeH', 'MgSiO3(c)', 'Fe(c)',]
+                     'TiO', 'FeH', 'MgSiO3(c)', 'Fe(c)', 'Al2O3(c)']
 
     abund_labels = ['CO', 'H_{2}O', 'CH_{4}', 'NH_{3}', 'CO_{2}', 'H_{2}S', 'Na', 'K',
-                    'PH_{3}', 'VO', 'TiO', 'FeH', 'MgSiO_{3}', 'Fe']
+                    'PH_{3}', 'VO', 'TiO', 'FeH', 'MgSiO_{3}', 'Fe', 'Al_{2}O_{3}']
 
     if 'teff' in param:
         index = param.index('teff')
