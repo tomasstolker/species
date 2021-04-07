@@ -75,13 +75,15 @@ class ReadIsochrone:
             Box with the isochrone.
         """
 
-        age_points = np.repeat(age, masses.shape[0])  # (Myr)
+        age_points = np.full(masses.shape[0], age)  # (Myr)
 
         color = None
         mag_abs = None
 
         index_teff = 2
         index_logg = 4
+
+        # Read isochrone data
 
         with h5py.File(self.database, 'r') as h5_file:
             model = h5_file[f'isochrones/{self.tag}/evolution'].attrs['model']
@@ -90,6 +92,11 @@ class ReadIsochrone:
             if model == 'baraffe':
                 filters = list(h5_file[f'isochrones/{self.tag}/filters'])
                 magnitudes = np.asarray(h5_file[f'isochrones/{self.tag}/magnitudes'])
+
+                # Convert the h5py list of filters from bytes to strings
+                for i, item in enumerate(filters):
+                    if isinstance(item, bytes):
+                        filters[i] = item.decode('utf-8')
 
         if model == 'baraffe':
             if filters_color is not None:
