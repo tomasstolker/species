@@ -115,5 +115,5 @@ class TestPhotometry:
         assert abs_mag[0] == pytest.approx(5.59000700894101, rel=self.limit, abs=0.)
 
         # The error is estimated with Monte Carlo sampling
-        assert app_mag[1] == pytest.approx(5.368048545366946e-05, rel=0., abs=1e-5)
+        assert app_mag[1] == pytest.approx(5.368048545366946e-05, rel=0., abs=2e-5)
         assert abs_mag[1] == pytest.approx(0.021714790446227043, rel=0., abs=1e-2)

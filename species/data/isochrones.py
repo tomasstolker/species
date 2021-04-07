@@ -12,10 +12,9 @@ def add_baraffe(database,
                 tag,
                 filename):
     """
-    Function for adding the Baraffe et al. isochrone data to the database. Any of the isochrones
-    from  https://phoenix.ens-lyon.fr/Grids/ can be used as input.
-
-    https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B/
+    Function for adding the `Baraffe et al. (2003)
+    <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B/>`_ isochrone data to the database.
+    Any of the isochrones from  https://phoenix.ens-lyon.fr/Grids/ can be used as input.
 
     Parameters
     ----------
@@ -32,8 +31,10 @@ def add_baraffe(database,
         None
     """
 
-    # read in all the data, ignoring empty lines or lines with '---'
+    # Read in all the data, ignoring empty lines or lines with '---'
+
     data = []
+
     with open(filename) as data_file:
         for line in data_file:
             if '---' in line or line == '\n':

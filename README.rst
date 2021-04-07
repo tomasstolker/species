@@ -34,6 +34,11 @@ Documentation
 
 Documentation can be found at `http://species.readthedocs.io <http://species.readthedocs.io>`_.
 
+Tutorials
+---------
+
+There are several `Jupyter notebooks <https://species.readthedocs.io/en/latest/tutorials.html>`_ with tutorials that showcase the workflow and available tools. They can also be executed on `Binder <https://mybinder.org/v2/gh/tomasstolker/species/HEAD>`_ by navigating to the *docs/tutorials* folder.
+
 Attribution
 -----------
 
