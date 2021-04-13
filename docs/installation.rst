@@ -3,18 +3,18 @@
 Installation
 ============
 
-*species* is compatible with Python 3.6/3.7/3.8 and is available in the |pypi| and on |github|.
+*species* is compatible with Python 3.6/3.7/3.8 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
 Installation from PyPI
 ----------------------
 
-*species* can be installed with the |pip|:
+The Python package can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
 
 .. code-block:: console
 
     $ pip install species
 
-And to update to the most recent version:
+Or, to update to the most recent version:
 
 .. code-block:: console
 
@@ -39,7 +39,7 @@ And running the setup script to install the package and its dependencies:
     $ python setup.py install
 
 .. important::
-   If an error occurs when running ``setup.py`` then possibly ``pip`` needs to be updated the latest version:
+   If an error occurs when running ``setup.py`` then possibly ``pip`` needs to be updated to the latest version:
 
    .. code-block:: console
 
@@ -62,21 +62,9 @@ Do you want to make changes to the code? Please fork the `species` repository on
 Testing `species`
 -----------------
 
-The installation can be tested by starting Python in interactive mode and printing the `species` version:
+The installation can now be tested, for example by starting Python in interactive mode and printing the version number of the installed package:
 
 .. code-block:: python
 
     >>> import species
     >>> species.__version__
-
-.. |pypi| raw:: html
-
-   <a href="https://pypi.org/project/species/" target="_blank">PyPI repository</a>
-
-.. |github| raw:: html
-
-   <a href="https://github.com/tomasstolker/species" target="_blank">Github</a>
-
-.. |pip| raw:: html
-
-   <a href="https://packaging.python.org/tutorials/installing-packages/" target="_blank">pip package manager</a>

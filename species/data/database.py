@@ -1155,6 +1155,7 @@ class Database:
                     sampler: str,
                     samples: np.ndarray,
                     ln_prob: np.ndarray,
+                    ln_evidence: Optional[Tuple[float, float]],
                     mean_accept: Optional[float],
                     spectrum: Tuple[str, str],
                     tag: str,
@@ -1170,6 +1171,8 @@ class Database:
             Samples of the posterior.
         ln_prob : np.ndarray
             Log posterior for each sample.
+        ln_evidence : tuple(float, float)
+            Log evidence and uncertainty. Set to ``None`` when ``sampler`` is 'emcee'.
         mean_accept : float, None
             Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'multinest' or
             'ultranest'.
@@ -1220,6 +1223,9 @@ class Database:
 
         if distance is not None:
             dset.attrs['distance'] = float(distance)
+
+        if ln_evidence is not None:
+            dset.attrs['ln_evidence'] = ln_evidence
 
         count_scaling = 0
 
@@ -1778,6 +1784,10 @@ class Database:
         elif 'nparam' in dset.attrs:
             n_param = dset.attrs['nparam']
 
+        if 'ln_evidence' in dset.attrs:
+            # Use if condition for backward compatibility
+            ln_evidence = dset.attrs['ln_evidence']
+
         samples = np.asarray(dset)
 
         if samples.ndim == 3:
@@ -1810,6 +1820,7 @@ class Database:
                               parameters=param,
                               samples=samples,
                               ln_prob=ln_prob,
+                              ln_evidence=ln_evidence,
                               prob_sample=prob_sample,
                               median_sample=median_sample)
 

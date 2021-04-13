@@ -58,24 +58,28 @@ def add_optical_constants(input_path: str,
                            'mgsio3_jaeger_98_scott_96_axis1.dat')
 
     data = np.loadtxt(nk_file)
-    database.create_dataset('dust/mgsio3/crystalline/axis_1/', data=data)
+
+    database.create_dataset('dust/mgsio3/crystalline/axis_1', data=data)
 
     nk_file = os.path.join(input_path, 'optical_constants/mgsio3/crystalline/'
                            'mgsio3_jaeger_98_scott_96_axis2.dat')
 
     data = np.loadtxt(nk_file)
-    database.create_dataset('dust/mgsio3/crystalline/axis_2/', data=data)
+
+    database.create_dataset('dust/mgsio3/crystalline/axis_2', data=data)
 
     nk_file = os.path.join(input_path, 'optical_constants/mgsio3/crystalline/'
                            'mgsio3_jaeger_98_scott_96_axis3.dat')
 
     data = np.loadtxt(nk_file)
-    database.create_dataset('dust/mgsio3/crystalline/axis_3/', data=data)
+
+    database.create_dataset('dust/mgsio3/crystalline/axis_3', data=data)
 
     nk_file = os.path.join(input_path, 'optical_constants/mgsio3/amorphous/'
                            'mgsio3_jaeger_2003_reformat.dat')
 
     data = np.loadtxt(nk_file)
+
     database.create_dataset('dust/mgsio3/amorphous', data=data)
 
     print(' [DONE]')
@@ -127,24 +131,24 @@ def add_cross_sections(input_path: str,
     print('Adding log-normal dust cross sections:')
 
     with fits.open(os.path.join(input_path, 'lognorm_mgsio3_c_ext.fits')) as hdu_list:
-        database.create_dataset('dust/lognorm/mgsio3/crystalline/cross_section/',
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/cross_section',
                                 data=hdu_list[0].data)
 
         print(f'   - Data shape (n_wavelength, n_radius, n_sigma): {hdu_list[0].data.shape}')
 
-        database.create_dataset('dust/lognorm/mgsio3/crystalline/wavelength/',
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/wavelength',
                                 data=hdu_list[1].data)
 
         data_range = f'{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}'
         print(f'   - Wavelength range: {data_range} um')
 
-        database.create_dataset('dust/lognorm/mgsio3/crystalline/radius_g/',
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/radius_g',
                                 data=hdu_list[2].data)
 
         data_range = f'{np.amin(hdu_list[2].data)} - {np.amax(hdu_list[2].data)}'
         print(f'   - Mean geometric radius range: {data_range} um')
 
-        database.create_dataset('dust/lognorm/mgsio3/crystalline/sigma_g/',
+        database.create_dataset('dust/lognorm/mgsio3/crystalline/sigma_g',
                                 data=hdu_list[3].data)
 
         data_range = f'{np.amin(hdu_list[3].data)} - {np.amax(hdu_list[3].data)}'
@@ -161,24 +165,24 @@ def add_cross_sections(input_path: str,
     print('Adding power-law dust cross sections')
 
     with fits.open(os.path.join(input_path, 'powerlaw_mgsio3_c_ext.fits')) as hdu_list:
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/cross_section/',
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/cross_section',
                                 data=hdu_list[0].data)
 
         print(f'   - Data shape (n_wavelength, n_radius, n_exponent): {hdu_list[0].data.shape}')
 
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/wavelength/',
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/wavelength',
                                 data=hdu_list[1].data)
 
         data_range = f'{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}'
         print(f'   - Wavelength range: {data_range} um')
 
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max/',
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/radius_max',
                                 data=hdu_list[2].data)
 
         data_range = f'{np.amin(hdu_list[2].data)} - {np.amax(hdu_list[2].data)}'
         print(f'   - Maximum grain radius range: {data_range} um')
 
-        database.create_dataset('dust/powerlaw/mgsio3/crystalline/exponent/',
+        database.create_dataset('dust/powerlaw/mgsio3/crystalline/exponent',
                                 data=hdu_list[3].data)
 
         data_range = f'{np.amin(hdu_list[3].data)} - {np.amax(hdu_list[3].data)}'

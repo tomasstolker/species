@@ -3,11 +3,7 @@
 Documentation for *species*
 ===========================
 
-*species* is a toolkit for atmospheric characterization of directly imaged exoplanets. The package has been developed and is maintained by |stolker|.
-
-.. |stolker| raw:: html
-
-	<a href="https://home.strw.leidenuniv.nl/~stolker/" target="_blank">Tomas Stolker</a>
+*species* is a toolkit for atmospheric characterization of directly imaged exoplanets.
 
 .. toctree::
    :maxdepth: 2

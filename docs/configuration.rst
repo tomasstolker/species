@@ -28,7 +28,7 @@ The workflow with *species* can now be initiated with the :class:`~species.core.
    >>> import species
    >>> species.SpeciesInit()
 
-Alternatively, a configuration file with default values is automatically created when `species` is initiated and the configuration file is not present in the working folder.
+A configuration file with default values is automatically created when `species` is initiated and the file is not present in the working folder.
 
 .. tip::
    The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
