@@ -304,6 +304,34 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('veil_ref')
         param[index] = r'$F_\mathregular{ref, veil}$'
 
+    if 'gauss_amplitude' in param:
+        index = param.index('gauss_amplitude')
+        param[index] = r'$a$ (W m$^{-2}$ µm$^{-1}$)'
+
+    if 'gauss_mean' in param:
+        index = param.index('gauss_mean')
+        param[index] = r'$\mu$ (nm)'
+
+    if 'gauss_sigma' in param:
+        index = param.index('gauss_sigma')
+        param[index] = r'$\sigma$ (nm)'
+
+    if 'gauss_fwhm' in param:
+        index = param.index('gauss_fwhm')
+        param[index] = r'$v$ (km s$^{-1}$)'
+
+    if 'line_flux' in param:
+        index = param.index('line_flux')
+        param[index] = r'$F_\mathregular{line}$ (W m$^{-2}$)'
+
+    if 'line_luminosity' in param:
+        index = param.index('line_luminosity')
+        param[index] = r'$L_\mathregular{line}$ (L$_\mathregular{\odot}$)'
+
+    if 'line_eq_width' in param:
+        index = param.index('line_eq_width')
+        param[index] = r'EW ($\AA$)'
+
     return param
 
 

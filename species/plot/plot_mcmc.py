@@ -180,17 +180,25 @@ def plot_posterior(tag: str,
 
     print('Median sample:')
     for key, value in box.median_sample.items():
-        print(f'   - {key} = {value:.2f}')
+        print(f'   - {key} = {value:.2e}')
 
     samples = box.samples
     ndim = samples.shape[-1]
+
+    if 'gauss_mean' in box.parameters:
+        param_index = np.argwhere(np.array(box.parameters) == 'gauss_mean')[0]
+        samples[:, param_index] *= 1e3  # (um) -> (nm)
+
+    if 'gauss_sigma' in box.parameters:
+        param_index = np.argwhere(np.array(box.parameters) == 'gauss_sigma')[0]
+        samples[:, param_index] *= 1e3  # (um) -> (nm)
 
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
 
         print('Maximum posterior sample:')
         for key, value in box.prob_sample.items():
-            print(f'   - {key} = {value:.2f}')
+            print(f'   - {key} = {value:.2e}')
 
     print(f'Plotting the posterior: {output}...', end='', flush=True)
 

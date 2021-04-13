@@ -95,6 +95,16 @@ class ReadColorMagnitude:
                 flag = np.asarray(h5_file[f'photometry/{self.library}/flag'])
                 obj_names = np.asarray(h5_file[f'photometry/{self.library}/name'])
 
+                for i in range(sptype.shape[0]):
+                    if isinstance(sptype[i], bytes):
+                        sptype[i] = sptype[i].decode('utf-8')
+
+                    if isinstance(flag[i], bytes):
+                        flag[i] = flag[i].decode('utf-8')
+
+                    if isinstance(obj_names[i], bytes):
+                        obj_names[i] = obj_names[i].decode('utf-8')
+
             if object_type is None:
                 indices = np.arange(0, np.size(sptype), 1)
 

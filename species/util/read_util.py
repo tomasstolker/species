@@ -339,3 +339,46 @@ def powerlaw_spectrum(wavel_range: Union[Tuple[float, float],
                                quantity='flux')
 
     return model_box
+
+
+@typechecked
+def gaussian_spectrum(wavel_range: Union[Tuple[float, float],
+                                         Tuple[np.float32, np.float32]],
+                      model_param: Dict[str, float],
+                      spec_res: float = 100.) -> box.ModelBox:
+    """
+    Function for calculating a Gaussian spectrum (i.e. for an emission line).
+
+    Parameters
+    ----------
+    wavel_range : tuple(float, float)
+        Tuple with the minimum and maximum wavelength (um).
+    model_param : dict
+        Dictionary with the model parameters. Should contain `'gauss_amplitude'`, `'gauss_mean'`,
+        `'gauss_sigma'`, and optionally `'gauss_offset'`.
+    spec_res : float
+        Spectral resolution (default: 100).
+
+    Returns
+    -------
+    species.core.box.ModelBox
+        Box with the Gaussian spectrum.
+    """
+
+    wavel = create_wavelengths((wavel_range[0], wavel_range[1]), spec_res)
+
+    gauss_exp = np.exp(-0.5*(wavel-model_param['gauss_mean'])**2/model_param['gauss_sigma']**2)
+
+    flux = model_param['gauss_amplitude'] * gauss_exp
+
+    if 'gauss_offset' in model_param:
+        flux += model_param['gauss_offset']
+
+    model_box = box.create_box(boxtype='model',
+                               model='gaussian',
+                               wavelength=wavel,
+                               flux=flux,
+                               parameters=model_param,
+                               quantity='flux')
+
+    return model_box

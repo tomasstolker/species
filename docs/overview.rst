@@ -6,12 +6,12 @@ Overview
 Introduction
 ------------
 
-*species* provides a coherent framework for spectral and photometric analysis of directly imaged planets and brown dwarfs. This page contains a short overview of the various data that are supported and some of the tools and features that have been implemented.
+*species* provides a coherent framework for spectral and photometric analysis of directly imaged planets and brown dwarfs. This page contains a short overview of the various data that are supported and some of the tools and features that are provided.
 
 Supported data
 --------------
 
-The *species* toolkit benefits from publicly available data resources such as photometric and spectral libraries, atmospheric model spectra, evolutionary tracks, and photometry of directly imaged planets and brown dwarfs. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and manipulate the data.
+The toolkit benefits from publicly available data resources such as photometric and spectral libraries, atmospheric model spectra, evolutionary tracks, and photometry of directly imaged, low-mass objects. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and process the data.
 
 The following data and models are currently supported:
 
@@ -55,7 +55,7 @@ The following data and models are currently supported:
 - Extinction cross sections computed with `PyMieScatt <https://pymiescatt.readthedocs.io>`_
 - Optical constants compiled by `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_
 
-Please give credit to the relevant authors when using any of the external data in a publication. More information is available on the respective websites. Support for other datasets can be requested by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
+Please give credit to the relevant references when using any of the external data in a publication. More information is available on the respective websites. Support for other datasets can be requested by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
 
 Analysis tools
 --------------
@@ -72,3 +72,4 @@ After adding the relevant data to the database, the user can take advantage of t
 - Computing synthetic fluxes from isochrones and model spectra (see :class:`~species.read.read_isochrone.ReadIsochrone`)
 - Flux calibration of photometric and spectroscopic data (see :class:`~species.read.read_calibration.ReadCalibration`, :class:`~species.analysis.fit_model.FitModel`, and :class:`~species.analysis.fit_spectrum.FitSpectrum`).
 - Empirical comparison of spectra to infer the spectral type (see :class:`~species.analysis.empirical.CompareSpectra`).
+- Analyzing emission lines from accreting planets (see :class:`~species.analysis.emission_line.EmissionLine`).
