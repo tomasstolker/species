@@ -132,19 +132,17 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
                              f'available?')
 
         if transmission is not None:
-            try:
-                det_type = table.get_field_by_id('DetectorType').value
+            det_type = table.get_field_by_id('DetectorType').value
 
-                # For backward compatibility
-                if not isinstance(det_type, str):
-                    det_type = det_type.decode('utf-8')
+            # For backward compatibility
+            if not isinstance(det_type, str):
+                det_type = det_type.decode('utf-8')
 
-                if int(det_type) == 1:
-                    det_type = 'photon'
-
-            except KeyError:
-                # Energy-counting detector if the DetectorType key is not present
+            if int(det_type) == 0:
                 det_type = 'energy'
+
+            elif int(det_type) == 1:
+                det_type = 'photon'
 
             wavelength *= 1e-4  # (um)
 

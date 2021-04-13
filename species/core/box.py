@@ -99,6 +99,7 @@ def create_box(boxtype,
         box.parameters = kwargs['parameters']
         box.samples = kwargs['samples']
         box.ln_prob = kwargs['ln_prob']
+        box.ln_evidence = kwargs['ln_evidence']
         box.prob_sample = kwargs['prob_sample']
         box.median_sample = kwargs['median_sample']
         box.attributes = kwargs['attributes']
@@ -369,6 +370,7 @@ class SamplesBox(Box):
         self.parameters = None
         self.samples = None
         self.ln_prob = None
+        self.ln_evidence = None
         self.prob_sample = None
         self.median_sample = None
         self.attributes = None

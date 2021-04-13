@@ -4,6 +4,14 @@ species.analysis package
 Submodules
 ----------
 
+species.analysis.emission\_line module
+--------------------------------------
+
+.. automodule:: species.analysis.emission_line
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.analysis.empirical module
 ---------------------------------
 

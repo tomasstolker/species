@@ -194,6 +194,7 @@ class FitSpectrum:
         species_db.add_samples(sampler='emcee',
                                samples=ens_sampler.chain,
                                ln_prob=ens_sampler.lnprobability,
+                               ln_evidence=None,
                                mean_accept=np.mean(ens_sampler.acceptance_fraction),
                                spectrum=('calibration', self.spectrum),
                                tag=tag,
