@@ -1787,6 +1787,8 @@ class Database:
         if 'ln_evidence' in dset.attrs:
             # Use if condition for backward compatibility
             ln_evidence = dset.attrs['ln_evidence']
+        else:
+            ln_evidence = None
 
         samples = np.asarray(dset)
 
