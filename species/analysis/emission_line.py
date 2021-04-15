@@ -209,9 +209,10 @@ class EmissionLine:
             Minimum number of live points (see
             https://johannesbuchner.github.io/UltraNest/issues.html).
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors. Conservative prior boundaries will
-            be estimated from the spectrum if the argument is set to ``None`` or if any of the
-            required parameters is missing in the ``bounds`` dictionary.
+            The boundaries that are used for the uniform priors of the 3 Gaussian parameters
+            (``gauss_amplitude``, ``gauss_mean``, and ``gauss_sigma``). Conservative prior
+            boundaries will be estimated from the spectrum if the argument is set to ``None``
+            or if any of the required parameters is missing in the ``bounds`` dictionary.
         output : str
             Path that is used for the output files from ``UltraNest``.
         plot_filename : str

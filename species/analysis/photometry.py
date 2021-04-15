@@ -200,7 +200,7 @@ class SyntheticPhotometry:
                         integrand1 = transmission[indices]*flux[indices]
                         integrand2 = transmission[indices]
 
-                    if self.det_type == 'photon':
+                    elif self.det_type == 'photon':
                         # Photon counting detector
                         integrand1 = wavelength[indices]*transmission[indices]*flux[indices]
                         integrand2 = wavelength[indices]*transmission[indices]

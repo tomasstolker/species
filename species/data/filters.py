@@ -3,14 +3,14 @@ Module for downloading filter data from the website of the SVO Filter Profile Se
 """
 
 import os
-import warnings
 import urllib.request
+import warnings
 
 from typing import Optional, Tuple
-from astropy.io.votable import parse_single_table
 
 import numpy as np
 
+from astropy.io.votable import parse_single_table
 from typeguard import typechecked
 
 
@@ -44,7 +44,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         wavelength, transmission, _, _ = np.loadtxt('VisAO_rp_filter_curve.dat', unpack=True)
 
         # Not sure if energy- or photon-counting detector
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('VisAO_rp_filter_curve.dat')
 
@@ -55,7 +55,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         wavelength, transmission, _, _ = np.loadtxt('VisAO_ip_filter_curve.dat', unpack=True)
 
         # Not sure if energy- or photon-counting detector
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('VisAO_ip_filter_curve.dat')
 
@@ -66,11 +66,11 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         wavelength, transmission, _, _ = np.loadtxt('VisAO_zp_filter_curve.dat', unpack=True)
 
         # Not sure if energy- or photon-counting detector
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('VisAO_zp_filter_curve.dat')
 
-    elif filter_id == 'LCO/VisAO.Ys' or filter_id == 'Magellan/VisAO.Ys':
+    elif filter_id  in ['LCO/VisAO.Ys', 'Magellan/VisAO.Ys']:
         url = 'https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat'
         urllib.request.urlretrieve(url, 'VisAO_Ys_filter_curve.dat')
 
@@ -81,7 +81,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
         transmission = transmission[:-7]
 
         # Not sure if energy- or photon-counting detector
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('VisAO_Ys_filter_curve.dat')
 
@@ -91,7 +91,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         wavelength, transmission = np.loadtxt('alma_band6.dat', unpack=True)
 
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('alma_band6.dat')
 
@@ -101,7 +101,7 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
         wavelength, transmission = np.loadtxt('alma_band7.dat', unpack=True)
 
-        det_type = 'energy'
+        det_type = 'photon'
 
         os.remove('alma_band7.dat')
 
@@ -143,6 +143,12 @@ def download_filter(filter_id: str) -> Tuple[Optional[np.ndarray],
 
             elif int(det_type) == 1:
                 det_type = 'photon'
+
+            else:
+                det_type = 'photon'
+
+                warnings.warn(f'Detector type ({det_type}) not recognized. Setting detector type '
+                              f'to photon-counting detector.')
 
             wavelength *= 1e-4  # (um)
 

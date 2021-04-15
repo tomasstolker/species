@@ -62,7 +62,12 @@ class ReadModel:
 
         if self.filter_name is not None:
             transmission = read_filter.ReadFilter(self.filter_name)
+
             self.wavel_range = transmission.wavelength_range()
+            self.mean_wavelength = transmission.mean_wavelength()
+
+        else:
+            self.mean_wavelength = None
 
         config_file = os.path.join(os.getcwd(), 'species_config.ini')
 
