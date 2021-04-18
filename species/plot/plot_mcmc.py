@@ -235,7 +235,7 @@ def plot_posterior(tag: str,
         for item in item_del:
             box.parameters.remove(item)
 
-    if box.attributes['chemistry'] == 'free':
+    if box.spectrum == 'petitradtrans' and box.attributes['chemistry'] == 'free':
         box.parameters.append('c_h_ratio')
         box.parameters.append('o_h_ratio')
         box.parameters.append('c_o_ratio')
