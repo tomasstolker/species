@@ -196,7 +196,8 @@ class EmissionLine:
                      min_num_live_points: float = 400,
                      bounds: Dict[str, Union[Tuple[float, float]]] = None,
                      output: str = 'ultranest/',
-                     plot_filename: str = 'line_fit.pdf') -> None:
+                     plot_filename: str = 'line_fit.pdf',
+                     show_status: bool = True) -> None:
         """
         Method for fitting a Gaussian profile to an emission line and using ``UltraNest`` for
         sampling the posterior distributions and estimating the evidence.
@@ -217,6 +218,8 @@ class EmissionLine:
             Path that is used for the output files from ``UltraNest``.
         plot_filename : str
             Filename for the plot with the best-fit line profile.
+        show_status : bool
+            Print information about the convergence.
 
         Returns
         -------
@@ -331,7 +334,7 @@ class EmissionLine:
                                                   resume='subfolder',
                                                   log_dir=output)
 
-        result = sampler.run(show_status=True,
+        result = sampler.run(show_status=show_status,
                              viz_callback=False,
                              min_num_live_points=min_num_live_points)
 
