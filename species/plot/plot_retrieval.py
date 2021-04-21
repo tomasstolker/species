@@ -403,6 +403,11 @@ def plot_pt_profile(tag: str,
                 else:
                     ax2.get_xaxis().set_label_coords(0.5, 1.06)
 
+            else:
+                raise ValueError('The Radtrans object does not contain any cloud species. Please '
+                                 'set the argument of \'extra_axis\' either to \'photosphere\' or '
+                                 'None.')
+
             for item in radtrans.cloud_species:
                 cloud_index = radtrans.rt_object.cloud_species.index(item)
 
