@@ -1824,10 +1824,14 @@ class Database:
 
             samples = samples[:, burnin:, :]
 
-            if random:
+            if random is not None:
                 ran_walker = np.random.randint(samples.shape[0], size=random)
                 ran_step = np.random.randint(samples.shape[1], size=random)
                 samples = samples[ran_walker, ran_step, :]
+
+        elif samples.ndim == 2 and random is not None:
+            indices = np.random.randint(samples.shape[0], size=random)
+            samples = samples[indices, :]
 
         param = []
         for i in range(n_param):
@@ -1859,6 +1863,105 @@ class Database:
                               prob_sample=prob_sample,
                               median_sample=median_sample,
                               attributes=attributes)
+
+    @typechecked
+    def get_pt_profiles(self,
+                        tag: str,
+                        random: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Parameters
+        ----------
+        tag: str
+            Database tag with the posterior samples from the atmospheric retrieval with
+            :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        random : int, None
+            Number of random samples that will be used for the P-T profiles. All samples
+            will be selected if set to ``None``.
+
+        Returns
+        -------
+        np.ndarray
+            Array (1D) with the pressures (bar).
+        np.ndarray
+            Array (2D) with the temperature profiles (K). The shape of the array is
+            (n_samples, n_pressures).
+        """
+
+        h5_file = h5py.File(self.database, 'r')
+        dset = h5_file[f'results/fit/{tag}/samples']
+
+        spectrum = dset.attrs['spectrum']
+        pt_profile = dset.attrs['pt_profile']
+
+        if spectrum != 'petitradtrans':
+            raise ValueError(f'The model spectrum of the posterior samples is \'{spectrum}\' '
+                             f'instead of \'petitradtrans\'. Extracting P-T profiles is '
+                             f'therefore not possible.')
+
+        if 'n_param' in dset.attrs:
+            n_param = dset.attrs['n_param']
+        elif 'nparam' in dset.attrs:
+            n_param = dset.attrs['nparam']
+
+        samples = np.asarray(dset)
+
+        if random is None:
+            n_profiles = samples.shape[0]
+
+        else:
+            n_profiles = random
+
+            indices = np.random.randint(samples.shape[0], size=random)
+            samples = samples[indices, :]
+
+        param_index = {}
+        for i in range(n_param):
+            param_index[dset.attrs[f'parameter{i}']] = i
+
+        h5_file.close()
+
+        press = np.logspace(-6, 3, 180)  # (bar)
+
+        temp = np.zeros((n_profiles, press.shape[0]))
+
+        desc = f'Extracting the P-T profiles of {tag}'
+
+        for i in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+            item = samples[i, :]
+
+            if pt_profile == 'molliere':
+                three_temp = np.array([item[param_index['t1']],
+                                       item[param_index['t2']],
+                                       item[param_index['t3']]])
+
+                temp[i, :], _ = retrieval_util.pt_ret_model(three_temp,
+                                                            10.**item[param_index['log_delta']],
+                                                            item[param_index['alpha']],
+                                                            item[param_index['tint']],
+                                                            press,
+                                                            item[param_index['metallicity']],
+                                                            item[param_index['c_o_ratio']])
+
+            elif pt_profile == 'mod-molliere':
+                temp[i, :], _ = retrieval_util.pt_ret_model(None,
+                                                            10.**item[param_index['log_delta']],
+                                                            item[param_index['alpha']],
+                                                            item[param_index['tint']],
+                                                            press,
+                                                            item[param_index['metallicity']],
+                                                            item[param_index['c_o_ratio']])
+
+            elif pt_profile in ['free', 'monotonic']:
+                knot_temp = []
+                for i in range(15):
+                    knot_temp.append(item[param_index[f't{i}']])
+
+                knot_temp = np.asarray(knot_temp)
+
+                temp[i, :] = retrieval_util.pt_spline_interp(
+                    knot_press, knot_temp, press, pt_smooth)
+
+        return press, temp
 
     @typechecked
     def add_empirical(self,

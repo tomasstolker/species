@@ -228,7 +228,7 @@ def plot_pt_profile(tag: str,
             pt_smooth = box.attributes['pt_smooth']
 
         temp = retrieval_util.pt_spline_interp(
-            knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
+            knot_press, knot_temp, pressure, pt_smooth=pt_smooth)        
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 

@@ -311,7 +311,7 @@ def create_pt_profile(cube,
                       knot_press: Optional[np.ndarray],
                       metallicity: float,
                       c_o_ratio: float,
-                      pt_smooth: float = 0.3,) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+                      pt_smooth: float = 0.3) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Function for creating the P-T profile.
 
