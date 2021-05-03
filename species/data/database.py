@@ -1383,8 +1383,8 @@ class Database:
                          burnin: Optional[int] = None,
                          wavel_range: Optional[Union[Tuple[float, float], str]] = None,
                          spec_res: Optional[float] = None,
-                         wavel_resample: Optional[np.ndarray] = None) -> \
-                             Union[List[box.ModelBox], List[box.SpectrumBox]]:
+                         wavel_resample: Optional[np.ndarray] = None) -> Union[
+                             List[box.ModelBox], List[box.SpectrumBox]]:
         """
         Function for drawing random spectra from the sampled posterior distributions.
 
@@ -1750,7 +1750,8 @@ class Database:
     def get_samples(self,
                     tag: str,
                     burnin: Optional[int] = None,
-                    random: Optional[int] = None) -> box.SamplesBox:
+                    random: Optional[int] = None,
+                    out_file: Optional[str] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
@@ -1763,6 +1764,10 @@ class Database:
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.
+        out_file : str, None
+            Output file to store the posterior samples. The data will be stored in a FITS file if
+            the argument of ``out_file`` ends with `.fits`. Otherwise, the data will be written to
+            a text file. The data will not be written to a file if the argument is set to ``None``.
 
         Returns
         -------
@@ -1817,6 +1822,19 @@ class Database:
 
         median_sample = self.get_median_sample(tag, burnin)
 
+        if out_file is not None:
+            header = ''
+            for i, item in enumerate(param):
+                header += f'{item}'
+                if i != len(param) - 1:
+                    header += ' - '
+            
+            if out_file.endswith('.fits'):
+                fits.writeto(out_file, samples, overwrite=True)
+
+            else:
+                np.savetxt(out_file, samples, header=header)
+
         return box.create_box('samples',
                               spectrum=spectrum,
                               parameters=param,
@@ -1852,7 +1870,7 @@ class Database:
         flux_scaling : list(float)
             Array with the best-fit scaling values to match the library spectra with the data.
         av_ext : list(float)
-            Array with the visual extinctions A_V.
+            Array with the visual extinction :math:`A_V`.
         rad_vel : list(float)
             Array with the radial velocities (km s-1).
         object_name : str
@@ -1901,3 +1919,71 @@ class Database:
             h5_file.create_dataset(f'results/empirical/{tag}/flux_scaling', data=flux_scaling)
             h5_file.create_dataset(f'results/empirical/{tag}/av_ext', data=av_ext)
             h5_file.create_dataset(f'results/empirical/{tag}/rad_vel', data=rad_vel)
+
+    @typechecked
+    def add_comparison(self,
+                       tag: str,
+                       goodness_of_fit: np.ndarray,
+                       flux_scaling: np.ndarray,
+                       model_param: List[str],
+                       coord_points: List[np.ndarray],
+                       object_name: str,
+                       spec_name: List[str],
+                       model: str) -> None:
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag where the results will be stored.
+        goodness_of_fit : np.ndarray
+            Array with the goodness-of-fit values.
+        flux_scaling : np.ndarray
+            Array with the best-fit scaling values to match the model spectra with the data.
+        model_param : list(str)
+            List with the names of the model parameters.
+        coord_points : list(np.ndarray)
+            List with 1D arrays of the model grid points, in the same order as ``model_param``.
+        object_name : str
+            Object name as stored in the database with
+            :func:`~species.data.database.Database.add_object` or
+            :func:`~species.data.database.Database.add_companion`.
+        spec_name : list(str)
+            List with spectrum names that are stored at the object data of ``object_name``.
+        model : str
+            Atmospheric model grid that is used for the comparison.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, 'a') as h5_file:
+
+            if 'results' not in h5_file:
+                h5_file.create_group('results')
+
+            if 'results/comparison' not in h5_file:
+                h5_file.create_group('results/comparison')
+
+            if f'results/comparison/{tag}' in h5_file:
+                del h5_file[f'results/comparison/{tag}']
+
+            dset = h5_file.create_dataset(f'results/comparison/{tag}/goodness_of_fit',
+                                          data=goodness_of_fit)
+
+            dset.attrs['object_name'] = str(object_name)
+            dset.attrs['model'] = str(model)
+            dset.attrs['n_param'] = len(model_param)
+            dset.attrs['n_spec_name'] = len(spec_name)
+
+            for i, item in enumerate(model_param):
+                dset.attrs[f'parameter{i}'] = item
+
+            for i, item in enumerate(spec_name):
+                dset.attrs[f'spec_name{i}'] = item
+
+            h5_file.create_dataset(f'results/comparison/{tag}/flux_scaling', data=flux_scaling)
+
+            for i, item in enumerate(coord_points):
+                h5_file.create_dataset(f'results/comparison/{tag}/coord_points{i}', data=item)

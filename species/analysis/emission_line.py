@@ -65,6 +65,7 @@ class EmissionLine:
         self.lambda_rest = lambda_rest
 
         self.object = read_object.ReadObject(object_name)
+        self.distance = self.object.get_distance()[0]
 
         self.spectrum = self.object.get_spectrum()[spec_name][0]
 
@@ -79,7 +80,7 @@ class EmissionLine:
 
             self.spectrum = self.spectrum[indices, ]
 
-        self.spec_vrad =  1e-3 * constants.LIGHT * \
+        self.spec_vrad = 1e-3 * constants.LIGHT * \
             (self.spectrum[:, 0] - self.lambda_rest) / self.lambda_rest
 
         self.continuum_flux = np.full(self.spectrum.shape[0], 0.)
@@ -301,6 +302,7 @@ class EmissionLine:
         fwhm_sample = np.zeros(n_samples)
         mean_sample = np.zeros(n_samples)
         vrad_sample = np.zeros(n_samples)
+        lum_sample = np.zeros(n_samples)
 
         for i in range(n_samples):
             # Sample fluxes from random errors
@@ -317,6 +319,10 @@ class EmissionLine:
 
             # Integrate line flux (W m-2)
             flux_sample[i] = np.trapz(flux_rand, wavel_high_res)
+
+            # Line luminosity (Lsun)
+            lum_sample[i] = 4. * np.pi * (self.distance*constants.PARSEC)**2 * flux_sample[i]
+            lum_sample[i] /= constants.L_SUN  # (Lsun)
 
             # Weighted (with flux) mean wavelength (um)
             mean_sample[i] = np.trapz(wavel_high_res*flux_rand, wavel_high_res) / \
@@ -336,7 +342,7 @@ class EmissionLine:
             root1 = np.amax(diff[diff < 0.])
             root2 = np.amin(diff[diff > 0.])
 
-            fwhm_sample[i] = root2 - root1
+            fwhm_sample[i] = 1e-3*constants.LIGHT*(root2 - root1)/mean_sample[i]
 
             # Add 30 samples to the plot
 
@@ -372,13 +378,16 @@ class EmissionLine:
         print(f'Mean wavelength (nm): {1e3*wavel_mean:.2f} +/- {1e3*wavel_std:.2f}')
 
         fwhm_mean, fwhm_std = np.mean(fwhm_sample), np.std(fwhm_sample)
-        print(f'FWHM (nm): {1e3*fwhm_mean:.2f} +/- {1e3*fwhm_std:.2f}')
+        print(f'FWHM (km s-1): {fwhm_mean:.2f} +/- {fwhm_std:.2f}')
 
         vrad_mean, vrad_std = np.mean(vrad_sample), np.std(vrad_sample)
         print(f'Radial velocity (km s-1): {vrad_mean:.1f} +/- {vrad_std:.1f}')
 
         line_error = np.std(flux_sample)
         print(f'Line flux (W m-2): {line_flux:.2e} +/- {line_error:.2e}')
+
+        lum_mean, lum_std = np.mean(lum_sample), np.std(lum_sample)
+        print(f'Line luminosity (Lsun): {lum_mean:.2e} +/- {lum_std:.2e}')
 
         return line_flux, line_error
 
@@ -626,8 +635,6 @@ class EmissionLine:
 
         print('Calculating line fluxes...', end='', flush=True)
 
-        distance = self.object.get_distance()[0]
-
         modelpar.append('line_flux')
         modelpar.append('line_luminosity')
 
@@ -654,7 +661,7 @@ class EmissionLine:
 
             line_flux[i] = np.trapz(model_box.flux, model_box.wavelength)  # (W m-2)
 
-            line_lum[i] = 4. * np.pi * (distance*constants.PARSEC)**2 * line_flux[i]  # (W)
+            line_lum[i] = 4. * np.pi * (self.distance*constants.PARSEC)**2 * line_flux[i]  # (W)
             line_lum[i] /= constants.L_SUN  # (Lsun)
 
             if self.continuum_check:
@@ -730,7 +737,7 @@ class EmissionLine:
                                    spectrum=('model', 'gaussian'),
                                    tag=tag,
                                    modelpar=modelpar,
-                                   distance=distance,
+                                   distance=self.distance,
                                    spec_labels=None)
 
         # Create plot

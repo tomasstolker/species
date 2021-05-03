@@ -1,6 +1,6 @@
 from species.analysis.emission_line import EmissionLine
 
-from species.analysis.empirical import CompareSpectra
+from species.analysis.compare_spectra import CompareSpectra
 
 from species.analysis.fit_model import FitModel
 
@@ -39,8 +39,9 @@ from species.data.companions import get_data
 
 from species.data.database import Database
 
-from species.plot.plot_empirical import plot_statistic, \
-                                        plot_empirical_spectra
+from species.plot.plot_comparison import plot_statistic, \
+                                         plot_empirical_spectra, \
+                                         plot_grid_statistic
 
 from species.plot.plot_color import plot_color_magnitude, \
                                     plot_color_color

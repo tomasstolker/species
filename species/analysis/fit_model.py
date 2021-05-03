@@ -1087,7 +1087,7 @@ class FitModel:
         # Add samples to the database
 
         if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single 
+            # Writing the samples to the database is only possible when using a single process
             species_db = database.Database()
 
             species_db.add_samples(sampler='emcee',
@@ -1380,7 +1380,7 @@ class FitModel:
             # Veiling
             if 'veil_a' in veil_param and 'veil_b' in veil_param and 'veil_ref' in veil_param:
                 if item == 'MUSE':
-                    lambda_ref = 0.5 # (um)
+                    lambda_ref = 0.5  # (um)
 
                     veil_flux = veil_param['veil_ref'] + veil_param['veil_b'] * \
                         (self.spectrum[item][0][:, 0] - lambda_ref)
@@ -1448,7 +1448,7 @@ class FitModel:
             if self.spectrum[item][2] is not None:
                 # Use the inverted covariance matrix
                 ln_like += -0.5 * weight * np.dot(data_flux-model_flux,
-                                         np.dot(data_cov_inv, data_flux-model_flux))
+                                                  np.dot(data_cov_inv, data_flux-model_flux))
 
                 ln_like += -0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
 
@@ -1468,7 +1468,7 @@ class FitModel:
                     dot_tmp = np.dot(data_flux-model_flux,
                                      np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))
 
-                    ln_like += -0.5 * weight * dot_tmp 
+                    ln_like += -0.5 * weight * dot_tmp
                     ln_like += -0.5 * np.nansum(np.log(2.*np.pi*data_var))
 
                 else:
@@ -1658,7 +1658,7 @@ class FitModel:
         # Add samples to the database
 
         if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single 
+            # Writing the samples to the database is only possible when using a single process
             species_db = database.Database()
 
             species_db.add_samples(sampler='multinest',
