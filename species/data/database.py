@@ -1867,8 +1867,12 @@ class Database:
     @typechecked
     def get_pt_profiles(self,
                         tag: str,
-                        random: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+                        random: Optional[int] = None,
+                        out_file: Optional[str] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
+        Method for returning the pressure-temperature profiles from the atmospheric retrieval
+        with ``petitRADTRANS``. The data can also be optionally stored to an output file.
+
         Parameters
         ----------
         tag: str
@@ -1877,6 +1881,12 @@ class Database:
         random : int, None
             Number of random samples that will be used for the P-T profiles. All samples
             will be selected if set to ``None``.
+        out_file : str, None
+            Output file to store the P-T profiles. The data will be stored in a FITS file if the
+            argument of ``out_file`` ends with `.fits`. Otherwise, the data will be written to a
+            text file. The data has two dimensions with the first column containing the pressures
+            (bar) and the remaining columns the temperature profiles (K). The data will not be
+            written to a file if the argument is set to ``None``.
 
         Returns
         -------
@@ -1884,7 +1894,7 @@ class Database:
             Array (1D) with the pressures (bar).
         np.ndarray
             Array (2D) with the temperature profiles (K). The shape of the array is
-            (n_samples, n_pressures).
+            (n_pressures, n_samples).
         """
 
         h5_file = h5py.File(self.database, 'r')
@@ -1922,7 +1932,7 @@ class Database:
 
         press = np.logspace(-6, 3, 180)  # (bar)
 
-        temp = np.zeros((n_profiles, press.shape[0]))
+        temp = np.zeros((press.shape[0], n_profiles))
 
         desc = f'Extracting the P-T profiles of {tag}'
 
@@ -1934,7 +1944,7 @@ class Database:
                                        item[param_index['t2']],
                                        item[param_index['t3']]])
 
-                temp[i, :], _ = retrieval_util.pt_ret_model(three_temp,
+                temp[:, i], _ = retrieval_util.pt_ret_model(three_temp,
                                                             10.**item[param_index['log_delta']],
                                                             item[param_index['alpha']],
                                                             item[param_index['tint']],
@@ -1943,7 +1953,7 @@ class Database:
                                                             item[param_index['c_o_ratio']])
 
             elif pt_profile == 'mod-molliere':
-                temp[i, :], _ = retrieval_util.pt_ret_model(None,
+                temp[:, i], _ = retrieval_util.pt_ret_model(None,
                                                             10.**item[param_index['log_delta']],
                                                             item[param_index['alpha']],
                                                             item[param_index['tint']],
@@ -1958,8 +1968,17 @@ class Database:
 
                 knot_temp = np.asarray(knot_temp)
 
-                temp[i, :] = retrieval_util.pt_spline_interp(
+                temp[:, i] = retrieval_util.pt_spline_interp(
                     knot_press, knot_temp, press, pt_smooth)
+
+        if out_file is not None:
+            data = np.hstack([press[..., np.newaxis], temp])
+
+            if out_file.endswith('.fits'):
+                fits.writeto(out_file, data, overwrite=True)
+
+            else:
+                np.savetxt(out_file, data, header='Pressure (bar) - Temperature (K)')
 
         return press, temp
 

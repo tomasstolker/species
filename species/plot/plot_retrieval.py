@@ -63,7 +63,6 @@ def plot_pt_profile(tag: str,
     print(f'Plotting the P-T profiles: {output}...', end='', flush=True)
 
     cloud_species = ['Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)']
-    # cloud_check = ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']
 
     cloud_color = {'Fe(c)': 'tab:blue', 'MgSiO3(c)': 'tab:orange',
                    'Al2O3(c)': 'tab:green', 'Na2S(c)': 'tab:cyan',
@@ -94,15 +93,6 @@ def plot_pt_profile(tag: str,
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
     ax = plt.subplot(gridsp[0, 0])
-
-    # top = True
-    #
-    # for item in cloud_check:
-    #     if f'{item}_fraction' in median:
-    #         top = False
-    #
-    #     elif f'{item}_tau' in median:
-    #         top = False
 
     ax.tick_params(axis='both', which='major', colors='black', labelcolor='black',
                    direction='in', width=1, length=5, labelsize=12, top=True,
@@ -135,8 +125,8 @@ def plot_pt_profile(tag: str,
         ax.get_xaxis().set_label_coords(0.5, -0.06)
         ax.get_yaxis().set_label_coords(-0.14, 0.5)
 
-    # Create the pressure levels (bar)
-    pressure = np.logspace(-6, 3, 180)
+    # Create the pressure points (bar)
+    pressure = np.logspace(-6., 3., 180)
 
     if 'tint' in parameters:
         pt_profile = 'molliere'
@@ -198,10 +188,6 @@ def plot_pt_profile(tag: str,
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
         ax.plot(temp, pressure, '-', lw=0.3, color='gray', alpha=0.5, zorder=1)
-
-        # np.savetxt(f'output/pt_profile/pt_profile_{i:04d}.dat',
-        #            np.column_stack([pressure, temp]),
-        #            header='Pressure (bar) - Temperature (K)')
 
     if box.attributes['chemistry'] == 'free':
         # TODO Set [Fe/H] = 0
