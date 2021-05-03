@@ -1768,7 +1768,7 @@ class Database:
                     tag: str,
                     burnin: Optional[int] = None,
                     random: Optional[int] = None,
-                    write_json: Optional[str] = None) -> box.SamplesBox:
+                    out_file: Optional[str] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
@@ -1781,9 +1781,9 @@ class Database:
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.
-        write_json : str, None
+        out_file : str, None
             Filename of a JSON file where the samples will be externally written. The samples will
-            not be stored in a JSON file if the argument is set to ``None``.
+            not be stored in an output file if the argument is set to ``None``.
 
         Returns
         -------
@@ -1846,12 +1846,12 @@ class Database:
 
         median_sample = self.get_median_sample(tag, burnin)
 
-        if write_json is not None:
+        if out_file is not None:
             samples_dict = {}
             for i, item in enumerate(param):
                 samples_dict[item] = list(samples[:, i])
 
-            with open(write_json, 'w') as json_file:
+            with open(out_file, 'w') as json_file:
                 json_file.write(json.dumps(samples_dict, indent=4))
 
         return box.create_box('samples',
@@ -2008,7 +2008,7 @@ class Database:
         flux_scaling : list(float)
             Array with the best-fit scaling values to match the library spectra with the data.
         av_ext : list(float)
-            Array with the visual extinctions A_V.
+            Array with the visual extinction :math:`A_V`.
         rad_vel : list(float)
             Array with the radial velocities (km s-1).
         object_name : str
@@ -2058,6 +2058,72 @@ class Database:
             h5_file.create_dataset(f'results/empirical/{tag}/rad_vel', data=rad_vel)
 
     @typechecked
+    def add_comparison(self,
+                       tag: str,
+                       goodness_of_fit: np.ndarray,
+                       flux_scaling: np.ndarray,
+                       model_param: List[str],
+                       coord_points: List[np.ndarray],
+                       object_name: str,
+                       spec_name: List[str],
+                       model: str) -> None:
+        """
+        Parameters
+        ----------
+        tag : str
+            Database tag where the results will be stored.
+        goodness_of_fit : np.ndarray
+            Array with the goodness-of-fit values.
+        flux_scaling : np.ndarray
+            Array with the best-fit scaling values to match the model spectra with the data.
+        model_param : list(str)
+            List with the names of the model parameters.
+        coord_points : list(np.ndarray)
+            List with 1D arrays of the model grid points, in the same order as ``model_param``.
+        object_name : str
+            Object name as stored in the database with
+            :func:`~species.data.database.Database.add_object` or
+            :func:`~species.data.database.Database.add_companion`.
+        spec_name : list(str)
+            List with spectrum names that are stored at the object data of ``object_name``.
+        model : str
+            Atmospheric model grid that is used for the comparison.
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, 'a') as h5_file:
+
+            if 'results' not in h5_file:
+                h5_file.create_group('results')
+
+            if 'results/comparison' not in h5_file:
+                h5_file.create_group('results/comparison')
+
+            if f'results/comparison/{tag}' in h5_file:
+                del h5_file[f'results/comparison/{tag}']
+
+            dset = h5_file.create_dataset(f'results/comparison/{tag}/goodness_of_fit',
+                                          data=goodness_of_fit)
+
+            dset.attrs['object_name'] = str(object_name)
+            dset.attrs['model'] = str(model)
+            dset.attrs['n_param'] = len(model_param)
+            dset.attrs['n_spec_name'] = len(spec_name)
+
+            for i, item in enumerate(model_param):
+                dset.attrs[f'parameter{i}'] = item
+
+            for i, item in enumerate(spec_name):
+                dset.attrs[f'spec_name{i}'] = item
+
+            h5_file.create_dataset(f'results/comparison/{tag}/flux_scaling', data=flux_scaling)
+
+            for i, item in enumerate(coord_points):
+                h5_file.create_dataset(f'results/comparison/{tag}/coord_points{i}', data=item)
+
     def add_retrieval(self,
                       tag: str,
                       output_folder: str,
