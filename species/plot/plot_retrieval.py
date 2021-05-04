@@ -235,8 +235,7 @@ def plot_pt_profile(tag: str,
 
         # Import interpol_abundances here because it is slow
 
-        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-            interpol_abundances
+        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         abund_in = interpol_abundances(np.full(pressure.shape[0], median['c_o_ratio']),
                                        np.full(pressure.shape[0], median['metallicity']),
