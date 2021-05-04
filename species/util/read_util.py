@@ -376,7 +376,7 @@ def gaussian_spectrum(wavel_range: Union[Tuple[float, float],
     flux = model_param['gauss_amplitude'] * gauss_exp
 
     if double_gaussian:
-        gauss_exp = np.exp(-0.5*(wavel-model_param['gauss_mean_2'])**2 / 
+        gauss_exp = np.exp(-0.5*(wavel-model_param['gauss_mean_2'])**2 /
                            model_param['gauss_sigma_2']**2)
 
         flux += model_param['gauss_amplitude_2'] * gauss_exp

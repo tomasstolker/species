@@ -309,7 +309,10 @@ class CompareSpectra:
                       av_points: Optional[Union[List[float], np.array]] = None) -> None:
         """
         Method for finding the best fitting spectrum from a grid of atmospheric model spectra by
-        evaluating the goodness-of-fit statistic from Cushing et al. (2008).
+        evaluating the goodness-of-fit statistic from Cushing et al. (2008). Currently, this method
+        only supports model grids with only :math:`T_\mathrm{eff}` and :math:`\log(g)` as free
+        parameters (e.g. BT-Settl). Please create an issue on Github if support for models with
+        more than two parameters is required.
 
         Parameters
         ----------
@@ -337,7 +340,7 @@ class CompareSpectra:
         elif isinstance(av_points, list):
             av_points = np.array(av_points)
 
-        readmodel = read_model.ReadModel(model, wavel_range=None)
+        readmodel = read_model.ReadModel(model)
 
         model_param = readmodel.get_parameters()
         grid_points = readmodel.get_points()
@@ -359,16 +362,24 @@ class CompareSpectra:
         fit_stat = np.zeros(grid_shape)
         flux_scaling = np.zeros(grid_shape)
 
+        count = 1
+
         if len(coord_points) == 2:
+            n_iter = len(coord_points[0])*len(coord_points[1])
 
             for i, item_i in enumerate(coord_points[0]):
                 for j, item_j in enumerate(coord_points[1]):
                     for k, spec_item in enumerate(self.spec_name):
+                        print(f'Processing model spectrum {count}/{n_iter}...', end='')
+
                         obj_spec = self.object.get_spectrum()[spec_item][0]
                         obj_res = self.object.get_spectrum()[spec_item][3]
 
                         param_dict = {model_param[0]: item_i,
                                       model_param[1]: item_j}
+
+                        wavel_range = (0.9*obj_spec[0, 0], 1.1*obj_spec[-1, 0])
+                        readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
 
                         model_box = readmodel.get_data(param_dict,
                                                        spec_res=obj_res,
@@ -382,18 +393,26 @@ class CompareSpectra:
                         residual = obj_spec[:, 1] - flux_scaling[i, j, k]*model_box.flux
                         fit_stat[i, j, k] = np.sum(w_i * (residual/obj_spec[:, 2])**2)
 
+                    count += 1
+
         if len(coord_points) == 3:
+            n_iter = len(coord_points[0])*len(coord_points[1])*len(coord_points[2])
 
             for i, item_i in enumerate(coord_points[0]):
                 for j, item_j in enumerate(coord_points[1]):
                     for k, item_k in enumerate(coord_points[2]):
                         for m, spec_item in enumerate(self.spec_name):
+                            print(f'\rProcessing model spectrum {count}/{n_iter}...', end='')
+
                             obj_spec = self.object.get_spectrum()[spec_item][0]
                             obj_res = self.object.get_spectrum()[spec_item][3]
 
                             param_dict = {model_param[0]: item_i,
                                           model_param[1]: item_j,
                                           model_param[2]: item_k}
+
+                            wavel_range = (0.9*obj_spec[0, 0], 1.1*obj_spec[-1, 0])
+                            readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
 
                             model_box = readmodel.get_data(param_dict,
                                                            spec_res=obj_res,
@@ -406,6 +425,10 @@ class CompareSpectra:
 
                             residual = obj_spec[:, 1] - flux_scaling[i, j, k, m]*model_box.flux
                             fit_stat[i, j, k, m] = np.sum(w_i * (residual/obj_spec[:, 2])**2)
+
+                        count += 1
+
+        print(' [DONE]')
 
         species_db = database.Database()
 

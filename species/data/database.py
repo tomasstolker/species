@@ -17,12 +17,12 @@ from astropy.io import fits
 from typeguard import typechecked
 
 from species.analysis import photometry
-from species.core import box
+from species.core import box, constants
 from species.data import ames_cond, ames_dusty, atmo, blackbody, btcond, btcond_feh, btnextgen, \
                          btsettl, btsettl_cifist, companions, drift_phoenix, dust, exo_rem, \
                          filters, irtf, isochrones, leggett, petitcode, spex, vega, vlm_plx, \
                          kesseli2017
-from species.read import read_calibration, read_filter, read_model, read_planck
+from species.read import read_calibration, read_filter, read_model, read_object, read_planck
 from species.util import data_util, dust_util, read_util
 
 
@@ -1377,6 +1377,70 @@ class Database:
         return median_sample
 
     @typechecked
+    def get_compare_sample(self,
+                           tag: str,
+                           spec_fix: Optional[str] = None) -> Dict[str, float]:
+        """
+        Function for extracting the sample parameters with the highest posterior probability.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the results from
+            :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model` are stored.
+        spec_fix : str, None
+            After comparing multiple spectra with a model grid, one of the flux scalings need to
+            be used to calculate the planet radius (i.e. scaling = (radius/distance)^2). The name
+            of this spectrum is specified as argument of ``spec_fix``. For the other spectra,
+            the same radius will be used and an additional scaling parameter will be included in
+            the returned dictionary. When passing the returned dictionary to
+            :func:`~species.util.read_util.update_spectra`, the spectra can be updated with the
+            derived scaling corrections. The argument can be set to ``None`` if a single spectrum
+            was used for the comparison.
+
+        Returns
+        -------
+        dict
+            Dictionary with the best-fit parameters.
+        """
+
+        with h5py.File(self.database, 'a') as h5_file:
+            dset = h5_file[f'results/comparison/{tag}/goodness_of_fit']
+
+            n_param = dset.attrs['n_param']
+            n_spec_name = dset.attrs['n_spec_name']
+
+            model_param = {}
+
+            for i in range(n_param):
+                model_param[dset.attrs[f'parameter{i}']] = dset.attrs[f'best_param{i}']
+
+            model_param['distance'] = dset.attrs['distance']
+
+            if n_spec_name == 1:
+                model_param['radius'] = dset.attrs[f'radius_{item}']
+
+            else:
+                if spec_fix is None:
+                    raise ValueError('The argument of \'spec_fix\' should be set when the results '
+                                     'from CompareSpectra.compare_model have been obtained by '
+                                     'combining multiple spectra (i.e. the argument of '
+                                     '\'spec_name\' in CompareSpectra).')
+
+                model_param['radius'] = dset.attrs[f'radius_{spec_fix}']
+
+                for i in range(n_spec_name):
+                    spec_name = dset.attrs[f'spec_name{i}']
+
+                    if spec_name == spec_fix:
+                        continue
+
+                    model_param[f'scaling_{spec_name}'] = (
+                        dset.attrs[f'radius_{spec_fix}'] / dset.attrs[f'radius_{spec_name}'])**2
+
+        return model_param
+
+    @typechecked
     def get_mcmc_spectra(self,
                          tag: str,
                          random: int,
@@ -1828,7 +1892,7 @@ class Database:
                 header += f'{item}'
                 if i != len(param) - 1:
                     header += ' - '
-            
+
             if out_file.endswith('.fits'):
                 fits.writeto(out_file, samples, overwrite=True)
 
@@ -1958,6 +2022,9 @@ class Database:
             None
         """
 
+        read_obj = read_object.ReadObject(object_name)
+        distance = read_obj.get_distance()[0]  # (pc)
+
         with h5py.File(self.database, 'a') as h5_file:
 
             if 'results' not in h5_file:
@@ -1976,6 +2043,7 @@ class Database:
             dset.attrs['model'] = str(model)
             dset.attrs['n_param'] = len(model_param)
             dset.attrs['n_spec_name'] = len(spec_name)
+            dset.attrs['distance'] = distance
 
             for i, item in enumerate(model_param):
                 dset.attrs[f'parameter{i}'] = item
@@ -1987,3 +2055,27 @@ class Database:
 
             for i, item in enumerate(coord_points):
                 h5_file.create_dataset(f'results/comparison/{tag}/coord_points{i}', data=item)
+
+            # Sum the goodness-of-fit of the different spectra
+            goodness_sum = np.sum(goodness_of_fit, axis=-1)
+
+            # Indices of the best-fit model
+            best_index = np.unravel_index(goodness_sum.argmin(), goodness_sum.shape)
+
+            print('Best-fit parameters:')
+
+            for i, item in enumerate(model_param):
+                best_param = coord_points[i][best_index[i]]
+                dset.attrs[f'best_param{i}'] = best_param
+
+            for i, item in enumerate(spec_name):
+                scaling = flux_scaling[best_index[0], best_index[1], best_index[2], i]
+
+                radius = np.sqrt(scaling * (distance*constants.PARSEC)**2)  # (m)
+                radius /= constants.R_JUP  # (Rjup)
+
+                dset.attrs[f'radius_{item}'] = radius
+                print(f' -   {item} radius (Rjup) = {radius:.2f}')
+
+                dset.attrs[f'scaling_{item}'] = scaling
+                print(f' -   {item} scaling = {scaling:.2e}')
