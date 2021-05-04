@@ -91,8 +91,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
     # Importing interpol_abundances is only slow the first time, which occurs at the start
     # of the run_multinest method of AtmosphericRetrieval
 
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-        interpol_abundances
+    from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
     ab = interpol_abundances(np.full(tedd.shape[0], c_o_ratio),
                              np.full(tedd.shape[0], metallicity),
@@ -642,8 +641,7 @@ def calc_spectrum_clear(rt_object,
     # Importing interpol_abundances is only slow the first time, which occurs at the start
     # of the run_multinest method of AtmosphericRetrieval
 
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-        interpol_abundances
+    from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
     if chemistry == 'equilibrium':
         # Chemical equilibrium
@@ -784,8 +782,7 @@ def calc_spectrum_clouds(rt_object,
         # Importing interpol_abundances is only slow the first time, which occurs at the start
         # of the run_multinest method of AtmosphericRetrieval
 
-        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-            interpol_abundances
+        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         # Interpolate the abundances, following chemical equilibrium
         abund_in = interpol_abundances(np.full(pressure.shape, c_o_ratio),
@@ -2048,8 +2045,7 @@ def quench_pressure(pressure: np.ndarray,
     co_array = np.full(pressure.shape[0], c_o_ratio)
     feh_array = np.full(pressure.shape[0], metallicity)
 
-    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-        interpol_abundances
+    from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
     abund_eq = interpol_abundances(
         co_array, feh_array, temperature, pressure, Pquench_carbon=None)

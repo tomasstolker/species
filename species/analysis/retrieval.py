@@ -623,8 +623,7 @@ class AtmosphericRetrieval:
         print(' [DONE]')
 
         print('Importing chemistry module...', end='', flush=True)
-        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import \
-            interpol_abundances
+        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         print(' [DONE]')
 
         print('Importing rebin module...', end='', flush=True)

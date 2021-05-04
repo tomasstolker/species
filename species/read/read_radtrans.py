@@ -294,8 +294,7 @@ class ReadRadtrans:
                     elif f'{item[:-3].lower()}_tau' in model_param:
                         # Import the chemistry module here because it is slow
 
-                        from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem \
-                            import interpol_abundances
+                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
                         # Interpolate the abundances, following chemical equilibrium
 
