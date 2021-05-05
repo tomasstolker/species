@@ -105,7 +105,6 @@ def add_morley2012(input_path: str,
                 print(f'\r{print_message}', end='')
 
                 data_wavel, data_flux = np.loadtxt(os.path.join(data_folder, filename), unpack=True)
-                print(data_wavel)
 
                 teff.append(teff_val)
                 logg.append(logg_val)

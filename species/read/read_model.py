@@ -1201,3 +1201,24 @@ class ReadModel:
         h5_file.close()
 
         return param
+
+    @typechecked
+    def get_spec_res(self) -> float:
+        """
+        Function for extracting the spectral resolution as stored in the database.
+
+        Returns
+        -------
+        float
+            Spectral resolution.
+        """
+
+        wavel_points = self.get_wavelengths()
+
+        wavel_mean = (wavel_points[1:]+wavel_points[:-1])/2.
+
+        # R = lambda / delta_lambda / 2, because twice as many points as R are
+        # required to resolve two features that are lambda / R apart
+        spec_res = wavel_mean / np.diff(wavel_points) / 2.
+
+        return np.mean(spec_res)
