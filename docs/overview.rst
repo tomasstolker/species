@@ -27,6 +27,7 @@ The following data and models are currently supported:
 - `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov2/index.php?models=drift>`_
 - `Exo-REM <https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract>`_
 - `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_
+- `T/Y dwarf spectra from Morley et al. (2012) <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=morley12>`_
 
 **Spectral libraries**
 

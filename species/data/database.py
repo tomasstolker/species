@@ -21,7 +21,7 @@ from species.core import box, constants
 from species.data import ames_cond, ames_dusty, atmo, blackbody, btcond, btcond_feh, btnextgen, \
                          btsettl, btsettl_cifist, companions, drift_phoenix, dust, exo_rem, \
                          filters, irtf, isochrones, leggett, petitcode, spex, vega, vlm_plx, \
-                         kesseli2017
+                         kesseli2017, morley2012
 from species.read import read_calibration, read_filter, read_model, read_object, read_planck
 from species.util import data_util, dust_util, read_util
 
@@ -325,27 +325,31 @@ class Database:
                   teff_range: Optional[Tuple[float, float]] = None,
                   data_folder: Optional[str] = None) -> None:
         """
+        Method for adding a grid of model spectra to the database. All spectra have been resampled
+        to a lower, constant spectral resolution (typically :math:`R = 5000`).
+
         Parameters
         ----------
         model : str
             Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl', 'bt-settl-cifist',
             'bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
             'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'blackbody', bt-cond',
-            or 'bt-cond-feh).
+            'bt-cond-feh, 'morley-2012').
         wavel_range : tuple(float, float), None
-            Wavelength range (um). Optional for the DRIFT-PHOENIX and petitCODE models. For
-            these models, the original wavelength points are used if set to ``None``.
-            which case the argument can be set to ``None``.
+            Wavelength range (um) for adding a subset of the spectra. The full wavelength range
+            is used if the argument is set to ``None``.
         spec_res : float, None
-            Spectral resolution. The parameter is optional for the DRIFT-PHOENIX, petitCODE,
-            BT-Settl, and Exo-REM models. The argument is only used if ``wavel_range`` is not
+            Spectral resolution to which the spectra will be resampled. This parameter is optional
+            since the spectra have already been resampled to a lower, constant resolution
+            (typically :math:`R = 5000`). The argument is only used if ``wavel_range`` is not
             ``None``.
         teff_range : tuple(float, float), None
-            Effective temperature range (K). Setting the value to None for will add all available
-            temperatures.
+            Effective temperature range (K) for adding a subset of the model grid. The full
+            parameter grid will be added if the argument is set to ``None``.
         data_folder : str, None
-            Folder with input data. This parameter has been deprecated since all model spectra
-            are publicly available.
+            DEPRECATED: Folder where the input data is located. This parameter is no longer in use
+            since all model spectra are publicly available. The parameter will be removed in a
+            future release.
 
         Returns
         -------
@@ -472,6 +476,15 @@ class Database:
                                             spec_res)
 
             data_util.add_missing(model, ['teff', 'logg', 'feh'], h5_file)
+
+        elif model == 'morley-2012':
+            morley2012.add_morley2012(self.input_path,
+                                      h5_file,
+                                      wavel_range,
+                                      teff_range,
+                                      spec_res)
+
+            data_util.add_missing(model, ['teff', 'logg', 'fsed'], h5_file)
 
         elif model == 'petitcode-cool-clear':
             petitcode.add_petitcode_cool_clear(self.input_path,
@@ -908,7 +921,7 @@ class Database:
 
                                 corr_warn = f'The covariance matrix from {value[1]} contains ' \
                                             f'ones along the diagonal. Converting this ' \
-                                            f'correlation  matrix into a covariance matrix.'
+                                            f'correlation matrix into a covariance matrix.'
 
                                 if data.ndim == 2 and data.shape[0] == data.shape[1]:
                                     if key not in read_cov:
