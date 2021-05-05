@@ -74,7 +74,7 @@ from species.util.read_util import add_luminosity, \
 
 __author__ = 'Tomas Stolker'
 __license__ = 'MIT'
-__version__ = '0.3.5'
+__version__ = '0.3.6'
 __maintainer__ = 'Tomas Stolker'
 __email__ = 'stolker@strw.leidenuniv.nl'
 __status__ = 'Development'

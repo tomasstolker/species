@@ -14,12 +14,11 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import AutoMinorLocator
 from scipy.interpolate import interp1d, RegularGridInterpolator
-from scipy.ndimage import gaussian_filter
 from typeguard import typechecked
 
 from species.core import constants
 from species.read import read_object
-from species.util import dust_util, read_util
+from species.util import dust_util, read_util, plot_util
 
 
 @typechecked
@@ -351,6 +350,12 @@ def plot_grid_statistic(tag: str,
 
     n_param = dset.attrs['n_param']
 
+    read_obj = read_object.ReadObject(dset.attrs['object_name'])
+
+    n_wavel = 0
+    for key, value in read_obj.get_spectrum().items():
+        n_wavel += value[0].shape[0]
+
     goodness_fit = np.array(dset)
 
     model_param = []
@@ -407,6 +412,9 @@ def plot_grid_statistic(tag: str,
     # Sum the goodness-of-fit of the different spectra
     goodness_fit = np.sum(goodness_fit, axis=-1)
 
+    # Indices of the best-fit model
+    best_index = np.unravel_index(goodness_fit.argmin(), goodness_fit.shape)
+
     # Make Teff the x axis and log(g) the y axis
     goodness_fit = np.transpose(goodness_fit)
 
@@ -428,12 +436,11 @@ def plot_grid_statistic(tag: str,
     x_grid, y_grid = np.meshgrid(x_new, y_new)
 
     goodness_fit = fit_interp((y_grid, x_grid))
-    goodness_fit = gaussian_filter(goodness_fit, 1.)
 
     c = ax.contourf(x_grid, y_grid, np.log10(goodness_fit))
 
     cb = mpl.colorbar.Colorbar(ax=ax_cb, mappable=c, orientation='vertical',
-                               ticklocation='right', format='%.2f')
+                               ticklocation='right', format='%.1f')
 
     cb.ax.tick_params(width=0.8, length=5, labelsize=12, direction='in', color='black')
     cb.ax.set_ylabel(r'$\mathregular{log}\,G_k$', rotation=270, labelpad=22, fontsize=13.)
@@ -442,10 +449,22 @@ def plot_grid_statistic(tag: str,
         extra_interp = RegularGridInterpolator((coord_points[1], coord_points[0]), extra_map)
 
         extra_map = extra_interp((y_grid, x_grid))
-        extra_map = gaussian_filter(extra_map, 1.)
 
-        cs = ax.contour(x_grid, y_grid, extra_map, levels=5, colors='white', linewidths=0.5)
+        cs = ax.contour(x_grid, y_grid, extra_map, levels=10, colors='white', linewidths=0.7)
         ax.clabel(cs, cs.levels, inline=True, fontsize=8, fmt='%1.1f')
+
+    ax.plot(coord_points[0][best_index[0]], coord_points[1][best_index[1]], marker='X',
+            ms=10., color='#eb4242', mfc='#eb4242', mec='black')
+
+    # best_param = (coord_points[0][best_index[0]], coord_points[1][best_index[1]])
+    #
+    # par_key, par_unit, par_label = plot_util.quantity_unit(model_param, object_type='planet')
+    #
+    # par_text = f'{par_label[0]} = {best_param[0]:.0f} {par_unit[0]}\n' \
+    #            f'{par_label[1]} = {best_param[1]:.1f}'
+    #
+    # ax.annotate(par_text, (best_param[0]+50., best_param[1]), ha='left', va='center',
+    #             color='white', fontsize=12.)
 
     plt.savefig(os.getcwd()+'/'+output, bbox_inches='tight')
     plt.clf()
