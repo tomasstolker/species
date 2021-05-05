@@ -1041,22 +1041,25 @@ class ReadModel:
 
     @typechecked
     def get_magnitude(self,
-                      model_param: Dict[str, float]) -> Tuple[float, Optional[float]]:
+                      model_param: Dict[str, float]) -> Tuple[Optional[float], Optional[float]]:
         """
         Function for calculating the apparent and absolute magnitudes for the ``filter_name``.
 
         Parameters
         ----------
         model_param : dict
-            Model parameters and values.
+            Dictionary with the model parameters. A ``radius`` (Rjup) and ``distance`` (pc)
+            are required for the apparent magnitude (i.e. to scale the flux from the planet to the
+            observer). Only a ``radius`` is required for the absolute magnitude.
 
         Returns
         -------
         float
-            Apparent magnitude.
+            Apparent magnitude. A ``None`` is returned if the dictionary of ``model_param`` does
+            not contain a ``radius`` and ``distance``.
         float, None
-            Absolute magnitude. A ``None`` is returned if the ``model_param`` do not contain a
-            ``radius`` and ``distance``.
+            Absolute magnitude. A ``None`` is returned if the dictionary of ``model_param`` does
+            not contain a ``radius``.
         """
 
         for key in self.get_parameters():
@@ -1077,19 +1080,28 @@ class ReadModel:
             return np.nan, np.nan
 
         if spectrum.wavelength.size == 0:
-            app_mag = np.nan
-            abs_mag = np.nan
+            app_mag = (np.nan, None)
+            abs_mag = (np.nan, None)
 
         else:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-            if 'distance' in model_param:
+            if 'radius' in model_param and 'distance' in model_param:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
                     spectrum.wavelength, spectrum.flux, distance=(model_param['distance'], None))
 
             else:
-                app_mag, abs_mag = synphot.spectrum_to_magnitude(
-                    spectrum.wavelength, spectrum.flux, distance=None)
+                app_mag = (None, None)
+                abs_mag = (None, None)
+
+                if 'radius' in model_param:
+                    distance = 10.  # (pc)
+
+                    spectrum.flux *= (model_param['radius']*constants.R_JUP)**2
+                    spectrum.flux /= (distance*constants.PARSEC)**2
+
+                    _, abs_mag = synphot.spectrum_to_magnitude(
+                        spectrum.wavelength, spectrum.flux, distance=(distance, None))
 
         return app_mag[0], abs_mag[0]
 
