@@ -919,7 +919,7 @@ class Database:
                             for i, hdu_item in enumerate(hdulist):
                                 data = np.asarray(hdu_item.data)
 
-                                corr_warn = f'The covariance matrix from {value[1]} contains ' \
+                                corr_warn = f'The matrix from {value[1]} contains ' \
                                             f'ones along the diagonal. Converting this ' \
                                             f'correlation matrix into a covariance matrix.'
 
@@ -956,7 +956,7 @@ class Database:
                     print('   - Covariance matrix:')
 
                     if np.all(np.diag(data) == 1.):
-                        warnings.warn(f'The covariance matrix from {value[1]} contains ones on '
+                        warnings.warn(f'The matrix from {value[1]} contains ones on '
                                       f'the diagonal. Converting this correlation matrix into a '
                                       f'covariance matrix.')
 
