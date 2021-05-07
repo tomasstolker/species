@@ -5,6 +5,7 @@ Module with functionalities for reading and writing of data.
 import configparser
 import json
 import os
+import json
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -931,7 +932,7 @@ class Database:
                             for i, hdu_item in enumerate(hdulist):
                                 data = np.asarray(hdu_item.data)
 
-                                corr_warn = f'The covariance matrix from {value[1]} contains ' \
+                                corr_warn = f'The matrix from {value[1]} contains ' \
                                             f'ones along the diagonal. Converting this ' \
                                             f'correlation matrix into a covariance matrix.'
 
@@ -968,7 +969,7 @@ class Database:
                     print('   - Covariance matrix:')
 
                     if np.all(np.diag(data) == 1.):
-                        warnings.warn(f'The covariance matrix from {value[1]} contains ones on '
+                        warnings.warn(f'The matrix from {value[1]} contains ones on '
                                       f'the diagonal. Converting this correlation matrix into a '
                                       f'covariance matrix.')
 
@@ -1846,7 +1847,7 @@ class Database:
                     tag: str,
                     burnin: Optional[int] = None,
                     random: Optional[int] = None,
-                    out_file: Optional[str] = None) -> box.SamplesBox:
+                    json_file: Optional[str] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
@@ -1859,9 +1860,9 @@ class Database:
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.
-        out_file : str, None
-            Filename of a JSON file where the samples will be externally written. The samples will
-            not be stored in an output file if the argument is set to ``None``.
+        json_file : str, None
+            JSON file to store the posterior samples. The data will not be written if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -1924,13 +1925,14 @@ class Database:
 
         median_sample = self.get_median_sample(tag, burnin)
 
-        if out_file is not None:
+        if json_file is not None:
             samples_dict = {}
+
             for i, item in enumerate(param):
                 samples_dict[item] = list(samples[:, i])
 
-            with open(out_file, 'w') as json_file:
-                json_file.write(json.dumps(samples_dict, indent=4))
+            with open(json_file, 'w') as out_file:
+                json.dump(samples_dict, out_file, indent=4)
 
         return box.create_box('samples',
                               spectrum=spectrum,

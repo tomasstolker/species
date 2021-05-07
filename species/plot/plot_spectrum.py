@@ -14,7 +14,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
-from matplotlib.ticker import AutoMinorLocator, MultipleLocator
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator, ScalarFormatter
 
 from species.core import box, constants
 from species.read import read_filter
@@ -207,11 +207,13 @@ def plot_spectrum(boxes: list,
     # ax1.set_yticks([1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0])
     # ax3.set_yticks([-2., 0., 2.])
 
-    if filters is not None and scale[0] == 'linear':
-        ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
+    if filters is not None:
+        if scale[0] == 'linear':
+            ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
 
-    if residuals is not None and scale[0] == 'linear':
-        ax3.xaxis.set_minor_locator(AutoMinorLocator(5))
+    if residuals is not None:
+        if scale[0] == 'linear':
+            ax3.xaxis.set_minor_locator(AutoMinorLocator(5))
 
     if residuals is not None and filters is not None:
         ax1.set_xlabel('')
@@ -756,6 +758,15 @@ def plot_spectrum(boxes: list,
 
         else:
             ax1.legend(**legend)
+
+    if scale[0] == 'log':
+        ax1.xaxis.set_major_formatter(ScalarFormatter())
+
+        if ax2 is not None:
+            ax2.xaxis.set_major_formatter(ScalarFormatter())
+
+        if ax3 is not None:
+            ax3.xaxis.set_major_formatter(ScalarFormatter())
 
     # filters = ['Paranal/SPHERE.ZIMPOL_N_Ha',
     #            'MUSE/Hbeta',
