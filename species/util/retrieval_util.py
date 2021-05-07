@@ -716,9 +716,9 @@ def calc_spectrum_clouds(rt_object,
                          pressure_grid: str = 'smaller',
                          plotting: bool = False,
                          contribution: bool = False,
-                         tau_cloud: Optional[float] = None) -> Tuple[Optional[np.ndarray],
-                                                                     Optional[np.ndarray],
-                                                                     Optional[np.ndarray]]:
+                         tau_cloud: Optional[float] = None,
+                         cloud_wavel: Optional[Tuple[float, float]] = None) -> Tuple[
+                             Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere.
 
@@ -766,6 +766,12 @@ def calc_spectrum_clouds(rt_object,
     tau_cloud : float, None
         Total cloud optical that will be used for scaling the cloud mass fractions. The mass
         fractions will not be scaled if the parameter is set to ``None``.
+    cloud_wavel : tuple(float, float), None
+        Tuple with the wavelength range (um) that is used for calculating the median optical
+        depth of the clouds at the gas-only photosphere and then scaling the cloud optical
+        depth to the value of ``log_tau_cloud``. The range of ``cloud_wavel`` should be
+        encompassed by the range of ``wavel_range``.  The full wavelength range (i.e.
+        ``wavel_range``) is used if the argument is set to ``None``.
 
     Returns
     -------
@@ -925,7 +931,8 @@ def calc_spectrum_clouds(rt_object,
                                         kappa_zero=None,
                                         gamma_scat=None,
                                         add_cloud_scat_as_abs=False,
-                                        hack_cloud_photospheric_tau=tau_cloud)
+                                        hack_cloud_photospheric_tau=tau_cloud,
+                                        cloud_wlen=cloud_wavel)
 
     if check_scaling is None:
         wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
