@@ -4,6 +4,7 @@ Module with functionalities for reading and writing of data.
 
 import configparser
 import os
+import json
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -1828,7 +1829,7 @@ class Database:
                     tag: str,
                     burnin: Optional[int] = None,
                     random: Optional[int] = None,
-                    out_file: Optional[str] = None) -> box.SamplesBox:
+                    json_file: Optional[str] = None) -> box.SamplesBox:
         """
         Parameters
         ----------
@@ -1841,10 +1842,9 @@ class Database:
         random : int, None
             Number of random samples to select. All samples (with the burnin excluded) are
             selected if set to ``None``.
-        out_file : str, None
-            Output file to store the posterior samples. The data will be stored in a FITS file if
-            the argument of ``out_file`` ends with `.fits`. Otherwise, the data will be written to
-            a text file. The data will not be written to a file if the argument is set to ``None``.
+        json_file : str, None
+            JSON file to store the posterior samples. The data will not be written if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -1899,18 +1899,14 @@ class Database:
 
         median_sample = self.get_median_sample(tag, burnin)
 
-        if out_file is not None:
-            header = ''
+        if json_file is not None:
+            samples_dict = {}
+
             for i, item in enumerate(param):
-                header += f'{item}'
-                if i != len(param) - 1:
-                    header += ' - '
+                samples_dict[item] = list(samples[:, i])
 
-            if out_file.endswith('.fits'):
-                fits.writeto(out_file, samples, overwrite=True)
-
-            else:
-                np.savetxt(out_file, samples, header=header)
+            with open(json_file, 'w') as out_file:
+                json.dump(samples_dict, out_file, indent=4)
 
         return box.create_box('samples',
                               spectrum=spectrum,
