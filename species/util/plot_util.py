@@ -251,17 +251,17 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'log_kzz' in param:
         index = param.index('log_kzz')
-        param[index] = r'$\log\,K_{zz}$'
+        param[index] = r'$\mathregular{log}\,K_{zz}$'
 
     if 'kzz' in param:
         # Backward compatibility
         index = param.index('kzz')
-        param[index] = r'$\log\,K_{zz}$'
+        param[index] = r'$\mathregular{log}\,K_{zz}$'
 
     for i, item in enumerate(cloud_species):
         if f'{item}_fraction' in param:
             index = param.index(f'{item}_fraction')
-            param[index] = rf'$\log\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}$'
+            param[index] = rf'$\mathregular{{log}}\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}$'
 
         if f'{item}_tau' in param:
             index = param.index(f'{item}_tau')
@@ -271,13 +271,14 @@ def update_labels(param: List[str]) -> List[str]:
         for j, item_j in enumerate(cloud_species):
             if f'{item_i}_{item_j}_ratio' in param:
                 index = param.index(f'{item_i}_{item_j}_ratio')
-                param[index] = rf'$\log\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}/' \
+                param[index] = rf'$\mathregular{{log}}\,\tilde{{X}}' \
+                               rf'_\mathregular{{{cloud_labels[i]}}}/' \
                                rf'\tilde{{X}}_\mathregular{{{cloud_labels[j]}}}$'
 
     for i, item in enumerate(abund_species):
         if item in param:
             index = param.index(item)
-            param[index] = rf'$\log\,\mathregular{{{abund_labels[i]}}}$'
+            param[index] = rf'$\mathregular{{log}}\,\mathregular{{{abund_labels[i]}}}$'
 
     for i, item in enumerate(param):
         if item[0:8] == 'scaling_':
@@ -354,11 +355,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'log_prob' in param:
         index = param.index('log_prob')
-        param[index] = r'$\log\,L$'
+        param[index] = r'$\mathregular{log}\,L$'
 
     if 'log_tau_cloud' in param:
         index = param.index('log_tau_cloud')
-        param[index] = rf'$\log\,\tau_\mathregular{{cloud}}$'
+        param[index] = rf'$\mathregular{{log}}\,\tau_\mathregular{{cloud}}$'
 
     if 'veil_a' in param:
         index = param.index('veil_a')

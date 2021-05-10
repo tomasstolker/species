@@ -35,7 +35,8 @@ class ReadRadtrans:
                  wavel_range: Optional[Tuple[float, float]] = None,
                  filter_name: Optional[str] = None,
                  pressure_grid: str = 'smaller',
-                 res_mode: str = 'c-k') -> None:
+                 res_mode: str = 'c-k',
+                 cloud_wavel: Optional[Tuple[float, float]] = None) -> None:
         """
         Parameters
         ----------
@@ -65,6 +66,12 @@ class ReadRadtrans:
             spectrum with the correlated-k assumption at :math:`\lambda/\Delta \lambda = 1000`. The
             high-resolution mode ('lbl') calculates the spectrum with a line-by-line treatment at
             :math:`\lambda/\Delta \lambda = 10^6`.
+        cloud_wavel : tuple(float, float), None
+            Tuple with the wavelength range (um) that is used for calculating the median optical
+            depth of the clouds at the gas-only photosphere and then scaling the cloud optical
+            depth to the value of ``log_tau_cloud``. The range of ``cloud_wavel`` should be
+            encompassed by the range of ``wavel_range``.  The full wavelength range (i.e.
+            ``wavel_range``) is used if the argument is set to ``None``.
 
         Returns
         -------
@@ -78,6 +85,7 @@ class ReadRadtrans:
         self.wavel_range = wavel_range
         self.scattering = scattering
         self.pressure_grid = pressure_grid
+        self.cloud_wavel = cloud_wavel
 
         # Set the wavelength range
 
@@ -145,8 +153,7 @@ class ReadRadtrans:
                   quenching: Optional[str] = None,
                   spec_res: Optional[float] = None,
                   wavel_resample: Optional[np.ndarray] = None,
-                  plot_contribution: Optional[str] = None,
-                  cloud_wavel: Optional[Tuple[float, float]] = None) -> box.ModelBox:
+                  plot_contribution: Optional[str] = None) -> box.ModelBox:
         """
         Function for calculating a model spectrum with ``petitRADTRANS``.
 
@@ -168,12 +175,6 @@ class ReadRadtrans:
         plot_contribution : str, None
             Filename for the plot with the emission contribution. The plot is not created if the
             argument is set to ``None``.
-        cloud_wavel : tuple(float, float), None
-            Tuple with the wavelength range (um) that is used for calculating the median optical
-            depth of the clouds at the gas-only photosphere and then scaling the cloud optical
-            depth to the value of ``log_tau_cloud``. The range of ``cloud_wavel`` should be
-            encompassed by the range of ``wavel_range``.  The full wavelength range (i.e.
-            ``wavel_range``) is used if the argument is set to ``None``.
 
         Returns
         -------
@@ -207,6 +208,7 @@ class ReadRadtrans:
                              'parameters of \'model_param\'.')
 
         # Check quenching parameter
+
         if not hasattr(self, 'quenching'):
             self.quenching = quenching
 
@@ -374,7 +376,7 @@ class ReadRadtrans:
                 log_kzz, model_param['logg'], model_param['sigma_lnorm'],
                 chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud,
-                cloud_wavel=cloud_wavel)
+                cloud_wavel=self.cloud_wavel)
 
         elif chemistry == 'equilibrium':
             # Calculate the petitRADTRANS spectrum for a clear atmosphere

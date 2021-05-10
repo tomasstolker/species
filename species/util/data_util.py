@@ -2,7 +2,7 @@
 Utility functions for data processing.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -709,7 +709,8 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
                        distance: Optional[float],
                        pt_smooth: Optional[float],
                        read_rad: read_radtrans.ReadRadtrans,
-                       sample: np.ndarray) -> box.ModelBox:
+                       sample: np.ndarray,
+                       cloud_wavel: Optional[Tuple[float, float]]) -> box.ModelBox:
     """
     Function for calculating a petitRADTRANS spectrum from a posterior sample.
 
@@ -740,6 +741,11 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
         `pt_profile='monotonic'`. The argument should be given as log10(P/bar).
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+    cloud_wavel : tuple(float, float), None
+        Tuple with the wavelength range (um) that is used for calculating the median optical
+        depth of the clouds at the gas-only photosphere and then scaling the cloud optical
+        depth to the value of ``log_tau_cloud``.  The full wavelength range is used if the
+        argument is set to ``None``.
     sample : np.ndarray
         Parameter values with their order given by the ``indices``.
 
@@ -842,7 +848,8 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
 
     # Calculate spectrum
 
-    model_box = read_rad.get_model(model_param, spec_res=spec_res)
+    model_box = read_rad.get_model(model_param,
+                                   spec_res=spec_res)
 
     # Set content type of the ModelBox
 

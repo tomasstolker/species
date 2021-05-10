@@ -2667,10 +2667,6 @@ class Database:
         else:
             distance = None
 
-        # Get wavelength range
-        if wavel_range is None:
-            wavel_range = (dset.attrs['wavel_min'], dset.attrs['wavel_max'])
-
         # Get model parameters
 
         parameters = []
@@ -2678,6 +2674,18 @@ class Database:
             parameters.append(dset.attrs[f'parameter{i}'])
 
         parameters = np.asarray(parameters)
+
+        # Get wavelength range for median cloud optical depth
+
+        if 'log_tau_cloud' in parameters and wavel_range is not None:
+            cloud_wavel = (dset.attrs['wavel_min'], dset.attrs['wavel_max'])
+        else:
+            cloud_wavel = None
+
+        # Get wavelength range for spectrum
+
+        if wavel_range is None:
+            wavel_range = (dset.attrs['wavel_min'], dset.attrs['wavel_max'])
 
         # Create dictionary with array indices of the model parameters
 
@@ -2705,7 +2713,8 @@ class Database:
                                               cloud_species=cloud_species,
                                               scattering=scattering,
                                               wavel_range=wavel_range,
-                                              pressure_grid=pressure_grid)
+                                              pressure_grid=pressure_grid,
+                                              cloud_wavel=cloud_wavel)
 
         # Set quenching attribute such that the parameter of get_model is not required
 
@@ -2739,6 +2748,7 @@ class Database:
                                                      distance=distance,
                                                      pt_smooth=pt_smooth,
                                                      read_rad=read_rad,
+                                                     cloud_wavel=cloud_wavel,
                                                      sample=item)
 
             # Add the ModelBox to the list

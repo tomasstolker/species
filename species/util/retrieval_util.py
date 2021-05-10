@@ -917,6 +917,7 @@ def calc_spectrum_clouds(rt_object,
         rt_object.setup_opa_structure(pressure)
 
     # Calculate the emission spectrum
+
     check_scaling = rt_object.calc_flux(temperature,
                                         abundances,
                                         10.**log_g,
