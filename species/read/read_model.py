@@ -509,7 +509,7 @@ class ReadModel:
 
     @staticmethod
     @typechecked
-    def apply_ism_ext(wavelengths: np.ndarray,
+    def apply_ext_ism(wavelengths: np.ndarray,
                       flux: np.ndarray,
                       v_band_ext: float,
                       v_band_red: float) -> np.ndarray:
@@ -963,7 +963,7 @@ class ReadModel:
         if 'ism_ext' in model_param:
             ism_reddening = model_param.get('ism_red', 3.1)
 
-            model_box.flux = self.apply_ism_ext(model_box.wavelength,
+            model_box.flux = self.apply_ext_ism(model_box.wavelength,
                                                 model_box.flux,
                                                 model_param['ism_ext'],
                                                 ism_reddening)
