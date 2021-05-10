@@ -507,6 +507,34 @@ class ReadModel:
 
         return flux * np.exp(-cross_new*n_grains)
 
+    @staticmethod
+    @typechecked
+    def apply_ext_ism(wavelengths: np.ndarray,
+                      flux: np.ndarray,
+                      v_band_ext: float,
+                      v_band_red: float) -> np.ndarray:
+        """
+        Internal function for applying ISM extinction to a spectrum.
+
+        wavelengths : np.ndarray
+            Wavelengths (um) of the spectrum.
+        flux : np.ndarray
+            Fluxes (W m-2 um-1) of the spectrum.
+        v_band_ext : float
+            Extinction (mag) in the V band.
+        v_band_red : float
+            Reddening in the V band.
+
+        Returns
+        -------
+        np.ndarray
+            Fluxes (W m-2 um-1) with the extinction applied.
+        """
+
+        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
+
+        return flux * 10.**(-0.4*ext_mag)
+
     @typechecked
     def get_model(self,
                   model_param: Dict[str, float],
@@ -935,10 +963,10 @@ class ReadModel:
         if 'ism_ext' in model_param:
             ism_reddening = model_param.get('ism_red', 3.1)
 
-            model_box.flux = dust_util.apply_ism_ext(model_box.wavelength,
-                                                     model_box.flux,
-                                                     model_param['ism_ext'],
-                                                     ism_reddening)
+            model_box.flux = self.apply_ext_ism(model_box.wavelength,
+                                                model_box.flux,
+                                                model_param['ism_ext'],
+                                                ism_reddening)
 
         # Smooth the spectrum
 
