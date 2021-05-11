@@ -217,7 +217,7 @@ class ReadRadtrans:
                              'chemistry=\'equilibrium\'.')
 
         if self.quenching is not None and self.quenching not in ['pressure', 'diffusion']:
-            raise ValueError('The argument of \'quenching\' should by of the following: '
+            raise ValueError('The argument of \'quenching\' should be of the following: '
                              '\'pressure\', \'diffusion\', or None.')
 
         # C/O and [Fe/H]

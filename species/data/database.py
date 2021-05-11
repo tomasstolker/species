@@ -5,7 +5,6 @@ Module with functionalities for reading and writing of data.
 import configparser
 import json
 import os
-import json
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -2042,13 +2041,20 @@ class Database:
                                                             item[param_index['c_o_ratio']])
 
             elif pt_profile in ['free', 'monotonic']:
+                if 'pt_smooth' in param_index:
+                    pt_smooth = item[param_index['pt_smooth']]
+                else:
+                    pt_smooth = 0.
+
+                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), 15)
+
                 knot_temp = []
-                for i in range(15):
+                for j in range(15):
                     knot_temp.append(item[param_index[f't{i}']])
 
                 knot_temp = np.asarray(knot_temp)
 
-                temp[:, i] = retrieval_util.pt_spline_interp(
+                temp[:, j] = retrieval_util.pt_spline_interp(
                     knot_press, knot_temp, press, pt_smooth)
 
         if out_file is not None:
@@ -2842,3 +2848,196 @@ class Database:
             print(' [DONE]')
 
         return np.mean(teff), np.std(teff)
+
+    @typechecked
+    def petitcode_param(self,
+                        tag: str,
+                        sample_type: str = 'median',
+                        json_file: Optional[str] = None) -> Dict[str, float]:
+        """
+        Function for converting the median are maximum likelihood posterior parameters of
+        ``petitRADTRANS`` into a dictionary of input parameters for ``petitCODE``.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag with the posterior samples.
+        sample_type : str
+            Sample type that will be selected from the posterior ('median' or 'probable'). Either
+            the median or maximum likelihood parameters are used.
+        json_file : str, None
+            JSON file to store the posterior samples. The data will not be written if the argument
+            is set to ``None``.
+
+        Returns
+        -------
+        dict
+            Dictionary with parameters for ``petitCODE``.
+        """
+
+        if sample_type == 'median':
+            model_param = self.get_median_sample(tag)
+
+        elif sample_type == 'probable':
+            model_param = self.get_probable_sample(tag)
+
+        else:
+            raise ValueError('The argument of \'sample_type\' should be set to either '
+                             '\'median\' or \'probable\'.')
+
+        sample_box = self.get_samples(tag)
+
+        line_species = []
+        for i in range(sample_box.attributes['n_line_species']):
+            line_species.append(sample_box.attributes[f'line_species{i}'])
+
+        cloud_species = []
+        cloud_species_full = []
+
+        for i in range(sample_box.attributes['n_cloud_species']):
+            cloud_species.append(sample_box.attributes[f'cloud_species{i}'])
+            cloud_species_full.append(sample_box.attributes[f'cloud_species{i}'])
+
+        pcode_param = {}
+
+        pcode_param['logg'] = model_param['logg']
+        pcode_param['metallicity'] = model_param['metallicity']
+        pcode_param['c_o_ratio'] = model_param['c_o_ratio']
+
+        if 'fsed' in model_param:
+            pcode_param['fsed'] = model_param['fsed']
+
+        if 'log_kzz' in model_param:
+            pcode_param['log_kzz'] = model_param['log_kzz']
+
+        if 'fsed' in model_param:
+            pcode_param['fsed'] = model_param['fsed']
+
+        pressure = np.logspace(-6., 3., 180)
+
+        if sample_box.attributes['pt_profile'] == 'molliere':
+            temperature, _ = retrieval_util.pt_ret_model(
+                np.array([model_param['t1'], model_param['t2'], model_param['t3']]),
+                10.**model_param['log_delta'], model_param['alpha'], model_param['tint'],
+                pressure, model_param['metallicity'], model_param['c_o_ratio'])
+
+        else:
+            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+
+            knot_temp = []
+            for i in range(15):
+                knot_temp.append(model_param[f't{i}'])
+
+            knot_temp = np.asarray(knot_temp)
+
+            if 'pt_smooth' in model_param:
+                pt_smooth = model_param['pt_smooth']
+            else:
+                pt_smooth = 0.
+
+            temperature = retrieval_util.pt_spline_interp(
+                knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
+
+        if 'log_p_quench' in model_param:
+            p_quench = 10.**model_param['log_p_quench']
+        else:
+            p_quench = None
+
+        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+
+        # Interpolate the abundances, following chemical equilibrium
+        abund_in = interpol_abundances(np.full(pressure.shape, model_param['c_o_ratio']),
+                                       np.full(pressure.shape, model_param['metallicity']),
+                                       temperature,
+                                       pressure,
+                                       Pquench_carbon=p_quench)
+
+        # Extract the mean molecular weight
+        mmw = abund_in['MMW']
+
+        if 'log_tau_cloud' in model_param:
+            tau_cloud = 10.**model_param['log_tau_cloud']
+
+            cloud_fractions = {}
+
+            for i, item in enumerate(cloud_species):
+                if i == 0:
+                    cloud_fractions[item[:-3]] = 0.
+
+                else:
+                    cloud_1 = item[:-6].lower()
+                    cloud_2 = cloud_species[0][:-6].lower()
+
+                    cloud_fractions[item[:-3]] = model_param[f'{cloud_1}_{cloud_2}_ratio']
+
+        else:
+            tau_cloud = None
+
+        log_x_base = retrieval_util.log_x_cloud_base(model_param['c_o_ratio'],
+                                                     model_param['metallicity'],
+                                                     cloud_fractions)
+
+        p_base = {}
+
+        for item in cloud_species:
+            p_base_item = retrieval_util.find_cloud_deck(
+                item[:-6], pressure, temperature, model_param['metallicity'],
+                model_param['c_o_ratio'], mmw=np.mean(mmw), plotting=False)
+
+            abund_in[item[:-3]] = np.zeros_like(temperature)
+
+            abund_in[item[:-3]][pressure < p_base_item] = 10.**log_x_base[item[:-6]] * \
+                (pressure[pressure <= p_base_item] / p_base_item)**model_param['fsed']
+
+            p_base[item[:-3]] = p_base_item
+
+            indices = np.where(pressure <= p_base_item)[0]
+            pcode_param[f'{item}_base'] = pressure[np.amax(indices)]
+
+        # abundances = retrieval_util.create_abund_dict(
+        #     abund_in, line_species, sample_box.attributes['chemistry'],
+        #     pressure_grid='smaller', indices=None)
+
+        cloud_wavel = (sample_box.attributes['wavel_min'], sample_box.attributes['wavel_max'])
+
+        read_rad = read_radtrans.ReadRadtrans(line_species=line_species,
+                                              cloud_species=cloud_species,
+                                              scattering=True,
+                                              wavel_range=(0.5, 50.),
+                                              pressure_grid='smaller',
+                                              res_mode='c-k',
+                                              cloud_wavel=cloud_wavel)
+
+        print(f'Converting {tag} to petitCODE parameters...', end='', flush=True)
+
+        if sample_box.attributes['quenching'] == 'None':
+            quenching = None
+        else:
+            quenching = sample_box.attributes['quenching']
+
+        model_box = read_rad.get_model(model_param=model_param,
+                                       quenching=quenching,
+                                       spec_res=500.)
+
+        # Scale the flux back to the planet surface
+        distance = model_param['distance']*constants.PARSEC
+        radius = model_param['radius']*constants.R_JUP
+
+        # Blackbody flux: sigma * Teff^4
+        flux_int = simps(model_box.flux*(distance/radius)**2, model_box.wavelength)
+        pcode_param['teff'] = (flux_int/constants.SIGMA_SB)**0.25
+
+        cloud_scaling = read_rad.rt_object.cloud_scaling_factor
+
+        for item in cloud_species_full:
+            cloud_abund = abund_in[item[:-3]]
+            indices = np.where(cloud_abund > 0.)[0]
+            pcode_param[f'{item}_abund'] = cloud_scaling * cloud_abund[np.amax(indices)]
+
+        if json_file is not None:
+            with open(json_file, 'w') as out_file:
+                json.dump(pcode_param, out_file, indent=4)
+
+        print(' [DONE]')
+
+        return pcode_param

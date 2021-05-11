@@ -462,7 +462,8 @@ def create_abund_dict(abund_in: dict,
         faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
         test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
     indices : np.ndarray, None
-        Pressure indices from the adaptive refinement in a cloudy atmosphere.
+        Pressure indices from the adaptive refinement in a cloudy atmosphere. Only required with
+        ``pressure_grid='clouds'``. Otherwise, the argument can be set to ``None``.
 
     Returns
     -------
@@ -1457,6 +1458,9 @@ def find_cloud_deck(composition: str,
 
     elif composition == 'KCL':
         Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
+
+    else:
+        raise ValueError(f'The \'{composition}\' composition is not supported by find_cloud_deck.')
 
     index = (Pc > 1e-8) & (Pc < 1e5)
     Pc, Tc = Pc[index], Tc[index]
