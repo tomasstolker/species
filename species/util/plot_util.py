@@ -247,21 +247,22 @@ def update_labels(param: List[str]) -> List[str]:
 
     if 'sigma_lnorm' in param:
         index = param.index('sigma_lnorm')
-        param[index] = r'$\sigma_{g}$'
+        param[index] = r'$\sigma_\mathregular{g}$'
 
     if 'log_kzz' in param:
         index = param.index('log_kzz')
-        param[index] = r'$\mathregular{log}\,K_{zz}$'
+        param[index] = r'$\mathregular{log}\,\mathregular{K}_\mathregular{zz}$'
 
     if 'kzz' in param:
         # Backward compatibility
         index = param.index('kzz')
-        param[index] = r'$\mathregular{log}\,K_{zz}$'
+        param[index] = r'$\mathregular{log}\,\mathregular{K}_\mathregular{zz}$'
 
     for i, item in enumerate(cloud_species):
         if f'{item}_fraction' in param:
             index = param.index(f'{item}_fraction')
-            param[index] = rf'$\mathregular{{log}}\,\tilde{{X}}_\mathregular{{{cloud_labels[i]}}}$'
+            param[index] = rf'$\mathregular{{log}}\,\tilde{{\mathregular{{X}}}}' \
+                           rf'_\mathregular{{{cloud_labels[i]}}}$'
 
         if f'{item}_tau' in param:
             index = param.index(f'{item}_tau')
@@ -271,9 +272,9 @@ def update_labels(param: List[str]) -> List[str]:
         for j, item_j in enumerate(cloud_species):
             if f'{item_i}_{item_j}_ratio' in param:
                 index = param.index(f'{item_i}_{item_j}_ratio')
-                param[index] = rf'$\mathregular{{log}}\,\tilde{{X}}' \
+                param[index] = rf'$\mathregular{{log}}\,\tilde{{\mathregular{{X}}}}' \
                                rf'_\mathregular{{{cloud_labels[i]}}}/' \
-                               rf'\tilde{{X}}_\mathregular{{{cloud_labels[j]}}}$'
+                               rf'\mathregular{{\tilde{{X}}}}_\mathregular{{{cloud_labels[j]}}}$'
 
     for i, item in enumerate(abund_species):
         if item in param:
