@@ -1449,7 +1449,8 @@ class Database:
             model_param['distance'] = dset.attrs['distance']
 
             if n_spec_name == 1:
-                model_param['radius'] = dset.attrs[f'radius_{item}']
+                spec_name = dset.attrs['spec_name0']
+                model_param['radius'] = dset.attrs[f'radius_{spec_name}']
 
             else:
                 if spec_fix is None:
@@ -2219,12 +2220,15 @@ class Database:
 
             # Indices of the best-fit model
             best_index = np.unravel_index(goodness_sum.argmin(), goodness_sum.shape)
+            dset.attrs['best_fit'] = goodness_sum[best_index]
 
             print('Best-fit parameters:')
+            print(f'   - Goodness-of-fit = {goodness_sum[best_index]:.2e}')
 
             for i, item in enumerate(model_param):
                 best_param = coord_points[i][best_index[i]]
                 dset.attrs[f'best_param{i}'] = best_param
+                print(f'   - {item} = {best_param}')
 
             for i, item in enumerate(spec_name):
                 scaling = flux_scaling[best_index[0], best_index[1], best_index[2], i]
@@ -2233,10 +2237,10 @@ class Database:
                 radius /= constants.R_JUP  # (Rjup)
 
                 dset.attrs[f'radius_{item}'] = radius
-                print(f' -   {item} radius (Rjup) = {radius:.2f}')
+                print(f'   - {item} radius (Rjup) = {radius:.2f}')
 
                 dset.attrs[f'scaling_{item}'] = scaling
-                print(f' -   {item} scaling = {scaling:.2e}')
+                print(f'   - {item} scaling = {scaling:.2e}')
 
     def add_retrieval(self,
                       tag: str,
