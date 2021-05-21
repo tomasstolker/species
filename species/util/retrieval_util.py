@@ -919,24 +919,31 @@ def calc_spectrum_clouds(rt_object,
 
     # Calculate the emission spectrum
 
-    check_scaling = rt_object.calc_flux(temperature,
-                                        abundances,
-                                        10.**log_g,
-                                        mmw,
-                                        sigma_lnorm=sigma_lnorm,
-                                        Kzz=Kzz_use,
-                                        fsed=fseds,
-                                        radius=None,
-                                        contribution=contribution,
-                                        gray_opacity=None,
-                                        Pcloud=None,
-                                        kappa_zero=None,
-                                        gamma_scat=None,
-                                        add_cloud_scat_as_abs=False,
-                                        hack_cloud_photospheric_tau=tau_cloud)
-                                        # cloud_wlen=cloud_wavel)  # TODO
+    rt_object.calc_flux(temperature,
+                        abundances,
+                        10.**log_g,
+                        mmw,
+                        sigma_lnorm=sigma_lnorm,
+                        Kzz=Kzz_use,
+                        fsed=fseds,
+                        radius=None,
+                        contribution=contribution,
+                        gray_opacity=None,
+                        Pcloud=None,
+                        kappa_zero=None,
+                        gamma_scat=None,
+                        add_cloud_scat_as_abs=False,
+                        hack_cloud_photospheric_tau=tau_cloud)
+                        # cloud_wlen=cloud_wavel)  # TODO
 
-    if check_scaling is None:
+    if hasattr(rt_object, 'scaling_physicality') and rt_object.scaling_physicality > 1.:
+        # cloud_scaling_factor > 2 * (fsed + 1)
+        # Set to None such that -inf will be returned as ln_like
+        wlen_micron = None
+        f_lambda = None
+        contr_em = None
+
+    else:
         wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
         wlen = constants.LIGHT*1e2/rt_object.freq
         flux = rt_object.flux
@@ -952,11 +959,6 @@ def calc_spectrum_clouds(rt_object,
             contr_em = rt_object.contr_em
         else:
             contr_em = None
-
-    else:
-        wlen_micron = None
-        f_lambda = None
-        contr_em = None
 
     return wlen_micron, f_lambda, contr_em
 
