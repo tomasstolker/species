@@ -933,8 +933,8 @@ def calc_spectrum_clouds(rt_object,
                                         kappa_zero=None,
                                         gamma_scat=None,
                                         add_cloud_scat_as_abs=False,
-                                        hack_cloud_photospheric_tau=tau_cloud,
-                                        cloud_wlen=cloud_wavel)
+                                        hack_cloud_photospheric_tau=tau_cloud)
+                                        # cloud_wlen=cloud_wavel)  # TODO
 
     if check_scaling is None:
         wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
