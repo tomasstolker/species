@@ -16,7 +16,8 @@ import spectres
 try:
     import ultranest
 except:
-    warnings.warn('UltraNest could not be imported.')
+    warnings.warn('UltraNest could not be imported. '
+                  'Perhaps because cython was not correctly compiled?')
 
 # Installation of MultiNest is not possible on readthedocs
 try:
