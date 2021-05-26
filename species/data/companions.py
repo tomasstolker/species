@@ -2,7 +2,10 @@
 Module for extracting data of directly imaged planets and brown dwarfs.
 """
 
-from typing import Dict, List, Tuple, Union
+import os
+import urllib.request
+
+from typing import Dict, List, Optional, Tuple, Union
 
 from typeguard import typechecked
 
@@ -216,7 +219,8 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
                                             0.01*constants.M_SUN/constants.M_JUP),  # Kennedy et al. 2020
                          'accretion': False},
 
-            'GQ Lup B': {'distance': (151.82, 1.10),
+            'GQ Lup B': {'distance': (154.10, 0.69),  # Gaia Data Release 3
+                         'parallax': (6.49, 0.03),  # Gaia Data Release 3
                          'app_mag': {'HST/WFPC2-PC.F606W': (19.19, 0.07),  # Marois et al. 2007
                                      'HST/WFPC2-PC.F814W': (17.67, 0.05),  # Marois et al. 2007
                                      'HST/NICMOS2.F171M': (13.84, 0.13),  # Marois et al. 2007
@@ -225,7 +229,7 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
                                      'Magellan/VisAO.ip': (18.89, 0.24),  # Wu et al. 2017
                                      'Magellan/VisAO.zp': (16.40, 0.10),  # Wu et al. 2017
                                      'Magellan/VisAO.Ys': (15.88, 0.10),  # Wu et al. 2017
-                                     'MKO/NSFCam.H': (14.02, 0.13),  # Stolker et al. in prep.
+                                     # 'MKO/NSFCam.H': (14.02, 0.13),  # Stolker et al. in prep.
                                      'Paranal/NACO.NB405': (12.29, 0.07),  # Stolker et al. in prep.
                                      'Paranal/NACO.Mp': (11.97, 0.08),  # Stolker et al. in prep.
                                      'Paranal/NACO.Ks': [(13.474, 0.031),  # Ginski et al. 2014
@@ -449,7 +453,7 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
                                                0.03*constants.M_SUN/constants.M_JUP),  # Lacour et al. 2016
                             'radius_companion': (19.1, 1.0),  # Christiaens et al. 2018
                             'accretion': True,  # Close et al. 2014
-                            'line_flux': {'h-alpha': (7.6e-17, 3.5e-17)}},  # Cugno et al. 2019 TODO extinction?
+                            'line_flux': {'h-alpha': (7.6e-17, 3.5e-17)}},  # Cugno et al. 2019
 
             'CS Cha B': {'distance': (168.77, 1.92),
                          'app_mag': {'Paranal/SPHERE.IRDIS_B_J': (19.16, 0.21),  # Ginski et al. 2018
@@ -493,3 +497,109 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
                          'accretion': True}}  # Zhou et al. 2014
 
     return data
+
+
+@typechecked
+def get_spec_data() -> Dict[str, Dict[str, Tuple[str, Optional[str], float, str]]]:
+    """
+    Function for extracting a dictionary with the spectra of directly imaged planets.
+
+    Returns
+    -------
+    dict
+        Dictionary with the spectrum, optional covariances, spectral resolution, and filename.
+    """
+
+    spec_data = {'beta Pic b': {'GPI_YJHK': ('betapicb_gpi_yjhk.dat',
+                                             None,
+                                             40.,
+                                             'Chilcote et al. 2017, AJ, 153, 182'),
+
+                                'GRAVITY': ('BetaPictorisb_2018-09-22.fits',
+                                            'BetaPictorisb_2018-09-22.fits',
+                                            500.,
+                                            'Gravity Collaboration et al. 2020, A&A, 633, 110')},
+
+                 '51 Eri b': {'SPHERE_YJH': ('51erib_sphere_yjh.dat',
+                                             None,
+                                             25.,
+                                             'Samland et al. 2017, A&A, 603, 57')},
+
+                 'HD 206893 B': {'SPHERE_YJH': ('hd206893b_sphere_yjh.dat',
+                                                None,
+                                                25.,
+                                                'Delorme et al. 2017, A&A, 608, 79')},
+
+                 'HIP 65426 B': {'SPHERE_YJH': ('hip65426b_sphere_yjh.dat',
+                                                None,
+                                                25.,
+                                                'Cheetham et al. 2019, A&A, 622, 80')},
+
+                 'HR 8799 e': {'SPHERE_YJH': ('hr8799e_sphere_yjh.dat',
+                                              None,
+                                              25.,
+                                              'Zurlo et al. 2016, A&A, 587, 57')},
+
+                 'PDS 70 b': {'SPHERE_YJH': ('pds70b_sphere_yjh.dat',
+                                             None,
+                                             25.,
+                                             'Müller et al. 2018, A&A, 617, 2')}}
+
+    return spec_data
+
+
+@typechecked
+def companion_spectra(input_path: str,
+                      comp_name: str) -> Optional[Dict[str, Tuple[str, Optional[str], float]]]:
+    """
+    Function for getting available spectra of directly imaged planets and brown dwarfs.
+
+    Parameters
+    ----------
+    input_path : str
+        Path of the data folder.
+    comp_name : str
+        Companion name for which the spectra will be returned.
+
+    Returns
+    -------
+    dict, None
+        Dictionary with the spectra of ``comp_name``. A ``None`` will be returned if there are not
+        any spectra available.
+    """
+
+    data_folder = os.path.join(input_path, 'companion_data/')
+
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
+
+    spec_data = get_spec_data()
+
+    if comp_name in spec_data:
+        spec_dict = {}
+
+        for key, value in spec_data[comp_name].items():
+            print(f'Getting {key} spectrum of {comp_name}...', end='', flush=True)
+
+            spec_url = f'https://home.strw.leidenuniv.nl/~stolker/species/spectra/{value[0]}'
+            spec_file = os.path.join(data_folder, value[0])
+
+            if value[1] is None:
+                cov_file = None
+            else:
+                cov_file = os.path.join(data_folder, value[1])
+
+            if not os.path.isfile(spec_file):
+                urllib.request.urlretrieve(spec_url, spec_file)
+
+            spec_dict[key] = (spec_file, cov_file, value[2])
+
+            print(' [DONE]')
+
+            print(f'IMPORTANT: Please cite {value[3]}')
+            print('           when making use of this spectrum in a publication')
+
+    else:
+        spec_dict = None
+
+    return spec_dict
