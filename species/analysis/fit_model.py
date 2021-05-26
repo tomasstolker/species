@@ -12,7 +12,11 @@ from multiprocessing import Pool, cpu_count
 import emcee
 import numpy as np
 import spectres
-import ultranest
+
+try:
+    import ultranest
+except:
+    warnings.warn('UltraNest could not be imported.')
 
 # Installation of MultiNest is not possible on readthedocs
 try:

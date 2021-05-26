@@ -10,7 +10,11 @@ from typing import Dict, Optional, Tuple, Union
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import ultranest
+
+try:
+    import ultranest
+except:
+    warnings.warn('UltraNest could not be imported.')
 
 from astropy import units as u
 from astropy.modeling.fitting import LinearLSQFitter
