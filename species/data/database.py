@@ -2758,7 +2758,6 @@ class Database:
                                                      distance=distance,
                                                      pt_smooth=pt_smooth,
                                                      read_rad=read_rad,
-                                                     cloud_wavel=cloud_wavel,
                                                      sample=item)
 
             # Add the ModelBox to the list

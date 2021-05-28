@@ -918,23 +918,42 @@ def calc_spectrum_clouds(rt_object,
         rt_object.setup_opa_structure(pressure)
 
     # Calculate the emission spectrum
+    # TODO Remove try-except after merged PR in pRT repo
 
-    rt_object.calc_flux(temperature,
-                        abundances,
-                        10.**log_g,
-                        mmw,
-                        sigma_lnorm=sigma_lnorm,
-                        Kzz=Kzz_use,
-                        fsed=fseds,
-                        radius=None,
-                        contribution=contribution,
-                        gray_opacity=None,
-                        Pcloud=None,
-                        kappa_zero=None,
-                        gamma_scat=None,
-                        add_cloud_scat_as_abs=False,
-                        hack_cloud_photospheric_tau=tau_cloud)
-                        # cloud_wlen=cloud_wavel)  # TODO
+    try:
+        rt_object.calc_flux(temperature,
+                            abundances,
+                            10.**log_g,
+                            mmw,
+                            sigma_lnorm=sigma_lnorm,
+                            Kzz=Kzz_use,
+                            fsed=fseds,
+                            radius=None,
+                            contribution=contribution,
+                            gray_opacity=None,
+                            Pcloud=None,
+                            kappa_zero=None,
+                            gamma_scat=None,
+                            add_cloud_scat_as_abs=False,
+                            hack_cloud_photospheric_tau=tau_cloud,
+                            cloud_wlen=cloud_wavel)
+
+    except TypeError:
+        rt_object.calc_flux(temperature,
+                            abundances,
+                            10.**log_g,
+                            mmw,
+                            sigma_lnorm=sigma_lnorm,
+                            Kzz=Kzz_use,
+                            fsed=fseds,
+                            radius=None,
+                            contribution=contribution,
+                            gray_opacity=None,
+                            Pcloud=None,
+                            kappa_zero=None,
+                            gamma_scat=None,
+                            add_cloud_scat_as_abs=False,
+                            hack_cloud_photospheric_tau=tau_cloud)
 
     if hasattr(rt_object, 'scaling_physicality') and rt_object.scaling_physicality > 1.:
         # cloud_scaling_factor > 2 * (fsed + 1)
