@@ -105,6 +105,8 @@ class Database:
             None
         """
 
+        spec_data = companions.get_spec_data()
+
         for planet_name, planet_dict in companions.get_data().items():
             distance = planet_dict['distance']
             app_mag = planet_dict['app_mag']
@@ -114,6 +116,10 @@ class Database:
 
             for mag_name, mag_dict in app_mag.items():
                 print(f'{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}')
+
+            if planet_name in spec_data:
+                for key, value in spec_data[planet_name].items():
+                    print(f'{key} spectrum from {value[3]}')
 
             print()
 
@@ -147,8 +153,9 @@ class Database:
     def add_companion(self,
                       name: Union[Optional[str], Optional[List[str]]] = None) -> None:
         """
-        Function for adding the magnitudes of directly imaged planets and brown dwarfs from
-        :class:`~species.data.companions.get_data` to the database.
+        Function for adding the magnitudes and spectra of directly imaged planets and brown dwarfs
+        from :class:`~species.data.companions.get_data` and
+        :class:`~species.data.companions.get_comp_spec`to the database.
 
         Parameters
         ----------
@@ -172,9 +179,12 @@ class Database:
             name = data.keys()
 
         for item in name:
+            spec_dict = companions.companion_spectra(self.input_path, item)
+
             self.add_object(object_name=item,
                             distance=data[item]['distance'],
-                            app_mag=data[item]['app_mag'])
+                            app_mag=data[item]['app_mag'],
+                            spectrum=spec_dict)
 
     @typechecked
     def add_dust(self) -> None:
@@ -897,8 +907,8 @@ class Database:
                 print(f'      - Filename: {value[0]}')
                 print(f'      - Data shape: {read_spec[key].shape}')
                 print(f'      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}')
-                print(f'      - Mean flux (W m-2 um-1): {np.mean(flux):.2e}')
-                print(f'      - Mean error (W m-2 um-1): {np.mean(error):.2e}')
+                print(f'      - Mean flux (W m-2 um-1): {np.nanmean(flux):.2e}')
+                print(f'      - Mean error (W m-2 um-1): {np.nanmean(error):.2e}')
 
                 if isinstance(deredden, float):
                     print(f'      - Dereddening A_V: {deredden}')
