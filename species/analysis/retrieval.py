@@ -1019,17 +1019,17 @@ class AtmosphericRetrieval:
                         cloud_lower = item[:-6].lower()
 
                         if f'{cloud_lower}_fraction' in bounds:
+                            cloud_bounds = bounds[f'{cloud_lower}_fraction']
+
                             cube[cube_index[f'{cloud_lower}_fraction']] = \
-                                bounds[f'{cloud_lower}_fraction'][0] + \
-                                (bounds[f'{cloud_lower}_fraction'][1] - \
-                                 bounds[f'{cloud_lower}_fraction'][0]) * \
+                                cloud_bounds[0] + (cloud_bounds[1] - cloud_bounds[0]) * \
                                 cube[cube_index[f'{cloud_lower}_fraction']]
 
                         elif f'{cloud_lower}_tau' in bounds:
+                            cloud_bounds = bounds[f'{cloud_lower}_tau']
+
                             cube[cube_index[f'{cloud_lower}_tau']] = \
-                                bounds[f'{cloud_lower}_tau'][0] + \
-                                (bounds[f'{cloud_lower}_tau'][1] - \
-                                 bounds[f'{cloud_lower}_tau'][0]) * \
+                                cloud_bounds[0] + (cloud_bounds[1] - cloud_bounds[0]) * \
                                 cube[cube_index[f'{cloud_lower}_tau']]
 
                         else:
@@ -1386,11 +1386,9 @@ class AtmosphericRetrieval:
 
                     lbl_wavel[item], lbl_flux[item], _ = retrieval_util.calc_spectrum_clouds(
                         lbl_radtrans[item], self.pressure, temp, c_o_ratio, metallicity,
-                        p_quench, log_x_abund, log_x_base,
-                        cube[cube_index['fsed']], cube[cube_index['log_kzz']], cube[cube_index['logg']],
-                        cube[cube_index['sigma_lnorm']], chemistry=chemistry,
-                        pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
-                        tau_cloud=tau_cloud)
+                        p_quench, log_x_abund, log_x_base, cloud_dict, cube[cube_index['logg']],
+                        chemistry=chemistry, pressure_grid=self.pressure_grid, plotting=plotting,
+                        contribution=False, tau_cloud=tau_cloud)
 
                     if lbl_wavel[item] is None and lbl_flux[item] is None:
                         return -np.inf
