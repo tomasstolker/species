@@ -708,11 +708,9 @@ def calc_spectrum_clouds(rt_object,
                          metallicity: float,
                          p_quench: Optional[float],
                          log_x_abund: Optional[dict],
-                         log_x_base: dict,
-                         fsed: float,
-                         log_kzz: float,
+                         log_x_base: Optional[dict],
+                         cloud_dict: Dict[str, Optional[float]],
                          log_g: float,
-                         sigma_lnorm: float,
                          chemistry: str,
                          pressure_grid: str = 'smaller',
                          plotting: bool = False,
@@ -739,16 +737,14 @@ def calc_spectrum_clouds(rt_object,
         Quenching pressure (bar).
     log_x_abund : dict, None
         Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
-    log_x_base : dict
-        Dictionary with the log10 of the mass fractions at the cloud base.
-    fsed : float
-        Sedimentation parameter.
-    log_kzz : float
-        Log10 of the eddy diffusion coefficient (cm2 s-1).
+    log_x_base : dict, None
+        Dictionary with the log10 of the mass fractions at the cloud base. Only required when the
+        ``cloud_dict`` contains ``fsed``, ``log_kzz``, and ``sigma_lnorm``.
+    cloud_dict : dict
+        Dictionary with the cloud parameters. A parameter value is set to ``None`` if the parameter
+        is not in use.
     log_g : float
         Log10 of the surface gravity (cm s-2).
-    sigma_lnorm : float
-        Geometric standard deviation of the log-normal size distribution.
     chemistry : str
         Chemistry type (only ``'equilibrium'`` is supported).
     pressure_grid : str
@@ -817,23 +813,24 @@ def calc_spectrum_clouds(rt_object,
         # Create an array of a constant mean molecular weight
         mmw *= np.ones_like(pressure)
 
-    p_base = {}
+    if log_x_base is not None:
+        p_base = {}
 
-    for item in log_x_base:
-        p_base_item = find_cloud_deck(item,
-                                      pressure,
-                                      temperature,
-                                      metallicity,
-                                      c_o_ratio,
-                                      mmw=np.mean(mmw),
-                                      plotting=plotting)
+        for item in log_x_base:
+            p_base_item = find_cloud_deck(item,
+                                          pressure,
+                                          temperature,
+                                          metallicity,
+                                          c_o_ratio,
+                                          mmw=np.mean(mmw),
+                                          plotting=plotting)
 
-        abund_in[f'{item}(c)'] = np.zeros_like(temperature)
+            abund_in[f'{item}(c)'] = np.zeros_like(temperature)
 
-        abund_in[f'{item}(c)'][pressure < p_base_item] = 10.**log_x_base[item] * \
-            (pressure[pressure <= p_base_item] / p_base_item)**fsed
+            abund_in[f'{item}(c)'][pressure < p_base_item] = 10.**log_x_base[item] * \
+                (pressure[pressure <= p_base_item] / p_base_item)**cloud_dict['fsed']
 
-        p_base[f'{item}(c)'] = p_base_item
+            p_base[f'{item}(c)'] = p_base_item
 
     # Adaptive pressure refinement around the cloud base
     if pressure_grid == 'clouds':
@@ -847,26 +844,43 @@ def calc_spectrum_clouds(rt_object,
                                    pressure_grid=pressure_grid,
                                    indices=indices)
 
-    Kzz_use = np.full(pressure.shape, 10.**log_kzz)
+    # Create dictionary with sedimentation parameters
+    # Use the same value for all cloud species
+
+    fseds = {}
+    for item in rt_object.cloud_species:
+        # item has the form of e.g. MgSiO3(c)
+        fseds[item] = cloud_dict['fsed']
+
+    # Create an array with a constant eddy diffusion coefficient (cm2 s-1)
+
+    if cloud_dict['log_kzz'] is None:
+        Kzz_use = None
+
+    else:
+        Kzz_use = np.full(pressure.shape, 10.**cloud_dict['log_kzz'])
+
+    # Adjust number of atmospheric levels
 
     if pressure_grid == 'smaller':
         temperature = temperature[::3]
         pressure = pressure[::3]
         mmw = mmw[::3]
-        Kzz_use = Kzz_use[::3]
+
+        if cloud_dict['log_kzz'] is not None:
+            Kzz_use = Kzz_use[::3]
 
     elif pressure_grid == 'clouds':
         temperature = temperature[indices]
         pressure = pressure[indices]
         mmw = mmw[indices]
-        Kzz_use = Kzz_use[indices]
 
-    fseds = {}
+        if cloud_dict['log_kzz'] is not None:
+            Kzz_use = Kzz_use[indices]
 
-    for item in log_x_base:
-        fseds[f'{item}(c)'] = fsed
+    # Optionally plot the cloud properties
 
-    if plotting:
+    if plotting and Kzz_use is not None:
         if 'CO_all_iso' in abundances:
             plt.plot(abundances['CO_all_iso'], pressure, label='CO')
         if 'CH4' in abundances:
@@ -905,11 +919,13 @@ def calc_spectrum_clouds(rt_object,
             plt.ylim(1e3, 1e-6)
             plt.xlim(1e-10, 1.)
             log_x_base_item = log_x_base[item]
+            fsed = cloud_dict['fsed']
+            log_kzz = cloud_dict['log_kzz']
             plt.title(f'fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, X_b = {log_x_base_item:.2f}')
             plt.savefig(f'{item.lower()}_clouds.pdf', bbox_inches='tight')
             plt.clf()
 
-    # Turn off clouds
+    # Turn clouds off
     # abundances['MgSiO3(c)'] = np.zeros_like(pressure)
     # abundances['Fe(c)'] = np.zeros_like(pressure)
 
@@ -925,7 +941,7 @@ def calc_spectrum_clouds(rt_object,
                             abundances,
                             10.**log_g,
                             mmw,
-                            sigma_lnorm=sigma_lnorm,
+                            sigma_lnorm=cloud_dict['sigma_lnorm'],
                             Kzz=Kzz_use,
                             fsed=fseds,
                             radius=None,
@@ -936,14 +952,15 @@ def calc_spectrum_clouds(rt_object,
                             gamma_scat=None,
                             add_cloud_scat_as_abs=False,
                             hack_cloud_photospheric_tau=tau_cloud,
-                            cloud_wlen=cloud_wavel)
+                            cloud_wlen=cloud_wavel,
+                            new_simple_cloud_params=cloud_dict)
 
     except TypeError:
         rt_object.calc_flux(temperature,
                             abundances,
                             10.**log_g,
                             mmw,
-                            sigma_lnorm=sigma_lnorm,
+                            sigma_lnorm=cloud_dict['sigma_lnorm'],
                             Kzz=Kzz_use,
                             fsed=fseds,
                             radius=None,
@@ -953,7 +970,8 @@ def calc_spectrum_clouds(rt_object,
                             kappa_zero=None,
                             gamma_scat=None,
                             add_cloud_scat_as_abs=False,
-                            hack_cloud_photospheric_tau=tau_cloud)
+                            hack_cloud_photospheric_tau=tau_cloud,
+                            new_simple_cloud_params=cloud_dict)
 
     if hasattr(rt_object, 'scaling_physicality') and rt_object.scaling_physicality > 1.:
         # cloud_scaling_factor > 2 * (fsed + 1)
@@ -978,6 +996,17 @@ def calc_spectrum_clouds(rt_object,
             contr_em = rt_object.contr_em
         else:
             contr_em = None
+
+    if plotting and Kzz_use is None:
+        scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
+        plt.plot(wlen_micron, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label='Total opacity')
+        plt.plot(wlen_micron, rt_object.ret_test_cloud_abs[:, 0], label='Absorption opacity')
+        plt.plot(wlen_micron, scat_opa[:, 0], label='Scattering opacity')
+        plt.xlabel(r'Wavelength ($\mu$m)')
+        plt.ylabel('Opacity at smallest pressure')
+        plt.legend(loc='best')
+        plt.savefig('cloud_opacity.pdf', bbox_inches='tight')
+        plt.clf()
 
     return wlen_micron, f_lambda, contr_em
 

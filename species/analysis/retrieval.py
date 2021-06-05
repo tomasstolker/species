@@ -54,15 +54,15 @@ class AtmosphericRetrieval:
         cloud_species : list, None
             List with the cloud species. No cloud species are used if set to ``None``.
         output_folder : str
-            Folder name that is used for the output files from ``MultiNest``. The folder should
-            already exist.
+            Folder name that is used for the output files from ``MultiNest``. The folder is created
+            if it does not exist.
         wavel_range : tuple(float, float), None
             The wavelength range (um) of the forward model. Should be a bit broader than the
             minimum and maximum wavelength of the data. The wavelength range is set automatically
             if the argument is set to ``None``.
         scattering : bool
-            Include scattering in the radiative transfer. Scattering is not required if no cloud
-            species are selected.
+            Include scattering in the radiative transfer. Only recommended at infrared wavelengths
+            when clouds are included. Using scattering will increase the computation time.
         inc_spec : bool, list(str)
             Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
             (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
@@ -164,11 +164,6 @@ class AtmosphericRetrieval:
         # Copy the cloud species into a new list because the values will be adjusted by Radtrans
 
         self.cloud_species_full = self.cloud_species.copy()
-
-        # Scattering is not required without cloud species
-
-        if self.scattering and len(self.cloud_species) == 0:
-            raise ValueError('Scattering is not required if there are no cloud species selected.')
 
         # Get photometric data
 
@@ -397,47 +392,26 @@ class AtmosphericRetrieval:
 
         # Cloud parameters
 
-        if len(self.cloud_species) > 0:
-            if chemistry != 'free':
+        if 'log_kappa_0' in bounds:
+            self.parameters.append('fsed')
+            self.parameters.append('log_kappa_0')
+            self.parameters.append('opa_index')
+            self.parameters.append('log_p_base')
+            self.parameters.append('albedo')
 
-                if 'Fe(c)_cd' in self.cloud_species:
-                    if 'fe_tau' in bounds:
-                        self.parameters.append('fe_tau')
-
-                    elif 'log_tau_cloud' not in bounds:
-                        self.parameters.append('fe_fraction')
-
-                if 'MgSiO3(c)_cd' in self.cloud_species:
-                    if 'mgsio3_tau' in bounds:
-                        self.parameters.append('mgsio3_tau')
-
-                    elif 'log_tau_cloud' not in bounds:
-                        self.parameters.append('mgsio3_fraction')
-
-                if 'Al2O3(c)_cd' in self.cloud_species:
-                    if 'al2o3_tau' in bounds:
-                        self.parameters.append('al2o3_tau')
-
-                    elif 'log_tau_cloud' not in bounds:
-                        self.parameters.append('al2o3_fraction')
-
-                if 'Na2S(c)_cd' in self.cloud_species:
-                    if 'na2s_tau' in bounds:
-                        self.parameters.append('na2s_tau')
-
-                    elif 'log_tau_cloud' not in bounds:
-                        self.parameters.append('na2s_fraction')
-
-                if 'KCL(c)_cd' in self.cloud_species:
-                    if 'kcl_tau' in bounds:
-                        self.parameters.append('kcl_tau')
-
-                    elif 'log_tau_cloud' not in bounds:
-                        self.parameters.append('kcl_fraction')
-
+        elif len(self.cloud_species) > 0:
             self.parameters.append('fsed')
             self.parameters.append('log_kzz')
             self.parameters.append('sigma_lnorm')
+
+            for item in self.cloud_species:
+                cloud_lower = item[:-6].lower()
+
+                if f'{cloud_lower}_tau' in bounds:
+                    self.parameters.append(f'{cloud_lower}_tau')
+
+                elif 'log_tau_cloud' not in bounds:
+                    self.parameters.append(f'{cloud_lower}_fraction')
 
         # Add the flux scaling parameters
 
@@ -655,25 +629,6 @@ class AtmosphericRetrieval:
         for i, item in enumerate(self.parameters):
             cube_index[item] = i
 
-        # Delete the cloud parameters from the boundaries dictionary in case of no cloud species
-
-        if len(self.cloud_species) == 0:
-            for item in ['fe', 'mgsio3', 'al2o3', 'na2s', 'kcl']:
-                if f'{item}_fraction' in bounds:
-                    del bounds[f'{item}_fraction']
-
-                if f'{item}_tau' in bounds:
-                    del bounds[f'{item}_tau']
-
-            if 'fsed' in bounds:
-                del bounds['fsed']
-
-            if 'log_kzz' in bounds:
-                del bounds['log_kzz']
-
-            if 'sigma_lnorm' in bounds:
-                del bounds['sigma_lnorm']
-
         # Delete C/H and O/H boundaries if the chemistry is not free
 
         if chemistry != 'free':
@@ -890,6 +845,8 @@ class AtmosphericRetrieval:
                     #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
                     #         cube[cube_index[f't{i}']]*temp_diff
 
+            # Chemical composition
+
             if chemistry == 'equilibrium':
                 # Metallicity [Fe/H] for the nabla_ad interpolation
                 if 'metallicity' in bounds:
@@ -958,9 +915,55 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['log_p_quench']] = log_p_quench
 
-            if len(self.cloud_species) > 0:
+            # Cloud parameters
+
+            if 'log_kappa_0' in bounds:
+                # Cloud model 2 from Mollière et al. (2020)
+
+                if 'fsed' in bounds:
+                    fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
+                else:
+                    # Default: 0 - 10
+                    fsed = 10.*cube[cube_index['fsed']]
+
+                cube[cube_index['fsed']] = fsed
+
+                if 'log_kappa_0' in bounds:
+                    log_kappa_0 = bounds['log_kappa_0'][0] + (bounds['log_kappa_0'][1]-bounds['log_kappa_0'][0])*cube[cube_index['log_kappa_0']]
+                else:
+                    # Default: -8 - 3
+                    log_kappa_0 = -8. + 11.*cube[cube_index['log_kappa_0']]
+
+                cube[cube_index['log_kappa_0']] = log_kappa_0
+
+                if 'opa_index' in bounds:
+                    opa_index = bounds['opa_index'][0] + (bounds['opa_index'][1]-bounds['opa_index'][0])*cube[cube_index['opa_index']]
+                else:
+                    # Default: -6 - 1
+                    opa_index = -6. + 7.*cube[cube_index['opa_index']]
+
+                cube[cube_index['opa_index']] = opa_index
+
+                if 'log_p_base' in bounds:
+                    log_p_base = bounds['log_p_base'][0] + (bounds['log_p_base'][1]-bounds['log_p_base'][0])*cube[cube_index['log_p_base']]
+                else:
+                    # Default: -6 - 3
+                    log_p_base = -6. + 9.*cube[cube_index['log_p_base']]
+
+                cube[cube_index['log_p_base']] = log_p_base
+
+                if 'albedo' in bounds:
+                    albedo = bounds['albedo'][0] + (bounds['albedo'][1]-bounds['albedo'][0])*cube[cube_index['albedo']]
+                else:
+                    # Default: 0 - 1
+                    albedo = cube[cube_index['albedo']]
+
+                cube[cube_index['albedo']] = albedo
+
+            elif len(self.cloud_species) > 0:
                 # Sedimentation parameter: ratio of the settling and mixing velocities of the
                 # cloud particles (used in Eq. 3 of Mollière et al. 2020)
+
                 if 'fsed' in bounds:
                     fsed = bounds['fsed'][0] + (bounds['fsed'][1]-bounds['fsed'][0])*cube[cube_index['fsed']]
                 else:
@@ -970,6 +973,7 @@ class AtmosphericRetrieval:
                 cube[cube_index['fsed']] = fsed
 
                 # Log10 of the eddy diffusion coefficient (cm2 s-1)
+
                 if 'log_kzz' in bounds:
                     log_kzz = bounds['log_kzz'][0] + (bounds['log_kzz'][1]-bounds['log_kzz'][0])*cube[cube_index['log_kzz']]
                 else:
@@ -979,6 +983,7 @@ class AtmosphericRetrieval:
                 cube[cube_index['log_kzz']] = log_kzz
 
                 # Geometric standard deviation of the log-normal size distribution
+
                 if 'sigma_lnorm' in bounds:
                     sigma_lnorm = bounds['sigma_lnorm'][0] + (bounds['sigma_lnorm'][1] -
                                                               bounds['sigma_lnorm'][0])*cube[cube_index['sigma_lnorm']]
@@ -1010,120 +1015,28 @@ class AtmosphericRetrieval:
                     # Cloud mass fractions at the cloud base, relative to the maximum values allowed
                     # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
 
-                    if 'Fe(c)' in self.cloud_species:
+                    for item in self.cloud_species:
+                        cloud_lower = item[:-6].lower()
 
-                        if 'fe_fraction' in bounds:
-                            fe_fraction = bounds['fe_fraction'][0] + \
-                                (bounds['fe_fraction'][1] - bounds['fe_fraction'][0]) * \
-                                cube[cube_index['fe_fraction']]
+                        if f'{cloud_lower}_fraction' in bounds:
+                            cube[cube_index[f'{cloud_lower}_fraction']] = \
+                                bounds[f'{cloud_lower}_fraction'][0] + \
+                                (bounds[f'{cloud_lower}_fraction'][1] - \
+                                 bounds[f'{cloud_lower}_fraction'][0]) * \
+                                cube[cube_index[f'{cloud_lower}_fraction']]
 
-                            cube[cube_index['fe_fraction']] = fe_fraction
-
-                        elif 'fe_tau' in bounds:
-                            fe_tau = bounds['fe_tau'][0] + \
-                                (bounds['fe_tau'][1] - bounds['fe_tau'][0]) * \
-                                cube[cube_index['fe_tau']]
-
-                            cube[cube_index['fe_tau']] = fe_tau
-
-                        else:
-                            # Default: 0.05 - 1.
-                            fe_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                                cube[cube_index['fe_fraction']]
-
-                            cube[cube_index['fe_fraction']] = fe_fraction
-
-                    if 'MgSiO3(c)' in self.cloud_species:
-
-                        if 'mgsio3_fraction' in bounds:
-                            mgsio3_fraction = bounds['mgsio3_fraction'][0] + \
-                                (bounds['mgsio3_fraction'][1] - bounds['mgsio3_fraction'][0]) * \
-                                cube[cube_index['mgsio3_fraction']]
-
-                            cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
-
-                        elif 'mgsio3_tau' in bounds:
-                            mgsio3_tau = bounds['mgsio3_tau'][0] + \
-                                (bounds['mgsio3_tau'][1] - bounds['mgsio3_tau'][0]) * \
-                                cube[cube_index['mgsio3_tau']]
-
-                            cube[cube_index['mgsio3_tau']] = mgsio3_tau
+                        elif f'{cloud_lower}_tau' in bounds:
+                            cube[cube_index[f'{cloud_lower}_tau']] = \
+                                bounds[f'{cloud_lower}_tau'][0] + \
+                                (bounds[f'{cloud_lower}_tau'][1] - \
+                                 bounds[f'{cloud_lower}_tau'][0]) * \
+                                cube[cube_index[f'{cloud_lower}_tau']]
 
                         else:
                             # Default: 0.05 - 1.
-                            mgsio3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                                cube[cube_index['mgsio3_fraction']]
-
-                            cube[cube_index['mgsio3_fraction']] = mgsio3_fraction
-
-                    if 'Al2O3(c)' in self.cloud_species:
-
-                        if 'al2o3_fraction' in bounds:
-                            al2o3_fraction = bounds['al2o3_fraction'][0] + \
-                                (bounds['al2o3_fraction'][1] - bounds['al2o3_fraction'][0]) * \
-                                cube[cube_index['al2o3_fraction']]
-
-                            cube[cube_index['al2o3_fraction']] = al2o3_fraction
-
-                        elif 'al2o3_tau' in bounds:
-                            al2o3_tau = bounds['al2o3_tau'][0] + \
-                                (bounds['al2o3_tau'][1] - bounds['al2o3_tau'][0]) * \
-                                cube[cube_index['al2o3_tau']]
-
-                            cube[cube_index['al2o3_tau']] = al2o3_tau
-
-                        else:
-                            # Default: 0.05 - 1.
-                            al2o3_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                                cube[cube_index['al2o3_fraction']]
-
-                            cube[cube_index['al2o3_fraction']] = al2o3_fraction
-
-                    if 'Na2S(c)' in self.cloud_species:
-
-                        if 'na2s_fraction' in bounds:
-                            na2s_fraction = bounds['na2s_fraction'][0] + \
-                                (bounds['na2s_fraction'][1] - bounds['na2s_fraction'][0]) * \
-                                cube[cube_index['na2s_fraction']]
-
-                            cube[cube_index['na2s_fraction']] = na2s_fraction
-
-                        elif 'na2s_tau' in bounds:
-                            na2s_tau = bounds['na2s_tau'][0] + \
-                                (bounds['na2s_tau'][1] - bounds['na2s_tau'][0]) * \
-                                cube[cube_index['na2s_tau']]
-
-                            cube[cube_index['na2s_tau']] = na2s_tau
-
-                        else:
-                            # Default: 0.05 - 1.
-                            na2s_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                                cube[cube_index['na2s_fraction']]
-
-                            cube[cube_index['na2s_fraction']] = na2s_fraction
-
-                    if 'KCL(c)' in self.cloud_species:
-
-                        if 'kcl_fraction' in bounds:
-                            kcl_fraction = bounds['kcl_fraction'][0] + \
-                                (bounds['kcl_fraction'][1] - bounds['kcl_fraction'][0]) * \
-                                cube[cube_index['kcl_fraction']]
-
-                            cube[cube_index['kcl_fraction']] = kcl_fraction
-
-                        elif 'kcl_tau' in bounds:
-                            kcl_tau = bounds['kcl_tau'][0] + \
-                                (bounds['kcl_tau'][1] - bounds['kcl_tau'][0]) * \
-                                cube[cube_index['kcl_tau']]
-
-                            cube[cube_index['kcl_tau']] = kcl_tau
-
-                        else:
-                            # Default: 0.05 - 1.
-                            kcl_fraction = np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
-                                cube[cube_index['kcl_fraction']]
-
-                            cube[cube_index['kcl_fraction']] = kcl_fraction
+                            cube[cube_index[f'{cloud_lower}_fraction']] = \
+                                np.log10(0.05) + (np.log10(1.) - np.log10(0.05)) * \
+                                cube[cube_index[f'{cloud_lower}_fraction']]
 
             # Add flux scaling parameter if the boundaries are provided
 
@@ -1206,6 +1119,11 @@ class AtmosphericRetrieval:
 
             ln_prior = 0.
             ln_like = 0.
+
+            # Initiate abundance and cloud base dictionaries to None
+
+            log_x_abund = None
+            log_x_base = None
 
             # Create dictionary with flux scaling parameters
 
@@ -1387,12 +1305,12 @@ class AtmosphericRetrieval:
 
             start = time.time()
 
-            if len(self.cloud_species) > 0:
+            if len(self.cloud_species) > 0 or 'log_kappa_0' in bounds:
                 # Cloudy atmosphere
 
                 tau_cloud = None
 
-                if chemistry == 'equilibrium':
+                if chemistry == 'equilibrium' and 'log_kappa_0' not in bounds:
                     cloud_fractions = {}
 
                     for item in self.cloud_species:
@@ -1427,8 +1345,6 @@ class AtmosphericRetrieval:
                                                                  cube[cube_index['metallicity']],
                                                                  cloud_fractions)
 
-                    log_x_abund = None
-
                 elif chemistry == 'free':
                     # Add the log10 mass fractions of the clouds to the dictionary
 
@@ -1437,15 +1353,26 @@ class AtmosphericRetrieval:
                     for item in self.cloud_species:
                         log_x_base[item[:-3]] = cube[cube_index[item]]
 
+                # Create dictionary with cloud parameters
+
+                cloud_param = ['fsed', 'log_kzz', 'sigma_lnorm', 'log_kappa_0',
+                               'opa_index', 'log_p_base', 'albedo']
+
+                cloud_dict = {}
+
+                for item in cloud_param:
+                    if item in self.parameters:
+                        cloud_dict[item] = cube[cube_index[item]]
+                    elif item in ['log_kzz', 'sigma_lnorm']:
+                        cloud_dict[item] = None
+
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
                 wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object, self.pressure, temp, c_o_ratio, metallicity,
-                    p_quench, log_x_abund, log_x_base,
-                    cube[cube_index['fsed']], cube[cube_index['log_kzz']], cube[cube_index['logg']],
-                    cube[cube_index['sigma_lnorm']], chemistry=chemistry,
-                    pressure_grid=self.pressure_grid, plotting=plotting, contribution=False,
-                    tau_cloud=tau_cloud)
+                    p_quench, log_x_abund, log_x_base, cloud_dict, cube[cube_index['logg']],
+                    chemistry=chemistry, pressure_grid=self.pressure_grid, plotting=plotting,
+                    contribution=False, tau_cloud=tau_cloud)
 
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
