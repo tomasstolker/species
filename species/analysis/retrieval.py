@@ -505,6 +505,9 @@ class AtmosphericRetrieval:
             >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
             >>> import species
 
+        When using MPI, it is also required to install ``mpi4py`` (e.g. ``pip install mpi4py``),
+        otherwise an error may occur when the ``output_folder`` is created by multiple processes.
+
         Parameters
         ----------
         bounds : dict
