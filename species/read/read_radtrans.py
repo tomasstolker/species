@@ -372,8 +372,7 @@ class ReadRadtrans:
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
                 self.rt_object, self.pressure, temp, c_o_ratio, metallicity,
-                p_quench, log_x_abund, log_x_base, model_param['fsed'],
-                log_kzz, model_param['logg'], model_param['sigma_lnorm'],
+                p_quench, log_x_abund, log_x_base, model_param, model_param['logg'],
                 chemistry=chemistry, pressure_grid=self.pressure_grid,
                 plotting=False, contribution=True, tau_cloud=tau_cloud,
                 cloud_wavel=self.cloud_wavel)

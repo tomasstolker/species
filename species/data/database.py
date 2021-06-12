@@ -2926,6 +2926,15 @@ class Database:
         if 'fsed' in model_param:
             pcode_param['fsed'] = model_param['fsed']
 
+        if 'sigma_lnorm' in model_param:
+            pcode_param['sigma_lnorm'] = model_param['sigma_lnorm']
+
+        if 'log_p_quench' in model_param:
+            pcode_param['log_p_quench'] = model_param['log_p_quench']
+            p_quench = 10.**model_param['log_p_quench']
+        else:
+            p_quench = None
+
         pressure = np.logspace(-6., 3., 180)
 
         if sample_box.attributes['pt_profile'] == 'molliere':
@@ -2950,11 +2959,6 @@ class Database:
 
             temperature = retrieval_util.pt_spline_interp(
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
-
-        if 'log_p_quench' in model_param:
-            p_quench = 10.**model_param['log_p_quench']
-        else:
-            p_quench = None
 
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
