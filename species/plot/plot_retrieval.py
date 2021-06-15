@@ -218,6 +218,9 @@ def plot_pt_profile(tag: str,
 
     ax.plot(temp, pressure, '-', lw=1, color='black', zorder=2)
 
+    # data = np.loadtxt('res_struct.dat')
+    # ax.plot(data[:, 1], data[:, 0], lw=1, color='tab:purple')
+
     # Add cloud condensation profiles
 
     if extra_axis == 'grains' and 'metallicity' in median and 'c_o_ratio' in median:
