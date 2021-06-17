@@ -963,6 +963,13 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['albedo']] = albedo
 
+                if 'log_tau_cloud' in bounds:
+                    log_tau_cloud = bounds['log_tau_cloud'][0] + \
+                        (bounds['log_tau_cloud'][1] - bounds['log_tau_cloud'][0]) * \
+                        cube[cube_index['log_tau_cloud']]
+
+                    cube[cube_index['log_tau_cloud']] = log_tau_cloud
+
             elif len(self.cloud_species) > 0:
                 # Sedimentation parameter: ratio of the settling and mixing velocities of the
                 # cloud particles (used in Eq. 3 of Mollière et al. 2020)
@@ -1313,7 +1320,11 @@ class AtmosphericRetrieval:
 
                 tau_cloud = None
 
-                if chemistry == 'equilibrium' and 'log_kappa_0' not in bounds:
+                if 'log_kappa_0' in bounds:
+                    if 'log_tau_cloud' in self.parameters:
+                        tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
+
+                elif chemistry == 'equilibrium' and 'log_kappa_0' not in bounds:
                     cloud_fractions = {}
 
                     for item in self.cloud_species:
