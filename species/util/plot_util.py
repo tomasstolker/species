@@ -418,6 +418,22 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('line_vrad')
         param[index] = r'v$_\mathregular{r}$ (km s$^{-1}$)'
 
+    if 'log_kappa_0' in param:
+        index = param.index('log_kappa_0')
+        param[index] = rf'$\mathregular{{log}}\,\kappa_0$'
+
+    if 'opa_index' in param:
+        index = param.index('opa_index')
+        param[index] = r'$\xi$'
+
+    if 'log_p_base' in param:
+        index = param.index('log_p_base')
+        param[index] = rf'$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$'
+
+    if 'albedo' in param:
+        index = param.index('albedo')
+        param[index] = r'$\omega$'
+
     return param
 
 

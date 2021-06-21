@@ -854,11 +854,10 @@ def calc_spectrum_clouds(rt_object,
 
     # Create an array with a constant eddy diffusion coefficient (cm2 s-1)
 
-    if cloud_dict['log_kzz'] is None:
-        Kzz_use = None
-
-    else:
+    if 'log_kzz' in cloud_dict:
         Kzz_use = np.full(pressure.shape, 10.**cloud_dict['log_kzz'])
+    else:
+        Kzz_use = None
 
     # Adjust number of atmospheric levels
 
@@ -867,7 +866,7 @@ def calc_spectrum_clouds(rt_object,
         pressure = pressure[::3]
         mmw = mmw[::3]
 
-        if cloud_dict['log_kzz'] is not None:
+        if 'log_kzz' in cloud_dict:
             Kzz_use = Kzz_use[::3]
 
     elif pressure_grid == 'clouds':
@@ -875,7 +874,7 @@ def calc_spectrum_clouds(rt_object,
         pressure = pressure[indices]
         mmw = mmw[indices]
 
-        if cloud_dict['log_kzz'] is not None:
+        if 'log_kzz' in cloud_dict:
             Kzz_use = Kzz_use[indices]
 
     # Optionally plot the cloud properties
@@ -933,6 +932,12 @@ def calc_spectrum_clouds(rt_object,
     if pressure_grid == 'clouds':
         rt_object.setup_opa_structure(pressure)
 
+    # Width of cloud particle distribution
+    if 'sigma_lnorm' in cloud_dict:
+        sigma_lnorm = cloud_dict['sigma_lnorm']
+    else:
+        sigma_lnorm = None
+
     # Calculate the emission spectrum
     # TODO Remove try-except after merged PR in pRT repo
 
@@ -941,7 +946,7 @@ def calc_spectrum_clouds(rt_object,
                             abundances,
                             10.**log_g,
                             mmw,
-                            sigma_lnorm=cloud_dict['sigma_lnorm'],
+                            sigma_lnorm=sigma_lnorm,
                             Kzz=Kzz_use,
                             fsed=fseds,
                             radius=None,
@@ -960,7 +965,7 @@ def calc_spectrum_clouds(rt_object,
                             abundances,
                             10.**log_g,
                             mmw,
-                            sigma_lnorm=cloud_dict['sigma_lnorm'],
+                            sigma_lnorm=sigma_lnorm,
                             Kzz=Kzz_use,
                             fsed=fseds,
                             radius=None,

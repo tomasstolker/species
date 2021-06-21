@@ -795,7 +795,14 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
 
     # Add cloud parameters
 
-    if len(cloud_species) > 0:
+    if 'log_kappa_0' in indices:
+        model_param['log_kappa_0'] = sample[indices['log_kappa_0']]
+        model_param['opa_index'] = sample[indices['opa_index']]
+        model_param['log_p_base'] = sample[indices['log_p_base']]
+        model_param['albedo'] = sample[indices['albedo']]
+        model_param['fsed'] = sample[indices['fsed']]
+
+    elif len(cloud_species) > 0:
         model_param['fsed'] = sample[indices['fsed']]
         model_param['sigma_lnorm'] = sample[indices['sigma_lnorm']]
 

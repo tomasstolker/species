@@ -286,13 +286,23 @@ class ReadRadtrans:
 
             p_quench = None
 
-        # Create the dictionary with the mass fractions of the clouds relative to the maximum
-        # values allowed from elemental abundances
+        if len(self.cloud_species) > 0 or 'log_kappa_0' in model_param:
 
-        if len(self.cloud_species) > 0:
             tau_cloud = None
+            log_x_abund = None
+            log_x_base = None
 
-            if chemistry == 'equilibrium':
+            if 'log_kappa_0' in model_param:
+                if 'log_tau_cloud' in model_param:
+                    tau_cloud = 10.**model_param['log_tau_cloud']
+
+                elif 'tau_cloud' in model_param:
+                    tau_cloud = model_param['tau_cloud']
+
+            elif chemistry == 'equilibrium':
+                # Create the dictionary with the mass fractions of the clouds relative to the maximum
+                # values allowed from elemental abundances
+
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
@@ -362,13 +372,6 @@ class ReadRadtrans:
                     log_x_base[item[:-3]] = model_param[item]
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
-
-            if 'kzz' in model_param:
-                # Backward compatibility
-                log_kzz = model_param['kzz']
-
-            elif 'log_kzz' in model_param:
-                log_kzz = model_param['log_kzz']
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
                 self.rt_object, self.pressure, temp, c_o_ratio, metallicity,
