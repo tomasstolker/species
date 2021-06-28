@@ -1782,6 +1782,7 @@ class Database:
 
             magnitude = {}
             flux = {}
+            mean_wavel = {}
 
             for observatory in dset.keys():
                 if observatory not in ['distance', 'spectrum']:
@@ -1792,6 +1793,9 @@ class Database:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
 
+                            filter_trans = read_filter.ReadFilter(name)
+                            mean_wavel[name] = filter_trans.mean_wavelength()
+
             phot_filters = list(magnitude.keys())
 
         else:
@@ -1799,6 +1803,7 @@ class Database:
             magnitude = None
             flux = None
             phot_filters = None
+            mean_wavel = None
 
         if inc_spec and f'objects/{object_name}/spectrum' in h5_file:
             spectrum = {}
@@ -1830,6 +1835,7 @@ class Database:
         return box.create_box('object',
                               name=object_name,
                               filters=phot_filters,
+                              mean_wavel=mean_wavel,
                               magnitude=magnitude,
                               flux=flux,
                               distance=distance,
