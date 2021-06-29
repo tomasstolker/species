@@ -1025,7 +1025,7 @@ class AtmosphericRetrieval:
                     # Cloud mass fractions at the cloud base, relative to the maximum values allowed
                     # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
 
-                    for item in self.cloud_species:
+                    for item in self.cloud_species_full:
                         cloud_lower = item[:-6].lower()
 
                         if f'{cloud_lower}_fraction' in bounds:
