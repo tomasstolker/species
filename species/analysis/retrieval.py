@@ -799,8 +799,11 @@ class AtmosphericRetrieval:
                 # Photospheric pressure (bar)
 
                 if pt_profile == 'molliere':
-                    # 1e-3 - 1e2 bar
-                    p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
+                    if 'log_delta' in bounds:
+                        p_phot = 10.**(bounds['log_delta'][0] + (bounds['log_delta'][1]-bounds['log_delta'][0])*cube[cube_index['log_delta']])
+                    else:
+                        # 1e-3 - 1e2 bar
+                        p_phot = 10.**(-3. + 5.*cube[cube_index['log_delta']])
 
                 elif pt_profile == 'mod-molliere':
                     # 1e-6 - 1e2 bar
