@@ -114,8 +114,12 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
         # Where is the atmosphere convectively unstable?
         conv_index = nabla_rad > nabla_ad
 
-        conv_bound = np.amin(np.argwhere(conv_index))
-        conv_press = press[conv_bound]
+        if np.argwhere(conv_index).size == 0:
+            conv_press = None
+
+        else:
+            conv_bound = np.amin(np.argwhere(conv_index))
+            conv_press = press[conv_bound]
 
         for i in range(10):
             if i == 0:
