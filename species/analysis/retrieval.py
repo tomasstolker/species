@@ -1239,9 +1239,13 @@ class AtmosphericRetrieval:
 
             # Create the P-T profile
 
-            temp, knot_temp = retrieval_util.create_pt_profile(
+            temp, knot_temp, conv_press = retrieval_util.create_pt_profile(
                 cube, cube_index, pt_profile, self.pressure, knot_press,
                 metallicity, c_o_ratio, pt_smooth)
+
+            if conv_press > 1.:
+                # Maximum pressure (bar) for the radiative-convective boundary
+                return -np.inf
 
             # Prepare the scaling based on the cloud optical depth
 

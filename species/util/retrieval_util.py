@@ -41,7 +41,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
                  press: np.ndarray,
                  metallicity: float,
                  c_o_ratio: float,
-                 conv: bool = True) -> Tuple[np.ndarray, float]:
+                 conv: bool = True) -> Tuple[np.ndarray, float, Optional[float]]:
     """
     Pressure-temperature profile for a self-luminous atmosphere (see Mollière et al. 2020).
 
@@ -74,8 +74,8 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
         Temperature profile (K) for ``press``.
     float
         Pressure (bar) where the optical depth is 1.
-    np.ndarray
-        Temperature (K) at the connection point (removed).
+    float, None
+        Pressure (bar) at the radiative-convective boundary.
     """
 
     # Go from bar to cgs units
@@ -114,6 +114,9 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
         # Where is the atmosphere convectively unstable?
         conv_index = nabla_rad > nabla_ad
 
+        conv_bound = np.amin(np.argwhere(conv_index))
+        conv_press = press[conv_bound]
+
         for i in range(10):
             if i == 0:
                 t_take = copy.copy(tedd)
@@ -150,6 +153,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
 
     else:
         tfinal = tedd
+        conv_press = None
 
     # Add the three temperature-point P-T description above tau = 0.1
 
@@ -218,7 +222,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
             if i_intp == 0:
                 tfintp = interp1d(press_cgs, tfinal)
 
-                # The temperature at p_bot_spline (from the radiative-convectice solution)
+                # The temperature at p_bot_spline (from the radiative-convective solution)
                 t_support[len(support_points_low)-1] = tfintp(p_bot_spline)
 
                 # if temp_3 is not None:
@@ -229,7 +233,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
                 #     t_support[:3] = tfintp(support_points_low[:3])
 
                 # The temperature at pressures above p_bot_spline (from the
-                # radiative-convectice solution)
+                # radiative-convective solution)
                 t_support[len(support_points_low):] = \
                     tfintp(support_points[len(support_points_low):])
 
@@ -241,7 +245,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
 
                 tfintp = interp1d(press_cgs, tfinal)
 
-                # The temperature at p_bot_spline (from the radiative-convectice solution)
+                # The temperature at p_bot_spline (from the radiative-convective solution)
                 t_support[len(support_points_low)-1] = tfintp(p_bot_spline)
 
                 # print('diff', t_connect_calc - tfintp(p_bot_spline))
@@ -256,7 +260,7 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
     # Return the temperature, the pressure at tau = 1
     # The temperature at the connection point: tfintp(p_bot_spline)
     # The last two are needed for the priors on the P-T profile.
-    return tret, press_tau(1.)/1e6
+    return tret, press_tau(1.)/1e6, conv_press
 
 
 @typechecked
@@ -310,7 +314,9 @@ def create_pt_profile(cube,
                       knot_press: Optional[np.ndarray],
                       metallicity: float,
                       c_o_ratio: float,
-                      pt_smooth: float = 0.3) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+                      pt_smooth: float = 0.3) -> Tuple[np.ndarray,
+                                                       Optional[np.ndarray],
+                                                       Optional[float]]:
     """
     Function for creating the P-T profile.
 
@@ -344,29 +350,31 @@ def create_pt_profile(cube,
         Temperatures (K).
     np.ndarray, None
         Temperature at the knots (K). A None is returned if ``pt_profile`` is set to 'molliere'.
+    float, None
+        Pressure (bar) at the radiative-convective boundary.
     """
 
     knot_temp = None
 
     if pt_profile == 'molliere':
-        temp, _ = pt_ret_model(np.array([cube[cube_index['t1']],
-                                         cube[cube_index['t2']],
-                                         cube[cube_index['t3']]]),
-                               10.**cube[cube_index['log_delta']],
-                               cube[cube_index['alpha']],
-                               cube[cube_index['tint']],
-                               pressure,
-                               metallicity,
-                               c_o_ratio)
+        temp, _, conv_press = pt_ret_model(np.array([cube[cube_index['t1']],
+                                                     cube[cube_index['t2']],
+                                                     cube[cube_index['t3']]]),
+                                           10.**cube[cube_index['log_delta']],
+                                           cube[cube_index['alpha']],
+                                           cube[cube_index['tint']],
+                                           pressure,
+                                           metallicity,
+                                           c_o_ratio)
 
     elif pt_profile == 'mod-molliere':
-        temp, _ = pt_ret_model(None,
-                               10.**cube[cube_index['log_delta']],
-                               cube[cube_index['alpha']],
-                               cube[cube_index['tint']],
-                               pressure,
-                               metallicity,
-                               c_o_ratio)
+        temp, _, conv_press = pt_ret_model(None,
+                                           10.**cube[cube_index['log_delta']],
+                                           cube[cube_index['alpha']],
+                                           cube[cube_index['tint']],
+                                           pressure,
+                                           metallicity,
+                                           c_o_ratio)
 
     elif pt_profile in ['free', 'monotonic']:
         knot_temp = []
@@ -377,7 +385,7 @@ def create_pt_profile(cube,
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
 
-    return temp, knot_temp
+    return temp, knot_temp, conv_press
 
 
 @typechecked
