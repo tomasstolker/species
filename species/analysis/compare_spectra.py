@@ -356,7 +356,7 @@ class CompareSpectra:
             spectral features. Typically, :math:`\log(g)` can not be accurately determined when
             comparing the spectra over a broad wavelength range.
         fix_spec : list(str), None
-            TODO
+            List with names of spectra for which the relative scaling will be fixed.
 
         Returns
         -------
@@ -486,9 +486,8 @@ class CompareSpectra:
                                 if spec_item == fix_spec[0]:
                                     obj_add = self.object.get_spectrum()[spec_item][0]
 
-                                    # TODO
-                                    if spec_item == 'MUSE':
-                                        obj_add[:, 2] *= 3.
+                                    # if spec_item == 'MUSE':
+                                    #     obj_add[:, 2] *= 3.
 
                                     model_add = model_spec[spec_item]
                                     w_i_add = w_i[spec_item]
