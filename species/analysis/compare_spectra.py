@@ -302,8 +302,8 @@ class CompareSpectra:
         print('Best-fitting spectra:')
 
         if len(gk_select) < 10:
-            for i in range(len(gk_select)):
-                print(f'   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, '
+            for i, gk_item in enumerate(gk_select):
+                print(f'   {i+1:2d}. G = {gk_item:.2e} -> {name_select[i]}, {spt_select[i]}, '
                       f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n'
                       f'                      scalings = {ck_select[i]}')
 
