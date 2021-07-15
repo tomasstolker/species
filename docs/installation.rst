@@ -3,7 +3,7 @@
 Installation
 ============
 
-*species* is compatible with Python 3.6/3.7/3.8 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
+*species* is compatible with Python 3.7/3.8 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
 Installation from PyPI
 ----------------------
