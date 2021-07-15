@@ -332,7 +332,8 @@ class CompareSpectra:
                       model: str,
                       av_points: Optional[Union[List[float], np.array]] = None,
                       fix_logg: Optional[float] = None,
-                      fix_spec: Optional[List[str]] = None) -> None:
+                      fix_spec: Optional[List[str]] = None,
+                      weights: bool = True) -> None:
         """
         Method for finding the best fitting spectrum from a grid of atmospheric model spectra by
         evaluating the goodness-of-fit statistic from Cushing et al. (2008). Currently, this method
@@ -352,11 +353,13 @@ class CompareSpectra:
             List of :math:`A_V` extinction values for which the goodness-of-fit statistic will be
             tested. The extinction is calculated with the relation from Cardelli et al. (1989).
         fix_logg : float, None
-            Fix the value of :math:`\log(g)`, for example if estimated from gravity-sensitive
-            spectral features. Typically, :math:`\log(g)` can not be accurately determined when
+            Fix the value of :math:`\\log(g)`, for example if estimated from gravity-sensitive
+            spectral features. Typically, :math:`\\log(g)` can not be accurately determined when
             comparing the spectra over a broad wavelength range.
         fix_spec : list(str), None
             List with names of spectra for which the relative scaling will be fixed.
+        weights : bool
+            Apply a weighting based on the widths of the wavelengths bins.
 
         Returns
         -------
@@ -373,8 +376,10 @@ class CompareSpectra:
             diff = np.insert(diff, 0, diff[0])
             diff = np.append(diff, diff[-1])
 
-            # w_i[spec_item] = diff
-            w_i[spec_item] = np.ones(obj_wavel.shape[0])
+            if weights:
+                w_i[spec_item] = diff
+            else:
+                w_i[spec_item] = np.ones(obj_wavel.shape[0])
 
         if av_points is None:
             av_points = np.array([0.])
@@ -444,7 +449,8 @@ class CompareSpectra:
                     for k, spec_item in enumerate(self.spec_name):
                         obj_spec = self.object.get_spectrum()[spec_item][0]
 
-                        c_numer = w_i[spec_item] * obj_spec[:, 1] * model_spec[spec_item] / obj_spec[:, 2]**2
+                        c_numer = w_i[spec_item] * obj_spec[:, 1] * \
+                            model_spec[spec_item] / obj_spec[:, 2]**2
                         c_denom = w_i[spec_item] * model_spec[spec_item]**2 / obj_spec[:, 2]**2
 
                         flux_scaling[i, j, k] = np.sum(c_numer) / np.sum(c_denom)
@@ -530,13 +536,19 @@ class CompareSpectra:
                             else:
                                 obj_spec = self.object.get_spectrum()[spec_item][0]
 
-                                c_numer = w_i[spec_item] * obj_spec[:, 1] * model_spec[spec_item] / obj_spec[:, 2]**2
-                                c_denom = w_i[spec_item] * model_spec[spec_item]**2 / obj_spec[:, 2]**2
+                                c_numer = w_i[spec_item] * obj_spec[:, 1] * \
+                                    model_spec[spec_item] / obj_spec[:, 2]**2
+
+                                c_denom = w_i[spec_item] * model_spec[spec_item]**2 / \
+                                    obj_spec[:, 2]**2
 
                                 flux_scaling[i, j, k, m] = np.sum(c_numer) / np.sum(c_denom)
 
-                                residual = obj_spec[:, 1] - flux_scaling[i, j, k, m]*model_spec[spec_item]
-                                fit_stat[i, j, k, m] = np.sum(w_i[spec_item] * (residual/obj_spec[:, 2])**2)
+                                residual = obj_spec[:, 1] - flux_scaling[i, j, k, m] * \
+                                    model_spec[spec_item]
+
+                                fit_stat[i, j, k, m] = np.sum(
+                                    w_i[spec_item] * (residual/obj_spec[:, 2])**2)
 
                         count += 1
 

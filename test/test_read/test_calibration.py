@@ -26,7 +26,7 @@ class TestCalibration:
 
     def test_read_calibration(self):
         database = species.Database()
-        database.add_spectrum('vega')
+        database.add_spectra('vega')
 
         read_calib = species.ReadCalibration('vega', filter_name='Paranal/NACO.H')
         assert read_calib.wavel_range == pytest.approx((1.44, 1.88), rel=1e-7, abs=0.)
