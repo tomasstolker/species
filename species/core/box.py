@@ -75,6 +75,7 @@ def create_box(boxtype,
         box = ObjectBox()
         box.name = kwargs['name']
         box.filters = kwargs['filters']
+        box.mean_wavel = kwargs['mean_wavel']
         box.magnitude = kwargs['magnitude']
         box.flux = kwargs['flux']
         box.distance = kwargs['distance']
@@ -321,6 +322,7 @@ class ObjectBox(Box):
 
         self.name = None
         self.filters = None
+        self.mean_wavel = None
         self.magnitude = None
         self.flux = None
         self.distance = None

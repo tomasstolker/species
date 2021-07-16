@@ -772,7 +772,7 @@ class ReadModel:
                 except KeyError:
                     h5_file.close()
                     species_db = database.Database()
-                    species_db.add_spectrum('vega')
+                    species_db.add_spectra('vega')
                     h5_file = h5py.File(self.database, 'r')
 
             readcalib = read_calibration.ReadCalibration('vega', filter_name=None)
@@ -865,6 +865,12 @@ class ReadModel:
 
         h5_file = self.open_database()
 
+        # Set the wavelength range
+
+        if self.wavel_range is None:
+            wl_points = self.get_wavelengths()
+            self.wavel_range = (wl_points[0], wl_points[-1])
+
         # Create lists with the parameter names and values
 
         param_key = []
@@ -931,6 +937,23 @@ class ReadModel:
 
             flux *= scaling
 
+        # Add blackbody disk component to the spectrum
+
+        if 'disk_teff' in model_param and 'disk_radius' in model_param:
+            disk_param = {'teff': model_param['disk_teff'],
+                          'radius': model_param['disk_radius'],
+                          'distance': model_param['distance']}
+
+            readplanck = read_planck.ReadPlanck((0.9*self.wavel_range[0], 1.1*self.wavel_range[-1]))
+
+            if spec_res is None:
+                planck_box = readplanck.get_spectrum(disk_param, 1000., smooth=False)
+
+            else:
+                planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
+
+            flux += spectres.spectres(wl_points, planck_box.wavelength, planck_box.flux)
+
         # Create ModelBox with the spectrum
 
         model_box = box.create_box(boxtype='model',
@@ -995,10 +1018,10 @@ class ReadModel:
 
         # Add the blackbody disk component to the luminosity
 
-        # if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
-        #     model_box.parameters['luminosity'] += 4. * np.pi * (
-        #         model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
-        #         model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
+        if 'disk_teff' in model_box.parameters and 'disk_radius' in model_box.parameters:
+            model_box.parameters['luminosity'] += 4. * np.pi * (
+                model_box.parameters['disk_radius'] * constants.R_JUP)**2 * constants.SIGMA_SB * \
+                model_box.parameters['disk_teff']**4. / constants.L_SUN  # (Lsun)
 
         return model_box
 
