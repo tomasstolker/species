@@ -168,7 +168,7 @@ def plot_pt_profile(tag: str,
                                  item[param_index['t2']],
                                  item[param_index['t3']]])
 
-            temp, _ = retrieval_util.pt_ret_model(
+            temp, _, _ = retrieval_util.pt_ret_model(
                 t3_param, 10.**item[param_index['log_delta']], item[param_index['alpha']],
                 item[param_index['tint']], pressure, metallicity, c_o_ratio)
 
@@ -195,7 +195,7 @@ def plot_pt_profile(tag: str,
         median['c_o_ratio'] = c_o_ratio
 
     if pt_profile == 'molliere':
-        temp, _ = retrieval_util.pt_ret_model(
+        temp, _, _ = retrieval_util.pt_ret_model(
             np.array([median['t1'], median['t2'], median['t3']]), 10.**median['log_delta'],
             median['alpha'], median['tint'], pressure, median['metallicity'], median['c_o_ratio'])
 

@@ -2098,22 +2098,16 @@ class Database:
                                        item[param_index['t2']],
                                        item[param_index['t3']]])
 
-                temp[:, i], _ = retrieval_util.pt_ret_model(three_temp,
-                                                            10.**item[param_index['log_delta']],
-                                                            item[param_index['alpha']],
-                                                            item[param_index['tint']],
-                                                            press,
-                                                            item[param_index['metallicity']],
-                                                            item[param_index['c_o_ratio']])
+                temp[:, i], _, _ = retrieval_util.pt_ret_model(
+                    three_temp, 10.**item[param_index['log_delta']], item[param_index['alpha']],
+                    item[param_index['tint']], press, item[param_index['metallicity']],
+                    item[param_index['c_o_ratio']])
 
             elif pt_profile == 'mod-molliere':
-                temp[:, i], _ = retrieval_util.pt_ret_model(None,
-                                                            10.**item[param_index['log_delta']],
-                                                            item[param_index['alpha']],
-                                                            item[param_index['tint']],
-                                                            press,
-                                                            item[param_index['metallicity']],
-                                                            item[param_index['c_o_ratio']])
+                temp[:, i], _, _ = retrieval_util.pt_ret_model(
+                    None, 10.**item[param_index['log_delta']], item[param_index['alpha']],
+                    item[param_index['tint']], press, item[param_index['metallicity']],
+                    item[param_index['c_o_ratio']])
 
             elif pt_profile in ['free', 'monotonic']:
                 if 'pt_smooth' in param_index:
@@ -2478,13 +2472,10 @@ class Database:
                                                sample_dict['t2'],
                                                sample_dict['t3']])
 
-                        temp, _ = retrieval_util.pt_ret_model(upper_temp,
-                                                              10.**sample_dict['log_delta'],
-                                                              sample_dict['alpha'],
-                                                              sample_dict['tint'],
-                                                              pressure,
-                                                              sample_dict['metallicity'],
-                                                              sample_dict['c_o_ratio'])
+                        temp, _, _ = retrieval_util.pt_ret_model(
+                            upper_temp, 10.**sample_dict['log_delta'], sample_dict['alpha'],
+                            sample_dict['tint'], pressure, sample_dict['metallicity'],
+                            sample_dict['c_o_ratio'])
 
                     elif radtrans['pt_profile'] == 'free' or radtrans['pt_profile'] == 'monotonic':
                         knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
@@ -2559,13 +2550,10 @@ class Database:
                                            sample_dict['t2'],
                                            sample_dict['t3']])
 
-                    temp, _ = retrieval_util.pt_ret_model(upper_temp,
-                                                          10.**sample_dict['log_delta'],
-                                                          sample_dict['alpha'],
-                                                          sample_dict['tint'],
-                                                          pressure,
-                                                          sample_dict['metallicity'],
-                                                          sample_dict['c_o_ratio'])
+                    temp, _, _ = retrieval_util.pt_ret_model(
+                        upper_temp, 10.**sample_dict['log_delta'], sample_dict['alpha'],
+                        sample_dict['tint'], pressure, sample_dict['metallicity'],
+                        sample_dict['c_o_ratio'])
 
                 elif radtrans['pt_profile'] == 'free' or radtrans['pt_profile'] == 'monotonic':
                     knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
@@ -3007,7 +2995,7 @@ class Database:
         pressure = np.logspace(-6., 3., 180)
 
         if sample_box.attributes['pt_profile'] == 'molliere':
-            temperature, _ = retrieval_util.pt_ret_model(
+            temperature, _, _ = retrieval_util.pt_ret_model(
                 np.array([model_param['t1'], model_param['t2'], model_param['t3']]),
                 10.**model_param['log_delta'], model_param['alpha'], model_param['tint'],
                 pressure, model_param['metallicity'], model_param['c_o_ratio'])
