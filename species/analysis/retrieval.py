@@ -1245,6 +1245,7 @@ class AtmosphericRetrieval:
 
             if conv_press is not None and (conv_press > 1. or conv_press < 0.01):
                 # Maximum pressure (bar) for the radiative-convective boundary
+                # TODO change back
                 return -np.inf
 
             # Prepare the scaling based on the cloud optical depth
