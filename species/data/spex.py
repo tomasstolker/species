@@ -216,7 +216,7 @@ def add_spex(input_path: str,
                 if not isinstance(simbad_id, str):
                     simbad_id = simbad_id.decode('utf-8')
 
-                dist_select = distance_data.loc[distance_data['object'] == simbad_id]
+                dist_select = distance_data[distance_data['object'] == simbad_id]
 
                 if not dist_select.empty:
                     distance = (dist_select['distance'].values[0],
