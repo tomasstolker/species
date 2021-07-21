@@ -1476,8 +1476,7 @@ class Database:
 
     @typechecked
     def get_compare_sample(self,
-                           tag: str,
-                           spec_fix: Optional[str] = None) -> Dict[str, float]:
+                           tag: str) -> Dict[str, float]:
         """
         Function for extracting the sample parameters with the highest posterior probability.
 
@@ -1486,15 +1485,6 @@ class Database:
         tag : str
             Database tag where the results from
             :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model` are stored.
-        spec_fix : str, None
-            After comparing multiple spectra with a model grid, one of the flux scalings need to
-            be used to calculate the planet radius (i.e. scaling = (radius/distance)^2). The name
-            of this spectrum is specified as argument of ``spec_fix``. For the other spectra,
-            the same radius will be used and an additional scaling parameter will be included in
-            the returned dictionary. When passing the returned dictionary to
-            :func:`~species.util.read_util.update_spectra`, the spectra can be updated with the
-            derived scaling corrections. The argument can be set to ``None`` if a single spectrum
-            was used for the comparison.
 
         Returns
         -------
@@ -1507,6 +1497,7 @@ class Database:
 
             n_param = dset.attrs['n_param']
             n_spec_name = dset.attrs['n_spec_name']
+            n_scale_spec = dset.attrs['n_scale_spec']
 
             model_param = {}
 
@@ -1514,29 +1505,11 @@ class Database:
                 model_param[dset.attrs[f'parameter{i}']] = dset.attrs[f'best_param{i}']
 
             model_param['distance'] = dset.attrs['distance']
+            model_param['radius'] = dset.attrs['radius']
 
-            if n_spec_name == 1:
-                spec_name = dset.attrs['spec_name0']
-                model_param['radius'] = dset.attrs[f'radius_{spec_name}']
-
-            else:
-                if spec_fix is None:
-                    raise ValueError('The argument of \'spec_fix\' should be set when the results '
-                                     'from CompareSpectra.compare_model have been obtained by '
-                                     'combining multiple spectra (i.e. the argument of '
-                                     '\'spec_name\' in CompareSpectra).')
-
-                model_param['radius'] = dset.attrs[f'radius_{spec_fix}']
-
-                for i in range(n_spec_name):
-                    spec_name = dset.attrs[f'spec_name{i}']
-
-                    if spec_name == spec_fix:
-                        continue
-
-                    # Factor for scaling the observed spectrum to the model spectrum
-                    model_param[f'scaling_{spec_name}'] = (
-                        dset.attrs[f'radius_{spec_fix}'] / dset.attrs[f'radius_{spec_name}'])**2
+            for i in range(n_scale_spec):
+                scale_spec = dset.attrs[f'scale_spec{i}']
+                model_param[f'scaling_{scale_spec}'] = dset.attrs[f'scaling_{scale_spec}']
 
         return model_param
 
@@ -2226,7 +2199,9 @@ class Database:
                        coord_points: List[np.ndarray],
                        object_name: str,
                        spec_name: List[str],
-                       model: str) -> None:
+                       model: str,
+                       scale_spec: List[str],
+                       extra_scaling: Optional[np.ndarray]) -> None:
         """
         Parameters
         ----------
@@ -2248,6 +2223,12 @@ class Database:
             List with spectrum names that are stored at the object data of ``object_name``.
         model : str
             Atmospheric model grid that is used for the comparison.
+        scale_spec : list(str)
+            List with spectrum names to which an additional scaling has been applied.
+        extra_scaling : np.ndarray. None
+            Array with extra scalings that have been applied to the spectra of ``scale_spec``.
+            The argument can be set to ``None`` if no extra scalings have been applied.
+
         Returns
         -------
         NoneType
@@ -2275,6 +2256,7 @@ class Database:
             dset.attrs['model'] = str(model)
             dset.attrs['n_param'] = len(model_param)
             dset.attrs['n_spec_name'] = len(spec_name)
+            dset.attrs['n_scale_spec'] = len(scale_spec)
             dset.attrs['distance'] = distance
 
             for i, item in enumerate(model_param):
@@ -2283,37 +2265,45 @@ class Database:
             for i, item in enumerate(spec_name):
                 dset.attrs[f'spec_name{i}'] = item
 
+            for i, item in enumerate(scale_spec):
+                dset.attrs[f'scale_spec{i}'] = item
+
             h5_file.create_dataset(f'results/comparison/{tag}/flux_scaling', data=flux_scaling)
+
+            if len(scale_spec) > 0:
+                h5_file.create_dataset(
+                    f'results/comparison/{tag}/extra_scaling', data=extra_scaling)
 
             for i, item in enumerate(coord_points):
                 h5_file.create_dataset(f'results/comparison/{tag}/coord_points{i}', data=item)
 
-            # Sum the goodness-of-fit of the different spectra
-            goodness_sum = np.sum(goodness_of_fit, axis=-1)
-
             # Indices of the best-fit model
-            best_index = np.unravel_index(goodness_sum.argmin(), goodness_sum.shape)
-            dset.attrs['best_fit'] = goodness_sum[best_index]
+            best_index = np.unravel_index(goodness_of_fit.argmin(), goodness_of_fit.shape)
+            dset.attrs['best_fit'] = goodness_of_fit[best_index]
 
             print('Best-fit parameters:')
-            print(f'   - Goodness-of-fit = {goodness_sum[best_index]:.2e}')
+            print(f'   - Goodness-of-fit = {goodness_of_fit[best_index]:.2e}')
 
             for i, item in enumerate(model_param):
                 best_param = coord_points[i][best_index[i]]
                 dset.attrs[f'best_param{i}'] = best_param
                 print(f'   - {item} = {best_param}')
 
-            for i, item in enumerate(spec_name):
-                scaling = flux_scaling[best_index[0], best_index[1], best_index[2], i]
+            scaling = flux_scaling[best_index[0], best_index[1], best_index[2]]
 
-                radius = np.sqrt(scaling * (distance*constants.PARSEC)**2)  # (m)
-                radius /= constants.R_JUP  # (Rjup)
+            radius = np.sqrt(scaling * (distance*constants.PARSEC)**2)  # (m)
+            radius /= constants.R_JUP  # (Rjup)
 
-                dset.attrs[f'radius_{item}'] = radius
-                print(f'   - {item} radius (Rjup) = {radius:.2f}')
+            dset.attrs['radius'] = radius
+            print(f'   - Radius (Rjup) = {radius:.2f}')
 
-                dset.attrs[f'scaling_{item}'] = scaling
-                print(f'   - {item} scaling = {scaling:.2e}')
+            dset.attrs['scaling'] = scaling
+            print(f'   - Scaling = {scaling:.2e}')
+
+            for i, item in enumerate(scale_spec):
+                scale_tmp = scaling / extra_scaling[best_index[0], best_index[1], best_index[2], i]
+                print(f'   - {item} scaling = {scale_tmp:.2e}')
+                dset.attrs[f'scaling_{item}'] = scale_tmp
 
     def add_retrieval(self,
                       tag: str,
