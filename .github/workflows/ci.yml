@@ -19,6 +19,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install MultiNest
+        run: |
+          git clone https://github.com/JohannesBuchner/MultiNest
+          cd MultiNest/build
+          cmake ..
+          make
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build/tomasstolker/species/MultiNest/lib
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
