@@ -33,6 +33,7 @@ jobs:
           cd MultiNest/build
           cmake ..
           make
+          ls -l
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
 
       - name: Install dependencies
@@ -53,8 +54,10 @@ jobs:
 
       - name: Build documentation
         run: |
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
           make docs
 
       - name: Run pytest
         run: |
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
           make test
