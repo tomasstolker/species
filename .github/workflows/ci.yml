@@ -32,7 +32,7 @@ jobs:
           cd MultiNest/build
           cmake ..
           make
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/tomasstolker/species/species/MultiNest/lib
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
 
       - name: Install dependencies
         run: |
@@ -51,7 +51,7 @@ jobs:
       - name: Build documentation
         run: |
           sudo apt-get install pandoc
-          make test
+          make docs
 
       - name: Run pytest
         run: |
