@@ -23,6 +23,7 @@ jobs:
         run: |
           pwd
           echo $HOME
+          ls -l
           # sudo apt-get install cmake
           # sudo apt-get install gfortran
           # sudo apt-get install libblas-dev
