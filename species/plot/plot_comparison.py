@@ -399,12 +399,12 @@ def plot_grid_statistic(tag: str,
 
     n_param = dset.attrs['n_param']
 
-    flux_scaling = np.array(h5_file[f'results/comparison/{tag}/flux_scaling'])
+    # flux_scaling = np.array(h5_file[f'results/comparison/{tag}/flux_scaling'])
 
-    if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
-        extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
-    else:
-        extra_scaling = None
+    # if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
+    #     extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
+    # else:
+    #     extra_scaling = None
 
     read_obj = read_object.ReadObject(dset.attrs['object_name'])
 
@@ -539,7 +539,13 @@ def plot_grid_statistic(tag: str,
         cb = mpl.colorbar.Colorbar(ax=ax_cb, mappable=c, orientation='vertical',
                                    ticklocation='right', format='%.1f')
 
-        cb.ax.tick_params(width=0.8, length=5, labelsize=12, direction='in', color='black')
+        cb.ax.minorticks_on()
+
+        cb.ax.tick_params(which='major', width=0.8, length=5, labelsize=12,
+                          direction='in', color='black')
+
+        cb.ax.tick_params(which='minor', width=0.8, length=3, labelsize=12,
+                          direction='in', color='black')
 
         cb.ax.set_ylabel(r'$\Delta\mathregular{log}\,\mathregular{G}$',
                          rotation=270, labelpad=22, fontsize=13.)

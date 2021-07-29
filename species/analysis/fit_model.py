@@ -1346,12 +1346,12 @@ class FitModel:
                 ln_like += -0.5 * weight * np.log(2.*np.pi*phot_var)
 
             else:
-                phot_var = obj_item[1, j]**2
-
-                if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
-                    phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0, j]**2
-
                 for j in range(obj_item.shape[1]):
+                    phot_var = obj_item[1, j]**2
+
+                    if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
+                        phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0, j]**2
+
                     ln_like += -0.5 * weight * (obj_item[0, j] - phot_flux)**2 / phot_var
 
                     # Only required when fitting an error inflation
