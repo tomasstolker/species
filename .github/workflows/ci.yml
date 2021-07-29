@@ -22,6 +22,7 @@ jobs:
       - name: Install MultiNest
         run: |
           pwd
+          echo $HOME
           # sudo apt-get install cmake
           # sudo apt-get install gfortran
           # sudo apt-get install libblas-dev
@@ -31,7 +32,7 @@ jobs:
           cd MultiNest/build
           cmake ..
           make
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build/tomasstolker/species/MultiNest/lib
+          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/tomasstolker/species/species/MultiNest/lib
 
       - name: Install dependencies
         run: |
