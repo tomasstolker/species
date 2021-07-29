@@ -1243,7 +1243,7 @@ class AtmosphericRetrieval:
                 cube, cube_index, pt_profile, self.pressure, knot_press,
                 metallicity, c_o_ratio, pt_smooth)
 
-            if conv_press is not None and (conv_press > 1. or conv_press < 0.1):
+            if conv_press is not None and (conv_press > 1. or conv_press < 0.01):
                 # Maximum pressure (bar) for the radiative-convective boundary
                 # TODO change back
                 return -np.inf
@@ -1332,7 +1332,7 @@ class AtmosphericRetrieval:
                     if 'log_tau_cloud' in self.parameters:
                         tau_cloud = 10.**cube[cube_index['log_tau_cloud']]
 
-                elif chemistry == 'equilibrium' and 'log_kappa_0' not in bounds:
+                elif chemistry == 'equilibrium':
                     cloud_fractions = {}
 
                     for item in self.cloud_species:
@@ -1385,8 +1385,8 @@ class AtmosphericRetrieval:
                 for item in cloud_param:
                     if item in self.parameters:
                         cloud_dict[item] = cube[cube_index[item]]
-                    elif item in ['log_kzz', 'sigma_lnorm']:
-                        cloud_dict[item] = None
+                    # elif item in ['log_kzz', 'sigma_lnorm']:
+                    #     cloud_dict[item] = None
 
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 

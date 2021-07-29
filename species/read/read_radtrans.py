@@ -289,7 +289,6 @@ class ReadRadtrans:
         if len(self.cloud_species) > 0 or 'log_kappa_0' in model_param:
 
             tau_cloud = None
-            log_x_abund = None
             log_x_base = None
 
             if 'log_kappa_0' in model_param:
