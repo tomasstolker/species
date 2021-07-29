@@ -1479,7 +1479,6 @@ class Database:
             dset = h5_file[f'results/comparison/{tag}/goodness_of_fit']
 
             n_param = dset.attrs['n_param']
-            n_spec_name = dset.attrs['n_spec_name']
             n_scale_spec = dset.attrs['n_scale_spec']
 
             model_param = {}

@@ -399,12 +399,12 @@ def plot_grid_statistic(tag: str,
 
     n_param = dset.attrs['n_param']
 
-    flux_scaling = np.array(h5_file[f'results/comparison/{tag}/flux_scaling'])
+    # flux_scaling = np.array(h5_file[f'results/comparison/{tag}/flux_scaling'])
 
-    if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
-        extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
-    else:
-        extra_scaling = None
+    # if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
+    #     extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
+    # else:
+    #     extra_scaling = None
 
     read_obj = read_object.ReadObject(dset.attrs['object_name'])
 
