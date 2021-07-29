@@ -121,6 +121,8 @@ def pt_ret_model(temp_3: Optional[np.ndarray],
             conv_bound = np.amin(np.argwhere(conv_index))
             conv_press = press[conv_bound]
 
+        tfinal = None
+
         for i in range(10):
             if i == 0:
                 t_take = copy.copy(tedd)
