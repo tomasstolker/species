@@ -1,6 +1,6 @@
 """
 Utility functions for atmospheric retrieval with ``petitRADTRANS``. This module was put together
-with major contributions by Paul Mollière (MPIA).
+with many contributions by Paul Mollière (MPIA).
 """
 
 import copy
@@ -322,6 +322,7 @@ def create_pt_profile(cube,
                       c_o_ratio: float,
                       pt_smooth: float = 0.3) -> Tuple[np.ndarray,
                                                        Optional[np.ndarray],
+                                                       float,
                                                        Optional[float]]:
     """
     Function for creating the P-T profile.
@@ -356,6 +357,8 @@ def create_pt_profile(cube,
         Temperatures (K).
     np.ndarray, None
         Temperature at the knots (K). A None is returned if ``pt_profile`` is set to 'molliere'.
+    float
+        Pressure (bar) where the optical depth is 1.
     float, None
         Pressure (bar) at the radiative-convective boundary.
     """
@@ -363,24 +366,24 @@ def create_pt_profile(cube,
     knot_temp = None
 
     if pt_profile == 'molliere':
-        temp, _, conv_press = pt_ret_model(np.array([cube[cube_index['t1']],
-                                                     cube[cube_index['t2']],
-                                                     cube[cube_index['t3']]]),
-                                           10.**cube[cube_index['log_delta']],
-                                           cube[cube_index['alpha']],
-                                           cube[cube_index['tint']],
-                                           pressure,
-                                           metallicity,
-                                           c_o_ratio)
+        temp, phot_press, conv_press = pt_ret_model(np.array([cube[cube_index['t1']],
+                                                              cube[cube_index['t2']],
+                                                              cube[cube_index['t3']]]),
+                                                    10.**cube[cube_index['log_delta']],
+                                                    cube[cube_index['alpha']],
+                                                    cube[cube_index['tint']],
+                                                    pressure,
+                                                    metallicity,
+                                                    c_o_ratio)
 
     elif pt_profile == 'mod-molliere':
-        temp, _, conv_press = pt_ret_model(None,
-                                           10.**cube[cube_index['log_delta']],
-                                           cube[cube_index['alpha']],
-                                           cube[cube_index['tint']],
-                                           pressure,
-                                           metallicity,
-                                           c_o_ratio)
+        temp, phot_press, conv_press = pt_ret_model(None,
+                                                    10.**cube[cube_index['log_delta']],
+                                                    cube[cube_index['alpha']],
+                                                    cube[cube_index['tint']],
+                                                    pressure,
+                                                    metallicity,
+                                                    c_o_ratio)
 
     elif pt_profile in ['free', 'monotonic']:
         knot_temp = []
@@ -391,7 +394,7 @@ def create_pt_profile(cube,
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
 
-    return temp, knot_temp, conv_press
+    return temp, knot_temp, phot_press, conv_press
 
 
 @typechecked

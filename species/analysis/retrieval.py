@@ -604,7 +604,7 @@ class AtmosphericRetrieval:
         print(' [DONE]')
 
         print('Importing rebin module...', end='', flush=True)
-        from rebin_give_width import rebin_give_width
+        from petitRADTRANS.retrieval.rebin_give_width import rebin_give_width
         print(' [DONE]')
 
         # List with spectra for which the correlated noise is fitted
@@ -1239,7 +1239,7 @@ class AtmosphericRetrieval:
 
             # Create the P-T profile
 
-            temp, knot_temp, conv_press = retrieval_util.create_pt_profile(
+            temp, knot_temp, phot_press, conv_press = retrieval_util.create_pt_profile(
                 cube, cube_index, pt_profile, self.pressure, knot_press,
                 metallicity, c_o_ratio, pt_smooth)
 
@@ -1397,6 +1397,19 @@ class AtmosphericRetrieval:
                     contribution=False, tau_cloud=tau_cloud)
 
                 if wlen_micron is None and flux_lambda is None:
+                    return -np.inf
+
+                if phot_press/rt_object.pphot > 5.:
+                    # Remove the sample if the photospheric pressure from the P-T profile is more
+                    # than a factor 5 larger than the photospheric pressure that is calculated from
+                    # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
+                    # See Eq. 7 in GRAVITY Collaboration et al. (2020)
+                    return -np.inf
+
+                if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
+                    # Remove the sample if the parametrized, pressure-dependent opacity is not
+                    # consistent with the atmosphere's non-gray opacity structure
+                    # See Eq. 5 in GRAVITY Collaboration et al. (2020)
                     return -np.inf
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
