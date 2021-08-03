@@ -351,6 +351,7 @@ class AtmosphericRetrieval:
             self.parameters.append('tint')
             self.parameters.append('alpha')
             self.parameters.append('log_delta')
+            self.parameters.append('log_sigma_alpha')
 
             if pt_profile == 'molliere':
                 self.parameters.append('t1')
@@ -816,6 +817,17 @@ class AtmosphericRetrieval:
 
                 cube[cube_index['log_delta']] = log_delta
 
+                # sigma_alpha: fitted uncertainty on the alpha index
+                # see Eq. 6 in GRAVITY Collaboration et al. (2020)
+
+                if 'log_sigma_alpha' in bounds:
+                    log_sigma_alpha = bounds['log_sigma_alpha'][0] + (bounds['log_sigma_alpha'][1]-bounds['log_sigma_alpha'][0])*cube[cube_index['log_sigma_alpha']]
+                else:
+                    # Default: -4 - 1
+                    log_sigma_alpha = 1. - 5.*cube[cube_index['log_sigma_alpha']]
+
+                cube[cube_index['log_sigma_alpha']] = log_sigma_alpha
+
             elif pt_profile == 'free':
                 # 15 temperature knots (K)
                 for i in range(15):
@@ -1245,7 +1257,6 @@ class AtmosphericRetrieval:
 
             # if conv_press is not None and (conv_press > 1. or conv_press < 0.01):
             #     # Maximum pressure (bar) for the radiative-convective boundary
-            #     # TODO change back
             #     return -np.inf
 
             # Prepare the scaling based on the cloud optical depth
@@ -1406,11 +1417,16 @@ class AtmosphericRetrieval:
                     # See Eq. 7 in GRAVITY Collaboration et al. (2020)
                     return -np.inf
 
-                if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
-                    # Remove the sample if the parametrized, pressure-dependent opacity is not
-                    # consistent with the atmosphere's non-gray opacity structure
-                    # See Eq. 5 in GRAVITY Collaboration et al. (2020)
-                    return -np.inf
+                # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
+                #     # Remove the sample if the parametrized, pressure-dependent opacity is not
+                #     # consistent with the atmosphere's non-gray opacity structure
+                #     # See Eq. 5 in GRAVITY Collaboration et al. (2020)
+                #     return -np.inf
+
+                sigma_alpha = 10.**cube[cube_index['log_sigma_alpha']]
+
+                ln_like += -0.5*(cube[cube_index['alpha']]-rt_object.tau_pow)**2. / \
+                    sigma_alpha**2. - 0.5*np.log(2.*np.pi*sigma_alpha**2.)
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 
