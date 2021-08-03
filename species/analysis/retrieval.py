@@ -1423,9 +1423,13 @@ class AtmosphericRetrieval:
                 #     # See Eq. 5 in GRAVITY Collaboration et al. (2020)
                 #     return -np.inf
 
+                # Penalize samples if the parametrized, pressure-dependent opacity is not
+                # consistent with the atmosphere's non-gray opacity structure
+                # See Eqs. 5 and 6 in GRAVITY Collaboration et al. (2020)
+
                 sigma_alpha = 10.**cube[cube_index['log_sigma_alpha']]
 
-                ln_like += -0.5*(cube[cube_index['alpha']]-rt_object.tau_pow)**2. / \
+                ln_like += -0.5 * (cube[cube_index['alpha']]-rt_object.tau_pow)**2. / \
                     sigma_alpha**2. - 0.5*np.log(2.*np.pi*sigma_alpha**2.)
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
