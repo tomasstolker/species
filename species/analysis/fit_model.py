@@ -23,7 +23,8 @@ except:
 try:
     import pymultinest
 except:
-    warnings.warn('PyMultiNest could not be imported.')
+    warnings.warn('PyMultiNest could not be imported. '
+                  'Perhaps because MultiNest was not build and/or found at the PYTHONPATH?')
 
 from typeguard import typechecked
 
