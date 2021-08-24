@@ -237,6 +237,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index('alpha')
         param[index] = r'$\alpha$'
 
+    if 'log_sigma_alpha' in param:
+        index = param.index('log_sigma_alpha')
+        param[index] = r'$\mathregular{{log}}\,\sigma_\alpha$'
+
     if 'log_delta' in param:
         index = param.index('log_delta')
         param[index] = r'$\mathregular{log}\,\mathregular{\delta}$'

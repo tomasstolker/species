@@ -5,6 +5,7 @@ Module with a frontend for atmospheric retrieval with the radiative transfer cod
 
 import os
 import json
+import math
 import time
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -13,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pymultinest
 
+from scipy.integrate import simps
 from scipy.stats import invgamma
 from typeguard import typechecked
 
@@ -490,7 +492,8 @@ class AtmosphericRetrieval:
                       resume: bool = False,
                       plotting: bool = False,
                       check_isothermal: bool = False,
-                      pt_smooth: float = 0.3) -> None:
+                      pt_smooth: float = 0.3,
+                      check_flux: bool = False) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -538,8 +541,15 @@ class AtmosphericRetrieval:
             Resume from a previous run.
         plotting : bool
             Plot sample results for testing.
+        check_flux : bool
+            Check if the bolometric flux is conserved between the top, radiative-convective
+            boundary, and bottom of the atmosphere. This makes the retrieval much slower but
+            may ensure a quasi-self-consistent P-T structure. This parameter has not been
+            properly implemented yet.
         check_isothermal : bool
-            Check if there is an isothermal region below 1 bar. If so, discard the sample.
+            Check if there is an isothermal region below 1 bar. If so, discard the sample. This
+            parameter has not been properly tested. It is recommended to use the ``check_flux``
+            parameter instead.
         pt_smooth : float
             Standard deviation of the Gaussian kernel that is used for smoothing the sampled
             temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
@@ -598,6 +608,7 @@ class AtmosphericRetrieval:
 
         print('Importing petitRADTRANS...', end='', flush=True)
         from petitRADTRANS.radtrans import Radtrans
+        from petitRADTRANS.fort_spec import feautrier_rad_trans
         print(' [DONE]')
 
         print('Importing chemistry module...', end='', flush=True)
@@ -1410,7 +1421,69 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                if phot_press/rt_object.pphot > 5.:
+                if check_flux:
+                    # Check if the bolometric flux is conserved between the top,
+                    # radiative-convective boundary, and bottom of the atmosphere
+
+                    # Pressure index at the radiative-convective boundary
+                    i_conv = np.argmax(conv_press < 1e-6*rt_object.press)
+
+                    # Spectrum at the radiative-convective boundary
+
+                    flux_rcb, _ = feautrier_rad_trans(rt_object.border_freqs,
+                                                      rt_object.total_tau[:, :, 0, i_conv:],
+                                                      rt_object.temp[i_conv:],
+                                                      rt_object.mu,
+                                                      rt_object.w_gauss_mu,
+                                                      rt_object.w_gauss,
+                                                      rt_object.photon_destruction_prob[:, :, i_conv:],
+                                                      False,
+                                                      rt_object.reflectance,
+                                                      rt_object.emissivity,
+                                                      rt_object.stellar_intensity,
+                                                      rt_object.geometry,
+                                                      rt_object.mu_star)
+
+                    # Spectrum at the bottom of the atmosphere
+
+                    flux_bottom, _ = feautrier_rad_trans(rt_object.border_freqs,
+                                                         rt_object.total_tau[:, :, 0, -2:],
+                                                         rt_object.temp[-2:],
+                                                         rt_object.mu,
+                                                         rt_object.w_gauss_mu,
+                                                         rt_object.w_gauss,
+                                                         rt_object.photon_destruction_prob[:, :, -2:],
+                                                         False,
+                                                         rt_object.reflectance,
+                                                         rt_object.emissivity,
+                                                         rt_object.stellar_intensity,
+                                                         rt_object.geometry,
+                                                         rt_object.mu_star)
+
+                    # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
+                    flux_bottom *= 1e3*constants.LIGHT/wlen_micron**2.
+                    flux_rcb *= 1e3*constants.LIGHT/wlen_micron**2.
+
+                    f_bol_top = simps(flux_lambda, wlen_micron)
+                    f_bol_rcb = simps(flux_rcb, wlen_micron)
+                    f_bol_bot = simps(flux_bottom, wlen_micron)
+
+                    test_flux_1 = math.isclose(f_bol_top, f_bol_rcb, rel_tol=1e0, abs_tol=0.)
+                    test_flux_2 = math.isclose(f_bol_top, f_bol_bot, rel_tol=1e0, abs_tol=0.)
+                    test_flux_3 = math.isclose(f_bol_rcb, f_bol_bot, rel_tol=1e0, abs_tol=0.)
+
+                    if not test_flux_1 or not test_flux_2 or not test_flux_3:
+                        # Remove the sample if the bolometric flux at the top, radiative-convective
+                        # boundary, and bottom of the atmosphere are not quasi-consiatent
+                        return -np.inf
+
+                    # plt.plot(wlen_micron, flux_lambda)
+                    # plt.plot(wlen_micron, flux_rcb)
+                    # plt.plot(wlen_micron, flux_bottom)
+                    # plt.savefig('spec.pdf')
+                    # plt.clf()
+
+                if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
                     # Remove the sample if the photospheric pressure from the P-T profile is more
                     # than a factor 5 larger than the photospheric pressure that is calculated from
                     # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
@@ -1665,6 +1738,11 @@ class AtmosphericRetrieval:
             for i, obj_item in enumerate(self.objphot):
                 # Calculate the photometric flux from the model spectrum
                 phot_flux, _ = self.synphot[i].spectrum_to_flux(wlen_micron, flux_lambda)
+
+                if np.isnan(phot_flux):
+                    raise ValueError(f'The synthetic flux of {self.synphot[i].filter_name} '
+                                     f'is NaN. Perhaps the \'wavel_range\' should be broader '
+                                     f'such that it includes the full filter profile?')
 
                 # Shortcut for weight
                 weight = self.weights[self.synphot[i].filter_name]

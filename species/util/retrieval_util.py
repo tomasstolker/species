@@ -998,20 +998,24 @@ def calc_spectrum_clouds(rt_object,
     if hasattr(rt_object, 'scaling_physicality') and rt_object.scaling_physicality > 1.:
         # cloud_scaling_factor > 2 * (fsed + 1)
         # Set to None such that -inf will be returned as ln_like
-        wlen_micron = None
+        wavel = None
         f_lambda = None
         contr_em = None
 
     else:
-        wlen_micron = constants.LIGHT*1e2/rt_object.freq/1e-4
-        wlen = constants.LIGHT*1e2/rt_object.freq
-        flux = rt_object.flux
+        wavel = 1e6*constants.LIGHT/rt_object.freq  # (um)
 
-        # Convert flux f_nu to f_lambda
-        f_lambda = flux*constants.LIGHT*1e2/wlen**2.
+        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+        f_lambda = 1e4*rt_object.flux
 
-        # Convert from ergs to Joule
-        f_lambda = f_lambda * 1e-7
+        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+        f_lambda *= constants.LIGHT/(1e-6*wavel)**2.
+
+        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+        f_lambda *= 1e-6
+
+        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+        f_lambda *= 1e-7
 
         # Optionally return the emission contribution
         if contribution:
@@ -1021,16 +1025,16 @@ def calc_spectrum_clouds(rt_object,
 
     if plotting and Kzz_use is None:
         scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
-        plt.plot(wlen_micron, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label='Total opacity')
-        plt.plot(wlen_micron, rt_object.ret_test_cloud_abs[:, 0], label='Absorption opacity')
-        plt.plot(wlen_micron, scat_opa[:, 0], label='Scattering opacity')
+        plt.plot(wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label='Total opacity')
+        plt.plot(wavel, rt_object.ret_test_cloud_abs[:, 0], label='Absorption opacity')
+        plt.plot(wavel, scat_opa[:, 0], label='Scattering opacity')
         plt.xlabel(r'Wavelength ($\mu$m)')
         plt.ylabel('Opacity at smallest pressure')
         plt.legend(loc='best')
         plt.savefig('cloud_opacity.pdf', bbox_inches='tight')
         plt.clf()
 
-    return wlen_micron, f_lambda, contr_em
+    return wavel, f_lambda, contr_em
 
 
 @typechecked
