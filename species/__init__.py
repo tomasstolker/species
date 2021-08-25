@@ -33,7 +33,7 @@ from species.core.box import create_box
 
 from species.core.constants import *
 
-from species.core.setup import SpeciesInit
+from species.core.init import SpeciesInit
 
 from species.data.companions import get_data
 

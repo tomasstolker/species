@@ -1381,12 +1381,12 @@ class Database:
             n_param = dset.attrs['nparam']
 
         if samples.ndim == 3:
-            if burnin > samples.shape[1]:
+            if burnin > samples.shape[0]:
                 raise ValueError(f'The \'burnin\' value is larger than the number of steps '
                                  f'({samples.shape[1]}) that are made by the walkers.')
 
-            samples = samples[:, burnin:, :]
-            ln_prob = ln_prob[:, burnin:]
+            samples = samples[burnin:, :, :]
+            ln_prob = ln_prob[burnin:, :]
 
             samples = np.reshape(samples, (-1, n_param))
             ln_prob = np.reshape(ln_prob, -1)
@@ -1450,12 +1450,12 @@ class Database:
             # samples = samples[samples[:, 2] > 100., ]
 
             if samples.ndim == 3:
-                if burnin > samples.shape[1]:
+                if burnin > samples.shape[0]:
                     raise ValueError(f'The \'burnin\' value is larger than the number of steps '
                                      f'({samples.shape[1]}) that are made by the walkers.')
 
                 if burnin is not None:
-                    samples = samples[:, burnin:, :]
+                    samples = samples[burnin:, :, :]
 
                 samples = np.reshape(samples, (-1, n_param))
 
@@ -1607,11 +1607,11 @@ class Database:
             samples = samples[ran_index, ]
 
         elif samples.ndim == 3:
-            if burnin > samples.shape[1]:
+            if burnin > samples.shape[0]:
                 raise ValueError(f'The \'burnin\' value is larger than the number of steps '
                                  f'({samples.shape[1]}) that are made by the walkers.')
 
-            samples = samples[:, burnin:, :]
+            samples = samples[burnin:, :, :]
 
             ran_walker = np.random.randint(samples.shape[0], size=random)
             ran_step = np.random.randint(samples.shape[1], size=random)
@@ -1727,11 +1727,11 @@ class Database:
         samples = np.asarray(dset)
 
         if samples.ndim == 3:
-            if burnin > samples.shape[1]:
+            if burnin > samples.shape[0]:
                 raise ValueError(f'The \'burnin\' value is larger than the number of steps '
                                  f'({samples.shape[1]}) that are made by the walkers.')
 
-            samples = samples[:, burnin:, :]
+            samples = samples[burnin:, :, :]
             samples = samples.reshape((samples.shape[0]*samples.shape[1], n_param))
 
         param = []
@@ -1943,11 +1943,11 @@ class Database:
         samples = np.asarray(dset)
 
         if samples.ndim == 3:
-            if burnin > samples.shape[1]:
+            if burnin > samples.shape[0]:
                 raise ValueError(f'The \'burnin\' value is larger than the number of steps '
                                  f'({samples.shape[1]}) that are made by the walkers.')
 
-            samples = samples[:, burnin:, :]
+            samples = samples[burnin:, :, :]
 
             if random is not None:
                 ran_walker = np.random.randint(samples.shape[0], size=random)

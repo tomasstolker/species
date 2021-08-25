@@ -63,9 +63,9 @@ class ReadRadtrans:
             test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
         res_mode : str
             Resolution mode ('c-k' or 'lbl'). The low-resolution mode ('c-k') calculates the
-            spectrum with the correlated-k assumption at :math:`\lambda/\Delta \lambda = 1000`. The
+            spectrum with the correlated-k assumption at :math:`\\lambda/\\Delta \\lambda = 1000`. The
             high-resolution mode ('lbl') calculates the spectrum with a line-by-line treatment at
-            :math:`\lambda/\Delta \lambda = 10^6`.
+            :math:`\\lambda/\\Delta \\lambda = 10^6`.
         cloud_wavel : tuple(float, float), None
             Tuple with the wavelength range (um) that is used for calculating the median optical
             depth of the clouds at the gas-only photosphere and then scaling the cloud optical
