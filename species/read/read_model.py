@@ -20,7 +20,7 @@ from species.analysis import photometry
 from species.core import box, constants
 from species.data import database
 from species.read import read_calibration, read_filter, read_planck
-from species.util import read_util, dust_util
+from species.util import dust_util, read_util
 
 
 class ReadModel:

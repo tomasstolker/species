@@ -359,11 +359,13 @@ def plot_spectrum(boxes: list,
                         if item[:4] == 'teff':
                             value = f'{param[item]:.0f}'
 
-                        elif item in ['logg', 'feh', 'fsed', 'lognorm_ext',
-                                      'powerlaw_ext', 'ism_ext']:
+                        elif item in ['logg', 'feh', 'metallicity', 'fsed',
+                                      'lognorm_ext', 'powerlaw_ext', 'ism_ext']:
+
                             value = f'{param[item]:.1f}'
 
-                        elif item in ['co']:
+                        elif item in ['co', 'c_o_ratio']:
+
                             value = f'{param[item]:.2f}'
 
                         elif item[:6] == 'radius':
