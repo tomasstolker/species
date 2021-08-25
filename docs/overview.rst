@@ -69,7 +69,7 @@ After adding the relevant data to the database, the user can take advantage of t
 - Interpolating and plotting model spectra (see :class:`~species.read.read_model.ReadModel` and :func:`~species.plot.plot_spectrum.plot_spectrum`).
 - Grid retrievals with Bayesian inference (see :class:`~species.analysis.fit_model.FitModel` and :class:`~species.plot.plot_mcmc`).
 - Comparing a spectrum with a full grid of model spectra (see :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model`).
-- Free retrievals through a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see `AtmosphericRetrieval <https://github.com/tomasstolker/species/blob/retrieval/species/analysis/retrieval.py>`_ on the `retrieval branch <https://github.com/tomasstolker/species/tree/retrieval>`_).
+- Free retrievals with a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see :class:`~species.analysis.retrieval.AtmosphericRetrieval`).
 - Creating color-magnitude diagrams (see :class:`~species.read.read_color.ReadColorMagnitude` and :class:`~species.plot.plot_color.plot_color_magnitude`).
 - Creating color-color diagrams (see :class:`~species.read.read_color.ReadColorColor` and :class:`~species.plot.plot_color.plot_color_color`).
 - Computing synthetic fluxes from isochrones and model spectra (see :class:`~species.read.read_isochrone.ReadIsochrone`)
