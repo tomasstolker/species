@@ -279,16 +279,16 @@ class Database:
         else:
             wavelength, transmission, detector_type = filters.download_filter(filter_name)
 
-        wavel_new = [wavelength[0]]
-        transm_new = [transmission[0]]
-
-        for i in range(wavelength.size-1):
-            if wavelength[i+1] > wavel_new[-1]:
-                # Required for the issue with the Keck/NIRC2.J filter on SVO
-                wavel_new.append(wavelength[i+1])
-                transm_new.append(transmission[i+1])
-
         if wavelength is not None and transmission is not None:
+            wavel_new = [wavelength[0]]
+            transm_new = [transmission[0]]
+
+            for i in range(wavelength.size-1):
+                if wavelength[i+1] > wavel_new[-1]:
+                    # Required for the issue with the Keck/NIRC2.J filter on SVO
+                    wavel_new.append(wavelength[i+1])
+                    transm_new.append(transmission[i+1])
+
             dset = h5_file.create_dataset(f'filters/{filter_name}',
                                           data=np.column_stack((wavel_new, transm_new)))
 

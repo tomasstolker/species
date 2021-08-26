@@ -48,6 +48,9 @@ extensions = [
 # Disable notebook timeout
 nbsphinx_timeout = -1
 
+# Allow errors from notebooks
+nbsphinx_allow_errors = True
+
 autoclass_content = 'both'
 
 # Add any paths that contain templates here, relative to this directory.
