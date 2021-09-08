@@ -538,10 +538,6 @@ def plot_posterior(tag: str,
         box.parameters.append('log_prob')
         ndim += 1
 
-    if isinstance(title_fmt, list) and len(title_fmt) != ndim:
-        raise ValueError(f'The number of items in the list of \'title_fmt\' ({len(title_fmt)}) is '
-                         f'not equal to the number of dimensions of the samples ({ndim}).')
-
     labels = plot_util.update_labels(box.parameters)
 
     # Check if parameter values were fixed
@@ -563,6 +559,10 @@ def plot_posterior(tag: str,
     ndim -= len(index_del)
 
     samples = samples.reshape((-1, ndim))
+
+    if isinstance(title_fmt, list) and len(title_fmt) != ndim:
+        raise ValueError(f'The number of items in the list of \'title_fmt\' ({len(title_fmt)}) is '
+                         f'not equal to the number of dimensions of the samples ({ndim}).')
 
     hist_titles = []
 
