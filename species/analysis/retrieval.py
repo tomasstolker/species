@@ -1535,10 +1535,10 @@ class AtmosphericRetrieval:
                     plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
-                    Remove the sample if the photospheric pressure from the P-T profile is more
-                    than a factor 5 larger than the photospheric pressure that is calculated from
-                    the Rosseland mean opacity, using the non-gray opacities of the atmosphere
-                    See Eq. 7 in GRAVITY Collaboration et al. (2020)
+                    # Remove the sample if the photospheric pressure from the P-T profile is more
+                    # than a factor 5 larger than the photospheric pressure that is calculated from
+                    # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
+                    # See Eq. 7 in GRAVITY Collaboration et al. (2020)
                     return -np.inf
 
                 # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
