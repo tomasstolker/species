@@ -1514,6 +1514,13 @@ class AtmosphericRetrieval:
 
                         flux_test.append(flux_lowres)
 
+                    for i in range(n_test):
+                        plt.plot(wlen_lowres, flux_test[i])
+                    plt.xscale('log')
+                    plt.yscale('log')
+                    plt.savefig('spec.pdf', bbox_inches='tight')
+                    plt.clf()
+
                     flux_total = []
                     for i in range(n_test):
                         flux_total.append(simps(flux_test[i], wlen_lowres))
@@ -1526,13 +1533,6 @@ class AtmosphericRetrieval:
                                 # Remove the sample if the bolometric flux is not
                                 # conserved between two pressures
                                 return -np.inf
-
-                    for i in range(n_test):
-                        plt.plot(wlen_lowres, flux_test[i])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    plt.savefig('spec.pdf', bbox_inches='tight')
-                    plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
                     # Remove the sample if the photospheric pressure from the P-T profile is more
