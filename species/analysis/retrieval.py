@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pymultinest
 
+from molmass import Formula
 from scipy.integrate import simps
 from scipy.stats import invgamma
 from typeguard import typechecked
@@ -687,6 +688,44 @@ class AtmosphericRetrieval:
                                           test_ck_shuffle_comp=self.scattering,
                                           do_scat_emis=self.scattering)
 
+        if check_flux:
+            # # https://petitradtrans.readthedocs.io/en/latest/content/notebooks/Rebinning_opacities.html
+            # lowres_radtrans = Radtrans(line_species=self.line_species,
+            #                            rayleigh_species=['H2', 'He'],
+            #                            cloud_species=self.cloud_species_full.copy(),
+            #                            continuum_opacities=['H2-H2', 'H2-He'],
+            #                            wlen_bords_micron=(0.1, 251.),
+            #                            mode='c-k',
+            #                            test_ck_shuffle_comp=self.scattering,
+            #                            do_scat_emis=self.scattering)
+            #
+            # mol_masses = {}
+            #
+            # for item in self.line_species:
+            #     if item[-8:] == '_all_iso':
+            #         mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+            #
+            #     else:
+            #         mol_masses[item] = Formula(item).isotope.massnumber
+            #
+            # lowres_radtrans.write_out_rebin(30.,
+            #                                 path='rebin_test',
+            #                                 species=self.line_species,
+            #                                 masses=mol_masses)
+
+            line_species_low_res = []
+            for item in self.line_species:
+                line_species_low_res.append(item+'_R_30')
+
+            lowres_radtrans = Radtrans(line_species=line_species_low_res,
+                                       rayleigh_species=['H2', 'He'],
+                                       cloud_species=self.cloud_species_full.copy(),
+                                       continuum_opacities=['H2-H2', 'H2-He'],
+                                       wlen_bords_micron=(0.5, 30.),
+                                       mode='c-k',
+                                       test_ck_shuffle_comp=self.scattering,
+                                       do_scat_emis=self.scattering)
+
         # Create the RT arrays
 
         if self.pressure_grid == 'standard':
@@ -697,6 +736,9 @@ class AtmosphericRetrieval:
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure)
 
+            if check_flux:
+                lowres_radtrans.setup_opa_structure(self.pressure)
+
         elif self.pressure_grid == 'smaller':
             print(f'Number of pressure levels used with the radiative transfer: {self.pressure[::3].size}')
 
@@ -704,6 +746,9 @@ class AtmosphericRetrieval:
 
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure[::3])
+
+            if check_flux:
+                lowres_radtrans.setup_opa_structure(self.pressure[::3])
 
         elif self.pressure_grid == 'clouds':
             if len(self.cloud_species) == 0:
@@ -718,6 +763,9 @@ class AtmosphericRetrieval:
 
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure[::24])
+
+            if check_flux:
+                lowres_radtrans.setup_opa_structure(self.pressure[::24])
 
         # Create the knot pressures
 
@@ -1426,68 +1474,71 @@ class AtmosphericRetrieval:
                     # radiative-convective boundary, and bottom of the atmosphere
 
                     # Pressure index at the radiative-convective boundary
-                    i_conv = np.argmax(conv_press < 1e-6*rt_object.press)
+                    # i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
 
-                    # Spectrum at the radiative-convective boundary
+                    n_test = 5
 
-                    flux_rcb, _ = feautrier_rad_trans(rt_object.border_freqs,
-                                                      rt_object.total_tau[:, :, 0, i_conv:],
-                                                      rt_object.temp[i_conv:],
-                                                      rt_object.mu,
-                                                      rt_object.w_gauss_mu,
-                                                      rt_object.w_gauss,
-                                                      rt_object.photon_destruction_prob[:, :, i_conv:],
-                                                      False,
-                                                      rt_object.reflectance,
-                                                      rt_object.emissivity,
-                                                      rt_object.stellar_intensity,
-                                                      rt_object.geometry,
-                                                      rt_object.mu_star)
+                    press_index = np.linspace(0, 58, n_test, dtype=int)
 
-                    # Spectrum at the bottom of the atmosphere
+                    flux_test = []
 
-                    flux_bottom, _ = feautrier_rad_trans(rt_object.border_freqs,
-                                                         rt_object.total_tau[:, :, 0, -2:],
-                                                         rt_object.temp[-2:],
-                                                         rt_object.mu,
-                                                         rt_object.w_gauss_mu,
-                                                         rt_object.w_gauss,
-                                                         rt_object.photon_destruction_prob[:, :, -2:],
-                                                         False,
-                                                         rt_object.reflectance,
-                                                         rt_object.emissivity,
-                                                         rt_object.stellar_intensity,
-                                                         rt_object.geometry,
-                                                         rt_object.mu_star)
+                    for item in press_index:
 
-                    # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
-                    flux_bottom *= 1e3*constants.LIGHT/wlen_micron**2.
-                    flux_rcb *= 1e3*constants.LIGHT/wlen_micron**2.
+                        if item == 0:
+                            wlen_lowres, flux_lowres, _ = retrieval_util.calc_spectrum_clouds(
+                                lowres_radtrans, self.pressure, temp, c_o_ratio, metallicity,
+                                p_quench, log_x_abund, log_x_base, cloud_dict, cube[cube_index['logg']],
+                                chemistry=chemistry, pressure_grid=self.pressure_grid, plotting=plotting,
+                                contribution=False, tau_cloud=tau_cloud)
 
-                    f_bol_top = simps(flux_lambda, wlen_micron)
-                    f_bol_rcb = simps(flux_rcb, wlen_micron)
-                    f_bol_bot = simps(flux_bottom, wlen_micron)
+                            if wlen_lowres is None and flux_lowres is None:
+                                return -np.inf
 
-                    test_flux_1 = math.isclose(f_bol_top, f_bol_rcb, rel_tol=1e0, abs_tol=0.)
-                    test_flux_2 = math.isclose(f_bol_top, f_bol_bot, rel_tol=1e0, abs_tol=0.)
-                    test_flux_3 = math.isclose(f_bol_rcb, f_bol_bot, rel_tol=1e0, abs_tol=0.)
+                        else:
+                            flux_lowres, _ = feautrier_rad_trans(lowres_radtrans.border_freqs,
+                                                                 lowres_radtrans.total_tau[:, :, 0, item:],
+                                                                 lowres_radtrans.temp[item:],
+                                                                 lowres_radtrans.mu,
+                                                                 lowres_radtrans.w_gauss_mu,
+                                                                 lowres_radtrans.w_gauss,
+                                                                 lowres_radtrans.photon_destruction_prob[:, :, item:],
+                                                                 False,
+                                                                 lowres_radtrans.reflectance,
+                                                                 lowres_radtrans.emissivity,
+                                                                 lowres_radtrans.stellar_intensity,
+                                                                 lowres_radtrans.geometry,
+                                                                 lowres_radtrans.mu_star)
 
-                    if not test_flux_1 or not test_flux_2 or not test_flux_3:
-                        # Remove the sample if the bolometric flux at the top, radiative-convective
-                        # boundary, and bottom of the atmosphere are not quasi-consiatent
-                        return -np.inf
+                        # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
+                        flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
 
-                    # plt.plot(wlen_micron, flux_lambda)
-                    # plt.plot(wlen_micron, flux_rcb)
-                    # plt.plot(wlen_micron, flux_bottom)
-                    # plt.savefig('spec.pdf')
-                    # plt.clf()
+                        flux_test.append(flux_lowres)
+
+                    flux_total = []
+                    for i in range(n_test):
+                        flux_total.append(simps(flux_test[i], wlen_lowres))
+
+                    for i in range(n_test):
+                        for j in range(n_test):
+                            test_bool = math.isclose(flux_total[i], flux_total[j], rel_tol=1e-1, abs_tol=0.)
+
+                            if not test_bool:
+                                # Remove the sample if the bolometric flux is not
+                                # conserved between two pressures
+                                return -np.inf
+
+                    for i in range(n_test):
+                        plt.plot(wlen_lowres, flux_test[i])
+                    plt.xscale('log')
+                    plt.yscale('log')
+                    plt.savefig('spec.pdf', bbox_inches='tight')
+                    plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
-                    # Remove the sample if the photospheric pressure from the P-T profile is more
-                    # than a factor 5 larger than the photospheric pressure that is calculated from
-                    # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
-                    # See Eq. 7 in GRAVITY Collaboration et al. (2020)
+                    Remove the sample if the photospheric pressure from the P-T profile is more
+                    than a factor 5 larger than the photospheric pressure that is calculated from
+                    the Rosseland mean opacity, using the non-gray opacities of the atmosphere
+                    See Eq. 7 in GRAVITY Collaboration et al. (2020)
                     return -np.inf
 
                 # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:

@@ -495,7 +495,8 @@ def create_abund_dict(abund_in: dict,
     if indices is not None:
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_all_iso', '')
+                item_replace = item.replace('_R_30', '')
+                item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
@@ -527,7 +528,8 @@ def create_abund_dict(abund_in: dict,
     elif pressure_grid == 'smaller':
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_all_iso', '')
+                item_replace = item.replace('_R_30', '')
+                item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
@@ -559,7 +561,8 @@ def create_abund_dict(abund_in: dict,
     else:
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_all_iso', '')
+                item_replace = item.replace('_R_30', '')
+                item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
                 item_replace = item_replace.replace('_burrows', '')
@@ -896,7 +899,8 @@ def calc_spectrum_clouds(rt_object,
 
     # Optionally plot the cloud properties
 
-    if plotting and Kzz_use is not None:
+    if plotting and Kzz_use is not None and \
+            (rt_object.wlen_bords_micron[0] != 0.5 and rt_object.wlen_bords_micron[1] != 30.):
         if 'CO_all_iso' in abundances:
             plt.plot(abundances['CO_all_iso'], pressure, label='CO')
         if 'CH4' in abundances:
