@@ -482,6 +482,56 @@ class AtmosphericRetrieval:
             print(f'   - {item}')
 
     @typechecked
+    def rebin_opacities(self,
+                        spec_res: float,
+                        out_folder: str = 'rebin_out'):
+        """
+        Function for downsampling the ``c-k`` opacities. The downsampled opacities should be stored
+        in the `opacities/lines/corr_k/` folder of the ``pRT_input_data_path``.
+
+        Parameters
+        ----------
+        spec_res : float
+            Spectral resolution to which the opacities are downsampled.
+        out_folder : str
+            Path of the output folder where the opacities will be stored.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print('Importing petitRADTRANS...', end='', flush=True)
+        from petitRADTRANS.radtrans import Radtrans
+        print(' [DONE]')
+
+        # https://petitradtrans.readthedocs.io/en/latest/content/notebooks/Rebinning_opacities.html
+
+        rt_object = Radtrans(line_species=self.line_species,
+                             rayleigh_species=['H2', 'He'],
+                             cloud_species=self.cloud_species_full.copy(),
+                             continuum_opacities=['H2-H2', 'H2-He'],
+                             wlen_bords_micron=(0.1, 251.),
+                             mode='c-k',
+                             test_ck_shuffle_comp=self.scattering,
+                             do_scat_emis=self.scattering)
+
+        mol_masses = {}
+
+        for item in self.line_species:
+            if item[-8:] == '_all_iso':
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            else:
+                mol_masses[item] = Formula(item).isotope.massnumber
+
+        rt_object.write_out_rebin(spec_res,
+                                  path=out_folder,
+                                  species=self.line_species,
+                                  masses=mol_masses)
+
+    @typechecked
     def run_multinest(self,
                       bounds: dict,
                       chemistry: str = 'equilibrium',
@@ -542,11 +592,6 @@ class AtmosphericRetrieval:
             Resume from a previous run.
         plotting : bool
             Plot sample results for testing.
-        check_flux : bool
-            Check if the bolometric flux is conserved between the top, radiative-convective
-            boundary, and bottom of the atmosphere. This makes the retrieval much slower but
-            may ensure a quasi-self-consistent P-T structure. This parameter has not been
-            properly implemented yet.
         check_isothermal : bool
             Check if there is an isothermal region below 1 bar. If so, discard the sample. This
             parameter has not been properly tested. It is recommended to use the ``check_flux``
@@ -556,6 +601,12 @@ class AtmosphericRetrieval:
             temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
             `pt_profile='monotonic'`. The argument should be given as log10(P/bar) with the default
             value set to 0.3 dex.
+        check_flux : bool
+            Check if the bolometric flux is conserved between the top, bottom, and 3 intermediate
+            pressures in the atmosphere. This makes the retrieval much slower but may ensure a
+            quasi-self-consistent P-T structure. To use this parameter, the opacities should be
+            recreated with :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
+            at $R = 30$ (i.e. ``spec_res=30``).
 
         Returns
         -------
@@ -689,29 +740,6 @@ class AtmosphericRetrieval:
                                           do_scat_emis=self.scattering)
 
         if check_flux:
-            # # https://petitradtrans.readthedocs.io/en/latest/content/notebooks/Rebinning_opacities.html
-            # lowres_radtrans = Radtrans(line_species=self.line_species,
-            #                            rayleigh_species=['H2', 'He'],
-            #                            cloud_species=self.cloud_species_full.copy(),
-            #                            continuum_opacities=['H2-H2', 'H2-He'],
-            #                            wlen_bords_micron=(0.1, 251.),
-            #                            mode='c-k',
-            #                            test_ck_shuffle_comp=self.scattering,
-            #                            do_scat_emis=self.scattering)
-            #
-            # mol_masses = {}
-            #
-            # for item in self.line_species:
-            #     if item[-8:] == '_all_iso':
-            #         mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
-            #
-            #     else:
-            #         mol_masses[item] = Formula(item).isotope.massnumber
-            #
-            # lowres_radtrans.write_out_rebin(30.,
-            #                                 path='rebin_test',
-            #                                 species=self.line_species,
-            #                                 masses=mol_masses)
 
             line_species_low_res = []
             for item in self.line_species:
@@ -1470,8 +1498,8 @@ class AtmosphericRetrieval:
                     return -np.inf
 
                 if check_flux:
-                    # Check if the bolometric flux is conserved between the top,
-                    # radiative-convective boundary, and bottom of the atmosphere
+                    # Check if the bolometric flux is conserved at the top, bottom,
+                    # and three intermediate pressures
 
                     # Pressure index at the radiative-convective boundary
                     # i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
@@ -1527,7 +1555,8 @@ class AtmosphericRetrieval:
 
                     for i in range(n_test):
                         for j in range(n_test):
-                            test_bool = math.isclose(flux_total[i], flux_total[j], rel_tol=1e-1, abs_tol=0.)
+                            test_bool = math.isclose(flux_total[i], flux_total[j],
+                                                     rel_tol=1e-1, abs_tol=0.)
 
                             if not test_bool:
                                 # Remove the sample if the bolometric flux is not
