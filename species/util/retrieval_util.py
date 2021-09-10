@@ -1034,6 +1034,7 @@ def calc_spectrum_clouds(rt_object,
         plt.plot(wavel, scat_opa[:, 0], label='Scattering opacity')
         plt.xlabel(r'Wavelength ($\mu$m)')
         plt.ylabel('Opacity at smallest pressure')
+        plt.yscale('log')
         plt.legend(loc='best')
         plt.savefig('cloud_opacity.pdf', bbox_inches='tight')
         plt.clf()

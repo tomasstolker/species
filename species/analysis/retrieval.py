@@ -544,7 +544,7 @@ class AtmosphericRetrieval:
                       plotting: bool = False,
                       check_isothermal: bool = False,
                       pt_smooth: float = 0.3,
-                      check_flux: bool = False) -> None:
+                      check_flux: Optional[float] = None) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -601,12 +601,12 @@ class AtmosphericRetrieval:
             temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
             `pt_profile='monotonic'`. The argument should be given as log10(P/bar) with the default
             value set to 0.3 dex.
-        check_flux : bool
-            Check if the bolometric flux is conserved between the top, bottom, and 3 intermediate
-            pressures in the atmosphere. This makes the retrieval much slower but may ensure a
-            quasi-self-consistent P-T structure. To use this parameter, the opacities should be
-            recreated with :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
-            at $R = 30$ (i.e. ``spec_res=30``).
+        check_flux : float, None
+            Relative tolerance that is used for ensuring a consistent bolometric flux between the
+            top, bottom, and 3 intermediate pressures in the atmosphere. This makes the retrieval
+            much slower. To use this parameter, the opacities should be recreated with
+            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 30$
+            (i.e. ``spec_res=30``).
 
         Returns
         -------
@@ -739,7 +739,7 @@ class AtmosphericRetrieval:
                                           test_ck_shuffle_comp=self.scattering,
                                           do_scat_emis=self.scattering)
 
-        if check_flux:
+        if check_flux is not None:
 
             line_species_low_res = []
             for item in self.line_species:
@@ -764,7 +764,7 @@ class AtmosphericRetrieval:
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure)
 
-            if check_flux:
+            if check_flux is not None:
                 lowres_radtrans.setup_opa_structure(self.pressure)
 
         elif self.pressure_grid == 'smaller':
@@ -775,7 +775,7 @@ class AtmosphericRetrieval:
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure[::3])
 
-            if check_flux:
+            if check_flux is not None:
                 lowres_radtrans.setup_opa_structure(self.pressure[::3])
 
         elif self.pressure_grid == 'clouds':
@@ -792,7 +792,7 @@ class AtmosphericRetrieval:
             for item in lbl_radtrans.values():
                 item.setup_opa_structure(self.pressure[::24])
 
-            if check_flux:
+            if check_flux is not None:
                 lowres_radtrans.setup_opa_structure(self.pressure[::24])
 
         # Create the knot pressures
@@ -1497,7 +1497,7 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                if check_flux:
+                if check_flux is not None:
                     # Check if the bolometric flux is conserved at the top, bottom,
                     # and three intermediate pressures
 
@@ -1506,11 +1506,12 @@ class AtmosphericRetrieval:
 
                     n_test = 5
 
-                    press_index = np.linspace(0, 58, n_test, dtype=int)
+                    press_index = np.linspace(0, lowres_radtrans.press.shape[0]-1, n_test, dtype=int)
 
-                    flux_test = []
+                    spec_test = []
+                    bol_flux = []
 
-                    for item in press_index:
+                    for i, item in enumerate(press_index):
 
                         if item == 0:
                             wlen_lowres, flux_lowres, _ = retrieval_util.calc_spectrum_clouds(
@@ -1540,28 +1541,24 @@ class AtmosphericRetrieval:
                         # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                         flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
 
-                        flux_test.append(flux_lowres)
+                        spec_test.append(flux_lowres)
+                        bol_flux.append(simps(flux_lowres, wlen_lowres))
 
-                    for i in range(n_test):
-                        plt.plot(wlen_lowres, flux_test[i])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    plt.savefig('spec.pdf', bbox_inches='tight')
-                    plt.clf()
-
-                    flux_total = []
-                    for i in range(n_test):
-                        flux_total.append(simps(flux_test[i], wlen_lowres))
-
-                    for i in range(n_test):
-                        for j in range(n_test):
-                            test_bool = math.isclose(flux_total[i], flux_total[j],
-                                                     rel_tol=1e-1, abs_tol=0.)
+                        for j in range(i):
+                            test_bool = math.isclose(bol_flux[i], bol_flux[j],
+                                                     rel_tol=check_flux, abs_tol=0.)
 
                             if not test_bool:
                                 # Remove the sample if the bolometric flux is not
                                 # conserved between two pressures
                                 return -np.inf
+
+                    for i in range(n_test):
+                        plt.plot(wlen_lowres, spec_test[i])
+                    plt.xscale('log')
+                    plt.yscale('log')
+                    plt.savefig('spec.pdf', bbox_inches='tight')
+                    plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
                     # Remove the sample if the photospheric pressure from the P-T profile is more
