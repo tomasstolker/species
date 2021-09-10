@@ -1554,8 +1554,10 @@ class AtmosphericRetrieval:
                                 return -np.inf
 
                     if plotting:
-                        for i in range(n_test):
-                            plt.plot(wlen_lowres, spec_test[i])
+                        for item in spec_test:
+                            plt.plot(wlen_lowres, item)
+                        plt.xlabel(r'Wavelength ($\mu$m)')
+                        plt.ylabel(r'Flux (W m$^{-2}$ $\mu$m$^{-1}$)')
                         plt.xscale('log')
                         plt.yscale('log')
                         plt.savefig('spec.pdf', bbox_inches='tight')
