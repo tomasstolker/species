@@ -1553,12 +1553,13 @@ class AtmosphericRetrieval:
                                 # conserved between two pressures
                                 return -np.inf
 
-                    for i in range(n_test):
-                        plt.plot(wlen_lowres, spec_test[i])
-                    plt.xscale('log')
-                    plt.yscale('log')
-                    plt.savefig('spec.pdf', bbox_inches='tight')
-                    plt.clf()
+                    if plotting:
+                        for i in range(n_test):
+                            plt.plot(wlen_lowres, spec_test[i])
+                        plt.xscale('log')
+                        plt.yscale('log')
+                        plt.savefig('spec.pdf', bbox_inches='tight')
+                        plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:
                     # Remove the sample if the photospheric pressure from the P-T profile is more
