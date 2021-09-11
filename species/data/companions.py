@@ -17,7 +17,8 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
                        Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]]]]]:
     """
     Function for extracting a dictionary with the distances (pc) and apparent magnitudes of
-    directly imaged planets and brown dwarfs.
+    directly imaged planets and brown dwarfs. These data can be added to the database
+    with :meth:`~species.data.database.Database.add_companion`.
 
     Returns
     -------
@@ -507,7 +508,8 @@ def get_data() -> Dict[str, Dict[str, Union[bool, Tuple[float, float],
 @typechecked
 def get_spec_data() -> Dict[str, Dict[str, Tuple[str, Optional[str], float, str]]]:
     """
-    Function for extracting a dictionary with the spectra of directly imaged planets.
+    Function for extracting a dictionary with the spectra of directly imaged planets. These data
+    can be added to the database with :meth:`~species.data.database.Database.add_companion`.
 
     Returns
     -------
