@@ -1502,7 +1502,10 @@ class AtmosphericRetrieval:
                     # Check if the bolometric flux is conserved in the radiative region
 
                     # Pressure index at the radiative-convective boundary
-                    i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
+                    if conv_press is None:
+                        i_conv = lowres_radtrans.press.shape[0]
+                    else:
+                        i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
 
                     # Calculate low-resolution spectrum (R = 10) to initiate the attributes
 
