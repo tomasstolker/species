@@ -5,9 +5,9 @@ Module with a frontend for atmospheric retrieval with the radiative transfer cod
 
 import os
 import json
-import math
 import time
 
+from math import isclose
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -605,7 +605,7 @@ class AtmosphericRetrieval:
             Relative tolerance that is used for ensuring a consistent bolometric flux between the
             top, bottom, and 3 intermediate pressures in the atmosphere. This makes the retrieval
             much slower. To use this parameter, the opacities should be recreated with
-            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 30$
+            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 10$
             (i.e. ``spec_res=30``).
 
         Returns
@@ -660,7 +660,8 @@ class AtmosphericRetrieval:
 
         print('Importing petitRADTRANS...', end='', flush=True)
         from petitRADTRANS.radtrans import Radtrans
-        from petitRADTRANS.fort_spec import feautrier_rad_trans
+        # from petitRADTRANS.fort_spec import feautrier_rad_trans
+        from petitRADTRANS.fort_spec import feautrier_pt_it
         print(' [DONE]')
 
         print('Importing chemistry module...', end='', flush=True)
@@ -743,7 +744,7 @@ class AtmosphericRetrieval:
 
             line_species_low_res = []
             for item in self.line_species:
-                line_species_low_res.append(item+'_R_30')
+                line_species_low_res.append(item+'_R_10')
 
             lowres_radtrans = Radtrans(line_species=line_species_low_res,
                                        rayleigh_species=['H2', 'He'],
@@ -1498,69 +1499,61 @@ class AtmosphericRetrieval:
                     return -np.inf
 
                 if check_flux is not None:
-                    # Check if the bolometric flux is conserved at the top, bottom,
-                    # and three intermediate pressures
+                    # Check if the bolometric flux is conserved in the radiative region
 
                     # Pressure index at the radiative-convective boundary
-                    # i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
+                    i_conv = np.argmax(conv_press < 1e-6*lowres_radtrans.press)
 
-                    n_test = 5
+                    # Calculate low-resolution spectrum (R = 10) to initiate the attributes
 
-                    press_index = np.linspace(0, lowres_radtrans.press.shape[0]-1, n_test, dtype=int)
+                    wlen_lowres, flux_lowres, _ = retrieval_util.calc_spectrum_clouds(
+                        lowres_radtrans, self.pressure, temp, c_o_ratio, metallicity,
+                        p_quench, log_x_abund, log_x_base, cloud_dict, cube[cube_index['logg']],
+                        chemistry=chemistry, pressure_grid=self.pressure_grid, plotting=plotting,
+                        contribution=False, tau_cloud=tau_cloud)
 
-                    spec_test = []
-                    bol_flux = []
+                    if wlen_lowres is None and flux_lowres is None:
+                        return -np.inf
 
-                    for i, item in enumerate(press_index):
+                    # Calculate again a low-resolution spectrum (R = 10) but now
+                    # with the new Feautrier function from petitRADTRANS
 
-                        if item == 0:
-                            wlen_lowres, flux_lowres, _ = retrieval_util.calc_spectrum_clouds(
-                                lowres_radtrans, self.pressure, temp, c_o_ratio, metallicity,
-                                p_quench, log_x_abund, log_x_base, cloud_dict, cube[cube_index['logg']],
-                                chemistry=chemistry, pressure_grid=self.pressure_grid, plotting=plotting,
-                                contribution=False, tau_cloud=tau_cloud)
+                    flux_lowres, __, _, h_bol, _, _, _, _, __, __ = \
+                        feautrier_pt_it(lowres_radtrans.border_freqs,
+                                        lowres_radtrans.total_tau[:, :, 0, :],
+                                        lowres_radtrans.temp,
+                                        lowres_radtrans.mu,
+                                        lowres_radtrans.w_gauss_mu,
+                                        lowres_radtrans.w_gauss,
+                                        lowres_radtrans.photon_destruction_prob,
+                                        False,
+                                        lowres_radtrans.reflectance,
+                                        lowres_radtrans.emissivity,
+                                        np.zeros_like(lowres_radtrans.freq),
+                                        lowres_radtrans.geometry,
+                                        lowres_radtrans.mu_star,
+                                        True,
+                                        lowres_radtrans.do_scat_emis,
+                                        lowres_radtrans.line_struc_kappas[:, :, 0, :],
+                                        lowres_radtrans.continuum_opa_scat_emis)
 
-                            if wlen_lowres is None and flux_lowres is None:
-                                return -np.inf
+                    # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
+                    flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
 
-                        else:
-                            flux_lowres, _ = feautrier_rad_trans(lowres_radtrans.border_freqs,
-                                                                 lowres_radtrans.total_tau[:, :, 0, item:],
-                                                                 lowres_radtrans.temp[item:],
-                                                                 lowres_radtrans.mu,
-                                                                 lowres_radtrans.w_gauss_mu,
-                                                                 lowres_radtrans.w_gauss,
-                                                                 lowres_radtrans.photon_destruction_prob[:, :, item:],
-                                                                 False,
-                                                                 lowres_radtrans.reflectance,
-                                                                 lowres_radtrans.emissivity,
-                                                                 lowres_radtrans.stellar_intensity,
-                                                                 lowres_radtrans.geometry,
-                                                                 lowres_radtrans.mu_star)
-
-                        # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
-                        flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
-
-                        spec_test.append(flux_lowres)
-                        bol_flux.append(simps(flux_lowres, wlen_lowres))
-
-                        for j in range(i):
-                            test_bool = math.isclose(bol_flux[i], bol_flux[j],
-                                                     rel_tol=check_flux, abs_tol=0.)
-
-                            if not test_bool:
+                    for i in range(i_conv):
+                        for j in range(i_conv):
+                            if not isclose(h_bol[i], h_bol[j], rel_tol=check_flux, abs_tol=0.):
                                 # Remove the sample if the bolometric flux is not
                                 # conserved between two pressures
                                 return -np.inf
 
                     if plotting:
-                        for item in spec_test:
-                            plt.plot(wlen_lowres, item)
+                        plt.plot(wlen_lowres, flux_lowres)
                         plt.xlabel(r'Wavelength ($\mu$m)')
                         plt.ylabel(r'Flux (W m$^{-2}$ $\mu$m$^{-1}$)')
                         plt.xscale('log')
                         plt.yscale('log')
-                        plt.savefig('spec.pdf', bbox_inches='tight')
+                        plt.savefig('lowres_spec.pdf', bbox_inches='tight')
                         plt.clf()
 
                 if phot_press/rt_object.pphot > 5. or phot_press/rt_object.pphot < 0.2:

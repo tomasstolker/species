@@ -495,7 +495,8 @@ def create_abund_dict(abund_in: dict,
     if indices is not None:
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_R_30', '')
+                item_replace = item.replace('_R_10', '')
+                item_replace = item_replace.replace('_R_30', '')
                 item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
@@ -528,7 +529,8 @@ def create_abund_dict(abund_in: dict,
     elif pressure_grid == 'smaller':
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_R_30', '')
+                item_replace = item.replace('_R_10', '')
+                item_replace = item_replace.replace('_R_30', '')
                 item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
@@ -561,7 +563,8 @@ def create_abund_dict(abund_in: dict,
     else:
         for item in line_species:
             if chemistry == 'equilibrium':
-                item_replace = item.replace('_R_30', '')
+                item_replace = item.replace('_R_10', '')
+                item_replace = item_replace.replace('_R_30', '')
                 item_replace = item_replace.replace('_all_iso', '')
                 item_replace = item_replace.replace('_main_iso', '')
                 item_replace = item_replace.replace('_lor_cut', '')
