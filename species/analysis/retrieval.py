@@ -1515,6 +1515,8 @@ class AtmosphericRetrieval:
                     if wlen_lowres is None and flux_lowres is None:
                         return -np.inf
 
+                    f_bol = simps(flux_lowres, wlen_lowres)
+
                     # Calculate again a low-resolution spectrum (R = 10) but now
                     # with the new Feautrier function from petitRADTRANS
 
@@ -1537,15 +1539,17 @@ class AtmosphericRetrieval:
                                         lowres_radtrans.line_struc_kappas[:, :, 0, :],
                                         lowres_radtrans.continuum_opa_scat_emis)
 
+                    # What are the units of H_bol?
+                    h_bol *= -1e-3
+
                     # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                     flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
 
                     for i in range(i_conv):
-                        for j in range(i_conv):
-                            if not isclose(h_bol[i], h_bol[j], rel_tol=check_flux, abs_tol=0.):
-                                # Remove the sample if the bolometric flux is not
-                                # conserved between two pressures
-                                return -np.inf
+                        if not isclose(f_bol, 4.*np.pi*h_bol[i], rel_tol=check_flux, abs_tol=0.):
+                            # Remove the sample if the bolometric flux of the output spectrum
+                            # is different from the bolometric flux deeper in the atmosphere
+                            return -np.inf
 
                     if plotting:
                         plt.plot(wlen_lowres, flux_lowres)
