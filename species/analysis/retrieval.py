@@ -661,7 +661,7 @@ class AtmosphericRetrieval:
         print('Importing petitRADTRANS...', end='', flush=True)
         from petitRADTRANS.radtrans import Radtrans
         # from petitRADTRANS.fort_spec import feautrier_rad_trans
-        from petitRADTRANS.fort_spec import feautrier_pt_it
+        # from petitRADTRANS.fort_spec import feautrier_pt_it
         print(' [DONE]')
 
         print('Importing chemistry module...', end='', flush=True)
@@ -1523,27 +1523,26 @@ class AtmosphericRetrieval:
                     # Calculate again a low-resolution spectrum (R = 10) but now
                     # with the new Feautrier function from petitRADTRANS
 
-                    flux_lowres, __, _, h_bol, _, _, _, _, __, __ = \
-                        feautrier_pt_it(lowres_radtrans.border_freqs,
-                                        lowres_radtrans.total_tau[:, :, 0, :],
-                                        lowres_radtrans.temp,
-                                        lowres_radtrans.mu,
-                                        lowres_radtrans.w_gauss_mu,
-                                        lowres_radtrans.w_gauss,
-                                        lowres_radtrans.photon_destruction_prob,
-                                        False,
-                                        lowres_radtrans.reflectance,
-                                        lowres_radtrans.emissivity,
-                                        np.zeros_like(lowres_radtrans.freq),
-                                        lowres_radtrans.geometry,
-                                        lowres_radtrans.mu_star,
-                                        True,
-                                        lowres_radtrans.do_scat_emis,
-                                        lowres_radtrans.line_struc_kappas[:, :, 0, :],
-                                        lowres_radtrans.continuum_opa_scat_emis)
+                    # flux_lowres, __, _, h_bol, _, _, _, _, __, __ = \
+                    #     feautrier_pt_it(lowres_radtrans.border_freqs,
+                    #                     lowres_radtrans.total_tau[:, :, 0, :],
+                    #                     lowres_radtrans.temp,
+                    #                     lowres_radtrans.mu,
+                    #                     lowres_radtrans.w_gauss_mu,
+                    #                     lowres_radtrans.w_gauss,
+                    #                     lowres_radtrans.photon_destruction_prob,
+                    #                     False,
+                    #                     lowres_radtrans.reflectance,
+                    #                     lowres_radtrans.emissivity,
+                    #                     np.zeros_like(lowres_radtrans.freq),
+                    #                     lowres_radtrans.geometry,
+                    #                     lowres_radtrans.mu_star,
+                    #                     True,
+                    #                     lowres_radtrans.do_scat_emis,
+                    #                     lowres_radtrans.line_struc_kappas[:, :, 0, :],
+                    #                     lowres_radtrans.continuum_opa_scat_emis)
 
-                    # What are the units of H_bol?
-                    h_bol *= -1e-3
+                    h_bol = -1e-3*lowres_radtrans.h_bol
 
                     # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                     flux_lowres *= 1e3*constants.LIGHT/wlen_lowres**2.
