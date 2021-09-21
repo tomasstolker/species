@@ -30,7 +30,7 @@ def plot_pt_profile(tag: str,
                     offset: Optional[Tuple[float, float]] = None,
                     output: str = 'pt_profile.pdf',
                     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
-                    extra_axis: str = 'photosphere') -> None:
+                    extra_axis: Optional[str] = None) -> None:
     """
     Function to plot the posterior distribution.
 
@@ -52,7 +52,8 @@ def plot_pt_profile(tag: str,
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     extra_axis : str, None
-        The quantify that is plotted at the top axis ('photosphere', 'grains', None).
+        The quantify that is plotted at the top axis ('photosphere', 'grains'). The top axis is not
+        used if the argument is set to ``None``.
 
     Returns
     -------
@@ -407,7 +408,8 @@ def plot_pt_profile(tag: str,
                 ax2.plot(radtrans.rt_object.r_g[:, cloud_index]*1e4, pressure[::3],
                          lw=0.8, color=cloud_color[item], label=label)
 
-        ax2.legend(loc='upper right', frameon=False, fontsize=12.)
+        if extra_axis is not None:
+            ax2.legend(loc='upper right', frameon=False, fontsize=12.)
 
     else:
         if extra_axis is not None:
