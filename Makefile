@@ -43,6 +43,7 @@ clean:
 	rm -rf .pytest_cache/
 	rm -rf docs/_build/
 	rm -rf docs/tutorials/data/
+	rm -rf docs/tutorials/multinest/
 	rm -rf docs/tutorials/ultranest/
 	rm -rf docs/tutorials/.ipynb_checkpoints
 	rm -f docs/tutorials/species_config.ini
