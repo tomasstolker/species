@@ -33,7 +33,7 @@ coverage:
 	coverage report -m
 
 test:
-	pytest --cov=species/
+	pytest --cov=species/ --cov-report=xml
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +

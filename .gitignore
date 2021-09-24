@@ -13,7 +13,7 @@ build/
 dist/
 species.egg-info/
 .coverage
+coverage.xml
 .pytest_cache/
 htmlcov/
-coverage.xml
 .tox/

@@ -15,8 +15,8 @@
 .. image:: https://img.shields.io/readthedocs/species
    :target: http://species.readthedocs.io
 
-.. image:: https://img.shields.io/coveralls/github/tomasstolker/species
-   :target: https://coveralls.io/github/tomasstolker/species
+.. image:: https://codecov.io/gh/tomasstolker/species/branch/main/graph/badge.svg?token=LSSCPMJ5JH
+   :target: https://codecov.io/gh/tomasstolker/species
 
 .. image:: https://img.shields.io/codefactor/grade/github/tomasstolker/species
    :target: https://www.codefactor.io/repository/github/tomasstolker/species
