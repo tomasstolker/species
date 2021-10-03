@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 1%
+        if_not_found: success
+    patch: no
+
+comment: off
+
+ignore:
+  - tests/*
+  - setup.py
