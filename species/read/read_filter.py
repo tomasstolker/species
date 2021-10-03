@@ -23,8 +23,7 @@ class ReadFilter:
     """
 
     @typechecked
-    def __init__(self,
-                 filter_name: str) -> None:
+    def __init__(self, filter_name: str) -> None:
         """
         Parameters
         ----------
@@ -40,20 +39,20 @@ class ReadFilter:
 
         self.filter_name = filter_name
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
         config.read_file(open(config_file))
 
-        self.database = config['species']['database']
+        self.database = config["species"]["database"]
 
-        h5_file = h5py.File(self.database, 'r')
+        h5_file = h5py.File(self.database, "r")
 
-        if 'filters' not in h5_file or self.filter_name not in h5_file['filters']:
+        if "filters" not in h5_file or self.filter_name not in h5_file["filters"]:
             h5_file.close()
             species_db = database.Database()
             species_db.add_filter(self.filter_name)
-            h5_file = h5py.File(self.database, 'r')
+            h5_file = h5py.File(self.database, "r")
 
         h5_file.close()
 
@@ -68,9 +67,9 @@ class ReadFilter:
             Array with the wavelengths and filter transmission.
         """
 
-        h5_file = h5py.File(self.database, 'r')
+        h5_file = h5py.File(self.database, "r")
 
-        data = np.asarray(h5_file[f'filters/{self.filter_name}'])
+        data = np.asarray(h5_file[f"filters/{self.filter_name}"])
 
         if data.shape[0] == 2 and data.shape[1] > data.shape[0]:
             # Required for backward compatibility
@@ -93,15 +92,18 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return interp1d(data[:, 0],
-                        data[:, 1],
-                        kind='linear',
-                        bounds_error=False,
-                        fill_value=float('nan'))
+        return interp1d(
+            data[:, 0],
+            data[:, 1],
+            kind="linear",
+            bounds_error=False,
+            fill_value=float("nan"),
+        )
 
     @typechecked
-    def wavelength_range(self) -> Tuple[Union[np.float32, np.float64],
-                                        Union[np.float32, np.float64]]:
+    def wavelength_range(
+        self,
+    ) -> Tuple[Union[np.float32, np.float64], Union[np.float32, np.float64]]:
         """
         Extract the wavelength range of the filter profile.
 
@@ -130,7 +132,9 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return np.trapz(data[:, 0]*data[:, 1], data[:, 0]) / np.trapz(data[:, 1], data[:, 0])
+        return np.trapz(data[:, 0] * data[:, 1], data[:, 0]) / np.trapz(
+            data[:, 1], data[:, 0]
+        )
 
     @typechecked
     def filter_fwhm(self) -> float:
@@ -145,13 +149,15 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        spline = InterpolatedUnivariateSpline(data[:, 0], data[:, 1] - np.max(data[:, 1])/2.)
+        spline = InterpolatedUnivariateSpline(
+            data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
+        )
         root = spline.roots()
 
         diff = root - self.mean_wavelength()
 
-        root1 = np.amax(diff[diff < 0.])
-        root2 = np.amin(diff[diff > 0.])
+        root1 = np.amax(diff[diff < 0.0])
+        root2 = np.amin(diff[diff > 0.0])
 
         return root2 - root1
 
@@ -183,17 +189,19 @@ class ReadFilter:
             Detector type ('energy' or 'photon').
         """
 
-        with h5py.File(self.database, 'r') as h5_file:
-            dset = h5_file[f'filters/{self.filter_name}']
+        with h5py.File(self.database, "r") as h5_file:
+            dset = h5_file[f"filters/{self.filter_name}"]
 
-            if 'det_type' in dset.attrs:
-                det_type = dset.attrs['det_type']
+            if "det_type" in dset.attrs:
+                det_type = dset.attrs["det_type"]
 
             else:
-                warnings.warn(f'Detector type not found for {self.filter_name}. The database '
-                              f'was probably created before the detector type was introduced '
-                              f'in species (v0.3.1). Assuming an energy-counting detector.')
+                warnings.warn(
+                    f"Detector type not found for {self.filter_name}. The database "
+                    f"was probably created before the detector type was introduced "
+                    f"in species (v0.3.1). Assuming an energy-counting detector."
+                )
 
-                det_type = 'energy'
+                det_type = "energy"
 
         return det_type

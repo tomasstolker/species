@@ -12,8 +12,7 @@ import pandas as pd
 from species.util import data_util
 
 
-def add_leggett(input_path,
-                database):
+def add_leggett(input_path, database):
     """
     Function for adding the Database of Ultracool Parallaxes to the database.
 
@@ -30,83 +29,83 @@ def add_leggett(input_path,
         None
     """
 
-    data_file1 = os.path.join(input_path, '2010_phot.xls')
-    url1 = 'http://staff.gemini.edu/~sleggett/2010_phot.xls'
+    data_file1 = os.path.join(input_path, "2010_phot.xls")
+    url1 = "http://staff.gemini.edu/~sleggett/2010_phot.xls"
 
-    data_file2 = os.path.join(input_path, 'datafile8.txt')
-    url2 = 'http://staff.gemini.edu/~sleggett/datafile8.txt'
+    data_file2 = os.path.join(input_path, "datafile8.txt")
+    url2 = "http://staff.gemini.edu/~sleggett/datafile8.txt"
 
     if not os.path.isfile(data_file1):
-        print('Downloading Leggett L and T Dwarf Data (88 kB)...', end='', flush=True)
+        print("Downloading Leggett L and T Dwarf Data (88 kB)...", end="", flush=True)
         urllib.request.urlretrieve(url1, data_file1)
-        print(' [DONE]')
+        print(" [DONE]")
 
     if not os.path.isfile(data_file2):
-        print('Downloading Leggett T6+ and Y Dwarf Data (44 kB)...', end='', flush=True)
+        print("Downloading Leggett T6+ and Y Dwarf Data (44 kB)...", end="", flush=True)
         urllib.request.urlretrieve(url2, data_file2)
-        print(' [DONE]')
+        print(" [DONE]")
 
-    print('Adding Leggett L and T Dwarf Data...', end='', flush=True)
+    print("Adding Leggett L and T Dwarf Data...", end="", flush=True)
 
-    group = 'photometry/leggett'
+    group = "photometry/leggett"
 
     database.create_group(group)
 
     dataframe = pd.pandas.read_excel(data_file1)
-    dataframe.columns = dataframe.columns.str.replace('\'', '')
+    dataframe.columns = dataframe.columns.str.replace("'", "")
 
-    modulus = np.asarray(dataframe['M-m'])  # M-m (mag)
-    modulus_error = np.asarray(dataframe['Mmerr'])  # M-m (mag)
+    modulus = np.asarray(dataframe["M-m"])  # M-m (mag)
+    modulus_error = np.asarray(dataframe["Mmerr"])  # M-m (mag)
 
-    distance = 10.**(-modulus/5.+1.)  # (pc)
-    distance_lower = distance - 10.**(-(modulus+modulus_error)/5.+1.)  # (pc)
-    distance_upper = 10.**(-(modulus-modulus_error)/5.+1.) - distance  # (pc)
-    distance_error = (distance_lower+distance_upper)/2.
+    distance = 10.0 ** (-modulus / 5.0 + 1.0)  # (pc)
+    distance_lower = distance - 10.0 ** (-(modulus + modulus_error) / 5.0 + 1.0)  # (pc)
+    distance_upper = 10.0 ** (-(modulus - modulus_error) / 5.0 + 1.0) - distance  # (pc)
+    distance_error = (distance_lower + distance_upper) / 2.0
 
-    name = np.asarray(dataframe['Name'])
+    name = np.asarray(dataframe["Name"])
 
     # Near-infrared spectral type
-    sptype = np.asarray(dataframe['Type'])
+    sptype = np.asarray(dataframe["Type"])
     sptype = data_util.update_sptype(sptype)
     sptype = np.asarray(sptype)
 
-    mag_y = np.asarray(dataframe['Y'])
-    mag_j = np.asarray(dataframe['J'])
-    mag_h = np.asarray(dataframe['H'])
-    mag_k = np.asarray(dataframe['K'])
-    mag_lp = np.asarray(dataframe['L'])
-    mag_mp = np.asarray(dataframe['M'])
-    mag_ch1 = np.asarray(dataframe['Ch1'])
-    mag_ch2 = np.asarray(dataframe['Ch2'])
-    mag_ch3 = np.asarray(dataframe['Ch3'])
-    mag_ch4 = np.asarray(dataframe['Ch4'])
+    mag_y = np.asarray(dataframe["Y"])
+    mag_j = np.asarray(dataframe["J"])
+    mag_h = np.asarray(dataframe["H"])
+    mag_k = np.asarray(dataframe["K"])
+    mag_lp = np.asarray(dataframe["L"])
+    mag_mp = np.asarray(dataframe["M"])
+    mag_ch1 = np.asarray(dataframe["Ch1"])
+    mag_ch2 = np.asarray(dataframe["Ch2"])
+    mag_ch3 = np.asarray(dataframe["Ch3"])
+    mag_ch4 = np.asarray(dataframe["Ch4"])
     mag_w1 = np.repeat(np.nan, np.size(name))
     mag_w2 = np.repeat(np.nan, np.size(name))
     mag_w3 = np.repeat(np.nan, np.size(name))
     mag_w4 = np.repeat(np.nan, np.size(name))
 
-    print(' [DONE]')
-    print('Adding Leggett T6+ and Y Dwarf Data...', end='', flush=True)
+    print(" [DONE]")
+    print("Adding Leggett T6+ and Y Dwarf Data...", end="", flush=True)
 
-    file_io = open(data_file2, 'r')
+    file_io = open(data_file2, "r")
     lines = file_io.readlines()[69:]
 
     for item in lines:
         name = np.append(name, item[0:16])
 
         spt_tmp = item[62:66]
-        if spt_tmp[0] == '2':
-            spt_tmp = 'T'+spt_tmp[1]
-        elif spt_tmp[0] == '3':
-            spt_tmp = 'Y'+spt_tmp[1]
+        if spt_tmp[0] == "2":
+            spt_tmp = "T" + spt_tmp[1]
+        elif spt_tmp[0] == "3":
+            spt_tmp = "Y" + spt_tmp[1]
 
         sptype = np.append(sptype, spt_tmp)
 
         modulus = float(item[67:73])  # M-m (mag)
-        if modulus == 999.:
+        if modulus == 999.0:
             modulus = np.nan
 
-        distance = np.append(distance, 10.**(-modulus/5.+1.))  # (pc)
+        distance = np.append(distance, 10.0 ** (-modulus / 5.0 + 1.0))  # (pc)
 
         mag = np.zeros(14)
 
@@ -126,7 +125,7 @@ def add_leggett(input_path,
         mag[13] = float(item[184:190])  # WISE W4
 
         for j, mag_item in enumerate(mag):
-            if mag_item == 999.:
+            if mag_item == 999.0:
                 mag[j] = np.nan
 
         mag_y = np.append(mag_y, mag[0])
@@ -148,34 +147,34 @@ def add_leggett(input_path,
 
     dtype = h5py.special_dtype(vlen=str)
 
-    dset = database.create_dataset(group+'/name', (np.size(name), ), dtype=dtype)
+    dset = database.create_dataset(group + "/name", (np.size(name),), dtype=dtype)
     dset[...] = name
 
-    dset = database.create_dataset(group+'/sptype', (np.size(sptype), ), dtype=dtype)
+    dset = database.create_dataset(group + "/sptype", (np.size(sptype),), dtype=dtype)
     dset[...] = sptype
 
-    flag = np.repeat('null', np.size(name))
+    flag = np.repeat("null", np.size(name))
 
-    dset = database.create_dataset(group+'/flag', (np.size(flag), ), dtype=dtype)
+    dset = database.create_dataset(group + "/flag", (np.size(flag),), dtype=dtype)
     dset[...] = flag
 
-    database.create_dataset(group+'/distance', data=distance)
-    database.create_dataset(group+'/distance_error', data=distance_error)
-    database.create_dataset(group+'/MKO/NSFCam.Y', data=mag_y)
-    database.create_dataset(group+'/MKO/NSFCam.J', data=mag_j)
-    database.create_dataset(group+'/MKO/NSFCam.H', data=mag_h)
-    database.create_dataset(group+'/MKO/NSFCam.K', data=mag_k)
-    database.create_dataset(group+'/MKO/NSFCam.Lp', data=mag_lp)
-    database.create_dataset(group+'/MKO/NSFCam.Mp', data=mag_mp)
-    database.create_dataset(group+'/Spitzer/IRAC.I1', data=mag_ch1)
-    database.create_dataset(group+'/Spitzer/IRAC.I2', data=mag_ch2)
-    database.create_dataset(group+'/Spitzer/IRAC.I3', data=mag_ch3)
-    database.create_dataset(group+'/Spitzer/IRAC.I4', data=mag_ch4)
-    database.create_dataset(group+'/WISE/WISE.W1', data=mag_w1)
-    database.create_dataset(group+'/WISE/WISE.W2', data=mag_w2)
-    database.create_dataset(group+'/WISE/WISE.W3', data=mag_w3)
-    database.create_dataset(group+'/WISE/WISE.W4', data=mag_w4)
+    database.create_dataset(group + "/distance", data=distance)
+    database.create_dataset(group + "/distance_error", data=distance_error)
+    database.create_dataset(group + "/MKO/NSFCam.Y", data=mag_y)
+    database.create_dataset(group + "/MKO/NSFCam.J", data=mag_j)
+    database.create_dataset(group + "/MKO/NSFCam.H", data=mag_h)
+    database.create_dataset(group + "/MKO/NSFCam.K", data=mag_k)
+    database.create_dataset(group + "/MKO/NSFCam.Lp", data=mag_lp)
+    database.create_dataset(group + "/MKO/NSFCam.Mp", data=mag_mp)
+    database.create_dataset(group + "/Spitzer/IRAC.I1", data=mag_ch1)
+    database.create_dataset(group + "/Spitzer/IRAC.I2", data=mag_ch2)
+    database.create_dataset(group + "/Spitzer/IRAC.I3", data=mag_ch3)
+    database.create_dataset(group + "/Spitzer/IRAC.I4", data=mag_ch4)
+    database.create_dataset(group + "/WISE/WISE.W1", data=mag_w1)
+    database.create_dataset(group + "/WISE/WISE.W2", data=mag_w2)
+    database.create_dataset(group + "/WISE/WISE.W3", data=mag_w3)
+    database.create_dataset(group + "/WISE/WISE.W4", data=mag_w4)
 
-    print(' [DONE]')
+    print(" [DONE]")
 
     database.close()

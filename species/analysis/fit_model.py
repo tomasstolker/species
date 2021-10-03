@@ -16,17 +16,21 @@ import spectres
 try:
     import ultranest
 except:
-    warnings.warn('UltraNest could not be imported. '
-                  'Perhaps because cython was not correctly compiled?')
+    warnings.warn(
+        "UltraNest could not be imported. "
+        "Perhaps because cython was not correctly compiled?"
+    )
 
 # Installation of MultiNest is not possible on readthedocs
 try:
     import pymultinest
 except:
-    warnings.warn('PyMultiNest could not be imported. '
-                  'Perhaps because MultiNest was not build '
-                  'and/or found at the LD_LIBRARY_PATH (Linux) '
-                  'or DYLD_LIBRARY_PATH (Mac)?')
+    warnings.warn(
+        "PyMultiNest could not be imported. "
+        "Perhaps because MultiNest was not build "
+        "and/or found at the LD_LIBRARY_PATH (Linux) "
+        "or DYLD_LIBRARY_PATH (Mac)?"
+    )
 
 from typeguard import typechecked
 
@@ -37,14 +41,16 @@ from species.read import read_model, read_object, read_planck, read_filter
 from species.util import read_util, dust_util
 
 
-warnings.filterwarnings('always', category=DeprecationWarning)
+warnings.filterwarnings("always", category=DeprecationWarning)
 
 
 @typechecked
-def lnprior(param: np.ndarray,
-            bounds: dict,
-            param_index: Dict[str, int],
-            prior: Optional[Dict[str, Tuple[float, float]]] = None):
+def lnprior(
+    param: np.ndarray,
+    bounds: dict,
+    param_index: Dict[str, int],
+    prior: Optional[Dict[str, Tuple[float, float]]] = None,
+):
     """
     Internal function for calculating the log prior.
 
@@ -74,7 +80,7 @@ def lnprior(param: np.ndarray,
     for key, value in bounds.items():
 
         if value[0] <= param[param_index[key]] <= value[1]:
-            ln_prior += 0.
+            ln_prior += 0.0
 
         else:
             ln_prior = -np.inf
@@ -82,31 +88,37 @@ def lnprior(param: np.ndarray,
 
     if prior is not None:
         for key, value in prior.items():
-            if key == 'mass':
-                mass = read_util.get_mass(param[param_index['logg']],
-                                          param[param_index['radius']])
+            if key == "mass":
+                mass = read_util.get_mass(
+                    param[param_index["logg"]], param[param_index["radius"]]
+                )
 
-                ln_prior += -0.5 * (mass - value[0])**2 / value[1]**2
+                ln_prior += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
 
             else:
-                ln_prior += -0.5 * (param[param_index[key]] - value[0])**2 / value[1]**2
+                ln_prior += (
+                    -0.5 * (param[param_index[key]] - value[0]) ** 2 / value[1] ** 2
+                )
 
     return ln_prior
 
 
 @typechecked
-def lnlike(param: np.ndarray,
-           bounds: dict,
-           param_index: Dict[str, int],
-           model: str,
-           objphot: List[Optional[np.ndarray]],
-           distance: Tuple[float, float],
-           spectrum: Optional[dict],
-           modelphot: Optional[Union[List[read_model.ReadModel],
-                                     List[photometry.SyntheticPhotometry]]],
-           modelspec: Optional[List[read_model.ReadModel]],
-           n_planck: int,
-           fit_corr: List[str]):
+def lnlike(
+    param: np.ndarray,
+    bounds: dict,
+    param_index: Dict[str, int],
+    model: str,
+    objphot: List[Optional[np.ndarray]],
+    distance: Tuple[float, float],
+    spectrum: Optional[dict],
+    modelphot: Optional[
+        Union[List[read_model.ReadModel], List[photometry.SyntheticPhotometry]]
+    ],
+    modelspec: Optional[List[read_model.ReadModel]],
+    n_planck: int,
+    fit_corr: List[str],
+):
     """
     Internal function for calculating the log likelihood.
 
@@ -158,50 +170,51 @@ def lnlike(param: np.ndarray,
     corr_amp = {}
 
     for item in bounds:
-        if item[:8] == 'scaling_' and item[8:] in spectrum:
+        if item[:8] == "scaling_" and item[8:] in spectrum:
             spec_scaling[item[8:]] = param[param_index[item]]
 
-        elif item[:6] == 'error_' and item[6:] in spectrum:
+        elif item[:6] == "error_" and item[6:] in spectrum:
             err_scaling[item[6:]] = param[param_index[item]]
 
-        elif item[:9] == 'corr_len_' and item[9:] in spectrum:
-            corr_len[item[9:]] = 10.**param[param_index[item]]  # (um)
+        elif item[:9] == "corr_len_" and item[9:] in spectrum:
+            corr_len[item[9:]] = 10.0 ** param[param_index[item]]  # (um)
 
-        elif item[:9] == 'corr_amp_' and item[9:] in spectrum:
+        elif item[:9] == "corr_amp_" and item[9:] in spectrum:
             corr_amp[item[9:]] = param[param_index[item]]
 
         else:
             param_dict[item] = param[param_index[item]]
 
-    if model == 'planck':
-        param_dict['distance'] = distance[0]
+    if model == "planck":
+        param_dict["distance"] = distance[0]
 
     else:
-        flux_scaling = (param_dict['radius']*constants.R_JUP)**2 / \
-                       (distance[0]*constants.PARSEC)**2
+        flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
+            distance[0] * constants.PARSEC
+        ) ** 2
 
         # The scaling is applied manually because of the interpolation
-        del param_dict['radius']
+        del param_dict["radius"]
 
     for item in spectrum:
         if item not in spec_scaling:
-            spec_scaling[item] = 1.
+            spec_scaling[item] = 1.0
 
         if item not in err_scaling:
             err_scaling[item] = None
 
-    ln_like = 0.
+    ln_like = 0.0
 
-    if model == 'planck' and n_planck > 1:
-        for i in range(n_planck-1):
-            if param_dict[f'teff_{i+1}'] > param_dict[f'teff_{i}']:
+    if model == "planck" and n_planck > 1:
+        for i in range(n_planck - 1):
+            if param_dict[f"teff_{i+1}"] > param_dict[f"teff_{i}"]:
                 return -np.inf
 
-            if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
+            if param_dict[f"radius_{i}"] > param_dict[f"radius_{i+1}"]:
                 return -np.inf
 
     for i, obj_item in enumerate(objphot):
-        if model == 'planck':
+        if model == "planck":
             readplanck = read_planck.ReadPlanck(filter_name=modelphot[i].filter_name)
             phot_flux = readplanck.get_flux(param_dict, synphot=modelphot[i])[0]
 
@@ -210,25 +223,28 @@ def lnlike(param: np.ndarray,
             phot_flux *= flux_scaling
 
         if obj_item.ndim == 1:
-            ln_like += -0.5 * (obj_item[0] - phot_flux)**2 / obj_item[1]**2
+            ln_like += -0.5 * (obj_item[0] - phot_flux) ** 2 / obj_item[1] ** 2
 
         else:
             for j in range(obj_item.shape[1]):
-                ln_like += -0.5 * (obj_item[0, j] - phot_flux)**2 / obj_item[1, j]**2
+                ln_like += (
+                    -0.5 * (obj_item[0, j] - phot_flux) ** 2 / obj_item[1, j] ** 2
+                )
 
     for i, item in enumerate(spectrum.keys()):
         # Calculate or interpolate the model spectrum
-        if model == 'planck':
+        if model == "planck":
             # Calculate a blackbody spectrum
-            readplanck = read_planck.ReadPlanck((0.9*spectrum[item][0][0, 0],
-                                                 1.1*spectrum[item][0][-1, 0]))
+            readplanck = read_planck.ReadPlanck(
+                (0.9 * spectrum[item][0][0, 0], 1.1 * spectrum[item][0][-1, 0])
+            )
 
-            model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
+            model_box = readplanck.get_spectrum(param_dict, 1000.0, smooth=True)
 
             # Resample the spectrum to the observed wavelengths
-            model_flux = spectres.spectres(spectrum[item][0][:, 0],
-                                           model_box.wavelength,
-                                           model_box.flux)
+            model_flux = spectres.spectres(
+                spectrum[item][0][:, 0], model_box.wavelength, model_box.flux
+            )
 
         else:
             # Interpolate the model spectrum
@@ -238,15 +254,17 @@ def lnlike(param: np.ndarray,
             model_flux *= flux_scaling
 
         # Scale the spectrum data
-        data_flux = spec_scaling[item]*spectrum[item][0][:, 1]
+        data_flux = spec_scaling[item] * spectrum[item][0][:, 1]
 
         if err_scaling[item] is None:
             # Variance without error inflation
-            data_var = spectrum[item][0][:, 2]**2
+            data_var = spectrum[item][0][:, 2] ** 2
 
         else:
             # Variance with error inflation (see Piette & Madhusudhan 2020)
-            data_var = spectrum[item][0][:, 2]**2 + (err_scaling[item]*model_flux)**2
+            data_var = (
+                spectrum[item][0][:, 2] ** 2 + (err_scaling[item] * model_flux) ** 2
+            )
 
         if spectrum[item][2] is not None:
             # The inverted covariance matrix is available
@@ -261,12 +279,14 @@ def lnlike(param: np.ndarray,
                 sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
                 # Calculate the inverted matrix of the inflated covariances
-                data_cov_inv = np.linalg.inv(spectrum[item][1]*sigma_i*sigma_j)
+                data_cov_inv = np.linalg.inv(spectrum[item][1] * sigma_i * sigma_j)
 
         if spectrum[item][2] is not None:
             # Calculate the log-likelihood with the covariance matrix
-            dot_tmp = np.dot(data_flux-model_flux, np.dot(data_cov_inv, data_flux-model_flux))
-            ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+            dot_tmp = np.dot(
+                data_flux - model_flux, np.dot(data_cov_inv, data_flux - model_flux)
+            )
+            ln_like += -0.5 * dot_tmp - 0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
 
         else:
             if item in fit_corr:
@@ -277,38 +297,53 @@ def lnlike(param: np.ndarray,
                 error = np.sqrt(data_var)  # (W m-2 um-1)
                 error_j, error_i = np.meshgrid(error, error)
 
-                cov_matrix = corr_amp[item]**2 * error_i * error_j * \
-                    np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
-                    (1.-corr_amp[item]**2) * np.eye(wavel.shape[0])*error_i**2
+                cov_matrix = (
+                    corr_amp[item] ** 2
+                    * error_i
+                    * error_j
+                    * np.exp(-((wavel_i - wavel_j) ** 2) / (2.0 * corr_len[item] ** 2))
+                    + (1.0 - corr_amp[item] ** 2)
+                    * np.eye(wavel.shape[0])
+                    * error_i ** 2
+                )
 
-                dot_tmp = np.dot(data_flux-model_flux,
-                                 np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))
+                dot_tmp = np.dot(
+                    data_flux - model_flux,
+                    np.dot(np.linalg.inv(cov_matrix), data_flux - model_flux),
+                )
 
-                ln_like += -0.5*dot_tmp - 0.5*np.nansum(np.log(2.*np.pi*data_var))
+                ln_like += -0.5 * dot_tmp - 0.5 * np.nansum(
+                    np.log(2.0 * np.pi * data_var)
+                )
 
             else:
                 # Calculate the log-likelihood without the covariance matrix but with the
                 # normalization term in case of the errors are inflated
-                ln_like += np.nansum(-0.5 * (data_flux-model_flux)**2 / data_var -
-                                     0.5 * np.log(2.*np.pi*data_var))
+                ln_like += np.nansum(
+                    -0.5 * (data_flux - model_flux) ** 2 / data_var
+                    - 0.5 * np.log(2.0 * np.pi * data_var)
+                )
 
     return ln_like
 
 
 @typechecked
-def lnprob(param: np.ndarray,
-           bounds: dict,
-           model: str,
-           param_index: Dict[str, int],
-           objphot: List[Optional[np.ndarray]],
-           distance: Tuple[float, float],
-           prior: Optional[Dict[str, Tuple[float, float]]],
-           spectrum: Optional[dict],
-           modelphot: Optional[Union[List[read_model.ReadModel],
-                                     List[photometry.SyntheticPhotometry]]],
-           modelspec: Optional[List[read_model.ReadModel]],
-           n_planck: int,
-           fit_corr: List[str]) -> np.float64:
+def lnprob(
+    param: np.ndarray,
+    bounds: dict,
+    model: str,
+    param_index: Dict[str, int],
+    objphot: List[Optional[np.ndarray]],
+    distance: Tuple[float, float],
+    prior: Optional[Dict[str, Tuple[float, float]]],
+    spectrum: Optional[dict],
+    modelphot: Optional[
+        Union[List[read_model.ReadModel], List[photometry.SyntheticPhotometry]]
+    ],
+    modelspec: Optional[List[read_model.ReadModel]],
+    n_planck: int,
+    fit_corr: List[str],
+) -> np.float64:
     """
     Internal function for calculating the log posterior.
 
@@ -365,8 +400,19 @@ def lnprob(param: np.ndarray,
         ln_prob = -np.inf
 
     else:
-        ln_prob = ln_prior + lnlike(param, bounds, param_index, model, objphot, distance, spectrum,
-                                    modelphot, modelspec, n_planck, fit_corr)
+        ln_prob = ln_prior + lnlike(
+            param,
+            bounds,
+            param_index,
+            model,
+            objphot,
+            distance,
+            spectrum,
+            modelphot,
+            modelspec,
+            n_planck,
+            fit_corr,
+        )
 
     if np.isnan(ln_prob):
         ln_prob = -np.inf
@@ -382,17 +428,23 @@ class FitModel:
     """
 
     @typechecked
-    def __init__(self,
-                 object_name: str,
-                 model: str,
-                 bounds: Dict[str, Union[Tuple[float, float],
-                                         Tuple[Optional[Tuple[float, float]],
-                                               Optional[Tuple[float, float]]],
-                                         List[Tuple[float, float]]]],
-                 inc_phot: Union[bool, List[str]] = True,
-                 inc_spec: Union[bool, List[str]] = True,
-                 fit_corr: Optional[List[str]] = None,
-                 weights: Optional[Dict[str, float]] = None) -> None:
+    def __init__(
+        self,
+        object_name: str,
+        model: str,
+        bounds: Dict[
+            str,
+            Union[
+                Tuple[float, float],
+                Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
+                List[Tuple[float, float]],
+            ],
+        ],
+        inc_phot: Union[bool, List[str]] = True,
+        inc_spec: Union[bool, List[str]] = True,
+        fit_corr: Optional[List[str]] = None,
+        weights: Optional[Dict[str, float]] = None,
+    ) -> None:
         """
         The grid of spectra is linearly interpolated for each photometric point and spectrum while
         taking into account the filter profile, spectral resolution, and wavelength sampling.
@@ -586,10 +638,12 @@ class FitModel:
         """
 
         if not inc_phot and not inc_spec:
-            raise ValueError('No photometric or spectroscopic data has been selected.')
+            raise ValueError("No photometric or spectroscopic data has been selected.")
 
-        if model == 'planck' and ('teff' not in bounds or 'radius' not in bounds):
-            raise ValueError('The \'bounds\' dictionary should contain \'teff\' and \'radius\'.')
+        if model == "planck" and ("teff" not in bounds or "radius" not in bounds):
+            raise ValueError(
+                "The 'bounds' dictionary should contain 'teff' and 'radius'."
+            )
 
         self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()
@@ -602,33 +656,33 @@ class FitModel:
         self.model = model
         self.bounds = bounds
 
-        if self.model == 'planck':
+        if self.model == "planck":
             # Fitting blackbody radiation
-            if isinstance(bounds['teff'], list) and isinstance(bounds['radius'], list):
+            if isinstance(bounds["teff"], list) and isinstance(bounds["radius"], list):
                 # Update temperature and radius parameters in case of multiple blackbody components
-                self.n_planck = len(bounds['teff'])
+                self.n_planck = len(bounds["teff"])
 
                 self.modelpar = []
                 self.bounds = {}
 
-                for i, item in enumerate(bounds['teff']):
-                    self.modelpar.append(f'teff_{i}')
-                    self.modelpar.append(f'radius_{i}')
+                for i, item in enumerate(bounds["teff"]):
+                    self.modelpar.append(f"teff_{i}")
+                    self.modelpar.append(f"radius_{i}")
 
-                    self.bounds[f'teff_{i}'] = bounds['teff'][i]
-                    self.bounds[f'radius_{i}'] = bounds['radius'][i]
+                    self.bounds[f"teff_{i}"] = bounds["teff"][i]
+                    self.bounds[f"radius_{i}"] = bounds["radius"][i]
 
             else:
                 # Fitting a single blackbody compoentn
                 self.n_planck = 1
 
-                self.modelpar = ['teff', 'radius']
+                self.modelpar = ["teff", "radius"]
                 self.bounds = bounds
 
-        elif self.model == 'powerlaw':
+        elif self.model == "powerlaw":
             self.n_planck = 0
 
-            self.modelpar = ['log_powerlaw_a', 'log_powerlaw_b', 'log_powerlaw_c']
+            self.modelpar = ["log_powerlaw_a", "log_powerlaw_b", "log_powerlaw_c"]
 
         else:
             # Fitting self-consistent atmospheric models
@@ -646,17 +700,17 @@ class FitModel:
                 readmodel = read_model.ReadModel(self.model, None, None)
                 self.bounds = readmodel.get_bounds()
 
-            if 'radius' not in self.bounds:
-                self.bounds['radius'] = (0.8, 1.5)
+            if "radius" not in self.bounds:
+                self.bounds["radius"] = (0.8, 1.5)
 
             self.n_planck = 0
 
             self.modelpar = readmodel.get_parameters()
-            self.modelpar.append('radius')
+            self.modelpar.append("radius")
 
-            if 'disk_teff' in self.bounds and 'disk_radius' in self.bounds:
-                self.modelpar.append('disk_teff')
-                self.modelpar.append('disk_radius')
+            if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
+                self.modelpar.append("disk_teff")
+                self.modelpar.append("disk_radius")
 
         # Select filters and spectra
 
@@ -680,10 +734,12 @@ class FitModel:
             else:
                 inc_spec = []
 
-        if inc_spec and self.model == 'powerlaw':
-            warnings.warn('The \'inc_spec\' parameter is not supported when fitting a '
-                          'power-law spectrum to photometric data. The argument of '
-                          '\'inc_spec\' is therefore ignored.')
+        if inc_spec and self.model == "powerlaw":
+            warnings.warn(
+                "The 'inc_spec' parameter is not supported when fitting a "
+                "power-law spectrum to photometric data. The argument of "
+                "'inc_spec' is therefore ignored."
+            )
 
             inc_spec = []
 
@@ -693,13 +749,13 @@ class FitModel:
         self.modelphot = []
 
         for item in inc_phot:
-            if self.model == 'planck':
+            if self.model == "planck":
                 # Create SyntheticPhotometry objects when fitting a Planck function
-                print(f'Creating synthetic photometry: {item}...', end='', flush=True)
+                print(f"Creating synthetic photometry: {item}...", end="", flush=True)
                 self.modelphot.append(photometry.SyntheticPhotometry(item))
-                print(' [DONE]')
+                print(" [DONE]")
 
-            elif self.model == 'powerlaw':
+            elif self.model == "powerlaw":
                 # Or create SyntheticPhotometry objects when fitting a power-law function
                 synphot = photometry.SyntheticPhotometry(item)
 
@@ -708,16 +764,18 @@ class FitModel:
 
                 self.modelphot.append(synphot)
 
-                if f'{item}_error' in self.bounds:
-                    self.modelpar.append(f'{item}_error')
+                if f"{item}_error" in self.bounds:
+                    self.modelpar.append(f"{item}_error")
 
             else:
                 # Or interpolate the model grid for each filter
-                print(f'Interpolating {item}...', end='', flush=True)
+                print(f"Interpolating {item}...", end="", flush=True)
                 readmodel = read_model.ReadModel(self.model, filter_name=item)
-                readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
+                readmodel.interpolate_grid(
+                    wavel_resample=None, smooth=False, spec_res=None
+                )
                 self.modelphot.append(readmodel)
-                print(' [DONE]')
+                print(" [DONE]")
 
             # Store the flux and uncertainty for each filter
             obj_phot = self.object.get_photometry(item)
@@ -743,35 +801,42 @@ class FitModel:
 
             for item in self.spectrum:
                 if item in self.fit_corr:
-                    self.modelpar.append(f'corr_len_{item}')
-                    self.modelpar.append(f'corr_amp_{item}')
+                    self.modelpar.append(f"corr_len_{item}")
+                    self.modelpar.append(f"corr_amp_{item}")
 
-                    if f'corr_len_{item}' not in self.bounds:
-                        self.bounds[f'corr_len_{item}'] = (-3., 0.)  # log10(corr_len/um)
+                    if f"corr_len_{item}" not in self.bounds:
+                        self.bounds[f"corr_len_{item}"] = (
+                            -3.0,
+                            0.0,
+                        )  # log10(corr_len/um)
 
-                    if f'corr_amp_{item}' not in self.bounds:
-                        self.bounds[f'corr_amp_{item}'] = (0., 1.)
+                    if f"corr_amp_{item}" not in self.bounds:
+                        self.bounds[f"corr_amp_{item}"] = (0.0, 1.0)
 
                     self.n_corr_par += 2
 
             self.modelspec = []
 
-            if self.model != 'planck':
+            if self.model != "planck":
 
                 for key, value in self.spectrum.items():
-                    print(f'\rInterpolating {key}...', end='', flush=True)
+                    print(f"\rInterpolating {key}...", end="", flush=True)
 
-                    wavel_range = (0.9*value[0][0, 0], 1.1*value[0][-1, 0])
+                    wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
 
-                    readmodel = read_model.ReadModel(self.model, wavel_range=wavel_range)
+                    readmodel = read_model.ReadModel(
+                        self.model, wavel_range=wavel_range
+                    )
 
-                    readmodel.interpolate_grid(wavel_resample=self.spectrum[key][0][:, 0],
-                                               smooth=True,
-                                               spec_res=self.spectrum[key][3])
+                    readmodel.interpolate_grid(
+                        wavel_resample=self.spectrum[key][0][:, 0],
+                        smooth=True,
+                        spec_res=self.spectrum[key][3],
+                    )
 
                     self.modelspec.append(readmodel)
 
-                    print(' [DONE]')
+                    print(" [DONE]")
 
         else:
             self.spectrum = {}
@@ -780,7 +845,7 @@ class FitModel:
 
         # Get the parameter order if interpolate_grid is used
 
-        if self.model != 'planck' and self.model != 'powerlaw':
+        if self.model != "planck" and self.model != "powerlaw":
             readmodel = read_model.ReadModel(self.model)
             self.param_interp = readmodel.get_parameters()
 
@@ -792,107 +857,138 @@ class FitModel:
         self.diskphot = []
         self.diskspec = []
 
-        if 'disk_teff' in self.bounds and 'disk_radius' in self.bounds:
+        if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
             for item in inc_phot:
-                print(f'Interpolating {item}...', end='', flush=True)
-                readmodel = read_model.ReadModel('blackbody', filter_name=item)
-                readmodel.interpolate_grid(wavel_resample=None, smooth=False, spec_res=None)
+                print(f"Interpolating {item}...", end="", flush=True)
+                readmodel = read_model.ReadModel("blackbody", filter_name=item)
+                readmodel.interpolate_grid(
+                    wavel_resample=None, smooth=False, spec_res=None
+                )
                 self.diskphot.append(readmodel)
-                print(' [DONE]')
+                print(" [DONE]")
 
             for key, value in self.spectrum.items():
-                print(f'\rInterpolating {key}...', end='', flush=True)
+                print(f"\rInterpolating {key}...", end="", flush=True)
 
-                wavel_range = (0.9*value[0][0, 0], 1.1*value[0][-1, 0])
+                wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
 
-                readmodel = read_model.ReadModel('blackbody', wavel_range=wavel_range)
+                readmodel = read_model.ReadModel("blackbody", wavel_range=wavel_range)
 
-                readmodel.interpolate_grid(wavel_resample=self.spectrum[key][0][:, 0],
-                                           smooth=True,
-                                           spec_res=self.spectrum[key][3])
+                readmodel.interpolate_grid(
+                    wavel_resample=self.spectrum[key][0][:, 0],
+                    smooth=True,
+                    spec_res=self.spectrum[key][3],
+                )
 
                 self.diskspec.append(readmodel)
 
-                print(' [DONE]')
+                print(" [DONE]")
 
         for item in self.spectrum:
             if item in bounds:
 
                 if bounds[item][0] is not None:
                     # Add the flux scaling parameter
-                    self.modelpar.append(f'scaling_{item}')
-                    self.bounds[f'scaling_{item}'] = (bounds[item][0][0], bounds[item][0][1])
+                    self.modelpar.append(f"scaling_{item}")
+                    self.bounds[f"scaling_{item}"] = (
+                        bounds[item][0][0],
+                        bounds[item][0][1],
+                    )
 
                 if bounds[item][1] is not None:
                     # Add the error inflation parameters
-                    self.modelpar.append(f'error_{item}')
-                    self.bounds[f'error_{item}'] = (bounds[item][1][0], bounds[item][1][1])
+                    self.modelpar.append(f"error_{item}")
+                    self.bounds[f"error_{item}"] = (
+                        bounds[item][1][0],
+                        bounds[item][1][1],
+                    )
 
-                    if self.bounds[f'error_{item}'][0] < 0.:
-                        warnings.warn(f'The lower bound of \'error_{item}\' is smaller than 0. '
-                                      f'The error inflation should be given relative to the model '
-                                      f'fluxes  so the boundaries are typically between 0 and 1.')
+                    if self.bounds[f"error_{item}"][0] < 0.0:
+                        warnings.warn(
+                            f"The lower bound of 'error_{item}' is smaller than 0. "
+                            f"The error inflation should be given relative to the model "
+                            f"fluxes  so the boundaries are typically between 0 and 1."
+                        )
 
-                    if self.bounds[f'error_{item}'][1] < 0.:
-                        warnings.warn(f'The upper bound of \'error_{item}\' is smaller than 0. '
-                                      f'The error inflation should be given relative to the model '
-                                      f'fluxes so the boundaries are typically between 0 and 1.')
+                    if self.bounds[f"error_{item}"][1] < 0.0:
+                        warnings.warn(
+                            f"The upper bound of 'error_{item}' is smaller than 0. "
+                            f"The error inflation should be given relative to the model "
+                            f"fluxes so the boundaries are typically between 0 and 1."
+                        )
 
-                    if self.bounds[f'error_{item}'][0] > 1.:
-                        warnings.warn(f'The lower bound of \'error_{item}\' is larger than 1. The '
-                                      f'error inflation should be given relative to the model '
-                                      f'fluxes so the boundaries are typically between 0 and 1.')
+                    if self.bounds[f"error_{item}"][0] > 1.0:
+                        warnings.warn(
+                            f"The lower bound of 'error_{item}' is larger than 1. The "
+                            f"error inflation should be given relative to the model "
+                            f"fluxes so the boundaries are typically between 0 and 1."
+                        )
 
-                    if self.bounds[f'error_{item}'][1] > 1.:
-                        warnings.warn(f'The upper bound of \'error_{item}\' is larger than 1. The '
-                                      f'error inflation should be given relative to the model '
-                                      f'fluxes so the boundaries are typically between 0 and 1.')
+                    if self.bounds[f"error_{item}"][1] > 1.0:
+                        warnings.warn(
+                            f"The upper bound of 'error_{item}' is larger than 1. The "
+                            f"error inflation should be given relative to the model "
+                            f"fluxes so the boundaries are typically between 0 and 1."
+                        )
 
                 if item in self.bounds:
                     del self.bounds[item]
 
-        if 'lognorm_radius' in self.bounds and 'lognorm_sigma' in self.bounds and \
-                'lognorm_ext' in self.bounds:
+        if (
+            "lognorm_radius" in self.bounds
+            and "lognorm_sigma" in self.bounds
+            and "lognorm_ext" in self.bounds
+        ):
 
-            self.cross_sections, _, _ = dust_util.interp_lognorm(inc_phot, inc_spec, self.spectrum)
+            self.cross_sections, _, _ = dust_util.interp_lognorm(
+                inc_phot, inc_spec, self.spectrum
+            )
 
-            self.modelpar.append('lognorm_radius')
-            self.modelpar.append('lognorm_sigma')
-            self.modelpar.append('lognorm_ext')
+            self.modelpar.append("lognorm_radius")
+            self.modelpar.append("lognorm_sigma")
+            self.modelpar.append("lognorm_ext")
 
-            self.bounds['lognorm_radius'] = (np.log10(self.bounds['lognorm_radius'][0]),
-                                             np.log10(self.bounds['lognorm_radius'][1]))
+            self.bounds["lognorm_radius"] = (
+                np.log10(self.bounds["lognorm_radius"][0]),
+                np.log10(self.bounds["lognorm_radius"][1]),
+            )
 
-        elif 'powerlaw_max' in self.bounds and 'powerlaw_exp' in self.bounds and \
-                'powerlaw_ext' in self.bounds:
+        elif (
+            "powerlaw_max" in self.bounds
+            and "powerlaw_exp" in self.bounds
+            and "powerlaw_ext" in self.bounds
+        ):
 
             self.cross_sections, _, _ = dust_util.interp_powerlaw(
-                inc_phot, inc_spec, self.spectrum)
+                inc_phot, inc_spec, self.spectrum
+            )
 
-            self.modelpar.append('powerlaw_max')
-            self.modelpar.append('powerlaw_exp')
-            self.modelpar.append('powerlaw_ext')
+            self.modelpar.append("powerlaw_max")
+            self.modelpar.append("powerlaw_exp")
+            self.modelpar.append("powerlaw_ext")
 
-            self.bounds['powerlaw_max'] = (np.log10(self.bounds['powerlaw_max'][0]),
-                                           np.log10(self.bounds['powerlaw_max'][1]))
+            self.bounds["powerlaw_max"] = (
+                np.log10(self.bounds["powerlaw_max"][0]),
+                np.log10(self.bounds["powerlaw_max"][1]),
+            )
 
         else:
             self.cross_sections = None
 
-        if 'ism_ext' in self.bounds:
-            self.modelpar.append('ism_ext')
+        if "ism_ext" in self.bounds:
+            self.modelpar.append("ism_ext")
 
-        if 'ism_red' in self.bounds:
-            self.modelpar.append('ism_red')
+        if "ism_red" in self.bounds:
+            self.modelpar.append("ism_red")
 
-        if 'veil_a' in self.bounds:
-            self.modelpar.append('veil_a')
+        if "veil_a" in self.bounds:
+            self.modelpar.append("veil_a")
 
-        if 'veil_b' in self.bounds:
-            self.modelpar.append('veil_b')
+        if "veil_b" in self.bounds:
+            self.modelpar.append("veil_b")
 
-        if 'veil_ref' in self.bounds:
-            self.modelpar.append('veil_ref')
+        if "veil_ref" in self.bounds:
+            self.modelpar.append("veil_ref")
 
         self.fix_param = {}
         del_param = []
@@ -903,23 +999,23 @@ class FitModel:
                 del_param.append(key)
 
         if del_param:
-            print(f'Fixing {len(del_param)} parameters:')
+            print(f"Fixing {len(del_param)} parameters:")
 
             for item in del_param:
-                print(f'   - {item} = {self.fix_param[item]}')
+                print(f"   - {item} = {self.fix_param[item]}")
 
                 self.modelpar.remove(item)
                 del self.bounds[item]
 
-        print(f'Fitting {len(self.modelpar)} parameters:')
+        print(f"Fitting {len(self.modelpar)} parameters:")
 
         for item in self.modelpar:
-            print(f'   - {item}')
+            print(f"   - {item}")
 
-        print('Prior boundaries:')
+        print("Prior boundaries:")
 
         for key, value in self.bounds.items():
-            print(f'   - {key} = {value}')
+            print(f"   - {key} = {value}")
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -929,7 +1025,7 @@ class FitModel:
 
         # Weighting of the photometric and spectroscopic data
 
-        print('Weights for the log-likelihood function:')
+        print("Weights for the log-likelihood function:")
 
         if weights is None:
             self.weights = {}
@@ -938,26 +1034,34 @@ class FitModel:
 
         for item in inc_spec:
             if item not in self.weights:
-                self.weights[item] = 1.
+                self.weights[item] = 1.0
 
-            print(f'   - {item} = {self.weights[item]:.2e}')
+            print(f"   - {item} = {self.weights[item]:.2e}")
 
         for item in inc_phot:
             if item not in self.weights:
-                self.weights[item] = 1.
+                self.weights[item] = 1.0
 
-            print(f'   - {item} = {self.weights[item]:.2e}')
+            print(f"   - {item} = {self.weights[item]:.2e}")
 
     @typechecked
-    def run_mcmc(self,
-                 tag: str,
-                 guess: Optional[Dict[str, Union[Optional[float],
-                                                 List[Optional[float]],
-                                                 Tuple[Optional[float],
-                                                       Optional[float]]]]],
-                 nwalkers: int = 200,
-                 nsteps: int = 1000,
-                 prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
+    def run_mcmc(
+        self,
+        tag: str,
+        guess: Optional[
+            Dict[
+                str,
+                Union[
+                    Optional[float],
+                    List[Optional[float]],
+                    Tuple[Optional[float], Optional[float]],
+                ],
+            ]
+        ],
+        nwalkers: int = 200,
+        nsteps: int = 1000,
+        prior: Optional[Dict[str, Tuple[float, float]]] = None,
+    ) -> None:
         """
         Function to run the MCMC sampler of ``emcee``. The functionalities of ``run_mcmc`` are
         more limited than :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
@@ -991,53 +1095,55 @@ class FitModel:
             None
         """
 
-        print('Running MCMC...')
+        print("Running MCMC...")
 
         ndim = len(self.bounds)
 
-        if self.model == 'planck':
+        if self.model == "planck":
 
-            if 'teff' in self.bounds:
-                sigma = {'teff': 5., 'radius': 0.01}
+            if "teff" in self.bounds:
+                sigma = {"teff": 5.0, "radius": 0.01}
 
             else:
                 sigma = {}
 
-                for i, item in enumerate(guess['teff']):
-                    sigma[f'teff_{i}'] = 5.
-                    guess[f'teff_{i}'] = guess['teff'][i]
+                for i, item in enumerate(guess["teff"]):
+                    sigma[f"teff_{i}"] = 5.0
+                    guess[f"teff_{i}"] = guess["teff"][i]
 
-                for i, item in enumerate(guess['radius']):
-                    sigma[f'radius_{i}'] = 0.01
-                    guess[f'radius_{i}'] = guess['radius'][i]
+                for i, item in enumerate(guess["radius"]):
+                    sigma[f"radius_{i}"] = 0.01
+                    guess[f"radius_{i}"] = guess["radius"][i]
 
-                del guess['teff']
-                del guess['radius']
+                del guess["teff"]
+                del guess["radius"]
 
         else:
-            sigma = {'teff': 5.,
-                     'logg': 0.01,
-                     'feh': 0.01,
-                     'fsed': 0.01,
-                     'c_o_ratio': 0.01,
-                     'radius': 0.01}
+            sigma = {
+                "teff": 5.0,
+                "logg": 0.01,
+                "feh": 0.01,
+                "fsed": 0.01,
+                "c_o_ratio": 0.01,
+                "radius": 0.01,
+            }
 
         for item in self.spectrum:
             if item in self.fit_corr:
-                sigma[f'corr_len_{item}'] = 0.01  # log10(corr_len/um)
-                guess[f'corr_len_{item}'] = None  # log10(corr_len/um)
+                sigma[f"corr_len_{item}"] = 0.01  # log10(corr_len/um)
+                guess[f"corr_len_{item}"] = None  # log10(corr_len/um)
 
-                sigma[f'corr_amp_{item}'] = 0.1
-                guess[f'corr_amp_{item}'] = None
+                sigma[f"corr_amp_{item}"] = 0.1
+                guess[f"corr_amp_{item}"] = None
 
         for item in self.spectrum:
-            if f'scaling_{item}' in self.bounds:
-                sigma[f'scaling_{item}'] = 0.01
-                guess[f'scaling_{item}'] = guess[item][0]
+            if f"scaling_{item}" in self.bounds:
+                sigma[f"scaling_{item}"] = 0.01
+                guess[f"scaling_{item}"] = guess[item][0]
 
-            if f'error_{item}' in self.bounds:
-                sigma[f'error_{item}'] = 0.1
-                guess[f'error_{item}'] = guess[item][1]
+            if f"error_{item}" in self.bounds:
+                sigma[f"error_{item}"] = 0.1
+                guess[f"error_{item}"] = guess[item][1]
 
             if item in guess:
                 del guess[item]
@@ -1049,9 +1155,9 @@ class FitModel:
                 initial[:, i] = guess[item] + np.random.normal(0, sigma[item], nwalkers)
 
             else:
-                initial[:, i] = np.random.uniform(low=self.bounds[item][0],
-                                                  high=self.bounds[item][1],
-                                                  size=nwalkers)
+                initial[:, i] = np.random.uniform(
+                    low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
+                )
 
         # Create a dictionary with the indices of the parameters
 
@@ -1061,32 +1167,39 @@ class FitModel:
 
         with Pool(processes=cpu_count()):
 
-            ens_sampler = emcee.EnsembleSampler(nwalkers,
-                                                ndim,
-                                                lnprob,
-                                                args=([self.bounds,
-                                                       self.model,
-                                                       param_index,
-                                                       self.objphot,
-                                                       self.distance,
-                                                       prior,
-                                                       self.spectrum,
-                                                       self.modelphot,
-                                                       self.modelspec,
-                                                       self.n_planck,
-                                                       self.fit_corr]))
+            ens_sampler = emcee.EnsembleSampler(
+                nwalkers,
+                ndim,
+                lnprob,
+                args=(
+                    [
+                        self.bounds,
+                        self.model,
+                        param_index,
+                        self.objphot,
+                        self.distance,
+                        prior,
+                        self.spectrum,
+                        self.modelphot,
+                        self.modelspec,
+                        self.n_planck,
+                        self.fit_corr,
+                    ]
+                ),
+            )
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
         spec_labels = []
         for item in self.spectrum:
-            if f'scaling_{item}' in self.bounds:
-                spec_labels.append(f'scaling_{item}')
+            if f"scaling_{item}" in self.bounds:
+                spec_labels.append(f"scaling_{item}")
 
         # Get the MPI rank of the process
 
         try:
             from mpi4py import MPI
+
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
         except ModuleNotFoundError:
@@ -1098,21 +1211,23 @@ class FitModel:
             # Writing the samples to the database is only possible when using a single process
             species_db = database.Database()
 
-            species_db.add_samples(sampler='emcee',
-                                   samples=ens_sampler.chain,
-                                   ln_prob=ens_sampler.lnprobability,
-                                   ln_evidence=None,
-                                   mean_accept=np.mean(ens_sampler.acceptance_fraction),
-                                   spectrum=('model', self.model),
-                                   tag=tag,
-                                   modelpar=self.modelpar,
-                                   distance=self.distance[0],
-                                   spec_labels=spec_labels)
+            species_db.add_samples(
+                sampler="emcee",
+                samples=ens_sampler.chain,
+                ln_prob=ens_sampler.lnprobability,
+                ln_evidence=None,
+                mean_accept=np.mean(ens_sampler.acceptance_fraction),
+                spectrum=("model", self.model),
+                tag=tag,
+                modelpar=self.modelpar,
+                distance=self.distance[0],
+                spec_labels=spec_labels,
+            )
 
     @typechecked
-    def lnlike_func(self,
-                    params,
-                    prior: Optional[Dict[str, Tuple[float, float]]] = None) -> np.float64:
+    def lnlike_func(
+        self, params, prior: Optional[Dict[str, Tuple[float, float]]] = None
+    ) -> np.float64:
         """
         Function for calculating the log-likelihood for the sampled parameter cube.
 
@@ -1147,41 +1262,41 @@ class FitModel:
         for item in self.bounds:
             # Add the parameters from the params to their dictionaries
 
-            if item[:8] == 'scaling_' and item[8:] in self.spectrum:
+            if item[:8] == "scaling_" and item[8:] in self.spectrum:
                 spec_scaling[item[8:]] = params[self.cube_index[item]]
 
-            elif item[:6] == 'error_' and item[6:] in self.spectrum:
+            elif item[:6] == "error_" and item[6:] in self.spectrum:
                 err_scaling[item[6:]] = params[self.cube_index[item]]
 
-            elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
-                corr_len[item[9:]] = 10.**params[self.cube_index[item]]  # (um)
+            elif item[:9] == "corr_len_" and item[9:] in self.spectrum:
+                corr_len[item[9:]] = 10.0 ** params[self.cube_index[item]]  # (um)
 
-            elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
+            elif item[:9] == "corr_amp_" and item[9:] in self.spectrum:
                 corr_amp[item[9:]] = params[self.cube_index[item]]
 
-            elif item[:8] == 'lognorm_':
+            elif item[:8] == "lognorm_":
                 dust_param[item] = params[self.cube_index[item]]
 
-            elif item[:9] == 'powerlaw_':
+            elif item[:9] == "powerlaw_":
                 dust_param[item] = params[self.cube_index[item]]
 
-            elif item[:4] == 'ism_':
+            elif item[:4] == "ism_":
                 dust_param[item] = params[self.cube_index[item]]
 
-            elif item == 'disk_teff':
-                disk_param['teff'] = params[self.cube_index[item]]
+            elif item == "disk_teff":
+                disk_param["teff"] = params[self.cube_index[item]]
 
-            elif item == 'disk_radius':
-                disk_param['radius'] = params[self.cube_index[item]]
+            elif item == "disk_radius":
+                disk_param["radius"] = params[self.cube_index[item]]
 
-            elif item == 'veil_a':
-                veil_param['veil_a'] = params[self.cube_index[item]]
+            elif item == "veil_a":
+                veil_param["veil_a"] = params[self.cube_index[item]]
 
-            elif item == 'veil_b':
-                veil_param['veil_b'] = params[self.cube_index[item]]
+            elif item == "veil_b":
+                veil_param["veil_b"] = params[self.cube_index[item]]
 
-            elif item == 'veil_ref':
-                veil_param['veil_ref'] = params[self.cube_index[item]]
+            elif item == "veil_ref":
+                veil_param["veil_ref"] = params[self.cube_index[item]]
 
             else:
                 param_dict[item] = params[self.cube_index[item]]
@@ -1189,64 +1304,65 @@ class FitModel:
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries
 
-            if item[:8] == 'scaling_' and item[8:] in self.spectrum:
+            if item[:8] == "scaling_" and item[8:] in self.spectrum:
                 spec_scaling[item[8:]] = self.fix_param[item]
 
-            elif item[:6] == 'error_' and item[6:] in self.spectrum:
+            elif item[:6] == "error_" and item[6:] in self.spectrum:
                 err_scaling[item[6:]] = self.fix_param[item]
 
-            elif item[:9] == 'corr_len_' and item[9:] in self.spectrum:
+            elif item[:9] == "corr_len_" and item[9:] in self.spectrum:
                 corr_len[item[9:]] = self.fix_param[item]  # (um)
 
-            elif item[:9] == 'corr_amp_' and item[9:] in self.spectrum:
+            elif item[:9] == "corr_amp_" and item[9:] in self.spectrum:
                 corr_amp[item[9:]] = self.fix_param[item]
 
-            elif item[:8] == 'lognorm_':
+            elif item[:8] == "lognorm_":
                 dust_param[item] = self.fix_param[item]
 
-            elif item[:9] == 'powerlaw_':
+            elif item[:9] == "powerlaw_":
                 dust_param[item] = self.fix_param[item]
 
-            elif item[:4] == 'ism_':
+            elif item[:4] == "ism_":
                 dust_param[item] = self.fix_param[item]
 
-            elif item == 'disk_teff':
-                disk_param['teff'] = self.fix_param[item]
+            elif item == "disk_teff":
+                disk_param["teff"] = self.fix_param[item]
 
-            elif item == 'disk_radius':
-                disk_param['radius'] = self.fix_param[item]
+            elif item == "disk_radius":
+                disk_param["radius"] = self.fix_param[item]
 
             else:
                 param_dict[item] = self.fix_param[item]
 
-        if self.model == 'planck' and self.n_planck > 1:
-            for i in range(self.n_planck-1):
-                if param_dict[f'teff_{i+1}'] > param_dict[f'teff_{i}']:
+        if self.model == "planck" and self.n_planck > 1:
+            for i in range(self.n_planck - 1):
+                if param_dict[f"teff_{i+1}"] > param_dict[f"teff_{i}"]:
                     return -np.inf
 
-                if param_dict[f'radius_{i}'] > param_dict[f'radius_{i+1}']:
+                if param_dict[f"radius_{i}"] > param_dict[f"radius_{i+1}"]:
                     return -np.inf
 
         if disk_param:
-            if disk_param['teff'] > param_dict['teff']:
+            if disk_param["teff"] > param_dict["teff"]:
                 return -np.inf
 
-            if disk_param['radius'] < param_dict['radius']:
+            if disk_param["radius"] < param_dict["radius"]:
                 return -np.inf
 
-        if self.model == 'planck':
-            param_dict['distance'] = self.distance[0]
+        if self.model == "planck":
+            param_dict["distance"] = self.distance[0]
 
-        elif self.model != 'powerlaw':
-            flux_scaling = (param_dict['radius']*constants.R_JUP)**2 / \
-                           (self.distance[0]*constants.PARSEC)**2
+        elif self.model != "powerlaw":
+            flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
+                self.distance[0] * constants.PARSEC
+            ) ** 2
 
             # The scaling is applied manually because of the interpolation
-            del param_dict['radius']
+            del param_dict["radius"]
 
         for item in self.spectrum:
             if item not in spec_scaling:
-                spec_scaling[item] = 1.
+                spec_scaling[item] = 1.0
 
             if item not in err_scaling:
                 err_scaling[item] = None
@@ -1260,30 +1376,42 @@ class FitModel:
             for item in self.param_interp:
                 param_dict[item] = param_tmp[item]
 
-        ln_like = 0.
+        ln_like = 0.0
 
         if prior is not None:
             for key, value in prior.items():
-                if key == 'mass':
-                    mass = read_util.get_mass(params[self.cube_index['logg']],
-                                              params[self.cube_index['radius']])
+                if key == "mass":
+                    mass = read_util.get_mass(
+                        params[self.cube_index["logg"]],
+                        params[self.cube_index["radius"]],
+                    )
 
-                    ln_like += -0.5 * (mass - value[0])**2 / value[1]**2
+                    ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
 
                 else:
-                    ln_like += -0.5 * (params[self.cube_index[key]] - value[0])**2 / value[1]**2
+                    ln_like += (
+                        -0.5
+                        * (params[self.cube_index[key]] - value[0]) ** 2
+                        / value[1] ** 2
+                    )
 
-        if 'lognorm_ext' in dust_param:
-            cross_tmp = self.cross_sections['Generic/Bessell.V'](
-                dust_param['lognorm_sigma'], 10.**dust_param['lognorm_radius'])[0]
+        if "lognorm_ext" in dust_param:
+            cross_tmp = self.cross_sections["Generic/Bessell.V"](
+                dust_param["lognorm_sigma"], 10.0 ** dust_param["lognorm_radius"]
+            )[0]
 
-            n_grains = dust_param['lognorm_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+            n_grains = (
+                dust_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+            )
 
-        elif 'powerlaw_ext' in dust_param:
-            cross_tmp = self.cross_sections['Generic/Bessell.V'](
-                dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])
+        elif "powerlaw_ext" in dust_param:
+            cross_tmp = self.cross_sections["Generic/Bessell.V"](
+                dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
+            )
 
-            n_grains = dust_param['powerlaw_ext'] / cross_tmp / 2.5 / np.log10(np.exp(1.))
+            n_grains = (
+                dust_param["powerlaw_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+            )
 
         for i, obj_item in enumerate(self.objphot):
             # Get filter name
@@ -1292,73 +1420,94 @@ class FitModel:
             # Shortcut for weight
             weight = self.weights[phot_filter]
 
-            if self.model == 'planck':
+            if self.model == "planck":
                 readplanck = read_planck.ReadPlanck(filter_name=phot_filter)
-                phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[0]
+                phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[
+                    0
+                ]
 
-            elif self.model == 'powerlaw':
-                powerl_box = read_util.powerlaw_spectrum(self.modelphot[i].wavel_range,
-                                                         param_dict)
+            elif self.model == "powerlaw":
+                powerl_box = read_util.powerlaw_spectrum(
+                    self.modelphot[i].wavel_range, param_dict
+                )
 
                 phot_flux = self.modelphot[i].spectrum_to_flux(
-                    powerl_box.wavelength, powerl_box.flux)[0]
+                    powerl_box.wavelength, powerl_box.flux
+                )[0]
 
             else:
-                phot_flux = self.modelphot[i].spectrum_interp(list(param_dict.values()))[0][0]
+                phot_flux = self.modelphot[i].spectrum_interp(
+                    list(param_dict.values())
+                )[0][0]
                 phot_flux *= flux_scaling
 
             if disk_param:
-                phot_tmp = self.diskphot[i].spectrum_interp([disk_param['teff']])[0][0]
+                phot_tmp = self.diskphot[i].spectrum_interp([disk_param["teff"]])[0][0]
 
-                phot_flux += phot_tmp * (disk_param['radius']*constants.R_JUP)**2 / \
-                    (self.distance[0]*constants.PARSEC)**2
+                phot_flux += (
+                    phot_tmp
+                    * (disk_param["radius"] * constants.R_JUP) ** 2
+                    / (self.distance[0] * constants.PARSEC) ** 2
+                )
 
-            if 'lognorm_ext' in dust_param:
+            if "lognorm_ext" in dust_param:
                 cross_tmp = self.cross_sections[phot_filter](
-                    dust_param['lognorm_sigma'], 10.**dust_param['lognorm_radius'])[0]
+                    dust_param["lognorm_sigma"], 10.0 ** dust_param["lognorm_radius"]
+                )[0]
 
-                phot_flux *= np.exp(-cross_tmp*n_grains)
+                phot_flux *= np.exp(-cross_tmp * n_grains)
 
-            elif 'powerlaw_ext' in dust_param:
+            elif "powerlaw_ext" in dust_param:
                 cross_tmp = self.cross_sections[phot_filter](
-                    dust_param['powerlaw_exp'], 10.**dust_param['powerlaw_max'])[0]
+                    dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
+                )[0]
 
-                phot_flux *= np.exp(-cross_tmp*n_grains)
+                phot_flux *= np.exp(-cross_tmp * n_grains)
 
-            elif 'ism_ext' in dust_param:
+            elif "ism_ext" in dust_param:
                 read_filt = read_filter.ReadFilter(phot_filter)
                 filt_wavel = np.array([read_filt.mean_wavelength()])
 
-                ism_reddening = dust_param.get('ism_red', 3.1)
+                ism_reddening = dust_param.get("ism_red", 3.1)
 
-                ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
-                                                    ism_reddening,
-                                                    filt_wavel)
+                ext_filt = dust_util.ism_extinction(
+                    dust_param["ism_ext"], ism_reddening, filt_wavel
+                )
 
-                phot_flux *= 10.**(-0.4*ext_filt[0])
+                phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
 
             if obj_item.ndim == 1:
-                phot_var = obj_item[1]**2
+                phot_var = obj_item[1] ** 2
 
-                if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
-                    phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0]**2
+                if self.model == "powerlaw" and f"{phot_filter}_error" in param_dict:
+                    phot_var += (
+                        param_dict[f"{phot_filter}_error"] ** 2 * obj_item[0] ** 2
+                    )
 
-                ln_like += -0.5 * weight * (obj_item[0] - phot_flux)**2 / phot_var
+                ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
 
                 # Only required when fitting an error inflation
-                ln_like += -0.5 * weight * np.log(2.*np.pi*phot_var)
+                ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
 
             else:
                 for j in range(obj_item.shape[1]):
-                    phot_var = obj_item[1, j]**2
+                    phot_var = obj_item[1, j] ** 2
 
-                    if self.model == 'powerlaw' and f'{phot_filter}_error' in param_dict:
-                        phot_var += param_dict[f'{phot_filter}_error']**2 * obj_item[0, j]**2
+                    if (
+                        self.model == "powerlaw"
+                        and f"{phot_filter}_error" in param_dict
+                    ):
+                        phot_var += (
+                            param_dict[f"{phot_filter}_error"] ** 2
+                            * obj_item[0, j] ** 2
+                        )
 
-                    ln_like += -0.5 * weight * (obj_item[0, j] - phot_flux)**2 / phot_var
+                    ln_like += (
+                        -0.5 * weight * (obj_item[0, j] - phot_flux) ** 2 / phot_var
+                    )
 
                     # Only required when fitting an error inflation
-                    ln_like += -0.5 * weight * np.log(2.*np.pi*phot_var)
+                    ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
 
         for i, item in enumerate(self.spectrum.keys()):
             # Calculate or interpolate the model spectrum
@@ -1366,45 +1515,59 @@ class FitModel:
             # Shortcut for the weight
             weight = self.weights[item]
 
-            if self.model == 'planck':
+            if self.model == "planck":
                 # Calculate a blackbody spectrum
-                readplanck = read_planck.ReadPlanck((0.9*self.spectrum[item][0][0, 0],
-                                                     1.1*self.spectrum[item][0][-1, 0]))
+                readplanck = read_planck.ReadPlanck(
+                    (
+                        0.9 * self.spectrum[item][0][0, 0],
+                        1.1 * self.spectrum[item][0][-1, 0],
+                    )
+                )
 
-                model_box = readplanck.get_spectrum(param_dict, 1000., smooth=True)
+                model_box = readplanck.get_spectrum(param_dict, 1000.0, smooth=True)
 
                 # Resample the spectrum to the observed wavelengths
-                model_flux = spectres.spectres(self.spectrum[item][0][:, 0],
-                                               model_box.wavelength,
-                                               model_box.flux)
+                model_flux = spectres.spectres(
+                    self.spectrum[item][0][:, 0], model_box.wavelength, model_box.flux
+                )
 
             else:
                 # Interpolate the model spectrum from the grid
-                model_flux = self.modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
+                model_flux = self.modelspec[i].spectrum_interp(
+                    list(param_dict.values())
+                )[0, :]
 
                 # Scale the spectrum by (radius/distance)^2
                 model_flux *= flux_scaling
 
             # Veiling
-            if 'veil_a' in veil_param and 'veil_b' in veil_param and 'veil_ref' in veil_param:
-                if item == 'MUSE':
+            if (
+                "veil_a" in veil_param
+                and "veil_b" in veil_param
+                and "veil_ref" in veil_param
+            ):
+                if item == "MUSE":
                     lambda_ref = 0.5  # (um)
 
-                    veil_flux = veil_param['veil_ref'] + veil_param['veil_b'] * \
-                        (self.spectrum[item][0][:, 0] - lambda_ref)
+                    veil_flux = veil_param["veil_ref"] + veil_param["veil_b"] * (
+                        self.spectrum[item][0][:, 0] - lambda_ref
+                    )
 
-                    model_flux = veil_param['veil_a']*model_flux + veil_flux
+                    model_flux = veil_param["veil_a"] * model_flux + veil_flux
 
             # Scale the spectrum data
-            data_flux = spec_scaling[item]*self.spectrum[item][0][:, 1]
+            data_flux = spec_scaling[item] * self.spectrum[item][0][:, 1]
 
             if err_scaling[item] is None:
                 # Variance without error inflation
-                data_var = self.spectrum[item][0][:, 2]**2
+                data_var = self.spectrum[item][0][:, 2] ** 2
 
             else:
                 # Variance with error inflation (see Piette & Madhusudhan 2020)
-                data_var = self.spectrum[item][0][:, 2]**2 + (err_scaling[item]*model_flux)**2
+                data_var = (
+                    self.spectrum[item][0][:, 2] ** 2
+                    + (err_scaling[item] * model_flux) ** 2
+                )
 
             if self.spectrum[item][2] is not None:
                 # The inverted covariance matrix is available
@@ -1419,46 +1582,58 @@ class FitModel:
                     sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
                     # Calculate the inverted matrix of the inflated covariances
-                    data_cov_inv = np.linalg.inv(self.spectrum[item][1]*sigma_i*sigma_j)
+                    data_cov_inv = np.linalg.inv(
+                        self.spectrum[item][1] * sigma_i * sigma_j
+                    )
 
             if disk_param:
-                model_tmp = self.diskspec[i].spectrum_interp([disk_param['teff']])[0, :]
+                model_tmp = self.diskspec[i].spectrum_interp([disk_param["teff"]])[0, :]
 
-                model_tmp *= (disk_param['radius']*constants.R_JUP)**2 / \
-                    (self.distance[0]*constants.PARSEC)**2
+                model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 / (
+                    self.distance[0] * constants.PARSEC
+                ) ** 2
 
                 model_flux += model_tmp
 
-            if 'lognorm_ext' in dust_param:
+            if "lognorm_ext" in dust_param:
                 for j, cross_item in enumerate(self.cross_sections[item]):
-                    cross_tmp = cross_item(dust_param['lognorm_sigma'],
-                                           10.**dust_param['lognorm_radius'])[0]
+                    cross_tmp = cross_item(
+                        dust_param["lognorm_sigma"],
+                        10.0 ** dust_param["lognorm_radius"],
+                    )[0]
 
-                    model_flux[j] *= np.exp(-cross_tmp*n_grains)
+                    model_flux[j] *= np.exp(-cross_tmp * n_grains)
 
-            elif 'powerlaw_ext' in dust_param:
+            elif "powerlaw_ext" in dust_param:
                 for j, cross_item in enumerate(self.cross_sections[item]):
                     # For loop over all wavelengths of a spectrum
-                    cross_tmp = cross_item(dust_param['powerlaw_exp'],
-                                           10.**dust_param['powerlaw_max'])[0]
+                    cross_tmp = cross_item(
+                        dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
+                    )[0]
 
-                    model_flux[j] *= np.exp(-cross_tmp*n_grains)
+                    model_flux[j] *= np.exp(-cross_tmp * n_grains)
 
-            elif 'ism_ext' in dust_param:
-                ism_reddening = dust_param.get('ism_red', 3.1)
+            elif "ism_ext" in dust_param:
+                ism_reddening = dust_param.get("ism_red", 3.1)
 
-                ext_filt = dust_util.ism_extinction(dust_param['ism_ext'],
-                                                    ism_reddening,
-                                                    self.spectrum[item][0][:, 0])
+                ext_filt = dust_util.ism_extinction(
+                    dust_param["ism_ext"], ism_reddening, self.spectrum[item][0][:, 0]
+                )
 
-                model_flux *= 10.**(-0.4*ext_filt)
+                model_flux *= 10.0 ** (-0.4 * ext_filt)
 
             if self.spectrum[item][2] is not None:
                 # Use the inverted covariance matrix
-                ln_like += -0.5 * weight * np.dot(data_flux-model_flux,
-                                                  np.dot(data_cov_inv, data_flux-model_flux))
+                ln_like += (
+                    -0.5
+                    * weight
+                    * np.dot(
+                        data_flux - model_flux,
+                        np.dot(data_cov_inv, data_flux - model_flux),
+                    )
+                )
 
-                ln_like += -0.5 * weight * np.nansum(np.log(2.*np.pi*data_var))
+                ln_like += -0.5 * weight * np.nansum(np.log(2.0 * np.pi * data_var))
 
             else:
                 if item in self.fit_corr:
@@ -1469,31 +1644,43 @@ class FitModel:
                     error = np.sqrt(data_var)  # (W m-2 um-1)
                     error_j, error_i = np.meshgrid(error, error)
 
-                    cov_matrix = corr_amp[item]**2 * error_i * error_j * \
-                        np.exp(-(wavel_i-wavel_j)**2 / (2.*corr_len[item]**2)) + \
-                        (1.-corr_amp[item]**2) * np.eye(wavel.shape[0])*error_i**2
+                    cov_matrix = (
+                        corr_amp[item] ** 2
+                        * error_i
+                        * error_j
+                        * np.exp(
+                            -((wavel_i - wavel_j) ** 2) / (2.0 * corr_len[item] ** 2)
+                        )
+                        + (1.0 - corr_amp[item] ** 2)
+                        * np.eye(wavel.shape[0])
+                        * error_i ** 2
+                    )
 
-                    dot_tmp = np.dot(data_flux-model_flux,
-                                     np.dot(np.linalg.inv(cov_matrix), data_flux-model_flux))
+                    dot_tmp = np.dot(
+                        data_flux - model_flux,
+                        np.dot(np.linalg.inv(cov_matrix), data_flux - model_flux),
+                    )
 
                     ln_like += -0.5 * weight * dot_tmp
-                    ln_like += -0.5 * np.nansum(np.log(2.*np.pi*data_var))
+                    ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
 
                 else:
                     # Calculate the chi-square without a covariance matrix
-                    chi_sq = -0.5 * weight * (data_flux-model_flux)**2 / data_var
-                    chi_sq += -0.5 * weight * np.log(2.*np.pi*data_var)
+                    chi_sq = -0.5 * weight * (data_flux - model_flux) ** 2 / data_var
+                    chi_sq += -0.5 * weight * np.log(2.0 * np.pi * data_var)
 
                     ln_like += np.nansum(chi_sq)
 
         return ln_like
 
     @typechecked
-    def run_multinest(self,
-                      tag: str,
-                      n_live_points: int = 1000,
-                      output: str = 'multinest/',
-                      prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
+    def run_multinest(
+        self,
+        tag: str,
+        n_live_points: int = 1000,
+        output: str = "multinest/",
+        prior: Optional[Dict[str, Tuple[float, float]]] = None,
+    ) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
         ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
@@ -1530,12 +1717,13 @@ class FitModel:
             None
         """
 
-        print('Running nested sampling with MultiNest...')
+        print("Running nested sampling with MultiNest...")
 
         # Get the MPI rank of the process
 
         try:
             from mpi4py import MPI
+
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
         except ModuleNotFoundError:
@@ -1547,9 +1735,7 @@ class FitModel:
             os.mkdir(output)
 
         @typechecked
-        def lnprior_multinest(cube,
-                              n_dim: int,
-                              n_param: int) -> None:
+        def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter cube. It is not clear how to
             pass additional arguments to the function, therefore it is placed here and not merged
@@ -1572,13 +1758,14 @@ class FitModel:
 
             for item in self.cube_index:
                 # Uniform priors for all parameters
-                cube[self.cube_index[item]] = self.bounds[item][0] + \
-                    (self.bounds[item][1]-self.bounds[item][0])*cube[self.cube_index[item]]
+                cube[self.cube_index[item]] = (
+                    self.bounds[item][0]
+                    + (self.bounds[item][1] - self.bounds[item][0])
+                    * cube[self.cube_index[item]]
+                )
 
         @typechecked
-        def lnlike_multinest(params,
-                             n_dim: int,
-                             n_param: int) -> np.float64:
+        def lnlike_multinest(params, n_dim: int, n_param: int) -> np.float64:
             """
             Function for return the log-likelihood for the sampled parameter cube.
 
@@ -1599,47 +1786,53 @@ class FitModel:
 
             return self.lnlike_func(params, prior=prior)
 
-        pymultinest.run(lnlike_multinest,
-                        lnprior_multinest,
-                        len(self.modelpar),
-                        outputfiles_basename=output,
-                        resume=False,
-                        n_live_points=n_live_points)
+        pymultinest.run(
+            lnlike_multinest,
+            lnprior_multinest,
+            len(self.modelpar),
+            outputfiles_basename=output,
+            resume=False,
+            n_live_points=n_live_points,
+        )
 
         # Create the Analyzer object
-        analyzer = pymultinest.analyse.Analyzer(len(self.modelpar), outputfiles_basename=output)
+        analyzer = pymultinest.analyse.Analyzer(
+            len(self.modelpar), outputfiles_basename=output
+        )
 
         # Get a dictionary with the ln(Z) and its errors, the individual modes and their parameters
         # quantiles of the parameter posteriors
         stats = analyzer.get_stats()
 
         # Nested sampling global log-evidence
-        ln_z = stats['nested sampling global log-evidence']
-        ln_z_error = stats['nested sampling global log-evidence error']
-        print(f'Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+        ln_z = stats["nested sampling global log-evidence"]
+        ln_z_error = stats["nested sampling global log-evidence error"]
+        print(f"Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Nested sampling global log-evidence
-        ln_z = stats['nested importance sampling global log-evidence']
-        ln_z_error = stats['nested importance sampling global log-evidence error']
-        print(f'Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}')
+        ln_z = stats["nested importance sampling global log-evidence"]
+        ln_z_error = stats["nested importance sampling global log-evidence error"]
+        print(
+            f"Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}"
+        )
 
         # Get the best-fit (highest likelihood) point
-        print('Sample with the highest likelihood:')
+        print("Sample with the highest likelihood:")
         best_params = analyzer.get_best_fit()
 
-        max_lnlike = best_params['log_likelihood']
-        print(f'   - Log-likelihood = {max_lnlike:.2f}')
+        max_lnlike = best_params["log_likelihood"]
+        print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
-        for i, item in enumerate(best_params['parameters']):
-            print(f'   - {self.modelpar[i]} = {item:.2f}')
+        for i, item in enumerate(best_params["parameters"]):
+            print(f"   - {self.modelpar[i]} = {item:.2f}")
 
         # Get the posterior samples
         samples = analyzer.get_equal_weighted_posterior()
 
         spec_labels = []
         for item in self.spectrum:
-            if f'scaling_{item}' in self.bounds:
-                spec_labels.append(f'scaling_{item}')
+            if f"scaling_{item}" in self.bounds:
+                spec_labels.append(f"scaling_{item}")
 
         ln_prob = samples[:, -1]
         samples = samples[:, :-1]
@@ -1658,6 +1851,7 @@ class FitModel:
 
         try:
             from mpi4py import MPI
+
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
         except ModuleNotFoundError:
@@ -1669,23 +1863,27 @@ class FitModel:
             # Writing the samples to the database is only possible when using a single process
             species_db = database.Database()
 
-            species_db.add_samples(sampler='multinest',
-                                   samples=samples,
-                                   ln_prob=ln_prob,
-                                   ln_evidence=(ln_z, ln_z_error),
-                                   mean_accept=None,
-                                   spectrum=('model', self.model),
-                                   tag=tag,
-                                   modelpar=self.modelpar,
-                                   distance=self.distance[0],
-                                   spec_labels=spec_labels)
+            species_db.add_samples(
+                sampler="multinest",
+                samples=samples,
+                ln_prob=ln_prob,
+                ln_evidence=(ln_z, ln_z_error),
+                mean_accept=None,
+                spectrum=("model", self.model),
+                tag=tag,
+                modelpar=self.modelpar,
+                distance=self.distance[0],
+                spec_labels=spec_labels,
+            )
 
     @typechecked
-    def run_ultranest(self,
-                      tag: str,
-                      min_num_live_points=400,
-                      output: str = 'ultranest/',
-                      prior: Optional[Dict[str, Tuple[float, float]]] = None) -> None:
+    def run_ultranest(
+        self,
+        tag: str,
+        min_num_live_points=400,
+        output: str = "ultranest/",
+        prior: Optional[Dict[str, Tuple[float, float]]] = None,
+    ) -> None:
         """
         Function to run ``UltraNest`` for constructing the posterior probability distributions
         on model parameters and computing the marginal likelihood (i.e. "evidence").
@@ -1716,7 +1914,7 @@ class FitModel:
             None
         """
 
-        print('Running nested sampling with UltraNest...')
+        print("Running nested sampling with UltraNest...")
 
         # Print warning if n_live_points from PyMultiNest is used
 
@@ -1731,6 +1929,7 @@ class FitModel:
 
         try:
             from mpi4py import MPI
+
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
         except ModuleNotFoundError:
@@ -1763,8 +1962,11 @@ class FitModel:
 
             for item in self.cube_index:
                 # Uniform priors for all parameters
-                params[self.cube_index[item]] = self.bounds[item][0] + \
-                    (self.bounds[item][1]-self.bounds[item][0])*params[self.cube_index[item]]
+                params[self.cube_index[item]] = (
+                    self.bounds[item][0]
+                    + (self.bounds[item][1] - self.bounds[item][0])
+                    * params[self.cube_index[item]]
+                )
 
             return params
 
@@ -1786,54 +1988,58 @@ class FitModel:
 
             return self.lnlike_func(params, prior=prior)
 
-        sampler = ultranest.ReactiveNestedSampler(self.modelpar,
-                                                  lnlike_ultranest,
-                                                  transform=lnprior_ultranest,
-                                                  resume='subfolder',
-                                                  log_dir=output)
+        sampler = ultranest.ReactiveNestedSampler(
+            self.modelpar,
+            lnlike_ultranest,
+            transform=lnprior_ultranest,
+            resume="subfolder",
+            log_dir=output,
+        )
 
-        result = sampler.run(show_status=True,
-                             viz_callback=False,
-                             min_num_live_points=min_num_live_points)
+        result = sampler.run(
+            show_status=True,
+            viz_callback=False,
+            min_num_live_points=min_num_live_points,
+        )
 
         # Log-evidence
 
-        ln_z = result['logz']
-        ln_z_error = result['logzerr']
-        print(f'Log-evidence = {ln_z:.2f} +/- {ln_z_error:.2f}')
+        ln_z = result["logz"]
+        ln_z_error = result["logzerr"]
+        print(f"Log-evidence = {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Best-fit parameters
 
-        print('Best-fit parameters (mean +/- std):')
+        print("Best-fit parameters (mean +/- std):")
 
         for i, item in enumerate(self.modelpar):
-            mean = np.mean(result['samples'][:, i])
-            std = np.std(result['samples'][:, i])
+            mean = np.mean(result["samples"][:, i])
+            std = np.std(result["samples"][:, i])
 
-            print(f'   - {item} = {mean:.2e} +/- {std:.2e}')
+            print(f"   - {item} = {mean:.2e} +/- {std:.2e}")
 
         # Maximum likelihood sample
 
-        print('Maximum likelihood sample:')
+        print("Maximum likelihood sample:")
 
-        max_lnlike = result['maximum_likelihood']['logl']
-        print(f'   - Log-likelihood = {max_lnlike:.2f}')
+        max_lnlike = result["maximum_likelihood"]["logl"]
+        print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
-        for i, item in enumerate(result['maximum_likelihood']['point']):
-            print(f'   - {self.modelpar[i]} = {item:.2f}')
+        for i, item in enumerate(result["maximum_likelihood"]["point"]):
+            print(f"   - {self.modelpar[i]} = {item:.2f}")
 
         # Create a list with scaling labels
 
         spec_labels = []
         for item in self.spectrum:
-            if f'scaling_{item}' in self.bounds:
-                spec_labels.append(f'scaling_{item}')
+            if f"scaling_{item}" in self.bounds:
+                spec_labels.append(f"scaling_{item}")
 
         # Posterior samples
-        samples = result['samples']
+        samples = result["samples"]
 
         # Log-likelihood
-        ln_prob = result['weighted_samples']['logl']
+        ln_prob = result["weighted_samples"]["logl"]
 
         # Adding the fixed parameters to the samples
 
@@ -1849,6 +2055,7 @@ class FitModel:
 
         try:
             from mpi4py import MPI
+
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
         except ModuleNotFoundError:
@@ -1860,13 +2067,15 @@ class FitModel:
             # Writing the samples to the database is only possible when using a single process
             species_db = database.Database()
 
-            species_db.add_samples(sampler='ultranest',
-                                   samples=samples,
-                                   ln_prob=ln_prob,
-                                   ln_evidence=(ln_z, ln_z_error),
-                                   mean_accept=None,
-                                   spectrum=('model', self.model),
-                                   tag=tag,
-                                   modelpar=self.modelpar,
-                                   distance=self.distance[0],
-                                   spec_labels=spec_labels)
+            species_db.add_samples(
+                sampler="ultranest",
+                samples=samples,
+                ln_prob=ln_prob,
+                ln_evidence=(ln_z, ln_z_error),
+                mean_accept=None,
+                spectrum=("model", self.model),
+                tag=tag,
+                modelpar=self.modelpar,
+                distance=self.distance[0],
+                spec_labels=spec_labels,
+            )

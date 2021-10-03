@@ -26,9 +26,7 @@ class ReadCalibration:
     """
 
     @typechecked
-    def __init__(self,
-                 tag: str,
-                 filter_name: Optional[str] = None) -> None:
+    def __init__(self, tag: str, filter_name: Optional[str] = None) -> None:
         """
         Parameters
         ----------
@@ -54,19 +52,21 @@ class ReadCalibration:
             transmission = read_filter.ReadFilter(filter_name)
             self.wavel_range = transmission.wavelength_range()
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
         config.read_file(open(config_file))
 
-        self.database = config['species']['database']
+        self.database = config["species"]["database"]
 
     @typechecked
-    def resample_spectrum(self,
-                          wavel_points: np.ndarray,
-                          model_param: Optional[Dict[str, float]] = None,
-                          spec_res: Optional[float] = None,
-                          apply_mask: bool = False) -> box.SpectrumBox:
+    def resample_spectrum(
+        self,
+        wavel_points: np.ndarray,
+        model_param: Optional[Dict[str, float]] = None,
+        spec_res: Optional[float] = None,
+        apply_mask: bool = False,
+    ) -> box.SpectrumBox:
         """
         Function for resampling the spectrum and optional uncertainties onto a new wavelength grid.
 
@@ -95,45 +95,51 @@ class ReadCalibration:
         calibbox = self.get_spectrum()
 
         if spec_res is not None:
-            calibbox.flux = read_util.smooth_spectrum(wavelength=calibbox.wavelength,
-                                                      flux=calibbox.flux,
-                                                      spec_res=spec_res)
+            calibbox.flux = read_util.smooth_spectrum(
+                wavelength=calibbox.wavelength, flux=calibbox.flux, spec_res=spec_res
+            )
 
         if apply_mask:
-            indices = np.where(calibbox.flux > 0.)[0]
+            indices = np.where(calibbox.flux > 0.0)[0]
 
             calibbox.wavelength = calibbox.wavelength[indices]
             calibbox.flux = calibbox.flux[indices]
             calibbox.error = calibbox.error[indices]
 
-        flux_new, error_new = spectres.spectres(wavel_points,
-                                                calibbox.wavelength,
-                                                calibbox.flux,
-                                                spec_errs=calibbox.error,
-                                                fill=0.,
-                                                verbose=False)
+        flux_new, error_new = spectres.spectres(
+            wavel_points,
+            calibbox.wavelength,
+            calibbox.flux,
+            spec_errs=calibbox.error,
+            fill=0.0,
+            verbose=False,
+        )
 
         if model_param is not None:
-            flux_new = model_param['scaling']*flux_new
-            error_new = model_param['scaling']*error_new
+            flux_new = model_param["scaling"] * flux_new
+            error_new = model_param["scaling"] * error_new
 
-        return box.create_box(boxtype='spectrum',
-                              spectrum='calibration',
-                              wavelength=wavel_points,
-                              flux=flux_new,
-                              error=error_new,
-                              name=self.tag,
-                              simbad=None,
-                              sptype=None,
-                              distance=None)
+        return box.create_box(
+            boxtype="spectrum",
+            spectrum="calibration",
+            wavelength=wavel_points,
+            flux=flux_new,
+            error=error_new,
+            name=self.tag,
+            simbad=None,
+            sptype=None,
+            distance=None,
+        )
 
     @typechecked
-    def get_spectrum(self,
-                     model_param: Optional[Dict[str, float]] = None,
-                     apply_mask: bool = False,
-                     spec_res: Optional[float] = None,
-                     extrapolate: bool = False,
-                     min_wavelength: Optional[float] = None) -> box.SpectrumBox:
+    def get_spectrum(
+        self,
+        model_param: Optional[Dict[str, float]] = None,
+        apply_mask: bool = False,
+        spec_res: Optional[float] = None,
+        extrapolate: bool = False,
+        min_wavelength: Optional[float] = None,
+    ) -> box.SpectrumBox:
         """
         Function for selecting the calibration spectrum.
 
@@ -157,29 +163,44 @@ class ReadCalibration:
             Box with the spectrum.
         """
 
-        with h5py.File(self.database, 'r') as h5_file:
-            data = np.asarray(h5_file[f'spectra/calibration/{self.tag}'])
+        with h5py.File(self.database, "r") as h5_file:
+            data = np.asarray(h5_file[f"spectra/calibration/{self.tag}"])
 
-            wavelength = np.asarray(data[0, ])
-            flux = np.asarray(data[1, ])
-            error = np.asarray(data[2, ])
+            wavelength = np.asarray(
+                data[
+                    0,
+                ]
+            )
+            flux = np.asarray(
+                data[
+                    1,
+                ]
+            )
+            error = np.asarray(
+                data[
+                    2,
+                ]
+            )
 
         if apply_mask:
-            indices = np.where(flux > 0.)[0]
+            indices = np.where(flux > 0.0)[0]
 
             wavelength = wavelength[indices]
             flux = flux[indices]
             error = error[indices]
 
         if model_param is not None:
-            flux = model_param['scaling']*flux
-            error = model_param['scaling']*error
+            flux = model_param["scaling"] * flux
+            error = model_param["scaling"] * error
 
         if self.wavel_range is None:
             wl_index = np.ones(wavelength.size, dtype=bool)
         else:
-            wl_index = (flux > 0.) & (wavelength > self.wavel_range[0]) & \
-                       (wavelength < self.wavel_range[1])
+            wl_index = (
+                (flux > 0.0)
+                & (wavelength > self.wavel_range[0])
+                & (wavelength < self.wavel_range[1])
+            )
 
         count = np.count_nonzero(wl_index)
 
@@ -189,7 +210,7 @@ class ReadCalibration:
             if index[0] > 0:
                 wl_index[index[0] - 1] = True
 
-            if index[-1] < len(wl_index)-1:
+            if index[-1] < len(wl_index) - 1:
                 wl_index[index[-1] + 1] = True
 
             wavelength = wavelength[wl_index]
@@ -197,62 +218,71 @@ class ReadCalibration:
             error = error[wl_index]
 
         if extrapolate:
+
             def _power_law(wavelength, offset, scaling, power_index):
-                return offset + scaling*wavelength**power_index
+                return offset + scaling * wavelength ** power_index
 
             if min_wavelength:
                 indices = np.where(wavelength > min_wavelength)[0]
             else:
                 indices = np.arange(0, wavelength.size, 1)
 
-            popt, pcov = curve_fit(f=_power_law,
-                                   xdata=wavelength[indices],
-                                   ydata=flux[indices],
-                                   p0=(0., np.mean(flux[indices]), -1.),
-                                   sigma=error[indices])
+            popt, pcov = curve_fit(
+                f=_power_law,
+                xdata=wavelength[indices],
+                ydata=flux[indices],
+                p0=(0.0, np.mean(flux[indices]), -1.0),
+                sigma=error[indices],
+            )
 
             sigma = np.sqrt(np.diag(pcov))
 
-            print('Fit result for f(x) = a + b*x^c:')
-            print(f'a = {popt[0]} +/- {sigma[0]}')
-            print(f'b = {popt[1]} +/- {sigma[1]}')
-            print(f'c = {popt[2]} +/- {sigma[2]}')
+            print("Fit result for f(x) = a + b*x^c:")
+            print(f"a = {popt[0]} +/- {sigma[0]}")
+            print(f"b = {popt[1]} +/- {sigma[1]}")
+            print(f"c = {popt[2]} +/- {sigma[2]}")
 
-            while wavelength[-1] <= 6.:
-                wl_add = wavelength[-1] + wavelength[-1]/1000.
+            while wavelength[-1] <= 6.0:
+                wl_add = wavelength[-1] + wavelength[-1] / 1000.0
 
                 wavelength = np.append(wavelength, wl_add)
                 flux = np.append(flux, _power_law(wl_add, popt[0], popt[1], popt[2]))
-                error = np.append(error, 0.)
+                error = np.append(error, 0.0)
 
         if spec_res is not None:
-            wavelength_new = read_util.create_wavelengths((wavelength[0], wavelength[-1]),
-                                                          spec_res)
+            wavelength_new = read_util.create_wavelengths(
+                (wavelength[0], wavelength[-1]), spec_res
+            )
 
-            flux_new, error_new = spectres.spectres(wavelength_new,
-                                                    wavelength,
-                                                    flux,
-                                                    spec_errs=error,
-                                                    fill=0.,
-                                                    verbose=True)
+            flux_new, error_new = spectres.spectres(
+                wavelength_new,
+                wavelength,
+                flux,
+                spec_errs=error,
+                fill=0.0,
+                verbose=True,
+            )
 
             wavelength = wavelength_new
             flux = flux_new
             error = error_new
 
-        return box.create_box(boxtype='spectrum',
-                              spectrum='calibration',
-                              wavelength=wavelength,
-                              flux=flux,
-                              error=error,
-                              name=self.tag,
-                              simbad=None,
-                              sptype=None,
-                              distance=None)
+        return box.create_box(
+            boxtype="spectrum",
+            spectrum="calibration",
+            wavelength=wavelength,
+            flux=flux,
+            error=error,
+            name=self.tag,
+            simbad=None,
+            sptype=None,
+            distance=None,
+        )
 
     @typechecked
-    def get_flux(self,
-                 model_param: Optional[Dict[str, float]] = None) -> Tuple[float, float]:
+    def get_flux(
+        self, model_param: Optional[Dict[str, float]] = None
+    ) -> Tuple[float, float]:
         """
         Function for calculating the average flux for the ``filter_name``.
 
@@ -275,13 +305,16 @@ class ReadCalibration:
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_flux(specbox.wavelength, specbox.flux, error=specbox.flux)
+        return synphot.spectrum_to_flux(
+            specbox.wavelength, specbox.flux, error=specbox.flux
+        )
 
     @typechecked
-    def get_magnitude(self,
-                      model_param: Optional[Dict[str, float]] = None,
-                      distance: Optional[Tuple[float, float]] = None) -> Tuple[
-                          Tuple[float, Optional[float]], Tuple[Optional[float], Optional[float]]]:
+    def get_magnitude(
+        self,
+        model_param: Optional[Dict[str, float]] = None,
+        distance: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[Tuple[float, Optional[float]], Tuple[Optional[float], Optional[float]]]:
         """
         Function for calculating the apparent magnitude for the ``filter_name``.
 
@@ -310,7 +343,6 @@ class ReadCalibration:
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_magnitude(specbox.wavelength,
-                                             specbox.flux,
-                                             error=error,
-                                             distance=distance)
+        return synphot.spectrum_to_magnitude(
+            specbox.wavelength, specbox.flux, error=error, distance=distance
+        )
