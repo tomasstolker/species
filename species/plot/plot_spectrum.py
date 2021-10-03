@@ -723,7 +723,7 @@ def plot_spectrum(boxes: list,
 
         ax3.axhline(0., ls='--', lw=0.7, color='gray', dashes=(2, 4), zorder=0.5)
 
-        if res_lim > 5. or (ylim_res[0] < -5. and ylim_res[1] > 5.):
+        if res_lim > 5. or (ylim_res is not None and ylim_res[0] < -5. and ylim_res[1] > 5.):
             ax3.axhline(-5., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
             ax3.axhline(5., ls=':', lw=0.7, color='gray', dashes=(1, 4), zorder=0.5)
 

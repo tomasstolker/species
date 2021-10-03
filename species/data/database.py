@@ -533,7 +533,7 @@ class Database:
                                               teff_range,
                                               spec_res)
 
-            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co'], h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'c_o_ratio'], h5_file)
 
         elif model == 'petitcode-hot-cloudy':
             petitcode.add_petitcode_hot_cloudy(self.input_path,
@@ -542,7 +542,7 @@ class Database:
                                                teff_range,
                                                spec_res)
 
-            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co', 'fsed'], h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'c_o_ratio', 'fsed'], h5_file)
 
         elif model == 'exo-rem':
             exo_rem.add_exo_rem(self.input_path,
@@ -551,7 +551,7 @@ class Database:
                                 teff_range,
                                 spec_res)
 
-            data_util.add_missing(model, ['teff', 'logg', 'feh', 'co'], h5_file)
+            data_util.add_missing(model, ['teff', 'logg', 'feh', 'c_o_ratio'], h5_file)
 
         else:
             raise ValueError(f'The {model} atmospheric model is not available. Please choose from '

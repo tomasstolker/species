@@ -1019,7 +1019,7 @@ class FitModel:
                      'logg': 0.01,
                      'feh': 0.01,
                      'fsed': 0.01,
-                     'co': 0.01,
+                     'c_o_ratio': 0.01,
                      'radius': 0.01}
 
         for item in self.spectrum:

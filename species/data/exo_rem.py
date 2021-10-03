@@ -153,6 +153,6 @@ def add_exo_rem(input_path: str,
                                       np.asarray(flux))
 
     data_util.write_data('exo-rem',
-                         ['teff', 'logg', 'feh', 'co'],
+                         ['teff', 'logg', 'feh', 'c_o_ratio'],
                          database,
                          data_sorted)

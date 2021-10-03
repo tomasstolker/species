@@ -389,7 +389,7 @@ def add_petitcode_hot_clear(input_path: str,
                                       np.asarray(flux))
 
     data_util.write_data('petitcode-hot-clear',
-                         ['teff', 'logg', 'feh', 'co'],
+                         ['teff', 'logg', 'feh', 'c_o_ratio'],
                          database,
                          data_sorted)
 
@@ -517,6 +517,6 @@ def add_petitcode_hot_cloudy(input_path: str,
                                       np.asarray(flux))
 
     data_util.write_data('petitcode-hot-cloudy',
-                         ['teff', 'logg', 'feh', 'co', 'fsed'],
+                         ['teff', 'logg', 'feh', 'c_o_ratio', 'fsed'],
                          database,
                          data_sorted)
