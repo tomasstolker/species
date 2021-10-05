@@ -63,7 +63,7 @@ def plot_statistic(
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
     config = configparser.ConfigParser()
-    config.read_file(open(config_file))
+    config.read(config_file)
 
     db_path = config["species"]["database"]
 
@@ -238,7 +238,7 @@ def plot_empirical_spectra(
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
     config = configparser.ConfigParser()
-    config.read_file(open(config_file))
+    config.read(config_file)
 
     db_path = config["species"]["database"]
 
@@ -466,7 +466,7 @@ def plot_grid_statistic(
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
     config = configparser.ConfigParser()
-    config.read_file(open(config_file))
+    config.read(config_file)
 
     db_path = config["species"]["database"]
 

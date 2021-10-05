@@ -29,9 +29,11 @@ class ReadSpectrum:
         Parameters
         ----------
         spec_library : str
-            Name of the spectral library ('irtf', 'spex') or other type of spectrum ('vega').
+            Name of the spectral library ('irtf', 'spex') or other type
+            of spectrum ('vega').
         filter_name : str, None
-            Filter name for the wavelength range. Full spectra are read if set to ``None``.
+            Filter name for the wavelength range. Full spectra are read
+            if set to ``None``.
 
         Returns
         -------
@@ -52,7 +54,7 @@ class ReadSpectrum:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -66,10 +68,12 @@ class ReadSpectrum:
         Parameters
         ----------
         sptypes : list(str), None
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
-            For each object in the ``spec_library``, the requested ``sptypes`` are first compared
-            with the optical spectral type and, if not available, secondly the near-infrared
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``. For
+            each object in the ``spec_library``, the requested
+            ``sptypes`` are first compared with the optical spectral
+            type and, if not available, secondly the near-infrared
             spectral type.
         exclude_nan : bool
             Exclude wavelength points for which the flux is NaN.
@@ -222,13 +226,15 @@ class ReadSpectrum:
     @typechecked
     def get_flux(self, sptypes: List[str] = None) -> box.PhotometryBox:
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux density for the
+        ``filter_name``.
 
         Parameters
         ----------
         sptypes : list(str), None
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------
@@ -275,13 +281,15 @@ class ReadSpectrum:
     @typechecked
     def get_magnitude(self, sptypes: List[str] = None) -> box.PhotometryBox:
         """
-        Function for calculating the apparent magnitude for the ``filter_name``.
+        Function for calculating the apparent magnitude for the
+        ``filter_name``.
 
         Parameters
         ----------
         sptypes : list(str)
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------

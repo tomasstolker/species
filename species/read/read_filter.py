@@ -28,8 +28,10 @@ class ReadFilter:
         Parameters
         ----------
         filter_name : str
-            Filter name as stored in the database. Filter names from the SVO Filter Profile Service
-            will be automatically downloaded, stored in the database, and read from the database.
+            Filter name as stored in the database. Filter names from
+            the SVO Filter Profile Service will be automatically
+            downloaded, stored in the database, and read from the
+            database.
 
         Returns
         -------
@@ -42,7 +44,7 @@ class ReadFilter:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -139,7 +141,8 @@ class ReadFilter:
     @typechecked
     def filter_fwhm(self) -> float:
         """
-        Calculate the full width at half maximum (FWHM) of the filter profile.
+        Calculate the full width at half maximum (FWHM) of the filter
+        profile.
 
         Returns
         -------
@@ -164,9 +167,10 @@ class ReadFilter:
     @typechecked
     def effective_width(self) -> np.float32:
         """
-        Calculate the effective width of the filter profile. The effective width is equivalent to
-        the horizontal size of a rectangle with height equal to the maximum transmission and with
-        the same area as the one covered by the filter profile.
+        Calculate the effective width of the filter profile. The
+        effective width is equivalent to the horizontal size of a
+        rectangle with height equal to the maximum transmission and
+        with the same area as the one covered by the filter profile.
 
         Returns
         -------

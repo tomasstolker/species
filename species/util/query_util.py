@@ -4,9 +4,9 @@ Text
 
 import os
 import sys
+
 # import time
 import warnings
-import configparser
 
 import h5py
 import numpy as np
@@ -47,8 +47,8 @@ class NoStdStreams:
         self.devnull.close()
 
 
-with NoStdStreams():
-    from astroquery.gaia import Gaia
+# with NoStdStreams():
+#     from astroquery.gaia import Gaia
 
 
 def get_parallax():
@@ -295,14 +295,19 @@ def get_distance(target):
     # if ma.is_masked(parallax):
     #
     #     if simbad_result is not None:
-    #         coord_ra = simbad_result['RA'][0]
-    #         coord_dec = simbad_result['DEC'][0]
+    #         coord_ra = simbad_result["RA"][0]
+    #         coord_dec = simbad_result["DEC"][0]
     #
-    #         coord = SkyCoord(ra=coord_ra, dec=coord_dec, unit=(u.hourangle, u.deg), frame='icrs')
-    #         result = Gaia.query_object(coordinate=coord, width=1.*u.arcsec, height=1.*u.arcsec)
+    #         coord = SkyCoord(
+    #             ra=coord_ra, dec=coord_dec, unit=(u.hourangle, u.deg), frame="icrs"
+    #         )
+    #
+    #         result = Gaia.query_object(
+    #             coordinate=coord, width=1.0 * u.arcsec, height=1.0 * u.arcsec
+    #         )
     #
     #         if result:
-    #             parallax = result['parallax'][0]  # (mas)
+    #             parallax = result["parallax"][0]  # (mas)
 
     if parallax is not None:
         distance = 1.0 / (parallax * 1e-3)  # (pc)

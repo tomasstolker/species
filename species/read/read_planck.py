@@ -36,11 +36,12 @@ class ReadPlanck:
         Parameters
         ----------
         wavel_range : tuple(float, float), None
-            Wavelength range (um). A wavelength range of 0.1-1000 um is used if set to
-            None. Not used if ``filter_name`` is not ``None``.
+            Wavelength range (um). A wavelength range of 0.1-1000 um is
+            used if set to None. Not used if ``filter_name`` is not
+            ``None``.
         filter_name : str, None
-            Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
-            to ``None``.
+            Filter name that is used for the wavelength range. The
+            ``wavel_range`` is used if set to ``None``.
 
         Returns
         -------
@@ -65,7 +66,7 @@ class ReadPlanck:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -113,15 +114,17 @@ class ReadPlanck:
         model_param: Dict[str, Union[float, List[float]]]
     ) -> Dict[str, float]:
         """
-        Internal function for updating the dictionary with model parameters.
+        Internal function for updating the dictionary with model
+        parameters.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values
-            of 'teff' and 'radius' can be a single float, or a list with floats for a combination
-            of multiple Planck functions, e.g.
-            {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and
+            'distance' (pc). The values of 'teff' and 'radius' can be a
+            single float, or a list with floats for a combination of
+            multiple Planck functions, e.g. {'teff': [1500., 1000.],
+            'radius': [1., 2.], 'distance': 10.}.
 
         Returns
         -------
@@ -148,25 +151,29 @@ class ReadPlanck:
         wavel_resample: Optional[np.ndarray] = None,
     ) -> box.ModelBox:
         """
-        Function for calculating a Planck spectrum or a combination of multiple Planck spectra. The
-        spectrum is calculated at :math:`R = 500`. Afterwards, an optional smoothing and wavelength
-        resampling can be applied.
+        Function for calculating a Planck spectrum or a combination of
+        multiple Planck spectra. The spectrum is calculated at
+        :math:`R = 500`. Afterwards, an optional smoothing and
+        wavelength resampling can be applied.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc). The values
-            of 'teff' and 'radius' can be a single float, or a list with floats for a combination
-            of multiple Planck functions, e.g.
-            {'teff': [1500., 1000.], 'radius': [1., 2.], 'distance': 10.}.
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and
+            'distance' (pc). The values of 'teff' and 'radius' can be a
+            single float, or a list with floats for a combination of
+            multiple Planck functions, e.g. {'teff': [1500., 1000.],
+            'radius': [1., 2.], 'distance': 10.}.
         spec_res : float
-            Spectral resolution that is used for smoothing the spectrum with a Gaussian kernel when
-            ``smooth=True``.
+            Spectral resolution that is used for smoothing the spectrum
+            with a Gaussian kernel when ``smooth=True``.
         smooth : bool
-            If ``True``, the spectrum is smoothed to the spectral resolution of ``spec_res``.
+            If ``True``, the spectrum is smoothed to the spectral
+            resolution of ``spec_res``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum will be resampled. The resampling is
-            applied after the optional smoothing to ``spec_res`` when ``smooth=True``.
+            Wavelength points (um) to which the spectrum will be
+            resampled. The resampling is applied after the optional
+            smoothing to ``spec_res`` when ``smooth=True``.
 
         Returns
         -------
@@ -280,14 +287,17 @@ class ReadPlanck:
         self, model_param: Dict[str, Union[float, List[float]]], synphot=None
     ) -> Tuple[float, None]:
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux density for the
+        ``filter_name``.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and
+            'distance' (pc).
         synphot : species.analysis.photometry.SyntheticPhotometry, None
-            Synthetic photometry object. The object is created if set to None.
+            Synthetic photometry object. The object is created if set
+            to ``None``.
 
         Returns
         -------
@@ -317,9 +327,11 @@ class ReadPlanck:
         Parameters
         ----------
         model_param : dict
-            Dictionary with the 'teff' (K), 'radius' (Rjup), and 'distance' (pc).
+            Dictionary with the 'teff' (K), 'radius' (Rjup), and
+            'distance' (pc).
         synphot : species.analysis.photometry.SyntheticPhotometry, None
-            Synthetic photometry object. The object is created if set to None.
+            Synthetic photometry object. The object is created if set
+            to ``None``.
 
         Returns
         -------
@@ -355,7 +367,8 @@ class ReadPlanck:
         Parameters
         ----------
         temperatures : np.ndarray
-            Temperatures (K) for which the colors and magnitude are calculated.
+            Temperatures (K) for which the colors and magnitude are
+            calculated.
         radius : float
             Radius (Rjup).
         filters_color : tuple(str, str)
@@ -406,7 +419,8 @@ class ReadPlanck:
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
     ) -> box.ColorColorBox:
         """
-        Function for calculating two colors in the range of 100-10000 K.
+        Function for calculating two colors in the range of
+        100-10000 K.
 
         Parameters
         ----------

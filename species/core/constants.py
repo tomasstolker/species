@@ -1,3 +1,7 @@
+"""
+Constants in SI units.
+"""
+
 PLANCK = 6.62607004e-34  # (m2 kg s-1)
 LIGHT = 299792458.0  # (m s-1)
 BOLTZMANN = 1.38064852e-23  # (m2 kg s-2 K-1)

@@ -14,7 +14,7 @@ from scipy.ndimage.filters import gaussian_filter
 from typeguard import typechecked
 
 from species.core import box, constants
-from species.read import read_model, read_planck, read_radtrans
+from species.read import read_model, read_planck
 
 
 @typechecked
@@ -22,7 +22,8 @@ def get_mass(
     logg: Union[float, np.ndarray], radius: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:
     """
-    Function for converting a :math:`\\log(g)` and a radius into a mass.
+    Function for converting a :math:`\\log(g)` and a radius into
+    a mass.
 
     Parameters
     ----------
@@ -49,7 +50,8 @@ def get_radius(
     logg: Union[float, np.ndarray], mass: Union[float, np.ndarray]
 ) -> Union[float, np.ndarray]:
     """
-    Function for converting a :math:`\\log(g)` and a mass into a radius.
+    Function for converting a :math:`\\log(g)` and a mass into
+    a radius.
 
     Parameters
     ----------
@@ -73,18 +75,20 @@ def get_radius(
 
 def add_luminosity(modelbox):
     """
-    Function to add the luminosity of a model spectrum to the parameter dictionary of the box.
+    Function to add the luminosity of a model spectrum to the parameter
+    dictionary of the box.
 
     Parameters
     ----------
     modelbox : species.core.box.ModelBox
-        Box with the model spectrum. Should also contain the dictionary with the model parameters,
-        the radius in particular.
+        Box with the model spectrum. Should also contain the dictionary
+        with the model parameters, the radius in particular.
 
     Returns
     -------
     species.core.box.ModelBox
-        The input box with the luminosity added in the parameter dictionary.
+        The input box with the luminosity added in the parameter
+        dictionary.
     """
 
     print("Calculating the luminosity...", end="", flush=True)
@@ -137,26 +141,28 @@ def update_spectra(
     objectbox: box.ObjectBox, model_param: Dict[str, float], model: Optional[str] = None
 ) -> box.ObjectBox:
     """
-    Function for applying a flux scaling and/or error inflation to the spectra of an
-    :class:`~species.core.box.ObjectBox`.
+    Function for applying a flux scaling and/or error inflation to the
+    spectra of an :class:`~species.core.box.ObjectBox`.
 
     Parameters
     ----------
     objectbox : species.core.box.ObjectBox
         Box with the object's data, including the spectra.
     model_param : dict
-        Dictionary with the model parameters. Should contain the value(s) of the flux scaling
-        and/or the error inflation.
+        Dictionary with the model parameters. Should contain the
+        value(s) of the flux scaling and/or the error inflation.
     model : str, None
-        Name of the atmospheric model. Only required for inflating the errors. Otherwise, the
-        argument can be set to ``None``. Not required when ``model='petitradtrans'`` because
-        the error inflation is differently implemented with
+        Name of the atmospheric model. Only required for inflating the
+        errors. Otherwise, the argument can be set to ``None``. Not
+        required when ``model='petitradtrans'`` because the error
+        inflation is differently implemented with
         :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
     Returns
     -------
     species.core.box.ObjectBox
-        The input box which includes the spectra with the scaled fluxes and/or inflated errors.
+        The input box which includes the spectra with the scaled fluxes
+        and/or inflated errors.
     """
 
     if objectbox.flux is not None:
@@ -165,7 +171,9 @@ def update_spectra(
             if f"{key}_error" in model_param:
                 var_add = model_param[f"{key}_error"] ** 2 * value[0] ** 2
 
-                message = f"Inflating the error of {key} (W m-2 um-1): {np.sqrt(var_add):.2e}..."
+                message = f"Inflating the error of {key} " + \
+                          f"(W m-2 um-1): {np.sqrt(var_add):.2e}..."
+
                 print(message, end="", flush=True)
 
                 value[1] = np.sqrt(value[1] ** 2 + var_add)
@@ -233,8 +241,9 @@ def update_spectra(
                     print(" [DONE]")
 
             # Store the spectra with the scaled fluxes and/or errors
-            # The other three elements (i.e. the covariance matrix, the inverted covariance matrix,
-            # and the spectral resolution) remain unaffected
+            # The other three elements (i.e. the covariance matrix,
+            # the inverted covariance matrix, and the spectral
+            # resolution) remain unaffected
             objectbox.spectrum[key] = (spec_tmp, value[1], value[2], value[3])
 
     return objectbox
@@ -246,20 +255,23 @@ def create_wavelengths(
     spec_res: float,
 ) -> np.ndarray:
     """
-    Function for creating logarithmically-spaced wavelengths at a constant spectral resolution.
+    Function for creating logarithmically-spaced wavelengths at a
+    constant spectral resolution.
 
     Parameters
     ----------
     wavel_range : tuple(float, float)
-        Wavelength range (um). Tuple with the minimum and maximum wavelength.
+        Wavelength range (um). Tuple with the minimum and maximum
+        wavelength.
     spec_res : float
         Spectral resolution at which the wavelengths are sampled.
 
     Returns
     -------
     np.ndarray
-        Array with the wavelength points and a fixed spectral resolution. Since the wavelength
-        boundaries are fixed, the output spectral resolution is slightly different from the
+        Array with the wavelength points and a fixed spectral
+        resolution. Since the wavelength boundaries are fixed, the
+        output spectral resolution is slightly different from the
         ``spec_res`` value.
     """
 
@@ -269,8 +281,8 @@ def create_wavelengths(
 
     res_test = 0.5 * (wavel_test[1:] + wavel_test[:-1]) / np.diff(wavel_test)
 
-    # R = lambda / delta_lambda / 2, because twice as many points as R are required to resolve
-    # two features that are lambda / R apart
+    # R = lambda / delta_lambda / 2, because twice as many points as
+    # R are required to resolve two features that are lambda / R apart
 
     wavelength = np.logspace(
         np.log10(wavel_range[0]),
@@ -292,17 +304,18 @@ def smooth_spectrum(
     force_smooth: bool = False,
 ) -> np.ndarray:
     """
-    Function for smoothing a spectrum with a Gaussian kernel to a fixed spectral resolution. The
-    kernel size is set to 5 times the FWHM of the Gaussian. The FWHM of the Gaussian is equal
-    to the ratio of the wavelength and the spectral resolution. If the kernel does not fit within
-    the available wavelength grid (i.e. at the edge of the array) then the flux values are set
-    to NaN.
+    Function for smoothing a spectrum with a Gaussian kernel to a
+    fixed spectral resolution. The kernel size is set to 5 times the
+    FWHM of the Gaussian. The FWHM of the Gaussian is equal to the
+    ratio of the wavelength and the spectral resolution. If the
+    kernel does not fit within the available wavelength grid (i.e.
+    at the edge of the array) then the flux values are set to NaN.
 
     Parameters
     ----------
     wavelength : np.ndarray
-        Wavelength points (um). Should be sampled with a uniform spectral resolution or a uniform
-        wavelength spacing (slow).
+        Wavelength points (um). Should be sampled with a uniform
+        spectral resolution or a uniform wavelength spacing (slow).
     flux : np.ndarray
         Flux (W m-2 um-1).
     spec_res : float
@@ -381,17 +394,18 @@ def powerlaw_spectrum(
     spec_res: float = 100.0,
 ) -> box.ModelBox:
     """
-    Function for calculating a power-law spectrum. The power-law function is calculated in
-    log(wavelength)-log(flux) space but stored in the :class:`~species.core.box.ModelBox`
-    in linear wavelength-flux space.
+    Function for calculating a power-law spectrum. The power-law
+    function is calculated in log(wavelength)-log(flux) space but
+    stored in the :class:`~species.core.box.ModelBox` in linear
+    wavelength-flux space.
 
     Parameters
     ----------
     wavel_range : tuple(float, float)
         Tuple with the minimum and maximum wavelength (um).
     model_param : dict
-        Dictionary with the model parameters. Should contain `'log_powerlaw_a'`,
-        `'log_powerlaw_b'`, and `'log_powerlaw_c'`.
+        Dictionary with the model parameters. Should contain
+        `'log_powerlaw_a'`, `'log_powerlaw_b'`, and `'log_powerlaw_c'`.
     spec_res : float
         Spectral resolution (default: 100).
 
@@ -429,20 +443,24 @@ def gaussian_spectrum(
     double_gaussian: bool = False,
 ) -> box.ModelBox:
     """
-    Function for calculating a Gaussian spectrum (i.e. for an emission line).
+    Function for calculating a Gaussian spectrum (i.e. for an emission
+    line).
 
     Parameters
     ----------
     wavel_range : tuple(float, float)
         Tuple with the minimum and maximum wavelength (um).
     model_param : dict
-        Dictionary with the model parameters. Should contain ``'gauss_amplitude'``,
-        ``'gauss_mean'``, ``'gauss_sigma'``, and optionally ``'gauss_offset'``.
+        Dictionary with the model parameters. Should contain
+        ``'gauss_amplitude'``, ``'gauss_mean'``, ``'gauss_sigma'``,
+        and optionally ``'gauss_offset'``.
     spec_res : float
         Spectral resolution (default: 100).
     double_gaussian : bool
-        Set to ``True`` for returning a double Gaussian function. In that case, ``model_param``
-        should also contain ``'gauss_amplitude_2'``, ``'gauss_mean_2'``, and ``'gauss_sigma_2'``.
+        Set to ``True`` for returning a double Gaussian function.
+        In that case, ``model_param`` should also contain
+        ``'gauss_amplitude_2'``, ``'gauss_mean_2'``, and
+        ``'gauss_sigma_2'``.
 
     Returns
     -------

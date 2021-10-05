@@ -1,6 +1,6 @@
 """
-Module for generating atmospheric model spectra with ``petitRADTRANS``. Details on the
-radiative transfer code can be found in Mollière et al. (2019).
+Module for generating atmospheric model spectra with ``petitRADTRANS``.
+Details on the  transfer code can be found in Mollière et al. (2019).
 """
 
 import warnings
@@ -43,37 +43,51 @@ class ReadRadtrans:
         Parameters
         ----------
         line_species : list, None
-            List with the line species. No line species are used if set to ``None``.
+            List with the line species. No line species are used if set
+            to ``None``.
         cloud_species : list, None
-            List with the cloud species. No clouds are used if set to ``None``.
+            List with the cloud species. No clouds are used if set to
+            ``None``.
         scattering : bool
             Include scattering in the radiative transfer.
         wavel_range : tuple(float, float), None
-            Wavelength range (um). The wavelength range is set to 0.8-10 um if set to ``None`` or
-            not used if ``filter_name`` is not ``None``.
+            Wavelength range (um). The wavelength range is set to
+            0.8-10 um if set to ``None`` or not used if ``filter_name``
+            is not ``None``.
         filter_name : str, None
-            Filter name that is used for the wavelength range. The ``wavel_range`` is used if
-            ''filter_name`` is set to ``None``.
+            Filter name that is used for the wavelength range. The
+            ``wavel_range`` is used if ''filter_name`` is set to
+            ``None``.
         pressure_grid : str
-            The type of pressure grid that is used for the radiative transfer. Either 'standard',
-            to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-            abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-            of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-            to ~100 layers (depending on the number of cloud species) with a refinement around the
-            cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-            faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-            test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+            The type of pressure grid that is used for the radiative
+            transfer. Either 'standard', to use 180 layers both for
+            the atmospheric structure (e.g. when interpolating the
+            abundances) and 180 layers with the radiative transfer,
+            or 'smaller' to use 60 (instead of 180) with the radiative
+            transfer, or 'clouds' to start with 1440 layers but
+            resample to ~100 layers (depending on the number of cloud
+            species) with a refinement around the cloud decks. For
+            cloudless atmospheres it is recommended to use 'smaller',
+            which runs faster than 'standard' and provides sufficient
+            accuracy. For cloudy atmosphere, one can test with
+            'smaller' but it is recommended to use 'clouds' for
+            improved accuracy fluxes.
         res_mode : str
-            Resolution mode ('c-k' or 'lbl'). The low-resolution mode ('c-k') calculates the
-            spectrum with the correlated-k assumption at :math:`\\lambda/\\Delta \\lambda = 1000`. The
-            high-resolution mode ('lbl') calculates the spectrum with a line-by-line treatment at
+            Resolution mode ('c-k' or 'lbl'). The low-resolution mode
+            ('c-k') calculates the spectrum with the correlated-k
+            assumption at :math:`\\lambda/\\Delta \\lambda = 1000`. The
+            high-resolution mode ('lbl') calculates the spectrum with a
+            line-by-line treatment at
             :math:`\\lambda/\\Delta \\lambda = 10^6`.
         cloud_wavel : tuple(float, float), None
-            Tuple with the wavelength range (um) that is used for calculating the median optical
-            depth of the clouds at the gas-only photosphere and then scaling the cloud optical
-            depth to the value of ``log_tau_cloud``. The range of ``cloud_wavel`` should be
-            encompassed by the range of ``wavel_range``.  The full wavelength range (i.e.
-            ``wavel_range``) is used if the argument is set to ``None``.
+            Tuple with the wavelength range (um) that is used for
+            calculating the median optical depth of the clouds at the
+            gas-only photosphere and then scaling the cloud optical
+            depth to the value of ``log_tau_cloud``. The range of
+            ``cloud_wavel`` should be encompassed by the range of
+            ``wavel_range``.  The full wavelength range (i.e.
+            ``wavel_range``) is used if the argument is set to
+            ``None``.
 
         Returns
         -------
@@ -162,26 +176,31 @@ class ReadRadtrans:
         plot_contribution: Optional[str] = None,
     ) -> box.ModelBox:
         """
-        Function for calculating a model spectrum with ``petitRADTRANS``.
+        Function for calculating a model spectrum with
+        ``petitRADTRANS``.
 
         Parameters
         ----------
         model_param : dict
             Dictionary with the model parameters and values.
         quenching : str, None
-            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
-            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
-            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
-            applied if the argument is set to ``None``.
+            Quenching type for CO/CH4/H2O abundances. Either the
+            quenching pressure (bar) is a free parameter
+            (``quenching='pressure'``) or the quenching pressure is
+            calculated from the mixing and chemical timescales
+            (``quenching='diffusion'``). The quenching is not applied
+            if the argument is set to ``None``.
         spec_res : float, None
-            Spectral resolution, achieved by smoothing with a Gaussian kernel. No smoothing is
-            applied when the argument is set to ``None``.
+            Spectral resolution, achieved by smoothing with a Gaussian
+            kernel. No smoothing is applied when the argument is set to
+            ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum will be resampled. The original
-            wavelengths points will be used if the argument is set to ``None``.
+            Wavelength points (um) to which the spectrum will be
+            resampled. The original wavelengths points will be used if
+            the argument is set to ``None``.
         plot_contribution : str, None
-            Filename for the plot with the emission contribution. The plot is not created if the
-            argument is set to ``None``.
+            Filename for the plot with the emission contribution. The
+            plot is not created if the argument is set to ``None``.
 
         Returns
         -------
@@ -248,7 +267,8 @@ class ReadRadtrans:
         elif chemistry == "free":
             # Free chemistry
 
-            # TODO Set [Fe/H] = 0 for Molliere P-T profile and cloud condensation profiles
+            # TODO Set [Fe/H] = 0 for Molliere P-T profile and
+            # cloud condensation profiles
             metallicity = 0.0
 
             # Create a dictionary with the mass fractions
@@ -335,8 +355,9 @@ class ReadRadtrans:
                     tau_cloud = model_param["tau_cloud"]
 
             elif chemistry == "equilibrium":
-                # Create the dictionary with the mass fractions of the clouds relative to the maximum
-                # values allowed from elemental abundances
+                # Create the dictionary with the mass fractions of the
+                # clouds relative to the maximum values allowed from
+                # elemental abundances
 
                 cloud_fractions = {}
 
@@ -384,14 +405,16 @@ class ReadRadtrans:
                         )
 
                 if "log_tau_cloud" in model_param:
-                    # Set the log mass fraction to zero and use the optical depth parameter to
-                    # scale the cloud mass fraction with petitRADTRANS
+                    # Set the log mass fraction to zero and use the
+                    # optical depth parameter to scale the cloud mass
+                    # fraction with petitRADTRANS
 
                     tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
                 elif "tau_cloud" in model_param:
-                    # Set the log mass fraction to zero and use the optical depth parameter to
-                    # scale the cloud mass fraction with petitRADTRANS
+                    # Set the log mass fraction to zero and use the
+                    # optical depth parameter to scale the cloud mass
+                    # fraction with petitRADTRANS
 
                     tau_cloud = model_param["tau_cloud"]
 
@@ -516,14 +539,16 @@ class ReadRadtrans:
             # Calculate the total optical depth (line and continuum opacities)
             # self.rt_object.calc_opt_depth(10.**model_param['logg'])
 
-            # From Paul: The first axis of total_tau is the coordinate of the cumulative opacity
-            # distribution function (ranging from 0 to 1). A correct average is obtained by
-            # multiplying the first axis with self.w_gauss, then summing them. This is then the
-            # actual wavelength-mean.
+            # From Paul: The first axis of total_tau is the coordinate
+            # of the cumulative opacity distribution function (ranging
+            # from 0 to 1). A correct average is obtained by
+            # multiplying the first axis with self.w_gauss, then
+            # summing them. This is then the actual wavelength-mean.
 
             if self.scattering:
-                # From petitRADTRANS: Only use 0 index for species because for lbl or
-                # test_ck_shuffle_comp = True everything has been moved into the 0th index
+                # From petitRADTRANS: Only use 0 index for species
+                # because for lbl or test_ck_shuffle_comp = True
+                # everything has been moved into the 0th index
                 w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
                 optical_depth = np.sum(
                     w_gauss * self.rt_object.total_tau[:, :, 0, :], axis=0
@@ -649,7 +674,8 @@ class ReadRadtrans:
     @typechecked
     def get_flux(self, model_param: Dict[str, float]) -> Tuple[float, None]:
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux density for the
+        ``filter_name``.
 
         Parameters
         ----------

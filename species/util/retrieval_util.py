@@ -1,6 +1,7 @@
 """
-Utility functions for atmospheric retrieval with ``petitRADTRANS``. This module was put together
-with many contributions by Paul Mollière (MPIA).
+Utility functions for atmospheric retrieval with ``petitRADTRANS``.
+This module was put together  many contributions by Paul Mollière
+(MPIA).
 """
 
 import copy
@@ -10,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy.interpolate import interp1d, CubicSpline, PchipInterpolator
+from scipy.interpolate import interp1d, PchipInterpolator
 from scipy.ndimage.filters import gaussian_filter
 from typeguard import typechecked
 
@@ -65,28 +66,33 @@ def pt_ret_model(
     conv: bool = True,
 ) -> Tuple[np.ndarray, float, Optional[float]]:
     """
-    Pressure-temperature profile for a self-luminous atmosphere (see Mollière et al. 2020).
+    Pressure-temperature profile for a self-luminous atmosphere (see
+    Mollière et al. 2020).
 
     Parameters
     ----------
     temp_3 : np.ndarray, None
-        Array with three temperature points that are added on top of the radiative Eddington
-        structure (i.e. above tau = 0.1). The temperature nodes are connected with a spline
-        interpolation and a prior is used such that t1 < t2 < t3 < t_connect. The three
-        temperature points are not used if set to ``None``.
+        Array with three temperature points that are added on top of
+        the radiative Eddington structure (i.e. above tau = 0.1). The
+        temperature nodes are connected with a spline interpolation
+        and a prior is used such that t1 < t2 < t3 < t_connect. The
+        three temperature points are not used if set to ``None``.
     delta : float
         Proportionality factor in tau = delta * press_cgs**alpha.
     alpha : float
-        Power law index in tau = delta * press_cgs**alpha. For the tau model: use the proximity
-        to the kappa_rosseland photosphere as prior.
+        Power law index in tau = delta * press_cgs**alpha. For the tau
+        model: use the proximity to the kappa_rosseland photosphere
+        as prior.
     tint : float
         Internal temperature for the Eddington model.
     press : np.ndarray
         Pressure profile (bar).
     metallicity : float
-        Metallicity [Fe/H]. Required for the ``nabla_ad`` interpolation.
+        Metallicity [Fe/H]. Required for the ``nabla_ad``
+        interpolation.
     c_o_ratio : float
-        Carbon-to-oxygen ratio. Required for the ``nabla_ad`` interpolation.
+        Carbon-to-oxygen ratio. Required for the ``nabla_ad``
+        interpolation.
     conv : bool
         Enforce a convective adiabat.
 
@@ -109,9 +115,10 @@ def pt_ret_model(
     # Calculate the eddington temperature
     tedd = (3.0 / 4.0 * tint ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
-    # Import interpol_abundances here because it slows down importing species otherwise.
-    # Importing interpol_abundances is only slow the first time, which occurs at the start
-    # of the run_multinest method of AtmosphericRetrieval
+    # Import interpol_abundances here because it slows down importing
+    # species otherwise. Importing interpol_abundances is only slow
+    # the first time, which occurs at the start of the run_multinest
+    # method of AtmosphericRetrieval
 
     from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
@@ -172,10 +179,12 @@ def pt_ret_model(
             # What is the last radiative temperature?
             tstart = np.log(t_take[~conv_index][-1])
 
-            # Integrate and translate to temperature from log(temperature)
+            # Integrate and translate to temperature
+            # from log(temperature)
             tnew = np.exp(np.cumsum(tnew) + tstart)
 
-            # Add upper radiative and lower conective part into one single array
+            # Add upper radiative and lower conective
+            # part into one single array
             tfinal = copy.copy(t_take)
             tfinal[conv_index] = tnew
 
@@ -192,7 +201,8 @@ def pt_ret_model(
     @typechecked
     def press_tau(tau: float) -> float:
         """
-        Function to return the pressure in cgs units at a given optical depth.
+        Function to return the pressure in cgs units at a given
+        optical depth.
 
         Parameters
         ----------
@@ -207,7 +217,8 @@ def pt_ret_model(
 
         return (tau / delta) ** (1.0 / alpha)
 
-    # Where is the uppermost pressure of the Eddington radiative structure?
+    # Where is the uppermost pressure of the
+    # Eddington radiative structure?
     p_bot_spline = press_tau(0.1)
 
     if temp_3 is None:
@@ -217,21 +228,24 @@ def pt_ret_model(
         for i_intp in range(2):
             if i_intp == 0:
 
-                # Create the pressure coordinates for the spline support nodes at low pressure
+                # Create the pressure coordinates for the spline
+                # support nodes at low pressure
                 support_points_low = np.logspace(
                     np.log10(press_cgs[0]), np.log10(p_bot_spline), 4
                 )
 
-                # Create the pressure coordinates for the spline support nodes at high pressure,
-                # the corresponding temperatures for these nodes will be taken from the
-                # radiative-convective solution
+                # Create the pressure coordinates for the spline
+                # support nodes at high pressure, the corresponding
+                # temperatures for these nodes will be taken from
+                # the radiative-convective solution
                 support_points_high = 10.0 ** np.arange(
                     np.log10(p_bot_spline),
                     np.log10(press_cgs[-1]),
                     np.diff(np.log10(support_points_low))[0],
                 )
 
-                # Combine into one support node array, don't add the p_bot_spline point twice.
+                # Combine into one support node array, don't add
+                # the p_bot_spline point twice.
                 support_points = np.zeros(
                     len(support_points_low) + len(support_points_high) - 1
                 )
@@ -241,43 +255,48 @@ def pt_ret_model(
 
             else:
 
-                # Create the pressure coordinates for the spline support nodes at low pressure
+                # Create the pressure coordinates for the spline
+                # support nodes at low pressure
                 support_points_low = np.logspace(
                     np.log10(press_cgs[0]), np.log10(p_bot_spline), 7
                 )
 
-                # Create the pressure coordinates for the spline support nodes at high pressure,
-                # the corresponding temperatures for these nodes will be taken from the
-                # radiative-convective solution
+                # Create the pressure coordinates for the spline
+                # support nodes at high pressure, the corresponding
+                # temperatures for these nodes will be taken from
+                # the radiative-convective solution
                 support_points_high = np.logspace(
                     np.log10(p_bot_spline), np.log10(press_cgs[-1]), 7
                 )
 
-                # Combine into one support node array, don't add the p_bot_spline point twice.
+                # Combine into one support node array, don't add
+                # the p_bot_spline point twice.
                 support_points = np.zeros(
                     len(support_points_low) + len(support_points_high) - 1
                 )
                 support_points[:7] = support_points_low
                 support_points[7:] = support_points_high[1:]
 
-            # Define the temperature values at the node points.
+            # Define the temperature values at the node points
             t_support = np.zeros_like(support_points)
 
             if i_intp == 0:
                 tfintp = interp1d(press_cgs, tfinal)
 
-                # The temperature at p_bot_spline (from the radiative-convective solution)
+                # The temperature at p_bot_spline (from the
+                # radiative-convective solution)
                 t_support[len(support_points_low) - 1] = tfintp(p_bot_spline)
 
                 # if temp_3 is not None:
-                # The temperature at pressures below p_bot_spline (free parameters)
+                # The temperature at pressures below
+                # p_bot_spline (free parameters)
                 t_support[: len(support_points_low) - 1] = temp_3
 
                 # else:
                 #     t_support[:3] = tfintp(support_points_low[:3])
 
-                # The temperature at pressures above p_bot_spline (from the
-                # radiative-convective solution)
+                # The temperature at pressures above p_bot_spline
+                # (from the radiative-convective solution)
                 t_support[len(support_points_low) :] = tfintp(
                     support_points[len(support_points_low) :]
                 )
@@ -291,7 +310,8 @@ def pt_ret_model(
 
                 tfintp = interp1d(press_cgs, tfinal)
 
-                # The temperature at p_bot_spline (from the radiative-convective solution)
+                # The temperature at p_bot_spline (from
+                # the radiative-convective solution)
                 t_support[len(support_points_low) - 1] = tfintp(p_bot_spline)
 
                 # print('diff', t_connect_calc - tfintp(p_bot_spline))
@@ -299,8 +319,9 @@ def pt_ret_model(
                     support_points[len(support_points_low) :]
                 )
 
-            # Make the temperature spline interpolation to be returned to the user
-            # tret = spline(np.log10(support_points), t_support, np.log10(press_cgs), order = 3)
+            # Make the temperature spline interpolation to be returned
+            # to the user tret = spline(np.log10(support_points),
+            # t_support, np.log10(press_cgs), order = 3)
             cs = PchipInterpolator(np.log10(support_points), t_support)
             tret = cs(np.log10(press_cgs))
 
@@ -318,9 +339,10 @@ def pt_spline_interp(
     pt_smooth: float = 0.3,
 ) -> np.ndarray:
     """
-    Function for interpolating the P-T nodes with a PCHIP 1-D monotonic cubic interpolation. The
-    interpolated temperature is smoothed with a Gaussian kernel of width 0.3 dex in pressure
-    (see Piette & Madhusudhan 2020).
+    Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
+    cubic interpolation. The interpolated temperature is smoothed with
+    a Gaussian kernel of width 0.3 dex in pressure (see Piette &
+    Madhusudhan 2020).
 
     Parameters
     ----------
@@ -329,11 +351,13 @@ def pt_spline_interp(
     knot_temp : np.ndarray
         Temperature knots (K).
     pressure : np.ndarray
-        Pressure points (bar) at which the temperatures is interpolated.
+        Pressure points (bar) at which the temperatures is
+        interpolated.
     pt_smooth : float
-        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. The argument should be given as log10(P/bar) with the
-        default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the sampled temperature nodes of the P-T profile. The
+        argument should be given as log10(P/bar) with the default value
+        in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
         set to 0.3 dex.
 
     Returns
@@ -376,21 +400,23 @@ def create_pt_profile(
     cube_index : dict
         Dictionary with the index of each parameter in the ``cube``.
     pt_profile : str
-        The parametrization for the pressure-temperature profile ('molliere', 'free', or
-        'monotonic').
+        The parametrization for the pressure-temperature profile
+        ('molliere', 'free', or 'monotonic').
     pressure : np.ndarray
-        Pressure points (bar) at which the temperatures is interpolated.
+        Pressure points (bar) at which the temperatures is
+        interpolated.
     knot_press : np.ndarray, None
-        Pressure knots (bar), which are required when the argument of ``pt_profile`` is either
-        'free' or 'monotonic'.
+        Pressure knots (bar), which are required when the argument of
+        ``pt_profile`` is either 'free' or 'monotonic'.
     metallicity : float
         Metallicity [Fe/H].
     c_o_ratio : float
         Carbon-to-oxgen ratio.
     pt_smooth : float
-        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. The argument should be given as log10(P/bar) with the
-        default value in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the sampled temperature nodes of the P-T profile. The
+        argument should be given as log10(P/bar) with the default value
+        in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
         set to 0.3 dex.
 
     Returns
@@ -398,7 +424,8 @@ def create_pt_profile(
     np.ndarray
         Temperatures (K).
     np.ndarray, None
-        Temperature at the knots (K). A None is returned if ``pt_profile`` is set to 'molliere'.
+        Temperature at the knots (K). A None is returned if
+        ``pt_profile`` is set to 'molliere'.
     float
         Pressure (bar) where the optical depth is 1.
     float, None
@@ -448,24 +475,27 @@ def make_half_pressure_better(
     p_base: Dict[str, float], pressure: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Function for reducing the number of pressure layers from 1440 to ~100 (depending on the number
-    of cloud species) with a refinement around the cloud decks.
+    Function for reducing the number of pressure layers from 1440 to
+    ~100 (depending on the number of cloud species) with a refinement
+    around the cloud decks.
 
     Parameters
     ----------
     p_base : dict
-        Dictionary with the base of the cloud deck for all cloud species. The keys in the
-        dictionary are included for example as MgSiO3(c).
+        Dictionary with the base of the cloud deck for all cloud
+        species. The keys in the dictionary are included for example
+        as MgSiO3(c).
     pressure : np.ndarray
         Pressures (bar) at high resolution (1440 points).
 
     Returns
     -------
     np.ndarray
-        Pressures (bar) at lower resolution (60 points) but with a refinement around the position
-        of the cloud decks.
+        Pressures (bar) at lower resolution (60 points) but with a
+        refinement around the position of the cloud decks.
     np.ndarray, None
-        The indices of the pressures that have been selected from the input array ``pressure``.
+        The indices of the pressures that have been selected from
+        the input array ``pressure``.
     """
 
     press_plus_index = np.zeros(len(pressure) * 2).reshape(len(pressure), 2)
@@ -524,17 +554,22 @@ def create_abund_dict(
     chemistry : str
         Chemistry type ('equilibrium' or 'free').
     pressure_grid : str
-        The type of pressure grid that is used for the radiative transfer. Either 'standard',
-        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers (depending on the number of cloud species) with a refinement around the
-        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        The type of pressure grid that is used for the radiative
+        transfer. Either 'standard', to use 180 layers both for the
+        atmospheric structure (e.g. when interpolating the abundances)
+        and 180 layers with the radiative transfer, or 'smaller' to
+        use 60 (instead of 180) with the radiative transfer, or 'clouds'
+        to start with 1440 layers but resample to ~100 layers (depending
+        on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use
+        'smaller', which runs faster than 'standard' and provides
+        sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved
+        accuracy fluxes.
     indices : np.ndarray, None
-        Pressure indices from the adaptive refinement in a cloudy atmosphere. Only required with
-        ``pressure_grid='clouds'``. Otherwise, the argument can be set to ``None``.
+        Pressure indices from the adaptive refinement in a cloudy
+        atmosphere. Only required with ``pressure_grid='clouds'``.
+        Otherwise, the argument can be set to ``None``.
 
     Returns
     -------
@@ -648,8 +683,8 @@ def create_abund_dict(
         abund_out["H2"] = abund_in["H2"]
         abund_out["He"] = abund_in["He"]
 
-    # Correction for the nuclear spin degeneracy that was not included in the partition function
-    # See Charnay et al. (2018)
+    # Correction for the nuclear spin degeneracy that was not included
+    # in the partition function. See Charnay et al. (2018)
 
     if "FeH" in abund_out:
         abund_out["FeH"] = abund_out["FeH"] / 2.0
@@ -672,15 +707,18 @@ def calc_spectrum_clear(
     contribution: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
     """
-    Function to simulate an emission spectrum of a clear atmosphere. The function supports both
-    equilibrium chemistry (``chemistry='equilibrium'``) and free abundances (``chemistry='free'``).
+    Function to simulate an emission spectrum of a clear atmosphere.
+    The function supports both equilibrium chemistry
+    (``chemistry='equilibrium'``) and free abundances
+    (``chemistry='free'``).
 
     rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
     pressure : np.ndarray
         Array with the pressure points (bar).
     temperature : np.ndarray
-        Array with the temperature points (K) corresponding to ``pressure``.
+        Array with the temperature points (K) corresponding to
+        ``pressure``.
     log_g : float
         Log10 of the surface gravity (cm s-2).
     c_o_ratio : float, None
@@ -690,18 +728,23 @@ def calc_spectrum_clear(
     p_quench : float, None
         Quenching pressure (bar).
     log_x_abund : dict, None
-        Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
+        Dictionary with the log10 of the abundances. Only required when
+        ``chemistry='free'``.
     chemistry : str
         Chemistry type (``'equilibrium'`` or ``'free'``).
     pressure_grid : str
-        The type of pressure grid that is used for the radiative transfer. Either 'standard',
-        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers (depending on the number of cloud species) with a refinement around the
-        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        The type of pressure grid that is used for the radiative
+        transfer. Either 'standard', to use 180 layers both for the
+        atmospheric structure (e.g. when interpolating the abundances)
+        and 180 layers with the radiative transfer, or 'smaller' to use
+        60 (instead of 180) with the radiative transfer, or 'clouds' to
+        start with 1440 layers but resample to ~100 layers (depending
+        on the number of cloud species) with a refinement around the
+        cloud decks. For cloudless atmospheres it is recommended to use
+        'smaller', which runs faster than 'standard' and provides
+        sufficient accuracy. For cloudy atmosphere, one can test with
+        'smaller' but it is recommended to use 'clouds' for improved
+        accuracy fluxes.
     contribution : bool
         Calculate the emission contribution.
 
@@ -715,9 +758,10 @@ def calc_spectrum_clear(
         Emission contribution.
     """
 
-    # Import interpol_abundances here because it slows down importing species otherwise.
-    # Importing interpol_abundances is only slow the first time, which occurs at the start
-    # of the run_multinest method of AtmosphericRetrieval
+    # Import interpol_abundances here because it slows down importing
+    # species otherwise. Importing interpol_abundances is only slow the
+    # first time, which occurs at the start of the run_multinest method
+    # of AtmosphericRetrieval
 
     from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
@@ -779,7 +823,8 @@ def calc_spectrum_clear(
     else:
         contr_em = None
 
-    # return wavelength (micron), flux (W m-2 um-1), and emission contribution
+    # return wavelength (micron), flux (W m-2 um-1),
+    # and emission contribution
     return (
         1e4 * wavel,
         1e-7 * rt_object.flux * constants.LIGHT * 1e2 / wavel ** 2.0,
@@ -816,7 +861,8 @@ def calc_spectrum_clouds(
     pressure : np.ndarray
         Array with the pressure points (bar).
     temperature : np.ndarray
-        Array with the temperature points (K) corresponding to ``pressure``.
+        Array with the temperature points (K) corresponding to
+        ``pressure``.
     c_o_ratio : float
         Carbon-to-oxygen ratio.
     metallicity : float
@@ -824,38 +870,47 @@ def calc_spectrum_clouds(
     p_quench : float, None
         Quenching pressure (bar).
     log_x_abund : dict, None
-        Dictionary with the log10 of the abundances. Only required when ``chemistry='free'``.
+        Dictionary with the log10 of the abundances. Only required
+        when ``chemistry='free'``.
     log_x_base : dict, None
-        Dictionary with the log10 of the mass fractions at the cloud base. Only required when the
-        ``cloud_dict`` contains ``fsed``, ``log_kzz``, and ``sigma_lnorm``.
+        Dictionary with the log10 of the mass fractions at the cloud
+        base. Only required when the ``cloud_dict`` contains ``fsed``,
+        ``log_kzz``, and ``sigma_lnorm``.
     cloud_dict : dict
-        Dictionary with the cloud parameters. A parameter value is set to ``None`` if the parameter
-        is not in use.
+        Dictionary with the cloud parameters. A parameter value is set
+        to ``None`` if the parameter is not in use.
     log_g : float
         Log10 of the surface gravity (cm s-2).
     chemistry : str
         Chemistry type (only ``'equilibrium'`` is supported).
     pressure_grid : str
-        The type of pressure grid that is used for the radiative transfer. Either 'standard',
-        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers (depending on the number of cloud species) with a refinement around the
-        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        The type of pressure grid that is used for the radiative
+        transfer. Either 'standard', to use 180 layers both for the
+        atmospheric structure (e.g. when interpolating the abundances)
+        and 180 layers with the radiative transfer, or 'smaller' to
+        use 60 (instead of 180) with the radiative transfer, or
+        'clouds' to start with 1440 layers but resample to ~100 layers
+        (depending on the number of cloud species) with a refinement
+        around the cloud decks. For cloudless atmospheres it is
+        recommended to use 'smaller', which runs faster than 'standard'
+        and provides sufficient accuracy. For cloudy atmosphere, one
+        can test with 'smaller' but it is recommended to use 'clouds'
+        for improved accuracy fluxes.
     plotting : bool
         Create plots.
     contribution : bool
         Calculate the emission contribution.
     tau_cloud : float, None
-        Total cloud optical that will be used for scaling the cloud mass fractions. The mass
-        fractions will not be scaled if the parameter is set to ``None``.
+        Total cloud optical that will be used for scaling the cloud
+        mass fractions. The mass fractions will not be scaled if the
+        parameter is set to ``None``.
     cloud_wavel : tuple(float, float), None
-        Tuple with the wavelength range (um) that is used for calculating the median optical
-        depth of the clouds at the gas-only photosphere and then scaling the cloud optical
-        depth to the value of ``log_tau_cloud``. The range of ``cloud_wavel`` should be
-        encompassed by the range of ``wavel_range``.  The full wavelength range (i.e.
+        Tuple with the wavelength range (um) that is used for
+        calculating the median optical depth of the clouds at the
+        gas-only photosphere and then scaling the cloud optical
+        depth to the value of ``log_tau_cloud``. The range of
+        ``cloud_wavel`` should be encompassed by the range of
+        ``wavel_range``.  The full wavelength range (i.e.
         ``wavel_range``) is used if the argument is set to ``None``.
 
     Returns
@@ -869,8 +924,9 @@ def calc_spectrum_clouds(
     """
 
     if chemistry == "equilibrium":
-        # Import interpol_abundances here because it slows down importing species otherwise.
-        # Importing interpol_abundances is only slow the first time, which occurs at the start
+        # Import interpol_abundances here because it slows down
+        # importing species otherwise. Importing interpol_abundances
+        # is only slow the first time, which occurs at the start
         # of the run_multinest method of AtmosphericRetrieval
 
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
@@ -1027,7 +1083,8 @@ def calc_spectrum_clouds(
             fsed = cloud_dict["fsed"]
             log_kzz = cloud_dict["log_kzz"]
             plt.title(
-                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, X_b = {log_x_base_item:.2f}"
+                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, " +
+                f"X_b = {log_x_base_item:.2f}"
             )
             plt.savefig(f"{item.lower()}_clouds.pdf", bbox_inches="tight")
             plt.clf()
@@ -1141,7 +1198,8 @@ def calc_spectrum_clouds(
 @typechecked
 def mass_fractions(log_x_abund: dict) -> dict:
     """
-    Function to return a dictionary with the mass fractions of all species.
+    Function to return a dictionary with the mass fractions of
+    all species.
 
     Parameters
     ----------
@@ -1180,7 +1238,8 @@ def mass_fractions(log_x_abund: dict) -> dict:
 @typechecked
 def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float]:
     """
-    Function for calculating [C/H], [O/H], and C/O for a given set of abundances.
+    Function for calculating [C/H], [O/H], and C/O for a given set
+    of abundances.
 
     Parameters
     ----------
@@ -1295,7 +1354,8 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
 @typechecked
 def mean_molecular_weight(abundances: dict) -> float:
     """
-    Function to calculate the mean molecular weight from the abundances.
+    Function to calculate the mean molecular weight from the
+    abundances.
 
     Parameters
     ----------
@@ -1337,8 +1397,8 @@ def mean_molecular_weight(abundances: dict) -> float:
 @typechecked
 def potassium_abundance(log_x_abund: dict) -> float:
     """
-    Function to calculate the mass fraction of potassium at a solar ratio of the sodium and
-    potassium abundances.
+    Function to calculate the mass fraction of potassium at a solar
+    ratio of the sodium and potassium abundances.
 
     Parameters
     ----------
@@ -1385,7 +1445,8 @@ def log_x_cloud_base(
     c_o_ratio: float, metallicity: float, cloud_fractions: dict
 ) -> dict:
     """
-    Function for returning a dictionary with the log10 mass fractions at the cloud base.
+    Function for returning a dictionary with the log10 mass fractions
+    at the cloud base.
 
     Parameters
     ----------
@@ -1394,16 +1455,19 @@ def log_x_cloud_base(
     metallicity : float
         Metallicity, [Fe/H].
     cloud_fractions : dict
-        Dictionary with the log10 mass fractions at the cloud base, relative to the maximum values
-        allowed from elemental abundances. The dictionary keys are the cloud species without the
-        structure and shape index (e.g. Na2S(c) instead of Na2S(c)_cd).
+        Dictionary with the log10 mass fractions at the cloud base,
+        relative to the maximum values allowed from elemental
+        abundances. The dictionary keys are the cloud species without
+        the structure and shape index (e.g. Na2S(c) instead of
+        Na2S(c)_cd).
 
     Returns
     -------
     dict
-        Dictionary with the log10 mass fractions at the cloud base. Compared to the keys of
-        ``cloud_fractions``, the keys in the returned dictionary are provided without ``(c)``
-        (e.g. Na2S instead of Na2S(c)).
+        Dictionary with the log10 mass fractions at the cloud base.
+        Compared to the keys of ``cloud_fractions``, the keys in the
+        returned dictionary are provided without ``(c)`` (e.g. Na2S
+        instead of Na2S(c)).
     """
 
     log_x_base = {}
@@ -1421,13 +1485,14 @@ def log_x_cloud_base(
 @typechecked
 def solar_mixing_ratios() -> dict:
     """
-    Function which returns the volume mixing ratios for solar elemental abundances (i.e.
-    [Fe/H] = 0); adopted from Asplund et al. (2009).
+    Function which returns the volume mixing ratios for solar elemental
+    abundances (i.e. [Fe/H] = 0); adopted from Asplund et al. (2009).
 
     Returns
     -------
     dict
-        Dictionary with the solar number fractions (i.e. volume mixing ratios).
+        Dictionary with the solar number fractions (i.e. volume
+        mixing ratios).
     """
 
     n_fracs = {}
@@ -1602,8 +1667,8 @@ def find_cloud_deck(
     plotting: bool = False,
 ) -> float:
     """
-    Function to find the base of the cloud deck by intersecting the P-T profile with the
-    saturation vapor pressure.
+    Function to find the base of the cloud deck by intersecting the
+    P-T profile with the saturation vapor pressure.
 
     Parameters
     ----------
@@ -1692,7 +1757,8 @@ def scale_cloud_abund(
     pressure_grid: str,
 ) -> float:
     """
-    Function to scale the mass fraction of a cloud species to the requested optical depth.
+    Function to scale the mass fraction of a cloud species to the
+    requested optical depth.
 
     Parameters
     ----------
@@ -1703,41 +1769,53 @@ def scale_cloud_abund(
     pressure : np.ndarray
         Array with the pressure points (bar).
     temperature : np.ndarray
-        Array with the temperature points (K) corresponding to ``pressure``.
+        Array with the temperature points (K) corresponding
+        to ``pressure``.
     mmw : np.ndarray
-        Array with the mean molecular weights corresponding to ``pressure``.
+        Array with the mean molecular weights corresponding
+        to ``pressure``.
     chemistry : str
         Chemistry type (only ``'equilibrium'`` is supported).
     abund_in : dict
-        Dictionary with arrays that contain the pressure-dependent, equilibrium mass fractions
-        of the line species.
+        Dictionary with arrays that contain the pressure-dependent,
+        equilibrium mass fractions of the line species.
     composition : sr
-        Cloud composition ('Fe(c)', 'MgSiO3(c)', 'Al2O3(c)', 'Na2S(c)', 'KCl(c)').
+        Cloud composition ('Fe(c)', 'MgSiO3(c)', 'Al2O3(c)',
+        'Na2S(c)', 'KCl(c)').
     tau_cloud : float
-        Optical depth of the clouds. The returned mass fraction is scaled such that the optical
-        depth at the shortest wavelength is equal to ``tau_cloud``.
+        Optical depth of the clouds. The returned mass fraction is
+        scaled such that the optical depth at the shortest wavelength
+        is equal to ``tau_cloud``.
     pressure_grid : str
-        The type of pressure grid that is used for the radiative transfer. Either 'standard',
-        to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-        abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-        of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-        to ~100 layers (depending on the number of cloud species) with a refinement around the
-        cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-        faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-        test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+        The type of pressure grid that is used for the radiative
+        transfer. Either 'standard', to use 180 layers both for the
+        atmospheric structure (e.g. when interpolating the abundances)
+        and 180 layers with the radiative transfer, or 'smaller' to
+        use 60 (instead of 180) with the radiative transfer, or
+        'clouds' to start with 1440 layers but resample to ~100 layers
+        (depending on the number of cloud species) with a refinement
+        around the cloud decks. For cloudless atmospheres it is
+        recommended to use 'smaller', which runs faster than 'standard'
+        and provides sufficient accuracy. For cloudy atmosphere, one
+        can test with 'smaller' but it is recommended to use 'clouds' for
+        improved accuracy fluxes.
 
     Returns
     -------
     float
-        Mass fraction relative to the maximum value allowed from elemental abundances. The value
-        has been scaled to the requested optical depth ``tau_cloud`` (at the shortest wavelength).
+        Mass fraction relative to the maximum value allowed from
+        elemental abundances. The value has been scaled to the
+        requested optical depth ``tau_cloud`` (at the shortest
+        wavelength).
     """
 
-    # Dictionary with the requested cloud composition and setting the log10 of the mass fraction
-    # (relative to the maximum value allowed from elemental abundances) equal to zero
+    # Dictionary with the requested cloud composition and setting the
+    # log10 of the mass fraction (relative to the maximum value
+    # allowed from elemental abundances) equal to zero
     cloud_fractions = {composition: 0.0}
 
-    # Create a dictionary with the log10 of the mass fraction at the cloud base
+    # Create a dictionary with the log10 of
+    # the mass fraction at the cloud base
     log_x_base = log_x_cloud_base(
         params["c_o_ratio"], params["metallicity"], cloud_fractions
     )
@@ -1753,10 +1831,12 @@ def scale_cloud_abund(
         plotting=False,
     )
 
-    # Initialize the cloud abundance in the dictionary with mass fractions
+    # Initialize the cloud abundance in
+    # the dictionary with mass fractions
     abund_in[composition] = np.zeros_like(temperature)
 
-    # Set the cloud abundances by scaling from the base with the f_sed parameter
+    # Set the cloud abundances by scaling
+    # from the base with the f_sed parameter
     abund_in[composition][pressure < p_base] = (
         10.0 ** log_x_base[composition[:-3]]
         * (pressure[pressure <= p_base] / p_base) ** params["fsed"]
@@ -1802,7 +1882,8 @@ def scale_cloud_abund(
             kzz_select = np.full(pressure[::3].size, 10.0 ** params["kzz"])
 
     elif pressure_grid == "clouds":
-        # Reinitiate the pressure structure after make_half_pressure_better
+        # Reinitiate the pressure structure
+        # after make_half_pressure_better
         rt_object.setup_opa_structure(pressure[indices])
         rt_object.interpolate_species_opa(temperature[indices])
 
@@ -1814,12 +1895,14 @@ def scale_cloud_abund(
             # Backward compatibility
             kzz_select = np.full(pressure[indices].size, 10.0 ** params["kzz"])
 
-    # Set the continuum opacities to zero because calc_cloud_opacity adds to existing opacities
+    # Set the continuum opacities to zero because
+    # calc_cloud_opacity adds to existing opacities
     rt_object.continuum_opa = np.zeros_like(rt_object.continuum_opa)
     rt_object.continuum_opa_scat = np.zeros_like(rt_object.continuum_opa_scat)
     rt_object.continuum_opa_scat_emis = np.zeros_like(rt_object.continuum_opa_scat_emis)
 
-    # Calculate the cloud opacities for the defined atmospheric structure
+    # Calculate the cloud opacities for
+    # the defined atmospheric structure
     rt_object.calc_cloud_opacity(
         abundances,
         mmw_select,
@@ -1834,7 +1917,8 @@ def scale_cloud_abund(
     # Calculate the cloud optical depth and set the tau_cloud attribute
     rt_object.calc_tau_cloud(10.0 ** params["logg"])
 
-    # Extract the wavelength-averaged optical depth at the largest pressure
+    # Extract the wavelength-averaged optical
+    # depth at the largest pressure
     tau_current = np.mean(rt_object.tau_cloud[0, :, 0, -1])
 
     # Set the continuum opacities again to zero
@@ -1887,7 +1971,8 @@ def list_to_dict(param_list: List[str], sample_val: np.ndarray) -> Dict[str, flo
     param_list : list(str)
         List with the parameter labels.
     sample_val : np.ndarray
-        Array with the parameter values, in the same order as ``param_list``.
+        Array with the parameter values, in the same order as
+        ``param_list``.
 
     Returns
     -------
@@ -2090,7 +2175,8 @@ def return_T_cond_Al2O3(
     # Partial pressure of Al2O3
     # part_press = pressure/(Xal2o3*MMW/m_al2o3)
 
-    # Condensation temperature of Al2O3 (see Eq. 4 in Wakeford et al. 2017)
+    # Condensation temperature of Al2O3
+    # (see Eq. 4 in Wakeford et al. 2017)
     t_cond = 1e4 / (
         5.014
         - 0.2179 * np.log10(pressure)
@@ -2130,9 +2216,9 @@ def return_T_cond_Na2S(
     # Taken from Charnay+2018
     T = np.linspace(100.0, 10000.0, 1000)
 
-    # This is the partial pressure of Na, so divide by factor 2 to get the partial pressure of
-    # the hypothetical Na2S gas particles, this is OK: there are more S than Na atoms at solar
-    # abundance ratios.
+    # This is the partial pressure of Na, so divide by factor 2 to get
+    # the partial pressure of the hypothetical Na2S gas particles, this
+    # is OK: there are more S than Na atoms at solar abundance ratios.
     P_vap = lambda x: 1e1 ** (8.55 - 13889.0 / x - 0.5 * FeH) / 2.0
 
     Xna2s = cloud_mass_fraction("Na2S", FeH, CO)
@@ -2229,8 +2315,9 @@ def quench_pressure(
     log_kzz: float,
 ) -> Optional[float]:
     """
-    Function to determine the CO/CH4 quenching pressure by intersecting the pressure-dependent
-    timescales of the vertical mixing and the CO/CH4 reaction rates.
+    Function to determine the CO/CH4 quenching pressure by intersecting
+    the pressure-dependent timescales of the vertical mixing and the
+    CO/CH4 reaction rates.
 
     Parameters
     ----------
@@ -2288,7 +2375,8 @@ def quench_pressure(
     t_diff = t_mix - t_chem
     diff_product = t_diff[1:] * t_diff[:-1]
 
-    # If t_mix and t_chem intersect then there is 1 negative value in diff_product
+    # If t_mix and t_chem intersect then there
+    # is 1 negative value in diff_product
     indices = diff_product < 0.0
 
     if np.sum(indices) == 1:
@@ -2301,8 +2389,8 @@ def quench_pressure(
     else:
         raise ValueError(
             f"Encountered unexpected number of indices "
-            f"({np.sum(indices)}) when determining the intersection of "
-            f"t_mix and t_chem."
+            f"({np.sum(indices)}) when determining the "
+            f"intersection of t_mix and t_chem."
         )
 
     return p_quench

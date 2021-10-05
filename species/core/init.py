@@ -14,8 +14,9 @@ import species
 
 class SpeciesInit:
     """
-    Class for initiating species by creating the database and configuration file in case they are
-    not present in the working folder, and creating the data folder for storage of input data.
+    Class for initiating species by creating the database and
+    configuration file in case they are not present in the working
+    folder, and creating the data folder for storage of input data.
     """
 
     def __init__(self):
@@ -63,7 +64,7 @@ class SpeciesInit:
             print(" [DONE]")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         database_file = os.path.abspath(config["species"]["database"])
         data_folder = os.path.abspath(config["species"]["data_folder"])

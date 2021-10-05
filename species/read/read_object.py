@@ -26,7 +26,8 @@ class ReadObject:
         Parameters
         ----------
         object_name : str
-            Object name as stored in the database (e.g. 'beta Pic b', 'PZ Tel B').
+            Object name as stored in the database (e.g. 'beta Pic b',
+            'PZ Tel B').
 
         Returns
         -------
@@ -39,7 +40,7 @@ class ReadObject:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -63,8 +64,8 @@ class ReadObject:
         Returns
         -------
         np.ndarray
-            Apparent magnitude, magnitude error (error), flux (W m-2 um-1),
-            flux error (W m-2 um-1).
+            Apparent magnitude, magnitude error (error),
+            flux (W m-2 um-1), flux error (W m-2 um-1).
         """
 
         with h5py.File(self.database, "r") as h5_file:
@@ -84,7 +85,8 @@ class ReadObject:
     @typechecked
     def get_spectrum(self) -> dict:
         """
-        Function for reading the spectra and covariance matrices of the object.
+        Function for reading the spectra and covariance matrices of the
+        object.
 
         Returns
         -------
@@ -143,9 +145,10 @@ class ReadObject:
         self, filter_name: str
     ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
         """
-        Function for calculating the absolute magnitudes of the object from the apparent
-        magnitudes and distance. The errors on the apparent magnitude and distance are propagated
-        into an error on the absolute magnitude.
+        Function for calculating the absolute magnitudes of the object
+        from the apparent magnitudes and distance. The errors on the
+        apparent magnitude and distance are propagated into an error
+        on the absolute magnitude.
 
         Parameters
         ----------

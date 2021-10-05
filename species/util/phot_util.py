@@ -38,15 +38,18 @@ def multi_photometry(
     datatype : str
         Data type ('model' or 'calibration').
     spectrum : str
-        Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw', 'petitradtrans').
+        Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw',
+        'petitradtrans').
     filters : list(str)
         List with the filter names.
     parameters : dict
         Dictionary with the model parameters.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
-        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
-        instance is sufficiently broad to cover all the ``filters``. Not used if set to `None`.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        Only required with ``spectrum='petitradtrans'`. Make sure that
+        the ``wavel_range`` of the ``ReadRadtrans`` instance is
+        sufficiently broad to cover all the ``filters``. Not used if
+        set to `None`.
 
     Returns
     -------
@@ -66,8 +69,9 @@ def multi_photometry(
         for item in filters:
 
             if spectrum == "petitradtrans":
-                # Use an instance of SyntheticPhotometry instead of get_flux from ReadRadtrans
-                # in order to not recalculate the spectrum
+                # Use an instance of SyntheticPhotometry instead
+                # of get_flux from ReadRadtrans in order to not
+                # recalculate the spectrum
                 syn_phot = photometry.SyntheticPhotometry(item)
 
                 flux[item], _ = syn_phot.spectrum_to_flux(
@@ -76,7 +80,9 @@ def multi_photometry(
 
             elif spectrum == "powerlaw":
                 synphot = photometry.SyntheticPhotometry(item)
-                synphot.zero_point()  # Set the wavel_range attribute
+
+                # Set the wavel_range attribute
+                synphot.zero_point()
 
                 powerl_box = read_util.powerlaw_spectrum(
                     synphot.wavel_range, parameters
@@ -99,8 +105,9 @@ def multi_photometry(
                     flux[item] = np.nan
 
                     warnings.warn(
-                        f"The wavelength range of the {item} filter does not match with "
-                        f"the wavelength range of {spectrum}. The flux is set to NaN."
+                        f"The wavelength range of the {item} filter does not "
+                        f"match with the wavelength range of {spectrum}. The "
+                        f"flux is set to NaN."
                     )
 
     elif datatype == "calibration":
@@ -123,18 +130,21 @@ def apparent_to_absolute(
     ],
 ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
-    Function for converting an apparent magnitude into an absolute magnitude. The uncertainty on
-    the distance is propagated into the uncertainty on the absolute magnitude.
+    Function for converting an apparent magnitude into an absolute
+    magnitude. The uncertainty on the distance is propagated into the
+    uncertainty on the absolute magnitude.
 
     Parameters
     ----------
     app_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Apparent magnitude and uncertainty (mag). The returned error on the absolute magnitude
-        is set to None if the error on the apparent magnitude is set to None, for example
+        Apparent magnitude and uncertainty (mag). The returned error
+        on the absolute magnitude is set to None if the error on the
+        apparent magnitude is set to None, for example
         ``app_mag=(15., None)``.
     distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Distance and uncertainty (pc). The error is not propagated into the error on the absolute
-        magnitude if set to None, for example ``distance=(20., None)``.
+        Distance and uncertainty (pc). The error is not propagated
+        into the error on the absolute magnitude if set to None, for
+        example ``distance=(20., None)``.
 
     Returns
     -------
@@ -167,13 +177,14 @@ def absolute_to_apparent(
     distance: Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
 ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
-    Function for converting an absolute magnitude into an apparent magnitude.
+    Function for converting an absolute magnitude into an apparent
+    magnitude.
 
     Parameters
     ----------
     abs_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Absolute magnitude and uncertainty (mag). The same uncertainty is used for the
-        apparent magnitude.
+        Absolute magnitude and uncertainty (mag). The same uncertainty
+        is used for the apparent magnitude.
     distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
         Distance and uncertainty (pc).
 
@@ -211,23 +222,27 @@ def get_residuals(
     parameters : dict
         Parameters and values for the spectrum
     objectbox : species.core.box.ObjectBox
-        Box with the photometry and/or spectra of an object. A scaling and/or error inflation of
-        the spectra should be applied with :func:`~species.util.read_util.update_spectra`
-        beforehand.
+        Box with the photometry and/or spectra of an object. A scaling
+        and/or error inflation of the spectra should be applied with
+        :func:`~species.util.read_util.update_spectra` beforehand.
     inc_phot : bool, list(str)
-        Include photometric data in the fit. If a boolean, either all (``True``) or none
-        (``False``) of the data are selected. If a list, a subset of filter names (as stored in
-        the database) can be provided.
+        Include photometric data in the fit. If a boolean, either all
+        (``True``) or none (``False``) of the data are selected. If a
+        list, a subset of filter names (as stored in the database) can
+        be provided.
     inc_spec : bool, list(str)
-        Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
-        (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
-        in the database with :func:`~species.data.database.Database.add_object`) can be
+        Include spectroscopic data in the fit. If a boolean, either all
+        (``True``) or none (``False``) of the data are selected. If a
+        list, a subset of spectrum names (as stored in the database
+        with :func:`~species.data.database.Database.add_object`) can be
         provided.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Only required with
-        ``spectrum='petitradtrans'`. Make sure that the ``wavel_range`` of the ``ReadRadtrans``
-        instance is sufficiently broad to cover all the photometric and spectroscopic data of
-        ``inc_phot`` and ``inc_spec``. Not used if set to ``None``.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        Only required with ``spectrum='petitradtrans'`. Make sure that
+        the ``wavel_range`` of the ``ReadRadtrans`` instance is
+        sufficiently broad to cover all the photometric and
+        spectroscopic data of ``inc_phot`` and ``inc_spec``. Not used
+        if set to ``None``.
 
     Returns
     -------
@@ -317,7 +332,8 @@ def get_residuals(
                     )
 
                 else:
-                    # Resampling to the new wavelength points is done by the get_model method
+                    # Resampling to the new wavelength points
+                    # is done by the get_model method
 
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 

@@ -22,7 +22,8 @@ from species.read import read_filter
 @typechecked
 def check_dust_database() -> str:
     """
-    Function to check if the dust data is present in the database and add the data if needed.
+    Function to check if the dust data is present in the database and
+    add the data if needed.
 
     Returns
     -------
@@ -33,7 +34,7 @@ def check_dust_database() -> str:
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
     config = configparser.ConfigParser()
-    config.read_file(open(config_file))
+    config.read(config_file)
 
     database_path = config["species"]["database"]
 
@@ -49,7 +50,8 @@ def log_normal_distribution(
     radius_g: float, sigma_g: float, n_bins: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Function for returning a log-normal size distribution. See Eq. 9 in Ackerman & Marley (2001).
+    Function for returning a log-normal size distribution. See Eq. 9
+    in Ackerman & Marley (2001).
 
     Parameters
     ----------
@@ -63,7 +65,8 @@ def log_normal_distribution(
     Returns
     -------
     np.ndarray
-        Number of grains in each radius bin, normalized to a total of 1 grain.
+        Number of grains in each radius bin, normalized to a total of
+        1 grain.
     np.ndarray
         Widths of the radius bins (um).
     np.ndarray
@@ -71,18 +74,21 @@ def log_normal_distribution(
     """
 
     if sigma_g == 1.0:
-        # The log-normal distribution is equal to a delta function with sigma_g = 1
+        # The log-normal distribution is equal to a delta
+        # function with sigma_g = 1
         radii = np.array([radius_g])
         r_width = np.array([np.nan])
         dn_grains = np.array([1.0])
 
     else:
-        # Get the radius interval which contains 99.999% of the distribution
+        # Get the radius interval which contains 99.999%
+        # of the distribution
         interval = lognorm.interval(
             1.0 - 1e-5, np.log(sigma_g), loc=0.0, scale=radius_g
         )
 
-        # Create bin boundaries (um), so +1 because there are n_bins+1 bin boundaries
+        # Create bin boundaries (um), so +1 because there
+        # are n_bins+1 bin boundaries
         r_bins = np.logspace(np.log10(interval[0]), np.log10(interval[1]), n_bins + 1)
 
         # Width of the radius bins (um)
@@ -91,10 +97,12 @@ def log_normal_distribution(
         # Grain radii (um) at which the size distribution is sampled
         radii = (r_bins[1:] + r_bins[:-1]) / 2.0
 
-        # Number of grains per radius bin width, normalized to an integrated value of
-        # 1 grain, that is, np.sum(dn_dr*r_width) = 1
-        # The log-normal distribution from Ackerman & Marley 2001 gives the same
-        # result as scipy.stats.lognorm.pdf with s = log(sigma_g) and scale=radius_g
+        # Number of grains per radius bin width, normalized to an
+        # integrated value of 1 grain, that is,
+        # np.sum(dn_dr*r_width) = 1
+        # The log-normal distribution from Ackerman & Marley 2001
+        # gives the same result as scipy.stats.lognorm.pdf with
+        # s = log(sigma_g) and scale=radius_g
         dn_dr = lognorm.pdf(radii, s=np.log(sigma_g), loc=0.0, scale=radius_g)
 
         # Number of grains for each radius bin
@@ -113,7 +121,8 @@ def power_law_distribution(
     Parameters
     ----------
     exponent : float
-        Exponent of the power-law size distribution, dn/dr = r**exponent.
+        Exponent of the power-law size distribution,
+        dn/dr = r**exponent.
     radius_min : float
         Minimum grain radius (um).
     radius_max : float
@@ -124,15 +133,17 @@ def power_law_distribution(
     Returns
     -------
     np.ndarray
-        Number of grains in each radius bin, normalized to a total of 1 grain.
+        Number of grains in each radius bin, normalized to a total
+        of 1 grain.
     np.ndarray
         Widths of the radius bins (um).
     np.ndarray
         Grain radii (um).
     """
 
-    # Create bin boundaries (um), so +1 because there are n_sizes+1 bin boundaries
-    r_bins = np.logspace(np.log10(radius_min), np.log10(radius_max), n_bins + 1)  # (um)
+    # Create bin boundaries (um), so +1 because there
+    # are n_sizes+1 bin boundaries (um)
+    r_bins = np.logspace(np.log10(radius_min), np.log10(radius_max), n_bins + 1)
 
     # Width of the radius bins (um)
     r_width = np.diff(r_bins)
@@ -161,12 +172,14 @@ def dust_cross_section(
     k_index: float,
 ) -> np.float64:
     """
-    Function for calculating the extinction cross section for a size distribution of dust grains.
+    Function for calculating the extinction cross section for a size
+    distribution of dust grains.
 
     Parameters
     ----------
     dn_grains : np.ndarray
-        Number of grains in each radius bin, normalized to a total of 1 grain.
+        Number of grains in each radius bin, normalized to a total
+        of 1 grain.
     radii : np.ndarray
         Grain radii (um).
     wavelength : float
@@ -185,10 +198,12 @@ def dust_cross_section(
     c_ext = 0.0
 
     for i, item in enumerate(radii):
-        # From the PyMieScatt documentation: When using PyMieScatt, pay close attention to
-        # the units of the your inputs and outputs. Wavelength and particle diameters are
-        # always in nanometers, efficiencies are unitless, cross-sections are in nm2,
-        # coefficients are in Mm-1, and size distribution concentration is always in cm-3.
+        # From the PyMieScatt documentation: When using PyMieScatt,
+        # pay close attention to the units of the your inputs and
+        # outputs. Wavelength and particle diameters are always in
+        # nanometers, efficiencies are unitless, cross-sections are
+        # in nm2, coefficients are in Mm-1, and size distribution
+        # concentration is always in cm-3.
         mie = PyMieScatt.MieQ(
             complex(n_index, k_index),
             wavelength * 1e3,  # (nm)
@@ -215,9 +230,10 @@ def calc_reddening(
     radius_g: float = 1.0,
 ) -> Tuple[float, float]:
     """
-    Function for calculating the reddening of a color given the extinction for a given filter. A
-    log-normal size distribution with a geometric standard deviation of 2 is used as
-    parametrization for the grain sizes (Ackerman & Marley 2001).
+    Function for calculating the reddening of a color given the
+    extinction for a given filter. A log-normal size distribution with
+    a geometric standard deviation of 2 is used as parametrization for
+    the grain sizes (Ackerman & Marley 2001).
 
     Parameters
     ----------
@@ -330,7 +346,8 @@ def interp_lognorm(
     ],
 ) -> Tuple[Dict[str, Union[interp2d, List[interp2d]]], np.ndarray, np.ndarray]:
     """
-    Function for interpolating the log-normal dust cross sections for each filter and spectrum.
+    Function for interpolating the log-normal dust cross sections for
+    each filter and spectrum.
 
     Parameters
     ----------
@@ -338,15 +355,18 @@ def interp_lognorm(
         List with filter names. Not used if the list is empty.
     inc_spec : list(str)
         List with the spectrum names (as stored in the database with
-        :func:`~species.data.database.Database.add_object`). Not used if the list is empty.
+        :func:`~species.data.database.Database.add_object`). Not used
+        if the list is empty.
     spec_data : dict, None
-        Dictionary with the spectrum data. Only required in combination with ``inc_spec``,
-        otherwise the argument needs to be set to ``None``,.
+        Dictionary with the spectrum data. Only required in combination
+        with ``inc_spec``, otherwise the argument needs to be set to
+        ``None``.
 
     Returns
     -------
     dict
-        Dictionary with the extinction cross section for each filter and spectrum
+        Dictionary with the extinction cross section for each filter
+        and spectrum.
     np.ndarray
         Grid points of the geometric mean radius.
     np.ndarray
@@ -436,7 +456,8 @@ def interp_powerlaw(
     ],
 ) -> Tuple[Dict[str, Union[interp2d, List[interp2d]]], np.ndarray, np.ndarray]:
     """
-    Function for interpolating the power-law dust cross sections for each filter and spectrum.
+    Function for interpolating the power-law dust cross sections for
+    each filter and spectrum.
 
     Parameters
     ----------
@@ -444,15 +465,18 @@ def interp_powerlaw(
         List with filter names. Not used if the list is empty.
     inc_spec : list(str)
         List with the spectrum names (as stored in the database with
-        :func:`~species.data.database.Database.add_object`). Not used if the list is empty.
+        :func:`~species.data.database.Database.add_object`). Not used
+        if the list is empty.
     spec_data : dict, None
-        Dictionary with the spectrum data. Only required in combination with ``inc_spec``,
-        otherwise the argument needs to be set to ``None``,.
+        Dictionary with the spectrum data. Only required in
+        combination with ``inc_spec``, otherwise the argument needs to
+        be set to ``None``,.
 
     Returns
     -------
     dict
-        Dictionary with the extinction cross section for each filter and spectrum
+        Dictionary with the extinction cross section for each filter
+        and spectrum.
     np.ndarray
         Grid points of the maximum radius.
     np.ndarray
@@ -543,8 +567,9 @@ def ism_extinction(
     av_mag: float, rv_red: float, wavelengths: Union[np.ndarray, List[float], float]
 ) -> np.ndarray:
     """
-    Function for calculating the optical and IR extinction with the empirical relation from
-    `Cardelli et al. (1989) <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
+    Function for calculating the optical and IR extinction with the
+    empirical relation from `Cardelli et al. (1989)
+    <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
 
     Parameters
     ----------
@@ -553,8 +578,9 @@ def ism_extinction(
     rv_red : float
         Reddening in the V band, ``R_V = A_V / E(B-V)``.
     wavelengths : np.ndarray, list(float), float
-        Array or list with the wavelengths (um) for which the extinction is calculated.
-        It is also possible to provide a single value as float.
+        Array or list with the wavelengths (um) for which the
+        extinction is calculated. It is also possible to provide a
+        single value as float.
 
     Returns
     -------

@@ -33,8 +33,8 @@ class ReadCalibration:
         tag : str
             Database tag of the calibration spectrum.
         filter_name : str, None
-            Filter that is used for the wavelength range. The full spectrum is read if the argument
-            is set to ``None``.
+            Filter that is used for the wavelength range. The full
+            spectrum is read if the argument is set to ``None``.
 
         Returns
         -------
@@ -55,7 +55,7 @@ class ReadCalibration:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -68,20 +68,24 @@ class ReadCalibration:
         apply_mask: bool = False,
     ) -> box.SpectrumBox:
         """
-        Function for resampling the spectrum and optional uncertainties onto a new wavelength grid.
+        Function for resampling the spectrum and optional uncertainties
+        onto a new wavelength grid.
 
         Parameters
         ----------
         wavel_points : np.ndarray
             Wavelengths (um).
         model_param : dict, None
-            Dictionary with the model parameters, which should only contain the ``'scaling'``
-            keyword. No scaling is applied if the argument of ``model_param`` is set to ``None``.
+            Dictionary with the model parameters, which should only
+            contain the ``'scaling'`` keyword. No scaling is applied if
+            the argument of ``model_param`` is set to ``None``.
         spec_res : float, None
-            Spectral resolution that is used for smoothing the spectrum before resampling the
-            wavelengths. No smoothing is applied if the argument is set to ``None``. The smoothing
-            can only be applied ti spectra with a constant spectral resolution (which is the case
-            for all model spectra that are compatible with ``species``) or a constant wavelength
+            Spectral resolution that is used for smoothing the spectrum
+            before resampling the wavelengths. No smoothing is applied
+            if the argument is set to ``None``. The smoothing can only
+            be applied ti spectra with a constant spectral resolution
+            (which is the case for all model spectra that are
+            compatible with ``species``) or a constant wavelength
             spacing. The first smoothing approach is fastest.
         apply_mask : bool
             Exclude negative values and NaNs.
@@ -146,16 +150,18 @@ class ReadCalibration:
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
+            Model parameters. Should contain the 'scaling' value. Not
+            used if set to ``None``.
         apply_mask : bool
             Exclude negative values and NaN values.
         spec_res : float, None
-            Spectral resolution. Original wavelength points are used if set to ``None``.
+            Spectral resolution. Original wavelength points are used if
+            set to ``None``.
         extrapolate : bool
             Extrapolate to 6 um by fitting a power law function.
         min_wavelength : float, None
-            Minimum wavelength used for fitting the power law function. All data is used if set
-            to ``None``.
+            Minimum wavelength used for fitting the power law function.
+            All data is used if set to ``None``.
 
         Returns
         -------
@@ -284,12 +290,14 @@ class ReadCalibration:
         self, model_param: Optional[Dict[str, float]] = None
     ) -> Tuple[float, float]:
         """
-        Function for calculating the average flux for the ``filter_name``.
+        Function for calculating the average flux for the
+        ``filter_name``.
 
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
+            Model parameters. Should contain the 'scaling' value. Not
+            used if set to ``None``.
 
         Returns
         -------
@@ -316,15 +324,18 @@ class ReadCalibration:
         distance: Optional[Tuple[float, float]] = None,
     ) -> Tuple[Tuple[float, Optional[float]], Tuple[Optional[float], Optional[float]]]:
         """
-        Function for calculating the apparent magnitude for the ``filter_name``.
+        Function for calculating the apparent magnitude for the
+        ``filter_name``.
 
         Parameters
         ----------
         model_param : dict, None
-            Model parameters. Should contain the 'scaling' value. Not used if set to ``None``.
+            Model parameters. Should contain the 'scaling' value. Not
+            used if set to ``None``.
         distance : tuple(float, float), None
-            Distance and uncertainty to the calibration object (pc). Not used if set to ``None``,
-            in which case the returned absolute magnitude is ``(None, None)``.
+            Distance and uncertainty to the calibration object (pc).
+            Not used if set to ``None``, in which case the returned
+            absolute magnitude is ``(None, None)``.
 
         Returns
         -------

@@ -1,6 +1,6 @@
 """
-Module with reading functionalities of color and magnitude data from photometric and
-spectral libraries.
+Module with reading functionalities of color and magnitude data from
+photometric and libraries.
 """
 
 import os
@@ -31,14 +31,17 @@ class ReadColorMagnitude:
         Parameters
         ----------
         library : str
-            Photometric ('vlm-plx' or 'leggett') or spectral ('irtf' or 'spex') library.
+            Photometric ('vlm-plx' or 'leggett') or spectral ('irtf' or
+            'spex') library.
         filters_color : tuple(str, str)
-            Filter names for the color. For a photometric library, these have to be present in
-            the database (typically in the MKO, 2MASS, or WISE system). For a spectral library,
-            any filter names can be provided as long as they overlap with the wavelength range
-            of the spectra.
+            Filter names for the color. For a photometric library,
+            these have to be present in the database (typically in the
+            MKO, 2MASS, or WISE system). For a spectral library, any
+            filter names can be provided as long as they overlap with
+            the wavelength range of the spectra.
         filter_mag : str
-            Filter name for the absolute magnitudes (see also description of ``filters_color``).
+            Filter name for the absolute magnitudes (see also
+            description of ``filters_color``).
 
         Returns
         -------
@@ -53,7 +56,7 @@ class ReadColorMagnitude:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -72,14 +75,16 @@ class ReadColorMagnitude:
     @typechecked
     def get_color_magnitude(self, object_type: Optional[str] = None) -> box.ColorMagBox:
         """
-        Function for extracting color-magnitude data from the selected library.
+        Function for extracting color-magnitude data from the selected
+        library.
 
         Parameters
         ----------
         object_type : str, None
-            Object type for which the colors and magnitudes are extracted. Either field dwarfs
-            ('field') or young/low-gravity objects ('young'). All objects are selected if set
-            to ``None``.
+            Object type for which the colors and magnitudes are
+            extracted. Either field dwarfs ('field') or
+            young/low-gravity objects ('young'). All objects are
+            selected if set to ``None``.
 
         Returns
         -------
@@ -219,12 +224,14 @@ class ReadColorColor:
         Parameters
         ----------
         library : str
-            Photometric ('vlm-plx' or 'leggett') or spectral ('irtf' or 'spex') library.
+            Photometric ('vlm-plx' or 'leggett') or spectral ('irtf' or
+            'spex') library.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
-            Filter names for the colors. For a photometric library, these have to be present in
-            the database (typically in the MKO, 2MASS, or WISE system). For a spectral library,
-            any filter names can be provided as long as they overlap with the wavelength range
-            of the spectra.
+            Filter names for the colors. For a photometric library,
+            these have to be present in the database (typically in the
+            MKO, 2MASS, or WISE system). For a spectral library, any
+            filter names can be provided as long as they overlap with
+            the wavelength range of the spectra.
 
         Returns
         -------
@@ -238,7 +245,7 @@ class ReadColorColor:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -257,14 +264,16 @@ class ReadColorColor:
     @typechecked
     def get_color_color(self, object_type: Optional[str] = None) -> box.ColorColorBox:
         """
-        Function for extracting color-color data from the selected library.
+        Function for extracting color-color data from the selected
+        library.
 
         Parameters
         ----------
         object_type : str, None
-            Object type for which the colors and magnitudes are extracted. Either field dwarfs
-            ('field') or young/low-gravity objects ('young'). All objects are selected if set
-            to ``None``.
+            Object type for which the colors and magnitudes are
+            extracted. Either field dwarfs ('field') or
+            young/low-gravity objects ('young'). All objects are
+            selected if set to ``None``.
 
         Returns
         -------

@@ -41,11 +41,11 @@ class ReadModel:
         model : str
             Name of the atmospheric model.
         wavel_range : tuple(float, float), None
-            Wavelength range (um). Full spectrum is selected if set to ``None``. Not used if
-            ``filter_name`` is not ``None``.
+            Wavelength range (um). Full spectrum is selected if set to
+            ``None``. Not used if ``filter_name`` is not ``None``.
         filter_name : str, None
-            Filter name that is used for the wavelength range. The ``wavel_range`` is used if set
-            to ``None``.
+            Filter name that is used for the wavelength range. The
+            ``wavel_range`` is used if set to ``None``.
 
         Returns
         -------
@@ -74,7 +74,7 @@ class ReadModel:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -112,7 +112,7 @@ class ReadModel:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         database_path = config["species"]["database"]
 
@@ -123,7 +123,7 @@ class ReadModel:
 
         except KeyError:
             raise ValueError(
-                f"The '{self.model}' model spectra are not present in the " f"database."
+                f"The '{self.model}' model spectra are not present in the database."
             )
 
         return h5_file
@@ -133,7 +133,8 @@ class ReadModel:
         self, hdf5_file: h5py._hl.files.File
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Internal function for extracting the wavelength points and indices that are used.
+        Internal function for extracting the wavelength points and
+        indices that are used.
 
         Parameters
         ----------
@@ -145,8 +146,8 @@ class ReadModel:
         np.ndarray
             Wavelength points (um).
         np.ndarray
-            Array with the size of the original wavelength grid. The booleans indicate if a
-            wavelength point was used.
+            Array with the size of the original wavelength grid. The
+            booleans indicate if a wavelength point was used.
         """
 
         wl_points = np.asarray(hdf5_file[f"models/{self.model}/wavelength"])
@@ -171,7 +172,8 @@ class ReadModel:
     @typechecked
     def interpolate_model(self) -> None:
         """
-        Internal function for linearly interpolating the full grid of model spectra.
+        Internal function for linearly interpolating the full grid of
+        model spectra.
 
         Returns
         -------
@@ -203,17 +205,19 @@ class ReadModel:
         spec_res: Optional[float] = None,
     ) -> None:
         """
-        Internal function for linearly interpolating the grid of model spectra for a given
-        filter or wavelength sampling.
+        Internal function for linearly interpolating the grid of model
+        spectra for a given filter or wavelength sampling.
 
         wavel_resample : np.ndarray, None
-            Wavelength points for the resampling of the spectrum. The ``filter_name`` is used
-            if set to ``None``.
+            Wavelength points for the resampling of the spectrum. The
+            ``filter_name`` is used if set to ``None``.
         smooth : bool
-            Smooth the spectrum with a Gaussian line spread function. Only recommended in case the
-            input wavelength sampling has a uniform spectral resolution.
+            Smooth the spectrum with a Gaussian line spread function.
+            Only recommended in case the input wavelength sampling has
+            a uniform spectral resolution.
         spec_res : float
-            Spectral resolution that is used for the Gaussian filter when ``smooth=True``.
+            Spectral resolution that is used for the Gaussian filter
+            when ``smooth=True``.
 
         Returns
         -------
@@ -376,16 +380,19 @@ class ReadModel:
         v_band_ext: float,
     ) -> np.ndarray:
         """
-        Internal function for applying extinction by dust to a spectrum.
+        Internal function for applying extinction by dust to a
+        spectrum.
 
         wavelength : np.ndarray
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
         radius_interp : float
-            Logarithm of the mean geometric radius (um) of the log-normal size distribution.
+            Logarithm of the mean geometric radius (um) of the
+            log-normal size distribution.
         sigma_interp : float
-            Geometric standard deviation (dimensionless) of the log-normal size distribution.
+            Geometric standard deviation (dimensionless) of the
+            log-normal size distribution.
         v_band_ext : float
             The extinction (mag) in the V band.
 
@@ -475,7 +482,8 @@ class ReadModel:
         v_band_ext: float,
     ) -> np.ndarray:
         """
-        Internal function for applying extinction by dust to a spectrum.
+        Internal function for applying extinction by dust to a
+        spectrum.
 
         wavelength : np.ndarray
             Wavelengths (um) of the spectrum.
@@ -601,29 +609,37 @@ class ReadModel:
         smooth: bool = False,
     ) -> box.ModelBox:
         """
-        Function for extracting a model spectrum by linearly interpolating the model grid.
+        Function for extracting a model spectrum by linearly
+        interpolating the model grid.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the model parameters and values. The values should be within the
-            boundaries of the grid. The grid boundaries of the spectra in the database can be
-            obtained with :func:`~species.read.read_model.ReadModel.get_bounds()`.
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The grid
+            boundaries of the spectra in the database can be obtained
+            with
+            :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
-            Spectral resolution that is used for smoothing the spectrum with a Gaussian kernel
-            when ``smooth=True``. The wavelengths will be resampled to the argument of
+            Spectral resolution that is used for smoothing the spectrum
+            with a Gaussian kernel when ``smooth=True``. The
+            wavelengths will be resampled to the argument of
             ``spec_res`` if ``smooth=False``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum is resampled. In that case, ``spec_res``
-            can still be used for smoothing the spectrum with a Gaussian kernel. The original
-            wavelength points are used if the argument is set to ``None``.
+            Wavelength points (um) to which the spectrum is resampled.
+            In that case, ``spec_res`` can still be used for smoothing
+            the spectrum with a Gaussian kernel. The original
+            wavelength points are used if the argument is set to
+            ``None``.
         magnitude : bool
-            Normalize the spectrum with a flux calibrated spectrum of Vega and return the magnitude
-            instead of flux density.
+            Normalize the spectrum with a flux calibrated spectrum of
+            Vega and return the magnitude instead of flux density.
         smooth : bool
-            If ``True``, the spectrum is smoothed with a Gaussian kernel to the spectral resolution
-            of ``spec_res``. This requires either a uniform spectral resolution of the input
-            spectra (fast) or a uniform wavelength spacing of the input spectra (slow).
+            If ``True``, the spectrum is smoothed with a Gaussian
+            kernel to the spectral resolution of ``spec_res``. This
+            requires either a uniform spectral resolution of the input
+            spectra (fast) or a uniform wavelength spacing of the input
+            spectra (slow).
 
         Returns
         -------
@@ -692,8 +708,8 @@ class ReadModel:
         if "feh" in model_param:
             parameters.append(model_param["feh"])
 
-        if "co" in model_param:
-            parameters.append(model_param["co"])
+        if "c_o_ratio" in model_param:
+            parameters.append(model_param["c_o_ratio"])
 
         if "fsed" in model_param:
             parameters.append(model_param["fsed"])
@@ -950,22 +966,27 @@ class ReadModel:
         wavel_resample: Optional[np.ndarray] = None,
     ) -> box.ModelBox:
         """
-        Function for selecting a model spectrum (without interpolation) for a set of parameter
-        values that coincide with the grid points. The stored grid points can be inspected with
+        Function for selecting a model spectrum (without interpolation)
+        for a set of parameter values that coincide with the grid
+        points. The stored grid points can be inspected with
         :func:`~species.read.read_model.ReadModel.get_points`.
 
         Parameters
         ----------
         model_param : dict
-            Model parameters and values. Only discrete values from the original grid are possible.
-            Else, the nearest grid values are selected.
+            Model parameters and values. Only discrete values from the
+            original grid are possible. Else, the nearest grid values
+            are selected.
         spec_res : float, None
-            Spectral resolution that is used for smoothing the spectrum with a Gaussian kernel. No
-            smoothing is applied to the spectrum if the argument is set to ``None``.
+            Spectral resolution that is used for smoothing the spectrum
+            with a Gaussian kernel. No smoothing is applied to the
+            spectrum if the argument is set to ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum will be resampled. In that case,
-            ``spec_res`` can still be used for smoothing the spectrum with a Gaussian kernel. The
-            original wavelength points are used if the argument is set to ``None``.
+            Wavelength points (um) to which the spectrum will be
+            resampled. In that case, ``spec_res`` can still be used for
+            smoothing the spectrum with a Gaussian kernel. The original
+            wavelength points are used if the argument is set to
+            ``None``.
 
         Returns
         -------
@@ -1019,9 +1040,9 @@ class ReadModel:
             param_key.append("feh")
             param_val.append(model_param["feh"])
 
-        if "co" in model_param:
-            param_key.append("co")
-            param_val.append(model_param["co"])
+        if "c_o_ratio" in model_param:
+            param_key.append("c_o_ratio")
+            param_val.append(model_param["c_o_ratio"])
 
         if "fsed" in model_param:
             param_key.append("fsed")
@@ -1046,7 +1067,8 @@ class ReadModel:
 
             indices.append(data_index[0])
 
-        # Read the wavelength grid and the indices that will be used for the wavelength range
+        # Read the wavelength grid and the indices that will be used
+        # for the wavelength range
 
         wl_points, wl_index = self.wavelength_points(h5_file)
 
@@ -1054,7 +1076,8 @@ class ReadModel:
 
         indices.append(wl_index)
 
-        # Extract the spectrum at the requested grid point and wavelength range
+        # Extract the spectrum at the requested grid point and
+        # wavelength range
 
         flux = flux[tuple(indices)]
 
@@ -1196,14 +1219,16 @@ class ReadModel:
     @typechecked
     def get_flux(self, model_param: Dict[str, float], synphot=None):
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux density for the
+        ``filter_name``.
 
         Parameters
         ----------
         model_param : dict
             Model parameters and values.
         synphot : species.analysis.photometry.SyntheticPhotometry, None
-            Synthetic photometry object. The object is created if set to None.
+            Synthetic photometry object. The object is created if set
+            to ``None``.
 
         Returns
         -------
@@ -1235,23 +1260,28 @@ class ReadModel:
         self, model_param: Dict[str, float]
     ) -> Tuple[Optional[float], Optional[float]]:
         """
-        Function for calculating the apparent and absolute magnitudes for the ``filter_name``.
+        Function for calculating the apparent and absolute magnitudes
+        for the ``filter_name``.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the model parameters. A ``radius`` (Rjup) and ``distance`` (pc)
-            are required for the apparent magnitude (i.e. to scale the flux from the planet to the
-            observer). Only a ``radius`` is required for the absolute magnitude.
+            Dictionary with the model parameters. A ``radius`` (Rjup)
+            and ``distance`` (pc) are required for the apparent
+            magnitude (i.e. to scale the flux from the planet to the
+            observer). Only a ``radius`` is required for the absolute
+            magnitude.
 
         Returns
         -------
         float
-            Apparent magnitude. A ``None`` is returned if the dictionary of ``model_param`` does
-            not contain a ``radius`` and ``distance``.
+            Apparent magnitude. A ``None`` is returned if the
+            dictionary of ``model_param`` does not contain a ``radius``
+            and ``distance``.
         float, None
-            Absolute magnitude. A ``None`` is returned if the dictionary of ``model_param`` does
-            not contain a ``radius``.
+            Absolute magnitude. A ``None`` is returned if the
+            dictionary of ``model_param`` does not contain a
+            ``radius``.
         """
 
         for key in self.get_parameters():
@@ -1405,7 +1435,8 @@ class ReadModel:
     @typechecked
     def get_spec_res(self) -> float:
         """
-        Function for extracting the spectral resolution as stored in the database.
+        Function for extracting the spectral resolution as stored in
+        the database.
 
         Returns
         -------
@@ -1417,8 +1448,8 @@ class ReadModel:
 
         wavel_mean = (wavel_points[1:] + wavel_points[:-1]) / 2.0
 
-        # R = lambda / delta_lambda / 2, because twice as many points as R are
-        # required to resolve two features that are lambda / R apart
+        # R = lambda / delta_lambda / 2, because twice as many points as R
+        # are required to resolve two features that are lambda / R apart
         spec_res = wavel_mean / np.diff(wavel_points) / 2.0
 
         return np.mean(spec_res)

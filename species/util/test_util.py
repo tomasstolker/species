@@ -24,7 +24,8 @@ def create_config(test_path):
     database_file = os.path.join(test_path, "species_database.hdf5")
     data_folder = os.path.join(test_path, "data/")
 
-    with open(config_file, "w") as config:
+    with open(config_file, "w", encoding="utf-8") as config:
+        print(dir(config))
         config.write("[species]\n")
         config.write("database = " + database_file + "\n")
         config.write("data_folder = " + data_folder)

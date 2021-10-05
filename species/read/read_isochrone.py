@@ -43,7 +43,7 @@ class ReadIsochrone:
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
         self.database = config["species"]["database"]
 
@@ -65,11 +65,13 @@ class ReadIsochrone:
         masses : np.ndarray
             Masses (Mjup) at which the isochrone data is interpolated.
         filters_color : tuple(str, str), None
-            Filter names for the color as listed in the file with the isochrone data. Not selected
-            if set to ``None`` or if only evolutionary tracks are available.
+            Filter names for the color as listed in the file with the
+            isochrone data. Not selected if set to ``None`` or if only
+            evolutionary tracks are available.
         filter_mag : str, None
-            Filter name for the absolute magnitude as listed in the file with the isochrone data.
-            Not selected if set to ``None`` or if only evolutionary tracks are available.
+            Filter name for the absolute magnitude as listed in the
+            file with the isochrone data. Not selected if set to
+            ``None`` or if only evolutionary tracks are available.
 
         Returns
         -------
@@ -180,7 +182,8 @@ class ReadIsochrone:
         adapt_logg: bool = False,
     ) -> box.ColorMagBox:
         """
-        Function for calculating color-magnitude combinations from a selected isochrone.
+        Function for calculating color-magnitude combinations from a
+        selected isochrone.
 
         Parameters
         ----------
@@ -191,16 +194,20 @@ class ReadIsochrone:
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_color : tuple(str, str)
-            Filter names for the color as listed in the file with the isochrone data. The filter
-            names should be provided in the format of the SVO Filter Profile Service.
+            Filter names for the color as listed in the file with the
+            isochrone data. The filter names should be provided in the
+            format of the SVO Filter Profile Service.
         filter_mag : str
-            Filter name for the absolute magnitude as listed in the file with the isochrone data.
-            The value should be equal to one of the ``filters_color`` values.
+            Filter name for the absolute magnitude as listed in the
+            file with the isochrone data. The value should be equal
+            to one of the ``filters_color`` values.
         adapt_logg : bool
-            Adapt :math:`\\log(g)` to the upper or lower boundary of the atmospheric model grid
-            whenever the :math:`\\log(g)` that has been calculated from the isochrone mass and
-            radius lies outside the available range of the synthetic spectra. Typically
-            :math:`\\log(g)` has only a minor impact on the broadband magnitudes and colors.
+            Adapt :math:`\\log(g)` to the upper or lower boundary of
+            the atmospheric model grid whenever the :math:`\\log(g)`
+            that has been calculated from the isochrone mass and
+            radius lies outside the available range of the synthetic
+            spectra. Typically :math:`\\log(g)` has only a minor
+            impact on the broadband magnitudes and colors.
 
         Returns
         -------
@@ -270,21 +277,21 @@ class ReadIsochrone:
 
                             warnings.warn(
                                 f"The value of {item_bounds} is "
-                                f"{model_param[item_bounds]}, which is below the lower "
-                                f"bound of the model grid "
+                                f"{model_param[item_bounds]}, which is below "
+                                f"the lower bound of the model grid "
                                 f"({param_bounds[item_bounds][0]}). Setting the "
-                                f"magnitudes to NaN for the following isochrone sample: "
-                                f"{model_param}."
+                                f"magnitudes to NaN for the following isochrone "
+                                f"sample: {model_param}."
                             )
 
                     elif model_param[item_bounds] >= param_bounds[item_bounds][1]:
                         if adapt_logg and item_bounds == "logg":
                             warnings.warn(
-                                f"The log(g) is {model_param[item_bounds]} but the "
-                                f"upper boundary of the model grid is "
+                                f"The log(g) is {model_param[item_bounds]} but "
+                                f"the upper boundary of the model grid is "
                                 f"{param_bounds[item_bounds][1]}. Adapting "
-                                f"log(g) to {param_bounds[item_bounds][1]} since "
-                                f"adapt_logg=True."
+                                f"log(g) to {param_bounds[item_bounds][1]} "
+                                f"since adapt_logg=True."
                             )
 
                             model_param["logg"] = param_bounds["logg"][1]
@@ -295,11 +302,11 @@ class ReadIsochrone:
 
                             warnings.warn(
                                 f"The value of {item_bounds} is "
-                                f"{model_param[item_bounds]}, which is above the upper "
-                                f"bound of the model grid "
+                                f"{model_param[item_bounds]}, which is above "
+                                f"the upper bound of the model grid "
                                 f"({param_bounds[item_bounds][1]}). Setting the "
-                                f"magnitudes to NaN for the following isochrone sample: "
-                                f"{model_param}."
+                                f"magnitudes to NaN for the following isochrone "
+                                f"sample: {model_param}."
                             )
 
                 if not np.isnan(mag1[i]):
@@ -314,8 +321,8 @@ class ReadIsochrone:
 
         else:
             raise ValueError(
-                "The argument of filter_mag should be equal to one of the two filter "
-                "values of filters_color."
+                "The argument of filter_mag should be equal to one "
+                "of the two filter values of filters_color."
             )
 
         return box.create_box(
@@ -341,7 +348,8 @@ class ReadIsochrone:
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
     ) -> box.ColorColorBox:
         """
-        Function for calculating color-magnitude combinations from a selected isochrone.
+        Function for calculating color-magnitude combinations from a
+        selected isochrone.
 
         Parameters
         ----------
@@ -352,8 +360,9 @@ class ReadIsochrone:
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
-            Filter names for the colors as listed in the file with the isochrone data. The filter
-            names should be provided in the format of the SVO Filter Profile Service.
+            Filter names for the colors as listed in the file with the
+            isochrone data. The filter names should be provided in the
+            format of the SVO Filter Profile Service.
 
         Returns
         -------
@@ -403,8 +412,8 @@ class ReadIsochrone:
                 mag4[i] = np.nan
 
                 warnings.warn(
-                    f"The value of Teff is NaN for the following isochrone sample: "
-                    f"{model_param}. Setting the magnitudes to NaN."
+                    f"The value of Teff is NaN for the following isochrone "
+                    f"sample: {model_param}. Setting the magnitudes to NaN."
                 )
 
             else:
@@ -416,11 +425,12 @@ class ReadIsochrone:
                         mag4[i] = np.nan
 
                         warnings.warn(
-                            f"The value of {item_bounds} is {model_param[item_bounds]}, "
-                            f"which is below the lower bound of the model grid "
-                            f"({model1.get_bounds()[item_bounds][0]}). Setting the "
-                            f"magnitudes to NaN for the following isochrone sample: "
-                            f"{model_param}."
+                            f"The value of {item_bounds} is "
+                            f"{model_param[item_bounds]}, which is "
+                            f"below the lower bound of the model grid "
+                            f" ({model1.get_bounds()[item_bounds][0]}). "
+                            f"Setting the magnitudes to NaN for the "
+                            f"following isochrone sample: {model_param}."
                         )
 
                     elif (
@@ -432,11 +442,12 @@ class ReadIsochrone:
                         mag4[i] = np.nan
 
                         warnings.warn(
-                            f"The value of {item_bounds} is {model_param[item_bounds]}, "
-                            f"which is above the upper bound of the model grid "
-                            f"({model1.get_bounds()[item_bounds][1]}). Setting the "
-                            f"magnitudes to NaN for the following isochrone sample: "
-                            f"{model_param}."
+                            f"The value of {item_bounds} is "
+                            f"{model_param[item_bounds]}, which is above "
+                            f"the upper bound of the model grid "
+                            f"({model1.get_bounds()[item_bounds][1]}). "
+                            f"Setting the magnitudes to NaN for the "
+                            f"following isochrone sample: {model_param}."
                         )
 
                 if (

@@ -12,7 +12,8 @@ from typeguard import typechecked
 @typechecked
 def sptype_substellar(sptype: np.ndarray, shape: Tuple[int]) -> np.ndarray:
     """
-    Function for mapping the spectral types of substellar objects (M, L, T, and Y) to numbers.
+    Function for mapping the spectral types of substellar objects
+    (M, L, T, and Y) to numbers.
 
     Parameters
     ----------
@@ -119,7 +120,8 @@ def sptype_stellar(sptype: np.ndarray, shape: Tuple[int]) -> np.ndarray:
 @typechecked
 def update_labels(param: List[str]) -> List[str]:
     """
-    Function for formatting the model parameters to use them as labels in the posterior plot.
+    Function for formatting the model parameters to use them as labels
+    in the posterior plot.
 
     Parameters
     ----------
@@ -407,7 +409,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_tau_cloud" in param:
         index = param.index("log_tau_cloud")
-        param[index] = rf"$\mathregular{{log}}\,\tau_\mathregular{{cloud}}$"
+        param[index] = r"$\mathregular{{log}}\,\tau_\mathregular{{cloud}}$"
 
     if "veil_a" in param:
         index = param.index("veil_a")
@@ -467,7 +469,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_kappa_0" in param:
         index = param.index("log_kappa_0")
-        param[index] = rf"$\mathregular{{log}}\,\kappa_0$"
+        param[index] = r"$\mathregular{{log}}\,\kappa_0$"
 
     if "opa_index" in param:
         index = param.index("opa_index")
@@ -477,7 +479,7 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("log_p_base")
         param[
             index
-        ] = rf"$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$"
+        ] = r"$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$"
 
     if "albedo" in param:
         index = param.index("albedo")
@@ -558,7 +560,8 @@ def quantity_unit(
     param: List[str], object_type: str
 ) -> Tuple[List[str], List[Optional[str]], List[str]]:
     """
-    Function for creating lists with quantities, units, and labels for fitted parameter.
+    Function for creating lists with quantities, units, and labels
+    for fitted parameter.
 
     Parameters
     ----------
@@ -691,9 +694,10 @@ def field_bounds_ticks(field_range):
     Parameters
     ----------
     field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
-        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
-        The full range is used if set to None.
+        Range of the discrete colorbar for the field dwarfs. The tuple
+        should contain the lower and upper value ('early M', 'late M',
+        'early L', 'late L', 'early T', 'late T', 'early Y). The full
+        range is used if set to None.
 
     Returns
     -------
@@ -753,8 +757,8 @@ def remove_color_duplicates(
     object_names: List[str], empirical_names: np.ndarray
 ) -> List[int]:
     """ "
-    Function for deselecting young/low-gravity objects that will already be plotted individually
-    as directly imaged objects.
+    Function for deselecting young/low-gravity objects that will
+    already be plotted individually as directly imaged objects.
 
     Parameters
     ----------

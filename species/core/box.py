@@ -167,7 +167,8 @@ class Box:
 
 class ColorMagBox(Box):
     """
-    Class for storing color-magnitude data in a :class:`~species.core.box.Box`.
+    Class for storing color-magnitude data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -192,7 +193,8 @@ class ColorMagBox(Box):
 
 class ColorColorBox(Box):
     """
-    Class for storing color-color data in a :class:`~species.core.box.Box`.
+    Class for storing color-color data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -216,7 +218,8 @@ class ColorColorBox(Box):
 
 class IsochroneBox(Box):
     """
-    Class for storing isochrone data in a :class:`~species.core.box.Box`.
+    Class for storing isochrone data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -239,7 +242,8 @@ class IsochroneBox(Box):
 
 class ModelBox(Box):
     """
-    Class for storing a model spectrum in a :class:`~species.core.box.Box`.
+    Class for storing a model spectrum in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -260,10 +264,11 @@ class ModelBox(Box):
 
     def smooth_spectrum(self, spec_res: float) -> None:
         """
-        Method for smoothing the spectrum with a Gaussian kernel to the instrument resolution. The
-        method is best applied on an input spectrum with a logarithmic wavelength sampling (i.e.
-        constant spectral resolution). Alternatively, the wavelength sampling may be linear, but
-        the smoothing is slower in that case.
+        Method for smoothing the spectrum with a Gaussian kernel to the
+        instrument resolution. The method is best applied on an input
+        spectrum with a logarithmic wavelength sampling (i.e. constant
+        spectral resolution). Alternatively, the wavelength sampling
+        may be linear, but the smoothing is slower in that case.
 
         Parameters
         ----------
@@ -282,12 +287,14 @@ class ModelBox(Box):
 
     def resample_spectrum(self, wavel_resample: np.ndarray) -> None:
         """
-        Method for resampling the spectrum with ``spectres`` to a new wavelength grid.
+        Method for resampling the spectrum with ``spectres`` to a new
+        wavelength grid.
 
         Parameters
         ----------
         wavel_resample : np.ndarray
-            Wavelength points (um) to which the spectrum will be resampled.
+            Wavelength points (um) to which the spectrum will be
+            resampled.
 
         Returns
         -------
@@ -331,7 +338,8 @@ class ObjectBox(Box):
 
 class PhotometryBox(Box):
     """
-    Class for storing photometric data in a :class:`~species.core.box.Box`.
+    Class for storing photometric data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -353,7 +361,8 @@ class PhotometryBox(Box):
 
 class ResidualsBox(Box):
     """
-    Class for storing best-fit residuals in a :class:`~species.core.box.Box`.
+    Class for storing best-fit residuals in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -371,7 +380,8 @@ class ResidualsBox(Box):
 
 class SamplesBox(Box):
     """
-    Class for storing posterior samples in a :class:`~species.core.box.Box`.
+    Class for storing posterior samples in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -394,7 +404,8 @@ class SamplesBox(Box):
 
 class SpectrumBox(Box):
     """
-    Class for storing spectral data in a :class:`~species.core.box.Box`.
+    Class for storing spectral data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -417,7 +428,8 @@ class SpectrumBox(Box):
 
 class SynphotBox(Box):
     """
-    Class for storing synthetic photometry in a :class:`~species.core.box.Box`.
+    Class for storing synthetic photometry in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):

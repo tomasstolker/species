@@ -2,7 +2,7 @@
 Utility functions for data processing.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
@@ -12,15 +12,15 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_radtrans
-from species.util import retrieval_util
 
 
 @typechecked
 def update_sptype(sptypes: np.ndarray) -> List[str]:
     """
-    Function to update a list with spectral types to two characters (e.g., M8, L3, or T1). The
-    spectral to is set to NaN in case the first character is not recognized or the second character
-    is not a numerical value.
+    Function to update a list with spectral types to two characters
+    (e.g., M8, L3, or T1). The spectral to is set to NaN in case the
+    first character is not recognized or the second character is not
+    a numerical value.
 
     Parameters
     ----------
@@ -61,8 +61,8 @@ def update_sptype(sptypes: np.ndarray) -> List[str]:
 
 def update_filter(filter_in):
     """
-    Function to update a filter ID from the Vizier Photometry viewer VOTable to the filter ID from
-    the SVO Filter Profile Service.
+    Function to update a filter ID from the Vizier Photometry viewer
+    VOTable to the filter ID from the SVO Filter Profile Service.
 
     Parameters
     ----------
@@ -108,21 +108,27 @@ def sort_data(
     param_logg : np.ndarray, None
         Array with the log10 surface gravity (cgs) of each spectrum.
     param_feh : np.ndarray, None
-        Array with the metallicity of each spectrum. Not used if set to ``None``.
+        Array with the metallicity of each spectrum. Not used if set
+        to ``None``.
     param_co : np.ndarray, None
-        Array with the carbon-to-oxygen ratio of each spectrum. Not used if set to ``None``.
+        Array with the carbon-to-oxygen ratio of each spectrum. Not
+        used if set to ``None``.
     param_fsed : np.ndarray, None
-        Array with the sedimentation parameter of each spectrum. Not used if set to ``None``.
+        Array with the sedimentation parameter of each spectrum. Not
+        used if set to ``None``.
     wavelength : np.ndarray
         Array with the wavelengths (um).
     flux : np.ndarray
-        Array with the spectra with dimensions ``(n_spectra, n_wavelengths)``.
+        Array with the spectra with dimensions
+        ``(n_spectra, n_wavelengths)``.
 
     Returns
     -------
     list(np.ndarray, )
-        List with the unique values of the atmosphere parameters (each in a separate array), an
-        array with the wavelengths, and a multidimensional array with the sorted spectra.
+        List with the unique values of the atmosphere parameters (each
+    in a separate array), an
+        array with the wavelengths, and a multidimensional array with
+        the sorted spectra.
     """
 
     n_spectra = param_teff.shape[0]
@@ -212,7 +218,8 @@ def write_data(
     data_sorted: List[np.ndarray],
 ) -> None:
     """
-    Function for writing the model spectra and parameters to the database.
+    Function for writing the model spectra and parameters to the
+    database.
 
     Parameters
     ----------
@@ -223,8 +230,8 @@ def write_data(
     database: h5py._hl.files.File
         Database.
     data_sorted : list(np.ndarray, )
-        Sorted model data with the parameter values, wavelength points (um), and flux
-        densities (W m-2 um-1).
+        Sorted model data with the parameter values, wavelength
+        points (um), and flux densities (W m-2 um-1).
 
     Returns
     -------
@@ -256,7 +263,8 @@ def add_missing(
     model: str, parameters: List[str], database: h5py._hl.files.File
 ) -> None:
     """
-    Function for adding missing grid points with a linear interpolation.
+    Function for adding missing grid points with a linear
+    interpolation.
 
     Parameters
     ----------
@@ -368,8 +376,8 @@ def add_missing(
 
             if count_missing > 0:
                 print(
-                    f"Could not interpolate {count_missing} grid points so storing zeros "
-                    f"instead. [WARNING]\nThe grid points that are missing:"
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
                 )
 
                 for i in range(flux_int.shape[0]):
@@ -457,8 +465,8 @@ def add_missing(
 
             if count_missing > 0:
                 print(
-                    f"Could not interpolate {count_missing} grid points so storing zeros "
-                    f"instead. [WARNING]\nThe grid points that are missing:"
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
                 )
 
                 for i in range(flux_int.shape[0]):
@@ -552,8 +560,8 @@ def add_missing(
 
             if count_missing > 0:
                 print(
-                    f"Could not interpolate {count_missing} grid points so storing zeros "
-                    f"instead. [WARNING]\nThe grid points that are missing:"
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
                 )
 
                 for i in range(flux_int.shape[0]):
@@ -682,8 +690,8 @@ def add_missing(
 
             if count_missing > 0:
                 print(
-                    f"Could not interpolate {count_missing} grid points so storing zeros "
-                    f"instead. [WARNING]\nThe grid points that are missing:"
+                    f"Could not interpolate {count_missing} grid points so storing"
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
                 )
 
                 for i in range(flux_int.shape[0]):
@@ -697,8 +705,8 @@ def add_missing(
 
     else:
         raise ValueError(
-            "The add_missing function is currently not compatible with more than 5 "
-            "model parameters."
+            "The add_missing function is currently not compatible "
+            "with more than 5 model parameters."
         )
 
     print(f"Number of stored grid points: {count_total}")
@@ -751,7 +759,8 @@ def retrieval_spectrum(
     sample: np.ndarray,
 ) -> box.ModelBox:
     """
-    Function for calculating a petitRADTRANS spectrum from a posterior sample.
+    Function for calculating a petitRADTRANS spectrum from a
+    posterior sample.
 
     Parameters
     ----------
@@ -760,24 +769,28 @@ def retrieval_spectrum(
     chemistry : str
         Chemistry type (``'equilibrium'`` or ``'free'``).
     pt_profile : str
-        Pressure-temperature parametrization (``'molliere'``, ``'monotonic'``, or ``'free'``).
+        Pressure-temperature parametrization (``'molliere'``,
+        ``'monotonic'``, or ``'free'``).
     line_species : list(str)
         List with the line species.
     cloud_species : list(str)
         List with the cloud species.
     quenching : str, None
-        Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
-        parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
-        mixing and chemical timescales (``quenching='diffusion'``). The quenching is not applied
-        if the argument is set to ``None``.
+        Quenching type for CO/CH4/H2O abundances. Either the quenching
+        pressure (bar) is a free parameter (``quenching='pressure'``)
+        or the quenching pressure is calculated from the mixing and
+        chemical timescales (``quenching='diffusion'``). The quenching
+        is not applied if the argument is set to ``None``.
     spec_res : float
         Spectral resolution.
     distance : float, None
         Distance (pc).
     pt_smooth : float
-        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
-        `pt_profile='monotonic'`. The argument should be given as log10(P/bar).
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the sampled temperature nodes of the P-T profile.
+        Only required with `pt_profile='free'` or
+        `pt_profile='monotonic'`. The argument should be given as
+        log10(P/bar).
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
