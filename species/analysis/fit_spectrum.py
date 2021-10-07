@@ -21,13 +21,16 @@ from species.read import read_calibration, read_object
 
 
 @typechecked
-def lnprob(param: np.ndarray,
-           bounds: Dict[str, Tuple[float, float]],
-           modelpar: List[str],
-           objphot: List[np.ndarray],
-           specphot: Union[List[float],
-                           List[Tuple[photometry.SyntheticPhotometry,
-                                      Tuple[np.float64, np.float64]]]]) -> float:
+def lnprob(
+    param: np.ndarray,
+    bounds: Dict[str, Tuple[float, float]],
+    modelpar: List[str],
+    objphot: List[np.ndarray],
+    specphot: Union[
+        List[float],
+        List[Tuple[photometry.SyntheticPhotometry, Tuple[np.float64, np.float64]]],
+    ],
+) -> float:
     """
     Internal function for calculating the posterior probability.
 
@@ -51,12 +54,12 @@ def lnprob(param: np.ndarray,
         Log posterior probability.
     """
 
-    ln_prob = 0.
+    ln_prob = 0.0
 
     for i, item in enumerate(modelpar):
 
         if bounds[item][0] <= param[i] <= bounds[item][1]:
-            ln_prob += 0.
+            ln_prob += 0.0
 
         else:
             ln_prob += -np.inf
@@ -66,12 +69,20 @@ def lnprob(param: np.ndarray,
 
         for i, obj_item in enumerate(objphot):
             if obj_item.ndim == 1:
-                ln_prob += -0.5 * (obj_item[0] - param[0]*specphot[i])**2 / obj_item[1]**2
+                ln_prob += (
+                    -0.5
+                    * (obj_item[0] - param[0] * specphot[i]) ** 2
+                    / obj_item[1] ** 2
+                )
 
             else:
 
                 for j in range(obj_item.shape[1]):
-                    ln_prob += -0.5 * (obj_item[0, j] - param[0]*specphot[i])**2 / obj_item[1, j]**2
+                    ln_prob += (
+                        -0.5
+                        * (obj_item[0, j] - param[0] * specphot[i]) ** 2
+                        / obj_item[1, j] ** 2
+                    )
 
     return ln_prob
 
@@ -82,11 +93,13 @@ class FitSpectrum:
     """
 
     @typechecked
-    def __init__(self,
-                 object_name: str,
-                 filters: Optional[List[str]],
-                 spectrum: str,
-                 bounds: Dict[str, Tuple[float, float]]) -> None:
+    def __init__(
+        self,
+        object_name: str,
+        filters: Optional[List[str]],
+        spectrum: str,
+        bounds: Dict[str, Tuple[float, float]],
+    ) -> None:
         """
         Parameters
         ----------
@@ -118,7 +131,9 @@ class FitSpectrum:
         if filters is None:
             species_db = database.Database()
 
-            objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=False)
+            objectbox = species_db.get_object(
+                object_name, inc_phot=True, inc_spec=False
+            )
             filters = objectbox.filters
 
         for item in filters:
@@ -132,14 +147,16 @@ class FitSpectrum:
             obj_phot = self.object.get_photometry(item)
             self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
-        self.modelpar = ['scaling']
+        self.modelpar = ["scaling"]
 
     @typechecked
-    def run_mcmc(self,
-                 nwalkers: int,
-                 nsteps: int,
-                 guess: Union[Dict[str, float], Dict[str, None]],
-                 tag: str) -> None:
+    def run_mcmc(
+        self,
+        nwalkers: int,
+        nsteps: int,
+        guess: Union[Dict[str, float], Dict[str, None]],
+        tag: str,
+    ) -> None:
         """
         Function to run the MCMC sampler.
 
@@ -160,7 +177,7 @@ class FitSpectrum:
             None
         """
 
-        print('Running MCMC...')
+        print("Running MCMC...")
 
         ndim = 1
 
@@ -168,36 +185,39 @@ class FitSpectrum:
 
         for i, item in enumerate(self.modelpar):
             if guess[item] is not None:
-                width = min(abs(guess[item] - self.bounds[item][0]),
-                            abs(guess[item] - self.bounds[item][1]))
+                width = min(
+                    abs(guess[item] - self.bounds[item][0]),
+                    abs(guess[item] - self.bounds[item][1]),
+                )
 
-                initial[:, i] = guess[item] + np.random.normal(0, 0.1*width, nwalkers)
+                initial[:, i] = guess[item] + np.random.normal(0, 0.1 * width, nwalkers)
 
             else:
-                initial[:, i] = np.random.uniform(low=self.bounds[item][0],
-                                                  high=self.bounds[item][1],
-                                                  size=nwalkers)
+                initial[:, i] = np.random.uniform(
+                    low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
+                )
 
         with Pool(processes=cpu_count()):
-            ens_sampler = emcee.EnsembleSampler(nwalkers,
-                                                ndim,
-                                                lnprob,
-                                                args=([self.bounds,
-                                                       self.modelpar,
-                                                       self.objphot,
-                                                       self.specphot]))
+            ens_sampler = emcee.EnsembleSampler(
+                nwalkers,
+                ndim,
+                lnprob,
+                args=([self.bounds, self.modelpar, self.objphot, self.specphot]),
+            )
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
         species_db = database.Database()
 
-        species_db.add_samples(sampler='emcee',
-                               samples=ens_sampler.get_chain(),
-                               ln_prob=ens_sampler.get_log_prob(),
-                               ln_evidence=None,
-                               mean_accept=np.mean(ens_sampler.acceptance_fraction),
-                               spectrum=('calibration', self.spectrum),
-                               tag=tag,
-                               modelpar=self.modelpar,
-                               distance=None,
-                               spec_labels=None)
+        species_db.add_samples(
+            sampler="emcee",
+            samples=ens_sampler.get_chain(),
+            ln_prob=ens_sampler.get_log_prob(),
+            ln_evidence=None,
+            mean_accept=np.mean(ens_sampler.acceptance_fraction),
+            spectrum=("calibration", self.spectrum),
+            tag=tag,
+            modelpar=self.modelpar,
+            distance=None,
+            spec_labels=None,
+        )

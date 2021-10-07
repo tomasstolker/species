@@ -27,10 +27,12 @@ class CompareSpectra:
     """
 
     @typechecked
-    def __init__(self,
-                 object_name: str,
-                 spec_name: Union[str, List[str]],
-                 spec_library: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        object_name: str,
+        spec_name: Union[str, List[str]],
+        spec_library: Optional[str] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -57,27 +59,31 @@ class CompareSpectra:
             self.spec_name = [self.spec_name]
 
         if spec_library is not None:
-            warnings.warn('The \'spec_library\' parameter is no longer used by the constructor '
-                          'of CompareSpectra and will be removed in a future release.',
-                          DeprecationWarning)
+            warnings.warn(
+                "The 'spec_library' parameter is no longer used by the constructor "
+                "of CompareSpectra and will be removed in a future release.",
+                DeprecationWarning,
+            )
 
         self.object = read_object.ReadObject(object_name)
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
-        self.database = config['species']['database']
+        self.database = config["species"]["database"]
 
     @typechecked
-    def spectral_type(self,
-                      tag: str,
-                      spec_library,
-                      wavel_range: Optional[Tuple[Optional[float], Optional[float]]] = None,
-                      sptypes: Optional[List[str]] = None,
-                      av_ext: Optional[Union[List[float], np.array]] = None,
-                      rad_vel: Optional[Union[List[float], np.array]] = None) -> None:
+    def spectral_type(
+        self,
+        tag: str,
+        spec_library,
+        wavel_range: Optional[Tuple[Optional[float], Optional[float]]] = None,
+        sptypes: Optional[List[str]] = None,
+        av_ext: Optional[Union[List[float], np.array]] = None,
+        rad_vel: Optional[Union[List[float], np.array]] = None,
+    ) -> None:
         """
         Method for finding the best fitting empirical spectra from a selected library by
         evaluating the goodness-of-fit statistic from Cushing et al. (2008).
@@ -108,24 +114,24 @@ class CompareSpectra:
             None
         """
 
-        w_i = 1.
+        w_i = 1.0
 
         if av_ext is None:
-            av_ext = [0.]
+            av_ext = [0.0]
 
         if rad_vel is None:
-            rad_vel = [0.]
+            rad_vel = [0.0]
 
-        h5_file = h5py.File(self.database, 'r')
+        h5_file = h5py.File(self.database, "r")
 
         try:
-            h5_file[f'spectra/{spec_library}']
+            h5_file[f"spectra/{spec_library}"]
 
         except KeyError:
             h5_file.close()
             species_db = database.Database()
             species_db.add_spectra(spec_library)
-            h5_file = h5py.File(self.database, 'r')
+            h5_file = h5py.File(self.database, "r")
 
         # Read object spectra and resolution
 
@@ -148,21 +154,21 @@ class CompareSpectra:
         av_list = []
         rv_list = []
 
-        print_message = ''
+        print_message = ""
 
         # Start looping over library spectra
 
-        for i, item in enumerate(h5_file[f'spectra/{spec_library}']):
+        for i, item in enumerate(h5_file[f"spectra/{spec_library}"]):
             # Read spectrum spectral type from library
-            dset = h5_file[f'spectra/{spec_library}/{item}']
+            dset = h5_file[f"spectra/{spec_library}/{item}"]
 
-            if isinstance(dset.attrs['sptype'], str):
-                item_sptype = dset.attrs['sptype']
+            if isinstance(dset.attrs["sptype"], str):
+                item_sptype = dset.attrs["sptype"]
             else:
                 # Use decode for backward compatibility
-                item_sptype = dset.attrs['sptype'].decode('utf-8')
+                item_sptype = dset.attrs["sptype"].decode("utf-8")
 
-            if item_sptype == 'None':
+            if item_sptype == "None":
                 continue
 
             if sptypes is None or item_sptype[0] in sptypes:
@@ -179,21 +185,27 @@ class CompareSpectra:
                         indices = np.where((spectrum[:, 0] > wavel_range[0]))[0]
 
                     else:
-                        indices = np.where((spectrum[:, 0] > wavel_range[0]) &
-                                           (spectrum[:, 0] < wavel_range[1]))[0]
+                        indices = np.where(
+                            (spectrum[:, 0] > wavel_range[0])
+                            & (spectrum[:, 0] < wavel_range[1])
+                        )[0]
 
                     if len(indices) == 0:
-                        raise ValueError('The selected wavelength range does not cover any '
-                                         'wavelength points of the input spectrum. Please '
-                                         'use a broader range as argument of \'wavel_range\'.')
+                        raise ValueError(
+                            "The selected wavelength range does not cover any "
+                            "wavelength points of the input spectrum. Please "
+                            "use a broader range as argument of 'wavel_range'."
+                        )
 
-                    spectrum = spectrum[indices, ]
+                    spectrum = spectrum[
+                        indices,
+                    ]
 
-                empty_message = len(print_message)*' '
-                print(f'\r{empty_message}', end='')
+                empty_message = len(print_message) * " "
+                print(f"\r{empty_message}", end="")
 
-                print_message = f'Processing spectra... {item}'
-                print(f'\r{print_message}', end='')
+                print_message = f"Processing spectra... {item}"
+                print(f"\r{print_message}", end="")
 
                 # Loop over all values of A_V and RV that will be tested
 
@@ -201,46 +213,63 @@ class CompareSpectra:
                     for rv_item in rad_vel:
                         for j, spec_item in enumerate(obj_spec):
                             # Dust extinction
-                            ism_ext = dust_util.ism_extinction(av_item, 3.1, spectrum[:, 0])
-                            flux_scaling = 10.**(-0.4*ism_ext)
+                            ism_ext = dust_util.ism_extinction(
+                                av_item, 3.1, spectrum[:, 0]
+                            )
+                            flux_scaling = 10.0 ** (-0.4 * ism_ext)
 
                             # Shift wavelengths by RV
-                            wavel_shifted = spectrum[:, 0] + \
-                                spectrum[:, 0]*1e3*rv_item/constants.LIGHT
+                            wavel_shifted = (
+                                spectrum[:, 0]
+                                + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
+                            )
 
                             # Smooth spectrum
-                            flux_smooth = read_util.smooth_spectrum(wavel_shifted,
-                                                                    spectrum[:, 1]*flux_scaling,
-                                                                    spec_res=obj_res[j],
-                                                                    force_smooth=True)
+                            flux_smooth = read_util.smooth_spectrum(
+                                wavel_shifted,
+                                spectrum[:, 1] * flux_scaling,
+                                spec_res=obj_res[j],
+                                force_smooth=True,
+                            )
 
                             # Interpolate library spectrum to object wavelengths
-                            interp_spec = interp1d(spectrum[:, 0],
-                                                   flux_smooth,
-                                                   kind='linear',
-                                                   fill_value='extrapolate')
+                            interp_spec = interp1d(
+                                spectrum[:, 0],
+                                flux_smooth,
+                                kind="linear",
+                                fill_value="extrapolate",
+                            )
 
-                            indices = np.where((spec_item[:, 0] > np.amin(spectrum[:, 0])) &
-                                               (spec_item[:, 0] < np.amax(spectrum[:, 0])))[0]
+                            indices = np.where(
+                                (spec_item[:, 0] > np.amin(spectrum[:, 0]))
+                                & (spec_item[:, 0] < np.amax(spectrum[:, 0]))
+                            )[0]
 
                             flux_resample = interp_spec(spec_item[indices, 0])
 
-                            c_numer = w_i*spec_item[indices, 1]*flux_resample / \
-                                spec_item[indices, 2]**2
+                            c_numer = (
+                                w_i
+                                * spec_item[indices, 1]
+                                * flux_resample
+                                / spec_item[indices, 2] ** 2
+                            )
 
-                            c_denom = w_i*flux_resample**2/spec_item[indices, 2]**2
+                            c_denom = (
+                                w_i * flux_resample ** 2 / spec_item[indices, 2] ** 2
+                            )
 
                             if j == 0:
-                                g_k = 0.
+                                g_k = 0.0
                                 c_k_spec = []
 
                             c_k = np.sum(c_numer) / np.sum(c_denom)
                             c_k_spec.append(c_k)
 
-                            chi_sq = (spec_item[indices, 1] - c_k*flux_resample) / \
-                                spec_item[indices, 2]
+                            chi_sq = (
+                                spec_item[indices, 1] - c_k * flux_resample
+                            ) / spec_item[indices, 2]
 
-                            g_k += np.sum(w_i * chi_sq**2)
+                            g_k += np.sum(w_i * chi_sq ** 2)
 
                             # obj_inv_cov_crop = obj_inv_cov[indices, :]
                             # obj_inv_cov_crop = obj_inv_cov_crop[:, indices]
@@ -258,10 +287,10 @@ class CompareSpectra:
                         av_list.append(av_item)
                         rv_list.append(rv_item)
 
-        empty_message = len(print_message)*' '
-        print(f'\r{empty_message}', end='')
+        empty_message = len(print_message) * " "
+        print(f"\r{empty_message}", end="")
 
-        print('\rProcessing spectra... [DONE]')
+        print("\rProcessing spectra... [DONE]")
 
         h5_file.close()
 
@@ -297,42 +326,50 @@ class CompareSpectra:
                 av_select.append(av_list[i])
                 rv_select.append(rv_list[i])
 
-        print('Best-fitting spectra:')
+        print("Best-fitting spectra:")
 
         if len(gk_select) < 10:
             for i, gk_item in enumerate(gk_select):
-                print(f'   {i+1:2d}. G = {gk_item:.2e} -> {name_select[i]}, {spt_select[i]}, '
-                      f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n'
-                      f'                      scalings = {ck_select[i]}')
+                print(
+                    f"   {i+1:2d}. G = {gk_item:.2e} -> {name_select[i]}, {spt_select[i]}, "
+                    f"A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n"
+                    f"                      scalings = {ck_select[i]}"
+                )
 
         else:
             for i in range(10):
-                print(f'   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, '
-                      f'A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n'
-                      f'                      scalings = {ck_select[i]}')
+                print(
+                    f"   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, "
+                    f"A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n"
+                    f"                      scalings = {ck_select[i]}"
+                )
 
         species_db = database.Database()
 
-        species_db.add_empirical(tag=tag,
-                                 names=name_select,
-                                 sptypes=spt_select,
-                                 goodness_of_fit=gk_select,
-                                 flux_scaling=ck_select,
-                                 av_ext=av_select,
-                                 rad_vel=rv_select,
-                                 object_name=self.object_name,
-                                 spec_name=self.spec_name,
-                                 spec_library=spec_library)
+        species_db.add_empirical(
+            tag=tag,
+            names=name_select,
+            sptypes=spt_select,
+            goodness_of_fit=gk_select,
+            flux_scaling=ck_select,
+            av_ext=av_select,
+            rad_vel=rv_select,
+            object_name=self.object_name,
+            spec_name=self.spec_name,
+            spec_library=spec_library,
+        )
 
     @typechecked
-    def compare_model(self,
-                      tag: str,
-                      model: str,
-                      av_points: Optional[Union[List[float], np.array]] = None,
-                      fix_logg: Optional[float] = None,
-                      scale_spec: Optional[List[str]] = None,
-                      weights: bool = True,
-                      inc_phot: Optional[List[str]] = None) -> None:
+    def compare_model(
+        self,
+        tag: str,
+        model: str,
+        av_points: Optional[Union[List[float], np.array]] = None,
+        fix_logg: Optional[float] = None,
+        scale_spec: Optional[List[str]] = None,
+        weights: bool = True,
+        inc_phot: Optional[List[str]] = None,
+    ) -> None:
         """
         Method for finding the best fitting spectrum from a grid of atmospheric model spectra by
         evaluating the goodness-of-fit statistic from Cushing et al. (2008). Currently, this method
@@ -376,7 +413,7 @@ class CompareSpectra:
         for spec_item in self.spec_name:
             obj_wavel = self.object.get_spectrum()[spec_item][0][:, 0]
 
-            diff = (np.diff(obj_wavel)[1:] + np.diff(obj_wavel)[:-1]) / 2.
+            diff = (np.diff(obj_wavel)[1:] + np.diff(obj_wavel)[:-1]) / 2.0
             diff = np.insert(diff, 0, diff[0])
             diff = np.append(diff, diff[-1])
 
@@ -399,7 +436,7 @@ class CompareSpectra:
             phot_wavel[phot_item] = read_filt.mean_wavelength()
 
         if av_points is None:
-            av_points = np.array([0.])
+            av_points = np.array([0.0])
 
         elif isinstance(av_points, list):
             av_points = np.array(av_points)
@@ -411,20 +448,22 @@ class CompareSpectra:
 
         coord_points = []
         for key, value in grid_points.items():
-            if key == 'logg' and fix_logg is not None:
+            if key == "logg" and fix_logg is not None:
                 if fix_logg in value:
                     coord_points.append(np.array([fix_logg]))
 
                 else:
-                    raise ValueError(f'The argument of \'fix_logg\' ({fix_logg}) is not found '
-                                     f'in the parameter grid of the model spectra. The following '
-                                     f'values of log(g) are available: {value}')
+                    raise ValueError(
+                        f"The argument of 'fix_logg' ({fix_logg}) is not found "
+                        f"in the parameter grid of the model spectra. The following "
+                        f"values of log(g) are available: {value}"
+                    )
 
             else:
                 coord_points.append(value)
 
         if av_points is not None:
-            model_param.append('ism_ext')
+            model_param.append("ism_ext")
             coord_points.append(av_points)
 
         grid_shape = []
@@ -445,12 +484,14 @@ class CompareSpectra:
         count = 1
 
         if len(coord_points) == 3:
-            n_iter = len(coord_points[0])*len(coord_points[1])*len(coord_points[2])
+            n_iter = len(coord_points[0]) * len(coord_points[1]) * len(coord_points[2])
 
             for i, item_i in enumerate(coord_points[0]):
                 for j, item_j in enumerate(coord_points[1]):
                     for k, item_k in enumerate(coord_points[2]):
-                        print(f'\rProcessing model spectrum {count}/{n_iter}...', end='')
+                        print(
+                            f"\rProcessing model spectrum {count}/{n_iter}...", end=""
+                        )
 
                         model_spec = {}
                         model_phot = {}
@@ -459,26 +500,34 @@ class CompareSpectra:
                             obj_spec = self.object.get_spectrum()[spec_item][0]
                             obj_res = self.object.get_spectrum()[spec_item][3]
 
-                            param_dict = {model_param[0]: item_i,
-                                          model_param[1]: item_j,
-                                          model_param[2]: item_k}
+                            param_dict = {
+                                model_param[0]: item_i,
+                                model_param[1]: item_j,
+                                model_param[2]: item_k,
+                            }
 
-                            wavel_range = (0.9*obj_spec[0, 0], 1.1*obj_spec[-1, 0])
-                            readmodel = read_model.ReadModel(model, wavel_range=wavel_range)
+                            wavel_range = (0.9 * obj_spec[0, 0], 1.1 * obj_spec[-1, 0])
+                            readmodel = read_model.ReadModel(
+                                model, wavel_range=wavel_range
+                            )
 
-                            model_box = readmodel.get_data(param_dict,
-                                                           spec_res=obj_res,
-                                                           wavel_resample=obj_spec[:, 0])
+                            model_box = readmodel.get_data(
+                                param_dict,
+                                spec_res=obj_res,
+                                wavel_resample=obj_spec[:, 0],
+                            )
 
                             model_spec[spec_item] = model_box.flux
 
                         for phot_item in inc_phot:
-                            readmodel = read_model.ReadModel(model, filter_name=phot_item)
+                            readmodel = read_model.ReadModel(
+                                model, filter_name=phot_item
+                            )
 
                             model_phot[phot_item] = readmodel.get_flux(param_dict)[0]
 
                         def g_fit(x, scaling):
-                            g_stat = 0.
+                            g_stat = 0.0
 
                             for spec_item in self.spec_name:
                                 obs_spec = self.object.get_spectrum()[spec_item][0]
@@ -486,51 +535,78 @@ class CompareSpectra:
                                 if spec_item in scale_spec:
                                     spec_idx = scale_spec.index(spec_item)
 
-                                    c_numer = w_i[spec_item] * obs_spec[:, 1] * \
-                                        model_spec[spec_item] / obs_spec[:, 2]**2
+                                    c_numer = (
+                                        w_i[spec_item]
+                                        * obs_spec[:, 1]
+                                        * model_spec[spec_item]
+                                        / obs_spec[:, 2] ** 2
+                                    )
 
-                                    c_denom = w_i[spec_item] * model_spec[spec_item]**2 / \
-                                        obs_spec[:, 2]**2
+                                    c_denom = (
+                                        w_i[spec_item]
+                                        * model_spec[spec_item] ** 2
+                                        / obs_spec[:, 2] ** 2
+                                    )
 
-                                    extra_scaling[i, j, k, spec_idx] = np.sum(c_numer) / \
-                                        np.sum(c_denom)
+                                    extra_scaling[i, j, k, spec_idx] = np.sum(
+                                        c_numer
+                                    ) / np.sum(c_denom)
 
-                                    g_stat += np.sum(w_i[spec_item] * (
-                                        obs_spec[:, 1] - extra_scaling[i, j, k, spec_idx] * \
-                                        model_spec[spec_item])**2 / obs_spec[:, 2]**2)
+                                    g_stat += np.sum(
+                                        w_i[spec_item]
+                                        * (
+                                            obs_spec[:, 1]
+                                            - extra_scaling[i, j, k, spec_idx]
+                                            * model_spec[spec_item]
+                                        )
+                                        ** 2
+                                        / obs_spec[:, 2] ** 2
+                                    )
 
                                 else:
-                                    g_stat += np.sum(w_i[spec_item] * (
-                                        obs_spec[:, 1] - scaling*model_spec[spec_item])**2 / \
-                                        obs_spec[:, 2]**2)
+                                    g_stat += np.sum(
+                                        w_i[spec_item]
+                                        * (
+                                            obs_spec[:, 1]
+                                            - scaling * model_spec[spec_item]
+                                        )
+                                        ** 2
+                                        / obs_spec[:, 2] ** 2
+                                    )
 
                             for phot_item in inc_phot:
                                 obs_phot = self.object.get_photometry(phot_item)
 
-                                g_stat += w_i[phot_item] * (
-                                    obs_phot[2] - scaling*model_phot[phot_item])**2/obs_phot[3]**2
+                                g_stat += (
+                                    w_i[phot_item]
+                                    * (obs_phot[2] - scaling * model_phot[phot_item])
+                                    ** 2
+                                    / obs_phot[3] ** 2
+                                )
 
                             return g_stat
 
-                        popt, _ = curve_fit(g_fit, xdata=[0.], ydata=[0.])
+                        popt, _ = curve_fit(g_fit, xdata=[0.0], ydata=[0.0])
                         scaling = popt[0]
 
                         flux_scaling[i, j, k] = scaling
-                        fit_stat[i, j, k] = g_fit(0., scaling)
+                        fit_stat[i, j, k] = g_fit(0.0, scaling)
 
                         count += 1
 
-        print(' [DONE]')
+        print(" [DONE]")
 
         species_db = database.Database()
 
-        species_db.add_comparison(tag=tag,
-                                  goodness_of_fit=fit_stat,
-                                  flux_scaling=flux_scaling,
-                                  model_param=model_param,
-                                  coord_points=coord_points,
-                                  object_name=self.object_name,
-                                  spec_name=self.spec_name,
-                                  model=model,
-                                  scale_spec=scale_spec,
-                                  extra_scaling=extra_scaling)
+        species_db.add_comparison(
+            tag=tag,
+            goodness_of_fit=fit_stat,
+            flux_scaling=flux_scaling,
+            model_param=model_param,
+            coord_points=coord_points,
+            object_name=self.object_name,
+            spec_name=self.spec_name,
+            model=model,
+            scale_spec=scale_spec,
+            extra_scaling=extra_scaling,
+        )

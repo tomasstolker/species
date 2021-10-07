@@ -2,7 +2,7 @@
 Utility functions for data processing.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
@@ -12,15 +12,15 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_radtrans
-from species.util import retrieval_util
 
 
 @typechecked
 def update_sptype(sptypes: np.ndarray) -> List[str]:
     """
-    Function to update a list with spectral types to two characters (e.g., M8, L3, or T1). The
-    spectral to is set to NaN in case the first character is not recognized or the second character
-    is not a numerical value.
+    Function to update a list with spectral types to two characters
+    (e.g., M8, L3, or T1). The spectral to is set to NaN in case the
+    first character is not recognized or the second character is not
+    a numerical value.
 
     Parameters
     ----------
@@ -33,32 +33,36 @@ def update_sptype(sptypes: np.ndarray) -> List[str]:
         Output spectral types.
     """
 
-    sptype_list = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y']
+    sptype_list = ["O", "B", "A", "F", "G", "K", "M", "L", "T", "Y"]
 
     sptypes_updated = []
 
     for spt_item in sptypes:
 
-        if spt_item == 'None':
-            sptypes_updated.append('None')
+        if spt_item == "None":
+            sptypes_updated.append("None")
 
-        elif spt_item == 'null':
-            sptypes_updated.append('None')
+        elif spt_item == "null":
+            sptypes_updated.append("None")
 
         else:
-            if len(spt_item) > 1 and spt_item[0] in sptype_list and spt_item[1].isnumeric():
+            if (
+                len(spt_item) > 1
+                and spt_item[0] in sptype_list
+                and spt_item[1].isnumeric()
+            ):
                 sptypes_updated.append(spt_item[:2])
 
             else:
-                sptypes_updated.append('None')
+                sptypes_updated.append("None")
 
     return sptypes_updated
 
 
 def update_filter(filter_in):
     """
-    Function to update a filter ID from the Vizier Photometry viewer VOTable to the filter ID from
-    the SVO Filter Profile Service.
+    Function to update a filter ID from the Vizier Photometry viewer
+    VOTable to the filter ID from the SVO Filter Profile Service.
 
     Parameters
     ----------
@@ -71,14 +75,14 @@ def update_filter(filter_in):
         Filter ID in the format of the SVO Filter Profile Service.
     """
 
-    if filter_in[0:5] == b'2MASS':
-        filter_out = str(b'2MASS/2MASS.'+filter_in[6:])
+    if filter_in[0:5] == b"2MASS":
+        filter_out = str(b"2MASS/2MASS." + filter_in[6:])
 
-    elif filter_in[0:4] == b'WISE':
-        filter_out = str(b'WISE/WISE.'+filter_in[5:])
+    elif filter_in[0:4] == b"WISE":
+        filter_out = str(b"WISE/WISE." + filter_in[5:])
 
-    elif filter_in[0:10] == b'GAIA/GAIA2':
-        filter_out = str(filter_in[0:9]+b'0'+filter_in[10:])
+    elif filter_in[0:10] == b"GAIA/GAIA2":
+        filter_out = str(filter_in[0:9] + b"0" + filter_in[10:])
 
     else:
         filter_out = None
@@ -87,13 +91,15 @@ def update_filter(filter_in):
 
 
 @typechecked
-def sort_data(param_teff: np.ndarray,
-              param_logg: Optional[np.ndarray],
-              param_feh: Optional[np.ndarray],
-              param_co: Optional[np.ndarray],
-              param_fsed: Optional[np.ndarray],
-              wavelength: np.ndarray,
-              flux: np.ndarray) -> List[np.ndarray]:
+def sort_data(
+    param_teff: np.ndarray,
+    param_logg: Optional[np.ndarray],
+    param_feh: Optional[np.ndarray],
+    param_co: Optional[np.ndarray],
+    param_fsed: Optional[np.ndarray],
+    wavelength: np.ndarray,
+    flux: np.ndarray,
+) -> List[np.ndarray]:
     """
     Parameters
     ----------
@@ -102,21 +108,27 @@ def sort_data(param_teff: np.ndarray,
     param_logg : np.ndarray, None
         Array with the log10 surface gravity (cgs) of each spectrum.
     param_feh : np.ndarray, None
-        Array with the metallicity of each spectrum. Not used if set to ``None``.
+        Array with the metallicity of each spectrum. Not used if set
+        to ``None``.
     param_co : np.ndarray, None
-        Array with the carbon-to-oxygen ratio of each spectrum. Not used if set to ``None``.
+        Array with the carbon-to-oxygen ratio of each spectrum. Not
+        used if set to ``None``.
     param_fsed : np.ndarray, None
-        Array with the sedimentation parameter of each spectrum. Not used if set to ``None``.
+        Array with the sedimentation parameter of each spectrum. Not
+        used if set to ``None``.
     wavelength : np.ndarray
         Array with the wavelengths (um).
     flux : np.ndarray
-        Array with the spectra with dimensions ``(n_spectra, n_wavelengths)``.
+        Array with the spectra with dimensions
+        ``(n_spectra, n_wavelengths)``.
 
     Returns
     -------
     list(np.ndarray, )
-        List with the unique values of the atmosphere parameters (each in a separate array), an
-        array with the wavelengths, and a multidimensional array with the sorted spectra.
+        List with the unique values of the atmosphere parameters (each
+    in a separate array), an
+        array with the wavelengths, and a multidimensional array with
+        the sorted spectra.
     """
 
     n_spectra = param_teff.shape[0]
@@ -124,28 +136,28 @@ def sort_data(param_teff: np.ndarray,
     teff_unique = np.unique(param_teff)
     spec_shape = [teff_unique.shape[0]]
 
-    print('Grid points stored in the database:')
-    print(f'   - Teff = {teff_unique}')
+    print("Grid points stored in the database:")
+    print(f"   - Teff = {teff_unique}")
 
     if param_logg is not None:
         logg_unique = np.unique(param_logg)
         spec_shape.append(logg_unique.shape[0])
-        print(f'   - log(g) = {logg_unique}')
+        print(f"   - log(g) = {logg_unique}")
 
     if param_feh is not None:
         feh_unique = np.unique(param_feh)
         spec_shape.append(feh_unique.shape[0])
-        print(f'   - [Fe/H] = {feh_unique}')
+        print(f"   - [Fe/H] = {feh_unique}")
 
     if param_co is not None:
         co_unique = np.unique(param_co)
         spec_shape.append(co_unique.shape[0])
-        print(f'   - C/O = {co_unique}')
+        print(f"   - C/O = {co_unique}")
 
     if param_fsed is not None:
         fsed_unique = np.unique(param_fsed)
         spec_shape.append(fsed_unique.shape[0])
-        print(f'   - f_sed = {fsed_unique}')
+        print(f"   - f_sed = {fsed_unique}")
 
     spec_shape.append(wavelength.shape[0])
 
@@ -199,12 +211,15 @@ def sort_data(param_teff: np.ndarray,
 
 
 @typechecked
-def write_data(model: str,
-               parameters: List[str],
-               database: h5py._hl.files.File,
-               data_sorted: List[np.ndarray]) -> None:
+def write_data(
+    model: str,
+    parameters: List[str],
+    database: h5py._hl.files.File,
+    data_sorted: List[np.ndarray],
+) -> None:
     """
-    Function for writing the model spectra and parameters to the database.
+    Function for writing the model spectra and parameters to the
+    database.
 
     Parameters
     ----------
@@ -215,8 +230,8 @@ def write_data(model: str,
     database: h5py._hl.files.File
         Database.
     data_sorted : list(np.ndarray, )
-        Sorted model data with the parameter values, wavelength points (um), and flux
-        densities (W m-2 um-1).
+        Sorted model data with the parameter values, wavelength
+        points (um), and flux densities (W m-2 um-1).
 
     Returns
     -------
@@ -226,32 +241,30 @@ def write_data(model: str,
 
     n_param = len(parameters)
 
-    if f'models/{model}' in database:
-        del database[f'models/{model}']
+    if f"models/{model}" in database:
+        del database[f"models/{model}"]
 
-    dset = database.create_group(f'models/{model}')
+    dset = database.create_group(f"models/{model}")
 
-    dset.attrs['n_param'] = n_param
+    dset.attrs["n_param"] = n_param
 
     for i, item in enumerate(parameters):
-        dset.attrs[f'parameter{i}'] = item
+        dset.attrs[f"parameter{i}"] = item
 
-        database.create_dataset(f'models/{model}/{item}',
-                                data=data_sorted[i])
+        database.create_dataset(f"models/{model}/{item}", data=data_sorted[i])
 
-    database.create_dataset(f'models/{model}/wavelength',
-                            data=data_sorted[n_param])
+    database.create_dataset(f"models/{model}/wavelength", data=data_sorted[n_param])
 
-    database.create_dataset(f'models/{model}/flux',
-                            data=data_sorted[n_param+1])
+    database.create_dataset(f"models/{model}/flux", data=data_sorted[n_param + 1])
 
 
 @typechecked
-def add_missing(model: str,
-                parameters: List[str],
-                database: h5py._hl.files.File) -> None:
+def add_missing(
+    model: str, parameters: List[str], database: h5py._hl.files.File
+) -> None:
     """
-    Function for adding missing grid points with a linear interpolation.
+    Function for adding missing grid points with a linear
+    interpolation.
 
     Parameters
     ----------
@@ -268,17 +281,17 @@ def add_missing(model: str,
         None
     """
 
-    print('Number of grid points per parameter:')
+    print("Number of grid points per parameter:")
 
     grid_shape = []
     param_data = []
 
     for i, item in enumerate(parameters):
-        grid_shape.append(database[f'models/{model}/{item}'].shape[0])
-        param_data.append(np.asarray(database[f'models/{model}/{item}']))
-        print(f'   - {item}: {grid_shape[i]}')
+        grid_shape.append(database[f"models/{model}/{item}"].shape[0])
+        param_data.append(np.asarray(database[f"models/{model}/{item}"]))
+        print(f"   - {item}: {grid_shape[i]}")
 
-    flux = np.asarray(database[f'models/{model}/flux'])  # (W m-1 um-1)
+    flux = np.asarray(database[f"models/{model}/flux"])  # (W m-1 um-1)
     flux = np.log10(flux)
 
     count_total = 0
@@ -296,27 +309,30 @@ def add_missing(model: str,
         points = [[], []]
         new_points = [[], []]
 
-        print('Fix missing grid points with a linear interpolation:')
+        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 if np.isinf(np.sum(flux[i, j, ...])):
-                    print('   - ', end='')
-                    print(f'{parameters[0]} = {param_data[0][i]}, ', end='')
-                    print(f'{parameters[1]} = {param_data[1][j]}')
+                    print("   - ", end="")
+                    print(f"{parameters[0]} = {param_data[0][i]}, ", end="")
+                    print(f"{parameters[1]} = {param_data[1][j]}")
 
-                    if 0 < i < grid_shape[0]-1:
-                        check_low = np.isinf(np.sum(flux[i-1, j, ...]))
-                        check_up = np.isinf(np.sum(flux[i+1, j, ...]))
+                    if 0 < i < grid_shape[0] - 1:
+                        check_low = np.isinf(np.sum(flux[i - 1, j, ...]))
+                        check_up = np.isinf(np.sum(flux[i + 1, j, ...]))
 
                         # Linear scaling of the intermediate Teff point
-                        scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                  (param_data[0][i+1] - param_data[0][i-1])
+                        scaling = (param_data[0][i] - param_data[0][i - 1]) / (
+                            param_data[0][i + 1] - param_data[0][i - 1]
+                        )
 
                         if not check_low and not check_up:
-                            flux_low = flux[i-1, j, ...]
-                            flux_up = flux[i+1, j, ...]
-                            flux[i, j, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                            flux_low = flux[i - 1, j, ...]
+                            flux_up = flux[i + 1, j, ...]
+                            flux[i, j, ...] = (
+                                flux_low * (1.0 - scaling) + flux_up * scaling
+                            )
                             count_interp += 1
 
                         else:
@@ -341,7 +357,9 @@ def add_missing(model: str,
         new_points = np.asarray(new_points)
 
         if np.sum(find_missing) > 0:
-            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
+            flux_int = griddata(
+                points.T, values, new_points.T, method="linear", fill_value=np.nan
+            )
 
             count = 0
 
@@ -357,14 +375,16 @@ def add_missing(model: str,
                     count += 1
 
             if count_missing > 0:
-                print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                      f'instead. [WARNING]\nThe grid points that are missing:')
+                print(
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                )
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
-                        print('   - ', end='')
-                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                        print(f'{parameters[1]} = {new_points[1][i]}')
+                        print("   - ", end="")
+                        print(f"{parameters[0]} = {new_points[0][i]}, ", end="")
+                        print(f"{parameters[1]} = {new_points[1][i]}")
 
     elif len(parameters) == 3:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -373,29 +393,32 @@ def add_missing(model: str,
         points = [[], [], []]
         new_points = [[], [], []]
 
-        print('Fix missing grid points with a linear interpolation:')
+        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
                     if np.isinf(np.sum(flux[i, j, k, ...])):
-                        print('   - ', end='')
-                        print(f'{parameters[0]} = {param_data[0][i]}, ', end='')
-                        print(f'{parameters[1]} = {param_data[1][j]}, ', end='')
-                        print(f'{parameters[2]} = {param_data[2][k]}')
+                        print("   - ", end="")
+                        print(f"{parameters[0]} = {param_data[0][i]}, ", end="")
+                        print(f"{parameters[1]} = {param_data[1][j]}, ", end="")
+                        print(f"{parameters[2]} = {param_data[2][k]}")
 
-                        if 0 < i < grid_shape[0]-1:
-                            check_low = np.isinf(np.sum(flux[i-1, j, k, ...]))
-                            check_up = np.isinf(np.sum(flux[i+1, j, k, ...]))
+                        if 0 < i < grid_shape[0] - 1:
+                            check_low = np.isinf(np.sum(flux[i - 1, j, k, ...]))
+                            check_up = np.isinf(np.sum(flux[i + 1, j, k, ...]))
 
                             # Linear scaling of the intermediate Teff point
-                            scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                      (param_data[0][i+1] - param_data[0][i-1])
+                            scaling = (param_data[0][i] - param_data[0][i - 1]) / (
+                                param_data[0][i + 1] - param_data[0][i - 1]
+                            )
 
                             if not check_low and not check_up:
-                                flux_low = flux[i-1, j, k, ...]
-                                flux_up = flux[i+1, j, k, ...]
-                                flux[i, j, k, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                flux_low = flux[i - 1, j, k, ...]
+                                flux_up = flux[i + 1, j, k, ...]
+                                flux[i, j, k, ...] = (
+                                    flux_low * (1.0 - scaling) + flux_up * scaling
+                                )
                                 count_interp += 1
 
                             else:
@@ -422,7 +445,9 @@ def add_missing(model: str,
         new_points = np.asarray(new_points)
 
         if np.sum(find_missing) > 0:
-            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
+            flux_int = griddata(
+                points.T, values, new_points.T, method="linear", fill_value=np.nan
+            )
 
             count = 0
 
@@ -439,15 +464,17 @@ def add_missing(model: str,
                         count += 1
 
             if count_missing > 0:
-                print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                      f'instead. [WARNING]\nThe grid points that are missing:')
+                print(
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                )
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
-                        print('   - ', end='')
-                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                        print(f'{parameters[2]} = {new_points[2][i]}')
+                        print("   - ", end="")
+                        print(f"{parameters[0]} = {new_points[0][i]}, ", end="")
+                        print(f"{parameters[1]} = {new_points[1][i]}, ", end="")
+                        print(f"{parameters[2]} = {new_points[2][i]}")
 
     elif len(parameters) == 4:
         find_missing = np.zeros(grid_shape, dtype=bool)
@@ -456,31 +483,34 @@ def add_missing(model: str,
         points = [[], [], [], []]
         new_points = [[], [], [], []]
 
-        print('Fix missing grid points with a linear interpolation:')
+        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
                     for m in range(grid_shape[3]):
                         if np.isinf(np.sum(flux[i, j, k, m, ...])):
-                            print('   - ', end='')
-                            print(f'{parameters[0]} = {param_data[0][i]}, ', end='')
-                            print(f'{parameters[1]} = {param_data[1][j]}, ', end='')
-                            print(f'{parameters[2]} = {param_data[2][k]}, ', end='')
-                            print(f'{parameters[3]} = {param_data[3][m]}')
+                            print("   - ", end="")
+                            print(f"{parameters[0]} = {param_data[0][i]}, ", end="")
+                            print(f"{parameters[1]} = {param_data[1][j]}, ", end="")
+                            print(f"{parameters[2]} = {param_data[2][k]}, ", end="")
+                            print(f"{parameters[3]} = {param_data[3][m]}")
 
-                            if 0 < i < grid_shape[0]-1:
-                                check_low = np.isinf(np.sum(flux[i-1, j, k, m, ...]))
-                                check_up = np.isinf(np.sum(flux[i+1, j, k, m, ...]))
+                            if 0 < i < grid_shape[0] - 1:
+                                check_low = np.isinf(np.sum(flux[i - 1, j, k, m, ...]))
+                                check_up = np.isinf(np.sum(flux[i + 1, j, k, m, ...]))
 
                                 # Linear scaling of the intermediate Teff point
-                                scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                          (param_data[0][i+1] - param_data[0][i-1])
+                                scaling = (param_data[0][i] - param_data[0][i - 1]) / (
+                                    param_data[0][i + 1] - param_data[0][i - 1]
+                                )
 
                                 if not check_low and not check_up:
-                                    flux_low = flux[i-1, j, k, m, ...]
-                                    flux_up = flux[i+1, j, k, m, ...]
-                                    flux[i, j, k, m, ...] = flux_low*(1.-scaling) + flux_up*scaling
+                                    flux_low = flux[i - 1, j, k, m, ...]
+                                    flux_up = flux[i + 1, j, k, m, ...]
+                                    flux[i, j, k, m, ...] = (
+                                        flux_low * (1.0 - scaling) + flux_up * scaling
+                                    )
                                     count_interp += 1
 
                                 else:
@@ -509,7 +539,9 @@ def add_missing(model: str,
         new_points = np.asarray(new_points)
 
         if np.sum(find_missing) > 0:
-            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
+            flux_int = griddata(
+                points.T, values, new_points.T, method="linear", fill_value=np.nan
+            )
 
             count = 0
 
@@ -527,16 +559,18 @@ def add_missing(model: str,
                             count += 1
 
             if count_missing > 0:
-                print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                      f'instead. [WARNING]\nThe grid points that are missing:')
+                print(
+                    f"Could not interpolate {count_missing} grid points so storing "
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                )
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
-                        print('   - ', end='')
-                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                        print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
-                        print(f'{parameters[3]} = {new_points[3][i]}')
+                        print("   - ", end="")
+                        print(f"{parameters[0]} = {new_points[0][i]}, ", end="")
+                        print(f"{parameters[1]} = {new_points[1][i]}, ", end="")
+                        print(f"{parameters[2]} = {new_points[2][i]}, ", end="")
+                        print(f"{parameters[3]} = {new_points[3][i]}")
 
         # ran_par_0 = np.random.randint(grid_shape[0], size=1000)
         # ran_par_1 = np.random.randint(grid_shape[1], size=1000)
@@ -569,7 +603,7 @@ def add_missing(model: str,
         points = [[], [], [], [], []]
         new_points = [[], [], [], [], []]
 
-        print('Fix missing grid points with a linear interpolation:')
+        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
@@ -577,26 +611,33 @@ def add_missing(model: str,
                     for m in range(grid_shape[3]):
                         for n in range(grid_shape[4]):
                             if np.isinf(np.sum(flux[i, j, k, m, n, ...])):
-                                print('   - ', end='')
-                                print(f'{parameters[0]} = {param_data[0][i]}, ', end='')
-                                print(f'{parameters[1]} = {param_data[1][j]}, ', end='')
-                                print(f'{parameters[2]} = {param_data[2][k]}, ', end='')
-                                print(f'{parameters[3]} = {param_data[3][m]}, ', end='')
-                                print(f'{parameters[4]} = {param_data[4][n]}')
+                                print("   - ", end="")
+                                print(f"{parameters[0]} = {param_data[0][i]}, ", end="")
+                                print(f"{parameters[1]} = {param_data[1][j]}, ", end="")
+                                print(f"{parameters[2]} = {param_data[2][k]}, ", end="")
+                                print(f"{parameters[3]} = {param_data[3][m]}, ", end="")
+                                print(f"{parameters[4]} = {param_data[4][n]}")
 
-                                if 0 < i < grid_shape[0]-1:
-                                    check_low = np.isinf(np.sum(flux[i-1, j, k, m, n, ...]))
-                                    check_up = np.isinf(np.sum(flux[i+1, j, k, m, n, ...]))
+                                if 0 < i < grid_shape[0] - 1:
+                                    check_low = np.isinf(
+                                        np.sum(flux[i - 1, j, k, m, n, ...])
+                                    )
+                                    check_up = np.isinf(
+                                        np.sum(flux[i + 1, j, k, m, n, ...])
+                                    )
 
                                     # Linear scaling of the intermediate Teff point
-                                    scaling = (param_data[0][i] - param_data[0][i-1]) / \
-                                              (param_data[0][i+1] - param_data[0][i-1])
+                                    scaling = (
+                                        param_data[0][i] - param_data[0][i - 1]
+                                    ) / (param_data[0][i + 1] - param_data[0][i - 1])
 
                                     if not check_low and not check_up:
-                                        flux_low = flux[i-1, j, k, m, n, ...]
-                                        flux_up = flux[i+1, j, k, m, n, ...]
-                                        flux[i, j, k, m, n, ...] = flux_low*(1.-scaling) + \
-                                            flux_up*scaling
+                                        flux_low = flux[i - 1, j, k, m, n, ...]
+                                        flux_up = flux[i + 1, j, k, m, n, ...]
+                                        flux[i, j, k, m, n, ...] = (
+                                            flux_low * (1.0 - scaling)
+                                            + flux_up * scaling
+                                        )
                                         count_interp += 1
 
                                     else:
@@ -627,7 +668,9 @@ def add_missing(model: str,
         new_points = np.asarray(new_points)
 
         if np.sum(find_missing) > 0:
-            flux_int = griddata(points.T, values, new_points.T, method='linear', fill_value=np.nan)
+            flux_int = griddata(
+                points.T, values, new_points.T, method="linear", fill_value=np.nan
+            )
 
             count = 0
 
@@ -646,32 +689,35 @@ def add_missing(model: str,
                                 count += 1
 
             if count_missing > 0:
-                print(f'Could not interpolate {count_missing} grid points so storing zeros '
-                      f'instead. [WARNING]\nThe grid points that are missing:')
+                print(
+                    f"Could not interpolate {count_missing} grid points so storing"
+                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                )
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
-                        print('   - ', end='')
-                        print(f'{parameters[0]} = {new_points[0][i]}, ', end='')
-                        print(f'{parameters[1]} = {new_points[1][i]}, ', end='')
-                        print(f'{parameters[2]} = {new_points[2][i]}, ', end='')
-                        print(f'{parameters[3]} = {new_points[3][i]}, ', end='')
-                        print(f'{parameters[4]} = {new_points[4][i]}')
+                        print("   - ", end="")
+                        print(f"{parameters[0]} = {new_points[0][i]}, ", end="")
+                        print(f"{parameters[1]} = {new_points[1][i]}, ", end="")
+                        print(f"{parameters[2]} = {new_points[2][i]}, ", end="")
+                        print(f"{parameters[3]} = {new_points[3][i]}, ", end="")
+                        print(f"{parameters[4]} = {new_points[4][i]}")
 
     else:
-        raise ValueError('The add_missing function is currently not compatible with more than 5 '
-                         'model parameters.')
+        raise ValueError(
+            "The add_missing function is currently not compatible "
+            "with more than 5 model parameters."
+        )
 
-    print(f'Number of stored grid points: {count_total}')
-    print(f'Number of interpolated grid points: {count_interp}')
-    print(f'Number of missing grid points: {count_missing}')
+    print(f"Number of stored grid points: {count_total}")
+    print(f"Number of interpolated grid points: {count_interp}")
+    print(f"Number of missing grid points: {count_missing}")
 
-    del database[f'models/{model}/flux']
-    database.create_dataset(f'models/{model}/flux', data=10.**flux)
+    del database[f"models/{model}/flux"]
+    database.create_dataset(f"models/{model}/flux", data=10.0 ** flux)
 
 
-def correlation_to_covariance(cor_matrix,
-                              spec_sigma):
+def correlation_to_covariance(cor_matrix, spec_sigma):
     """
     Parameters
     ----------
@@ -690,28 +736,31 @@ def correlation_to_covariance(cor_matrix,
 
     for i in range(cor_matrix.shape[0]):
         for j in range(cor_matrix.shape[1]):
-            cov_matrix[i, j] = cor_matrix[i, j]*spec_sigma[i]*spec_sigma[j]
+            cov_matrix[i, j] = cor_matrix[i, j] * spec_sigma[i] * spec_sigma[j]
 
             if i == j:
-                assert cor_matrix[i, j] == 1.
+                assert cor_matrix[i, j] == 1.0
 
     return cov_matrix
 
 
 @typechecked
-def retrieval_spectrum(indices: Dict[str, np.int64],
-                       chemistry: str,
-                       pt_profile: str,
-                       line_species: List[str],
-                       cloud_species: List[str],
-                       quenching: Optional[str],
-                       spec_res: float,
-                       distance: Optional[float],
-                       pt_smooth: Optional[float],
-                       read_rad: read_radtrans.ReadRadtrans,
-                       sample: np.ndarray) -> box.ModelBox:
+def retrieval_spectrum(
+    indices: Dict[str, np.int64],
+    chemistry: str,
+    pt_profile: str,
+    line_species: List[str],
+    cloud_species: List[str],
+    quenching: Optional[str],
+    spec_res: float,
+    distance: Optional[float],
+    pt_smooth: Optional[float],
+    read_rad: read_radtrans.ReadRadtrans,
+    sample: np.ndarray,
+) -> box.ModelBox:
     """
-    Function for calculating a petitRADTRANS spectrum from a posterior sample.
+    Function for calculating a petitRADTRANS spectrum from a
+    posterior sample.
 
     Parameters
     ----------
@@ -720,24 +769,28 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
     chemistry : str
         Chemistry type (``'equilibrium'`` or ``'free'``).
     pt_profile : str
-        Pressure-temperature parametrization (``'molliere'``, ``'monotonic'``, or ``'free'``).
+        Pressure-temperature parametrization (``'molliere'``,
+        ``'monotonic'``, or ``'free'``).
     line_species : list(str)
         List with the line species.
     cloud_species : list(str)
         List with the cloud species.
     quenching : str, None
-        Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
-        parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
-        mixing and chemical timescales (``quenching='diffusion'``). The quenching is not applied
-        if the argument is set to ``None``.
+        Quenching type for CO/CH4/H2O abundances. Either the quenching
+        pressure (bar) is a free parameter (``quenching='pressure'``)
+        or the quenching pressure is calculated from the mixing and
+        chemical timescales (``quenching='diffusion'``). The quenching
+        is not applied if the argument is set to ``None``.
     spec_res : float
         Spectral resolution.
     distance : float, None
         Distance (pc).
     pt_smooth : float
-        Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-        temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
-        `pt_profile='monotonic'`. The argument should be given as log10(P/bar).
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the sampled temperature nodes of the P-T profile.
+        Only required with `pt_profile='free'` or
+        `pt_profile='monotonic'`. The argument should be given as
+        log10(P/bar).
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -755,71 +808,71 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
 
     # Add log(g) and radius
 
-    model_param['logg'] = sample[indices['logg']]
-    model_param['radius'] = sample[indices['radius']]
+    model_param["logg"] = sample[indices["logg"]]
+    model_param["radius"] = sample[indices["radius"]]
 
     # Add distance
 
     if distance is not None:
-        model_param['distance'] = distance
+        model_param["distance"] = distance
 
     # Add P-T profile parameters
 
-    if pt_profile == 'molliere':
-        model_param['t1'] = sample[indices['t1']]
-        model_param['t2'] = sample[indices['t2']]
-        model_param['t3'] = sample[indices['t3']]
-        model_param['log_delta'] = sample[indices['log_delta']]
-        model_param['alpha'] = sample[indices['alpha']]
-        model_param['tint'] = sample[indices['tint']]
+    if pt_profile == "molliere":
+        model_param["t1"] = sample[indices["t1"]]
+        model_param["t2"] = sample[indices["t2"]]
+        model_param["t3"] = sample[indices["t3"]]
+        model_param["log_delta"] = sample[indices["log_delta"]]
+        model_param["alpha"] = sample[indices["alpha"]]
+        model_param["tint"] = sample[indices["tint"]]
 
-    elif pt_profile in ['free', 'monotonic']:
+    elif pt_profile in ["free", "monotonic"]:
         for j in range(15):
-            model_param[f't{j}'] = sample[indices[f't{j}']]
+            model_param[f"t{j}"] = sample[indices[f"t{j}"]]
 
     if pt_smooth is not None:
-        model_param['pt_smooth'] = pt_smooth
+        model_param["pt_smooth"] = pt_smooth
 
     # Add chemistry parameters
 
-    if chemistry == 'equilibrium':
-        model_param['c_o_ratio'] = sample[indices['c_o_ratio']]
-        model_param['metallicity'] = sample[indices['metallicity']]
+    if chemistry == "equilibrium":
+        model_param["c_o_ratio"] = sample[indices["c_o_ratio"]]
+        model_param["metallicity"] = sample[indices["metallicity"]]
 
-    elif chemistry == 'free':
+    elif chemistry == "free":
         for species_item in line_species:
             model_param[species_item] = sample[indices[species_item]]
 
-    if quenching == 'pressure':
-        model_param['log_p_quench'] = sample[indices['log_p_quench']]
+    if quenching == "pressure":
+        model_param["log_p_quench"] = sample[indices["log_p_quench"]]
 
     # Add cloud parameters
 
-    if 'log_kappa_0' in indices:
-        model_param['log_kappa_0'] = sample[indices['log_kappa_0']]
-        model_param['opa_index'] = sample[indices['opa_index']]
-        model_param['log_p_base'] = sample[indices['log_p_base']]
-        model_param['albedo'] = sample[indices['albedo']]
-        model_param['fsed'] = sample[indices['fsed']]
+    if "log_kappa_0" in indices:
+        model_param["log_kappa_0"] = sample[indices["log_kappa_0"]]
+        model_param["opa_index"] = sample[indices["opa_index"]]
+        model_param["log_p_base"] = sample[indices["log_p_base"]]
+        model_param["albedo"] = sample[indices["albedo"]]
+        model_param["fsed"] = sample[indices["fsed"]]
 
     elif len(cloud_species) > 0:
-        model_param['fsed'] = sample[indices['fsed']]
-        model_param['sigma_lnorm'] = sample[indices['sigma_lnorm']]
+        model_param["fsed"] = sample[indices["fsed"]]
+        model_param["sigma_lnorm"] = sample[indices["sigma_lnorm"]]
 
-        if 'kzz' in indices:
+        if "kzz" in indices:
             # Backward compatibility
-            model_param['kzz'] = sample[indices['kzz']]
+            model_param["kzz"] = sample[indices["kzz"]]
 
-        elif 'log_kzz' in indices:
-            model_param['log_kzz'] = sample[indices['log_kzz']]
+        elif "log_kzz" in indices:
+            model_param["log_kzz"] = sample[indices["log_kzz"]]
 
         for cloud_item in cloud_species:
-            cloud_param = f'{cloud_item[:-3].lower()}_fraction'
+            cloud_param = f"{cloud_item[:-3].lower()}_fraction"
 
             if cloud_param in indices:
                 model_param[cloud_param] = sample[indices[cloud_param]]
 
-            cloud_param = f'{cloud_item[:-3].lower()}_tau'
+            cloud_param = f"{cloud_item[:-3].lower()}_tau"
 
             if cloud_param in indices:
                 model_param[cloud_param] = sample[indices[cloud_param]]
@@ -827,33 +880,32 @@ def retrieval_spectrum(indices: Dict[str, np.int64],
             if cloud_item in indices:
                 model_param[cloud_item] = sample[indices[cloud_item]]
 
-    if 'log_tau_cloud' in indices:
-        model_param['tau_cloud'] = 10.**sample[indices['log_tau_cloud']]
+    if "log_tau_cloud" in indices:
+        model_param["tau_cloud"] = 10.0 ** sample[indices["log_tau_cloud"]]
 
         if len(cloud_species) > 1:
             for cloud_item in cloud_species[1:]:
                 cloud_1 = cloud_item[:-3].lower()
                 cloud_2 = cloud_species[0][:-3].lower()
 
-                cloud_ratio = f'{cloud_1}_{cloud_2}_ratio'
+                cloud_ratio = f"{cloud_1}_{cloud_2}_ratio"
 
                 model_param[cloud_ratio] = sample[indices[cloud_ratio]]
 
     # Add extinction parameters
 
-    if 'ism_ext' in indices:
-        model_param['ism_ext'] = sample[indices['ism_ext']]
+    if "ism_ext" in indices:
+        model_param["ism_ext"] = sample[indices["ism_ext"]]
 
-    if 'ism_red' in indices:
-        model_param['ism_red'] = sample[indices['ism_red']]
+    if "ism_red" in indices:
+        model_param["ism_red"] = sample[indices["ism_red"]]
 
     # Calculate spectrum
 
-    model_box = read_rad.get_model(model_param,
-                                   spec_res=spec_res)
+    model_box = read_rad.get_model(model_param, spec_res=spec_res)
 
     # Set content type of the ModelBox
 
-    model_box.type = 'mcmc'
+    model_box.type = "mcmc"
 
     return model_box

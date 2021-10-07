@@ -8,8 +8,7 @@ import spectres
 import species
 
 
-def create_box(boxtype,
-               **kwargs):
+def create_box(boxtype, **kwargs):
     """
     Function for creating a :class:`~species.core.box.Box`.
 
@@ -19,120 +18,122 @@ def create_box(boxtype,
         Box with the data and parameters.
     """
 
-    if boxtype == 'colormag':
+    if boxtype == "colormag":
         box = ColorMagBox()
-        box.library = kwargs['library']
-        box.object_type = kwargs['object_type']
-        box.filters_color = kwargs['filters_color']
-        box.filter_mag = kwargs['filter_mag']
-        box.color = kwargs['color']
-        box.magnitude = kwargs['magnitude']
-        box.names = kwargs['names']
-        if 'sptype' in kwargs:
-            box.sptype = kwargs['sptype']
-        if 'mass' in kwargs:
-            box.mass = kwargs['mass']
-        if 'radius' in kwargs:
-            box.radius = kwargs['radius']
+        box.library = kwargs["library"]
+        box.object_type = kwargs["object_type"]
+        box.filters_color = kwargs["filters_color"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.color = kwargs["color"]
+        box.magnitude = kwargs["magnitude"]
+        box.names = kwargs["names"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        if "radius" in kwargs:
+            box.radius = kwargs["radius"]
 
-    if boxtype == 'colorcolor':
+    if boxtype == "colorcolor":
         box = ColorColorBox()
-        box.library = kwargs['library']
-        box.object_type = kwargs['object_type']
-        box.filters = kwargs['filters']
-        box.color1 = kwargs['color1']
-        box.color2 = kwargs['color2']
-        box.names = kwargs['names']
-        if 'sptype' in kwargs:
-            box.sptype = kwargs['sptype']
-        if 'mass' in kwargs:
-            box.mass = kwargs['mass']
-        if 'radius' in kwargs:
-            box.radius = kwargs['radius']
+        box.library = kwargs["library"]
+        box.object_type = kwargs["object_type"]
+        box.filters = kwargs["filters"]
+        box.color1 = kwargs["color1"]
+        box.color2 = kwargs["color2"]
+        box.names = kwargs["names"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        if "radius" in kwargs:
+            box.radius = kwargs["radius"]
 
-    elif boxtype == 'isochrone':
+    elif boxtype == "isochrone":
         box = IsochroneBox()
-        box.model = kwargs['model']
-        box.filters_color = kwargs['filters_color']
-        box.filter_mag = kwargs['filter_mag']
-        box.color = kwargs['color']
-        box.magnitude = kwargs['magnitude']
-        box.teff = kwargs['teff']
-        box.logg = kwargs['logg']
-        box.masses = kwargs['masses']
+        box.model = kwargs["model"]
+        box.filters_color = kwargs["filters_color"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.color = kwargs["color"]
+        box.magnitude = kwargs["magnitude"]
+        box.teff = kwargs["teff"]
+        box.logg = kwargs["logg"]
+        box.masses = kwargs["masses"]
 
-    elif boxtype == 'model':
+    elif boxtype == "model":
         box = ModelBox()
-        box.model = kwargs['model']
-        box.wavelength = kwargs['wavelength']
-        box.flux = kwargs['flux']
-        box.parameters = kwargs['parameters']
-        box.quantity = kwargs['quantity']
-        if 'contribution' in kwargs:
-            box.contribution = kwargs['contribution']
+        box.model = kwargs["model"]
+        box.wavelength = kwargs["wavelength"]
+        box.flux = kwargs["flux"]
+        box.parameters = kwargs["parameters"]
+        box.quantity = kwargs["quantity"]
+        if "contribution" in kwargs:
+            box.contribution = kwargs["contribution"]
+        if "bol_flux" in kwargs:
+            box.bol_flux = kwargs["bol_flux"]
 
-    elif boxtype == 'object':
+    elif boxtype == "object":
         box = ObjectBox()
-        box.name = kwargs['name']
-        box.filters = kwargs['filters']
-        box.mean_wavel = kwargs['mean_wavel']
-        box.magnitude = kwargs['magnitude']
-        box.flux = kwargs['flux']
-        box.distance = kwargs['distance']
-        box.spectrum = kwargs['spectrum']
+        box.name = kwargs["name"]
+        box.filters = kwargs["filters"]
+        box.mean_wavel = kwargs["mean_wavel"]
+        box.magnitude = kwargs["magnitude"]
+        box.flux = kwargs["flux"]
+        box.distance = kwargs["distance"]
+        box.spectrum = kwargs["spectrum"]
 
-    elif boxtype == 'photometry':
+    elif boxtype == "photometry":
         box = PhotometryBox()
-        if 'name' in kwargs:
-            box.name = kwargs['name']
-        if 'sptype' in kwargs:
-            box.sptype = kwargs['sptype']
-        if 'wavelength' in kwargs:
-            box.wavelength = kwargs['wavelength']
-        if 'flux' in kwargs:
-            box.flux = kwargs['flux']
-        if 'app_mag' in kwargs:
-            box.app_mag = kwargs['app_mag']
-        if 'abs_mag' in kwargs:
-            box.abs_mag = kwargs['abs_mag']
-        if 'filter_name' in kwargs:
-            box.filter_name = kwargs['filter_name']
+        if "name" in kwargs:
+            box.name = kwargs["name"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "wavelength" in kwargs:
+            box.wavelength = kwargs["wavelength"]
+        if "flux" in kwargs:
+            box.flux = kwargs["flux"]
+        if "app_mag" in kwargs:
+            box.app_mag = kwargs["app_mag"]
+        if "abs_mag" in kwargs:
+            box.abs_mag = kwargs["abs_mag"]
+        if "filter_name" in kwargs:
+            box.filter_name = kwargs["filter_name"]
 
-    elif boxtype == 'residuals':
+    elif boxtype == "residuals":
         box = ResidualsBox()
-        box.name = kwargs['name']
-        box.photometry = kwargs['photometry']
-        box.spectrum = kwargs['spectrum']
+        box.name = kwargs["name"]
+        box.photometry = kwargs["photometry"]
+        box.spectrum = kwargs["spectrum"]
 
-    elif boxtype == 'samples':
+    elif boxtype == "samples":
         box = SamplesBox()
-        box.spectrum = kwargs['spectrum']
-        box.parameters = kwargs['parameters']
-        box.samples = kwargs['samples']
-        box.ln_prob = kwargs['ln_prob']
-        box.ln_evidence = kwargs['ln_evidence']
-        box.prob_sample = kwargs['prob_sample']
-        box.median_sample = kwargs['median_sample']
-        box.attributes = kwargs['attributes']
+        box.spectrum = kwargs["spectrum"]
+        box.parameters = kwargs["parameters"]
+        box.samples = kwargs["samples"]
+        box.ln_prob = kwargs["ln_prob"]
+        box.ln_evidence = kwargs["ln_evidence"]
+        box.prob_sample = kwargs["prob_sample"]
+        box.median_sample = kwargs["median_sample"]
+        box.attributes = kwargs["attributes"]
 
-    elif boxtype == 'spectrum':
+    elif boxtype == "spectrum":
         box = SpectrumBox()
-        box.spectrum = kwargs['spectrum']
-        box.wavelength = kwargs['wavelength']
-        box.flux = kwargs['flux']
-        box.error = kwargs['error']
-        box.name = kwargs['name']
-        if 'simbad' in kwargs:
-            box.simbad = kwargs['simbad']
-        if 'sptype' in kwargs:
-            box.sptype = kwargs['sptype']
-        if 'distance' in kwargs:
-            box.distance = kwargs['distance']
+        box.spectrum = kwargs["spectrum"]
+        box.wavelength = kwargs["wavelength"]
+        box.flux = kwargs["flux"]
+        box.error = kwargs["error"]
+        box.name = kwargs["name"]
+        if "simbad" in kwargs:
+            box.simbad = kwargs["simbad"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "distance" in kwargs:
+            box.distance = kwargs["distance"]
 
-    elif boxtype == 'synphot':
+    elif boxtype == "synphot":
         box = SynphotBox()
-        box.name = kwargs['name']
-        box.flux = kwargs['flux']
+        box.name = kwargs["name"]
+        box.flux = kwargs["flux"]
 
     return box
 
@@ -160,15 +161,16 @@ class Box:
             None
         """
 
-        print(f'Opening {type(self).__name__}...')
+        print(f"Opening {type(self).__name__}...")
 
         for key, value in self.__dict__.items():
-            print(f'{key} = {value}')
+            print(f"{key} = {value}")
 
 
 class ColorMagBox(Box):
     """
-    Class for storing color-magnitude data in a :class:`~species.core.box.Box`.
+    Class for storing color-magnitude data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -193,7 +195,8 @@ class ColorMagBox(Box):
 
 class ColorColorBox(Box):
     """
-    Class for storing color-color data in a :class:`~species.core.box.Box`.
+    Class for storing color-color data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -217,7 +220,8 @@ class ColorColorBox(Box):
 
 class IsochroneBox(Box):
     """
-    Class for storing isochrone data in a :class:`~species.core.box.Box`.
+    Class for storing isochrone data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -240,7 +244,8 @@ class IsochroneBox(Box):
 
 class ModelBox(Box):
     """
-    Class for storing a model spectrum in a :class:`~species.core.box.Box`.
+    Class for storing a model spectrum in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -258,14 +263,15 @@ class ModelBox(Box):
         self.parameters = None
         self.quantity = None
         self.contribution = None
+        self.bol_flux = None
 
-    def smooth_spectrum(self,
-                        spec_res: float) -> None:
+    def smooth_spectrum(self, spec_res: float) -> None:
         """
-        Method for smoothing the spectrum with a Gaussian kernel to the instrument resolution. The
-        method is best applied on an input spectrum with a logarithmic wavelength sampling (i.e.
-        constant spectral resolution). Alternatively, the wavelength sampling may be linear, but
-        the smoothing is slower in that case.
+        Method for smoothing the spectrum with a Gaussian kernel to the
+        instrument resolution. The method is best applied on an input
+        spectrum with a logarithmic wavelength sampling (i.e. constant
+        spectral resolution). Alternatively, the wavelength sampling
+        may be linear, but the smoothing is slower in that case.
 
         Parameters
         ----------
@@ -279,17 +285,19 @@ class ModelBox(Box):
         """
 
         self.flux = species.util.read_util.smooth_spectrum(
-            self.wavelength, self.flux, spec_res)
+            self.wavelength, self.flux, spec_res
+        )
 
-    def resample_spectrum(self,
-                          wavel_resample: np.ndarray) -> None:
+    def resample_spectrum(self, wavel_resample: np.ndarray) -> None:
         """
-        Method for resampling the spectrum with ``spectres`` to a new wavelength grid.
+        Method for resampling the spectrum with ``spectres`` to a new
+        wavelength grid.
 
         Parameters
         ----------
         wavel_resample : np.ndarray
-            Wavelength points (um) to which the spectrum will be resampled.
+            Wavelength points (um) to which the spectrum will be
+            resampled.
 
         Returns
         -------
@@ -297,12 +305,14 @@ class ModelBox(Box):
             None
         """
 
-        self.flux = spectres.spectres(wavel_resample,
-                                      self.wavelength,
-                                      self.flux,
-                                      spec_errs=None,
-                                      fill=np.nan,
-                                      verbose=True)
+        self.flux = spectres.spectres(
+            wavel_resample,
+            self.wavelength,
+            self.flux,
+            spec_errs=None,
+            fill=np.nan,
+            verbose=True,
+        )
 
         self.wavelength = wavel_resample
 
@@ -331,7 +341,8 @@ class ObjectBox(Box):
 
 class PhotometryBox(Box):
     """
-    Class for storing photometric data in a :class:`~species.core.box.Box`.
+    Class for storing photometric data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -353,7 +364,8 @@ class PhotometryBox(Box):
 
 class ResidualsBox(Box):
     """
-    Class for storing best-fit residuals in a :class:`~species.core.box.Box`.
+    Class for storing best-fit residuals in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -371,7 +383,8 @@ class ResidualsBox(Box):
 
 class SamplesBox(Box):
     """
-    Class for storing posterior samples in a :class:`~species.core.box.Box`.
+    Class for storing posterior samples in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -394,7 +407,8 @@ class SamplesBox(Box):
 
 class SpectrumBox(Box):
     """
-    Class for storing spectral data in a :class:`~species.core.box.Box`.
+    Class for storing spectral data in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):
@@ -417,7 +431,8 @@ class SpectrumBox(Box):
 
 class SynphotBox(Box):
     """
-    Class for storing synthetic photometry in a :class:`~species.core.box.Box`.
+    Class for storing synthetic photometry in a
+    :class:`~species.core.box.Box`.
     """
 
     def __init__(self):

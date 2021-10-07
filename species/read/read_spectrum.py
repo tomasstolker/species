@@ -24,16 +24,16 @@ class ReadSpectrum:
     """
 
     @typechecked
-    def __init__(self,
-                 spec_library: str,
-                 filter_name: str = None) -> None:
+    def __init__(self, spec_library: str, filter_name: str = None) -> None:
         """
         Parameters
         ----------
         spec_library : str
-            Name of the spectral library ('irtf', 'spex') or other type of spectrum ('vega').
+            Name of the spectral library ('irtf', 'spex') or other type
+            of spectrum ('vega').
         filter_name : str, None
-            Filter name for the wavelength range. Full spectra are read if set to ``None``.
+            Filter name for the wavelength range. Full spectra are read
+            if set to ``None``.
 
         Returns
         -------
@@ -51,27 +51,29 @@ class ReadSpectrum:
             transmission = read_filter.ReadFilter(filter_name)
             self.wavel_range = transmission.wavelength_range()
 
-        config_file = os.path.join(os.getcwd(), 'species_config.ini')
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
-        config.read_file(open(config_file))
+        config.read(config_file)
 
-        self.database = config['species']['database']
+        self.database = config["species"]["database"]
 
     @typechecked
-    def get_spectrum(self,
-                     sptypes: List[str] = None,
-                     exclude_nan: bool = True) -> box.SpectrumBox:
+    def get_spectrum(
+        self, sptypes: List[str] = None, exclude_nan: bool = True
+    ) -> box.SpectrumBox:
         """
         Function for selecting spectra from the database.
 
         Parameters
         ----------
         sptypes : list(str), None
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
-            For each object in the ``spec_library``, the requested ``sptypes`` are first compared
-            with the optical spectral type and, if not available, secondly the near-infrared
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``. For
+            each object in the ``spec_library``, the requested
+            ``sptypes`` are first compared with the optical spectral
+            type and, if not available, secondly the near-infrared
             spectral type.
         exclude_nan : bool
             Exclude wavelength points for which the flux is NaN.
@@ -82,16 +84,16 @@ class ReadSpectrum:
             Box with the spectra.
         """
 
-        h5_file = h5py.File(self.database, 'r')
+        h5_file = h5py.File(self.database, "r")
 
         try:
-            h5_file[f'spectra/{self.spec_library}']
+            h5_file[f"spectra/{self.spec_library}"]
 
         except KeyError:
             h5_file.close()
             species_db = database.Database()
             species_db.add_spectra(self.spec_library, sptypes)
-            h5_file = h5py.File(self.database, 'r')
+            h5_file = h5py.File(self.database, "r")
 
         list_wavelength = []
         list_flux = []
@@ -101,8 +103,8 @@ class ReadSpectrum:
         list_sptype = []
         list_distance = []
 
-        for item in h5_file[f'spectra/{self.spec_library}']:
-            dset = h5_file[f'spectra/{self.spec_library}/{item}']
+        for item in h5_file[f"spectra/{self.spec_library}"]:
+            dset = h5_file[f"spectra/{self.spec_library}/{item}"]
 
             wavelength = dset[:, 0]  # (um)
             flux = dset[:, 1]  # (W m-2 um-1)
@@ -121,8 +123,11 @@ class ReadSpectrum:
                 wl_index = np.arange(0, len(wavelength), 1)
 
             else:
-                wl_index = (flux > 0.) & (wavelength > self.wavel_range[0]) & \
-                           (wavelength < self.wavel_range[1])
+                wl_index = (
+                    (flux > 0.0)
+                    & (wavelength > self.wavel_range[0])
+                    & (wavelength < self.wavel_range[1])
+                )
 
             count = np.count_nonzero(wl_index)
 
@@ -132,7 +137,7 @@ class ReadSpectrum:
                 if index[0] > 0:
                     wl_index[index[0] - 1] = True
 
-                if index[-1] < len(wl_index)-1:
+                if index[-1] < len(wl_index) - 1:
                     wl_index[index[-1] + 1] = True
 
                 list_wavelength.append(wavelength[wl_index])
@@ -141,32 +146,34 @@ class ReadSpectrum:
 
                 attrs = dset.attrs
 
-                if 'name' in attrs:
-                    if isinstance(dset.attrs['name'], str):
-                        list_name.append(dset.attrs['name'])
+                if "name" in attrs:
+                    if isinstance(dset.attrs["name"], str):
+                        list_name.append(dset.attrs["name"])
                     else:
-                        list_name.append(dset.attrs['name'].decode('utf-8'))
+                        list_name.append(dset.attrs["name"].decode("utf-8"))
                 else:
-                    list_name.append('')
+                    list_name.append("")
 
-                if 'simbad' in attrs:
-                    if isinstance(dset.attrs['simbad'], str):
-                        list_simbad.append(dset.attrs['simbad'])
+                if "simbad" in attrs:
+                    if isinstance(dset.attrs["simbad"], str):
+                        list_simbad.append(dset.attrs["simbad"])
                     else:
-                        list_simbad.append(dset.attrs['simbad'].decode('utf-8'))
+                        list_simbad.append(dset.attrs["simbad"].decode("utf-8"))
                 else:
-                    list_simbad.append('')
+                    list_simbad.append("")
 
-                if 'sptype' in attrs:
-                    if isinstance(dset.attrs['sptype'], str):
-                        list_sptype.append(dset.attrs['sptype'])
+                if "sptype" in attrs:
+                    if isinstance(dset.attrs["sptype"], str):
+                        list_sptype.append(dset.attrs["sptype"])
                     else:
-                        list_sptype.append(dset.attrs['sptype'].decode('utf-8'))
+                        list_sptype.append(dset.attrs["sptype"].decode("utf-8"))
                 else:
-                    list_sptype.append('None')
+                    list_sptype.append("None")
 
-                if 'distance' in attrs:
-                    list_distance.append((dset.attrs['distance'], dset.attrs['distance_error']))
+                if "distance" in attrs:
+                    list_distance.append(
+                        (dset.attrs["distance"], dset.attrs["distance_error"])
+                    )
                 else:
                     list_distance.append((np.nan, np.nan))
 
@@ -174,9 +181,9 @@ class ReadSpectrum:
                 list_wavelength.append(np.array([]))
                 list_flux.append(np.array([]))
                 list_error.append(np.array([]))
-                list_name.append('')
-                list_simbad.append('')
-                list_sptype.append('None')
+                list_name.append("")
+                list_simbad.append("")
+                list_sptype.append("None")
                 list_distance.append((np.nan, np.nan))
 
         specbox = box.SpectrumBox()
@@ -217,16 +224,17 @@ class ReadSpectrum:
         return specbox
 
     @typechecked
-    def get_flux(self,
-                 sptypes: List[str] = None) -> box.PhotometryBox:
+    def get_flux(self, sptypes: List[str] = None) -> box.PhotometryBox:
         """
-        Function for calculating the average flux density for the ``filter_name``.
+        Function for calculating the average flux density for the
+        ``filter_name``.
 
         Parameters
         ----------
         sptypes : list(str), None
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------
@@ -234,8 +242,7 @@ class ReadSpectrum:
             Box with the synthetic photometry.
         """
 
-        specbox = self.get_spectrum(sptypes=sptypes,
-                                    exclude_nan=True)
+        specbox = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
 
         n_spectra = len(specbox.wavelength)
 
@@ -250,34 +257,39 @@ class ReadSpectrum:
         phot_flux = []
 
         for i in range(n_spectra):
-            flux = synphot.spectrum_to_flux(wavelength=specbox.wavelength[i],
-                                            flux=specbox.flux[i],
-                                            error=specbox.error[i])
+            flux = synphot.spectrum_to_flux(
+                wavelength=specbox.wavelength[i],
+                flux=specbox.flux[i],
+                error=specbox.error[i],
+            )
 
             phot_flux.append(flux)
 
         phot_flux = np.asarray(phot_flux)
 
-        return box.create_box(boxtype='photometry',
-                              name=specbox.name,
-                              sptype=specbox.sptype,
-                              wavelength=wavelengths,
-                              flux=phot_flux,
-                              app_mag=None,
-                              abs_mag=None,
-                              filter_name=filters)
+        return box.create_box(
+            boxtype="photometry",
+            name=specbox.name,
+            sptype=specbox.sptype,
+            wavelength=wavelengths,
+            flux=phot_flux,
+            app_mag=None,
+            abs_mag=None,
+            filter_name=filters,
+        )
 
     @typechecked
-    def get_magnitude(self,
-                      sptypes: List[str] = None) -> box.PhotometryBox:
+    def get_magnitude(self, sptypes: List[str] = None) -> box.PhotometryBox:
         """
-        Function for calculating the apparent magnitude for the ``filter_name``.
+        Function for calculating the apparent magnitude for the
+        ``filter_name``.
 
         Parameters
         ----------
         sptypes : list(str)
-            Spectral types to select from a library. The spectral types should be indicated with
-            two characters (e.g. 'M5', 'L2', 'T3'). All spectra are selected if set to ``None``.
+            Spectral types to select from a library. The spectral types
+            should be indicated with two characters (e.g. 'M5', 'L2',
+            'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------
@@ -285,9 +297,7 @@ class ReadSpectrum:
             Box with the synthetic photometry.
         """
 
-        specbox = self.get_spectrum(sptypes=sptypes,
-                                    exclude_nan=True)
-
+        specbox = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
 
         n_spectra = len(specbox.wavelength)
 
@@ -311,17 +321,25 @@ class ReadSpectrum:
             else:
 
                 app_tmp, abs_tmp = synphot.spectrum_to_magnitude(
-                    specbox.wavelength[i], specbox.flux[i], error=specbox.error[i],
-                    distance=(float(specbox.distance[i][0]), float(specbox.distance[i][1])))
+                    specbox.wavelength[i],
+                    specbox.flux[i],
+                    error=specbox.error[i],
+                    distance=(
+                        float(specbox.distance[i][0]),
+                        float(specbox.distance[i][1]),
+                    ),
+                )
 
             app_mag.append(app_tmp)
             abs_mag.append(abs_tmp)
 
-        return box.create_box(boxtype='photometry',
-                              name=specbox.name,
-                              sptype=specbox.sptype,
-                              wavelength=wavelengths,
-                              flux=None,
-                              app_mag=np.asarray(app_mag),
-                              abs_mag=np.asarray(abs_mag),
-                              filter_name=filters)
+        return box.create_box(
+            boxtype="photometry",
+            name=specbox.name,
+            sptype=specbox.sptype,
+            wavelength=wavelengths,
+            flux=None,
+            app_mag=np.asarray(app_mag),
+            abs_mag=np.asarray(abs_mag),
+            filter_name=filters,
+        )
