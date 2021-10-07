@@ -69,6 +69,8 @@ def create_box(boxtype, **kwargs):
         box.quantity = kwargs["quantity"]
         if "contribution" in kwargs:
             box.contribution = kwargs["contribution"]
+        if "bol_flux" in kwargs:
+            box.bol_flux = kwargs["bol_flux"]
 
     elif boxtype == "object":
         box = ObjectBox()
@@ -261,6 +263,7 @@ class ModelBox(Box):
         self.parameters = None
         self.quantity = None
         self.contribution = None
+        self.bol_flux = None
 
     def smooth_spectrum(self, spec_res: float) -> None:
         """

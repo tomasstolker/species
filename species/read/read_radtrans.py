@@ -661,6 +661,14 @@ class ReadRadtrans:
 
             wavelength = wavel_resample
 
+        if hasattr(self.rt_object, "h_bol"):
+            pressure = 1e-6*self.rt_object.press  # (bar)
+            f_bol = -4.*np.pi*self.rt_object.h_bol  # (W m-2)
+            bol_flux = np.column_stack((pressure, f_bol))
+
+        else:
+            bol_flux = None
+
         return box.create_box(
             boxtype="model",
             model="petitradtrans",
@@ -669,6 +677,7 @@ class ReadRadtrans:
             parameters=model_param,
             quantity="flux",
             contribution=emission_contr,
+            bol_flux=bol_flux,
         )
 
     @typechecked
