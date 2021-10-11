@@ -25,15 +25,17 @@ def get_data() -> Dict[
     ],
 ]:
     """
-    Function for extracting a dictionary with the distances (pc) and apparent magnitudes of
-    directly imaged planets and brown dwarfs. These data can be added to the database
-    with :meth:`~species.data.database.Database.add_companion`.
+    Function for extracting a dictionary with the distances (pc) and
+    apparent magnitudes of directly imaged planets and brown dwarfs.
+    These data can be added to the database with
+    :meth:`~species.data.database.Database.add_companion`.
 
     Returns
     -------
     dict
-        Dictionary with the distances and apparent magnitudes of directly imaged companions.
-        Distances are from GAIA DR2 unless indicated as comment.
+        Dictionary with the distances and apparent magnitudes of
+        directly imaged companions. Distances are from GAIA DR2 unless
+        indicated as comment.
     """
 
     data = {
@@ -223,7 +225,7 @@ def get_data() -> Dict[
             "mass_companion": (7.5, 4.7),  # Wang et al. 2021
             "accretion": True,
         },  # Haffert et al. 2019
-        "2M1207 B": {
+        "2M 1207 B": {
             "distance": (64.42, 0.65),
             "app_mag": {
                 "HST/NICMOS1.F090M": (22.58, 0.35),  # Song et al. 2006
@@ -416,8 +418,8 @@ def get_data() -> Dict[
                 "Subaru/CIAO.H": (20.01, 0.14),  # Janson et al. 2013
                 "Subaru/CIAO.Ks": (19.38, 0.11),  # Janson et al. 2013
                 "Subaru/CIAO.CH4s": (19.58, 0.13),  # Janson et al. 2013
-                "Subaru/IRCS.Lp": (16.70, 0.17),
-            },  # Kuzuhara et al. 2013
+                "Subaru/IRCS.Lp": (16.70, 0.17),  # Kuzuhara et al. 2013
+            },
             "semi_major": (43.5, 43.5),  # Skemer et al. 2016
             "mass_star": (1.18, 0.08),  # Bonnefoy et al. 2018
             "mass_companion": (16.5, 13.5),  # Skemer et al. 2016
@@ -655,9 +657,48 @@ def get_data() -> Dict[
             "semi_major": (330.0, 0.0),  # Patience et al. 2012
             "mass_star": (0.33, 0.0),  # Patience et al. 2012
             "mass_companion": (11.0, 3.0),  # Patience et al. 2012
-            "accretion": True,
+            "accretion": True,  # Zhou et al. 2014
         },
-    }  # Zhou et al. 2014
+        "HD 4747 B": {
+            "distance": (18.85, 0.01),
+            "app_mag": {
+                "Keck/NIRC2.Ks": (14.36, 0.14),  # Crepp et al. 2014
+                "Keck/NIRC2.Lp": (13.02, 0.44),  # Crepp et al. 2014
+            },
+            "semi_major": (10.1, 0.4),  # Brandt et al. 2019
+            "mass_star": (0.82, 0.08),  # Brandt et al. 2019
+            "mass_companion": (66.3, 3.0),  # Brandt et al. 2019
+            "accretion": False,
+        },
+        "HR 3549 B": {
+            "distance": (94.78, 0.34),
+            "app_mag": {
+                "Paranal/NACO.Lp": [
+                    (13.85, 0.25),  # Mawet et al. 2015
+                    (13.63, 0.5),
+                ],  # Mawet et al. 2015
+                "Paranal/SPHERE.IRDIS_B_Y": (16.81, 0.16),  # Mesa et al. 2016
+                "Paranal/SPHERE.IRDIS_B_J": (15.89, 0.06),  # Mesa et al. 2016
+                "Paranal/SPHERE.IRDIS_D_H23_2": (15.07, 0.07),  # Mesa et al. 2016
+                "Paranal/SPHERE.IRDIS_D_H23_3": (14.97, 0.02),  # Mesa et al. 2016
+            },
+            "semi_major": (80.0, 0.0),  # Mawet et al. 2015
+            "mass_star": (2.32, 0.2),  # Mawet et al. 2015
+            "mass_companion": (47.5, 32.5),  # Mawet et al. 2015
+            "accretion": False,
+        },
+        "CHXR 73 B": {
+            "distance": (191.37, 2.94),
+            "app_mag": {
+                "HST/ACS_WFC.F775W": (24.57, 0.03),  # Luhman et al. 2006
+                "HST/ACS_WFC.F850LP": (22.58, 0.03),  # Luhman et al. 2006
+            },
+            "semi_major": (210.0, 0.0),  # Luhman et al. 2006
+            "mass_star": (0.35, 0.0),  # Luhman et al. 2006
+            "mass_companion": (12.0, 1.0),  # Luhman et al. 2006
+            "accretion": False,
+        },
+    }
 
     return data
 
@@ -665,13 +706,15 @@ def get_data() -> Dict[
 @typechecked
 def get_spec_data() -> Dict[str, Dict[str, Tuple[str, Optional[str], float, str]]]:
     """
-    Function for extracting a dictionary with the spectra of directly imaged planets. These data
-    can be added to the database with :meth:`~species.data.database.Database.add_companion`.
+    Function for extracting a dictionary with the spectra of directly
+    imaged planets. These data can be added to the database with
+    :meth:`~species.data.database.Database.add_companion`.
 
     Returns
     -------
     dict
-        Dictionary with the spectrum, optional covariances, spectral resolution, and filename.
+        Dictionary with the spectrum, optional covariances, spectral
+        resolution, and filename.
     """
 
     spec_data = {
@@ -736,10 +779,11 @@ def get_spec_data() -> Dict[str, Dict[str, Tuple[str, Optional[str], float, str]
 
 @typechecked
 def companion_spectra(
-    input_path: str, comp_name: str
+    input_path: str, comp_name: str, verbose: bool = True
 ) -> Optional[Dict[str, Tuple[str, Optional[str], float]]]:
     """
-    Function for getting available spectra of directly imaged planets and brown dwarfs.
+    Function for getting available spectra of directly imaged planets
+    and brown dwarfs.
 
     Parameters
     ----------
@@ -747,12 +791,15 @@ def companion_spectra(
         Path of the data folder.
     comp_name : str
         Companion name for which the spectra will be returned.
+    verbose : bool
+        Print details on the companion data that are added to the
+        database.
 
     Returns
     -------
     dict, None
-        Dictionary with the spectra of ``comp_name``. A ``None`` will be returned if there are not
-        any spectra available.
+        Dictionary with the spectra of ``comp_name``. A ``None`` will
+        be returned if there are not any spectra available.
     """
 
     data_folder = os.path.join(input_path, "companion_data/")
@@ -766,7 +813,8 @@ def companion_spectra(
         spec_dict = {}
 
         for key, value in spec_data[comp_name].items():
-            print(f"Getting {key} spectrum of {comp_name}...", end="", flush=True)
+            if verbose:
+                print(f"Getting {key} spectrum of {comp_name}...", end="", flush=True)
 
             spec_url = (
                 f"https://home.strw.leidenuniv.nl/~stolker/species/spectra/{value[0]}"
@@ -783,10 +831,11 @@ def companion_spectra(
 
             spec_dict[key] = (spec_file, cov_file, value[2])
 
-            print(" [DONE]")
+            if verbose:
+                print(" [DONE]")
 
-            print(f"IMPORTANT: Please cite {value[3]}")
-            print("           when making use of this spectrum in a publication")
+                print(f"IMPORTANT: Please cite {value[3]}")
+                print("           when making use of this spectrum in a publication")
 
     else:
         spec_dict = None
