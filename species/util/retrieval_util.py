@@ -389,7 +389,7 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: float = 0.3,
-) -> Tuple[np.ndarray, Optional[np.ndarray], float, Optional[float]]:
+) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating the P-T profile.
 
@@ -460,12 +460,15 @@ def create_pt_profile(
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
-        for i in range(15):
+        for i in range(knot_press.shape[0]):
             knot_temp.append(cube[cube_index[f"t{i}"]])
 
         knot_temp = np.asarray(knot_temp)
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+
+        phot_press = None
+        conv_press = None
 
     return temp, knot_temp, phot_press, conv_press
 

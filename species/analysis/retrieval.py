@@ -373,7 +373,7 @@ class AtmosphericRetrieval:
                 self.parameters.append("t3")
 
         elif pt_profile in ["free", "monotonic"]:
-            for i in range(15):
+            for i in range(self.temp_nodes):
                 self.parameters.append(f"t{i}")
 
             if pt_profile == "free":
@@ -559,6 +559,7 @@ class AtmosphericRetrieval:
         check_isothermal: bool = False,
         pt_smooth: float = 0.3,
         check_flux: Optional[float] = None,
+        temp_nodes: Optional[int] = None,
     ) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
@@ -622,6 +623,9 @@ class AtmosphericRetrieval:
             much slower. To use this parameter, the opacities should be recreated with
             :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 10$
             (i.e. ``spec_res=30``).
+        temp_nodes : int, None
+            Number of free temperature nodes that are used when ``pt_profile='monotonic'`` or
+            ``pt_profile='free'``.
 
         Returns
         -------
@@ -644,6 +648,17 @@ class AtmosphericRetrieval:
                 "The argument of 'quenching' should by of the following: "
                 "'pressure', 'diffusion', or None."
             )
+
+        # Set number of free temperature nodes
+
+        if pt_profile in ["molliere", "mod-molliere"]:
+            self.temp_nodes = None
+
+        elif pt_profile in ["free", "monotonic"]:
+            if temp_nodes is None:
+                self.temp_nodes = 15
+            else:
+                self.temp_nodes = temp_nodes
 
         # Check if clouds are used in combination with equilibrium chemistry
 
@@ -804,7 +819,8 @@ class AtmosphericRetrieval:
 
         elif self.pressure_grid == "smaller":
             print(
-                f"Number of pressure levels used with the radiative transfer: {self.pressure[::3].size}"
+                f"Number of pressure levels used with the "
+                f"radiative transfer: {self.pressure[::3].size}"
             )
 
             rt_object.setup_opa_structure(self.pressure[::3])
@@ -840,7 +856,7 @@ class AtmosphericRetrieval:
 
         if pt_profile in ["free", "monotonic"]:
             knot_press = np.logspace(
-                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15
+                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), temp_nodes
             )
 
         else:
@@ -980,8 +996,8 @@ class AtmosphericRetrieval:
                 cube[cube_index["log_sigma_alpha"]] = log_sigma_alpha
 
             elif pt_profile == "free":
-                # 15 temperature knots (K)
-                for i in range(15):
+                # Free temperature nodes (K)
+                for i in range(self.temp_nodes):
                     # Default: 0 - 8000 K
                     cube[cube_index[f"t{i}"]] = 8000.0 * cube[cube_index[f"t{i}"]]
 
@@ -993,10 +1009,12 @@ class AtmosphericRetrieval:
                 cube[cube_index["gamma_r"]] = gamma_r
 
             elif pt_profile == "monotonic":
-                # 15 temperature knots (K)
-                cube[cube_index["t14"]] = 10000.0 * cube[cube_index["t14"]]
+                # Free temperature nodes (K)
+                cube[cube_index[f"t{self.temp_nodes-1}"]] = (
+                    10000.0 * cube[cube_index[f"t{self.temp_nodes-1}"]]
+                )
 
-                for i in range(13, -1, -1):
+                for i in range(self.temp_nodes - 2, -1, -1):
                     cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
                         1.0 - cube[cube_index[f"t{i}"]]
                     )
@@ -1695,37 +1713,14 @@ class AtmosphericRetrieval:
                     # elif item in ['log_kzz', 'sigma_lnorm']:
                     #     cloud_dict[item] = None
 
-                # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
-
-                wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
-                    rt_object,
-                    self.pressure,
-                    temp,
-                    c_o_ratio,
-                    metallicity,
-                    p_quench,
-                    log_x_abund,
-                    log_x_base,
-                    cloud_dict,
-                    cube[cube_index["logg"]],
-                    chemistry=chemistry,
-                    pressure_grid=self.pressure_grid,
-                    plotting=plotting,
-                    contribution=False,
-                    tau_cloud=tau_cloud,
-                )
-
-                if wlen_micron is None and flux_lambda is None:
-                    return -np.inf
+                # Check if the bolometric flux is conserved in the radiative region
 
                 if check_flux is not None:
-                    # Check if the bolometric flux is conserved in the radiative region
-
                     # Pressure index at the radiative-convective boundary
-                    if conv_press is None:
-                        i_conv = lowres_radtrans.press.shape[0]
-                    else:
-                        i_conv = np.argmax(conv_press < 1e-6 * lowres_radtrans.press)
+                    # if conv_press is None:
+                    #     i_conv = lowres_radtrans.press.shape[0]
+                    # else:
+                    #     i_conv = np.argmax(conv_press < 1e-6 * lowres_radtrans.press)
 
                     # Calculate low-resolution spectrum (R = 10) to initiate the attributes
 
@@ -1749,6 +1744,16 @@ class AtmosphericRetrieval:
 
                     if wlen_lowres is None and flux_lowres is None:
                         return -np.inf
+
+                    if plotting:
+                        plt.plot(temp, self.pressure, ls="-")
+                        if knot_temp is not None:
+                            plt.plot(knot_temp, knot_press, "o", ms=2.0)
+                        plt.yscale("log")
+                        plt.ylim(1e3, 1e-6)
+                        plt.xlim(0.0, 6000.0)
+                        plt.savefig("pt_low_res.pdf", bbox_inches="tight")
+                        plt.clf()
 
                     f_bol = simps(flux_lowres, wlen_lowres)
 
@@ -1779,7 +1784,8 @@ class AtmosphericRetrieval:
                     # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                     flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
 
-                    for i in range(i_conv):
+                    # for i in range(i_conv):
+                    for i in range(lowres_radtrans.press.shape[0]):
                         if not isclose(
                             f_bol,
                             4.0 * np.pi * h_bol[i],
@@ -1799,7 +1805,30 @@ class AtmosphericRetrieval:
                         plt.savefig("lowres_spec.pdf", bbox_inches="tight")
                         plt.clf()
 
-                if (
+                # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
+
+                wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
+                    rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    cloud_dict,
+                    cube[cube_index["logg"]],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=plotting,
+                    contribution=False,
+                    tau_cloud=tau_cloud,
+                )
+
+                if wlen_micron is None and flux_lambda is None:
+                    return -np.inf
+
+                if phot_press is not None and (
                     phot_press / rt_object.pphot > 5.0
                     or phot_press / rt_object.pphot < 0.2
                 ):
@@ -1819,13 +1848,17 @@ class AtmosphericRetrieval:
                 # consistent with the atmosphere's non-gray opacity structure
                 # See Eqs. 5 and 6 in GRAVITY Collaboration et al. (2020)
 
-                sigma_alpha = 10.0 ** cube[cube_index["log_sigma_alpha"]]
+                if (
+                    pt_profile in ["molliere", "mod-molliere"]
+                    and "log_sigma_alpha" in cube_index
+                ):
+                    sigma_alpha = 10.0 ** cube[cube_index["log_sigma_alpha"]]
 
-                ln_like += -0.5 * (
-                    cube[cube_index["alpha"]] - rt_object.tau_pow
-                ) ** 2.0 / sigma_alpha ** 2.0 - 0.5 * np.log(
-                    2.0 * np.pi * sigma_alpha ** 2.0
-                )
+                    ln_like += -0.5 * (
+                        cube[cube_index["alpha"]] - rt_object.tau_pow
+                    ) ** 2.0 / sigma_alpha ** 2.0 - 0.5 * np.log(
+                        2.0 * np.pi * sigma_alpha ** 2.0
+                    )
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 
@@ -2250,7 +2283,7 @@ class AtmosphericRetrieval:
         json_filename = os.path.join(self.output_folder, "params.json")
         print(f"Storing the model parameters: {json_filename}")
 
-        with open(json_filename, "w") as json_file:
+        with open(json_filename, "w", encoding="utf-8") as json_file:
             json.dump(self.parameters, json_file)
 
         # Store the Radtrans arguments in a JSON file
