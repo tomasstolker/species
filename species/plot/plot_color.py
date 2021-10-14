@@ -316,6 +316,10 @@ def plot_color_magnitude(
                                 pos_color = interp_color(mass_val)
                                 pos_mag = interp_magnitude(mass_val)
 
+                                # if j == 1 and mass_val == 10.:
+                                #     mass_ha = "center"
+                                #     mass_xytext = (pos_color, pos_mag-0.2)
+
                                 if mass_pos == "left":
                                     mass_ha = "right"
                                     mass_xytext = (pos_color - 0.05, pos_mag)
@@ -524,7 +528,7 @@ def plot_color_magnitude(
                 # for item in names[indices]:
                 #
                 #     if item == '2MASSWJ2244316+204343':
-                #         item = '2MASS 2244+20'
+                #         item = '2MASS 2244+2043'
                 #
                 #     kwargs = {'ha': 'left', 'va': 'center', 'fontsize': 8.5,
                 #               'xytext': (5., 0.), 'color': 'black'}

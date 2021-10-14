@@ -999,7 +999,7 @@ class AtmosphericRetrieval:
                 # Free temperature nodes (K)
                 for i in range(self.temp_nodes):
                     # Default: 0 - 8000 K
-                    cube[cube_index[f"t{i}"]] = 8000.0 * cube[cube_index[f"t{i}"]]
+                    cube[cube_index[f"t{i}"]] = 20000.0 * cube[cube_index[f"t{i}"]]
 
                 # Penalization of wiggles in the P-T profile
                 # inverse gamma: a=1, b=5e-5
@@ -1011,7 +1011,7 @@ class AtmosphericRetrieval:
             elif pt_profile == "monotonic":
                 # Free temperature nodes (K)
                 cube[cube_index[f"t{self.temp_nodes-1}"]] = (
-                    10000.0 * cube[cube_index[f"t{self.temp_nodes-1}"]]
+                    20000.0 * cube[cube_index[f"t{self.temp_nodes-1}"]]
                 )
 
                 for i in range(self.temp_nodes - 2, -1, -1):
