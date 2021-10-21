@@ -3,12 +3,19 @@
 Installation
 ============
 
-*species* is compatible with Python 3.7/3.8/3.9 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
+``species`` is compatible with `Python <https://www.python.org>`_ versions 3.7/3.8/3.9 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
 Installation from PyPI
 ----------------------
 
-The Python package can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
+.. important::
+   Before installing ``species``, it is required to separately install ``cython``:
+
+   .. code-block:: console
+
+       $ pip install cython
+
+The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
 
 .. code-block:: console
 
@@ -23,42 +30,41 @@ Or, to update to the most recent version:
 Please check for any errors and warnings during the installation to make sure that all dependencies are correctly installed.
 
 .. important::
-   Before installing ``species``, it is required to separately install ``cython``:
-
-   .. code-block:: console
-
-       $ pip install cython
-
-.. important::
    The ``PyMultiNest`` package requires the manual installation of ``MultiNest``. Please follow the `instructions <https://johannesbuchner.github.io/PyMultiNest/install.html>`_ for the building the library and make sure that the ``LD_LIBRARY_PATH`` (on Linux) or ``DYLD_LIBRARY_PATH`` (on macOS) environment variable is set. It is also possible to use ``species`` without installing ``MultiNest`` (but a warning will appear), apart from the functionalities that rely on ``PyMultiNest``.   
 
 Installation from Github
 ------------------------
 
-Installation from Github is done by cloning the repository:
+Using pip
+^^^^^^^^^
+
+The version on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip`:
 
 .. code-block:: console
 
-    $ git clone git@github.com:tomasstolker/species.git
-
-And running the setup script to install the package and its dependencies:
-
-.. code-block:: console
-
-    $ python setup.py install
+    $ pip install git+git://github.com:tomasstolker/species.git
 
 .. important::
-   If an error occurs when running ``setup.py`` then possibly ``pip`` needs to be updated to the latest version:
+   In case an error occurs during installation then possibly ``pip`` needs to be updated to the latest version:
 
    .. code-block:: console
 
        $ pip install --upgrade pip
 
-Alternatively to running the ``setup.py`` file, the folder where ``species`` is located can also be added to the ``PYTHONPATH`` environment variable such that the package is found by Python. The command may depend on the OS that is used, but is typically something like:
+Cloning the repository
+^^^^^^^^^^^^^^^^^^^^^^
+
+Alternatively, in case you want to look into the code, it is best to clone the repository:
 
 .. code-block:: console
 
-    $ export PYTHONPATH=$PYTHONPATH:/path/to/species
+    $ git clone git@github.com:tomasstolker/species.git
+
+Then, the package is installed by running ``pip`` in the local repository folder:
+
+.. code-block:: console
+
+    $ pip install -e .
 
 New commits can be pulled from Github once a local copy of the repository exists:
 
@@ -66,7 +72,7 @@ New commits can be pulled from Github once a local copy of the repository exists
 
     $ git pull origin main
 
-Do you want to make changes to the code? Please fork the `species` repository on the Github page and clone your own fork instead of the main repository. Contributions and pull requests are very welcome (see :ref:`contributing` section).
+Do you want to make changes to the code? Please fork the `species` repository on the Github page and clone your own fork instead of the main repository. Contributions and pull requests are welcome (see :ref:`contributing` section).
 
 Testing `species`
 -----------------

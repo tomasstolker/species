@@ -49,6 +49,7 @@ class AtmosphericRetrieval:
         pressure_grid: str = "smaller",
         weights: Optional[Dict[str, float]] = None,
         lbl_species: Optional[List[str]] = None,
+        max_pressure: float = 1e3,
     ) -> None:
         """
         Parameters
@@ -97,6 +98,8 @@ class AtmosphericRetrieval:
             the list of high-resolution spectra that are provided as argument of ``cross_corr``
             when running :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`. The
             argument can be set to ``None`` when ``cross_corr=None``.
+        max_pressure : float
+            Maximum pressure (bar). The default is set to 1000 bar.
 
         Returns
         -------
@@ -113,6 +116,7 @@ class AtmosphericRetrieval:
         self.output_folder = output_folder
         self.pressure_grid = pressure_grid
         self.lbl_species = lbl_species
+        self.max_pressure = max_pressure
 
         # Get object data
 
@@ -281,7 +285,7 @@ class AtmosphericRetrieval:
                 f"recognized. Please use 'standard', 'smaller', or 'clouds'."
             )
 
-        self.pressure = np.logspace(-6, 3, n_pressure)
+        self.pressure = np.logspace(-6, np.log10(self.max_pressure), n_pressure)
 
         print(
             f"Initiating {self.pressure.size} pressure levels (bar): "
@@ -1122,7 +1126,7 @@ class AtmosphericRetrieval:
                     )
                 else:
                     # Default: -6 - 3. (i.e. 1e-6 - 1e3 bar)
-                    log_p_quench = -6.0 + 9.0 * cube[cube_index["log_p_quench"]]
+                    log_p_quench = -6.0 + (6.+np.log10(self.max_pressure)) * cube[cube_index["log_p_quench"]]
 
                 cube[cube_index["log_p_quench"]] = log_p_quench
 
