@@ -785,9 +785,10 @@ def plot_mag_posterior(
     burnin: int = None,
     xlim: Tuple[float, float] = None,
     output: str = "mag_posterior.pdf",
-) -> None:
+) -> np.ndarray:
     """
-    Function to plot the posterior distribution of the synthetic magnitudes.
+    Function to plot the posterior distribution of the synthetic
+    magnitudes. The posterior samples are also returned.
 
     Parameters
     ----------
@@ -804,8 +805,8 @@ def plot_mag_posterior(
 
     Returns
     -------
-    NoneType
-        None
+    np.ndarray
+        Array with the posterior samples of the magnitude.
     """
 
     mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
@@ -874,6 +875,7 @@ def plot_mag_posterior(
 
     print(" [DONE]")
 
+    return samples
 
 @typechecked
 def plot_size_distributions(

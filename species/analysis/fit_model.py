@@ -17,8 +17,8 @@ try:
     import ultranest
 except:
     warnings.warn(
-        "UltraNest could not be imported. "
-        "Perhaps because cython was not correctly compiled?"
+        "UltraNest could not be imported. Perhaps "
+        "because cython was not correctly compiled?"
     )
 
 # Installation of MultiNest is not possible on readthedocs
@@ -28,8 +28,8 @@ except:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not build "
-        "and/or found at the LD_LIBRARY_PATH (Linux) "
-        "or DYLD_LIBRARY_PATH (Mac)?"
+        "and/or found at the LD_LIBRARY_PATH "
+        "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
 from typeguard import typechecked
@@ -63,11 +63,13 @@ def lnprior(
     param_index : dict(str, int)
         Dictionary with the parameter indices of ``param``.
     prior : dict(str, tuple(float, float)), None
-        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-        for any of the atmosphere or calibration parameters, e.g.
-        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
-        3 Mjup. The parameter is not used if set to ``None``.
+        Dictionary with Gaussian priors for one or multiple parameters.
+        The prior can be set for any of the atmosphere or calibration
+        parameters, e.g. ``prior={'teff': (1200., 100.)}``.
+        Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup
+        with an uncertainty of 3 Mjup. The parameter is not used if set
+        to ``None``.
 
     Returns
     -------
@@ -132,30 +134,37 @@ def lnlike(
         Dictionary with the parameter indices of ``param``.
     model : str
         Atmosphere model (e.g. 'bt-settl', 'exo-rem', or 'planck).
-    objphot : list(np.ndarray, )
-        List with the photometric fluxes and uncertainties of the object. Not photometric data
-        is fitted if an empty list is provided.
+    objphot : list(np.ndarray)
+        List with the photometric fluxes and uncertainties of the
+        object. Not photometric data is fitted if an empty list is
+        provided.
     distance : tuple(float, float)
         Distance and uncertainty (pc).
     spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
-        Dictionary with the spectra stored as wavelength (um), flux (W m-2 um-1),
-        and error (W m-2 um-1). Optionally the covariance matrix, the inverse of
-        the covariance matrix, and the spectral resolution are included. Each
-        of these three elements can be set to ``None``. No spectroscopic data is
-        fitted if ``spectrum=None``.
-    modelphot : list(species.read.read_model.ReadModel, ),
-                list(species.analysis.photometry.SyntheticPhotometry, ), None
+        Dictionary with the spectra stored as wavelength (um), flux
+        (W m-2 um-1), and error (W m-2 um-1). Optionally the covariance
+        matrix, the inverse of the covariance matrix, and the spectral
+        resolution are included. Each of these three elements can be
+        set to ``None``. No spectroscopic data is fitted if
+        ``spectrum=None``.
+    modelphot : list(species.read.read_model.ReadModel),
+                list(species.analysis.photometry.SyntheticPhotometry),
+                None
         List with the interpolated synthetic fluxes or list with the
-        :class:`~species.analysis.photometry.SyntheticPhotometry` objects for
-        calculation of synthetic photometry for Planck spectra. No photometry is fitted if set
-        to ``None``.
-    modelspec : list(species.read.read_model.ReadModel, ), None
+        :class:`~species.analysis.photometry.SyntheticPhotometry`
+        objects for calculation of synthetic photometry for Planck
+        spectra. No photometry is fitted if set to ``None``.
+    modelspec : list(species.read.read_model.ReadModel), None
         List with the interpolated synthetic spectra.
     n_planck : int
-        Number of Planck components. The argument is set to zero if ``model`` is not ``'planck'``.
+        Number of Planck components. The argument is set to zero if
+        ``model`` is not ``'planck'``.
     fit_corr : list(str)
-        List with spectrum names for which the correlation length and fractional amplitude are
-        fitted (see Wang et al. 2020).
+        List with spectrum names for which the covariances are modeled
+        with a Gaussian process (see Wang et al. 2020). This option can
+        be used if the actual covariances as determined from the data
+        are not available. The parameters that will be fitted are the
+        correlation length and fractional amplitude.
 
     Returns
     -------
@@ -290,7 +299,8 @@ def lnlike(
 
         else:
             if item in fit_corr:
-                # Calculate the log-likelihood with the covariance model (see Wang et al. 2020)
+                # Calculate the log-likelihood with the
+                # covariance model (see Wang et al. 2020)
                 wavel = spectrum[item][0][:, 0]  # (um)
                 wavel_j, wavel_i = np.meshgrid(wavel, wavel)
 
@@ -357,36 +367,46 @@ def lnprob(
         Atmosphere model (e.g. 'bt-settl', 'exo-rem', or 'planck).
     param_index : dict(str, int)
         Dictionary with the parameter indices of ``param``.
-    objphot : list(np.ndarray, ), None
-        List with the photometric fluxes and uncertainties. No photometric data is fitted if the
-        parameter is set to ``None``.
+    objphot : list(np.ndarray), None
+        List with the photometric fluxes and uncertainties. No
+        photometric data is fitted if the parameter is set to ``None``.
     distance : tuple(float, float)
         Distance and uncertainty (pc).
     prior : dict(str, tuple(float, float)), None
-        Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-        for any of the atmosphere or calibration parameters, e.g.
-        ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
-        3 Mjup. The parameter is not used if set to ``None``.
-    spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
-        Dictionary with the spectra stored as wavelength (um), flux (W m-2 um-1),
-        and error (W m-2 um-1). Optionally the covariance matrix, the inverse of
-        the covariance matrix, and the spectral resolution are included. Each
-        of these three elements can be set to ``None``. No spectroscopic data is
-        fitted if ``spectrum=None``.
-    modelphot : list(species.read.read_model.ReadModel, ),
-                list(species.analysis.photometry.SyntheticPhotometry, ), None
-        List with the interpolated synthetic fluxes or list with the
-        :class:`~species.analysis.photometry.SyntheticPhotometry` objects for
-        calculation of synthetic photometry for Planck spectra. No photometry is fitted if set
+        Dictionary with Gaussian priors for one or multiple parameters.
+        The prior can be set for any of the atmosphere or calibration
+        parameters, e.g. ``prior={'teff': (1200., 100.)}``.
+        Additionally, a prior can be set for the mass, e.g.
+        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup
+        with an uncertainty of 3 Mjup. The parameter is not used if set
         to ``None``.
-    modelspec : list(species.read.read_model.ReadModel, ), None
-        List with the interpolated synthetic spectra. The parameter is set to ``None`` when no
-        spectroscopic data is included or when ``model='planck'``.
+    spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
+        Dictionary with the spectra stored as wavelength (um), flux
+        (W m-2 um-1), and error (W m-2 um-1). Optionally the covariance
+        matrix, the inverse of the covariance matrix, and the spectral
+        resolution are included. Each of these three elements can be
+        set to ``None``. No spectroscopic data is fitted if
+        ``spectrum=None``.
+    modelphot : list(species.read.read_model.ReadModel),
+                list(species.analysis.photometry.SyntheticPhotometry),
+                None
+        List with the interpolated synthetic fluxes or list with the
+        :class:`~species.analysis.photometry.SyntheticPhotometry`
+        objects for calculation of synthetic photometry for Planck
+        spectra. No photometric data is fitted if set to ``None``.
+    modelspec : list(species.read.read_model.ReadModel), None
+        List with the interpolated synthetic spectra. The parameter is
+        set to ``None`` when no spectroscopic data is included or when
+        ``model='planck'``.
     n_planck : int
-        Number of Planck components. The argument is set to zero if ``model`` is not ``'planck'``.
+        Number of Planck components. The argument is set to zero if
+        ``model`` is not ``'planck'``.
     fit_corr : list(str)
-        List with spectrum names for which the correlation amplitude and length are fitted.
+        List with spectrum names for which the covariances are modeled
+        with a Gaussian process (see Wang et al. 2020). This option can
+        be used if the actual covariances as determined from the data
+        are not available. The parameters that will be fitted are the
+        correlation length and fractional amplitude.
 
     Returns
     -------
@@ -422,9 +442,10 @@ def lnprob(
 
 class FitModel:
     """
-    Class for fitting atmospheric model spectra to spectroscopic and/or photometric data, and using
-    Bayesian inference (``UltraNest``, ``MultiNest``, or ``emcee``) to estimate posterior
-    distributions and marginalized likelihoods (i.e. "evidence").
+    Class for fitting atmospheric model spectra to spectroscopic and/or
+    photometric data, and using Bayesian inference (``UltraNest``,
+    ``MultiNest``, or ``emcee``) to estimate posterior distributions
+    and marginalized likelihoods (i.e. "evidence").
     """
 
     @typechecked
@@ -622,8 +643,11 @@ class FitModel:
             in the database with :func:`~species.data.database.Database.add_object`) can be
             provided.
         fit_corr : list(str), None
-            List with spectrum names for which the correlation length and fractional amplitude are
-            fitted (see Wang et al. 2020).
+            List with spectrum names for which the covariances are modeled
+            with a Gaussian process (see Wang et al. 2020). This option can
+            be used if the actual covariances as determined from the data
+            are not available. The parameters that will be fitted are the
+            correlation length and fractional amplitude.
         weights : dict(str, float), None
             Weights to be applied to the log-likelihood components of the different spectroscopic
             and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
@@ -694,6 +718,36 @@ class FitModel:
                     if item not in self.bounds:
                         # Set the parameter boundaries to the grid boundaries if set to None
                         self.bounds[item] = bounds_grid[item]
+
+                    else:
+                        if self.bounds[item][0] < bounds_grid[item][0]:
+                            warnings.warn(
+                                f"The lower bound on {item} "
+                                f"({self.bounds[item][0]}) is smaller than "
+                                f"the lower bound from the available "
+                                f"{self.model} model grid "
+                                f"({bounds_grid[item][0]}). The lower bound "
+                                f"of the {item} prior will be adjusted to "
+                                f"{bounds_grid[item][0]}."
+                            )
+                            self.bounds[item] = (
+                                bounds_grid[item][0],
+                                self.bounds[item][1],
+                            )
+
+                        if self.bounds[item][1] > bounds_grid[item][1]:
+                            warnings.warn(
+                                f"The upper bound on {item} "
+                                f"({self.bounds[item][1]}) is larger than the "
+                                f"upper bound from the available {self.model} "
+                                f"model grid ({bounds_grid[item][1]}). The "
+                                f"bound of the {item} prior will be adjusted "
+                                f"to {bounds_grid[item][1]}."
+                            )
+                            self.bounds[item] = (
+                                self.bounds[item][0],
+                                bounds_grid[item][1],
+                            )
 
             else:
                 # Set all parameter boundaries to the grid boundaries
@@ -845,7 +899,7 @@ class FitModel:
 
         # Get the parameter order if interpolate_grid is used
 
-        if self.model != "planck" and self.model != "powerlaw":
+        if self.model not in ["planck", "powerlaw"]:
             readmodel = read_model.ReadModel(self.model)
             self.param_interp = readmodel.get_parameters()
 
@@ -1063,31 +1117,37 @@ class FitModel:
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
     ) -> None:
         """
-        Function to run the MCMC sampler of ``emcee``. The functionalities of ``run_mcmc`` are
-        more limited than :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
-        :func:`~species.analysis.fit_model.FitModel.run_multinest`. Furthermore, ``run_ultranest``
-        ``run_multinest`` provide more robust results when sampling multimodal posterior
-        distributions and have the additional advantage of returning the marginal likelihood (i.e.
-        "evidence"). Therefore, it is recommended to use ``run_ultranest`` or ``run_multinest``
-        instead of ``run_mcmc``.
+        Function to run the MCMC sampler of ``emcee``. The
+        functionalities of ``run_mcmc`` are more limited than
+        :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
+        :func:`~species.analysis.fit_model.FitModel.run_multinest`.
+        Furthermore, ``run_ultranest`` ``run_multinest`` provide more
+        robust results when sampling multimodal posterior distributions
+        and have the additional advantage of returning the marginal
+        likelihood (i.e. "evidence"). Therefore, it is recommended to
+        use ``run_ultranest`` or ``run_multinest`` instead of
+        ``run_mcmc``.
 
         Parameters
         ----------
         tag : str
             Database tag where the samples will be stored.
         guess : dict, None
-            Guess for each parameter to initialize the walkers. Random values between the
-            ``bounds`` are used is set to ``None``.
+            Guess for each parameter to initialize the walkers. Random
+            values between the ``bounds`` are used is set to ``None``.
         nwalkers : int
             Number of walkers.
         nsteps : int
             Number of steps per walker.
         prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-            for any of the atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup. The parameter is not used if set to ``None``.
+            Dictionary with Gaussian priors for one or multiple
+            parameters. The prior can be set for any of the
+            atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally,
+            a prior can be set for the mass, e.g.
+            ``prior={'mass': (13., 3.)}`` for an expected mass
+            of 13 Mjup with an uncertainty of 3 Mjup. The
+            parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -1229,17 +1289,20 @@ class FitModel:
         self, params, prior: Optional[Dict[str, Tuple[float, float]]] = None
     ) -> np.float64:
         """
-        Function for calculating the log-likelihood for the sampled parameter cube.
+        Function for calculating the log-likelihood for the sampled
+        parameter cube.
 
         Parameters
         ----------
         params : np.ndarray, pymultinest.run.LP_c_double
             Cube with physical parameters.
         prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-            for any of the atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            Dictionary with Gaussian priors for one or multiple
+            parameters. The prior can be set for any of the atmosphere
+            or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
+            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
+            for an expected mass of 13 Mjup with an uncertainty of
             3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
