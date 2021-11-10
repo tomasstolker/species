@@ -1788,17 +1788,22 @@ class AtmosphericRetrieval:
                     # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                     flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
 
+                    sigma_fbol = check_flux*f_bol
+
+                    ln_like += np.sum(-0.5 * (4.0 * np.pi * h_bol - f_bol)**2 / sigma_fbol**2)
+                    ln_like += -0.5 * h_bol.size * np.log(2.*np.pi*sigma_fbol**2)
+
                     # for i in range(i_conv):
-                    for i in range(lowres_radtrans.press.shape[0]):
-                        if not isclose(
-                            f_bol,
-                            4.0 * np.pi * h_bol[i],
-                            rel_tol=check_flux,
-                            abs_tol=0.0,
-                        ):
-                            # Remove the sample if the bolometric flux of the output spectrum
-                            # is different from the bolometric flux deeper in the atmosphere
-                            return -np.inf
+                    # for i in range(lowres_radtrans.press.shape[0]):
+                    #     if not isclose(
+                    #         f_bol,
+                    #         4.0 * np.pi * h_bol[i],
+                    #         rel_tol=check_flux,
+                    #         abs_tol=0.0,
+                    #     ):
+                    #         # Remove the sample if the bolometric flux of the output spectrum
+                    #         # is different from the bolometric flux deeper in the atmosphere
+                    #         return -np.inf
 
                     if plotting:
                         plt.plot(wlen_lowres, flux_lowres)
