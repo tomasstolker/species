@@ -1013,15 +1013,15 @@ class AtmosphericRetrieval:
                 cube[cube_index["gamma_r"]] = gamma_r
 
             elif pt_profile == "monotonic":
-                # Free temperature nodes (K)
+                # Free temperature node (K) between 500 and
+                # 20000 K for the deepest pressure point
                 cube[cube_index[f"t{self.temp_nodes-1}"]] = (
-                    20000.0 * cube[cube_index[f"t{self.temp_nodes-1}"]]
+                    20000.0 - 19500. * cube[cube_index[f"t{self.temp_nodes-1}"]]
                 )
 
                 for i in range(self.temp_nodes - 2, -1, -1):
-                    cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
-                        1.0 - cube[cube_index[f"t{i}"]]
-                    )
+                    cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] \
+                        - (cube[cube_index[f"t{i+1}"]] - 500.) * cube[cube_index[f"t{i}"]]
 
                     # Increasing temperature steps with increasing pressure
                     # if i == 13:
@@ -2306,6 +2306,7 @@ class AtmosphericRetrieval:
         radtrans_dict["pt_profile"] = pt_profile
         radtrans_dict["pressure_grid"] = self.pressure_grid
         radtrans_dict["wavel_range"] = self.wavel_range
+        radtrans_dict["temp_nodes"] = self.temp_nodes
 
         if "pt_smooth" not in bounds:
             radtrans_dict["pt_smooth"] = self.pt_smooth
@@ -2317,11 +2318,13 @@ class AtmosphericRetrieval:
 
         print("Sampling the posterior distribution with MultiNest...")
 
+        out_basename = os.path.join(self.output_folder, "retrieval_")
+
         pymultinest.run(
             loglike,
             prior,
             len(self.parameters),
-            outputfiles_basename=os.path.join(self.output_folder, ""),
+            outputfiles_basename=out_basename,
             resume=resume,
             verbose=True,
             const_efficiency_mode=True,

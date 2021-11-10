@@ -174,6 +174,7 @@ class ReadRadtrans:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         plot_contribution: Optional[str] = None,
+        temp_nodes: Optional[int] = None,
     ) -> box.ModelBox:
         """
         Function for calculating a model spectrum with
@@ -201,6 +202,8 @@ class ReadRadtrans:
         plot_contribution : str, None
             Filename for the plot with the emission contribution. The
             plot is not created if the argument is set to ``None``.
+        temp_nodes : int, None
+            Number of free temperature nodes.
 
         Returns
         -------
@@ -294,12 +297,21 @@ class ReadRadtrans:
             )
 
         else:
+            if temp_nodes is None:
+                temp_nodes = 0
+
+                for i in range(100):
+                    if f"t{i}" in model_param:
+                        temp_nodes += 1
+                    else:
+                        break
+
             knot_press = np.logspace(
-                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15
+                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), temp_nodes
             )
 
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(model_param[f"t{i}"])
 
             knot_temp = np.asarray(knot_temp)
