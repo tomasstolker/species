@@ -7,7 +7,7 @@ import os
 import json
 import time
 
-from math import isclose
+# from math import isclose
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -269,7 +269,7 @@ class AtmosphericRetrieval:
 
         # Create the pressure layers for the Radtrans object
 
-        if self.pressure_grid == "standard" or self.pressure_grid == "smaller":
+        if self.pressure_grid in ["standard", "smaller"]:
             # Initiate 180 pressure layers but use only 60 layers during the radiative transfer
             # when pressure_grid is set to 'smaller'
             n_pressure = 180
@@ -296,9 +296,10 @@ class AtmosphericRetrieval:
 
         self.parameters = []
 
-        # Initiate the optional P-T smoothing parameter
+        # Initiate the optional P-T parameters
 
         self.pt_smooth = None
+        self.temp_nodes = None
 
         # Weighting of the photometric and spectroscopic data
 
@@ -655,10 +656,7 @@ class AtmosphericRetrieval:
 
         # Set number of free temperature nodes
 
-        if pt_profile in ["molliere", "mod-molliere"]:
-            self.temp_nodes = None
-
-        elif pt_profile in ["free", "monotonic"]:
+        if pt_profile in ["free", "monotonic"]:
             if temp_nodes is None:
                 self.temp_nodes = 15
             else:
@@ -1016,12 +1014,15 @@ class AtmosphericRetrieval:
                 # Free temperature node (K) between 300 and
                 # 20000 K for the deepest pressure point
                 cube[cube_index[f"t{self.temp_nodes-1}"]] = (
-                    20000.0 - 19700. * cube[cube_index[f"t{self.temp_nodes-1}"]]
+                    20000.0 - 19700.0 * cube[cube_index[f"t{self.temp_nodes-1}"]]
                 )
 
                 for i in range(self.temp_nodes - 2, -1, -1):
-                    cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] \
-                        - (cube[cube_index[f"t{i+1}"]] - 300.) * cube[cube_index[f"t{i}"]]
+                    cube[cube_index[f"t{i}"]] = (
+                        cube[cube_index[f"t{i+1}"]]
+                        - (cube[cube_index[f"t{i+1}"]] - 300.0)
+                        * cube[cube_index[f"t{i}"]]
+                    )
 
                     # Increasing temperature steps with increasing pressure
                     # if i == 13:
@@ -1126,7 +1127,11 @@ class AtmosphericRetrieval:
                     )
                 else:
                     # Default: -6 - 3. (i.e. 1e-6 - 1e3 bar)
-                    log_p_quench = -6.0 + (6.+np.log10(self.max_pressure)) * cube[cube_index["log_p_quench"]]
+                    log_p_quench = (
+                        -6.0
+                        + (6.0 + np.log10(self.max_pressure))
+                        * cube[cube_index["log_p_quench"]]
+                    )
 
                 cube[cube_index["log_p_quench"]] = log_p_quench
 
@@ -1788,10 +1793,14 @@ class AtmosphericRetrieval:
                     # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
                     flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
 
-                    sigma_fbol = check_flux*f_bol
+                    sigma_fbol = check_flux * f_bol
 
-                    ln_like += np.sum(-0.5 * (4.0 * np.pi * h_bol - f_bol)**2 / sigma_fbol**2)
-                    ln_like += -0.5 * h_bol.size * np.log(2.*np.pi*sigma_fbol**2)
+                    ln_prior += np.sum(
+                        -0.5 * (4.0 * np.pi * h_bol - f_bol) ** 2 / sigma_fbol ** 2
+                    )
+                    ln_prior += (
+                        -0.5 * h_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
+                    )
 
                     # for i in range(i_conv):
                     # for i in range(lowres_radtrans.press.shape[0]):

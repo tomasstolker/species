@@ -2124,7 +2124,7 @@ class Database:
             n_param = dset.attrs["nparam"]
 
         if "ln_evidence" in dset.attrs:
-            # Use if condition for backward compatibility
+            # For backward compatibility
             ln_evidence = dset.attrs["ln_evidence"]
         else:
             ln_evidence = None
@@ -2571,7 +2571,17 @@ class Database:
         with open(radtrans_filename) as json_file:
             radtrans = json.load(json_file)
 
-        samples = np.loadtxt(os.path.join(output_folder, "post_equal_weights.dat"))
+        post_new = os.path.join(output_folder, "retrieval_post_equal_weights.dat")
+        post_old = os.path.join(output_folder, "post_equal_weights.dat")
+
+        if os.path.exists(post_new):
+            samples = np.loadtxt(post_new)
+
+        elif os.path.exists(post_old):
+            samples = np.loadtxt(post_old)
+
+        else:
+            raise RuntimeError("Can not find the post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
@@ -2654,6 +2664,9 @@ class Database:
 
             if "pt_smooth" in radtrans:
                 dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
+
+            if "temp_nodes" in radtrans:
+                dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
 
         print(" [DONE]")
 
@@ -3020,6 +3033,13 @@ class Database:
         else:
             pressure_grid = "smaller"
 
+        # Get free temperarture nodes
+
+        if "temp_nodes" in dset.attrs:
+            temp_nodes = dset.attrs["temp_nodes"]
+        else:
+            temp_nodes = None
+
         # Get distance
 
         if "distance" in dset.attrs:
@@ -3110,6 +3130,7 @@ class Database:
                 spec_res=spec_res,
                 distance=distance,
                 pt_smooth=pt_smooth,
+                temp_nodes=temp_nodes,
                 read_rad=read_rad,
                 sample=item,
             )

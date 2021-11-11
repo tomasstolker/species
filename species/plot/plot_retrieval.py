@@ -162,6 +162,12 @@ def plot_pt_profile(
     # Create the pressure points (bar)
     pressure = np.logspace(-6.0, 3.0, 180)
 
+    if "temp_nodes" in box.attributes:
+        temp_nodes = box.attributes["temp_nodes"]
+    else:
+        # For backward compatibility
+        temp_nodes = 15
+
     if "tint" in parameters:
         pt_profile = "molliere"
 
@@ -169,10 +175,10 @@ def plot_pt_profile(
         pt_profile = "free"
 
         temp_index = []
-        for i in range(15):
+        for i in range(temp_nodes):            
             temp_index.append(np.argwhere(parameters == f"t{i}")[0])
 
-        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
 
     if pt_profile == "molliere":
         conv_press = np.zeros(samples.shape[0])
@@ -221,7 +227,7 @@ def plot_pt_profile(
 
         elif pt_profile == "free":
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(item[temp_index[i]])
 
             knot_temp = np.asarray(knot_temp)
@@ -270,7 +276,7 @@ def plot_pt_profile(
 
     elif pt_profile == "free":
         knot_temp = []
-        for i in range(15):
+        for i in range(temp_nodes):
             knot_temp.append(median[f"t{i}"])
 
         knot_temp = np.asarray(knot_temp)

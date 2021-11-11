@@ -755,6 +755,7 @@ def retrieval_spectrum(
     spec_res: float,
     distance: Optional[float],
     pt_smooth: Optional[float],
+    temp_nodes: Optional[np.integer],
     read_rad: read_radtrans.ReadRadtrans,
     sample: np.ndarray,
 ) -> box.ModelBox:
@@ -791,6 +792,9 @@ def retrieval_spectrum(
         Only required with `pt_profile='free'` or
         `pt_profile='monotonic'`. The argument should be given as
         log10(P/bar).
+    temp_nodes : int, None
+        Number of free temperature nodes that are used when
+        ``pt_profile='monotonic'`` or ``pt_profile='free'``.
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -827,7 +831,11 @@ def retrieval_spectrum(
         model_param["tint"] = sample[indices["tint"]]
 
     elif pt_profile in ["free", "monotonic"]:
-        for j in range(15):
+        if temp_nodes is None:
+            # For backward compatibility
+            temp_nodes = 15
+
+        for j in range(temp_nodes):
             model_param[f"t{j}"] = sample[indices[f"t{j}"]]
 
     if pt_smooth is not None:
