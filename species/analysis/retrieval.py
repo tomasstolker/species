@@ -2321,6 +2321,7 @@ class AtmosphericRetrieval:
         radtrans_dict["pressure_grid"] = self.pressure_grid
         radtrans_dict["wavel_range"] = self.wavel_range
         radtrans_dict["temp_nodes"] = self.temp_nodes
+        radtrans_dict["max_press"] = self.max_pressure
 
         if "pt_smooth" not in bounds:
             radtrans_dict["pt_smooth"] = self.pt_smooth

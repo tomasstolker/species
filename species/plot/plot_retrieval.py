@@ -139,18 +139,6 @@ def plot_pt_profile(
     ax.set_xlabel("Temperature (K)", fontsize=13)
     ax.set_ylabel("Pressure (bar)", fontsize=13)
 
-    if xlim:
-        ax.set_xlim(xlim[0], xlim[1])
-    else:
-        ax.set_xlim(1000.0, 5000.0)
-
-    if ylim:
-        ax.set_ylim(ylim[0], ylim[1])
-    else:
-        ax.set_ylim(1e3, 1e-6)
-
-    ax.set_yscale("log")
-
     if offset is not None:
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
@@ -159,14 +147,32 @@ def plot_pt_profile(
         ax.get_xaxis().set_label_coords(0.5, -0.06)
         ax.get_yaxis().set_label_coords(-0.14, 0.5)
 
-    # Create the pressure points (bar)
-    pressure = np.logspace(-6.0, 3.0, 180)
-
     if "temp_nodes" in box.attributes:
         temp_nodes = box.attributes["temp_nodes"]
     else:
         # For backward compatibility
         temp_nodes = 15
+
+    if "max_press" in box.attributes:
+        max_press = box.attributes["max_press"]
+    else:
+        # For backward compatibility
+        max_press = 1e3  # (bar)
+
+    if xlim:
+        ax.set_xlim(xlim[0], xlim[1])
+    else:
+        ax.set_xlim(1000.0, 5000.0)
+
+    if ylim:
+        ax.set_ylim(ylim[0], ylim[1])
+    else:
+        ax.set_ylim(max_press, 1e-6)
+
+    ax.set_yscale("log")
+
+    # Create the pressure points (bar)
+    pressure = np.logspace(-6.0, np.log10(max_press), 180)
 
     if "tint" in parameters:
         pt_profile = "molliere"
@@ -487,7 +493,7 @@ def plot_pt_profile(
             if ylim:
                 ax2.set_ylim(ylim[0], ylim[1])
             else:
-                ax2.set_ylim(1e3, 1e-6)
+                ax2.set_ylim(max_press, 1e-6)
 
             ax2.set_yscale("log")
 
@@ -544,7 +550,7 @@ def plot_pt_profile(
                 if ylim:
                     ax2.set_ylim(ylim[0], ylim[1])
                 else:
-                    ax2.set_ylim(1e3, 1e-6)
+                    ax2.set_ylim(max_press, 1e-6)
 
                 ax2.set_xscale("log")
                 ax2.set_yscale("log")

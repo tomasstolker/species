@@ -2668,6 +2668,9 @@ class Database:
             if "temp_nodes" in radtrans:
                 dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
 
+            if "max_press" in radtrans:
+                dset.attrs["max_press"] = radtrans["max_press"]
+
         print(" [DONE]")
 
         rt_object = None
