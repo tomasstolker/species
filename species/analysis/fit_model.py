@@ -892,19 +892,33 @@ class FitModel:
 
             for item in self.spectrum:
                 if item in self.fit_corr:
-                    self.modelpar.append(f"corr_len_{item}")
-                    self.modelpar.append(f"corr_amp_{item}")
+                    if self.spectrum[item][1] is not None:
+                        warnings.warn(f"There is a covariance matrix included "
+                                      f"with the {item} data of "
+                                      f"{object_name} so it is not needed to "
+                                      f"model the covariances with a "
+                                      f"Gaussian process. Want to test the "
+                                      f"Gaussian process nonetheless? Please "
+                                      f"overwrite the data of {object_name} "
+                                      f"with add_object while setting the "
+                                      f"path to the covariance data to None.")
 
-                    if f"corr_len_{item}" not in self.bounds:
-                        self.bounds[f"corr_len_{item}"] = (
-                            -3.0,
-                            0.0,
-                        )  # log10(corr_len/um)
+                        self.fit_corr.remove(item)
 
-                    if f"corr_amp_{item}" not in self.bounds:
-                        self.bounds[f"corr_amp_{item}"] = (0.0, 1.0)
+                    else:
+                        self.modelpar.append(f"corr_len_{item}")
+                        self.modelpar.append(f"corr_amp_{item}")
 
-                    self.n_corr_par += 2
+                        if f"corr_len_{item}" not in self.bounds:
+                            self.bounds[f"corr_len_{item}"] = (
+                                -3.0,
+                                0.0,
+                            )  # log10(corr_len/um)
+
+                        if f"corr_amp_{item}" not in self.bounds:
+                            self.bounds[f"corr_amp_{item}"] = (0.0, 1.0)
+
+                        self.n_corr_par += 2
 
             self.modelspec = []
 
