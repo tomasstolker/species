@@ -83,6 +83,11 @@ class Database:
     @typechecked
     def list_content(self) -> None:
         """
+        Method for listing the content of the HDF5 database. The
+        database structure will be descended while printing the paths
+        of all the groups and datasets, as well as the dataset
+        attributes.
+
         Returns
         -------
         NoneType
@@ -92,14 +97,15 @@ class Database:
         print("Database content:")
 
         @typechecked
-        def descend(
+        def _descend(
             h5_object: Union[
                 h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
             ],
             seperator: str = "",
         ) -> None:
             """
-            Function for descending into an HDF5 dataset and printing its content.
+            Internal function for descending into an HDF5 dataset and
+            printing its content.
 
             Parameters
             ----------
@@ -117,14 +123,14 @@ class Database:
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
                 for key in h5_object.keys():
                     print(seperator + "- " + key + ": " + str(h5_object[key]))
-                    descend(h5_object[key], seperator=seperator + "\t")
+                    _descend(h5_object[key], seperator=seperator + "\t")
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
                 for key in h5_object.attrs.keys():
                     print(seperator + "- " + key + ": " + str(h5_object.attrs[key]))
 
         with h5py.File(self.database, "r") as hdf_file:
-            descend(hdf_file)
+            _descend(hdf_file)
 
     @staticmethod
     @typechecked
@@ -170,14 +176,20 @@ class Database:
         return comp_names
 
     @typechecked
-    def delete_data(self, dataset: str) -> None:
+    def delete_data(self, data_set: str) -> None:
         """
         Function for deleting a dataset from the HDF5 database.
 
         Parameters
         ----------
-        dataset : str
-            Dataset path in the HDF5 database.
+        data_set : str
+            Group or dataset path in the HDF5 database. The content
+            and structure of the database can be shown with
+            :meth:`~species.data.database.Database.list_content`. That
+            could help to determine which argument should be provided
+            as argument of ``data_set``. For example,
+            ``data_set="models/drift-phoenix"`` will remove the
+            model spectra of DRIFT-PHOENIX.            
 
         Returns
         -------
@@ -186,31 +198,35 @@ class Database:
         """
 
         with h5py.File(self.database, "a") as hdf_file:
-            if dataset in hdf_file:
-                print(f"Deleting data: {dataset}...", end="", flush=True)
-                del hdf_file[dataset]
+            if data_set in hdf_file:
+                print(f"Deleting data: {data_set}...", end="", flush=True)
+                del hdf_file[data_set]
                 print(" [DONE]")
 
             else:
-                warnings.warn(f"The dataset {dataset} is not found in {self.database}.")
+                warnings.warn(f"The dataset {data_set} is not "
+                              f"found in {self.database}.")
 
     @typechecked
     def add_companion(
         self, name: Union[Optional[str], Optional[List[str]]] = None, verbose: bool = True
     ) -> None:
         """
-        Function for adding the magnitudes and spectra of directly imaged planets and brown dwarfs
-        from :class:`~species.data.companions.get_data` and
+        Function for adding the magnitudes and spectra of directly
+        imaged planets and brown dwarfs from
+        :class:`~species.data.companions.get_data` and
         :func:`~species.data.companions.get_comp_spec` to the database.
 
         Parameters
         ----------
         name : str, list(str), None
-            Name or list with names of the directly imaged planets and brown dwarfs (e.g.
-            ``'HR 8799 b'`` or ``['HR 8799 b', '51 Eri b', 'PZ Tel B']``). All the available
-            companion data are added if set to ``None``.
+            Name or list with names of the directly imaged planets and
+            brown dwarfs (e.g. ``'HR 8799 b'`` or ``['HR 8799 b',
+            '51 Eri b', 'PZ Tel B']``). All the available companion
+            data are added if set to ``None``.
         verbose : bool
-            Print details on the companion data that are added to the database.
+            Print details on the companion data that are added to the
+            database.
 
         Returns
         -------
@@ -3050,6 +3066,13 @@ class Database:
         else:
             distance = None
 
+        # Get distance
+
+        if "max_press" in dset.attrs:
+            max_press = dset.attrs["max_press"]
+        else:
+            max_press = None
+
         # Get model parameters
 
         parameters = []
@@ -3099,6 +3122,7 @@ class Database:
             wavel_range=wavel_range,
             pressure_grid=pressure_grid,
             cloud_wavel=cloud_wavel,
+            max_press=max_press,
         )
 
         # Set quenching attribute such that the parameter of get_model is not required

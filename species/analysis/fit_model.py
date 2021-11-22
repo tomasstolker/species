@@ -148,8 +148,7 @@ def lnlike(
         set to ``None``. No spectroscopic data is fitted if
         ``spectrum=None``.
     modelphot : list(species.read.read_model.ReadModel),
-                list(species.analysis.photometry.SyntheticPhotometry),
-                None
+        list(species.analysis.photometry.SyntheticPhotometry), None
         List with the interpolated synthetic fluxes or list with the
         :class:`~species.analysis.photometry.SyntheticPhotometry`
         objects for calculation of synthetic photometry for Planck
@@ -157,8 +156,8 @@ def lnlike(
     modelspec : list(species.read.read_model.ReadModel), None
         List with the interpolated synthetic spectra.
     n_planck : int
-        Number of Planck components. The argument is set to zero if
-        ``model`` is not ``'planck'``.
+        Number of Planck components. The argument is set to zero
+        if ``model`` is not equal to ``'planck'``.
     fit_corr : list(str)
         List with spectrum names for which the covariances are modeled
         with a Gaussian process (see Wang et al. 2020). This option can
@@ -388,8 +387,7 @@ def lnprob(
         set to ``None``. No spectroscopic data is fitted if
         ``spectrum=None``.
     modelphot : list(species.read.read_model.ReadModel),
-                list(species.analysis.photometry.SyntheticPhotometry),
-                None
+        list(species.analysis.photometry.SyntheticPhotometry), None
         List with the interpolated synthetic fluxes or list with the
         :class:`~species.analysis.photometry.SyntheticPhotometry`
         objects for calculation of synthetic photometry for Planck
@@ -399,8 +397,8 @@ def lnprob(
         set to ``None`` when no spectroscopic data is included or when
         ``model='planck'``.
     n_planck : int
-        Number of Planck components. The argument is set to zero if
-        ``model`` is not ``'planck'``.
+        Number of Planck components. The argument is set to zero
+        if ``model`` is not equal to ``'planck'``.
     fit_corr : list(str)
         List with spectrum names for which the covariances are modeled
         with a Gaussian process (see Wang et al. 2020). This option can
@@ -467,11 +465,13 @@ class FitModel:
         weights: Optional[Dict[str, float]] = None,
     ) -> None:
         """
-        The grid of spectra is linearly interpolated for each photometric point and spectrum while
-        taking into account the filter profile, spectral resolution, and wavelength sampling.
-        Therefore, when fitting spectra from a model grid, the computation time of the
-        interpolation will depend on the wavelength range, spectral resolution, and parameter
-        space of the spectra that are stored in the database.
+        The grid of spectra is linearly interpolated for each
+        photometric point and spectrum while taking into account the
+        filter profile, spectral resolution, and wavelength sampling.
+        Therefore, when fitting spectra from a model grid, the
+        computation time of the interpolation will depend on the
+        wavelength range, spectral resolution, and parameter space of
+        the spectra that are stored in the database.
 
         Parameters
         ----------
@@ -482,13 +482,14 @@ class FitModel:
         model : str
             Atmospheric model (e.g. 'bt-settl', 'exo-rem', 'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors. Fixing a parameter is possible by
-            providing the same value as lower and upper boundary of the parameter, for example,
+            The boundaries that are used for the uniform priors. Fixing
+            a parameter is possible by providing the same value as
+            lower and upper boundary of the parameter, for example,
             ``bounds={'logg': (4., 4.)``.
 
             Atmospheric model parameters (e.g. ``model='bt-settl'``):
 
-                 - Boundaries are provided as tuple of two floats. For example,
+                 - Boundaries are provided as tuple of two floats. Forexample,
                    ``bounds={'teff': (1000, 1500.), 'logg': (3.5, 5.), 'radius': (0.8, 1.2)}``.
 
                  - The grid boundaries are used if set to ``None``. For example,
@@ -497,24 +498,31 @@ class FitModel:
 
             Blackbody emission parameters (``model='planck'``):
 
-                 - Parameter boundaries have to be provided for 'teff' and 'radius'.
+                 - Parameter boundaries have to be provided for 'teff'
+                   and 'radius'.
 
-                 - For a single blackbody component, the values are provided as a tuple with two
-                   floats. For example, ``bounds={'teff': (1000., 2000.), 'radius': (0.8, 1.2)}``.
+                 - For a single blackbody component, the values are
+                   provided as a tuple with two floats. For example,
+                   ``bounds={'teff': (1000., 2000.), 'radius': (0.8, 1.2)}``.
 
-                 - For multiple blackbody component, the values are provided as a list with tuples.
-                   For example, ``bounds={'teff': [(1000., 1400.), (1200., 1600.)],
+                 - For multiple blackbody component, the values are
+                   provided as a list with tuples. For example,
+                   ``bounds={'teff': [(1000., 1400.), (1200., 1600.)],
                    'radius': [(0.8, 1.5), (1.2, 2.)]}``.
 
-                 - When fitting multiple blackbody components, a prior is used which restricts the
-                   temperatures and radii to decreasing and increasing values, respectively, in the
-                   order as provided in ``bounds``.
+                 - When fitting multiple blackbody components, a prior
+                   is used which restricts the temperatures and radii
+                   to decreasing and increasing values, respectively,
+                   in the order as provided in ``bounds``.
 
             Power-law spectrum (``model='powerlaw'``):
 
-                 - Parameter boundaries have to be provided for 'log_powerlaw_a', 'log_powerlaw_b',
-                   and 'log_powerlaw_c'. For example, ``bounds={'log_powerlaw_a': (-20., 0.),
-                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c': (-20., 5.)}``.
+                 - Parameter boundaries have to be provided for
+                   'log_powerlaw_a', 'log_powerlaw_b', and
+                   'log_powerlaw_c'. For example,
+                   ``bounds={'log_powerlaw_a': (-20., 0.),
+                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c':
+                   (-20., 5.)}``.
 
                  - The spectrum is parametrized as log10(flux) = a + b*log10(wavelength)^c, where
                    a = log_powerlaw_a, b = log_powerlaw_b, and c = log_powerlaw_c.
@@ -558,101 +566,130 @@ class FitModel:
 
             ISM extinction parameters:
 
-                 - There are three approaches for fitting extinction. The first is with the
-                   empirical relation from Cardelli et al. (1989) for ISM extinction.
+                 - There are three approaches for fitting extinction.
+                   The first is with the empirical relation from
+                   Cardelli et al. (1989) for ISM extinction.
 
-                 - The extinction is parametrized by the V band extinction, A_V (``ism_ext``), and
-                   optionally the reddening, R_V (``ism_red``). If ``ism_red`` is not provided,
-                   its value is fixed to 3.1 and not fitted.
+                 - The extinction is parametrized by the $V$ band
+                   extinction, $A_V$ (``ism_ext``), and optionally the
+                   reddening, R_V (``ism_red``). If ``ism_red`` is not
+                   provided, its value is fixed to 3.1 and not fitted.
 
-                 - The prior boundaries of ``ism_ext`` and ``ext_red`` should be provided in the
-                   ``bounds`` dictionary, for example ``bounds={'ism_ext': (0., 10.),
+                 - The prior boundaries of ``ism_ext`` and ``ism_red``
+                   should be provided in the ``bounds`` dictionary, for
+                   example ``bounds={'ism_ext': (0., 10.),
                    'ism_red': (0., 20.)}``.
 
-                 - Only supported by ``run_ultranest`` and ``run_multinest``.
+                 - Only supported by ``run_ultranest`` and
+                   ``run_multinest``.
 
             Log-normal size distribution:
 
-                 - The second approach is fitting the extinction of a log-normal size distribution
-                   of grains with a crystalline MgSiO3 composition, and a homogeneous, spherical
-                   structure.
+                 - The second approach is fitting the extinction of a
+                   log-normal size distribution of grains with a
+                   crystalline MgSiO3 composition, and a homogeneous,
+                   spherical structure.
 
-                 - The size distribution is parameterized with a mean geometric radius
-                   (``lognorm_radius`` in um) and a geometric standard deviation
-                   (``lognorm_sigma``, dimensionless). The grid of cross sections has been
-                   calculated for mean geometric radii between 0.001 and 10 um, and geometric
-                   standard deviations between 1.1 and 10.
+                 - The size distribution is parameterized with a mean
+                   geometric radius (``lognorm_radius`` in um) and a
+                   geometric standard deviation (``lognorm_sigma``,
+                   dimensionless). The grid of cross sections has been
+                   calculated for mean geometric radii between 0.001
+                   and 10 um, and geometric standard deviations between
+                   1.1 and 10.
 
-                 - The extinction (``lognorm_ext``) is fitted in the V band (A_V in mag) and the
-                   wavelength-dependent extinction cross sections are interpolated from a
+                 - The extinction (``lognorm_ext``) is fitted in the
+                   $V$ band ($A_V$ in mag) and the wavelength-dependent
+                   extinction cross sections are interpolated from a
                    pre-tabulated grid.
 
-                 - The prior boundaries of ``lognorm_radius``, ``lognorm_sigma``, and
-                   ``lognorm_ext`` should be provided in the ``bounds`` dictionary, for example
-                   ``bounds={'lognorm_radius': (0.001, 10.), 'lognorm_sigma': (1.1, 10.),
+                 - The prior boundaries of ``lognorm_radius``,
+                   ``lognorm_sigma``, and ``lognorm_ext`` should be
+                   provided in the ``bounds`` dictionary, for example
+                   ``bounds={'lognorm_radius': (0.001, 10.),
+                   'lognorm_sigma': (1.1, 10.),
                    'lognorm_ext': (0., 5.)}``.
 
-                 - A uniform prior is used for ``lognorm_sigma`` and ``lognorm_ext``, and a
-                   log-uniform prior for ``lognorm_radius``.
+                 - A uniform prior is used for ``lognorm_sigma`` and
+                   ``lognorm_ext``, and a log-uniform prior for
+                   ``lognorm_radius``.
 
-                 - Only supported by ``run_ultranest`` and ``run_multinest``.
+                 - Only supported by ``run_ultranest`` and
+                   ``run_multinest``.
 
             Power-law size distribution:
 
-                 - The third approach is fitting the extinction of a power-law size distribution
-                   of grains, again with a crystalline MgSiO3 composition, and a homogeneous,
+                 - The third approach is fitting the extinction of a
+                   power-law size distribution of grains, again with a
+                   crystalline MgSiO3 composition, and a homogeneous,
                    spherical structure.
 
-                 - The size distribution is parameterized with a maximum radius (``powerlaw_max``
-                   in um) and a power-law exponent (``powerlaw_exp``, dimensionless). The
-                   minimum radius is fixed to 1 nm. The grid of cross sections has been calculated
-                   for maximum radii between 0.01 and 100 um, and power-law exponents between -10
-                   and 10.
+                 - The size distribution is parameterized with a
+                   maximum radius (``powerlaw_max`` in um) and a
+                   power-law exponent (``powerlaw_exp``,
+                   dimensionless). The minimum radius is fixed to 1 nm.
+                   The grid of cross sections has been calculated for
+                   maximum radii between 0.01 and 100 um, and power-law
+                   exponents between -10 and 10.
 
-                 - The extinction (``powerlaw_ext``) is fitted in the V band (A_V in mag) and the
-                   wavelength-dependent extinction cross sections are interpolated from a
+                 - The extinction (``powerlaw_ext``) is fitted in the
+                   $V$ band ($A_V$ in mag) and the wavelength-dependent
+                   extinction cross sections are interpolated from a
                    pre-tabulated grid.
 
-                 - The prior boundaries of ``powerlaw_max``, ``powerlaw_exp``, and ``powerlaw_ext``
-                   should be provided in the ``bounds`` dictionary, for example ``{'powerlaw_max':
-                   (0.01, 100.), 'powerlaw_exp': (-10., 10.), 'powerlaw_ext': (0., 5.)}``.
+                 - The prior boundaries of ``powerlaw_max``,
+                   ``powerlaw_exp``, and ``powerlaw_ext`` should be
+                   provided in the ``bounds`` dictionary, for example
+                   ``{'powerlaw_max': (0.01, 100.), 'powerlaw_exp':
+                   (-10., 10.), 'powerlaw_ext': (0., 5.)}``.
 
-                 - A uniform prior is used for ``powerlaw_exp`` and ``powerlaw_ext``, and a
-                   log-uniform prior for ``powerlaw_max``.
+                 - A uniform prior is used for ``powerlaw_exp`` and
+                   ``powerlaw_ext``, and a log-uniform prior for
+                   ``powerlaw_max``.
 
                  - Only supported by ``run_ultranest`` and ``run_multinest``.
 
             Blackbody disk emission:
 
-                 - Additional blackbody emission can be added to the atmospheric spectrum to
-                   account for thermal emission from a disk.
+                 - Additional blackbody emission can be added to the
+                   atmospheric spectrum to account for thermal emission
+                   from a disk.
 
-                 - Parameter boundaries have to be provided for 'disk_teff' and 'disk_radius'.
-                   For example, ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
-                   'logg': (3.5, 4.5), 'disk_teff': (100., 2000.), 'disk_radius': (1., 100.)}``.
+                 - Parameter boundaries have to be provided for
+                   'disk_teff' and 'disk_radius'. For example,
+                   ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
+                   'logg': (3.5, 4.5), 'disk_teff': (100., 2000.),
+                   'disk_radius': (1., 100.)}``.
 
-                 - Only supported by ``run_ultranest`` and ``run_multinest``.
+                 - Only supported by ``run_ultranest`` and
+                   ``run_multinest``.
 
         inc_phot : bool, list(str)
-            Include photometric data in the fit. If a boolean, either all (``True``) or none
-            (``False``) of the data are selected. If a list, a subset of filter names (as stored in
+            Include photometric data in the fit. If a boolean, either
+            all (``True``) or none (``False``) of the data are
+            selected. If a list, a subset of filter names (as stored in
             the database) can be provided.
         inc_spec : bool, list(str)
-            Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
-            (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
-            in the database with :func:`~species.data.database.Database.add_object`) can be
+            Include spectroscopic data in the fit. If a boolean, either
+            all (``True``) or none (``False``) of the data are
+            selected. If a list, a subset of spectrum names (as stored
+            in the database with
+            :func:`~species.data.database.Database.add_object`) can be
             provided.
         fit_corr : list(str), None
-            List with spectrum names for which the covariances are modeled
-            with a Gaussian process (see Wang et al. 2020). This option can
-            be used if the actual covariances as determined from the data
-            are not available. The parameters that will be fitted are the
-            correlation length and fractional amplitude.
+            List with spectrum names for which the covariances are
+            modeled with a Gaussian process (see Wang et al. 2020).
+            This option can be used if the actual covariances as
+            determined from the data are not available for the spectra
+            of ``object_name``. The parameters that will be fitted
+            are the correlation length and the fractional amplitude.
         weights : dict(str, float), None
-            Weights to be applied to the log-likelihood components of the different spectroscopic
-            and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
-            parameter can for example be used to bias the weighting of the photometric data points.
-            An equal weighting is applied if the argument is set to ``None``. Only supported by
+            Weights to be applied to the log-likelihood components of
+            the different spectroscopic and photometric data that are
+            provided with ``inc_spec`` and ``inc_phot``. This parameter
+            can for example be used to bias the weighting of the
+            photometric data points. An equal weighting is applied if
+            the argument is set to ``None``. Only supported by
             ``run_ultranest`` and ``run_multinest``.
 
         Returns

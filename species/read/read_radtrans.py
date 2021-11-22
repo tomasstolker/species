@@ -38,6 +38,7 @@ class ReadRadtrans:
         pressure_grid: str = "smaller",
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
+        max_press: float = None,
     ) -> None:
         """
         Parameters
@@ -88,6 +89,9 @@ class ReadRadtrans:
             ``wavel_range``.  The full wavelength range (i.e.
             ``wavel_range``) is used if the argument is set to
             ``None``.
+        max_pressure : float, None
+            Maximum pressure (bar) for the free temperature nodes. The
+            default is set to 1000 bar.
 
         Returns
         -------
@@ -102,6 +106,12 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
+        self.max_press = max_press
+
+        # Set maximum pressure if needed
+        
+        if self.max_press is None:
+            self.max_press = 1e3
 
         # Set the wavelength range
 
@@ -133,7 +143,7 @@ class ReadRadtrans:
 
         # Create 180 pressure layers in log space
 
-        self.pressure = np.logspace(-6, 3, n_pressure)
+        self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
 
         # Import petitRADTRANS here because it is slow
 
