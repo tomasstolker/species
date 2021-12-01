@@ -1014,6 +1014,22 @@ class Database:
                     )
                     read_spec[key][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
+                if read_spec[key].shape[0] == 3 and read_spec[key].shape[1] != 3:
+                    warnings.warn(f"Transposing the data of {key} because "
+                                  f"the first instead of the second axis "
+                                  f"has a length of 3.")
+
+                    read_spec[key] = read_spec[key].transpose()
+
+                nan_index = np.isnan(read_spec[key][:, 1])
+
+                if len(np.where(nan_index)[0]) != 0:
+                    read_spec[key] = read_spec[key][~nan_index, :]
+
+                    warnings.warn(f"Found {len(nan_index)} fluxes with NaN in "
+                                  f"the data of {key}. Removing the spectral "
+                                  f"fluxes that contain a NaN.")
+
                 wavelength = read_spec[key][:, 0]
                 flux = read_spec[key][:, 1]
                 error = read_spec[key][:, 2]

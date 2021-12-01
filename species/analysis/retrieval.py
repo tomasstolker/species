@@ -627,7 +627,7 @@ class AtmosphericRetrieval:
             top, bottom, and 3 intermediate pressures in the atmosphere. This makes the retrieval
             much slower. To use this parameter, the opacities should be recreated with
             :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 10$
-            (i.e. ``spec_res=30``).
+            (i.e. ``spec_res=10``).
         temp_nodes : int, None
             Number of free temperature nodes that are used when ``pt_profile='monotonic'`` or
             ``pt_profile='free'``.
@@ -1764,6 +1764,7 @@ class AtmosphericRetrieval:
                         plt.savefig("pt_low_res.pdf", bbox_inches="tight")
                         plt.clf()
 
+                    # Bolometric flux (W m-2) from the low-resolution spectrum
                     f_bol = simps(flux_lowres, wlen_lowres)
 
                     # Calculate again a low-resolution spectrum (R = 10) but now
@@ -1788,10 +1789,18 @@ class AtmosphericRetrieval:
                     #                     lowres_radtrans.line_struc_kappas[:, :, 0, :],
                     #                     lowres_radtrans.continuum_opa_scat_emis)
 
-                    h_bol = -1e-3 * lowres_radtrans.h_bol
+                    # h_bol = -1e-3 * lowres_radtrans.h_bol
+                    #
+                    # # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
+                    # flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
 
-                    # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
-                    flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
+                    h_bol = -1.0 * lowres_radtrans.h_bol
+
+                    # (erg s-1 cm-2) -> (W cm-2)
+                    h_bol *= 1e-7
+
+                    # (W cm-2) -> (W m-2)
+                    h_bol *= 1e4
 
                     sigma_fbol = check_flux * f_bol
 
@@ -2029,6 +2038,13 @@ class AtmosphericRetrieval:
                 / (self.distance * constants.PARSEC)
             ) ** 2.0
 
+            if check_flux:
+                flux_lowres *= (
+                    cube[cube_index["radius"]]
+                    * constants.R_JUP
+                    / (self.distance * constants.PARSEC)
+                ) ** 2.0
+
             for item in cross_corr:
                 lbl_flux[item] *= (
                     cube[cube_index["radius"]]
@@ -2202,9 +2218,13 @@ class AtmosphericRetrieval:
 
                     else:
                         # Return -inf if logarithm of negative value
-                        return -np.inf
+                        return -np.iff
 
                 if plotting:
+                    if check_flux:
+                        plt.plot(wlen_lowres, flux_lowres, ls="--", color="tab:gray")
+                        plt.xlim(np.amin(data_wavel) - 0.1, np.amax(data_wavel) + 0.1)
+
                     plt.errorbar(
                         data_wavel,
                         scaling[item] * data_flux,
