@@ -1789,11 +1789,9 @@ class AtmosphericRetrieval:
                     #                     lowres_radtrans.line_struc_kappas[:, :, 0, :],
                     #                     lowres_radtrans.continuum_opa_scat_emis)
 
-                    # h_bol = -1e-3 * lowres_radtrans.h_bol
-                    #
-                    # # (erg s-1 cm-2 Hz-1) -> (W m-2 um-1)
-                    # flux_lowres *= 1e3 * constants.LIGHT / wlen_lowres ** 2.0
-
+                    # f_bol = 4 x pi x h_bol
+                    # petitRADTRANS uses cgs units so
+                    # Radtrans.h_bol is in erg s-1 cm-2?
                     h_bol = -1.0 * lowres_radtrans.h_bol
 
                     # (erg s-1 cm-2) -> (W cm-2)
@@ -2038,7 +2036,7 @@ class AtmosphericRetrieval:
                 / (self.distance * constants.PARSEC)
             ) ** 2.0
 
-            if check_flux:
+            if check_flux is not None:
                 flux_lowres *= (
                     cube[cube_index["radius"]]
                     * constants.R_JUP
@@ -2221,7 +2219,7 @@ class AtmosphericRetrieval:
                         return -np.iff
 
                 if plotting:
-                    if check_flux:
+                    if check_flux is not None:
                         plt.plot(wlen_lowres, flux_lowres, ls="--", color="tab:gray")
                         plt.xlim(np.amin(data_wavel) - 0.1, np.amax(data_wavel) + 0.1)
 
