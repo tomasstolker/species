@@ -183,7 +183,7 @@ def pt_ret_model(
             # from log(temperature)
             tnew = np.exp(np.cumsum(tnew) + tstart)
 
-            # Add upper radiative and lower conective
+            # Add upper radiative and lower covective
             # part into one single array
             tfinal = copy.copy(t_take)
             tfinal[conv_index] = tnew

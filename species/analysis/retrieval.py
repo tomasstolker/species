@@ -418,6 +418,7 @@ class AtmosphericRetrieval:
             self.parameters.append("opa_index")
             self.parameters.append("log_p_base")
             self.parameters.append("albedo")
+            self.parameters.append("opa_knee")
 
         elif len(self.cloud_species) > 0:
             self.parameters.append("fsed")
@@ -1200,6 +1201,18 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["albedo"]] = albedo
 
+                if "opa_knee" in bounds:
+                    opa_knee = (
+                        bounds["opa_knee"][0]
+                        + (bounds["opa_knee"][1] - bounds["opa_knee"][0])
+                        * cube[cube_index["opa_knee"]]
+                    )
+                else:
+                    # Default: 0.5 - 5.0
+                    opa_knee = 0.5 + 5.5 * cube[cube_index["opa_knee"]]
+
+                cube[cube_index["opa_knee"]] = opa_knee
+
                 if "log_tau_cloud" in bounds:
                     log_tau_cloud = (
                         bounds["log_tau_cloud"][0]
@@ -1712,6 +1725,7 @@ class AtmosphericRetrieval:
                     "opa_index",
                     "log_p_base",
                     "albedo",
+                    "opa_knee",
                 ]
 
                 cloud_dict = {}

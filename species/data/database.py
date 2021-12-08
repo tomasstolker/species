@@ -1023,10 +1023,10 @@ class Database:
 
                 nan_index = np.isnan(read_spec[key][:, 1])
 
-                if len(np.where(nan_index)[0]) != 0:
+                if sum(nan_index) != 0:
                     read_spec[key] = read_spec[key][~nan_index, :]
 
-                    warnings.warn(f"Found {len(nan_index)} fluxes with NaN in "
+                    warnings.warn(f"Found {sum(nan_index)} fluxes with NaN in "
                                   f"the data of {key}. Removing the spectral "
                                   f"fluxes that contain a NaN.")
 
@@ -2697,7 +2697,9 @@ class Database:
             if "pt_smooth" in radtrans:
                 dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
 
-            if "temp_nodes" in radtrans:
+            if radtrans["temp_nodes"] is None:
+                dset.attrs["temp_nodes"] = "None"
+            else:
                 dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
 
             if "max_press" in radtrans:
@@ -3070,10 +3072,10 @@ class Database:
 
         # Get free temperarture nodes
 
-        if "temp_nodes" in dset.attrs:
-            temp_nodes = dset.attrs["temp_nodes"]
-        else:
+        if dset.attrs["temp_nodes"] == "None":
             temp_nodes = None
+        else:
+            temp_nodes = dset.attrs["temp_nodes"]
 
         # Get distance
 
