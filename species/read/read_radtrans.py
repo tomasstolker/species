@@ -469,7 +469,7 @@ class ReadRadtrans:
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
-            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
+            wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
                 self.rt_object,
                 self.pressure,
                 temp,

@@ -1,5 +1,5 @@
 """
-Constants in SI units.
+Physical constants in SI units.
 """
 
 PLANCK = 6.62607004e-34  # (m2 kg s-1)

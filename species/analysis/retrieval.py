@@ -481,6 +481,12 @@ class AtmosphericRetrieval:
         if "pt_smooth" in bounds:
             self.parameters.append("pt_smooth")
 
+        # Add mixing-length parameter for convective
+        # component when using check_flux
+
+        if "mix_length" in bounds:
+            self.parameters.append("mix_length")
+
         # Add cloud optical depth parameter
 
         if "log_tau_cloud" in bounds:
@@ -1408,6 +1414,15 @@ class AtmosphericRetrieval:
                     * cube[cube_index["pt_smooth"]]
                 )
 
+            # Mixing-length for convective flux
+
+            if "mix_length" in bounds:
+                cube[cube_index["mix_length"]] = (
+                    bounds["mix_length"][0]
+                    + (bounds["mix_length"][1] - bounds["mix_length"][0])
+                    * cube[cube_index["mix_length"]]
+                )
+
         @typechecked
         def loglike(cube, n_dim: int, n_param: int) -> float:
             """
@@ -1747,7 +1762,12 @@ class AtmosphericRetrieval:
 
                     # Calculate low-resolution spectrum (R = 10) to initiate the attributes
 
-                    wlen_lowres, flux_lowres, _ = retrieval_util.calc_spectrum_clouds(
+                    (
+                        wlen_lowres,
+                        flux_lowres,
+                        _,
+                        mmw,
+                    ) = retrieval_util.calc_spectrum_clouds(
                         lowres_radtrans,
                         self.pressure,
                         temp,
@@ -1803,9 +1823,7 @@ class AtmosphericRetrieval:
                     #                     lowres_radtrans.line_struc_kappas[:, :, 0, :],
                     #                     lowres_radtrans.continuum_opa_scat_emis)
 
-                    # f_bol = 4 x pi x h_bol
-                    # petitRADTRANS uses cgs units so
-                    # Radtrans.h_bol is in erg s-1 cm-2?
+                    # f_bol = 4 x pi x h_bol (erg s-1 cm-2)
                     h_bol = -1.0 * lowres_radtrans.h_bol
 
                     # (erg s-1 cm-2) -> (W cm-2)
@@ -1814,11 +1832,95 @@ class AtmosphericRetrieval:
                     # (W cm-2) -> (W m-2)
                     h_bol *= 1e4
 
+                    # Number of pressures
+                    n_press = lowres_radtrans.press.size
+
+                    # Interpolate abundances to get MMW and nabla_ad
+                    abund_test = interpol_abundances(
+                        np.full(n_press, cube[cube_index["c_o_ratio"]]),
+                        np.full(n_press, cube[cube_index["metallicity"]]),
+                        lowres_radtrans.temp,
+                        lowres_radtrans.press * 1e-6,  # (bar)
+                        Pquench_carbon=p_quench,
+                    )
+
+                    # Mean molecular weight
+                    mmw = abund_test["MMW"]
+
+                    # Adiabatic temperature gradient
+                    nabla_ad = abund_test["nabla_ad"]
+
+                    # Density (kg m-3)
+                    rho = (
+                        1e-1 * lowres_radtrans.press  # (Ba) -> (Pa)
+                        / constants.BOLTZMANN
+                        / lowres_radtrans.temp
+                        * mmw
+                        * constants.ATOMIC_MASS
+                    )
+
+                    # (kg m-3) -> (g cm-3)
+                    rho *= 1e-3
+
+                    # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
+                    gamma = np.diff(np.log(lowres_radtrans.press)) / np.diff(
+                        np.log(rho)
+                    )
+
+                    # Extend adiabatic index to array of same length as pressure structure
+                    ad_index = np.zeros(lowres_radtrans.press.shape)
+                    ad_index[0] = gamma[0]
+                    ad_index[-1] = gamma[-1]
+                    ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
+
+                    # Specific heat capacity (erg g-1 K-1)
+                    c_p = (
+                        (1.0 / (ad_index - 1.0) + 1.0)
+                        * lowres_radtrans.press
+                        / (rho * lowres_radtrans.temp)
+                    )
+
+                    # Mixing length in pressure scale heights
+
+                    if "mix_length" in cube_index:
+                        mix_length = cube[cube_index["mix_length"]]
+                    else:
+                        mix_length = 1.
+
+                    # Calculate the convective flux
+
+                    f_conv = retrieval_util.convective_flux(
+                        lowres_radtrans.press,  # (Ba)
+                        lowres_radtrans.temp,  # (K)
+                        mmw,
+                        nabla_ad,
+                        lowres_radtrans.kappa_rosseland,  # (cm2 g-1)
+                        rho,  # (g cm-3)
+                        c_p,  # (erg g-1 K-1)
+                        cube[cube_index["logg"]],  # log10(g/(cm s-2))
+                        f_bol,  # (W m-2)
+                        mix_length=mix_length,
+                    )
+
+                    f_conv[np.isnan(f_conv)] = 0.
+
+                    # if np.sum(np.isnan(f_conv)) > 0:
+                    #     return -np.inf
+                        
+                    print(f_conv/f_bol)
+
+                    # Bolometric flux = radiative + convective
+                    f_bol += f_conv
+
+                    # Accuracy on bolometric flux for Gaussian prior
                     sigma_fbol = check_flux * f_bol
+
+                    # Gaussian prior for bolometric flux
 
                     ln_prior += np.sum(
                         -0.5 * (4.0 * np.pi * h_bol - f_bol) ** 2 / sigma_fbol ** 2
                     )
+
                     ln_prior += (
                         -0.5 * h_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
                     )
@@ -1846,7 +1948,7 @@ class AtmosphericRetrieval:
 
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
-                wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clouds(
+                wlen_micron, flux_lambda, _, _ = retrieval_util.calc_spectrum_clouds(
                     rt_object,
                     self.pressure,
                     temp,
@@ -1909,6 +2011,7 @@ class AtmosphericRetrieval:
                     (
                         lbl_wavel[item],
                         lbl_flux[item],
+                        _,
                         _,
                     ) = retrieval_util.calc_spectrum_clouds(
                         lbl_radtrans[item],

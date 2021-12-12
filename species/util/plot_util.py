@@ -485,6 +485,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("albedo")
         param[index] = r"$\omega$"
 
+    if "opa_knee" in param:
+        index = param.index("opa_knee")
+        param[index] = r"$\lambda_\mathregular{R-J}$ (µm)"
+
     return param
 
 

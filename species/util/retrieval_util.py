@@ -853,7 +853,9 @@ def calc_spectrum_clouds(
     contribution: bool = False,
     tau_cloud: Optional[float] = None,
     cloud_wavel: Optional[Tuple[float, float]] = None,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+) -> Tuple[
+    Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray
+]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere.
 
@@ -924,6 +926,8 @@ def calc_spectrum_clouds(
         Flux (W m-2 um-1).
     np.ndarray, None
         Emission contribution.
+    np.ndarray
+        Array with mean molecular weight.
     """
 
     if chemistry == "equilibrium":
@@ -1086,8 +1090,8 @@ def calc_spectrum_clouds(
             fsed = cloud_dict["fsed"]
             log_kzz = cloud_dict["log_kzz"]
             plt.title(
-                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, " +
-                f"X_b = {log_x_base_item:.2f}"
+                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, "
+                + f"X_b = {log_x_base_item:.2f}"
             )
             plt.savefig(f"{item.lower()}_clouds.pdf", bbox_inches="tight")
             plt.clf()
@@ -1195,7 +1199,7 @@ def calc_spectrum_clouds(
         plt.savefig("cloud_opacity.pdf", bbox_inches="tight")
         plt.clf()
 
-    return wavel, f_lambda, contr_em
+    return wavel, f_lambda, contr_em, mmw
 
 
 @typechecked
@@ -2340,7 +2344,7 @@ def quench_pressure(
     Returns
     -------
     float, None
-        Quenching pressure (bar)
+        Quenching pressure (bar).
     """
 
     # Interpolate the equilibbrium abundances
@@ -2397,3 +2401,100 @@ def quench_pressure(
         )
 
     return p_quench
+
+
+def convective_flux(
+    press: np.ndarray,
+    temp: np.ndarray,
+    mmw: np.ndarray,
+    nabla_ad: np.ndarray,
+    kappa_r: np.ndarray,
+    density: np.ndarray,
+    c_p: np.ndarray,
+    log_g: float,
+    f_bol: float,
+    mix_length: float = 1.0,
+) -> np.ndarray:
+    """
+    Function for calculating the convective flux with mixing-length
+    theory. This function has been adopted from petitCODE (Paul
+    Mollière, MPIA) and was converted from Fortran to Python.
+
+    Parameters
+    ----------
+    press : np.ndarray
+        Array with the pressures (bar).
+    temp : np.ndarray
+        Array with the temperatures (K) at ``pressure``.
+    mmw : np.ndarray
+        Array with the mean molecular weights at ``pressure``.
+    nabla_ad : np.ndarray
+        Array with the adiabatic temperature gradient at ``pressure``.
+    kappa_r : np.ndarray
+        Array with the Rosseland mean opacity at ``pressure``.
+    density : np.ndarray
+        Array with the density (g cm-3) at ``pressure``.
+    c_p : np.ndarray
+        Array with the specific heat capacity (erg g-1 K-1) at
+        constant pressure, ``pressure``.
+    log_g : float
+        Logarithm of the surface gravity (cm s-2).
+    f_bol : float
+        Bolometric flux (W m-2) at the top of the atmosphere,
+        calculated from the low-resolution spectrum.
+    mix_length : float
+        Mixing length for the convection in units of the pressure
+        scale height (default: 1.0).
+
+    Returns
+    -------
+    np.ndarray
+        Convective flux (W m-2) at each pressure.
+    """
+
+    gravity = 1e-2 * 10.0 ** log_g  # (m s-2)
+    T_transp = (f_bol / constants.SIGMA_SB) ** 0.25  # (K)
+    nabla_rad = 3.0 * kappa_r * press * T_transp ** 4.0 / 16.0 / gravity / temp ** 4.0
+    h_press = constants.BOLTZMANN * temp / (mmw * constants.ATOMIC_MASS * gravity)  # (m)
+    l_mix = mix_length * h_press  # (m)
+
+    U = (
+        (12.0 * constants.SIGMA_SB * temp ** 3.0)
+        / (c_p * density ** 2.0 * kappa_r * l_mix ** 2.0)
+        * np.sqrt(8.0 * h_press / gravity)
+    )
+
+    W = nabla_rad - nabla_ad
+
+    # TODO thesis: 2336U^4W
+    A = (
+        1168.0 * U ** 3.0
+        + 2187 * U * W
+        + 27.0
+        * np.sqrt(
+            3.0
+            * (2048.0 * U ** 6.0 + 2236.0 * U ** 4.0 * W + 2187.0 * U ** 2.0 * W ** 2.0)
+        )
+    ) ** (1.0 / 3.0)
+
+    xi = (
+        19.0 / 27.0 * U
+        - 184.0 / 27.0 * 2.0 ** (1.0 / 3.0) * U ** 2.0 / A
+        + 2.0 ** (2.0 / 3.0) / 27.0 * A
+    )
+
+    nabla = xi ** 2.0 + nabla_ad - U ** 2.0
+    nabla_e = nabla_ad + 2.0 * U * xi - 2.0 * U ** 2.0
+
+    f_conv = (
+        density
+        * c_p
+        * temp
+        * np.sqrt(gravity)
+        * (mix_length * h_press) ** 2.0
+        / (4.0 * np.sqrt(2.0))
+        * h_press ** (-3.0 / 2.0)
+        * (nabla - nabla_e) ** (3.0 / 2.0)
+    )
+
+    return f_conv
