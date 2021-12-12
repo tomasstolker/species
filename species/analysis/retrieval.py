@@ -1904,11 +1904,6 @@ class AtmosphericRetrieval:
 
                     f_conv[np.isnan(f_conv)] = 0.
 
-                    # if np.sum(np.isnan(f_conv)) > 0:
-                    #     return -np.inf
-                        
-                    print(f_conv/f_bol)
-
                     # Bolometric flux = radiative + convective
                     f_bol += f_conv
 
