@@ -106,12 +106,13 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
-        self.max_press = max_press
 
-        # Set maximum pressure if needed
+        # Set maximum pressure
         
-        if self.max_press is None:
+        if max_press is None:
             self.max_press = 1e3
+        else:
+            self.max_press = max_press
 
         # Set the wavelength range
 
@@ -685,7 +686,8 @@ class ReadRadtrans:
 
         if hasattr(self.rt_object, "h_bol"):
             pressure = 1e-6*self.rt_object.press  # (bar)
-            f_bol = -4.*np.pi*self.rt_object.h_bol  # (W m-2)
+            f_bol = -4.*np.pi*self.rt_object.h_bol
+            f_bol *= 1e-3  # (erg s-1 cm-2) -> (W m-2)
             bol_flux = np.column_stack((pressure, f_bol))
 
         else:

@@ -549,6 +549,30 @@ class AtmosphericRetrieval:
             if item[-8:] == "_all_iso":
                 mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
 
+            elif item[-14:] == "_all_iso_Chubb":
+                mol_masses[item[:-14]] = Formula(item[:-14]).isotope.massnumber
+
+            elif item[-15:] == "_all_iso_HITEMP":
+                mol_masses[item[:-15]] = Formula(item[:-15]).isotope.massnumber
+
+            elif item[-7:] == "_HITEMP":
+                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
+
+            elif item[-7:] == "_allard":
+                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
+
+            elif item[-8:] == "_burrows":
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            elif item[-8:] == "_lor_cut":
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            elif item[-11:] == "_all_Exomol":
+                mol_masses[item[:-11]] = Formula(item[:-11]).isotope.massnumber
+
+            elif item[-9:] == "_all_Plez":
+                mol_masses[item[:-9]] = Formula(item[:-9]).isotope.massnumber
+
             else:
                 mol_masses[item] = Formula(item).isotope.massnumber
 
@@ -1799,7 +1823,7 @@ class AtmosphericRetrieval:
                         plt.clf()
 
                     # Bolometric flux (W m-2) from the low-resolution spectrum
-                    f_bol = simps(flux_lowres, wlen_lowres)
+                    f_bol_spec = simps(flux_lowres, wlen_lowres)
 
                     # Calculate again a low-resolution spectrum (R = 10) but now
                     # with the new Feautrier function from petitRADTRANS
@@ -1824,13 +1848,13 @@ class AtmosphericRetrieval:
                     #                     lowres_radtrans.continuum_opa_scat_emis)
 
                     # f_bol = 4 x pi x h_bol (erg s-1 cm-2)
-                    h_bol = -1.0 * lowres_radtrans.h_bol
+                    f_bol = -1.0 * 4. * np.pi * lowres_radtrans.h_bol
 
                     # (erg s-1 cm-2) -> (W cm-2)
-                    h_bol *= 1e-7
+                    f_bol *= 1e-7
 
                     # (W cm-2) -> (W m-2)
-                    h_bol *= 1e4
+                    f_bol *= 1e4
 
                     # Number of pressures
                     n_press = lowres_radtrans.press.size
@@ -1850,22 +1874,20 @@ class AtmosphericRetrieval:
                     # Adiabatic temperature gradient
                     nabla_ad = abund_test["nabla_ad"]
 
+                    # Pressure (Ba) -> (Pa)
+                    press_pa = 1e-1*lowres_radtrans.press
+
                     # Density (kg m-3)
                     rho = (
-                        1e-1 * lowres_radtrans.press  # (Ba) -> (Pa)
+                        press_pa  # (Pa)
                         / constants.BOLTZMANN
                         / lowres_radtrans.temp
                         * mmw
                         * constants.ATOMIC_MASS
                     )
 
-                    # (kg m-3) -> (g cm-3)
-                    rho *= 1e-3
-
                     # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
-                    gamma = np.diff(np.log(lowres_radtrans.press)) / np.diff(
-                        np.log(rho)
-                    )
+                    gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
 
                     # Extend adiabatic index to array of same length as pressure structure
                     ad_index = np.zeros(lowres_radtrans.press.shape)
@@ -1873,10 +1895,10 @@ class AtmosphericRetrieval:
                     ad_index[-1] = gamma[-1]
                     ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
 
-                    # Specific heat capacity (erg g-1 K-1)
+                    # Specific heat capacity (J kg-1 K-1)
                     c_p = (
                         (1.0 / (ad_index - 1.0) + 1.0)
-                        * lowres_radtrans.press
+                        * press_pa
                         / (rho * lowres_radtrans.temp)
                     )
 
@@ -1890,41 +1912,41 @@ class AtmosphericRetrieval:
                     # Calculate the convective flux
 
                     f_conv = retrieval_util.convective_flux(
-                        lowres_radtrans.press,  # (Ba)
+                        press_pa,  # (Pa)
                         lowres_radtrans.temp,  # (K)
                         mmw,
                         nabla_ad,
-                        lowres_radtrans.kappa_rosseland,  # (cm2 g-1)
-                        rho,  # (g cm-3)
-                        c_p,  # (erg g-1 K-1)
-                        cube[cube_index["logg"]],  # log10(g/(cm s-2))
-                        f_bol,  # (W m-2)
+                        1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
+                        rho,  # (kg m-3)
+                        c_p,  # (J kg-1 K-1)
+                        1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
+                        f_bol_spec,  # (W m-2)
                         mix_length=mix_length,
                     )
 
-                    f_conv[np.isnan(f_conv)] = 0.
-
                     # Bolometric flux = radiative + convective
-                    f_bol += f_conv
+                    press_bar = 1e-6*lowres_radtrans.press  # (bar)
+                    f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
 
                     # Accuracy on bolometric flux for Gaussian prior
-                    sigma_fbol = check_flux * f_bol
+                    sigma_fbol = check_flux * f_bol_spec
 
-                    # Gaussian prior for bolometric flux
+                    # Gaussian prior for comparing the bolometric flux
+                    # that is calculated from the spectrum and the
+                    # bolometric flux at each pressure
 
                     ln_prior += np.sum(
-                        -0.5 * (4.0 * np.pi * h_bol - f_bol) ** 2 / sigma_fbol ** 2
+                        -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol ** 2
                     )
 
                     ln_prior += (
-                        -0.5 * h_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
+                        -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
                     )
-
                     # for i in range(i_conv):
                     # for i in range(lowres_radtrans.press.shape[0]):
                     #     if not isclose(
+                    #         f_bol_spec,
                     #         f_bol,
-                    #         4.0 * np.pi * h_bol[i],
                     #         rel_tol=check_flux,
                     #         abs_tol=0.0,
                     #     ):
