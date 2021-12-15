@@ -1887,13 +1887,14 @@ class AtmosphericRetrieval:
                     )
 
                     # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
-                    gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
+                    # gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
+                    ad_index = 1. / (1. - nabla_ad)
 
                     # Extend adiabatic index to array of same length as pressure structure
-                    ad_index = np.zeros(lowres_radtrans.press.shape)
-                    ad_index[0] = gamma[0]
-                    ad_index[-1] = gamma[-1]
-                    ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
+                    # ad_index = np.zeros(lowres_radtrans.press.shape)
+                    # ad_index[0] = gamma[0]
+                    # ad_index[-1] = gamma[-1]
+                    # ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
 
                     # Specific heat capacity (J kg-1 K-1)
                     c_p = (
