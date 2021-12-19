@@ -53,7 +53,9 @@ def get_line_species() -> list:
         "PH3",
         "TiO",
         "TiO_all_Exomol",
+        "TiO_all_Plez",
         "VO",
+        "VO_Plez",
         "FeH",
         "H2O_main_iso",
         "CH4_main_iso",
@@ -605,6 +607,7 @@ def create_abund_dict(
                 item_replace = item_replace.replace("_burrows", "")
                 item_replace = item_replace.replace("_all_Plez", "")
                 item_replace = item_replace.replace("_all_Exomol", "")
+                item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace][indices]
 
@@ -644,6 +647,7 @@ def create_abund_dict(
                 item_replace = item_replace.replace("_burrows", "")
                 item_replace = item_replace.replace("_all_Plez", "")
                 item_replace = item_replace.replace("_all_Exomol", "")
+                item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace][::3]
 
@@ -683,6 +687,7 @@ def create_abund_dict(
                 item_replace = item_replace.replace("_burrows", "")
                 item_replace = item_replace.replace("_all_Plez", "")
                 item_replace = item_replace.replace("_all_Exomol", "")
+                item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace]
 
@@ -1634,6 +1639,7 @@ def atomic_masses() -> dict:
     masses["H2S"] = 34.0
     masses["H2S_main_iso"] = 34.0
     masses["VO"] = 67.0
+    masses["VO_Plez"] = 67.0
     masses["TiO"] = 64.0
     masses["TiO_all_Exomol"] = 64.0
     masses["TiO_all_Plez"] = 64.0
