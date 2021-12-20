@@ -41,7 +41,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
 
     data_url = "https://home.strw.leidenuniv.nl/~stolker/species/allers_liu_2013.tgz"
     data_file = os.path.join(input_path, "allers_liu_2013.tgz")
-    data_folder = os.path.join(input_path, "allers+2014/")
+    data_folder = os.path.join(input_path, "allers+2013/")
 
     if not os.path.isfile(data_file):
         print(f"Downloading {print_text} (173 kB)...", end="", flush=True)

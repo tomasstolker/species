@@ -698,6 +698,9 @@ def plot_grid_statistic(
                     linewidths=0.7,
                 )
 
+            # manual = [(2350, 0.8), (2500, 0.8), (2600, 0.8), (2700, 0.8),
+            #           (2800, 0.8), (2950, 0.8), (3100, 0.8), (3300, 0.8)]
+
             ax.clabel(cs, cs.levels, inline=True, fontsize=8, fmt="%1.1f")
 
         # if extra_scaling is not None and len(coord_points[2]) > 1:

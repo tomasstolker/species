@@ -698,6 +698,20 @@ def get_data() -> Dict[
             "mass_companion": (12.0, 1.0),  # Luhman et al. 2006
             "accretion": False,
         },
+        "HD 19467 B": {
+            "distance": (32.03, 0.02),
+            "app_mag": {
+                "Paranal/SPHERE.IRDIS_D_H23_2": (16.95, 0.05),  # Maire et al. 2020
+                "Paranal/SPHERE.IRDIS_D_H23_3": (17.88, 0.05),  # Maire et al. 2020
+                "Paranal/SPHERE.IRDIS_D_K12_1": (16.92, 0.07),  # Maire et al. 2020
+                "Paranal/SPHERE.IRDIS_D_K12_2": (18.52, 0.08),  # Maire et al. 2020
+                "Paranal/NACO.Lp": (15.46, 0.17),  # Maire et al. 2020
+            },
+            "semi_major": (54., 9.),  # Maire et al. 2020
+            "mass_star": (0.95, 0.02),  # Maire et al. 2020
+            "mass_companion": (74., 12.),  # Maire et al. 2020
+            "accretion": False,
+        },
     }
 
     return data
