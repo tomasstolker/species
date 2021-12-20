@@ -4,6 +4,7 @@ transfer code petitRADTRANS`` (see https://petitradtrans.readthedocs.io).
 """
 
 import os
+import inspect
 import json
 import time
 import warnings
@@ -331,6 +332,7 @@ class AtmosphericRetrieval:
         quenching: Optional[str],
         pt_profile: str,
         fit_corr: List[str],
+        rt_object,
     ) -> None:
         """
         Function to set the list with parameters.
@@ -353,6 +355,8 @@ class AtmosphericRetrieval:
         fit_corr : list(str), None
             List with spectrum names for which the correlation length and fractional amplitude are
             fitted (see Wang et al. 2020).
+        rt_object : petitRADTRANS.radtrans.Radtrans
+            Instance of ``Radtrans``.
 
         Returns
         -------
@@ -416,6 +420,21 @@ class AtmosphericRetrieval:
         # Cloud parameters
 
         if "log_kappa_0" in bounds:
+            inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+
+            if "new_simple_cloud_params" not in inspect_prt.args:
+                raise RuntimeError("The Radtrans.calc_flux method "
+                                   "from petitRADTRANS does not have "
+                                   "the new_simple_cloud_params "
+                                   "parameter. Probably you are "
+                                   "using the main package "
+                                   "instead of the fork from "
+                                   "https://gitlab.com/tomasstolker"
+                                   "/petitRADTRANS. The parameterized "
+                                   "cloud opacities (i.e. with "
+                                   "log_kappa_0, opa_index, albedo) "
+                                   "can therefore not be used.")
+
             self.parameters.append("fsed")
             self.parameters.append("log_kappa_0")
             self.parameters.append("opa_index")
@@ -761,9 +780,25 @@ class AtmosphericRetrieval:
         if cross_corr is None:
             cross_corr = []
 
+        # Create an instance of Ratrans
+        # The names in self.cloud_species are changed after initiating Radtrans
+
+        print("Setting up petitRADTRANS...")
+
+        rt_object = Radtrans(
+            line_species=self.line_species,
+            rayleigh_species=["H2", "He"],
+            cloud_species=self.cloud_species,
+            continuum_opacities=["H2-H2", "H2-He"],
+            wlen_bords_micron=self.wavel_range,
+            mode="c-k",
+            test_ck_shuffle_comp=self.scattering,
+            do_scat_emis=self.scattering,
+        )
+
         # Create list with parameters for MultiNest
 
-        self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr)
+        self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr, rt_object)
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -784,21 +819,7 @@ class AtmosphericRetrieval:
 
         self.pt_smooth = pt_smooth
 
-        # Create an instance of Ratrans
-        # The names in self.cloud_species are changed after initiating Radtrans
-
-        print("Setting up petitRADTRANS...")
-
-        rt_object = Radtrans(
-            line_species=self.line_species,
-            rayleigh_species=["H2", "He"],
-            cloud_species=self.cloud_species,
-            continuum_opacities=["H2-H2", "H2-He"],
-            wlen_bords_micron=self.wavel_range,
-            mode="c-k",
-            test_ck_shuffle_comp=self.scattering,
-            do_scat_emis=self.scattering,
-        )
+        # Create instance of Radtrans for high-resolution spectra
 
         lbl_radtrans = {}
 
@@ -820,6 +841,9 @@ class AtmosphericRetrieval:
                 test_ck_shuffle_comp=self.scattering,
                 do_scat_emis=self.scattering,
             )
+
+        # Create instance of Radtrans with (very) low-resolution
+        # opacities for enforcing the bolometric flux
 
         if check_flux is not None:
 
@@ -2000,15 +2024,15 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                if hasattr(rt_object, "pphot") and phot_press is not None \
-                    and (phot_press / rt_object.pphot > 5.0
-                    or phot_press / rt_object.pphot < 0.2
-                ):
-                    # Remove the sample if the photospheric pressure from the P-T profile is more
-                    # than a factor 5 larger than the photospheric pressure that is calculated from
-                    # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
-                    # See Eq. 7 in GRAVITY Collaboration et al. (2020)
-                    return -np.inf
+                # if hasattr(rt_object, "pphot") and phot_press is not None \
+                #     and (phot_press / rt_object.pphot > 5.0
+                #     or phot_press / rt_object.pphot < 0.2
+                # ):
+                #     # Remove the sample if the photospheric pressure from the P-T profile is more
+                #     # than a factor 5 larger than the photospheric pressure that is calculated from
+                #     # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
+                #     # See Eq. 7 in GRAVITY Collaboration et al. (2020)
+                #     return -np.inf
 
                 # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
                 #     # Remove the sample if the parametrized, pressure-dependent opacity is not
