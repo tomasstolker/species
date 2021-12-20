@@ -448,7 +448,7 @@ class AtmosphericRetrieval:
             self.parameters.append("sigma_lnorm")
 
             for item in self.cloud_species:
-                cloud_lower = item[:-6].lower()
+                cloud_lower = item[:-3].lower()
 
                 if f"{cloud_lower}_tau" in bounds:
                     self.parameters.append(f"{cloud_lower}_tau")
@@ -516,8 +516,8 @@ class AtmosphericRetrieval:
 
             if len(self.cloud_species) > 1:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = item[:-6].lower()
-                    cloud_2 = self.cloud_species[0][:-6].lower()
+                    cloud_1 = item[:-3].lower()
+                    cloud_2 = self.cloud_species[0][:-3].lower()
 
                     self.parameters.append(f"{cloud_1}_{cloud_2}_ratio")
 
