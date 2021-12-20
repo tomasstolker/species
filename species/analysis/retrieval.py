@@ -620,13 +620,16 @@ class AtmosphericRetrieval:
         temp_nodes: Optional[int] = None,
     ) -> None:
         """
-        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
-        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
-        has to to be build manually. See the ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
-        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
-        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
-        set before importing the ``species`` package, for example:
+        Function to run the ``PyMultiNest`` wrapper of the
+        ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
+        with ``pip`` from the PyPI repository, ``MultiNest`` has to to
+        be build manually. See the ``PyMultiNest`` documentation for :
+        details http://johannesbuchner.github.io/PyMultiNest/install.html.
+        Note that the library path of ``MultiNest`` should be set to
+        the environmental variable ``LD_LIBRARY_PATH`` on a Linux
+        machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the
+        variable can be set before importing the ``species`` package,
+        for example:
 
         .. code-block:: python
 
@@ -634,56 +637,69 @@ class AtmosphericRetrieval:
             >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
             >>> import species
 
-        When using MPI, it is also required to install ``mpi4py`` (e.g. ``pip install mpi4py``),
-        otherwise an error may occur when the ``output_folder`` is created by multiple processes.
+        When using MPI, it is also required to install ``mpi4py`` (e.g.
+        ``pip install mpi4py``), otherwise an error may occur when the
+        ``output_folder`` is created by multiple processes.
 
         Parameters
         ----------
         bounds : dict
             Dictionary with the prior boundaries.
         chemistry : str
-            The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
-            of free abundances (but constant with altitude).
+            The chemistry type: 'equilibrium' for equilibrium chemistry
+            or 'free' for retrieval of free abundances (but constant
+            with altitude).
         quenching : str, None
-            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
-            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
-            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
-            applied if the argument is set to ``None``.
+            Quenching type for CO/CH4/H2O abundances. Either the
+            quenching pressure (bar) is a free parameter
+            (``quenching='pressure'``) or the quenching pressure is
+            calculated from the mixing and chemical timescales
+            (``quenching='diffusion'``). The quenching is not applied
+            if the argument is set to ``None``.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere', 'free', or
-            'monotonic').
+            The parametrization for the pressure-temperature profile
+            ('molliere', 'free', or 'monotonic').
         fit_corr : list(str), None
-            List with spectrum names for which the correlation length and fractional amplitude are
-            fitted (see Wang et al. 2020).
+            List with spectrum names for which the correlation length
+            and fractional amplitude are fitted (see Wang et al. 2020).
         cross_corr : list(str), None
-            List with spectrum names for which a cross-correlation to log-likelihood mapping is
-            calculated instead of the regular least-squares approach (see Brogi & Line 2019). This
-            cross-correlation approach can be applied on high-resolution spectra. Currently, this
-            option only supports spectra that have been shifted to the planet's rest frame.
+            List with spectrum names for which a cross-correlation to
+            log-likelihood mapping is calculated instead of the regular
+            least-squares approach (see Brogi & Line 2019). This
+            cross-correlation approach can be applied on high-resolution
+            spectra. Currently, this option only supports spectra that
+            have been shifted to the planet's rest frame.
         n_live_points : int
             Number of live points.
         resume : bool
             Resume from a previous run.
         plotting : bool
-            Plot sample results for testing.
+            Plot sample results for testing purpose. Not recommended to
+            use when running the full retrieval.
         check_isothermal : bool
-            Check if there is an isothermal region below 1 bar. If so, discard the sample. This
-            parameter has not been properly tested. It is recommended to use the ``check_flux``
+            Check if there is an isothermal region below 1 bar. If so,
+            discard the sample. This parameter has not been properly
+            tested. It is recommended to use the ``check_flux``
             parameter instead.
         pt_smooth : float
-            Standard deviation of the Gaussian kernel that is used for smoothing the sampled
-            temperature nodes of the P-T profile. Only required with `pt_profile='free'` or
-            `pt_profile='monotonic'`. The argument should be given as log10(P/bar) with the default
-            value set to 0.3 dex.
+            Standard deviation of the Gaussian kernel that is used for
+            smoothing the sampled temperature nodes of the P-T profile.
+            Only required with `pt_profile='free'` or
+            `pt_profile='monotonic'`. The argument should be given as
+            log10(P/bar) with the default value set to 0.3 dex.
         check_flux : float, None
-            Relative tolerance that is used for ensuring a consistent bolometric flux between the
-            top, bottom, and 3 intermediate pressures in the atmosphere. This makes the retrieval
-            much slower. To use this parameter, the opacities should be recreated with
-            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities` at $R = 10$
-            (i.e. ``spec_res=10``).
+            Relative tolerance for enforcing a constant bolometric
+            flux at all pressures layers. To use this parameter, the
+            opacities should be recreated with
+            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
+            at $R = 10$ (i.e. ``spec_res=10``) and placed in
+            ``pRT_input_data_path``. By default, only the radiative
+            flux is considered. The convective flux is added to the
+            bolometric flux if the ``mix_length`` parameter (relative
+            to the pressure scale height) is included in ``bounds``.
         temp_nodes : int, None
-            Number of free temperature nodes that are used when ``pt_profile='monotonic'`` or
-            ``pt_profile='free'``.
+            Number of free temperature nodes that are used when
+            ``pt_profile='monotonic'`` or ``pt_profile='free'``.
 
         Returns
         -------
@@ -1933,27 +1949,25 @@ class AtmosphericRetrieval:
 
                         if "mix_length" in cube_index:
                             mix_length = cube[cube_index["mix_length"]]
-                        else:
-                            mix_length = 1.
 
-                        # Calculate the convective flux
+                            # Calculate the convective flux
 
-                        f_conv = retrieval_util.convective_flux(
-                            press_pa,  # (Pa)
-                            lowres_radtrans.temp,  # (K)
-                            mmw,
-                            nabla_ad,
-                            1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
-                            rho,  # (kg m-3)
-                            c_p,  # (J kg-1 K-1)
-                            1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
-                            f_bol_spec,  # (W m-2)
-                            mix_length=mix_length,
-                        )
+                            f_conv = retrieval_util.convective_flux(
+                                press_pa,  # (Pa)
+                                lowres_radtrans.temp,  # (K)
+                                mmw,
+                                nabla_ad,
+                                1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
+                                rho,  # (kg m-3)
+                                c_p,  # (J kg-1 K-1)
+                                1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
+                                f_bol_spec,  # (W m-2)
+                                mix_length=mix_length,
+                            )
 
-                        # Bolometric flux = radiative + convective
-                        press_bar = 1e-6*lowres_radtrans.press  # (bar)
-                        f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
+                            # Bolometric flux = radiative + convective
+                            press_bar = 1e-6*lowres_radtrans.press  # (bar)
+                            f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
 
                         # Accuracy on bolometric flux for Gaussian prior
                         sigma_fbol = check_flux * f_bol_spec
