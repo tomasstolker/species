@@ -6,6 +6,7 @@ transfer code petitRADTRANS`` (see https://petitradtrans.readthedocs.io).
 import os
 import json
 import time
+import warnings
 
 # from math import isclose
 from typing import Dict, List, Optional, Tuple, Union
@@ -370,7 +371,9 @@ class AtmosphericRetrieval:
             self.parameters.append("tint")
             self.parameters.append("alpha")
             self.parameters.append("log_delta")
-            self.parameters.append("log_sigma_alpha")
+
+            if "log_sigma_alpha" in bounds:
+                self.parameters.append("log_sigma_alpha")
 
             if pt_profile == "molliere":
                 self.parameters.append("t1")
@@ -1017,16 +1020,14 @@ class AtmosphericRetrieval:
                 # see Eq. 6 in GRAVITY Collaboration et al. (2020)
 
                 if "log_sigma_alpha" in bounds:
+                    # Recommended range: -4 - 1
                     log_sigma_alpha = (
                         bounds["log_sigma_alpha"][0]
                         + (bounds["log_sigma_alpha"][1] - bounds["log_sigma_alpha"][0])
                         * cube[cube_index["log_sigma_alpha"]]
                     )
-                else:
-                    # Default: -4 - 1
-                    log_sigma_alpha = 1.0 - 5.0 * cube[cube_index["log_sigma_alpha"]]
 
-                cube[cube_index["log_sigma_alpha"]] = log_sigma_alpha
+                    cube[cube_index["log_sigma_alpha"]] = log_sigma_alpha
 
             elif pt_profile == "free":
                 # Free temperature nodes (K)
@@ -1847,122 +1848,134 @@ class AtmosphericRetrieval:
                     #                     lowres_radtrans.line_struc_kappas[:, :, 0, :],
                     #                     lowres_radtrans.continuum_opa_scat_emis)
 
-                    # f_bol = 4 x pi x h_bol (erg s-1 cm-2)
-                    f_bol = -1.0 * 4. * np.pi * lowres_radtrans.h_bol
+                    if hasattr(lowres_radtrans, "h_bol"):
+                        # f_bol = 4 x pi x h_bol (erg s-1 cm-2)
+                        f_bol = -1.0 * 4. * np.pi * lowres_radtrans.h_bol
 
-                    # (erg s-1 cm-2) -> (W cm-2)
-                    f_bol *= 1e-7
+                        # (erg s-1 cm-2) -> (W cm-2)
+                        f_bol *= 1e-7
 
-                    # (W cm-2) -> (W m-2)
-                    f_bol *= 1e4
+                        # (W cm-2) -> (W m-2)
+                        f_bol *= 1e4
 
-                    # Number of pressures
-                    n_press = lowres_radtrans.press.size
+                        # Number of pressures
+                        n_press = lowres_radtrans.press.size
 
-                    # Interpolate abundances to get MMW and nabla_ad
-                    abund_test = interpol_abundances(
-                        np.full(n_press, cube[cube_index["c_o_ratio"]]),
-                        np.full(n_press, cube[cube_index["metallicity"]]),
-                        lowres_radtrans.temp,
-                        lowres_radtrans.press * 1e-6,  # (bar)
-                        Pquench_carbon=p_quench,
-                    )
+                        # Interpolate abundances to get MMW and nabla_ad
+                        abund_test = interpol_abundances(
+                            np.full(n_press, cube[cube_index["c_o_ratio"]]),
+                            np.full(n_press, cube[cube_index["metallicity"]]),
+                            lowres_radtrans.temp,
+                            lowres_radtrans.press * 1e-6,  # (bar)
+                            Pquench_carbon=p_quench,
+                        )
 
-                    # Mean molecular weight
-                    mmw = abund_test["MMW"]
+                        # Mean molecular weight
+                        mmw = abund_test["MMW"]
 
-                    # Adiabatic temperature gradient
-                    nabla_ad = abund_test["nabla_ad"]
+                        # Adiabatic temperature gradient
+                        nabla_ad = abund_test["nabla_ad"]
 
-                    # Pressure (Ba) -> (Pa)
-                    press_pa = 1e-1*lowres_radtrans.press
+                        # Pressure (Ba) -> (Pa)
+                        press_pa = 1e-1*lowres_radtrans.press
 
-                    # Density (kg m-3)
-                    rho = (
-                        press_pa  # (Pa)
-                        / constants.BOLTZMANN
-                        / lowres_radtrans.temp
-                        * mmw
-                        * constants.ATOMIC_MASS
-                    )
+                        # Density (kg m-3)
+                        rho = (
+                            press_pa  # (Pa)
+                            / constants.BOLTZMANN
+                            / lowres_radtrans.temp
+                            * mmw
+                            * constants.ATOMIC_MASS
+                        )
 
-                    # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
-                    # gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
-                    ad_index = 1. / (1. - nabla_ad)
+                        # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
+                        # gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
+                        ad_index = 1. / (1. - nabla_ad)
 
-                    # Extend adiabatic index to array of same length as pressure structure
-                    # ad_index = np.zeros(lowres_radtrans.press.shape)
-                    # ad_index[0] = gamma[0]
-                    # ad_index[-1] = gamma[-1]
-                    # ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
+                        # Extend adiabatic index to array of same length as pressure structure
+                        # ad_index = np.zeros(lowres_radtrans.press.shape)
+                        # ad_index[0] = gamma[0]
+                        # ad_index[-1] = gamma[-1]
+                        # ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
 
-                    # Specific heat capacity (J kg-1 K-1)
-                    c_p = (
-                        (1.0 / (ad_index - 1.0) + 1.0)
-                        * press_pa
-                        / (rho * lowres_radtrans.temp)
-                    )
+                        # Specific heat capacity (J kg-1 K-1)
+                        c_p = (
+                            (1.0 / (ad_index - 1.0) + 1.0)
+                            * press_pa
+                            / (rho * lowres_radtrans.temp)
+                        )
 
-                    # Mixing length in pressure scale heights
+                        # Mixing length in pressure scale heights
 
-                    if "mix_length" in cube_index:
-                        mix_length = cube[cube_index["mix_length"]]
+                        if "mix_length" in cube_index:
+                            mix_length = cube[cube_index["mix_length"]]
+                        else:
+                            mix_length = 1.
+
+                        # Calculate the convective flux
+
+                        f_conv = retrieval_util.convective_flux(
+                            press_pa,  # (Pa)
+                            lowres_radtrans.temp,  # (K)
+                            mmw,
+                            nabla_ad,
+                            1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
+                            rho,  # (kg m-3)
+                            c_p,  # (J kg-1 K-1)
+                            1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
+                            f_bol_spec,  # (W m-2)
+                            mix_length=mix_length,
+                        )
+
+                        # Bolometric flux = radiative + convective
+                        press_bar = 1e-6*lowres_radtrans.press  # (bar)
+                        f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
+
+                        # Accuracy on bolometric flux for Gaussian prior
+                        sigma_fbol = check_flux * f_bol_spec
+
+                        # Gaussian prior for comparing the bolometric flux
+                        # that is calculated from the spectrum and the
+                        # bolometric flux at each pressure
+
+                        ln_prior += np.sum(
+                            -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol ** 2
+                        )
+
+                        ln_prior += (
+                            -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
+                        )
+                        # for i in range(i_conv):
+                        # for i in range(lowres_radtrans.press.shape[0]):
+                        #     if not isclose(
+                        #         f_bol_spec,
+                        #         f_bol,
+                        #         rel_tol=check_flux,
+                        #         abs_tol=0.0,
+                        #     ):
+                        #         # Remove the sample if the bolometric flux of the output spectrum
+                        #         # is different from the bolometric flux deeper in the atmosphere
+                        #         return -np.inf
+
+                        if plotting:
+                            plt.plot(wlen_lowres, flux_lowres)
+                            plt.xlabel(r"Wavelength ($\mu$m)")
+                            plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
+                            plt.xscale("log")
+                            plt.yscale("log")
+                            plt.savefig("lowres_spec.pdf", bbox_inches="tight")
+                            plt.clf()
+
                     else:
-                        mix_length = 1.
-
-                    # Calculate the convective flux
-
-                    f_conv = retrieval_util.convective_flux(
-                        press_pa,  # (Pa)
-                        lowres_radtrans.temp,  # (K)
-                        mmw,
-                        nabla_ad,
-                        1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
-                        rho,  # (kg m-3)
-                        c_p,  # (J kg-1 K-1)
-                        1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
-                        f_bol_spec,  # (W m-2)
-                        mix_length=mix_length,
-                    )
-
-                    # Bolometric flux = radiative + convective
-                    press_bar = 1e-6*lowres_radtrans.press  # (bar)
-                    f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
-
-                    # Accuracy on bolometric flux for Gaussian prior
-                    sigma_fbol = check_flux * f_bol_spec
-
-                    # Gaussian prior for comparing the bolometric flux
-                    # that is calculated from the spectrum and the
-                    # bolometric flux at each pressure
-
-                    ln_prior += np.sum(
-                        -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol ** 2
-                    )
-
-                    ln_prior += (
-                        -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
-                    )
-                    # for i in range(i_conv):
-                    # for i in range(lowres_radtrans.press.shape[0]):
-                    #     if not isclose(
-                    #         f_bol_spec,
-                    #         f_bol,
-                    #         rel_tol=check_flux,
-                    #         abs_tol=0.0,
-                    #     ):
-                    #         # Remove the sample if the bolometric flux of the output spectrum
-                    #         # is different from the bolometric flux deeper in the atmosphere
-                    #         return -np.inf
-
-                    if plotting:
-                        plt.plot(wlen_lowres, flux_lowres)
-                        plt.xlabel(r"Wavelength ($\mu$m)")
-                        plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
-                        plt.xscale("log")
-                        plt.yscale("log")
-                        plt.savefig("lowres_spec.pdf", bbox_inches="tight")
-                        plt.clf()
+                        warnings.warn("The Radtrans object from "
+                                      "petitRADTRANS does not contain "
+                                      "the h_bol attribute. Probably "
+                                      "you are using the main package "
+                                      "instead of the fork from "
+                                      "https://gitlab.com/tomasstolker"
+                                      "/petitRADTRANS. The check_flux "
+                                      "parameter can therefore not be "
+                                      "used and could be set to None.")
 
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
@@ -1987,8 +2000,8 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                if phot_press is not None and (
-                    phot_press / rt_object.pphot > 5.0
+                if hasattr(rt_object, "pphot") and phot_press is not None \
+                    and (phot_press / rt_object.pphot > 5.0
                     or phot_press / rt_object.pphot < 0.2
                 ):
                     # Remove the sample if the photospheric pressure from the P-T profile is more
@@ -2013,11 +2026,25 @@ class AtmosphericRetrieval:
                 ):
                     sigma_alpha = 10.0 ** cube[cube_index["log_sigma_alpha"]]
 
-                    ln_like += -0.5 * (
-                        cube[cube_index["alpha"]] - rt_object.tau_pow
-                    ) ** 2.0 / sigma_alpha ** 2.0 - 0.5 * np.log(
-                        2.0 * np.pi * sigma_alpha ** 2.0
-                    )
+                    if hasattr(rt_object, "tau_pow"):
+                        ln_like += -0.5 * (
+                            cube[cube_index["alpha"]] - rt_object.tau_pow
+                        ) ** 2.0 / sigma_alpha ** 2.0 - 0.5 * np.log(
+                            2.0 * np.pi * sigma_alpha ** 2.0
+                        )
+
+                    else:
+                        warnings.warn("The Radtrans object from "
+                                      "petitRADTRANS does not contain "
+                                      "the tau_pow attribute. Probably "
+                                      "you are using the main package "
+                                      "instead of the fork from "
+                                      "https://gitlab.com/tomasstolker"
+                                      "/petitRADTRANS. The "
+                                      "log_sigma_alpha parameter can "
+                                      "therefore not be used and can "
+                                      "be removed from the bounds "
+                                      "dictionary.")
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 

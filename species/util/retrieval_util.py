@@ -5,6 +5,7 @@ This module was put together  many contributions by Paul Mollière
 """
 
 import copy
+import inspect
 
 from typing import Dict, List, Optional, Tuple
 
@@ -1142,10 +1143,24 @@ def calc_spectrum_clouds(
     else:
         sigma_lnorm = None
 
-    # Calculate the emission spectrum
-    # TODO Remove try-except after merged PR in pRT repo
+    # Check new parameters in petitRADTRANS function
 
-    try:
+    inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+
+    if "new_simple_cloud_params" in inspect_prt.args:
+        param_cloud_model_2 = True
+    else:
+        param_cloud_model_2 = False
+
+    if "cloud_wlen" in inspect_prt.args:
+        param_cloud_wlen = True
+    else:
+        param_cloud_wlen = False
+
+    # Calculate the emission spectrum
+    # TODO Update after PR in pRT repo
+
+    if param_cloud_model_2 and param_cloud_wlen:
         rt_object.calc_flux(
             temperature,
             abundances,
@@ -1166,7 +1181,7 @@ def calc_spectrum_clouds(
             new_simple_cloud_params=cloud_dict,
         )
 
-    except TypeError:
+    elif param_cloud_model_2 and not param_cloud_wlen:
         rt_object.calc_flux(
             temperature,
             abundances,
@@ -1184,6 +1199,45 @@ def calc_spectrum_clouds(
             add_cloud_scat_as_abs=False,
             hack_cloud_photospheric_tau=tau_cloud,
             new_simple_cloud_params=cloud_dict,
+        )
+
+    elif not param_cloud_model_2 and param_cloud_wlen:
+        rt_object.calc_flux(
+            temperature,
+            abundances,
+            10.0 ** log_g,
+            mmw,
+            sigma_lnorm=sigma_lnorm,
+            Kzz=Kzz_use,
+            fsed=fseds,
+            radius=None,
+            contribution=contribution,
+            gray_opacity=None,
+            Pcloud=None,
+            kappa_zero=None,
+            gamma_scat=None,
+            add_cloud_scat_as_abs=False,
+            hack_cloud_photospheric_tau=tau_cloud,
+            cloud_wlen=cloud_wavel,
+        )
+
+    else:
+        rt_object.calc_flux(
+            temperature,
+            abundances,
+            10.0 ** log_g,
+            mmw,
+            sigma_lnorm=sigma_lnorm,
+            Kzz=Kzz_use,
+            fsed=fseds,
+            radius=None,
+            contribution=contribution,
+            gray_opacity=None,
+            Pcloud=None,
+            kappa_zero=None,
+            gamma_scat=None,
+            add_cloud_scat_as_abs=False,
+            hack_cloud_photospheric_tau=tau_cloud,
         )
 
     if (
@@ -1217,7 +1271,7 @@ def calc_spectrum_clouds(
         else:
             contr_em = None
 
-    if plotting and Kzz_use is None:
+    if plotting and Kzz_use is None and hasattr(rt_object, "ret_test_cloud_scat_plus_abs"):
         scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
         plt.plot(
             wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label="Total opacity"
