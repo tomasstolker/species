@@ -2,6 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import os
 import warnings
 
 from typing import Optional, Tuple

@@ -518,8 +518,11 @@ class FitModel:
                  'logg': (4.0, 4.0), (4.5, 4.5)}`` will use the full
                  range for :math:`T_\\mathrm{eff}` of both components
                  and fixes :math:`\\log{g}` to 4.0 and 4.5,
-                 respectively. Only supported by ``run_ultranest`` and
-                 ``run_multinest``.
+                 respectively. The ``spec_weight`` parameter is
+                 automatically included in the fit, as it sets the
+                 weight of the two components. Modeling blended data
+                 is only supported by ``run_ultranest`` and
+                 ``run_multinest``. 
 
             Blackbody parameters (with ``model='planck'``):
 

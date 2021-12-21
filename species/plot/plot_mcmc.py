@@ -901,6 +901,7 @@ def plot_mag_posterior(
 
     return samples
 
+
 @typechecked
 def plot_size_distributions(
     tag: str,
