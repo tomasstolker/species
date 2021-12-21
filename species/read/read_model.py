@@ -1453,3 +1453,87 @@ class ReadModel:
         spec_res = wavel_mean / np.diff(wavel_points) / 2.0
 
         return np.mean(spec_res)
+
+    @typechecked
+    def binary_spectrum(
+        self,
+        model_param: Dict[str, float],
+        spec_res: Optional[float] = None,
+        wavel_resample: Optional[np.ndarray] = None,
+        smooth: bool = False,
+    ) -> box.ModelBox:
+        """
+        Function for extracting a model spectrum of a binary system.
+        A weighted combination of two spectra will be returned. The
+        ``model_param`` dictionary should contain the parameters
+        for both components (e.g. ``teff_0`` and ``teff_1``, instead
+        of ``teff``). Apart from that, the same parameters are used
+        as with :meth:`~species.read.read_model.ReadModel.get_model`.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The grid
+            boundaries of the spectra in the database can be obtained
+            with
+            :func:`~species.read.read_model.ReadModel.get_bounds()`.
+        spec_res : float, None
+            Spectral resolution that is used for smoothing the spectrum
+            with a Gaussian kernel when ``smooth=True``. The
+            wavelengths will be resampled to the argument of
+            ``spec_res`` if ``smooth=False``.
+        wavel_resample : np.ndarray, None
+            Wavelength points (um) to which the spectrum is resampled.
+            In that case, ``spec_res`` can still be used for smoothing
+            the spectrum with a Gaussian kernel. The original
+            wavelength points are used if the argument is set to
+            ``None``.
+        smooth : bool
+            If ``True``, the spectrum is smoothed with a Gaussian
+            kernel to the spectral resolution of ``spec_res``. This
+            requires either a uniform spectral resolution of the input
+            spectra (fast) or a uniform wavelength spacing of the input
+            spectra (slow).
+
+        Returns
+        -------
+        species.core.box.ModelBox
+            Box with the model spectrum.
+        """
+
+        # Get grid boundaries
+
+        param_0 = read_util.binary_to_single(model_param, 0)
+
+        model_box_0 = self.get_model(
+            param_0,
+            spec_res=spec_res,
+            wavel_resample=wavel_resample,
+            smooth=smooth,
+        )
+
+        param_1 = read_util.binary_to_single(model_param, 1)
+
+        model_box_1 = self.get_model(
+            param_1,
+            spec_res=spec_res,
+            wavel_resample=wavel_resample,
+            smooth=smooth,
+        )
+
+        flux_comb = (
+            model_param["spec_weight"] * model_box_0.flux
+            + (1.0 - model_param["spec_weight"]) * model_box_1.flux
+        )
+
+        model_box = box.create_box(
+            boxtype="model",
+            model=self.model,
+            wavelength=model_box_0.wavelength,
+            flux=flux_comb,
+            parameters=model_param,
+            quantity="flux",
+        )
+
+        return model_box

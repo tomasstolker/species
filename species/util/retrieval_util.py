@@ -1271,7 +1271,11 @@ def calc_spectrum_clouds(
         else:
             contr_em = None
 
-    if plotting and Kzz_use is None and hasattr(rt_object, "ret_test_cloud_scat_plus_abs"):
+    if (
+        plotting
+        and Kzz_use is None
+        and hasattr(rt_object, "ret_test_cloud_scat_plus_abs")
+    ):
         scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
         plt.plot(
             wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label="Total opacity"
@@ -2568,8 +2572,12 @@ def convective_flux(
     """
 
     t_transp = (f_bol / constants.SIGMA_SB) ** 0.25  # (K)
-    nabla_rad = 3.0 * kappa_r * press * t_transp ** 4.0 / 16.0 / gravity / temp ** 4.0  # (dimensionless)
-    h_press = constants.BOLTZMANN * temp / (mmw * constants.ATOMIC_MASS * gravity)  # (m)
+    nabla_rad = (
+        3.0 * kappa_r * press * t_transp ** 4.0 / 16.0 / gravity / temp ** 4.0
+    )  # (dimensionless)
+    h_press = (
+        constants.BOLTZMANN * temp / (mmw * constants.ATOMIC_MASS * gravity)
+    )  # (m)
     l_mix = mix_length * h_press  # (m)
 
     U = (
@@ -2611,6 +2619,6 @@ def convective_flux(
         * (nabla - nabla_e) ** 1.5
     )
 
-    f_conv[np.isnan(f_conv)] = 0.
+    f_conv[np.isnan(f_conv)] = 0.0
 
     return f_conv  # (W m-2)

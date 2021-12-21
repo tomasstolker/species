@@ -24,7 +24,9 @@ class TestObject:
 
     def test_read_object(self):
         database = species.Database()
-        database.add_companion(name="beta Pic b")
+
+        with pytest.warns(UserWarning):
+            database.add_companion(name="beta Pic b")
 
         read_object = species.ReadObject("beta Pic b")
         assert read_object.object_name == "beta Pic b"

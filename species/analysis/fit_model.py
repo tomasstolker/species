@@ -440,10 +440,17 @@ def lnprob(
 
 class FitModel:
     """
-    Class for fitting atmospheric model spectra to spectroscopic and/or
-    photometric data, and using Bayesian inference (``UltraNest``,
-    ``MultiNest``, or ``emcee``) to estimate posterior distributions
-    and marginalized likelihoods (i.e. "evidence").
+    Class for fitting atmospheric model spectra to spectra and/or
+    photometric fluxes, and using Bayesian inference (``MultiNest``,
+    ``UltraNest``, or ``emcee``) to estimate the posterior
+    distribution and marginalized likelihood (i.e. "evidence"). The
+    latter is only output from the two nested sampling algorithms.
+    A grid of model spectra is linearly interpolated for each
+    spectrum and photometric flux, while taking into account the
+    filter profile, spectral resolution, and wavelength sampling.
+    The computation time depends mostly on the number of
+    free parameters and the resolution / number of data points
+    of the spectra.
     """
 
     @typechecked
@@ -465,77 +472,104 @@ class FitModel:
         weights: Optional[Dict[str, float]] = None,
     ) -> None:
         """
-        The grid of spectra is linearly interpolated for each
-        photometric point and spectrum while taking into account the
-        filter profile, spectral resolution, and wavelength sampling.
-        Therefore, when fitting spectra from a model grid, the
-        computation time of the interpolation will depend on the
-        wavelength range, spectral resolution, and parameter space of
-        the spectra that are stored in the database.
-
         Parameters
         ----------
         object_name : str
-            Object name as stored in the database with
+            Object name of the companion as stored in the database with
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         model : str
-            Atmospheric model (e.g. 'bt-settl', 'exo-rem', 'planck', or 'powerlaw').
+            Name of the atmospheric model (e.g. 'bt-settl', 'exo-rem',
+            'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors. Fixing
-            a parameter is possible by providing the same value as
-            lower and upper boundary of the parameter, for example,
-            ``bounds={'logg': (4., 4.)``.
+            The boundaries that are used for the uniform priors.
+            Fixing a parameter is possible by providing the same
+            value as lower and upper boundary of the parameter
+            (e.g. ``bounds={'logg': (4., 4.)``. An explanation of
+            the various parameters can be found below.
 
-            Atmospheric model parameters (e.g. ``model='bt-settl'``):
+            Atmospheric model parameters (e.g. with
+            ``model='bt-settl-cifist'``; see docstring of
+            :meth:`~species.data.database.Database.add_model`
+            for the available model grids):
 
-                 - Boundaries are provided as tuple of two floats. Forexample,
-                   ``bounds={'teff': (1000, 1500.), 'logg': (3.5, 5.), 'radius': (0.8, 1.2)}``.
+               - Boundaries are provided as tuple of two floats. For example,
+                 ``bounds={'teff': (1000, 1500.), 'logg': (3.5, 5.)}``.
 
-                 - The grid boundaries are used if set to ``None``. For example,
-                   ``bounds={'teff': None, 'logg': None}``. The radius range is set to
-                   0.8-1.5 Rjup if the boundary is set to None.
+               - The grid boundaries (i.e. the maximum range) are
+                 adopted as priors if a parameter range is set to
+                 ``None`` or if a mandatory parameter is not included
+                 in the dictionary of ``bounds``. For example,
+                 ``bounds={'teff': (1000., 1500.), 'logg': None}``.
+                 The default range for the radius is
+                 :math:`0.5-5.0~R_\\mathrm{J}`.
 
-            Blackbody emission parameters (``model='planck'``):
+               - It is possible to fit a weighted combination of two
+                 atmospheric parameters from the same model. This
+                 can be useful to fit data of a spectroscopic binary
+                 or to account for atmospheric asymmetries of a single
+                 object. For each atmospheric parameter, a tuple of
+                 two tuples can be provided, for example
+                 ``bounds={'teff': ((1000., 1500.), (1300., 1800.))}``.
+                 Mandatory parameters that are not included are assumed
+                 to be the same for both components. The grid boundaries
+                 are used as parameter range if a component is set to
+                 ``None``. For example, ``bounds={'teff': (None, None),
+                 'logg': (4.0, 4.0), (4.5, 4.5)}`` will use the full
+                 range for :math:`T_\\mathrm{eff}` of both components
+                 and fixes :math:`\\log{g}` to 4.0 and 4.5,
+                 respectively. Only supported by ``run_ultranest`` and
+                 ``run_multinest``.
 
-                 - Parameter boundaries have to be provided for 'teff'
-                   and 'radius'.
+            Blackbody parameters (with ``model='planck'``):
 
-                 - For a single blackbody component, the values are
-                   provided as a tuple with two floats. For example,
-                   ``bounds={'teff': (1000., 2000.), 'radius': (0.8, 1.2)}``.
+               - Parameter boundaries have to be provided for 'teff'
+                 and 'radius'.
 
-                 - For multiple blackbody component, the values are
-                   provided as a list with tuples. For example,
-                   ``bounds={'teff': [(1000., 1400.), (1200., 1600.)],
-                   'radius': [(0.8, 1.5), (1.2, 2.)]}``.
+               - For a single blackbody component, the values are
+                 provided as a tuple with two floats. For example,
+                 ``bounds={'teff': (1000., 2000.),
+                 'radius': (0.8, 1.2)}``.
 
-                 - When fitting multiple blackbody components, a prior
-                   is used which restricts the temperatures and radii
-                   to decreasing and increasing values, respectively,
-                   in the order as provided in ``bounds``.
+               - For multiple blackbody components, the values are
+                 provided as a list with tuples. For example,
+                 ``bounds={'teff': [(1000., 1400.), (1200., 1600.)],
+                 'radius': [(0.8, 1.5), (1.2, 2.)]}``.
+
+               - When fitting multiple blackbody components, an
+                 additional prior is used for restricting the
+                 temperatures and radii to decreasing and increasing
+                 values, respectively, in the order as provided in
+                 ``bounds``.
 
             Power-law spectrum (``model='powerlaw'``):
 
-                 - Parameter boundaries have to be provided for
-                   'log_powerlaw_a', 'log_powerlaw_b', and
-                   'log_powerlaw_c'. For example,
-                   ``bounds={'log_powerlaw_a': (-20., 0.),
-                   'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c':
-                   (-20., 5.)}``.
+               - Parameter boundaries have to be provided for
+                 'log_powerlaw_a', 'log_powerlaw_b', and
+                 'log_powerlaw_c'. For example,
+                 ``bounds={'log_powerlaw_a': (-20., 0.),
+                 'log_powerlaw_b': (-20., 5.), 'log_powerlaw_c':
+                 (-20., 5.)}``.
 
-                 - The spectrum is parametrized as log10(flux) = a + b*log10(wavelength)^c, where
-                   a = log_powerlaw_a, b = log_powerlaw_b, and c = log_powerlaw_c.
+               - The spectrum is parametrized as :math:`\\log10{f} =
+                 a + b*\\log10{\\lambda}^c`, where :math:`a` is
+                 ``log_powerlaw_a``, :math:`b` is ``log_powerlaw_b``,
+                 and :math:`c` is ``log_powerlaw_c``.
 
-                 - Only implemented for fitting photometric fluxes, for example the IR fluxes of a
-                   star with disk. In that way, synthetic photometry can be calculated afterwards
-                   for a different filter. Note that this option assumes that the photometric
-                   fluxes are dominated by continuum emission while spectral lines are ignored.
+               - Only implemented for fitting photometric fluxes, for
+                 example the IR fluxes of a star with disk. In that way,
+                 synthetic photometry can be calculated afterwards for
+                 a different filter. Note that this option assumes that
+                 the photometric fluxes are dominated by continuum
+                 emission while spectral lines are ignored.
 
-                 - The :func:`~species.plot.plot_mcmc.plot_photometry` function can be used to
-                   calculate synthetic photometry and error bars from the posterior distribution.
+               - The :func:`~species.plot.plot_mcmc.plot_mag_posterior`
+                 function can be used for calculating synthetic
+                 photometry and error bars from the posterior
+                 distributions.
 
-                 - Only supported by ``run_ultranest`` and ``run_multinest``.
+               - Only supported by ``run_ultranest`` and
+                 ``run_multinest``.
 
             Calibration parameters:
 
@@ -556,10 +590,15 @@ class FitModel:
 
                  - The errors of the photometric fluxes can be inflated to account for
                    underestimated error bars. The error inflation is relative to the actual flux
-                   and is fitted separately for different filters. The keyword in the ``bounds``
-                   dictionary should be provided in the following format:
-                   ``'Paranal/NACO.Mp_error': (0., 1.)``. In this case, the error of the NACO Mp
-                   flux is inflated up to 100 percent of the actual flux.
+                   and is either fitted separately for a filter, or a single error inflation
+                   is applied to all filters from an instrument. For the first case, the keyword
+                   in the ``bounds`` dictionary should be provided in the following format:
+                   ``'Paranal/NACO.Mp_error': (0., 1.)``. Here, the error of the NACO Mp
+                   flux is inflated up to 100 percent of the actual flux. For the second case,
+                   only the telescope/instrument part of the the filter name should be provided
+                   in the ``bounds`` dictionary, so in the following format:
+                   ``'Paranal/NACO_error': (0., 1.)``. This will increase the errors of all
+                   NACO filters by the same (relative) amount.
 
                  - No calibration parameters are fitted if the spectrum name is not included in
                    ``bounds``.
@@ -708,6 +747,7 @@ class FitModel:
 
         self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()
+        self.binary = False
 
         if fit_corr is None:
             self.fit_corr = []
@@ -734,7 +774,7 @@ class FitModel:
                     self.bounds[f"radius_{i}"] = bounds["radius"][i]
 
             else:
-                # Fitting a single blackbody compoentn
+                # Fitting a single blackbody component
                 self.n_planck = 1
 
                 self.modelpar = ["teff", "radius"]
@@ -751,57 +791,109 @@ class FitModel:
                 readmodel = read_model.ReadModel(self.model)
                 bounds_grid = readmodel.get_bounds()
 
-                for item in bounds_grid:
-                    if item not in self.bounds:
-                        # Set the parameter boundaries to the grid boundaries if set to None
-                        self.bounds[item] = bounds_grid[item]
+                for key, value in bounds_grid.items():
+
+                    if key not in self.bounds:
+                        # Set the parameter boundaries to the grid
+                        # boundaries if set to None or not found
+                        self.bounds[key] = bounds_grid[key]
+
+                    elif isinstance(self.bounds[key][0], tuple):
+                        self.binary = True
+                        self.bounds[f"{key}_0"] = self.bounds[key][0]
+                        self.bounds[f"{key}_1"] = self.bounds[key][1]
+                        del self.bounds[key]
+
+                    elif self.bounds[key][0] is None and self.bounds[key][1] is None:
+                        self.binary = True
+                        self.bounds[f"{key}_0"] = bounds_grid[key]
+                        self.bounds[f"{key}_1"] = bounds_grid[key]
+                        del self.bounds[key]
+
+                    elif isinstance(self.bounds[key][0], tuple):
+                        self.binary = True
+                        self.bounds[f"{key}_0"] = self.bounds[key][0]
+                        self.bounds[f"{key}_1"] = self.bounds[key][1]
+                        del self.bounds[key]
 
                     else:
-                        if self.bounds[item][0] < bounds_grid[item][0]:
+                        if self.bounds[key][0] < bounds_grid[key][0]:
                             warnings.warn(
-                                f"The lower bound on {item} "
-                                f"({self.bounds[item][0]}) is smaller than "
+                                f"The lower bound on {key} "
+                                f"({self.bounds[key][0]}) is smaller than "
                                 f"the lower bound from the available "
                                 f"{self.model} model grid "
-                                f"({bounds_grid[item][0]}). The lower bound "
-                                f"of the {item} prior will be adjusted to "
-                                f"{bounds_grid[item][0]}."
+                                f"({bounds_grid[key][0]}). The lower bound "
+                                f"of the {key} prior will be adjusted to "
+                                f"{bounds_grid[key][0]}."
                             )
-                            self.bounds[item] = (
-                                bounds_grid[item][0],
-                                self.bounds[item][1],
+                            self.bounds[key] = (
+                                bounds_grid[key][0],
+                                self.bounds[key][1],
                             )
 
-                        if self.bounds[item][1] > bounds_grid[item][1]:
+                        if self.bounds[key][1] > bounds_grid[key][1]:
                             warnings.warn(
-                                f"The upper bound on {item} "
-                                f"({self.bounds[item][1]}) is larger than the "
+                                f"The upper bound on {key} "
+                                f"({self.bounds[key][1]}) is larger than the "
                                 f"upper bound from the available {self.model} "
-                                f"model grid ({bounds_grid[item][1]}). The "
-                                f"bound of the {item} prior will be adjusted "
-                                f"to {bounds_grid[item][1]}."
+                                f"model grid ({bounds_grid[key][1]}). The "
+                                f"bound of the {key} prior will be adjusted "
+                                f"to {bounds_grid[key][1]}."
                             )
-                            self.bounds[item] = (
-                                self.bounds[item][0],
-                                bounds_grid[item][1],
+                            self.bounds[key] = (
+                                self.bounds[key][0],
+                                bounds_grid[key][1],
                             )
+
+                # if self.binary:
+                #     # Check if all parameters are set for two objects
+                #     for key, value in bounds_grid.items():
+                #         if f"{key}_0" not in self.bounds:
+                #             self.bounds[f"{key}_0"] = bounds_grid[key]
+                #             self.bounds[f"{key}_1"] = bounds_grid[key]
+                #             del self.bounds[key]
 
             else:
                 # Set all parameter boundaries to the grid boundaries
                 readmodel = read_model.ReadModel(self.model, None, None)
                 self.bounds = readmodel.get_bounds()
 
-            if "radius" not in self.bounds:
-                self.bounds["radius"] = (0.8, 1.5)
-
-            self.n_planck = 0
-
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append("radius")
+
+            if self.binary:
+                if "radius" in self.bounds:
+                    if isinstance(self.bounds["radius"][0], tuple):
+                        self.bounds["radius_0"] = self.bounds["radius"][0]
+                        self.bounds["radius_1"] = self.bounds["radius"][1]
+                        del self.bounds["radius"]
+
+                else:
+                    self.bounds["radius"] = (0.5, 5.0)
+
+            elif "radius" not in self.bounds:
+                self.bounds["radius"] = (0.5, 5.0)
+
+            self.n_planck = 0
 
             if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
                 self.modelpar.append("disk_teff")
                 self.modelpar.append("disk_radius")
+
+            if self.binary:
+                # Update list of model parameters
+
+                for key in bounds:
+                    if key[:-2] in self.modelpar:
+                        par_index = self.modelpar.index(key[:-2])
+                        self.modelpar[par_index] = key[:-2] + "_0"
+                        self.modelpar.insert(par_index, key[:-2] + "_1")
+
+                self.modelpar.append("spec_weight")
+
+                if "spec_weight" not in self.bounds:
+                    self.bounds["spec_weight"] = (0.0, 1.0)
 
         # Select filters and spectra
 
@@ -838,6 +930,8 @@ class FitModel:
 
         self.objphot = []
         self.modelphot = []
+        self.filter_name = []
+        self.instr_name = []
 
         for item in inc_phot:
             if self.model == "planck":
@@ -855,9 +949,6 @@ class FitModel:
 
                 self.modelphot.append(synphot)
 
-                if f"{item}_error" in self.bounds:
-                    self.modelpar.append(f"{item}_error")
-
             else:
                 # Or interpolate the model grid for each filter
                 print(f"Interpolating {item}...", end="", flush=True)
@@ -868,9 +959,25 @@ class FitModel:
                 self.modelphot.append(readmodel)
                 print(" [DONE]")
 
+            # Add parameter for error inflation
+
+            instr_filt = item.split(".")[0]
+
+            if f"{item}_error" in self.bounds:
+                self.modelpar.append(f"{item}_error")
+
+            elif (
+                f"{instr_filt}_error" in self.bounds
+                and f"{instr_filt}_error" not in self.modelpar
+            ):
+                self.modelpar.append(f"{instr_filt}_error")
+
             # Store the flux and uncertainty for each filter
             obj_phot = self.object.get_photometry(item)
             self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
+
+            self.filter_name.append(item)
+            self.instr_name.append(instr_filt)
 
         # Include spectroscopic data
 
@@ -893,15 +1000,17 @@ class FitModel:
             for item in self.spectrum:
                 if item in self.fit_corr:
                     if self.spectrum[item][1] is not None:
-                        warnings.warn(f"There is a covariance matrix included "
-                                      f"with the {item} data of "
-                                      f"{object_name} so it is not needed to "
-                                      f"model the covariances with a "
-                                      f"Gaussian process. Want to test the "
-                                      f"Gaussian process nonetheless? Please "
-                                      f"overwrite the data of {object_name} "
-                                      f"with add_object while setting the "
-                                      f"path to the covariance data to None.")
+                        warnings.warn(
+                            f"There is a covariance matrix included "
+                            f"with the {item} data of "
+                            f"{object_name} so it is not needed to "
+                            f"model the covariances with a "
+                            f"Gaussian process. Want to test the "
+                            f"Gaussian process nonetheless? Please "
+                            f"overwrite the data of {object_name} "
+                            f"with add_object while setting the "
+                            f"path to the covariance data to None."
+                        )
 
                         self.fit_corr.remove(item)
 
@@ -953,6 +1062,18 @@ class FitModel:
         if self.model not in ["planck", "powerlaw"]:
             readmodel = read_model.ReadModel(self.model)
             self.param_interp = readmodel.get_parameters()
+
+            if self.binary:
+                param_tmp = self.param_interp.copy()
+
+                self.param_interp = []
+                for item in param_tmp:
+                    if f"{item}_0" in self.modelpar and f"{item}_1" in self.modelpar:
+                        self.param_interp.append(f"{item}_0")
+                        self.param_interp.append(f"{item}_1")
+
+                    else:
+                        self.param_interp.append(item)
 
         else:
             self.param_interp = None
@@ -1365,13 +1486,14 @@ class FitModel:
         # Initilize dictionaries for different parameter types
 
         spec_scaling = {}
+        phot_scaling = {}
         err_scaling = {}
         corr_len = {}
         corr_amp = {}
         dust_param = {}
         disk_param = {}
-        param_dict = {}
         veil_param = {}
+        param_dict = {}
 
         for item in self.bounds:
             # Add the parameters from the params to their dictionaries
@@ -1387,6 +1509,12 @@ class FitModel:
 
             elif item[:9] == "corr_amp_" and item[9:] in self.spectrum:
                 corr_amp[item[9:]] = params[self.cube_index[item]]
+
+            elif item[-6:] == "_error" and item[:-6] in self.filter_name:
+                phot_scaling[item[:-6]] = params[self.cube_index[item]]
+
+            elif item[-6:] == "_error" and item[:-6] in self.instr_name:
+                phot_scaling[item[:-6]] = params[self.cube_index[item]]
 
             elif item[:8] == "lognorm_":
                 dust_param[item] = params[self.cube_index[item]]
@@ -1411,6 +1539,9 @@ class FitModel:
 
             elif item == "veil_ref":
                 veil_param["veil_ref"] = params[self.cube_index[item]]
+
+            elif item == "spec_weight":
+                pass
 
             else:
                 param_dict[item] = params[self.cube_index[item]]
@@ -1445,6 +1576,9 @@ class FitModel:
             elif item == "disk_radius":
                 disk_param["radius"] = self.fix_param[item]
 
+            elif item == "spec_weight":
+                pass
+
             else:
                 param_dict[item] = self.fix_param[item]
 
@@ -1467,12 +1601,26 @@ class FitModel:
             param_dict["distance"] = self.distance[0]
 
         elif self.model != "powerlaw":
-            flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-                self.distance[0] * constants.PARSEC
-            ) ** 2
+            if "radius_0" in param_dict and "radius_1" in param_dict:
+                flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
+                    self.distance[0] * constants.PARSEC
+                ) ** 2
 
-            # The scaling is applied manually because of the interpolation
-            del param_dict["radius"]
+                flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
+                    self.distance[0] * constants.PARSEC
+                ) ** 2
+
+                # The scaling is applied manually because of the interpolation
+                del param_dict["radius_0"]
+                del param_dict["radius_1"]
+
+            else:
+                flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
+                    self.distance[0] * constants.PARSEC
+                ) ** 2
+
+                # The scaling is applied manually because of the interpolation
+                del param_dict["radius"]
 
         for item in self.spectrum:
             if item not in spec_scaling:
@@ -1550,10 +1698,46 @@ class FitModel:
                 )[0]
 
             else:
-                phot_flux = self.modelphot[i].spectrum_interp(
-                    list(param_dict.values())
-                )[0][0]
-                phot_flux *= flux_scaling
+                if self.binary:
+                    # Star 0
+
+                    param_0 = read_util.binary_to_single(param_dict, 0)
+
+                    phot_flux_0 = self.modelphot[i].spectrum_interp(
+                        list(param_0.values())
+                    )[0][0]
+
+                    if "radius" in self.modelpar:
+                        phot_flux_0 *= flux_scaling
+                    elif "radius_0" in self.modelpar:
+                        phot_flux_0 *= flux_scaling_0
+
+                    # Star 1
+
+                    param_1 = read_util.binary_to_single(param_dict, 1)
+
+                    phot_flux_1 = self.modelphot[i].spectrum_interp(
+                        list(param_1.values())
+                    )[0][0]
+
+                    if "radius" in self.modelpar:
+                        phot_flux_1 *= flux_scaling
+                    elif "radius_1" in self.modelpar:
+                        phot_flux_1 *= flux_scaling_1
+
+                    # Weighted flux of two stars
+
+                    phot_flux = (
+                        params[self.cube_index["spec_weight"]] * phot_flux_0
+                        + (1.0 - params[self.cube_index["spec_weight"]]) * phot_flux_1
+                    )
+
+                else:
+                    phot_flux = self.modelphot[i].spectrum_interp(
+                        list(param_dict.values())
+                    )[0][0]
+
+                    phot_flux *= flux_scaling
 
             if disk_param:
                 phot_tmp = self.diskphot[i].spectrum_interp([disk_param["teff"]])[0][0]
@@ -1593,10 +1777,16 @@ class FitModel:
             if obj_item.ndim == 1:
                 phot_var = obj_item[1] ** 2
 
-                if self.model == "powerlaw" and f"{phot_filter}_error" in param_dict:
-                    phot_var += (
-                        param_dict[f"{phot_filter}_error"] ** 2 * obj_item[0] ** 2
-                    )
+                # Get the telescope/instrument name
+                instr_check = phot_filter.split(".")[0]
+
+                if phot_filter in phot_scaling:
+                    # Inflate photometric error for filter
+                    phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0] ** 2
+
+                elif instr_check in phot_scaling:
+                    # Inflate photometric error for instrument
+                    phot_var += phot_scaling[instr_check] ** 2 * obj_item[0] ** 2
 
                 ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
 
@@ -1647,12 +1837,50 @@ class FitModel:
 
             else:
                 # Interpolate the model spectrum from the grid
-                model_flux = self.modelspec[i].spectrum_interp(
-                    list(param_dict.values())
-                )[0, :]
 
-                # Scale the spectrum by (radius/distance)^2
-                model_flux *= flux_scaling
+                if self.binary:
+                    # Star 1
+
+                    param_0 = read_util.binary_to_single(param_dict, 0)
+
+                    model_flux_0 = self.modelspec[i].spectrum_interp(
+                        list(param_0.values())
+                    )[0, :]
+
+                    # Scale the spectrum by (radius/distance)^2
+                    if "radius" in self.modelpar:
+                        model_flux_0 *= flux_scaling
+                    elif "radius_1" in self.modelpar:
+                        model_flux_0 *= flux_scaling_1
+
+                    # Star 2
+
+                    param_1 = read_util.binary_to_single(param_dict, 1)
+
+                    model_flux_1 = self.modelspec[i].spectrum_interp(
+                        list(param_1.values())
+                    )[0, :]
+
+                    # Scale the spectrum by (radius/distance)^2
+                    if "radius" in self.modelpar:
+                        model_flux_1 *= flux_scaling
+                    elif "radius_1" in self.modelpar:
+                        model_flux_1 *= flux_scaling_1
+
+                    # Weighted flux of two stars
+
+                    model_flux = (
+                        params[self.cube_index["spec_weight"]] * model_flux_0
+                        + (1.0 - params[self.cube_index["spec_weight"]]) * model_flux_1
+                    )
+
+                else:
+                    model_flux = self.modelspec[i].spectrum_interp(
+                        list(param_dict.values())
+                    )[0, :]
+
+                    # Scale the spectrum by (radius/distance)^2
+                    model_flux *= flux_scaling
 
             # Veiling
             if (

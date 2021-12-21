@@ -41,7 +41,8 @@ def plot_walkers(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -49,7 +50,10 @@ def plot_walkers(
         None
     """
 
-    print(f"Plotting walkers: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting walkers...", end="", flush=True)
+    else:
+        print(f"Plotting walkers: {output}...", end="", flush=True)
 
     mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
@@ -166,7 +170,11 @@ def plot_walkers(
         for j in range(samples.shape[0]):
             ax.plot(samples[j, :, i], ls="-", lw=0.5, color="black", alpha=0.5)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -224,7 +232,8 @@ def plot_posterior(
     inc_loglike : bool
         Include the log10 of the likelihood as additional parameter in the corner plot.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -470,7 +479,10 @@ def plot_posterior(
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3
 
-    print(f"Plotting the posterior: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting the posterior...", end="", flush=True)
+    else:
+        print(f"Plotting the posterior: {output}...", end="", flush=True)
 
     if "H2O" in box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
@@ -771,7 +783,11 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -801,7 +817,8 @@ def plot_mag_posterior(
     xlim : tuple(float, float), None
         Axis limits. Automatically set if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -818,7 +835,10 @@ def plot_mag_posterior(
 
     samples = species_db.get_mcmc_photometry(tag, filter_name, burnin)
 
-    print(f"Plotting photometry samples: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting photometry samples...", end="", flush=True)
+    else:
+        print(f"Plotting photometry samples: {output}...", end="", flush=True)
 
     fig = corner.corner(
         samples,
@@ -869,7 +889,11 @@ def plot_mag_posterior(
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -900,7 +924,8 @@ def plot_size_distributions(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -908,7 +933,10 @@ def plot_size_distributions(
         None
     """
 
-    print(f"Plotting size distributions: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting size distributions...", end="", flush=True)
+    else:
+        print(f"Plotting size distributions: {output}...", end="", flush=True)
 
     if burnin is None:
         burnin = 0
@@ -1036,7 +1064,11 @@ def plot_size_distributions(
 
         ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="black", alpha=0.5)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -1078,7 +1110,8 @@ def plot_extinction(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -1291,9 +1324,16 @@ def plot_extinction(
     else:
         raise ValueError("The SamplesBox does not contain extinction parameters.")
 
-    print(f"Plotting extinction: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting extinction...", end="", flush=True)
+    else:
+        print(f"Plotting extinction: {output}...", end="", flush=True)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

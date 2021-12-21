@@ -99,7 +99,24 @@ def multi_photometry(
                     readmodel = read_model.ReadModel(spectrum, filter_name=item)
 
                 try:
-                    flux[item] = readmodel.get_flux(parameters)[0]
+                    if "teff_0" in parameters and "teff_1" in parameters:
+                        # Binary system
+
+                        param_0 = read_util.binary_to_single(parameters, 0)
+                        model_flux_0 = readmodel.get_flux(param_0)[0]
+
+                        param_1 = read_util.binary_to_single(parameters, 1)
+                        model_flux_1 = readmodel.get_flux(param_1)[0]
+
+                        flux[item] = (
+                            parameters["spec_weight"] * model_flux_0
+                            + (1.0 - parameters["spec_weight"]) * model_flux_1
+                        )
+
+                    else:
+                        # Single object
+
+                        flux[item] = readmodel.get_flux(parameters)[0]
 
                 except IndexError:
                     flux[item] = np.nan
@@ -337,12 +354,50 @@ def get_residuals(
 
                     readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
 
-                    model_spec = readmodel.get_model(
-                        parameters,
-                        spec_res=spec_res,
-                        wavel_resample=wl_new,
-                        smooth=True,
-                    )
+                    if "teff_0" in parameters and "teff_1" in parameters:
+                        # Binary system
+
+                        param_0 = read_util.binary_to_single(parameters, 0)
+
+                        model_spec_0 = readmodel.get_model(
+                            param_0,
+                            spec_res=spec_res,
+                            wavel_resample=wl_new,
+                            smooth=True,
+                        )
+
+                        param_1 = read_util.binary_to_single(parameters, 1)
+
+                        model_spec_1 = readmodel.get_model(
+                            param_1,
+                            spec_res=spec_res,
+                            wavel_resample=wl_new,
+                            smooth=True,
+                        )
+
+                        flux_comb = (
+                            parameters["spec_weight"] * model_spec_0.flux
+                            + (1.0 - parameters["spec_weight"]) * model_spec_1.flux
+                        )
+
+                        model_spec = box.create_box(
+                            boxtype="model",
+                            model=spectrum,
+                            wavelength=model_spec_0.wavelength,
+                            flux=flux_comb,
+                            parameters=parameters,
+                            quantity="flux",
+                        )
+
+                    else:
+                        # Single object
+
+                        model_spec = readmodel.get_model(
+                            parameters,
+                            spec_res=spec_res,
+                            wavel_resample=wl_new,
+                            smooth=True,
+                        )
 
                     flux_new = model_spec.flux
 

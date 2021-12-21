@@ -178,9 +178,25 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("teff")
         param[index] = r"$\mathregular{T}_\mathregular{eff}$ (K)"
 
+    if "teff_0" in param:
+        index = param.index("teff_0")
+        param[index] = r"$\mathregular{T}_\mathregular{eff,1}$ (K)"
+
+    if "teff_1" in param:
+        index = param.index("teff_1")
+        param[index] = r"$\mathregular{T}_\mathregular{eff,2}$ (K)"
+
     if "logg" in param:
         index = param.index("logg")
         param[index] = r"$\mathregular{log}\,\mathregular{g}$"
+
+    if "logg_0" in param:
+        index = param.index("logg_0")
+        param[index] = r"$\mathregular{log}\,\mathregular{g}_\mathregular{1}$"
+
+    if "logg_1" in param:
+        index = param.index("logg_1")
+        param[index] = r"$\mathregular{log}\,\mathregular{g}_\mathregular{2}$"
 
     if "metallicity" in param:
         index = param.index("metallicity")
@@ -189,6 +205,14 @@ def update_labels(param: List[str]) -> List[str]:
     if "feh" in param:
         index = param.index("feh")
         param[index] = r"[Fe/H]"
+
+    if "feh_0" in param:
+        index = param.index("feh_0")
+        param[index] = r"[Fe/H]$_\mathregular{1}$"
+
+    if "feh_1" in param:
+        index = param.index("feh_1")
+        param[index] = r"[Fe/H]$_\mathregular{2}$"
 
     if "fsed" in param:
         index = param.index("fsed")
@@ -477,9 +501,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_p_base" in param:
         index = param.index("log_p_base")
-        param[
-            index
-        ] = r"$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$"
+        param[index] = r"$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$"
 
     if "albedo" in param:
         index = param.index("albedo")
@@ -492,6 +514,10 @@ def update_labels(param: List[str]) -> List[str]:
     if "mix_length" in param:
         index = param.index("mix_length")
         param[index] = r"$\ell_\mathregular{m}$ (H$_\mathregular{p}$)"
+
+    if "spec_weight" in param:
+        index = param.index("spec_weight")
+        param[index] = r"w$_\mathregular{spec}$"
 
     return param
 
@@ -645,7 +671,13 @@ def quantity_unit(
     for i in range(100):
         if f"radius_{i}" in param:
             quantity.append(f"radius_{i}")
-            unit.append(r"$\mathregular{R}_\mathregular{J}$")
+
+            if object_type == "planet":
+                unit.append(r"$\mathregular{R}_\mathregular{J}$")
+
+            elif object_type == "star":
+                unit.append(r"$\mathregular{R}_\mathregular{\odot}$")
+
             label.append(rf"$\mathregular{{R}}_\mathregular{{{i+1}}}$")
 
         else:
