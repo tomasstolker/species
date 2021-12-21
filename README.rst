@@ -47,7 +47,7 @@ Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A.
 Contributing
 ------------
 
-Contributions are welcome so please consider forking the repository and creating a pull request. Bug reports can be provided by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
+Contributions are welcome so please consider `forking <https://help.github.com/en/articles/fork-a-repo>`_ the repository and creating a `pull request <https://github.com/tomasstolker/pycrires/pulls>`_. Bug reports and feature requests can be provided by creating an `issue <https://github.com/tomasstolker/pycrires/issues>`_ on the Github page.
 
 License
 -------

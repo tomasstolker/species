@@ -5,7 +5,7 @@ Module with reading functionalities for data from individual objects.
 import os
 import configparser
 
-from typing import Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple
 
 import h5py
 import numpy as np
@@ -50,6 +50,31 @@ class ReadObject:
                     f"The object '{self.object_name}' is not present in the "
                     f"database."
                 )
+
+    @typechecked
+    def list_filters(self) -> List[str]:
+        """
+        Function for listing and returning the filter profile names for
+        which there is photometric data stored in the database.
+
+        Returns
+        -------
+        list(str)
+            List with names of the filter profiles.
+        """
+
+        filter_list = []
+
+        print(f"Available photometric data for {self.object_name}:")
+
+        with h5py.File(self.database, "r") as h5_file:
+            for tel_item in h5_file[f"objects/{self.object_name}"]:
+                if tel_item not in ["distance", "spectrum"]:
+                    for filt_item in h5_file[f"objects/{self.object_name}/{tel_item}"]:
+                        print(f"   - {tel_item}/{filt_item}")
+                        filter_list.append(f"{tel_item}/{filt_item}")
+
+        return filter_list
 
     @typechecked
     def get_photometry(self, filter_name: str) -> np.ndarray:

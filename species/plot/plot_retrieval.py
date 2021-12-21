@@ -2,6 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import os
 import warnings
 
 from typing import Optional, Tuple
@@ -29,7 +30,7 @@ def plot_pt_profile(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "pt_profile.pdf",
+    output: Optional[str] = "pt_profile.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
@@ -51,7 +52,8 @@ def plot_pt_profile(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     extra_axis : str, None
@@ -66,7 +68,10 @@ def plot_pt_profile(
         None
     """
 
-    print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting the P-T profiles...", end="", flush=True)
+    else:
+        print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
 
     cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCl(c)"]
 
@@ -139,18 +144,6 @@ def plot_pt_profile(
     ax.set_xlabel("Temperature (K)", fontsize=13)
     ax.set_ylabel("Pressure (bar)", fontsize=13)
 
-    if xlim:
-        ax.set_xlim(xlim[0], xlim[1])
-    else:
-        ax.set_xlim(1000.0, 5000.0)
-
-    if ylim:
-        ax.set_ylim(ylim[0], ylim[1])
-    else:
-        ax.set_ylim(1e3, 1e-6)
-
-    ax.set_yscale("log")
-
     if offset is not None:
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
@@ -159,8 +152,32 @@ def plot_pt_profile(
         ax.get_xaxis().set_label_coords(0.5, -0.06)
         ax.get_yaxis().set_label_coords(-0.14, 0.5)
 
+    if "temp_nodes" in box.attributes:
+        temp_nodes = box.attributes["temp_nodes"]
+    else:
+        # For backward compatibility
+        temp_nodes = 15
+
+    if "max_press" in box.attributes:
+        max_press = box.attributes["max_press"]
+    else:
+        # For backward compatibility
+        max_press = 1e3  # (bar)
+
+    if xlim:
+        ax.set_xlim(xlim[0], xlim[1])
+    else:
+        ax.set_xlim(1000.0, 5000.0)
+
+    if ylim:
+        ax.set_ylim(ylim[0], ylim[1])
+    else:
+        ax.set_ylim(max_press, 1e-6)
+
+    ax.set_yscale("log")
+
     # Create the pressure points (bar)
-    pressure = np.logspace(-6.0, 3.0, 180)
+    pressure = np.logspace(-6.0, np.log10(max_press), 180)
 
     if "tint" in parameters:
         pt_profile = "molliere"
@@ -169,10 +186,10 @@ def plot_pt_profile(
         pt_profile = "free"
 
         temp_index = []
-        for i in range(15):
+        for i in range(temp_nodes):            
             temp_index.append(np.argwhere(parameters == f"t{i}")[0])
 
-        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
 
     if pt_profile == "molliere":
         conv_press = np.zeros(samples.shape[0])
@@ -221,7 +238,7 @@ def plot_pt_profile(
 
         elif pt_profile == "free":
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(item[temp_index[i]])
 
             knot_temp = np.asarray(knot_temp)
@@ -270,7 +287,7 @@ def plot_pt_profile(
 
     elif pt_profile == "free":
         knot_temp = []
-        for i in range(15):
+        for i in range(temp_nodes):
             knot_temp.append(median[f"t{i}"])
 
         knot_temp = np.asarray(knot_temp)
@@ -481,7 +498,7 @@ def plot_pt_profile(
             if ylim:
                 ax2.set_ylim(ylim[0], ylim[1])
             else:
-                ax2.set_ylim(1e3, 1e-6)
+                ax2.set_ylim(max_press, 1e-6)
 
             ax2.set_yscale("log")
 
@@ -538,7 +555,7 @@ def plot_pt_profile(
                 if ylim:
                     ax2.set_ylim(ylim[0], ylim[1])
                 else:
-                    ax2.set_ylim(1e3, 1e-6)
+                    ax2.set_ylim(max_press, 1e-6)
 
                 ax2.set_xscale("log")
                 ax2.set_yscale("log")
@@ -589,7 +606,11 @@ def plot_pt_profile(
                 "contain a ReadRadtrans object."
             )
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -601,7 +622,7 @@ def plot_opacities(
     tag: str,
     radtrans: read_radtrans.ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "opacities.pdf",
+    output: Optional[str] = "opacities.pdf",
 ) -> None:
     """
     Function to plot the line and continuum opacity structure from the median posterior samples.
@@ -613,7 +634,8 @@ def plot_opacities(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. The parameter is not used if
         set to ``None``.
@@ -624,7 +646,10 @@ def plot_opacities(
         None
     """
 
-    print(f"Plotting opacities: {output}...", end="", flush=True)
+    if output:
+        print("Plotting opacities...", end="", flush=True)
+    else:
+        print(f"Plotting opacities: {output}...", end="", flush=True)
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -863,7 +888,11 @@ def plot_opacities(
     ax3.set_yscale("log")
     ax4.set_yscale("log")
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -874,7 +903,7 @@ def plot_opacities(
 def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "clouds.pdf",
+    output: Optional[str] = "clouds.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     composition: str = "MgSiO3",
 ) -> None:
@@ -890,7 +919,8 @@ def plot_clouds(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     composition : str
@@ -917,7 +947,10 @@ def plot_clouds(
             f"sample contains the following parameters: {list(median.keys())}"
         )
 
-    print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting {composition} clouds...", end="", flush=True)
+    else:
+        print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
     mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
@@ -1060,7 +1093,11 @@ def plot_clouds(
     ax1.set_yscale("log")
     ax2.set_yscale("log")
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

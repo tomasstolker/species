@@ -5,6 +5,7 @@ This module was put together  many contributions by Paul Mollière
 """
 
 import copy
+import inspect
 
 from typing import Dict, List, Optional, Tuple
 
@@ -33,21 +34,29 @@ def get_line_species() -> list:
         "CH4",
         "CO",
         "CO_all_iso",
+        "CO_all_iso_HITEMP",
+        "CO_all_iso_Chubb",
         "CO2",
         "H2O",
+        "H2O_HITEMP",
         "H2S",
         "HCN",
         "K",
         "K_lor_cut",
+        "K_allard",
         "K_burrows",
         "NH3",
         "Na",
         "Na_lor_cut",
+        "Na_allard",
         "Na_burrows",
         "OH",
         "PH3",
         "TiO",
+        "TiO_all_Exomol",
+        "TiO_all_Plez",
         "VO",
+        "VO_Plez",
         "FeH",
         "H2O_main_iso",
         "CH4_main_iso",
@@ -183,7 +192,7 @@ def pt_ret_model(
             # from log(temperature)
             tnew = np.exp(np.cumsum(tnew) + tstart)
 
-            # Add upper radiative and lower conective
+            # Add upper radiative and lower covective
             # part into one single array
             tfinal = copy.copy(t_take)
             tfinal[conv_index] = tnew
@@ -389,7 +398,7 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: float = 0.3,
-) -> Tuple[np.ndarray, Optional[np.ndarray], float, Optional[float]]:
+) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating the P-T profile.
 
@@ -460,12 +469,15 @@ def create_pt_profile(
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
-        for i in range(15):
+        for i in range(knot_press.shape[0]):
             knot_temp.append(cube[cube_index[f"t{i}"]])
 
         knot_temp = np.asarray(knot_temp)
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+
+        phot_press = None
+        conv_press = None
 
     return temp, knot_temp, phot_press, conv_press
 
@@ -586,10 +598,16 @@ def create_abund_dict(
             if chemistry == "equilibrium":
                 item_replace = item.replace("_R_10", "")
                 item_replace = item_replace.replace("_R_30", "")
+                item_replace = item_replace.replace("_all_iso_HITEMP", "")
+                item_replace = item_replace.replace("_all_iso_Chubb", "")
                 item_replace = item_replace.replace("_all_iso", "")
+                item_replace = item_replace.replace("_HITEMP", "")
                 item_replace = item_replace.replace("_main_iso", "")
                 item_replace = item_replace.replace("_lor_cut", "")
+                item_replace = item_replace.replace("_allard", "")
                 item_replace = item_replace.replace("_burrows", "")
+                item_replace = item_replace.replace("_all_Plez", "")
+                item_replace = item_replace.replace("_all_Exomol", "")
                 item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace][indices]
@@ -620,10 +638,16 @@ def create_abund_dict(
             if chemistry == "equilibrium":
                 item_replace = item.replace("_R_10", "")
                 item_replace = item_replace.replace("_R_30", "")
+                item_replace = item_replace.replace("_all_iso_HITEMP", "")
+                item_replace = item_replace.replace("_all_iso_Chubb", "")
                 item_replace = item_replace.replace("_all_iso", "")
+                item_replace = item_replace.replace("_HITEMP", "")
                 item_replace = item_replace.replace("_main_iso", "")
                 item_replace = item_replace.replace("_lor_cut", "")
+                item_replace = item_replace.replace("_allard", "")
                 item_replace = item_replace.replace("_burrows", "")
+                item_replace = item_replace.replace("_all_Plez", "")
+                item_replace = item_replace.replace("_all_Exomol", "")
                 item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace][::3]
@@ -654,10 +678,16 @@ def create_abund_dict(
             if chemistry == "equilibrium":
                 item_replace = item.replace("_R_10", "")
                 item_replace = item_replace.replace("_R_30", "")
+                item_replace = item_replace.replace("_all_iso_HITEMP", "")
+                item_replace = item_replace.replace("_all_iso_Chubb", "")
                 item_replace = item_replace.replace("_all_iso", "")
+                item_replace = item_replace.replace("_HITEMP", "")
                 item_replace = item_replace.replace("_main_iso", "")
                 item_replace = item_replace.replace("_lor_cut", "")
+                item_replace = item_replace.replace("_allard", "")
                 item_replace = item_replace.replace("_burrows", "")
+                item_replace = item_replace.replace("_all_Plez", "")
+                item_replace = item_replace.replace("_all_Exomol", "")
                 item_replace = item_replace.replace("_Plez", "")
 
                 abund_out[item] = abund_in[item_replace]
@@ -850,7 +880,9 @@ def calc_spectrum_clouds(
     contribution: bool = False,
     tau_cloud: Optional[float] = None,
     cloud_wavel: Optional[Tuple[float, float]] = None,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+) -> Tuple[
+    Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray
+]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere.
 
@@ -921,6 +953,8 @@ def calc_spectrum_clouds(
         Flux (W m-2 um-1).
     np.ndarray, None
         Emission contribution.
+    np.ndarray
+        Array with mean molecular weight.
     """
 
     if chemistry == "equilibrium":
@@ -1042,10 +1076,16 @@ def calc_spectrum_clouds(
     ):
         if "CO_all_iso" in abundances:
             plt.plot(abundances["CO_all_iso"], pressure, label="CO")
+        if "CO_all_iso_HITEMP" in abundances:
+            plt.plot(abundances["CO_all_iso_HITEMP"], pressure, label="CO")
+        if "CO_all_iso_Chubb" in abundances:
+            plt.plot(abundances["CO_all_iso_Chubb"], pressure, label="CO")
         if "CH4" in abundances:
             plt.plot(abundances["CH4"], pressure, label="CH4")
         if "H2O" in abundances:
             plt.plot(abundances["H2O"], pressure, label="H2O")
+        if "H2O_HITEMP" in abundances:
+            plt.plot(abundances["H2O_HITEMP"], pressure, label="H2O")
         plt.xlim(1e-10, 1.0)
         plt.ylim(pressure[-1], pressure[0])
         plt.yscale("log")
@@ -1083,8 +1123,8 @@ def calc_spectrum_clouds(
             fsed = cloud_dict["fsed"]
             log_kzz = cloud_dict["log_kzz"]
             plt.title(
-                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, " +
-                f"X_b = {log_x_base_item:.2f}"
+                f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, "
+                + f"X_b = {log_x_base_item:.2f}"
             )
             plt.savefig(f"{item.lower()}_clouds.pdf", bbox_inches="tight")
             plt.clf()
@@ -1103,10 +1143,24 @@ def calc_spectrum_clouds(
     else:
         sigma_lnorm = None
 
-    # Calculate the emission spectrum
-    # TODO Remove try-except after merged PR in pRT repo
+    # Check new parameters in petitRADTRANS function
 
-    try:
+    inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+
+    if "new_simple_cloud_params" in inspect_prt.args:
+        param_cloud_model_2 = True
+    else:
+        param_cloud_model_2 = False
+
+    if "cloud_wlen" in inspect_prt.args:
+        param_cloud_wlen = True
+    else:
+        param_cloud_wlen = False
+
+    # Calculate the emission spectrum
+    # TODO Update after PR in pRT repo
+
+    if param_cloud_model_2 and param_cloud_wlen:
         rt_object.calc_flux(
             temperature,
             abundances,
@@ -1127,7 +1181,7 @@ def calc_spectrum_clouds(
             new_simple_cloud_params=cloud_dict,
         )
 
-    except TypeError:
+    elif param_cloud_model_2 and not param_cloud_wlen:
         rt_object.calc_flux(
             temperature,
             abundances,
@@ -1145,6 +1199,45 @@ def calc_spectrum_clouds(
             add_cloud_scat_as_abs=False,
             hack_cloud_photospheric_tau=tau_cloud,
             new_simple_cloud_params=cloud_dict,
+        )
+
+    elif not param_cloud_model_2 and param_cloud_wlen:
+        rt_object.calc_flux(
+            temperature,
+            abundances,
+            10.0 ** log_g,
+            mmw,
+            sigma_lnorm=sigma_lnorm,
+            Kzz=Kzz_use,
+            fsed=fseds,
+            radius=None,
+            contribution=contribution,
+            gray_opacity=None,
+            Pcloud=None,
+            kappa_zero=None,
+            gamma_scat=None,
+            add_cloud_scat_as_abs=False,
+            hack_cloud_photospheric_tau=tau_cloud,
+            cloud_wlen=cloud_wavel,
+        )
+
+    else:
+        rt_object.calc_flux(
+            temperature,
+            abundances,
+            10.0 ** log_g,
+            mmw,
+            sigma_lnorm=sigma_lnorm,
+            Kzz=Kzz_use,
+            fsed=fseds,
+            radius=None,
+            contribution=contribution,
+            gray_opacity=None,
+            Pcloud=None,
+            kappa_zero=None,
+            gamma_scat=None,
+            add_cloud_scat_as_abs=False,
+            hack_cloud_photospheric_tau=tau_cloud,
         )
 
     if (
@@ -1178,7 +1271,11 @@ def calc_spectrum_clouds(
         else:
             contr_em = None
 
-    if plotting and Kzz_use is None:
+    if (
+        plotting
+        and Kzz_use is None
+        and hasattr(rt_object, "ret_test_cloud_scat_plus_abs")
+    ):
         scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
         plt.plot(
             wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label="Total opacity"
@@ -1192,7 +1289,7 @@ def calc_spectrum_clouds(
         plt.savefig("cloud_opacity.pdf", bbox_inches="tight")
         plt.clf()
 
-    return wavel, f_lambda, contr_em
+    return wavel, f_lambda, contr_em, mmw
 
 
 @typechecked
@@ -1284,6 +1381,12 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     if "CO_all_iso" in abund:
         c_abund += abund["CO_all_iso"] * mmw / masses["CO"]
 
+    if "CO_all_iso_HITEMP" in abund:
+        c_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+
+    if "CO_all_iso_Chubb" in abund:
+        c_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+
     if "CO2" in abund:
         c_abund += abund["CO2"] * mmw / masses["CO2"]
 
@@ -1304,6 +1407,12 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     if "CO_all_iso" in abund:
         o_abund += abund["CO_all_iso"] * mmw / masses["CO"]
 
+    if "CO_all_iso_HITEMP" in abund:
+        o_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+
+    if "CO_all_iso_Chubb" in abund:
+        o_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+
     if "CO2" in abund:
         o_abund += 2.0 * abund["CO2"] * mmw / masses["CO2"]
 
@@ -1312,6 +1421,9 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
 
     if "H2O" in abund:
         o_abund += abund["H2O"] * mmw / masses["H2O"]
+
+    if "H2O_HITEMP" in abund:
+        o_abund += abund["H2O_HITEMP"] * mmw / masses["H2O"]
 
     if "H2O_main_iso" in abund:
         o_abund += abund["H2O_main_iso"] * mmw / masses["H2O"]
@@ -1328,6 +1440,9 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
 
     if "H2O" in abund:
         h_abund += 2.0 * abund["H2O"] * mmw / masses["H2O"]
+
+    if "H2O_HITEMP" in abund:
+        h_abund += 2.0 * abund["H2O_HITEMP"] * mmw / masses["H2O"]
 
     if "H2O_main_iso" in abund:
         h_abund += 2.0 * abund["H2O_main_iso"] * mmw / masses["H2O"]
@@ -1373,19 +1488,19 @@ def mean_molecular_weight(abundances: dict) -> float:
     mmw = 0.0
 
     for key in abundances:
-        if key == "CO_all_iso":
+        if key in ["CO_all_iso", "CO_all_iso_HITEMP", "CO_all_iso_Chubb"]:
             mmw += abundances[key] / masses["CO"]
 
-        elif key in ["Na_lor_cut", "Na_burrows"]:
+        elif key in ["Na_lor_cut", "Na_allard", "Na_burrows"]:
             mmw += abundances[key] / masses["Na"]
 
-        elif key in ["K_lor_cut", "K_burrows"]:
+        elif key in ["K_lor_cut", "K_allard", "K_burrows"]:
             mmw += abundances[key] / masses["K"]
 
         elif key == "CH4_main_iso":
             mmw += abundances[key] / masses["CH4"]
 
-        elif key == "H2O_main_iso":
+        elif key in ["H2O_main_iso", "H2O_HITEMP"]:
             mmw += abundances[key] / masses["H2O"]
 
         else:
@@ -1430,6 +1545,9 @@ def potassium_abundance(log_x_abund: dict) -> float:
 
     elif "Na_lor_cut" in log_x_abund:
         n_na_abund = x_abund["Na_lor_cut"] * mmw / masses["Na"]
+
+    elif "Na_allard" in log_x_abund:
+        n_na_abund = x_abund["Na_allard"] * mmw / masses["Na"]
 
     elif "Na_burrows" in log_x_abund:
         n_na_abund = x_abund["Na_burrows"] * mmw / masses["Na"]
@@ -1539,6 +1657,7 @@ def atomic_masses() -> dict:
     masses["O"] = 16.0
     masses["Na"] = 23.0
     masses["Na_lor_cur"] = 23.0
+    masses["Na_allard"] = 23.0
     masses["Na_burrows"] = 23.0
     masses["Mg"] = 24.3
     masses["Al"] = 27.0
@@ -1548,6 +1667,7 @@ def atomic_masses() -> dict:
     masses["Cl"] = 35.45
     masses["K"] = 39.1
     masses["K_lor_cut"] = 39.1
+    masses["K_allard"] = 39.1
     masses["K_burrows"] = 39.1
     masses["Ca"] = 40.0
     masses["Ti"] = 47.9
@@ -1558,6 +1678,7 @@ def atomic_masses() -> dict:
     # Molecules
     masses["H2"] = 2.0
     masses["H2O"] = 18.0
+    masses["H2O_HITEMP"] = 18.0
     masses["H2O_main_iso"] = 18.0
     masses["CH4"] = 16.0
     masses["CH4_main_iso"] = 16.0
@@ -1565,6 +1686,8 @@ def atomic_masses() -> dict:
     masses["CO2_main_iso"] = 44.0
     masses["CO"] = 28.0
     masses["CO_all_iso"] = 28.0
+    masses["CO_all_iso_Chubb"] = 28.0
+    masses["CO_all_iso_HITEMP"] = 28.0
     masses["NH3"] = 17.0
     masses["NH3_main_iso"] = 17.0
     masses["HCN"] = 27.0
@@ -1574,8 +1697,10 @@ def atomic_masses() -> dict:
     masses["H2S"] = 34.0
     masses["H2S_main_iso"] = 34.0
     masses["VO"] = 67.0
+    masses["VO_Plez"] = 67.0
     masses["TiO"] = 64.0
-    masses["TiO_all_iso_Plez"] = 64.0
+    masses["TiO_all_Exomol"] = 64.0
+    masses["TiO_all_Plez"] = 64.0
     masses["FeH"] = 57.0
     masses["FeH_main_iso"] = 57.0
     masses["OH"] = 17.0
@@ -2337,7 +2462,7 @@ def quench_pressure(
     Returns
     -------
     float, None
-        Quenching pressure (bar)
+        Quenching pressure (bar).
     """
 
     # Interpolate the equilibbrium abundances
@@ -2394,3 +2519,106 @@ def quench_pressure(
         )
 
     return p_quench
+
+
+def convective_flux(
+    press: np.ndarray,
+    temp: np.ndarray,
+    mmw: np.ndarray,
+    nabla_ad: np.ndarray,
+    kappa_r: np.ndarray,
+    density: np.ndarray,
+    c_p: np.ndarray,
+    gravity: float,
+    f_bol: float,
+    mix_length: float = 1.0,
+) -> np.ndarray:
+    """
+    Function for calculating the convective flux with mixing-length
+    theory. This function has been adopted from petitCODE (Paul
+    Mollière, MPIA) and was converted from Fortran to Python.
+
+    Parameters
+    ----------
+    press : np.ndarray
+        Array with the pressures (Pa).
+    temp : np.ndarray
+        Array with the temperatures (K) at ``pressure``.
+    mmw : np.ndarray
+        Array with the mean molecular weights at ``pressure``.
+    nabla_ad : np.ndarray
+        Array with the adiabatic temperature gradient at ``pressure``.
+    kappa_r : np.ndarray
+        Array with the Rosseland mean opacity (m2 kg-1) at
+        ``pressure``.
+    density : np.ndarray
+        Array with the density (kg m-3) at ``pressure``.
+    c_p : np.ndarray
+        Array with the specific heat capacity (J kg-1 K-1) at
+        constant pressure, ``pressure``.
+    gravity : float
+        Surface gravity (m s-2).
+    f_bol : float
+        Bolometric flux (W m-2) at the top of the atmosphere,
+        calculated from the low-resolution spectrum.
+    mix_length : float
+        Mixing length for the convection in units of the pressure
+        scale height (default: 1.0).
+
+    Returns
+    -------
+    np.ndarray
+        Convective flux (W m-2) at each pressure.
+    """
+
+    t_transp = (f_bol / constants.SIGMA_SB) ** 0.25  # (K)
+    nabla_rad = (
+        3.0 * kappa_r * press * t_transp ** 4.0 / 16.0 / gravity / temp ** 4.0
+    )  # (dimensionless)
+    h_press = (
+        constants.BOLTZMANN * temp / (mmw * constants.ATOMIC_MASS * gravity)
+    )  # (m)
+    l_mix = mix_length * h_press  # (m)
+
+    U = (
+        (12.0 * constants.SIGMA_SB * temp ** 3.0)
+        / (c_p * density ** 2.0 * kappa_r * l_mix ** 2.0)
+        * np.sqrt(8.0 * h_press / gravity)
+    )
+
+    W = nabla_rad - nabla_ad
+
+    # TODO thesis: 2336U^4W
+    A = (
+        1168.0 * U ** 3.0
+        + 2187 * U * W
+        + 27.0
+        * np.sqrt(
+            3.0
+            * (2048.0 * U ** 6.0 + 2236.0 * U ** 4.0 * W + 2187.0 * U ** 2.0 * W ** 2.0)
+        )
+    ) ** (1.0 / 3.0)
+
+    xi = (
+        19.0 / 27.0 * U
+        - 184.0 / 27.0 * 2.0 ** (1.0 / 3.0) * U ** 2.0 / A
+        + 2.0 ** (2.0 / 3.0) / 27.0 * A
+    )
+
+    nabla = xi ** 2.0 + nabla_ad - U ** 2.0
+    nabla_e = nabla_ad + 2.0 * U * xi - 2.0 * U ** 2.0
+
+    f_conv = (
+        density
+        * c_p
+        * temp
+        * np.sqrt(gravity)
+        * (mix_length * h_press) ** 2.0
+        / (4.0 * np.sqrt(2.0))
+        * h_press ** -1.5
+        * (nabla - nabla_e) ** 1.5
+    )
+
+    f_conv[np.isnan(f_conv)] = 0.0
+
+    return f_conv  # (W m-2)

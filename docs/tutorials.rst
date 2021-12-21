@@ -31,6 +31,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
 
    tutorials/flux_magnitude.ipynb
    tutorials/synthetic_photometry.ipynb
+   tutorials/companion_data.ipynb
 
 **Color and magnitude diagrams**
 

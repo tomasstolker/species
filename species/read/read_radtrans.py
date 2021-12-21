@@ -38,6 +38,7 @@ class ReadRadtrans:
         pressure_grid: str = "smaller",
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
+        max_press: float = None,
     ) -> None:
         """
         Parameters
@@ -88,6 +89,9 @@ class ReadRadtrans:
             ``wavel_range``.  The full wavelength range (i.e.
             ``wavel_range``) is used if the argument is set to
             ``None``.
+        max_pressure : float, None
+            Maximum pressure (bar) for the free temperature nodes. The
+            default is set to 1000 bar.
 
         Returns
         -------
@@ -102,6 +106,13 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
+
+        # Set maximum pressure
+
+        if max_press is None:
+            self.max_press = 1e3
+        else:
+            self.max_press = max_press
 
         # Set the wavelength range
 
@@ -133,7 +144,7 @@ class ReadRadtrans:
 
         # Create 180 pressure layers in log space
 
-        self.pressure = np.logspace(-6, 3, n_pressure)
+        self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
 
         # Import petitRADTRANS here because it is slow
 
@@ -174,6 +185,7 @@ class ReadRadtrans:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         plot_contribution: Optional[str] = None,
+        temp_nodes: Optional[int] = None,
     ) -> box.ModelBox:
         """
         Function for calculating a model spectrum with
@@ -201,6 +213,8 @@ class ReadRadtrans:
         plot_contribution : str, None
             Filename for the plot with the emission contribution. The
             plot is not created if the argument is set to ``None``.
+        temp_nodes : int, None
+            Number of free temperature nodes.
 
         Returns
         -------
@@ -294,12 +308,21 @@ class ReadRadtrans:
             )
 
         else:
+            if temp_nodes is None:
+                temp_nodes = 0
+
+                for i in range(100):
+                    if f"t{i}" in model_param:
+                        temp_nodes += 1
+                    else:
+                        break
+
             knot_press = np.logspace(
-                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), 15
+                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), temp_nodes
             )
 
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(model_param[f"t{i}"])
 
             knot_temp = np.asarray(knot_temp)
@@ -447,7 +470,7 @@ class ReadRadtrans:
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
-            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clouds(
+            wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
                 self.rt_object,
                 self.pressure,
                 temp,
@@ -663,7 +686,8 @@ class ReadRadtrans:
 
         if hasattr(self.rt_object, "h_bol"):
             pressure = 1e-6*self.rt_object.press  # (bar)
-            f_bol = -4.*np.pi*self.rt_object.h_bol  # (W m-2)
+            f_bol = -4.*np.pi*self.rt_object.h_bol
+            f_bol *= 1e-3  # (erg s-1 cm-2) -> (W m-2)
             bol_flux = np.column_stack((pressure, f_bol))
 
         else:

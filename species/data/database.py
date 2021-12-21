@@ -83,6 +83,11 @@ class Database:
     @typechecked
     def list_content(self) -> None:
         """
+        Method for listing the content of the HDF5 database. The
+        database structure will be descended while printing the paths
+        of all the groups and datasets, as well as the dataset
+        attributes.
+
         Returns
         -------
         NoneType
@@ -92,14 +97,15 @@ class Database:
         print("Database content:")
 
         @typechecked
-        def descend(
+        def _descend(
             h5_object: Union[
                 h5py._hl.files.File, h5py._hl.group.Group, h5py._hl.dataset.Dataset
             ],
             seperator: str = "",
         ) -> None:
             """
-            Function for descending into an HDF5 dataset and printing its content.
+            Internal function for descending into an HDF5 dataset and
+            printing its content.
 
             Parameters
             ----------
@@ -117,28 +123,37 @@ class Database:
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
                 for key in h5_object.keys():
                     print(seperator + "- " + key + ": " + str(h5_object[key]))
-                    descend(h5_object[key], seperator=seperator + "\t")
+                    _descend(h5_object[key], seperator=seperator + "\t")
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
                 for key in h5_object.attrs.keys():
                     print(seperator + "- " + key + ": " + str(h5_object.attrs[key]))
 
         with h5py.File(self.database, "r") as hdf_file:
-            descend(hdf_file)
+            _descend(hdf_file)
 
     @staticmethod
     @typechecked
-    def list_companions() -> None:
+    def list_companions() -> List[str]:
         """
+        Method for printing an overview of the companion data that are
+        stored in the database. It will return a list with all the
+        companion names. Each name can be used as input for
+        :class:`~species.read.read_object.ReadObject`.
+
         Returns
         -------
-        NoneType
-            None
+        list(str)
+            List with the object names that are stored in the database.
         """
 
         spec_data = companions.get_spec_data()
 
+        comp_names = []
+
         for planet_name, planet_dict in companions.get_data().items():
+            comp_names.append(planet_name)
+
             distance = planet_dict["distance"]
             app_mag = planet_dict["app_mag"]
 
@@ -146,7 +161,11 @@ class Database:
             print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
 
             for mag_name, mag_dict in app_mag.items():
-                print(f"{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}")
+                if isinstance(mag_dict, list):
+                    for item in mag_dict:
+                        print(f"{mag_name} (mag) = {item[0]} +/- {item[1]}")
+                else:
+                    print(f"{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}")
 
             if planet_name in spec_data:
                 for key, value in spec_data[planet_name].items():
@@ -154,15 +173,23 @@ class Database:
 
             print()
 
+        return comp_names
+
     @typechecked
-    def delete_data(self, dataset: str) -> None:
+    def delete_data(self, data_set: str) -> None:
         """
         Function for deleting a dataset from the HDF5 database.
 
         Parameters
         ----------
-        dataset : str
-            Dataset path in the HDF5 database.
+        data_set : str
+            Group or dataset path in the HDF5 database. The content
+            and structure of the database can be shown with
+            :meth:`~species.data.database.Database.list_content`. That
+            could help to determine which argument should be provided
+            as argument of ``data_set``. For example,
+            ``data_set="models/drift-phoenix"`` will remove the
+            model spectra of DRIFT-PHOENIX.            
 
         Returns
         -------
@@ -171,29 +198,35 @@ class Database:
         """
 
         with h5py.File(self.database, "a") as hdf_file:
-            if dataset in hdf_file:
-                print(f"Deleting data: {dataset}...", end="", flush=True)
-                del hdf_file[dataset]
+            if data_set in hdf_file:
+                print(f"Deleting data: {data_set}...", end="", flush=True)
+                del hdf_file[data_set]
                 print(" [DONE]")
 
             else:
-                warnings.warn(f"The dataset {dataset} is not found in {self.database}.")
+                warnings.warn(f"The dataset {data_set} is not "
+                              f"found in {self.database}.")
 
     @typechecked
     def add_companion(
-        self, name: Union[Optional[str], Optional[List[str]]] = None
+        self, name: Union[Optional[str], Optional[List[str]]] = None, verbose: bool = True
     ) -> None:
         """
-        Function for adding the magnitudes and spectra of directly imaged planets and brown dwarfs
-        from :class:`~species.data.companions.get_data` and
-        :class:`~species.data.companions.get_comp_spec` to the database.
+        Function for adding the magnitudes and spectra of directly
+        imaged planets and brown dwarfs from
+        :class:`~species.data.companions.get_data` and
+        :func:`~species.data.companions.get_comp_spec` to the database.
 
         Parameters
         ----------
         name : str, list(str), None
-            Name or list with names of the directly imaged planets and brown dwarfs (e.g.
-            ``'HR 8799 b'`` or ``['HR 8799 b', '51 Eri b', 'PZ Tel B']``). All the available
-            companion data are added if set to ``None``.
+            Name or list with names of the directly imaged planets and
+            brown dwarfs (e.g. ``'HR 8799 b'`` or ``['HR 8799 b',
+            '51 Eri b', 'PZ Tel B']``). All the available companion
+            data are added if set to ``None``.
+        verbose : bool
+            Print details on the companion data that are added to the
+            database.
 
         Returns
         -------
@@ -210,13 +243,14 @@ class Database:
             name = data.keys()
 
         for item in name:
-            spec_dict = companions.companion_spectra(self.input_path, item)
+            spec_dict = companions.companion_spectra(self.input_path, item, verbose=verbose)
 
             self.add_object(
                 object_name=item,
                 distance=data[item]["distance"],
                 app_mag=data[item]["app_mag"],
                 spectrum=spec_dict,
+                verbose=verbose,
             )
 
     @typechecked
@@ -263,6 +297,7 @@ class Database:
         filter_name: str,
         filename: Optional[str] = None,
         detector_type: str = "photon",
+        verbose: bool = True,
     ) -> None:
         """
         Function for adding a filter profile to the database, either from the SVO Filter profile
@@ -284,6 +319,8 @@ class Database:
             is provided. Otherwise, for filters that are fetched from the SVO website, the detector
             type is read from the SVO data. The detector type determines if a wavelength factor
             is included in the integral for the synthetic photometry.
+        verbose : bool
+            Print details on the companion data that are added to the database.
 
         Returns
         -------
@@ -291,7 +328,8 @@ class Database:
             None
         """
 
-        print(f"Adding filter: {filter_name}...", end="", flush=True)
+        if verbose:
+            print(f"Adding filter: {filter_name}...", end="", flush=True)
 
         filter_split = filter_name.split("/")
 
@@ -334,7 +372,8 @@ class Database:
 
         h5_file.close()
 
-        print(" [DONE]")
+        if verbose:
+            print(" [DONE]")
 
     @typechecked
     def add_isochrones(self, filename: str, tag: str, model: str = "baraffe") -> None:
@@ -585,6 +624,7 @@ class Database:
             Dict[str, Tuple[str, Optional[str], Optional[float]]]
         ] = None,
         deredden: Union[Dict[str, float], float] = None,
+        verbose: bool = True,
     ) -> None:
         """
         Function for adding the photometric and/or spectroscopic data of an object to the database.
@@ -625,6 +665,8 @@ class Database:
             deredden the provided spectrum named 'SPHERE' and the Keck/NIRC2 J-band photometry with
             a visual extinction of 1.5. For photometric fluxes, the filter-averaged extinction is
             used for the dereddening.
+        verbose : bool
+            Print details on the object data that are added to the database.
 
         Returns
         -------
@@ -643,7 +685,7 @@ class Database:
 
             for item in app_mag:
                 if f"filters/{item}" not in h5_file:
-                    self.add_filter(item)
+                    self.add_filter(item, verbose=verbose)
 
         if flux_density is not None:
             if "spectra/calibration/vega" not in h5_file:
@@ -651,9 +693,10 @@ class Database:
 
             for item in flux_density:
                 if f"filters/{item}" not in h5_file:
-                    self.add_filter(item)
+                    self.add_filter(item, verbose=verbose)
 
-        print(f"Adding object: {object_name}")
+        if verbose:
+            print(f"Adding object: {object_name}")
 
         if "objects" not in h5_file:
             h5_file.create_group("objects")
@@ -662,7 +705,8 @@ class Database:
             h5_file.create_group(f"objects/{object_name}")
 
         if distance is not None:
-            print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
+            if verbose:
+                print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
 
             if f"objects/{object_name}/distance" in h5_file:
                 del h5_file[f"objects/{object_name}/distance"]
@@ -776,23 +820,24 @@ class Database:
                         app_mag[mag_item][1],
                     )
 
-                    print(f"   - {mag_item}:")
+                    if verbose:
+                        print(f"   - {mag_item}:")
 
-                    print(
-                        f"      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- "
-                        f"{app_mag[mag_item][1]:.2f}"
-                    )
+                        print(
+                            f"      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- "
+                            f"{app_mag[mag_item][1]:.2f}"
+                        )
 
-                    print(
-                        f"      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- "
-                        f"{error[mag_item]:.2e}"
-                    )
+                        print(
+                            f"      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- "
+                            f"{error[mag_item]:.2e}"
+                        )
 
-                    if isinstance(deredden, float):
-                        print(f"      - Dereddening A_V: {deredden}")
+                        if isinstance(deredden, float):
+                            print(f"      - Dereddening A_V: {deredden}")
 
-                    elif mag_item in deredden:
-                        print(f"      - Dereddening A_V: {deredden[mag_item]}")
+                        elif mag_item in deredden:
+                            print(f"      - Dereddening A_V: {deredden[mag_item]}")
 
                     data = np.asarray(
                         [
@@ -805,7 +850,9 @@ class Database:
 
                 elif isinstance(app_mag[mag_item], list):
                     n_phot = len(app_mag[mag_item])
-                    print(f"   - {mag_item} ({n_phot} values):")
+
+                    if verbose:
+                        print(f"   - {mag_item} ({n_phot} values):")
 
                     mag_list = []
                     mag_err_list = []
@@ -816,24 +863,25 @@ class Database:
                         )
                         app_mag_item = (dered_mag, app_mag[mag_item][i][1])
 
-                        print(
-                            f"      - Apparent magnitude = {app_mag_item[0]:.2f} +/- "
-                            f"{app_mag_item[1]:.2f}"
-                        )
+                        if verbose:
+                            print(
+                                f"      - Apparent magnitude = {app_mag_item[0]:.2f} +/- "
+                                f"{app_mag_item[1]:.2f}"
+                            )
 
-                        print(
-                            f"      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- "
-                            f"{error[mag_item][i]:.2e}"
-                        )
+                            print(
+                                f"      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- "
+                                f"{error[mag_item][i]:.2e}"
+                            )
+
+                            if isinstance(deredden, float):
+                                print(f"      - Dereddening A_V: {deredden}")
+
+                            elif mag_item in deredden:
+                                print(f"      - Dereddening A_V: {deredden[mag_item]}")
 
                         mag_list.append(app_mag_item[0])
                         mag_err_list.append(app_mag_item[1])
-
-                        if isinstance(deredden, float):
-                            print(f"      - Dereddening A_V: {deredden}")
-
-                        elif mag_item in deredden:
-                            print(f"      - Dereddening A_V: {deredden[mag_item]}")
 
                     data = np.asarray(
                         [mag_list, mag_err_list, flux[mag_item], error[mag_item]]
@@ -859,12 +907,13 @@ class Database:
                     del h5_file[f"objects/{object_name}/{flux_item}"]
 
                 if isinstance(flux_density[flux_item], tuple):
-                    print(f"   - {flux_item}:")
+                    if verbose:
+                        print(f"   - {flux_item}:")
 
-                    print(
-                        f"      - Flux (W m-2 um-1) = {flux_density[flux_item][0]:.2e} +/- "
-                        f"{flux_density[flux_item][1]:.2e}"
-                    )
+                        print(
+                            f"      - Flux (W m-2 um-1) = {flux_density[flux_item][0]:.2e} +/- "
+                            f"{flux_density[flux_item][1]:.2e}"
+                        )
 
                     data = np.asarray(
                         [
@@ -899,10 +948,11 @@ class Database:
                             and hdulist[0].header["INSTRU"] == "GRAVITY"
                         ):
                             # Read data from a FITS file with the GRAVITY format
-                            print("   - GRAVITY spectrum:")
-
                             gravity_object = hdulist[0].header["OBJECT"]
-                            print(f"      - Object: {gravity_object}")
+
+                            if verbose:
+                                print("   - GRAVITY spectrum:")
+                                print(f"      - Object: {gravity_object}")
 
                             wavelength = hdulist[1].data["WAVELENGTH"]  # (um)
                             flux = hdulist[1].data["FLUX"]  # (W m-2 um-1)
@@ -913,7 +963,8 @@ class Database:
 
                         else:
                             # Otherwise try to read a 2D dataset with 3 columns
-                            print("   - Spectrum:")
+                            if verbose:
+                                print("   - Spectrum:")
 
                             for i, hdu_item in enumerate(hdulist):
                                 data = np.asarray(hdu_item.data)
@@ -947,7 +998,8 @@ class Database:
                             f"data format should be 2D with 3 columns."
                         )
 
-                    print("   - Spectrum:")
+                    if verbose:
+                        print("   - Spectrum:")
                     read_spec[key] = data
 
                 if isinstance(deredden, float):
@@ -962,24 +1014,41 @@ class Database:
                     )
                     read_spec[key][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
+                if read_spec[key].shape[0] == 3 and read_spec[key].shape[1] != 3:
+                    warnings.warn(f"Transposing the data of {key} because "
+                                  f"the first instead of the second axis "
+                                  f"has a length of 3.")
+
+                    read_spec[key] = read_spec[key].transpose()
+
+                nan_index = np.isnan(read_spec[key][:, 1])
+
+                if sum(nan_index) != 0:
+                    read_spec[key] = read_spec[key][~nan_index, :]
+
+                    warnings.warn(f"Found {sum(nan_index)} fluxes with NaN in "
+                                  f"the data of {key}. Removing the spectral "
+                                  f"fluxes that contain a NaN.")
+
                 wavelength = read_spec[key][:, 0]
                 flux = read_spec[key][:, 1]
                 error = read_spec[key][:, 2]
 
-                print(f"      - Database tag: {key}")
-                print(f"      - Filename: {value[0]}")
-                print(f"      - Data shape: {read_spec[key].shape}")
-                print(
-                    f"      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}"
-                )
-                print(f"      - Mean flux (W m-2 um-1): {np.nanmean(flux):.2e}")
-                print(f"      - Mean error (W m-2 um-1): {np.nanmean(error):.2e}")
+                if verbose:
+                    print(f"      - Database tag: {key}")
+                    print(f"      - Filename: {value[0]}")
+                    print(f"      - Data shape: {read_spec[key].shape}")
+                    print(
+                        f"      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}"
+                    )
+                    print(f"      - Mean flux (W m-2 um-1): {np.nanmean(flux):.2e}")
+                    print(f"      - Mean error (W m-2 um-1): {np.nanmean(error):.2e}")
 
-                if isinstance(deredden, float):
-                    print(f"      - Dereddening A_V: {deredden}")
+                    if isinstance(deredden, float):
+                        print(f"      - Dereddening A_V: {deredden}")
 
-                elif key in deredden:
-                    print(f"      - Dereddening A_V: {deredden[key]}")
+                    elif key in deredden:
+                        print(f"      - Dereddening A_V: {deredden[key]}")
 
             # Read covariance matrix
 
@@ -994,10 +1063,11 @@ class Database:
                             and hdulist[0].header["INSTRU"] == "GRAVITY"
                         ):
                             # Read data from a FITS file with the GRAVITY format
-                            print("   - GRAVITY covariance matrix:")
-
                             gravity_object = hdulist[0].header["OBJECT"]
-                            print(f"      - Object: {gravity_object}")
+
+                            if verbose:
+                                print("   - GRAVITY covariance matrix:")
+                                print(f"      - Object: {gravity_object}")
 
                             read_cov[key] = hdulist[1].data[
                                 "COVARIANCE"
@@ -1005,7 +1075,8 @@ class Database:
 
                         else:
                             # Otherwise try to read a square, 2D dataset
-                            print("   - Covariance matrix:")
+                            if verbose:
+                                print("   - Covariance matrix:")
 
                             for i, hdu_item in enumerate(hdulist):
                                 data = np.asarray(hdu_item.data)
@@ -1055,7 +1126,8 @@ class Database:
                             f"wavelength points as the spectrum."
                         )
 
-                    print("   - Covariance matrix:")
+                    if verbose:
+                        print("   - Covariance matrix:")
 
                     if np.all(np.diag(data) == 1.0):
                         warnings.warn(
@@ -1071,12 +1143,13 @@ class Database:
                     else:
                         read_cov[key] = data
 
-                if read_cov[key] is not None:
+                if verbose and read_cov[key] is not None:
                     print(f"      - Database tag: {key}")
                     print(f"      - Filename: {value[1]}")
                     print(f"      - Data shape: {read_cov[key].shape}")
 
-            print("   - Spectral resolution:")
+            if verbose:
+                print("   - Spectral resolution:")
 
             for key, value in spectrum.items():
 
@@ -1099,11 +1172,13 @@ class Database:
                 dset = h5_file[f"objects/{object_name}/spectrum/{key}"]
 
                 if value[2] is None:
-                    print(f"      - {key}: None")
+                    if verbose:
+                        print(f"      - {key}: None")
                     dset.attrs["specres"] = 0.0
 
                 else:
-                    print(f"      - {key}: {value[2]:.1f}")
+                    if verbose:
+                        print(f"      - {key}: {value[2]:.1f}")
                     dset.attrs["specres"] = value[2]
 
         h5_file.close()
@@ -1428,6 +1503,11 @@ class Database:
 
         dset.attrs["n_scaling"] = int(count_scaling)
 
+        if "teff_0" in modelpar and "teff_1" in modelpar:
+            dset.attrs["binary"] = True
+        else:
+            dset.attrs["binary"] = False
+
         try:
             int_auto = emcee.autocorr.integrated_time(samples)
             print(f"Integrated autocorrelation time = {int_auto}")
@@ -1680,6 +1760,11 @@ class Database:
         else:
             n_error = 0
 
+        if "binary" in dset.attrs:
+            binary = dset.attrs["binary"]
+        else:
+            binary = False
+
         ignore_param = []
 
         for i in range(n_scaling):
@@ -1778,12 +1863,44 @@ class Database:
                     specbox = read_util.powerlaw_spectrum(wavel_range, model_param)
 
                 else:
-                    specbox = readmodel.get_model(
-                        model_param,
-                        spec_res=spec_res,
-                        wavel_resample=wavel_resample,
-                        smooth=True,
-                    )
+                    if binary:
+                        param_0 = read_util.binary_to_single(model_param, 0)
+
+                        specbox_0 = readmodel.get_model(
+                            param_0,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
+
+                        param_1 = read_util.binary_to_single(model_param, 1)
+
+                        specbox_1 = readmodel.get_model(
+                            param_1,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
+
+                        flux_comb = model_param['spec_weight']*specbox_0.flux \
+                            + (1.-model_param['spec_weight'])*specbox_1.flux
+
+                        specbox = box.create_box(
+                            boxtype="model",
+                            model=spectrum_name,
+                            wavelength=specbox_0.wavelength,
+                            flux=flux_comb,
+                            parameters=model_param,
+                            quantity="flux",
+                        )
+
+                    else:
+                        specbox = readmodel.get_model(
+                            model_param,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
 
             elif spectrum_type == "calibration":
                 specbox = readcalib.get_spectrum(model_param)
@@ -1842,6 +1959,11 @@ class Database:
 
         spectrum_type = dset.attrs["type"]
         spectrum_name = dset.attrs["spectrum"]
+
+        if "binary" in dset.attrs:
+            binary = dset.attrs["binary"]
+        else:
+            binary = False
 
         if "distance" in dset.attrs:
             distance = dset.attrs["distance"]
@@ -1909,10 +2031,32 @@ class Database:
 
                 else:
                     if phot_type == "magnitude":
-                        mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+                        if binary:
+                            param_0 = read_util.binary_to_single(model_param, 0)
+                            mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
+
+                            param_1 = read_util.binary_to_single(model_param, 1)
+                            mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
+
+                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
+                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+
+                        else:
+                            mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
 
                     elif phot_type == "flux":
-                        mcmc_phot[i], _ = readmodel.get_flux(model_param)
+                        if binary:
+                            param_0 = read_util.binary_to_single(model_param, 0)
+                            mcmc_phot_0, _ = readmodel.get_flux(param_0)
+
+                            param_1 = read_util.binary_to_single(model_param, 1)
+                            mcmc_phot_1, _ = readmodel.get_flux(param_1)
+
+                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
+                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+
+                        else:
+                            mcmc_phot[i], _ = readmodel.get_flux(model_param)
 
             elif spectrum_type == "calibration":
                 if phot_type == "magnitude":
@@ -2081,7 +2225,7 @@ class Database:
             n_param = dset.attrs["nparam"]
 
         if "ln_evidence" in dset.attrs:
-            # Use if condition for backward compatibility
+            # For backward compatibility
             ln_evidence = dset.attrs["ln_evidence"]
         else:
             ln_evidence = None
@@ -2528,7 +2672,17 @@ class Database:
         with open(radtrans_filename) as json_file:
             radtrans = json.load(json_file)
 
-        samples = np.loadtxt(os.path.join(output_folder, "post_equal_weights.dat"))
+        post_new = os.path.join(output_folder, "retrieval_post_equal_weights.dat")
+        post_old = os.path.join(output_folder, "post_equal_weights.dat")
+
+        if os.path.exists(post_new):
+            samples = np.loadtxt(post_new)
+
+        elif os.path.exists(post_old):
+            samples = np.loadtxt(post_old)
+
+        else:
+            raise RuntimeError("Can not find the post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
@@ -2611,6 +2765,14 @@ class Database:
 
             if "pt_smooth" in radtrans:
                 dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
+
+            if radtrans["temp_nodes"] is None:
+                dset.attrs["temp_nodes"] = "None"
+            else:
+                dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
+
+            if "max_press" in radtrans:
+                dset.attrs["max_press"] = radtrans["max_press"]
 
         print(" [DONE]")
 
@@ -2977,12 +3139,26 @@ class Database:
         else:
             pressure_grid = "smaller"
 
+        # Get free temperarture nodes
+
+        if dset.attrs["temp_nodes"] == "None":
+            temp_nodes = None
+        else:
+            temp_nodes = dset.attrs["temp_nodes"]
+
         # Get distance
 
         if "distance" in dset.attrs:
             distance = dset.attrs["distance"]
         else:
             distance = None
+
+        # Get distance
+
+        if "max_press" in dset.attrs:
+            max_press = dset.attrs["max_press"]
+        else:
+            max_press = None
 
         # Get model parameters
 
@@ -3033,6 +3209,7 @@ class Database:
             wavel_range=wavel_range,
             pressure_grid=pressure_grid,
             cloud_wavel=cloud_wavel,
+            max_press=max_press,
         )
 
         # Set quenching attribute such that the parameter of get_model is not required
@@ -3067,6 +3244,7 @@ class Database:
                 spec_res=spec_res,
                 distance=distance,
                 pt_smooth=pt_smooth,
+                temp_nodes=temp_nodes,
                 read_rad=read_rad,
                 sample=item,
             )

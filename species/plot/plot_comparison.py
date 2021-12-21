@@ -29,7 +29,7 @@ def plot_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "statistic.pdf",
+    output: Optional[str] = "statistic.pdf",
 ):
     """
     Function for plotting the goodness-of-fit statistic of the empirical spectral comparison.
@@ -50,7 +50,8 @@ def plot_statistic(
     figsize : tuple(float, float)
         Figure size.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -58,7 +59,10 @@ def plot_statistic(
         None
     """
 
-    print(f"Plotting goodness-of-fit statistic: {output}...", end="")
+    if output is None:
+        print("Plotting goodness-of-fit statistic...", end="")
+    else:
+        print(f"Plotting goodness-of-fit statistic: {output}...", end="")
 
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -171,7 +175,11 @@ def plot_statistic(
         markeredgecolor="darkgray",
     )
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -191,7 +199,7 @@ def plot_empirical_spectra(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "empirical.pdf",
+    output: Optional[str] = "empirical.pdf",
 ):
     """
     Function for plotting the results from the empirical spectrum comparison.
@@ -222,7 +230,8 @@ def plot_empirical_spectra(
     figsize : tuple(float, float)
         Figure size.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -230,7 +239,10 @@ def plot_empirical_spectra(
         None
     """
 
-    print(f"Plotting empirical spectra comparison: {output}...", end="")
+    if output is None:
+        print("Plotting empirical spectra comparison...", end="")
+    else:
+        print(f"Plotting empirical spectra comparison: {output}...", end="")
 
     if flux_offset is None:
         flux_offset = 0.0
@@ -412,7 +424,11 @@ def plot_empirical_spectra(
                 ha="left",
             )
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -430,7 +446,7 @@ def plot_grid_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "grid_statistic.pdf",
+    output: Optional[str] = "grid_statistic.pdf",
 ):
     """
     Function for plotting the results from the empirical spectrum comparison.
@@ -453,7 +469,8 @@ def plot_grid_statistic(
     figsize : tuple(float, float)
         Figure size.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -461,7 +478,10 @@ def plot_grid_statistic(
         None
     """
 
-    print(f"Plotting goodness-of-fit of model grid: {output}...", end="")
+    if output is None:
+        print("Plotting goodness-of-fit of model grid...", end="")
+    else:
+        print(f"Plotting goodness-of-fit of model grid: {output}...", end="")
 
     config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -698,6 +718,9 @@ def plot_grid_statistic(
                     linewidths=0.7,
                 )
 
+            # manual = [(2350, 0.8), (2500, 0.8), (2600, 0.8), (2700, 0.8),
+            #           (2800, 0.8), (2950, 0.8), (3100, 0.8), (3300, 0.8)]
+
             ax.clabel(cs, cs.levels, inline=True, fontsize=8, fmt="%1.1f")
 
         # if extra_scaling is not None and len(coord_points[2]) > 1:
@@ -728,7 +751,11 @@ def plot_grid_statistic(
         # ax.annotate(par_text, (best_param[0]+50., best_param[1]), ha='left', va='center',
         #             color='white', fontsize=12.)
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

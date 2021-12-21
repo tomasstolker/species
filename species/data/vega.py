@@ -28,11 +28,18 @@ def add_vega(input_path, database):
     """
 
     data_file = os.path.join(input_path, "alpha_lyr_stis_008.fits")
-    url = "http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits"
 
     if not os.path.isfile(data_file):
         print("Downloading Vega spectrum (270 kB)...", end="", flush=True)
-        urllib.request.urlretrieve(url, data_file)
+
+        try:
+            url = "http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits"
+            urllib.request.urlretrieve(url, data_file)
+
+        except urllib.error.HTTPError:
+            url = "https://home.strw.leidenuniv.nl/~stolker/species/alpha_lyr_stis_008.fits"
+            urllib.request.urlretrieve(url, data_file)
+
         print(" [DONE]")
 
     if "spectra/calibration" not in database:
