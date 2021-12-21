@@ -48,7 +48,7 @@ def plot_color_magnitude(
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
-    output: str = "color-magnitude.pdf",
+    output: Optional[str] = "color-magnitude.pdf",
 ) -> None:
     """
     Function for creating a color-magnitude diagram.
@@ -117,7 +117,8 @@ def plot_color_magnitude(
     legend : str, tuple(float, float), dict, None
         Legend position or keyword arguments. No legend is shown if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -749,7 +750,10 @@ def plot_color_magnitude(
                     **kwargs,
                 )
 
-    print(f"Plotting color-magnitude diagram: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting color-magnitude diagram...", end="", flush=True)
+    else:
+        print(f"Plotting color-magnitude diagram: {output}...", end="", flush=True)
 
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
@@ -767,7 +771,11 @@ def plot_color_magnitude(
                 numpoints=1,
             )
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -814,7 +822,7 @@ def plot_color_color(
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.3),
-    output: str = "color-color.pdf",
+    output: Optional[str] = "color-color.pdf",
 ) -> None:
     """
     Function for creating a color-color diagram.
@@ -872,7 +880,8 @@ def plot_color_color(
     figsize : tuple(float, float)
         Figure size.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
 
     Returns
     -------
@@ -1437,7 +1446,10 @@ def plot_color_color(
                     **kwargs,
                 )
 
-    print(f"Plotting color-color diagram: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting color-color diagram...", end="", flush=True)
+    else:
+        print(f"Plotting color-color diagram: {output}...", end="", flush=True)
 
     handles, labels = ax1.get_legend_handles_labels()
 
@@ -1457,7 +1469,11 @@ def plot_color_color(
                 numpoints=1,
             )
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

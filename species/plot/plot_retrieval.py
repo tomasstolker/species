@@ -2,6 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import os
 import warnings
 
 from typing import Optional, Tuple
@@ -29,7 +30,7 @@ def plot_pt_profile(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "pt_profile.pdf",
+    output: Optional[str] = "pt_profile.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
@@ -51,7 +52,8 @@ def plot_pt_profile(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     extra_axis : str, None
@@ -66,7 +68,10 @@ def plot_pt_profile(
         None
     """
 
-    print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting the P-T profiles...", end="", flush=True)
+    else:
+        print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
 
     cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCl(c)"]
 
@@ -601,7 +606,11 @@ def plot_pt_profile(
                 "contain a ReadRadtrans object."
             )
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -613,7 +622,7 @@ def plot_opacities(
     tag: str,
     radtrans: read_radtrans.ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "opacities.pdf",
+    output: Optional[str] = "opacities.pdf",
 ) -> None:
     """
     Function to plot the line and continuum opacity structure from the median posterior samples.
@@ -625,7 +634,8 @@ def plot_opacities(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. The parameter is not used if
         set to ``None``.
@@ -636,7 +646,10 @@ def plot_opacities(
         None
     """
 
-    print(f"Plotting opacities: {output}...", end="", flush=True)
+    if output:
+        print("Plotting opacities...", end="", flush=True)
+    else:
+        print(f"Plotting opacities: {output}...", end="", flush=True)
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -875,7 +888,11 @@ def plot_opacities(
     ax3.set_yscale("log")
     ax4.set_yscale("log")
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 
@@ -886,7 +903,7 @@ def plot_opacities(
 def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "clouds.pdf",
+    output: Optional[str] = "clouds.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     composition: str = "MgSiO3",
 ) -> None:
@@ -902,7 +919,8 @@ def plot_clouds(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used if set to ``None``.
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
     composition : str
@@ -929,7 +947,10 @@ def plot_clouds(
             f"sample contains the following parameters: {list(median.keys())}"
         )
 
-    print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting {composition} clouds...", end="", flush=True)
+    else:
+        print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
     mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
@@ -1072,7 +1093,11 @@ def plot_clouds(
     ax1.set_yscale("log")
     ax2.set_yscale("log")
 
-    plt.savefig(output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

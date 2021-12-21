@@ -686,7 +686,10 @@ class AtmosphericRetrieval:
             smoothing the sampled temperature nodes of the P-T profile.
             Only required with `pt_profile='free'` or
             `pt_profile='monotonic'`. The argument should be given as
-            log10(P/bar) with the default value set to 0.3 dex.
+            log10(P/bar) with the default value set to 0.3 dex. The
+            ``pt_smooth`` parameter can also be included in ``bounds``,
+            in which case the value is fitted and the ``pt_smooth``
+            argument of the ``run_multinest`` is ignored.
         check_flux : float, None
             Relative tolerance for enforcing a constant bolometric
             flux at all pressures layers. To use this parameter, the

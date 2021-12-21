@@ -1503,6 +1503,11 @@ class Database:
 
         dset.attrs["n_scaling"] = int(count_scaling)
 
+        if "teff_0" in modelpar and "teff_1" in modelpar:
+            dset.attrs["binary"] = True
+        else:
+            dset.attrs["binary"] = False
+
         try:
             int_auto = emcee.autocorr.integrated_time(samples)
             print(f"Integrated autocorrelation time = {int_auto}")
@@ -1755,6 +1760,11 @@ class Database:
         else:
             n_error = 0
 
+        if "binary" in dset.attrs:
+            binary = dset.attrs["binary"]
+        else:
+            binary = False
+
         ignore_param = []
 
         for i in range(n_scaling):
@@ -1853,12 +1863,44 @@ class Database:
                     specbox = read_util.powerlaw_spectrum(wavel_range, model_param)
 
                 else:
-                    specbox = readmodel.get_model(
-                        model_param,
-                        spec_res=spec_res,
-                        wavel_resample=wavel_resample,
-                        smooth=True,
-                    )
+                    if binary:
+                        param_0 = read_util.binary_to_single(model_param, 0)
+
+                        specbox_0 = readmodel.get_model(
+                            param_0,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
+
+                        param_1 = read_util.binary_to_single(model_param, 1)
+
+                        specbox_1 = readmodel.get_model(
+                            param_1,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
+
+                        flux_comb = model_param['spec_weight']*specbox_0.flux \
+                            + (1.-model_param['spec_weight'])*specbox_1.flux
+
+                        specbox = box.create_box(
+                            boxtype="model",
+                            model=spectrum_name,
+                            wavelength=specbox_0.wavelength,
+                            flux=flux_comb,
+                            parameters=model_param,
+                            quantity="flux",
+                        )
+
+                    else:
+                        specbox = readmodel.get_model(
+                            model_param,
+                            spec_res=spec_res,
+                            wavel_resample=wavel_resample,
+                            smooth=True,
+                        )
 
             elif spectrum_type == "calibration":
                 specbox = readcalib.get_spectrum(model_param)
@@ -1917,6 +1959,11 @@ class Database:
 
         spectrum_type = dset.attrs["type"]
         spectrum_name = dset.attrs["spectrum"]
+
+        if "binary" in dset.attrs:
+            binary = dset.attrs["binary"]
+        else:
+            binary = False
 
         if "distance" in dset.attrs:
             distance = dset.attrs["distance"]
@@ -1984,10 +2031,32 @@ class Database:
 
                 else:
                     if phot_type == "magnitude":
-                        mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+                        if binary:
+                            param_0 = read_util.binary_to_single(model_param, 0)
+                            mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
+
+                            param_1 = read_util.binary_to_single(model_param, 1)
+                            mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
+
+                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
+                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+
+                        else:
+                            mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
 
                     elif phot_type == "flux":
-                        mcmc_phot[i], _ = readmodel.get_flux(model_param)
+                        if binary:
+                            param_0 = read_util.binary_to_single(model_param, 0)
+                            mcmc_phot_0, _ = readmodel.get_flux(param_0)
+
+                            param_1 = read_util.binary_to_single(model_param, 1)
+                            mcmc_phot_1, _ = readmodel.get_flux(param_1)
+
+                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
+                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+
+                        else:
+                            mcmc_phot[i], _ = readmodel.get_flux(model_param)
 
             elif spectrum_type == "calibration":
                 if phot_type == "magnitude":

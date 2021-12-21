@@ -2,10 +2,15 @@
 Module with classes for storing data in `Box` objects.
 """
 
+from typing import List, Union
+
 import numpy as np
 import spectres
 
 import species
+
+from species.analysis import photometry
+from species.read import read_filter
 
 
 def create_box(boxtype, **kwargs):
@@ -242,6 +247,29 @@ class IsochroneBox(Box):
         self.masses = None
 
 
+class PhotometryBox(Box):
+    """
+    Class for storing photometric data in a
+    :class:`~species.core.box.Box`.
+    """
+
+    def __init__(self):
+        """
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.name = None
+        self.sptype = None
+        self.wavelength = None
+        self.flux = None
+        self.app_mag = None
+        self.abs_mag = None
+        self.filter_name = None
+
+
 class ModelBox(Box):
     """
     Class for storing a model spectrum in a
@@ -316,6 +344,62 @@ class ModelBox(Box):
 
         self.wavelength = wavel_resample
 
+    def synthetic_photometry(self, filter_name: Union[str, List[str]]) -> PhotometryBox:
+        """
+        Method for calculating synthetic photometry from the model
+        spectrum that is stored in the ``ModelBox``.
+
+        Parameters
+        ----------
+        filter_name : str, list(str)
+            Single filter name or a list of filter names for which
+            synthetic photometry will be calculated.
+
+        Returns
+        -------
+        species.core.box.PhotometryBox
+            Box with the synthetic photometry.
+        """
+
+        if isinstance(filter_name, str):
+            filter_name = [filter_name]
+
+        list_wavel = []
+        list_flux = []
+        list_app_mag = []
+        list_abs_mag = []
+
+        for item in filter_name:
+            syn_phot = photometry.SyntheticPhotometry(filter_name=item)
+
+            syn_flux = syn_phot.spectrum_to_flux(
+                wavelength=self.wavelength, flux=self.flux
+            )
+
+            syn_mag = syn_phot.spectrum_to_magnitude(
+                wavelength=self.wavelength, flux=self.flux
+            )
+
+            list_flux.append(syn_flux)
+            list_app_mag.append(syn_mag[0])
+            list_abs_mag.append(syn_mag[1])
+
+            filter_profile = read_filter.ReadFilter(filter_name=item)
+            list_wavel.append(filter_profile.mean_wavelength())
+
+        phot_box = create_box(
+            boxtype="photometry",
+            name=None,
+            sptype=None,
+            wavelength=list_wavel,
+            flux=list_flux,
+            app_mag=list_app_mag,
+            abs_mag=list_abs_mag,
+            filter_name=filter_name,
+        )
+
+        return phot_box
+
 
 class ObjectBox(Box):
     """
@@ -337,29 +421,6 @@ class ObjectBox(Box):
         self.flux = None
         self.distance = None
         self.spectrum = None
-
-
-class PhotometryBox(Box):
-    """
-    Class for storing photometric data in a
-    :class:`~species.core.box.Box`.
-    """
-
-    def __init__(self):
-        """
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        self.name = None
-        self.sptype = None
-        self.wavelength = None
-        self.flux = None
-        self.app_mag = None
-        self.abs_mag = None
-        self.filter_name = None
 
 
 class ResidualsBox(Box):

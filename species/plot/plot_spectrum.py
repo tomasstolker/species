@@ -43,7 +43,7 @@ def plot_spectrum(
     figsize: Optional[Tuple[float, float]] = (10.0, 5.0),
     object_type: str = "planet",
     quantity: str = "flux density",
-    output: str = "spectrum.pdf",
+    output: Optional[str] = "spectrum.pdf",
     leg_param: Optional[List[str]] = None,
 ):
     """
@@ -109,7 +109,8 @@ def plot_spectrum(
     quantity: str
         The quantity of the y-axis ('flux density', 'flux', or 'magnitude').
     output : str
-        Output filename.
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
     leg_param : list(str), None
         List with the parameters to include in the legend of the model spectra. Apart from
         atmospheric parameters (e.g. 'teff', 'logg', 'radius') also parameters such as 'mass'
@@ -1015,7 +1016,10 @@ def plot_spectrum(
     if filters is not None:
         ax2.set_ylim(0.0, 1.1)
 
-    print(f"Plotting spectrum: {output}...", end="", flush=True)
+    if output is None:
+        print("Plotting spectrum...", end="", flush=True)
+    else:
+        print(f"Plotting spectrum: {output}...", end="", flush=True)
 
     if title is not None:
         if filters:
@@ -1145,7 +1149,11 @@ def plot_spectrum(
     # ax1.text(1.26, 0.58, 'VLT/SPHERE', ha='center', va='center', fontsize=8., color='slateblue', rotation=43.)
     # ax1.text(2.5, 1.28, 'VLT/SINFONI', ha='left', va='center', fontsize=8., color='darkgray')
 
-    plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+
     plt.clf()
     plt.close()
 

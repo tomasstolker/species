@@ -73,6 +73,7 @@ from species.util.read_util import (
     get_radius,
     powerlaw_spectrum,
     gaussian_spectrum,
+    update_objectbox,
     update_spectra,
 )
 

@@ -108,7 +108,7 @@ class ReadRadtrans:
         self.cloud_wavel = cloud_wavel
 
         # Set maximum pressure
-        
+
         if max_press is None:
             self.max_press = 1e3
         else:
