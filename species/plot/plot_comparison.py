@@ -29,7 +29,7 @@ def plot_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "statistic.pdf",
+    output: Optional[str] = "statistic.pdf",
 ):
     """
     Function for plotting the goodness-of-fit statistic of the empirical spectral comparison.
@@ -199,7 +199,7 @@ def plot_empirical_spectra(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "empirical.pdf",
+    output: Optional[str] = "empirical.pdf",
 ):
     """
     Function for plotting the results from the empirical spectrum comparison.
@@ -446,7 +446,7 @@ def plot_grid_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: str = "grid_statistic.pdf",
+    output: Optional[str] = "grid_statistic.pdf",
 ):
     """
     Function for plotting the results from the empirical spectrum comparison.

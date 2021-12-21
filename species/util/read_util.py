@@ -670,7 +670,4 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
         elif key in ["teff", "logg", "feh", "c_o_ratio", "fsed", "radius", "distance"]:
             new_dict[key] = value
 
-    # if "radius" in new_dict:
-    #     new_dict["distance"] = param_dict["distance"]
-
     return new_dict

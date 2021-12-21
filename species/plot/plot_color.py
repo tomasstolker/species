@@ -48,7 +48,7 @@ def plot_color_magnitude(
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
-    output: str = "color-magnitude.pdf",
+    output: Optional[str] = "color-magnitude.pdf",
 ) -> None:
     """
     Function for creating a color-magnitude diagram.
@@ -822,7 +822,7 @@ def plot_color_color(
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.3),
-    output: str = "color-color.pdf",
+    output: Optional[str] = "color-color.pdf",
 ) -> None:
     """
     Function for creating a color-color diagram.

@@ -27,7 +27,7 @@ def plot_walkers(
     tag: str,
     nsteps: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "walkers.pdf",
+    output: Optional[str] = "walkers.pdf",
 ) -> None:
     """
     Function to plot the step history of the walkers.
@@ -195,7 +195,7 @@ def plot_posterior(
     inc_mass: bool = False,
     inc_pt_param: bool = False,
     inc_loglike: bool = False,
-    output: str = "posterior.pdf",
+    output: Optional[str] = "posterior.pdf",
 ) -> None:
     """
     Function to plot the posterior distribution of the fitted parameters.
@@ -800,7 +800,7 @@ def plot_mag_posterior(
     filter_name: str,
     burnin: int = None,
     xlim: Tuple[float, float] = None,
-    output: str = "mag_posterior.pdf",
+    output: Optional[str] = "mag_posterior.pdf",
 ) -> np.ndarray:
     """
     Function to plot the posterior distribution of the synthetic
@@ -908,7 +908,7 @@ def plot_size_distributions(
     burnin: Optional[int] = None,
     random: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "size_distributions.pdf",
+    output: Optional[str] = "size_distributions.pdf",
 ) -> None:
     """
     Function to plot random samples of the log-normal or power-law size distributions.
@@ -1085,7 +1085,7 @@ def plot_extinction(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "extinction.pdf",
+    output: Optional[str] = "extinction.pdf",
 ) -> None:
     """
     Function to plot random samples of the extinction, either from fitting a size distribution

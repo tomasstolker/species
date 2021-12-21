@@ -849,14 +849,6 @@ class FitModel:
                                 bounds_grid[key][1],
                             )
 
-                # if self.binary:
-                #     # Check if all parameters are set for two objects
-                #     for key, value in bounds_grid.items():
-                #         if f"{key}_0" not in self.bounds:
-                #             self.bounds[f"{key}_0"] = bounds_grid[key]
-                #             self.bounds[f"{key}_1"] = bounds_grid[key]
-                #             del self.bounds[key]
-
             else:
                 # Set all parameter boundaries to the grid boundaries
                 readmodel = read_model.ReadModel(self.model, None, None)
@@ -1710,8 +1702,11 @@ class FitModel:
                         list(param_0.values())
                     )[0][0]
 
+                    # Scale the spectrum by (radius/distance)^2
+
                     if "radius" in self.modelpar:
                         phot_flux_0 *= flux_scaling
+
                     elif "radius_0" in self.modelpar:
                         phot_flux_0 *= flux_scaling_0
 
@@ -1723,8 +1718,11 @@ class FitModel:
                         list(param_1.values())
                     )[0][0]
 
+                    # Scale the spectrum by (radius/distance)^2
+
                     if "radius" in self.modelpar:
                         phot_flux_1 *= flux_scaling
+
                     elif "radius_1" in self.modelpar:
                         phot_flux_1 *= flux_scaling_1
 
@@ -1851,10 +1849,12 @@ class FitModel:
                     )[0, :]
 
                     # Scale the spectrum by (radius/distance)^2
+
                     if "radius" in self.modelpar:
                         model_flux_0 *= flux_scaling
+
                     elif "radius_1" in self.modelpar:
-                        model_flux_0 *= flux_scaling_1
+                        model_flux_0 *= flux_scaling_0
 
                     # Star 2
 
@@ -1865,8 +1865,10 @@ class FitModel:
                     )[0, :]
 
                     # Scale the spectrum by (radius/distance)^2
+
                     if "radius" in self.modelpar:
                         model_flux_1 *= flux_scaling
+
                     elif "radius_1" in self.modelpar:
                         model_flux_1 *= flux_scaling_1
 

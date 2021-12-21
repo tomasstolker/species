@@ -30,7 +30,7 @@ def plot_pt_profile(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "pt_profile.pdf",
+    output: Optional[str] = "pt_profile.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
@@ -622,7 +622,7 @@ def plot_opacities(
     tag: str,
     radtrans: read_radtrans.ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "opacities.pdf",
+    output: Optional[str] = "opacities.pdf",
 ) -> None:
     """
     Function to plot the line and continuum opacity structure from the median posterior samples.
@@ -903,7 +903,7 @@ def plot_opacities(
 def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
-    output: str = "clouds.pdf",
+    output: Optional[str] = "clouds.pdf",
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     composition: str = "MgSiO3",
 ) -> None:

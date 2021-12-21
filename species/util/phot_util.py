@@ -383,7 +383,7 @@ def get_residuals(
                         model_spec = box.create_box(
                             boxtype="model",
                             model=spectrum,
-                            wavelength=model_spec_0.wavelength,
+                            wavelength=wl_new,
                             flux=flux_comb,
                             parameters=parameters,
                             quantity="flux",
