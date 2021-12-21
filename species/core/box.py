@@ -2,6 +2,8 @@
 Module with classes for storing data in `Box` objects.
 """
 
+from typing import List, Union
+
 import numpy as np
 import spectres
 
@@ -342,15 +344,16 @@ class ModelBox(Box):
 
         self.wavelength = wavel_resample
 
-    def synthetic_photometry(self, filter_name: str) -> PhotometryBox:
+    def synthetic_photometry(self, filter_name: Union[str, List[str]]) -> PhotometryBox:
         """
         Method for calculating synthetic photometry from the model
         spectrum that is stored in the ``ModelBox``.
 
         Parameters
         ----------
-        filter_name : str
-            Filter name for the synthetic photometry.
+        filter_name : str, list(str)
+            Single filter name or a list of filter names for which
+            synthetic photometry will be calculated.
 
         Returns
         -------
@@ -358,26 +361,41 @@ class ModelBox(Box):
             Box with the synthetic photometry.
         """
 
-        syn_phot = photometry.SyntheticPhotometry(filter_name=filter_name)
+        if isinstance(filter_name, str):
+            filter_name = [filter_name]
 
-        syn_mag = syn_phot.spectrum_to_magnitude(
-            wavelength=self.wavelength, flux=self.flux
-        )
+        list_wavel = []
+        list_flux = []
+        list_app_mag = []
+        list_abs_mag = []
 
-        syn_flux = syn_phot.spectrum_to_flux(wavelength=self.wavelength, flux=self.flux)
+        for item in filter_name:
+            syn_phot = photometry.SyntheticPhotometry(filter_name=item)
 
-        filter_profile = read_filter.ReadFilter(filter_name=filter_name)
-        mean_wavel = filter_profile.mean_wavelength()
+            syn_flux = syn_phot.spectrum_to_flux(
+                wavelength=self.wavelength, flux=self.flux
+            )
+
+            syn_mag = syn_phot.spectrum_to_magnitude(
+                wavelength=self.wavelength, flux=self.flux
+            )
+
+            list_flux.append(syn_flux)
+            list_app_mag.append(syn_mag[0])
+            list_abs_mag.append(syn_mag[1])
+
+            filter_profile = read_filter.ReadFilter(filter_name=item)
+            list_wavel.append(filter_profile.mean_wavelength())
 
         phot_box = create_box(
             boxtype="photometry",
             name=None,
             sptype=None,
-            wavelength=[mean_wavel],
-            flux=[syn_flux],
-            app_mag=[syn_mag[0]],
-            abs_mag=[syn_mag[1]],
-            filter_name=[filter_name],
+            wavelength=list_wavel,
+            flux=list_flux,
+            app_mag=list_app_mag,
+            abs_mag=list_abs_mag,
+            filter_name=filter_name,
         )
 
         return phot_box
