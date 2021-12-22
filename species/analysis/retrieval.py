@@ -503,8 +503,8 @@ class AtmosphericRetrieval:
         if "pt_smooth" in bounds:
             self.parameters.append("pt_smooth")
 
-        # Add mixing-length parameter for convective
-        # component when using check_flux
+        # Add mixing-length parameter for convective component
+        # of the bolometric flux when using check_flux
 
         if "mix_length" in bounds:
             self.parameters.append("mix_length")
@@ -595,6 +595,9 @@ class AtmosphericRetrieval:
             elif item[-9:] == "_all_Plez":
                 mol_masses[item[:-9]] = Formula(item[:-9]).isotope.massnumber
 
+            elif item[-5:] == "_Plez":
+                mol_masses[item[:-5]] = Formula(item[:-5]).isotope.massnumber
+
             else:
                 mol_masses[item] = Formula(item).isotope.massnumber
 
@@ -683,13 +686,16 @@ class AtmosphericRetrieval:
             parameter instead.
         pt_smooth : float
             Standard deviation of the Gaussian kernel that is used for
-            smoothing the sampled temperature nodes of the P-T profile.
+            smoothing the P-T profile, after the temperature nodes
+            have been interpolated to a higher pressure resolution.
             Only required with `pt_profile='free'` or
             `pt_profile='monotonic'`. The argument should be given as
-            log10(P/bar) with the default value set to 0.3 dex. The
-            ``pt_smooth`` parameter can also be included in ``bounds``,
-            in which case the value is fitted and the ``pt_smooth``
-            argument of the ``run_multinest`` is ignored.
+            :math:`\\log10{P/\\mathrm{bar}}`, with the default value
+            set to 0.3 dex. No smoothing is applied if the argument
+            if set to 0. The ``pt_smooth`` parameter can also be
+            included in ``bounds``, in which case the value is fitted
+            and the ``pt_smooth`` argument of ``run_multinest`` is
+            ignored.
         check_flux : float, None
             Relative tolerance for enforcing a constant bolometric
             flux at all pressures layers. To use this parameter, the

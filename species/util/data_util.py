@@ -863,6 +863,9 @@ def retrieval_spectrum(
         model_param["albedo"] = sample[indices["albedo"]]
         model_param["fsed"] = sample[indices["fsed"]]
 
+        if "opa_knee" in indices:
+            model_param["opa_knee"] = sample[indices["opa_knee"]]
+
     elif len(cloud_species) > 0:
         model_param["fsed"] = sample[indices["fsed"]]
         model_param["sigma_lnorm"] = sample[indices["sigma_lnorm"]]

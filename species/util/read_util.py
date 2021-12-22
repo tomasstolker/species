@@ -167,7 +167,7 @@ def update_spectra(
 
     warnings.warn(
         "The update_spectra function is deprecated and "
-        "will be remove in a future release. Please use "
+        "will be removed in a future release. Please use "
         "the update_objectbox function instead.",
         DeprecationWarning,
     )
