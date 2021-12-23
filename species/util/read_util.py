@@ -302,18 +302,23 @@ def update_objectbox(
                 # Inflate photometric error of instrument
                 var_add = model_param[f"{instr_name}_error"] ** 2 * value[0] ** 2
 
-            message = (
-                f"Inflating the error of {key} "
-                + f"(W m-2 um-1): {np.sqrt(var_add):.2e}..."
-            )
+            else:
+                # No inflation required
+                var_add = None
 
-            print(message, end="", flush=True)
+            if var_add is not None:
+                message = (
+                    f"Inflating the error of {key} "
+                    + f"(W m-2 um-1): {np.sqrt(var_add):.2e}..."
+                )
 
-            value[1] = np.sqrt(value[1] ** 2 + var_add)
+                print(message, end="", flush=True)
 
-            print(" [DONE]")
+                value[1] = np.sqrt(value[1] ** 2 + var_add)
 
-            objectbox.flux[key] = value
+                print(" [DONE]")
+
+                objectbox.flux[key] = value
 
     if objectbox.spectrum is not None:
         # Check if there are any spectra
@@ -389,7 +394,7 @@ def create_wavelengths(
 ) -> np.ndarray:
     """
     Function for creating logarithmically-spaced wavelengths at a
-    constant spectral resolution.
+    constant spectral resolution :math:`R`.
 
     Parameters
     ----------

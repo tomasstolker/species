@@ -97,6 +97,7 @@ def sort_data(
     param_feh: Optional[np.ndarray],
     param_co: Optional[np.ndarray],
     param_fsed: Optional[np.ndarray],
+    param_logkzz: Optional[np.ndarray],
     wavelength: np.ndarray,
     flux: np.ndarray,
 ) -> List[np.ndarray]:
@@ -106,7 +107,8 @@ def sort_data(
     param_teff : np.ndarray
         Array with the effective temperature (K) of each spectrum.
     param_logg : np.ndarray, None
-        Array with the log10 surface gravity (cgs) of each spectrum.
+        Array with the log10 of the surface gravity (cm s-2) of each
+        spectrum.
     param_feh : np.ndarray, None
         Array with the metallicity of each spectrum. Not used if set
         to ``None``.
@@ -116,6 +118,9 @@ def sort_data(
     param_fsed : np.ndarray, None
         Array with the sedimentation parameter of each spectrum. Not
         used if set to ``None``.
+    param_logkzz : np.ndarray, None
+        Array with the log10 of the eddy diffusion coefficient
+        (cm2 s-1) of each spectrum. Not used if set to ``None``.
     wavelength : np.ndarray
         Array with the wavelengths (um).
     flux : np.ndarray
@@ -159,13 +164,19 @@ def sort_data(
         spec_shape.append(fsed_unique.shape[0])
         print(f"   - f_sed = {fsed_unique}")
 
+    if param_logkzz is not None:
+        logkzz_unique = np.unique(param_logkzz)
+        spec_shape.append(logkzz_unique.shape[0])
+        print(f"   - log(Kzz) = {logkzz_unique}")
+
     spec_shape.append(wavelength.shape[0])
 
     spectrum = np.zeros(spec_shape)
 
     for i in range(n_spectra):
-        # The parameter order is: Teff, log(g), [Fe/H], C/O, f_sed
-        # Not all parameters have to be included but the order matters
+        # The parameter order is: Teff, log(g), [Fe/H], C/O,
+        # f_sed, log(Kzz). Not all parameters have to be included
+        # but the order matters
 
         index_teff = np.argwhere(teff_unique == param_teff[i])[0][0]
         spec_select = [index_teff]
@@ -186,6 +197,10 @@ def sort_data(
             index_fsed = np.argwhere(fsed_unique == param_fsed[i])[0][0]
             spec_select.append(index_fsed)
 
+        if param_logkzz is not None:
+            index_logkzz = np.argwhere(logkzz_unique == param_logkzz[i])[0][0]
+            spec_select.append(index_logkzz)
+
         spec_select.append(...)
 
         spectrum[tuple(spec_select)] = flux[i]
@@ -203,6 +218,9 @@ def sort_data(
 
     if param_fsed is not None:
         sorted_data.append(fsed_unique)
+
+    if param_logkzz is not None:
+        sorted_data.append(logkzz_unique)
 
     sorted_data.append(wavelength)
     sorted_data.append(spectrum)
@@ -225,11 +243,11 @@ def write_data(
     ----------
     model : str
         Atmosphere model.
-    parameters : list(str, )
+    parameters : list(str)
         Model parameters.
     database: h5py._hl.files.File
         Database.
-    data_sorted : list(np.ndarray, )
+    data_sorted : list(np.ndarray)
         Sorted model data with the parameter values, wavelength
         points (um), and flux densities (W m-2 um-1).
 
@@ -270,7 +288,7 @@ def add_missing(
     ----------
     model : str
         Atmosphere model.
-    parameters : list(str, )
+    parameters : list(str)
         Model parameters.
     database : h5py._hl.files.File
         Database.

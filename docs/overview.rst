@@ -6,12 +6,12 @@ Overview
 Introduction
 ------------
 
-*species* provides a coherent framework for spectral and photometric analysis of directly imaged planets and brown dwarfs. This page contains a short overview of the various data that are supported and some of the tools and features that are provided.
+*species* provides a coherent framework for spectral and photometric analysis of directly imaged exoplanets and brown dwarfs. This page contains a overview of the various data that are supported and some of the tools and features that are available.
 
 Supported data
 --------------
 
-The toolkit benefits from publicly available data resources such as photometric and spectral libraries, atmospheric model spectra, evolutionary tracks, and photometry of directly imaged, low-mass objects. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and process the data.
+The toolkit benefits from publicly available data resources such as atmospheric model spectra, photometric and spectral libraries, evolutionary tracks, and photometry of directly imaged companions. The relevant data are automatically downloaded and added to the HDF5 database, which acts as the central data storage for a workflow. All data are stored in a fixed format such that the analysis and plotting tools can easily access and process the data.
 
 The following data and models are currently supported:
 
@@ -26,9 +26,11 @@ The following data and models are currently supported:
 - `BT-Settl-CIFIST <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl-cifist>`_
 - `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov2/index.php?models=drift>`_
 - `Exo-REM <https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract>`_
+- `Morley et al. (2012) T/Y dwarf spectra <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_
 - `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
-- `T/Y dwarf spectra from Morley et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_
+- `Sonora Bobcat <https://zenodo.org/record/5063476>`_
+- `Sonora Cholla <https://zenodo.org/record/4450269>`_
 
 **Spectral libraries**
 
