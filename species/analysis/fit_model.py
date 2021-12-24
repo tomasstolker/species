@@ -458,14 +458,14 @@ class FitModel:
         self,
         object_name: str,
         model: str,
-        bounds: Dict[
+        bounds: Optional[Dict[
             str,
             Union[
                 Tuple[float, float],
                 Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
                 List[Tuple[float, float]],
             ],
-        ],
+        ]] = None,
         inc_phot: Union[bool, List[str]] = True,
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
@@ -502,7 +502,9 @@ class FitModel:
                  in the dictionary of ``bounds``. For example,
                  ``bounds={'teff': (1000., 1500.), 'logg': None}``.
                  The default range for the radius is
-                 :math:`0.5-5.0~R_\\mathrm{J}`.
+                 :math:`0.5-5.0~R_\\mathrm{J}`. With ``bounds=None``,
+                 automatic priors will be set for all mandatory
+                 parameters.
 
                - It is possible to fit a weighted combination of two
                  atmospheric parameters from the same model. This
@@ -1106,7 +1108,7 @@ class FitModel:
                 print(" [DONE]")
 
         for item in self.spectrum:
-            if item in bounds:
+            if bounds is not None and item in bounds:
 
                 if bounds[item][0] is not None:
                     # Add the flux scaling parameter

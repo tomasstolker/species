@@ -35,7 +35,7 @@ class TestModel:
             "ames-cond",
             wavel_range=(1.0, 5.0),
             spec_res=100.0,
-            teff_range=(2000.0, 2500),
+            teff_range=(2000.0, 2500.0),
         )
 
         read_model = species.ReadModel("ames-cond")

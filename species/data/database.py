@@ -5,6 +5,7 @@ Module with functionalities for reading and writing of data.
 import configparser
 import json
 import os
+import pathlib
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -21,31 +22,19 @@ from typeguard import typechecked
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import (
-    ames_cond,
-    ames_dusty,
-    atmo,
-    blackbody,
-    btcond,
-    btcond_feh,
-    btnextgen,
-    btsettl,
-    btsettl_cifist,
+    allers2013,
+    bonnefoy2014,
     companions,
-    drift_phoenix,
     dust,
-    exo_rem,
     filters,
     irtf,
     isochrones,
+    kesseli2017,
     leggett,
-    petitcode,
+    model_spectra,
     spex,
     vega,
     vlm_plx,
-    kesseli2017,
-    morley2012,
-    bonnefoy2014,
-    allers2013,
 )
 from species.read import (
     read_calibration,
@@ -175,6 +164,61 @@ class Database:
 
         return comp_names
 
+    @staticmethod
+    @typechecked
+    def available_models() -> Dict:
+        """
+        Method for printing an overview of the available model grids
+        that can be downloaded and added to the database with
+        :class:`~species.data.database.Database.add_model`.
+
+        Returns
+        -------
+        dict
+            Dictionary with the details on the model grids. The
+            dictionary is created from the ``model_data.json``
+            file in the ``species.data`` folder.
+        """
+
+        data_file = pathlib.Path(__file__).parent.resolve() / "model_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            model_data = json.load(json_file)
+
+        print("Available model grids:", end="")
+
+        for model_name, model_dict in model_data.items():
+            print(f"\n   - {model_dict['name']}:")
+            print(f"      - Label = {model_name}")
+
+            if "parameters" in model_dict:
+                print(f"      - Model parameters: {model_dict['parameters']}")
+
+            if "teff range" in model_dict:
+                print(f"      - Teff range (K): {model_dict['teff range']}")
+
+            if "wavelength range" in model_dict:
+                print(
+                    f"      - Wavelength range (um): {model_dict['wavelength range']}"
+                )
+
+            if "resolution" in model_dict:
+                print(f"      - Resolution lambda/Dlambda: {model_dict['resolution']}")
+
+            if "information" in model_dict:
+                print(f"      - Extra details: {model_dict['information']}")
+
+            if "file size" in model_dict:
+                print(f"      - File size: {model_dict['file size']}")
+
+            if "reference" in model_dict:
+                print(f"      - Reference: {model_dict['reference']}")
+
+            if "url" in model_dict:
+                print(f"      - URL: {model_dict['url']}")
+
+        return model_data
+
     @typechecked
     def delete_data(self, data_set: str) -> None:
         """
@@ -189,7 +233,7 @@ class Database:
             could help to determine which argument should be provided
             as argument of ``data_set``. For example,
             ``data_set="models/drift-phoenix"`` will remove the
-            model spectra of DRIFT-PHOENIX.            
+            model spectra of DRIFT-PHOENIX.
 
         Returns
         -------
@@ -204,12 +248,15 @@ class Database:
                 print(" [DONE]")
 
             else:
-                warnings.warn(f"The dataset {data_set} is not "
-                              f"found in {self.database}.")
+                warnings.warn(
+                    f"The dataset {data_set} is not " f"found in {self.database}."
+                )
 
     @typechecked
     def add_companion(
-        self, name: Union[Optional[str], Optional[List[str]]] = None, verbose: bool = True
+        self,
+        name: Union[Optional[str], Optional[List[str]]] = None,
+        verbose: bool = True,
     ) -> None:
         """
         Function for adding the magnitudes and spectra of directly
@@ -243,7 +290,9 @@ class Database:
             name = data.keys()
 
         for item in name:
-            spec_dict = companions.companion_spectra(self.input_path, item, verbose=verbose)
+            spec_dict = companions.companion_spectra(
+                self.input_path, item, verbose=verbose
+            )
 
             self.add_object(
                 object_name=item,
@@ -420,11 +469,18 @@ class Database:
         wavel_range: Optional[Tuple[float, float]] = None,
         spec_res: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
-        data_folder: Optional[str] = None,
     ) -> None:
         """
-        Method for adding a grid of model spectra to the database. All spectra have been resampled
-        to a lower, constant spectral resolution (typically :math:`R = 5000`).
+        Method for adding a grid of model spectra to the database.
+        All spectra have been resampled to logarithmically-spaced
+        wavelengths. The spectral resolution is returned with the
+        :meth:`~species.read.read_model.ReadModel.get_spec_res`
+        method of :class:`~species.read.read_model.ReadModel`, but
+        is typically of the order of several thousand.
+        It should be noted that the original spectra were often
+        calculated with a constant step size in wavenumber,
+        so the original spectral resolution decreased from short
+        to long wavelengths.
 
         Parameters
         ----------
@@ -432,7 +488,7 @@ class Database:
             Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl', 'bt-settl-cifist',
             'bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
             'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'blackbody', bt-cond',
-            'bt-cond-feh, 'morley-2012').
+            'bt-cond-feh, 'morley-2012', 'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co').
         wavel_range : tuple(float, float), None
             Wavelength range (um) for adding a subset of the spectra. The full wavelength range
             is used if the argument is set to ``None``.
@@ -444,10 +500,6 @@ class Database:
         teff_range : tuple(float, float), None
             Effective temperature range (K) for adding a subset of the model grid. The full
             parameter grid will be added if the argument is set to ``None``.
-        data_folder : str, None
-            DEPRECATED: Folder where the input data is located. This parameter is no longer in use
-            since all model spectra are publicly available. The parameter will be removed in a
-            future release.
 
         Returns
         -------
@@ -455,161 +507,13 @@ class Database:
             None
         """
 
-        if data_folder is not None:
-            warnings.warn(
-                "The 'data_folder' parameter has been deprecated since "
-                "all supported model spectra are publicly available. The"
-                "parameter will therefore be ignored and will cause an error "
-                "in a future release."
+        with h5py.File(self.database, "a") as h5_file:
+            if "models" not in h5_file:
+                h5_file.create_group("models")
+
+            model_spectra.add_model_grid(
+                model, self.input_path, h5_file, wavel_range, teff_range, spec_res
             )
-
-        # proprietary = ['petitcode-hot-clear', 'petitcode-hot-cloudy']
-
-        # if model in proprietary and data_folder is None:
-        #     raise ValueError(f'The {model} model is not publicly available and needs to '
-        #                      f'be imported by setting the \'data_folder\' parameter.')
-
-        # if model in ['bt-nextgen'] and wavel_range is None:
-        #     raise ValueError(f'The \'wavel_range\' should be set for the \'{model}\' models to '
-        #                      f'resample the original spectra on a fixed wavelength grid.')
-
-        # if model in ['bt-nextgen'] and spec_res is None:
-        #     raise ValueError(f'The \'spec_res\' should be set for the \'{model}\' models to '
-        #                      f'resample the original spectra on a fixed wavelength grid.')
-
-        # if model == 'bt-nextgen' and teff_range is None:
-        #     warnings.warn('The temperature range is not restricted with the \'teff_range\' '
-        #                   'parameter. Therefore, adding the BT-Settl or BT-NextGen spectra '
-        #                   'will be very slow.')
-
-        h5_file = h5py.File(self.database, "a")
-
-        if "models" not in h5_file:
-            h5_file.create_group("models")
-
-        if model == "ames-cond":
-            ames_cond.add_ames_cond(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "ames-dusty":
-            ames_dusty.add_ames_dusty(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "atmo":
-            atmo.add_atmo(self.input_path, h5_file, wavel_range, teff_range, spec_res)
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "blackbody":
-            blackbody.add_blackbody(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff"], h5_file)
-
-        elif model == "bt-cond":
-            btcond.add_btcond(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "bt-cond-feh":
-            btcond_feh.add_btcond_feh(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh"], h5_file)
-
-        elif model == "bt-settl":
-            btsettl.add_btsettl(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "bt-settl-cifist":
-            btsettl_cifist.add_btsettl(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg"], h5_file)
-
-        elif model == "bt-nextgen":
-            btnextgen.add_btnextgen(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh"], h5_file)
-
-        elif model == "drift-phoenix":
-            drift_phoenix.add_drift_phoenix(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh"], h5_file)
-
-        elif model == "morley-2012":
-            morley2012.add_morley2012(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "fsed"], h5_file)
-
-        elif model == "petitcode-cool-clear":
-            petitcode.add_petitcode_cool_clear(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh"], h5_file)
-
-        elif model == "petitcode-cool-cloudy":
-            petitcode.add_petitcode_cool_cloudy(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh", "fsed"], h5_file)
-
-        elif model == "petitcode-hot-clear":
-            petitcode.add_petitcode_hot_clear(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh", "c_o_ratio"], h5_file)
-
-        elif model == "petitcode-hot-cloudy":
-            petitcode.add_petitcode_hot_cloudy(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(
-                model, ["teff", "logg", "feh", "c_o_ratio", "fsed"], h5_file
-            )
-
-        elif model == "exo-rem":
-            exo_rem.add_exo_rem(
-                self.input_path, h5_file, wavel_range, teff_range, spec_res
-            )
-
-            data_util.add_missing(model, ["teff", "logg", "feh", "c_o_ratio"], h5_file)
-
-        else:
-            raise ValueError(
-                f"The {model} atmospheric model is not available. Please choose from "
-                f"'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
-                f"'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
-                f"'petitcode-cool-cloudy', 'petitcode-hot-clear', "
-                f"'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
-                f"'bt-cond', 'bt-cond-feh', 'blackbody'."
-            )
-
-        h5_file.close()
 
     @typechecked
     def add_object(
@@ -1015,9 +919,11 @@ class Database:
                     read_spec[key][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
                 if read_spec[key].shape[0] == 3 and read_spec[key].shape[1] != 3:
-                    warnings.warn(f"Transposing the data of {key} because "
-                                  f"the first instead of the second axis "
-                                  f"has a length of 3.")
+                    warnings.warn(
+                        f"Transposing the data of {key} because "
+                        f"the first instead of the second axis "
+                        f"has a length of 3."
+                    )
 
                     read_spec[key] = read_spec[key].transpose()
 
@@ -1026,9 +932,11 @@ class Database:
                 if sum(nan_index) != 0:
                     read_spec[key] = read_spec[key][~nan_index, :]
 
-                    warnings.warn(f"Found {sum(nan_index)} fluxes with NaN in "
-                                  f"the data of {key}. Removing the spectral "
-                                  f"fluxes that contain a NaN.")
+                    warnings.warn(
+                        f"Found {sum(nan_index)} fluxes with NaN in "
+                        f"the data of {key}. Removing the spectral "
+                        f"fluxes that contain a NaN."
+                    )
 
                 wavelength = read_spec[key][:, 0]
                 flux = read_spec[key][:, 1]
@@ -1882,8 +1790,10 @@ class Database:
                             smooth=True,
                         )
 
-                        flux_comb = model_param['spec_weight']*specbox_0.flux \
-                            + (1.-model_param['spec_weight'])*specbox_1.flux
+                        flux_comb = (
+                            model_param["spec_weight"] * specbox_0.flux
+                            + (1.0 - model_param["spec_weight"]) * specbox_1.flux
+                        )
 
                         specbox = box.create_box(
                             boxtype="model",
@@ -2038,8 +1948,10 @@ class Database:
                             param_1 = read_util.binary_to_single(model_param, 1)
                             mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
 
-                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
-                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+                            mcmc_phot[i] = (
+                                model_param["spec_weight"] * mcmc_phot_0
+                                + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                            )
 
                         else:
                             mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
@@ -2052,8 +1964,10 @@ class Database:
                             param_1 = read_util.binary_to_single(model_param, 1)
                             mcmc_phot_1, _ = readmodel.get_flux(param_1)
 
-                            mcmc_phot[i] = model_param['spec_weight']*mcmc_phot_0 \
-                            + (1.-model_param['spec_weight'])*mcmc_phot_1
+                            mcmc_phot[i] = (
+                                model_param["spec_weight"] * mcmc_phot_0
+                                + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                            )
 
                         else:
                             mcmc_phot[i], _ = readmodel.get_flux(model_param)
@@ -3555,7 +3469,7 @@ class Database:
             pcode_param[f"{item}_abund"] = cloud_scaling * cloud_abund[np.amax(indices)]
 
         if json_file is not None:
-            with open(json_file, "w") as out_file:
+            with open(json_file, "w", encoding="utf-8") as out_file:
                 json.dump(pcode_param, out_file, indent=4)
 
         print(" [DONE]")

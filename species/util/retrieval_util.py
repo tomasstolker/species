@@ -364,9 +364,10 @@ def pt_spline_interp(
         interpolated.
     pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for
-        smoothing the sampled temperature nodes of the P-T profile. The
-        argument should be given as log10(P/bar) with the default value
-        in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        smoothing the P-T profile, after the temperature nodes
+        have been interpolated to a higher pressure resolution.
+        The argument should be given as
+        :math:`\\log10{P/\\mathrm{bar}}`, with the default value
         set to 0.3 dex.
 
     Returns
@@ -423,9 +424,10 @@ def create_pt_profile(
         Carbon-to-oxgen ratio.
     pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for
-        smoothing the sampled temperature nodes of the P-T profile. The
-        argument should be given as log10(P/bar) with the default value
-        in :func:`~species.analysis.retrieval.AtmosphericRetrieval.run_multinest`
+        smoothing the P-T profile, after the temperature nodes
+        have been interpolated to a higher pressure resolution.
+        The argument should be given as
+        :math:`\\log10{P/\\mathrm{bar}}`, with the default value
         set to 0.3 dex.
 
     Returns
