@@ -1,0 +1,179 @@
+{
+    "ames-cond": {
+        "parameters": ["teff", "logg"],
+        "name": "AMES-Cond",
+        "file size": "150 MB",
+        "wavelength range": [0.5, 40],
+        "resolution": 4000,
+        "teff range": [100, 6600]
+    },
+    "ames-dusty": {
+        "parameters": ["teff", "logg"],
+        "name": "AMES-Dusty",
+        "file size": "59 MB",
+        "wavelength range": [0.5, 40],
+        "resolution": 4000,
+        "teff range": [500, 4000]
+    },
+    "atmo": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO",
+        "file size": "425 MB",
+        "wavelength range": [0.4, 6000],
+        "resolution": 10000,
+        "teff range": [200, 3000],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "blackbody": {
+        "parameters": ["teff"],
+        "name": "blackbody",
+        "file size": "56 MB",
+        "wavelength range": [0.1, 5000],
+        "resolution": 1000,
+        "teff range": [10, 20000]
+    },
+    "bt-cond": {
+        "parameters": ["teff", "logg"],
+        "name": "BT-Cond",
+        "file size": "162 MB",
+        "wavelength range": [0.1, 100],
+        "resolution": 10000,
+        "teff range": [800, 4000]
+    },
+    "bt-cond-feh": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-Cond [Fe/H]",
+        "file size": "390 MB",
+        "wavelength range": [0.1, 100],
+        "resolution": 10000,
+        "teff range": [2600, 4000]
+    },
+    "bt-nextgen": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-NextGen",
+        "file size": "368 MB",
+        "wavelength range": [0.1, 50],
+        "resolution": 4000,
+        "teff range": [2600, 30000]
+    },
+    "bt-settl": {
+        "parameters": ["teff", "logg"],
+        "name": "BT-Settl",
+        "file size": "227 MB",
+        "wavelength range": [0.1, 100],
+        "resolution": 10000,
+        "teff range": [400, 4000]
+    },
+    "bt-settl-cifist": {
+        "parameters": ["teff", "logg"],
+        "name": "BT-Settl CIFIST",
+        "file size": "1.8 GB",
+        "wavelength range": [0.1, 5000],
+        "resolution": 20000,
+        "teff range": [1200, 7000]
+    },
+    "drift-phoenix": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "DRIFT-PHOENIX",
+        "file size": "229 MB",
+        "wavelength range": [0.1, 50],
+        "resolution": 4000,
+        "teff range": [1000, 3000],
+        "reference": "Helling et al. (2008)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H/abstract"
+    },
+    "exo-rem": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "Exo-REM",
+        "file size": "706 MB",
+        "wavelength range": [0.9, 5],
+        "resolution": 10000,
+        "teff range": [1000, 2000],
+        "reference": "Charney et al. (2018)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
+    },
+    "morley-2012": {
+        "parameters": ["teff", "logg", "fsed"],
+        "name": "Morley et al. (2012)",
+        "file size": "141 MB",
+        "wavelength range": [0.6, 30],
+        "resolution": 10000,
+        "teff range": [400, 1300],
+        "reference": "Morley et al. (2012)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract"
+    },
+    "petitcode-cool-clear": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "petitCODE cool clear",
+        "file size": "86 MB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [500, 1000],
+        "reference": "Mollière et al. (2015)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "petitcode-cool-cloudy": {
+        "parameters": ["teff", "logg", "feh", "fsed"],
+        "name": "petitCODE cool cloudy",
+        "file size": "224 MB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [500, 850],
+        "information": "log(Kzz) = 7.5",
+        "reference": "Mollière et al. (2015)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "petitcode-hot-clear": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "petitCODE hot clear",
+        "file size": "42 MB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [1000, 2000],
+        "reference": "Mollière et al. (2015)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "petitcode-hot-cloudy": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "fsed"],
+        "name": "petitCODE hot cloudy",
+        "file size": "126 MB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [1000, 2000],
+        "reference": "Mollière et al. (2015)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "sonora-cholla": {
+        "parameters": ["teff", "logg", "log_kzz"],
+        "name": "Sonora Cholla",
+        "file size": "497 MB",
+        "wavelength range": [1, 250],
+        "resolution": 10000,
+        "teff range": [500, 1300],
+        "information": "[Fe/H] = 0.0",
+        "reference": "Karalidi et al. (2021)",
+        "url": "https://zenodo.org/record/4450269"
+    },
+    "sonora-bobcat": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "Sonora Bobcat",
+        "file size": "1.1 GB",
+        "wavelength range": [0.4, 50],
+        "resolution": 10000,
+        "teff range": [200, 2400],
+        "reference": "Marley et al. (2021)",
+        "url": "https://zenodo.org/record/5063476"
+    },
+    "sonora-bobcat-co": {
+        "parameters": ["teff", "c_o_ratio"],
+        "name": "Sonora Bobcat C/O",
+        "file size": "112 MB",
+        "wavelength range": [0.4, 50],
+        "resolution": 10000,
+        "teff range": [200, 2400],
+        "information": "[Fe/H] = 0.0, log(g) = 5.0",
+        "reference": "Marley et al. (2021)",
+        "url": "https://zenodo.org/record/5063476"
+    }
+}

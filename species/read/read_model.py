@@ -7,7 +7,7 @@ import math
 import warnings
 import configparser
 
-from typing import Optional, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import spectres
@@ -714,6 +714,9 @@ class ReadModel:
         if "fsed" in model_param:
             parameters.append(model_param["fsed"])
 
+        if "log_kzz" in model_param:
+            parameters.append(model_param["log_kzz"])
+
         # Interpolate the spectrum from the grid
 
         flux = self.spectrum_interp(parameters)[0]
@@ -1047,6 +1050,10 @@ class ReadModel:
         if "fsed" in model_param:
             param_key.append("fsed")
             param_val.append(model_param["fsed"])
+
+        if "log_kzz" in model_param:
+            param_key.append("log_kzz")
+            param_val.append(model_param["log_kzz"])
 
         # Read the grid of fluxes from the database
 
@@ -1435,21 +1442,25 @@ class ReadModel:
     @typechecked
     def get_spec_res(self) -> float:
         """
-        Function for extracting the spectral resolution as stored in
-        the database.
+        Function for returning the spectral resolution of the model
+        spectra as stored in the database, that is,
+        :math:`R = \\lambda/\\Delta\\lambda/2`. A minimum of two
+        wavelengths are required to resolve a spectral feature,
+        hence the factor 0.5.
 
         Returns
         -------
         float
-            Spectral resolution.
+            Spectral resolution :math:`R`.
         """
 
         wavel_points = self.get_wavelengths()
 
         wavel_mean = (wavel_points[1:] + wavel_points[:-1]) / 2.0
 
-        # R = lambda / delta_lambda / 2, because twice as many points as R
-        # are required to resolve two features that are lambda / R apart
+        # R = lambda / delta_lambda / 2, because twice as
+        # many points as R are required to resolve two
+        # features that are lambda / R apart
         spec_res = wavel_mean / np.diff(wavel_points) / 2.0
 
         return np.mean(spec_res)

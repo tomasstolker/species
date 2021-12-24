@@ -12,82 +12,10 @@ species.data.allers2013 module
    :undoc-members:
    :show-inheritance:
 
-species.data.ames\_cond module
-------------------------------
-
-.. automodule:: species.data.ames_cond
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.ames\_dusty module
--------------------------------
-
-.. automodule:: species.data.ames_dusty
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.atmo module
-------------------------
-
-.. automodule:: species.data.atmo
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.blackbody module
------------------------------
-
-.. automodule:: species.data.blackbody
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 species.data.bonnefoy2014 module
 --------------------------------
 
 .. automodule:: species.data.bonnefoy2014
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.btcond module
---------------------------
-
-.. automodule:: species.data.btcond
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.btcond\_feh module
--------------------------------
-
-.. automodule:: species.data.btcond_feh
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.btnextgen module
------------------------------
-
-.. automodule:: species.data.btnextgen
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.btsettl module
----------------------------
-
-.. automodule:: species.data.btsettl
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.btsettl\_cifist module
------------------------------------
-
-.. automodule:: species.data.btsettl_cifist
    :members:
    :undoc-members:
    :show-inheritance:
@@ -108,26 +36,10 @@ species.data.database module
    :undoc-members:
    :show-inheritance:
 
-species.data.drift\_phoenix module
-----------------------------------
-
-.. automodule:: species.data.drift_phoenix
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 species.data.dust module
 ------------------------
 
 .. automodule:: species.data.dust
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.exo\_rem module
-----------------------------
-
-.. automodule:: species.data.exo_rem
    :members:
    :undoc-members:
    :show-inheritance:
@@ -172,18 +84,10 @@ species.data.leggett module
    :undoc-members:
    :show-inheritance:
 
-species.data.morley2012 module
-------------------------------
+species.data.model\_spectra module
+----------------------------------
 
-.. automodule:: species.data.morley2012
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.data.petitcode module
------------------------------
-
-.. automodule:: species.data.petitcode
+.. automodule:: species.data.model_spectra
    :members:
    :undoc-members:
    :show-inheritance:
