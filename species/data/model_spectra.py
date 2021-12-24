@@ -32,7 +32,7 @@ def add_model_grid(
     Function for adding a grid of model spectra to the database.
     The original spectra had been resampled to logarithmically-
     spaced wavelengths, so at a constant resolution,
-    :math:`\\lambda/\\Delta\lambda`. This function downloads
+    :math:`\\lambda/\\Delta\\lambda`. This function downloads
     the model grid, unpacks the tar file, and adds the spectra
     and parameters to the database.
 
@@ -120,7 +120,7 @@ def add_model_grid(
 
     if "reference" in model_info:
         print(f"Please cite {model_info['reference']} when "
-              f"using {model_info['name']} in a publication.")
+              f"using {model_info['name']} in a publication")
 
     if "url" in model_info:
         print(f"Reference URL: {model_info['url']}")
@@ -156,8 +156,18 @@ def add_model_grid(
 
     if wavel_range is not None and spec_res is not None:
         wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+        print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
+        print(f"Spectral resolution = {spec_res}")
+
     else:
         wavelength = None
+        print(f"Wavelength range (um) = {model_info['wavelength range'][0]} - {model_info['wavelength range'][1]}")
+        print(f"Spectral resolution = {model_info['resolution']}")
+
+    if teff_range is None:
+        print(f"Teff range (K) = {model_info['teff range'][0]} - {model_info['teff range'][1]}")
+    else:
+        print(f"Teff range (K) = {teff_range[0]} - {teff_range[1]}")
 
     print_message = ""
 
@@ -173,8 +183,8 @@ def add_model_grid(
                 if teff_range is not None:
                     if teff_val < teff_range[0] or teff_val > teff_range[1]:
                         continue
-                else:
-                    teff.append(teff_val)
+
+                teff.append(teff_val)
 
                 if logg is not None:
                     param_index = file_split.index("logg") + 1
@@ -193,7 +203,7 @@ def add_model_grid(
                     fsed.append(float(file_split[param_index]))
 
                 if log_kzz is not None:
-                    param_index = file_split.index("log_kzz") + 1
+                    param_index = file_split.index("logkzz") + 1
                     log_kzz.append(float(file_split[param_index]))
 
                 empty_message = len(print_message) * " "

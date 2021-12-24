@@ -7,7 +7,7 @@ import math
 import warnings
 import configparser
 
-from typing import Optional, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import spectres

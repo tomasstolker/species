@@ -5,6 +5,7 @@ Module with functionalities for reading and writing of data.
 import configparser
 import json
 import os
+import pathlib
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -162,6 +163,61 @@ class Database:
             print()
 
         return comp_names
+
+    @staticmethod
+    @typechecked
+    def available_models() -> Dict:
+        """
+        Method for printing an overview of the available model grids
+        that can be downloaded and added to the database with
+        :class:`~species.data.database.Database.add_model`.
+
+        Returns
+        -------
+        dict
+            Dictionary with the details on the model grids. The
+            dictionary is created from the ``model_data.json``
+            file in the ``species.data`` folder.
+        """
+
+        data_file = pathlib.Path(__file__).parent.resolve() / "model_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            model_data = json.load(json_file)
+
+        print("Available model grids:", end="")
+
+        for model_name, model_dict in model_data.items():
+            print(f"\n   - {model_dict['name']}:")
+            print(f"      - Label = {model_name}")
+
+            if "parameters" in model_dict:
+                print(f"      - Model parameters: {model_dict['parameters']}")
+
+            if "teff range" in model_dict:
+                print(f"      - Teff range (K): {model_dict['teff range']}")
+
+            if "wavelength range" in model_dict:
+                print(
+                    f"      - Wavelength range (um): {model_dict['wavelength range']}"
+                )
+
+            if "resolution" in model_dict:
+                print(f"      - Resolution lambda/Dlambda: {model_dict['resolution']}")
+
+            if "information" in model_dict:
+                print(f"      - Extra details: {model_dict['information']}")
+
+            if "file size" in model_dict:
+                print(f"      - File size: {model_dict['file size']}")
+
+            if "reference" in model_dict:
+                print(f"      - Reference: {model_dict['reference']}")
+
+            if "url" in model_dict:
+                print(f"      - URL: {model_dict['url']}")
+
+        return model_data
 
     @typechecked
     def delete_data(self, data_set: str) -> None:
@@ -413,7 +469,6 @@ class Database:
         wavel_range: Optional[Tuple[float, float]] = None,
         spec_res: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
-        data_folder: Optional[str] = None,
     ) -> None:
         """
         Method for adding a grid of model spectra to the database.
@@ -445,24 +500,12 @@ class Database:
         teff_range : tuple(float, float), None
             Effective temperature range (K) for adding a subset of the model grid. The full
             parameter grid will be added if the argument is set to ``None``.
-        data_folder : str, None
-            DEPRECATED: Folder where the input data is located. This parameter is no longer in use
-            since all model spectra are publicly available. The parameter will be removed in a
-            future release.
 
         Returns
         -------
         NoneType
             None
         """
-
-        if data_folder is not None:
-            warnings.warn(
-                "The 'data_folder' parameter has been deprecated since "
-                "all supported model spectra are publicly available. The"
-                "parameter will therefore be ignored and will cause an error "
-                "in a future release."
-            )
 
         with h5py.File(self.database, "a") as h5_file:
             if "models" not in h5_file:
