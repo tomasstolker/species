@@ -3143,6 +3143,12 @@ class Database:
             # Get the P-T smoothing parameter
             if "pt_smooth" in dset.attrs:
                 pt_smooth = dset.attrs["pt_smooth"]
+
+            elif "pt_smooth_0" in parameters:
+                pt_smooth = {}
+                for i in range(temp_nodes-1):
+                    pt_smooth[f"pt_smooth_{i}"] = item[-temp_nodes+i]
+
             else:
                 pt_smooth = item[indices["pt_smooth"]]
 

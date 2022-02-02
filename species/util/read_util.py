@@ -345,7 +345,7 @@ def update_objectbox(
                         f"to None. Inflation of the errors is therefore not possible."
                     )
 
-                if model == "petitradtrans":
+                elif model == "petitradtrans":
                     # Increase the errors by a constant value
                     add_error = 10.0 ** model_param[f"error_{key}"]
                     log_msg = (

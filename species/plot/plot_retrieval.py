@@ -2,6 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import copy
 import os
 import warnings
 
@@ -245,12 +246,93 @@ def plot_pt_profile(
 
             if "pt_smooth" in parameters:
                 pt_smooth = item[param_index["pt_smooth"]]
+
+            elif "pt_smooth_0" in parameters:
+                pt_smooth = {}
+                for i in range(temp_nodes-1):
+                    pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
+
+            elif "pt_turn" in parameters:
+                pt_smooth = {"pt_smooth_1": item[param_index["pt_smooth_1"]],
+                             "pt_smooth_2": item[param_index["pt_smooth_2"]],
+                             "pt_turn": item[param_index["pt_turn"]],
+                             "pt_index": item[param_index["pt_index"]]}
+
             else:
                 pt_smooth = box.attributes["pt_smooth"]
 
             temp = retrieval_util.pt_spline_interp(
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
+
+        # if pt_profile == "free":
+        #     temp = temp[:, 0]
+        #
+        #     from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        #     ab = interpol_abundances(
+        #         np.full(temp.shape[0], c_o_ratio),
+        #         np.full(temp.shape[0], metallicity),
+        #         temp,
+        #         pressure,
+        #     )
+        #
+        #     nabla_ad = ab["nabla_ad"]
+        #
+        #     # Convert pressures from bar to cgs units
+        #     press_cgs = pressure * 1e6
+        #
+        #     # Calculate the current, radiative temperature gradient
+        #     nab_rad = np.diff(np.log(temp)) / np.diff(np.log(press_cgs))
+        #
+        #     # Extend to array of same length as pressure structure
+        #     nabla_rad = np.ones_like(temp)
+        #     nabla_rad[0] = nab_rad[0]
+        #     nabla_rad[-1] = nab_rad[-1]
+        #     nabla_rad[1:-1] = (nab_rad[1:] + nab_rad[:-1]) / 2.0
+        #
+        #     # Where is the atmosphere convectively unstable?
+        #     conv_index = nabla_rad > nabla_ad
+        #
+        #     tfinal = None
+        #
+        #     for i in range(10):
+        #         if i == 0:
+        #             t_take = copy.copy(temp)
+        #         else:
+        #             t_take = copy.copy(tfinal)
+        #
+        #         ab = interpol_abundances(
+        #             np.full(t_take.shape[0], c_o_ratio),
+        #             np.full(t_take.shape[0], metallicity),
+        #             t_take,
+        #             pressure,
+        #         )
+        #
+        #         nabla_ad = ab["nabla_ad"]
+        #
+        #         # Calculate the average nabla_ad between the layers
+        #         nabla_ad_mean = nabla_ad
+        #         nabla_ad_mean[1:] = (nabla_ad[1:] + nabla_ad[:-1]) / 2.0
+        #
+        #         # What are the increments in temperature due to convection
+        #         tnew = nabla_ad_mean[conv_index] * np.mean(np.diff(np.log(press_cgs)))
+        #
+        #         # What is the last radiative temperature?
+        #         tstart = np.log(t_take[~conv_index][-1])
+        #
+        #         # Integrate and translate to temperature
+        #         # from log(temperature)
+        #         tnew = np.exp(np.cumsum(tnew) + tstart)
+        #
+        #         # Add upper radiative and lower covective
+        #         # part into one single array
+        #         tfinal = copy.copy(t_take)
+        #         tfinal[conv_index] = tnew
+        #
+        #         if np.max(np.abs(t_take - tfinal) / t_take) < 0.01:
+        #             break
+        #
+        #     temp = copy.copy(tfinal)
 
         ax.plot(temp, pressure, "-", lw=0.3, color="gray", alpha=0.5, zorder=1)
 
@@ -296,6 +378,18 @@ def plot_pt_profile(
 
         if "pt_smooth" in parameters:
             pt_smooth = median["pt_smooth"]
+
+        elif "pt_smooth_0" in parameters:
+            pt_smooth = {}
+            for i in range(temp_nodes-1):
+                pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
+
+        elif "pt_turn" in parameters:
+            pt_smooth = {"pt_smooth_1": median["pt_smooth_1"],
+                         "pt_smooth_2": median["pt_smooth_2"],
+                         "pt_turn": median["pt_turn"],
+                         "pt_index": median["pt_index"]}
+
         else:
             pt_smooth = box.attributes["pt_smooth"]
 
