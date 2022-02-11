@@ -44,24 +44,30 @@ def plot_pt_profile(
     tag : str
         Database tag with the posterior samples.
     random : int, None
-        Number of randomly selected samples from the posterior. All samples are selected if
-        set to ``None``.
+        Number of randomly selected samples from the posterior. All
+        samples are selected if set to ``None``.
     xlim : tuple(float, float), None
-        Limits of the temperature axis. Default values are used if set to ``None``.
+        Limits of the temperature axis. Default values are used if
+        set to ``None``.
     ylim : tuple(float, float), None
-        Limits of the pressure axis. Default values are used if set to ``None``.
+        Limits of the pressure axis. Default values are used if set
+        to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values are used
+        if set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        Not used if set to ``None``.
     extra_axis : str, None
-        The quantify that is plotted at the top axis ('photosphere', 'grains'). The top axis is not
-        used if the argument is set to ``None``.
+        The quantify that is plotted at the top axis ('photosphere',
+        'grains'). The top axis is not used if the argument is set
+        to ``None``.
     rad_conv_bound : bool
-        Plot the range of pressures (:math:`\\pm 1\\sigma`) of the radiative-convective boundary.
+        Plot the range of pressures (:math:`\\pm 1\\sigma`) of the
+        radiative-convective boundary.
 
     Returns
     -------
@@ -74,14 +80,14 @@ def plot_pt_profile(
     else:
         print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
 
-    cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCl(c)"]
+    cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCL(c)"]
 
     cloud_color = {
         "Fe(c)": "tab:blue",
         "MgSiO3(c)": "tab:orange",
         "Al2O3(c)": "tab:green",
         "Na2S(c)": "tab:cyan",
-        "KCl(c)": "tab:pink",
+        "KCL(c)": "tab:pink",
     }
 
     species_db = database.Database()
@@ -512,6 +518,12 @@ def plot_pt_profile(
                 sat_temp, sat_press, "--", lw=0.8, color=cloud_color["KCL(c)"], zorder=2
             )
 
+    if box.attributes["chemistry"] == "free":
+        # Remove these parameters otherwise ReadRadtrans.get_model()
+        # will assume equilibrium chemistry
+        del median["metallicity"]
+        del median["c_o_ratio"]
+
     if radtrans is not None:
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
         model_box = radtrans.get_model(median)
@@ -680,6 +692,9 @@ def plot_pt_profile(
                         label += f"$_{char}$"
                     else:
                         label += char
+
+                if label == "KCL":
+                    label = "KCl"
 
                 # Convert from (cm) to (um)
                 ax2.plot(

@@ -21,7 +21,6 @@ except:
         "because cython was not correctly compiled?"
     )
 
-# Installation of MultiNest is not possible on readthedocs
 try:
     import pymultinest
 except:

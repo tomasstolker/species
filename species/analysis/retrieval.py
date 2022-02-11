@@ -15,7 +15,16 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pymultinest
+
+try:
+    import pymultinest
+except:
+    warnings.warn(
+        "PyMultiNest could not be imported. "
+        "Perhaps because MultiNest was not build "
+        "and/or found at the LD_LIBRARY_PATH "
+        "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
+    )
 
 from molmass import Formula
 from scipy.integrate import simps
@@ -393,9 +402,9 @@ class AtmosphericRetrieval:
             for i in range(self.temp_nodes):
                 self.parameters.append(f"t{i}")
 
-            if pt_profile == "free":
+            if "log_beta_r" in bounds:
                 self.parameters.append("gamma_r")
-                self.parameters.append("beta_r")
+                self.parameters.append("log_beta_r")
 
         # Abundance parameters
 
@@ -1136,13 +1145,6 @@ class AtmosphericRetrieval:
                     # Default: 0 - 8000 K
                     cube[cube_index[f"t{i}"]] = 20000.0 * cube[cube_index[f"t{i}"]]
 
-                # Penalization of wiggles in the P-T profile
-                # inverse gamma: a=1, b=5e-5
-                beta_r = cube[cube_index["beta_r"]]
-                gamma_r = invgamma.ppf(cube[cube_index["gamma_r"]], a=1.0, scale=beta_r)
-                cube[cube_index["beta_r"]] = beta_r
-                cube[cube_index["gamma_r"]] = gamma_r
-
             elif pt_profile == "monotonic":
                 # Free temperature node (K) between 300 and
                 # 20000 K for the deepest pressure point
@@ -1170,6 +1172,18 @@ class AtmosphericRetrieval:
                     #
                     #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
                     #         cube[cube_index[f't{i}']]*temp_diff
+
+            # Penalization of wiggles in the P-T profile
+            # Inverse gamma distribution
+            # a=1, b=5e-5 (Line et al. 2015)
+
+            if "gamma_r" in self.parameters:
+                log_beta_r = bounds["log_beta_r"][0] + (bounds["log_beta_r"][1] - bounds["log_beta_r"][0]) * cube[cube_index["log_beta_r"]]
+                cube[cube_index["log_beta_r"]] = log_beta_r
+
+                # Input gamma is sampled between 0 and 1
+                gamma_r = invgamma.ppf(cube[cube_index["gamma_r"]], a=1.0, scale=10.**log_beta_r)
+                cube[cube_index["gamma_r"]] = gamma_r
 
             # Chemical composition
 
@@ -1962,7 +1976,7 @@ class AtmosphericRetrieval:
 
             # Penalize P-T profiles with oscillations
 
-            if pt_profile == "free":
+            if pt_profile in ["free", "monotonic"]:
                 temp_sum = np.sum(
                     (knot_temp[2:] + knot_temp[:-2] - 2.0 * knot_temp[1:-1]) ** 2.0
                 )
