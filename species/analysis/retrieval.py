@@ -1976,10 +1976,11 @@ class AtmosphericRetrieval:
 
             # Penalize P-T profiles with oscillations
 
-            if pt_profile in ["free", "monotonic"]:
+            if pt_profile in ["free", "monotonic"] and "log_gamma_r" in self.parameters:
                 temp_sum = np.sum(
                     (knot_temp[2:] + knot_temp[:-2] - 2.0 * knot_temp[1:-1]) ** 2.0
                 )
+
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
                 ln_prior += -1.0 * temp_sum / (
