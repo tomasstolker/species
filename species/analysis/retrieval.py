@@ -403,7 +403,7 @@ class AtmosphericRetrieval:
                 self.parameters.append(f"t{i}")
 
             if "log_beta_r" in bounds:
-                self.parameters.append("gamma_r")
+                self.parameters.append("log_gamma_r")
                 self.parameters.append("log_beta_r")
 
         # Abundance parameters
@@ -1177,13 +1177,13 @@ class AtmosphericRetrieval:
             # Inverse gamma distribution
             # a=1, b=5e-5 (Line et al. 2015)
 
-            if "gamma_r" in self.parameters:
+            if "log_gamma_r" in self.parameters:
                 log_beta_r = bounds["log_beta_r"][0] + (bounds["log_beta_r"][1] - bounds["log_beta_r"][0]) * cube[cube_index["log_beta_r"]]
                 cube[cube_index["log_beta_r"]] = log_beta_r
 
-                # Input gamma is sampled between 0 and 1
-                gamma_r = invgamma.ppf(cube[cube_index["gamma_r"]], a=1.0, scale=10.**log_beta_r)
-                cube[cube_index["gamma_r"]] = gamma_r
+                # Input log_gamma_r is sampled between 0 and 1
+                gamma_r = invgamma.ppf(cube[cube_index["log_gamma_r"]], a=1.0, scale=10.**log_beta_r)
+                cube[cube_index["log_gamma_r"]] = np.log10(gamma_r)
 
             # Chemical composition
 
@@ -1983,8 +1983,8 @@ class AtmosphericRetrieval:
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
                 ln_prior += -1.0 * temp_sum / (
-                    2.0 * cube[cube_index["gamma_r"]]
-                ) - 0.5 * np.log(2.0 * np.pi * cube[cube_index["gamma_r"]])
+                    2.0 * 10.**cube[cube_index["log_gamma_r"]]
+                ) - 0.5 * np.log(2.0 * np.pi * 10.**cube[cube_index["log_gamma_r"]])
 
             # Return zero probability if the minimum temperature is negative
 
