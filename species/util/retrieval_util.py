@@ -93,7 +93,7 @@ def pt_ret_model(
         Power law index in
         :math:`\\tau = \\delta * P_\\mathrm{cgs}**\\alpha`.
         For the tau model: use the proximity to the
-        :math:`\\kappa_\mathrm{rosseland}` photosphere as prior.
+        :math:`\\kappa_\\mathrm{rosseland}` photosphere as prior.
     tint : float
         Internal temperature for the Eddington model.
     press : np.ndarray
