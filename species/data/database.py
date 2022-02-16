@@ -3055,10 +3055,15 @@ class Database:
 
         # Get free temperarture nodes
 
-        if dset.attrs["temp_nodes"] == "None":
-            temp_nodes = None
+        if "temp_nodes" in dset.attrs:
+            if dset.attrs["temp_nodes"] == "None":
+                temp_nodes = None
+            else:
+                temp_nodes = dset.attrs["temp_nodes"]
+
         else:
-            temp_nodes = dset.attrs["temp_nodes"]
+            # For backward compatibility 
+            temp_nodes = None
 
         # Get distance
 
@@ -3263,19 +3268,21 @@ class Database:
         self, tag: str, sample_type: str = "median", json_file: Optional[str] = None
     ) -> Dict[str, float]:
         """
-        Function for converting the median are maximum likelihood posterior parameters of
-        ``petitRADTRANS`` into a dictionary of input parameters for ``petitCODE``.
+        Function for converting the median are maximum likelihood
+        posterior parameters of ``petitRADTRANS`` into a dictionary of
+        input parameters for ``petitCODE``.
 
         Parameters
         ----------
         tag : str
             Database tag with the posterior samples.
         sample_type : str
-            Sample type that will be selected from the posterior ('median' or 'probable'). Either
-            the median or maximum likelihood parameters are used.
+            Sample type that will be selected from the posterior
+            ('median' or 'probable'). Either the median or maximum
+            likelihood parameters are used.
         json_file : str, None
-            JSON file to store the posterior samples. The data will not be written if the argument
-            is set to ``None``.
+            JSON file to store the posterior samples. The data will
+            not be written if the argument is set to ``None``.
 
         Returns
         -------
@@ -3291,8 +3298,8 @@ class Database:
 
         else:
             raise ValueError(
-                "The argument of 'sample_type' should be set to either "
-                "'median' or 'probable'."
+                "The argument of 'sample_type' should be set "
+                "to either 'median' or 'probable'."
             )
 
         sample_box = self.get_samples(tag)
@@ -3377,10 +3384,10 @@ class Database:
         # Extract the mean molecular weight
         mmw = abund_in["MMW"]
 
+        cloud_fractions = {}
+
         if "log_tau_cloud" in model_param:
             tau_cloud = 10.0 ** model_param["log_tau_cloud"]
-
-            cloud_fractions = {}
 
             for i, item in enumerate(cloud_species):
                 if i == 0:
@@ -3396,6 +3403,9 @@ class Database:
 
         else:
             tau_cloud = None
+
+            for i, item in enumerate(cloud_species):
+                cloud_fractions[item[:-3]] = model_param[f"{item[:-6].lower()}_fraction"]
 
         log_x_base = retrieval_util.log_x_cloud_base(
             model_param["c_o_ratio"], model_param["metallicity"], cloud_fractions
@@ -3467,12 +3477,19 @@ class Database:
         )
         pcode_param["teff"] = (flux_int / constants.SIGMA_SB) ** 0.25
 
-        cloud_scaling = read_rad.rt_object.cloud_scaling_factor
+        if "log_tau_cloud" in model_param:
+            cloud_scaling = read_rad.rt_object.cloud_scaling_factor
 
-        for item in cloud_species_full:
-            cloud_abund = abund_in[item[:-3]]
-            indices = np.where(cloud_abund > 0.0)[0]
-            pcode_param[f"{item}_abund"] = cloud_scaling * cloud_abund[np.amax(indices)]
+            for item in cloud_species_full:
+                cloud_abund = abund_in[item[:-3]]
+                indices = np.where(cloud_abund > 0.0)[0]
+                pcode_param[f"{item}_abund"] = cloud_scaling * cloud_abund[np.amax(indices)]
+
+        else:
+            for item in cloud_species_full:
+                cloud_abund = abund_in[item[:-3]]
+                indices = np.where(cloud_abund > 0.0)[0]
+                pcode_param[f"{item}_abund"] = cloud_abund[np.amax(indices)]
 
         if json_file is not None:
             with open(json_file, "w", encoding="utf-8") as out_file:
