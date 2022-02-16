@@ -912,14 +912,15 @@ class AtmosphericRetrieval:
                 bounds[f"corr_len_{item}"] = (-3.0, 0.0)  # log10(corr_len/um)
                 bounds[f"corr_amp_{item}"] = (0.0, 1.0)
 
-        # List with spectra that will be used for a cross-correlation instead of least-squares
+        # List with spectra that will be used for a
+        # cross-correlation instead of least-squares
 
         if cross_corr is None:
             cross_corr = []
 
-        elif "fsed_1" in bound or "fsed_2" in self.bound:
-            raise ValueError("The cross_corr parameter does not "
-                             "support multiple fsed parameters.")
+        elif "fsed_1" in bounds or "fsed_2" in bounds:
+            raise ValueError("The cross_corr parameter can not be "
+                             "used with multiple fsed parameters.")
 
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
