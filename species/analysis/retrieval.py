@@ -473,25 +473,22 @@ class AtmosphericRetrieval:
         if "log_kappa_0" in bounds:
             inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
 
-            if "new_simple_cloud_params" not in inspect_prt.args:
+            if "give_absorption_opacity" not in inspect_prt.args:
                 raise RuntimeError(
                     "The Radtrans.calc_flux method "
                     "from petitRADTRANS does not have "
-                    "the new_simple_cloud_params "
+                    "the give_absorption_opacity "
                     "parameter. Probably you are "
-                    "using the main package "
-                    "instead of the fork from "
-                    "https://gitlab.com/tomasstolker"
-                    "/petitRADTRANS. The parameterized "
-                    "cloud opacities (i.e. with "
-                    "log_kappa_0, opa_index, albedo) "
-                    "can therefore not be used."
+                    "using an outdated version so "
+                    "please update petitRADTRANS "
+                    "to the latest version."
                 )
 
             if "fsed_1" in bounds and "fsed_2" in bounds:
                 self.parameters.append("fsed_1")
                 self.parameters.append("fsed_2")
                 self.parameters.append("f_clouds")
+
             else:
                 self.parameters.append("fsed")
 

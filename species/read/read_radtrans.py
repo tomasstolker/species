@@ -536,26 +536,83 @@ class ReadRadtrans:
                                 f"{cloud_1}_{cloud_2}_ratio"
                             ]
 
-            # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
+            # Calculate the petitRADTRANS spectrum
+            # for a cloudy atmosphere
 
-            wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
-                self.rt_object,
-                self.pressure,
-                temp,
-                c_o_ratio,
-                metallicity,
-                p_quench,
-                log_x_abund,
-                log_x_base,
-                model_param,
-                model_param["logg"],
-                chemistry=chemistry,
-                pressure_grid=self.pressure_grid,
-                plotting=False,
-                contribution=True,
-                tau_cloud=tau_cloud,
-                cloud_wavel=self.cloud_wavel,
-            )
+            if "fsed" in model_param:
+                wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    model_param,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
+
+            elif "fsed_1" in model_param and "fsed_2" in model_param:
+                cloud_dict = model_param.copy()
+                cloud_dict["fsed"] = cloud_dict["fsed_1"]
+
+                wavelength, flux_1, emission_contr_1, _ = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    cloud_dict,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
+
+                cloud_dict = model_param.copy()
+                cloud_dict["fsed"] = cloud_dict["fsed_2"]
+
+                wavelength, flux_2, emission_contr_2, _ = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    cloud_dict,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
+
+                flux = (
+                    model_param["f_clouds"] * flux_1
+                    + (1.0 - model_param["f_clouds"]) * flux_2
+                )
+
+                emission_contr = (
+                    model_param["f_clouds"] * emission_contr_1
+                    + (1.0 - model_param["f_clouds"]) * emission_contr_2
+                )
 
         elif chemistry == "equilibrium":
             # Calculate the petitRADTRANS spectrum for a clear atmosphere

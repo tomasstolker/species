@@ -242,6 +242,18 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("fsed")
         param[index] = r"$\mathregular{f}_\mathregular{sed}$"
 
+    if "fsed_1" in param:
+        index = param.index("fsed_1")
+        param[index] = r"$\mathregular{f}_\mathregular{sed,1}$"
+
+    if "fsed_2" in param:
+        index = param.index("fsed_2")
+        param[index] = r"$\mathregular{f}_\mathregular{sed,2}$"
+
+    if "f_clouds" in param:
+        index = param.index("f_clouds")
+        param[index] = r"$\mathregular{w}_\mathregular{clouds}$"
+
     if "c_o_ratio" in param:
         index = param.index("c_o_ratio")
         param[index] = r"C/O"
