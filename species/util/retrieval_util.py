@@ -1,13 +1,13 @@
 """
 Utility functions for atmospheric retrieval with ``petitRADTRANS``.
-This module was put together  many contributions by Paul Mollière
+This module was put together many contributions by Paul Mollière
 (MPIA).
 """
 
 import copy
 import inspect
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,13 +20,14 @@ from species.core import constants
 
 
 @typechecked
-def get_line_species() -> list:
+def get_line_species() -> List[str]:
     """
     Function to get the list of the molecular and atomic line species.
+    This function is not used anywhere so could be removed.
 
     Returns
     -------
-    list
+    list(str)
         List with the line species.
     """
 
@@ -73,7 +74,7 @@ def pt_ret_model(
     metallicity: float,
     c_o_ratio: float,
     conv: bool = True,
-) -> Tuple[np.ndarray, float, Optional[float]]:
+) -> Tuple[Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Pressure-temperature profile for a self-luminous atmosphere (see
     Mollière et al. 2020).
@@ -89,9 +90,10 @@ def pt_ret_model(
     delta : float
         Proportionality factor in tau = delta * press_cgs**alpha.
     alpha : float
-        Power law index in tau = delta * press_cgs**alpha. For the tau
-        model: use the proximity to the kappa_rosseland photosphere
-        as prior.
+        Power law index in
+        :math:`\\tau = \\delta * P_\\mathrm{cgs}**\\alpha`.
+        For the tau model: use the proximity to the
+        :math:`\\kappa_\\mathrm{rosseland}` photosphere as prior.
     tint : float
         Internal temperature for the Eddington model.
     press : np.ndarray
@@ -115,13 +117,13 @@ def pt_ret_model(
         Pressure (bar) at the radiative-convective boundary.
     """
 
-    # Go from bar to cgs units
+    # Convert pressures from bar to cgs units
     press_cgs = press * 1e6
 
     # Calculate the optical depth
     tau = delta * press_cgs ** alpha
 
-    # Calculate the eddington temperature
+    # Calculate the Eddington temperature
     tedd = (3.0 / 4.0 * tint ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
     # Import interpol_abundances here because it slows down importing
@@ -324,9 +326,14 @@ def pt_ret_model(
                 t_support[len(support_points_low) - 1] = tfintp(p_bot_spline)
 
                 # print('diff', t_connect_calc - tfintp(p_bot_spline))
-                t_support[len(support_points_low) :] = tfintp(
-                    support_points[len(support_points_low) :]
-                )
+
+                try:
+                    t_support[len(support_points_low) :] = tfintp(
+                        support_points[len(support_points_low) :]
+                    )
+
+                except ValueError:
+                    return None, None, None
 
             # Make the temperature spline interpolation to be returned
             # to the user tret = spline(np.log10(support_points),
@@ -345,7 +352,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: float = 0.3,
+    pt_smooth: Union[float, Dict[str, float]] = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -362,13 +369,13 @@ def pt_spline_interp(
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
-    pt_smooth : float
+    pt_smooth : float, dict
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex.
+        set to 0.3 dex. TODO
 
     Returns
     -------
@@ -376,17 +383,100 @@ def pt_spline_interp(
         Interpolated, smoothed temperature points (K).
     """
 
-    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
+    if isinstance(pt_smooth, dict):
+        for i, item in enumerate(knot_temp[:-1]):
+            if i == 0:
+                pt_interp = PchipInterpolator(np.log10(knot_press[:i+2]), knot_temp[:i+2])
 
-    temp_interp = pt_interp(np.log10(pressure))
+                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
+                press_interp = np.log10(pressure[indices])
+                temp_interp = pt_interp(press_interp)
 
-    log_press = np.log10(pressure)
-    log_diff = np.mean(np.diff(log_press))
+            else:
+                press_new = np.append(press_interp, np.log10(knot_press[i+1]))
+                temp_new = np.append(temp_interp, knot_temp[i+1])
+                pt_interp = PchipInterpolator(press_new, temp_new)
 
-    if np.std(np.diff(log_press)) / log_diff > 1e-6:
-        raise ValueError("Expecting equally spaced pressures in log space.")
+                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
+                press_interp = np.log10(pressure[indices])
+                temp_interp = pt_interp(press_interp)
 
-    return gaussian_filter(temp_interp, sigma=pt_smooth / log_diff, mode="nearest")
+            log_press = np.log10(pressure)
+            log_diff = np.mean(np.diff(log_press))
+
+            if np.std(np.diff(log_press)) / log_diff > 1e-6:
+                raise ValueError("Expecting equally spaced pressures in log space.")
+
+            pt_profile = gaussian_filter(
+                temp_interp,
+                sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
+                mode="nearest",
+            )
+
+            # pt_profile = gaussian_filter(
+            #     pt_profile,
+            #     sigma=pt_smooth["pt_smooth_2"] / log_diff,
+            #     mode="nearest",
+            # )
+
+        # pt_profile = copy.copy(temp_interp)
+        #
+        # pt_profile = gaussian_filter(
+        #     pt_profile,
+        #     sigma=pt_smooth["pt_smooth_1"] / log_diff,
+        #     mode="nearest",
+        # )
+        #
+        # indices = np.where(temp_interp > pt_smooth["pt_turn"])[0]
+        #
+        # if len(indices) > 0:
+        #     pt_profile[indices] = (
+        #         pt_profile[indices[0]]
+        #         * (temp_interp[indices] / temp_interp[indices[0]]) ** pt_smooth["pt_index"]
+        #     )
+        #
+        #     pt_profile = gaussian_filter(
+        #         pt_profile,
+        #         sigma=pt_smooth["pt_smooth_2"] / log_diff,
+        #         mode="nearest",
+        #     )
+        #
+        # for i in range(pt_smooth["n_smooth"]):
+        #     if i == 0:
+        #         indices = log_press < pt_smooth["pt_connect_0_end"]
+        #
+        #     elif i == pt_smooth["n_smooth"] - 1:
+        #         indices = log_press > pt_smooth[f"pt_connect_{i}_start"]
+        #
+        #     else:
+        #         indices = (log_press > pt_smooth[f"pt_connect_{i}_start"]) \
+        #             & (log_press < pt_smooth[f"pt_connect_{i}_end"])
+        #
+        #     pt_profile[indices] = gaussian_filter(
+        #         pt_profile[indices],
+        #         sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
+        #         mode="nearest",
+        #     )
+        #
+        #     if i == pt_smooth["n_smooth"] - 1:
+        #         break
+
+    else:
+        pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
+
+        temp_interp = pt_interp(np.log10(pressure))
+
+        log_press = np.log10(pressure)
+        log_diff = np.mean(np.diff(log_press))
+
+        if np.std(np.diff(log_press)) / log_diff > 1e-6:
+            raise ValueError("Expecting equally spaced pressures in log space.")
+
+        temp_interp = gaussian_filter(
+            temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
+        )
+
+    return temp_interp
 
 
 @typechecked
@@ -398,7 +488,7 @@ def create_pt_profile(
     knot_press: Optional[np.ndarray],
     metallicity: float,
     c_o_ratio: float,
-    pt_smooth: float = 0.3,
+    pt_smooth: Union[float, Dict[str, float]] = 0.3,
 ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating the P-T profile.
@@ -422,7 +512,7 @@ def create_pt_profile(
         Metallicity [Fe/H].
     c_o_ratio : float
         Carbon-to-oxgen ratio.
-    pt_smooth : float
+    pt_smooth : float, dict
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.
@@ -1242,36 +1332,56 @@ def calc_spectrum_clouds(
             hack_cloud_photospheric_tau=tau_cloud,
         )
 
-    if (
-        hasattr(rt_object, "scaling_physicality")
-        and rt_object.scaling_physicality > 1.0
-    ):
-        # cloud_scaling_factor > 2 * (fsed + 1)
-        # Set to None such that -inf will be returned as ln_like
-        wavel = None
-        f_lambda = None
-        contr_em = None
+    # if (
+    #     hasattr(rt_object, "scaling_physicality")
+    #     and rt_object.scaling_physicality > 1.0
+    # ):
+    #     # cloud_scaling_factor > 2 * (fsed + 1)
+    #     # Set to None such that -inf will be returned as ln_like
+    #     wavel = None
+    #     f_lambda = None
+    #     contr_em = None
+    #
+    # else:
+    #     wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+    #
+    #     # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+    #     f_lambda = 1e4 * rt_object.flux
+    #
+    #     # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+    #     f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+    #
+    #     # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+    #     f_lambda *= 1e-6
+    #
+    #     # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+    #     f_lambda *= 1e-7
+    #
+    #     # Optionally return the emission contribution
+    #     if contribution:
+    #         contr_em = rt_object.contr_em
+    #     else:
+    #         contr_em = None
 
+    wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+
+    # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+    f_lambda = 1e4 * rt_object.flux
+
+    # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+    f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+
+    # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+    f_lambda *= 1e-6
+
+    # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+    f_lambda *= 1e-7
+
+    # Optionally return the emission contribution
+    if contribution:
+        contr_em = rt_object.contr_em
     else:
-        wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-
-        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-        f_lambda = 1e4 * rt_object.flux
-
-        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-        f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-
-        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-        f_lambda *= 1e-6
-
-        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-        f_lambda *= 1e-7
-
-        # Optionally return the emission contribution
-        if contribution:
-            contr_em = rt_object.contr_em
-        else:
-            contr_em = None
+        contr_em = None
 
     if (
         plotting

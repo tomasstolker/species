@@ -140,38 +140,62 @@ def update_labels(param: List[str]) -> List[str]:
 
     abund_species = [
         "CO_all_iso",
+        "CO_all_iso_HITEMP",
         "H2O",
+        "H2O_HITEMP",
         "CH4",
         "NH3",
         "CO2",
         "H2S",
         "Na",
+        "Na_allard",
+        "Na_burrows",
+        "Na_lor_cur",
         "K",
+        "K_allard",
+        "K_burrows",
+        "K_lor_cur",
         "PH3",
         "VO",
+        "VO_Plez",
         "TiO",
+        "TiO_all_Exomol",
         "FeH",
         "MgSiO3(c)",
         "Fe(c)",
         "Al2O3(c)",
+        "Na2S(c)",
+        "KCL(c)",
     ]
 
     abund_labels = [
         "CO",
+        "CO",
+        "H_{2}O",
         "H_{2}O",
         "CH_{4}",
         "NH_{3}",
         "CO_{2}",
         "H_{2}S",
         "Na",
+        "Na",
+        "Na",
+        "Na",
+        "K",
+        "K",
+        "K",
         "K",
         "PH_{3}",
         "VO",
+        "VO",
+        "TiO",
         "TiO",
         "FeH",
         "MgSiO_{3}",
         "Fe",
         "Al_{2}O_{3}",
+        "Na_{2}S",
+        "KCl",
     ]
 
     if "teff" in param:
@@ -518,6 +542,18 @@ def update_labels(param: List[str]) -> List[str]:
     if "spec_weight" in param:
         index = param.index("spec_weight")
         param[index] = r"w$_\mathregular{spec}$"
+
+    if "log_beta_r" in param:
+        index = param.index("log_beta_r")
+        param[index] = r"$\mathregular{log}\,\beta_\mathregular{r}$"
+
+    if "log_gamma_r" in param:
+        index = param.index("log_gamma_r")
+        param[index] = r"$\mathregular{log}\,\gamma_\mathregular{r}$"
+
+    if "gamma_r" in param:
+        index = param.index("gamma_r")
+        param[index] = r"$\gamma_\mathregular{r}$"
 
     return param
 

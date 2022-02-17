@@ -2,6 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
+import copy
 import os
 import warnings
 
@@ -43,24 +44,30 @@ def plot_pt_profile(
     tag : str
         Database tag with the posterior samples.
     random : int, None
-        Number of randomly selected samples from the posterior. All samples are selected if
-        set to ``None``.
+        Number of randomly selected samples from the posterior. All
+        samples are selected if set to ``None``.
     xlim : tuple(float, float), None
-        Limits of the temperature axis. Default values are used if set to ``None``.
+        Limits of the temperature axis. Default values are used if
+        set to ``None``.
     ylim : tuple(float, float), None
-        Limits of the pressure axis. Default values are used if set to ``None``.
+        Limits of the pressure axis. Default values are used if set
+        to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values are used
+        if set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        Not used if set to ``None``.
     extra_axis : str, None
-        The quantify that is plotted at the top axis ('photosphere', 'grains'). The top axis is not
-        used if the argument is set to ``None``.
+        The quantify that is plotted at the top axis ('photosphere',
+        'grains'). The top axis is not used if the argument is set
+        to ``None``.
     rad_conv_bound : bool
-        Plot the range of pressures (:math:`\\pm 1\\sigma`) of the radiative-convective boundary.
+        Plot the range of pressures (:math:`\\pm 1\\sigma`) of the
+        radiative-convective boundary.
 
     Returns
     -------
@@ -73,14 +80,14 @@ def plot_pt_profile(
     else:
         print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
 
-    cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCl(c)"]
+    cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCL(c)"]
 
     cloud_color = {
         "Fe(c)": "tab:blue",
         "MgSiO3(c)": "tab:orange",
         "Al2O3(c)": "tab:green",
         "Na2S(c)": "tab:cyan",
-        "KCl(c)": "tab:pink",
+        "KCL(c)": "tab:pink",
     }
 
     species_db = database.Database()
@@ -164,15 +171,15 @@ def plot_pt_profile(
         # For backward compatibility
         max_press = 1e3  # (bar)
 
-    if xlim:
-        ax.set_xlim(xlim[0], xlim[1])
-    else:
+    if xlim is None:
         ax.set_xlim(1000.0, 5000.0)
-
-    if ylim:
-        ax.set_ylim(ylim[0], ylim[1])
     else:
+        ax.set_xlim(xlim[0], xlim[1])
+
+    if ylim is None:
         ax.set_ylim(max_press, 1e-6)
+    else:
+        ax.set_ylim(ylim[0], ylim[1])
 
     ax.set_yscale("log")
 
@@ -186,10 +193,12 @@ def plot_pt_profile(
         pt_profile = "free"
 
         temp_index = []
-        for i in range(temp_nodes):            
+        for i in range(temp_nodes):
             temp_index.append(np.argwhere(parameters == f"t{i}")[0])
 
-        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
+        knot_press = np.logspace(
+            np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
+        )
 
     if pt_profile == "molliere":
         conv_press = np.zeros(samples.shape[0])
@@ -245,12 +254,95 @@ def plot_pt_profile(
 
             if "pt_smooth" in parameters:
                 pt_smooth = item[param_index["pt_smooth"]]
+
+            elif "pt_smooth_0" in parameters:
+                pt_smooth = {}
+                for i in range(temp_nodes - 1):
+                    pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
+
+            elif "pt_turn" in parameters:
+                pt_smooth = {
+                    "pt_smooth_1": item[param_index["pt_smooth_1"]],
+                    "pt_smooth_2": item[param_index["pt_smooth_2"]],
+                    "pt_turn": item[param_index["pt_turn"]],
+                    "pt_index": item[param_index["pt_index"]],
+                }
+
             else:
                 pt_smooth = box.attributes["pt_smooth"]
 
             temp = retrieval_util.pt_spline_interp(
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
+
+        # if pt_profile == "free":
+        #     temp = temp[:, 0]
+        #
+        #     from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        #     ab = interpol_abundances(
+        #         np.full(temp.shape[0], c_o_ratio),
+        #         np.full(temp.shape[0], metallicity),
+        #         temp,
+        #         pressure,
+        #     )
+        #
+        #     nabla_ad = ab["nabla_ad"]
+        #
+        #     # Convert pressures from bar to cgs units
+        #     press_cgs = pressure * 1e6
+        #
+        #     # Calculate the current, radiative temperature gradient
+        #     nab_rad = np.diff(np.log(temp)) / np.diff(np.log(press_cgs))
+        #
+        #     # Extend to array of same length as pressure structure
+        #     nabla_rad = np.ones_like(temp)
+        #     nabla_rad[0] = nab_rad[0]
+        #     nabla_rad[-1] = nab_rad[-1]
+        #     nabla_rad[1:-1] = (nab_rad[1:] + nab_rad[:-1]) / 2.0
+        #
+        #     # Where is the atmosphere convectively unstable?
+        #     conv_index = nabla_rad > nabla_ad
+        #
+        #     tfinal = None
+        #
+        #     for i in range(10):
+        #         if i == 0:
+        #             t_take = copy.copy(temp)
+        #         else:
+        #             t_take = copy.copy(tfinal)
+        #
+        #         ab = interpol_abundances(
+        #             np.full(t_take.shape[0], c_o_ratio),
+        #             np.full(t_take.shape[0], metallicity),
+        #             t_take,
+        #             pressure,
+        #         )
+        #
+        #         nabla_ad = ab["nabla_ad"]
+        #
+        #         # Calculate the average nabla_ad between the layers
+        #         nabla_ad_mean = nabla_ad
+        #         nabla_ad_mean[1:] = (nabla_ad[1:] + nabla_ad[:-1]) / 2.0
+        #
+        #         # What are the increments in temperature due to convection
+        #         tnew = nabla_ad_mean[conv_index] * np.mean(np.diff(np.log(press_cgs)))
+        #
+        #         # What is the last radiative temperature?
+        #         tstart = np.log(t_take[~conv_index][-1])
+        #
+        #         # Integrate and translate to temperature
+        #         # from log(temperature)
+        #         tnew = np.exp(np.cumsum(tnew) + tstart)
+        #
+        #         # Add upper radiative and lower covective
+        #         # part into one single array
+        #         tfinal = copy.copy(t_take)
+        #         tfinal[conv_index] = tnew
+        #
+        #         if np.max(np.abs(t_take - tfinal) / t_take) < 0.01:
+        #             break
+        #
+        #     temp = copy.copy(tfinal)
 
         ax.plot(temp, pressure, "-", lw=0.3, color="gray", alpha=0.5, zorder=1)
 
@@ -296,6 +388,20 @@ def plot_pt_profile(
 
         if "pt_smooth" in parameters:
             pt_smooth = median["pt_smooth"]
+
+        elif "pt_smooth_0" in parameters:
+            pt_smooth = {}
+            for i in range(temp_nodes - 1):
+                pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
+
+        elif "pt_turn" in parameters:
+            pt_smooth = {
+                "pt_smooth_1": median["pt_smooth_1"],
+                "pt_smooth_2": median["pt_smooth_2"],
+                "pt_turn": median["pt_turn"],
+                "pt_index": median["pt_index"],
+            }
+
         else:
             pt_smooth = box.attributes["pt_smooth"]
 
@@ -418,6 +524,12 @@ def plot_pt_profile(
                 sat_temp, sat_press, "--", lw=0.8, color=cloud_color["KCL(c)"], zorder=2
             )
 
+    if box.attributes["chemistry"] == "free":
+        # Remove these parameters otherwise ReadRadtrans.get_model()
+        # will assume equilibrium chemistry
+        del median["metallicity"]
+        del median["c_o_ratio"]
+
     if radtrans is not None:
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
         model_box = radtrans.get_model(median)
@@ -432,21 +544,24 @@ def plot_pt_profile(
         )
 
         if extra_axis == "photosphere":
-            # Calculate the total optical depth (line and continuum opacities)
+            # Calculate the total optical depth
+            # (line and continuum opacities)
             # radtrans.rt_object.calc_opt_depth(10.**median['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem * 1e-4  # (um)
 
-            # From Paul: The first axis of total_tau is the coordinate of the cumulative opacity
-            # distribution function (ranging from 0 to 1). A correct average is obtained by
-            # multiplying the first axis with self.w_gauss, then summing them. This is then the
-            # actual wavelength-mean.
+            # From Paul: The first axis of total_tau is the coordinate
+            # of the cumulative opacity distribution function (ranging
+            # from 0 to 1). A correct average is obtained by
+            # multiplying the first axis with self.w_gauss, then
+            # summing them. This is then the actual wavelength-mean.
 
             if radtrans.scattering:
                 w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
 
-                # From petitRADTRANS: Only use 0 index for species because for lbl or
-                # test_ck_shuffle_comp = True everything has been moved into the 0th index
+                # From petitRADTRANS: Only use 0 index for species
+                # because for lbl or test_ck_shuffle_comp = True
+                # everything has been moved into the 0th index
                 optical_depth = np.sum(
                     w_gauss * radtrans.rt_object.total_tau[:, :, 0, :], axis=0
                 )
@@ -495,10 +610,10 @@ def plot_pt_profile(
                 right=True,
             )
 
-            if ylim:
-                ax2.set_ylim(ylim[0], ylim[1])
-            else:
+            if ylim is None:
                 ax2.set_ylim(max_press, 1e-6)
+            else:
+                ax2.set_ylim(ylim[0], ylim[1])
 
             ax2.set_yscale("log")
 
@@ -512,10 +627,18 @@ def plot_pt_profile(
             photo_press = np.zeros(wavelength.shape[0])
 
             for i in range(photo_press.shape[0]):
+                # Interpolate the optical depth to
+                # the photosphere at tau = 2/3
                 press_interp = interp1d(optical_depth[i, :], radtrans.rt_object.press)
-                photo_press[i] = press_interp(1.0) * 1e-6  # cgs to (bar)
+                photo_press[i] = press_interp(2.0 / 3.0) * 1e-6  # cgs to (bar)
 
-            ax2.plot(wavelength, photo_press, lw=0.5, color="tab:blue")
+            ax2.plot(
+                wavelength,
+                photo_press,
+                lw=0.5,
+                color="tab:blue",
+                label=r"Photosphere ($\tau$ = 2/3)",
+            )
 
         elif extra_axis == "grains":
 
@@ -552,10 +675,10 @@ def plot_pt_profile(
                     right=True,
                 )
 
-                if ylim:
-                    ax2.set_ylim(ylim[0], ylim[1])
-                else:
+                if ylim is None:
                     ax2.set_ylim(max_press, 1e-6)
+                else:
+                    ax2.set_ylim(ylim[0], ylim[1])
 
                 ax2.set_xscale("log")
                 ax2.set_yscale("log")
@@ -586,6 +709,9 @@ def plot_pt_profile(
                         label += f"$_{char}$"
                     else:
                         label += char
+
+                if label == "KCL":
+                    label = "KCl"
 
                 # Convert from (cm) to (um)
                 ax2.plot(

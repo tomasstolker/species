@@ -21,7 +21,6 @@ except:
         "because cython was not correctly compiled?"
     )
 
-# Installation of MultiNest is not possible on readthedocs
 try:
     import pymultinest
 except:
@@ -2031,13 +2030,17 @@ class FitModel:
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
     ) -> None:
         """
-        Function to run the ``PyMultiNest`` wrapper of the ``MultiNest`` sampler. While
-        ``PyMultiNest`` can be installed with ``pip`` from the PyPI repository, ``MultiNest``
-        has to to be build manually. See the ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html. Note that the library path
-        of ``MultiNest`` should be set to the environmental variable ``LD_LIBRARY_PATH`` on a
-        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the variable can be
-        set before importing the ``species`` package, for example:
+        Function to run the ``PyMultiNest`` wrapper of the
+        ``MultiNest`` sampler. While ``PyMultiNest`` can be
+        installed with ``pip`` from the PyPI repository,
+        ``MultiNest`` has to to be build manually. See the
+        ``PyMultiNest`` documentation for details:
+        http://johannesbuchner.github.io/PyMultiNest/install.html.
+        Note that the library path of ``MultiNest`` should be set
+        to the environmental variable ``LD_LIBRARY_PATH`` on a
+        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac.
+        Alternatively, the variable can be set before importing
+        the ``species`` package, for example:
 
         .. code-block:: python
 
@@ -2054,11 +2057,14 @@ class FitModel:
         output : str
             Path that is used for the output files from MultiNest.
         prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-            for any of the atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup. The parameter is not used if set to ``None``.
+            Dictionary with Gaussian priors for one or multiple
+            parameters. The prior can be set for any of the
+            atmosphere or calibration parameters, for example
+            ``prior={'teff': (1200., 100.)}``. Additionally, a
+            prior can be set for the mass, for example
+            ``prior={'mass': (13., 3.)}`` for an expected mass
+            of 13 Mjup with an uncertainty of 3 Mjup. The
+            parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -2234,8 +2240,9 @@ class FitModel:
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
     ) -> None:
         """
-        Function to run ``UltraNest`` for constructing the posterior probability distributions
-        on model parameters and computing the marginal likelihood (i.e. "evidence").
+        Function to run ``UltraNest`` for constructing the posterior
+        probability distributions on model parameters and computing
+        the marginal likelihood (i.e. "evidence").
 
         Parameters
         ----------

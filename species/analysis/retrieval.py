@@ -1,8 +1,10 @@
 """
-Module with a frontend for atmospheric retrieval with the radiative
-transfer code petitRADTRANS`` (see https://petitradtrans.readthedocs.io).
+Module with a frontend for atmospheric retrieval with the
+radiative transfer and retrieval code ``petitRADTRANS``
+(see https://petitradtrans.readthedocs.io).
 """
 
+# import copy
 import os
 import inspect
 import json
@@ -14,7 +16,16 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pymultinest
+
+try:
+    import pymultinest
+except:
+    warnings.warn(
+        "PyMultiNest could not be imported. "
+        "Perhaps because MultiNest was not build "
+        "and/or found at the LD_LIBRARY_PATH "
+        "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
+    )
 
 from molmass import Formula
 from scipy.integrate import simps
@@ -25,7 +36,7 @@ from species.analysis import photometry
 from species.core import constants
 from species.data import database
 from species.read import read_filter, read_object
-from species.util import dust_util, retrieval_util
+from species.util import dust_util, read_util, retrieval_util
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -33,18 +44,20 @@ os.environ["OMP_NUM_THREADS"] = "1"
 
 class AtmosphericRetrieval:
     """
-    Class for atmospheric retrieval with ``petitRADTRANS`` and
-    Bayesian inference.
+    Class for atmospheric retrievals of self-luminous atmospheres
+    of giant planets and brown dwarfs within a Bayesian framework.
+    This class provides a frontend for ``petitRADTRANS``, with a
+    variety of P-T profiles, cloud models, priors, and more.
     """
 
     @typechecked
     def __init__(
         self,
         object_name: str,
-        line_species: Optional[List[str]],
-        cloud_species: Optional[List[str]],
-        output_folder: str,
-        wavel_range: Optional[Tuple[float, float]],
+        line_species: Optional[List[str]] = None,
+        cloud_species: Optional[List[str]] = None,
+        output_folder: str = "multinest",
+        wavel_range: Optional[Tuple[float, float]] = None,
         scattering: bool = True,
         inc_spec: Union[bool, List[str]] = True,
         inc_phot: Union[bool, List[str]] = False,
@@ -57,51 +70,83 @@ class AtmosphericRetrieval:
         Parameters
         ----------
         object_name : str
-            Object name in the database.
+            Name of the object as stored in the database with
+            :func:`~species.data.Database.add_object`.
         line_species : list, None
-            List with the line species. No line species are used if set to ``None``.
+            List with the line species. A minimum of one line
+            species should be included.
         cloud_species : list, None
-            List with the cloud species. No cloud species are used if set to ``None``.
+            List with the cloud species. No cloud species are used if
+            the argument is to ``None``.
         output_folder : str
-            Folder name that is used for the output files from ``MultiNest``. The folder is created
-            if it does not exist.
+            Folder name that is used for the output files from
+            ``MultiNest``. The folder is created if it does not exist.
         wavel_range : tuple(float, float), None
-            The wavelength range (um) of the forward model. Should be a bit broader than the
-            minimum and maximum wavelength of the data. The wavelength range is set automatically
-            if the argument is set to ``None``.
+            The wavelength range (um) that is used for the forward
+            model. Should be a bit broader than the minimum and
+            maximum wavelength of the data. If photometric fluxes are
+            included (see ``inc_phot``), it is important that
+            ``wavel_range`` encompasses the full filter profile, which
+            can be inspected with the functionalities of
+            :class:`~species.read.read_filter.ReadFilter`. The
+            wavelength range is set automatically if the argument is
+            set to ``None``.
         scattering : bool
-            Include scattering in the radiative transfer. Only recommended at infrared wavelengths
-            when clouds are included. Using scattering will increase the computation time.
+            Turn on scattering in the radiative transfer. Only
+            recommended at infrared wavelengths when clouds are
+            included in the forward model. Using scattering will
+            increase the computation time significantly.
         inc_spec : bool, list(str)
-            Include spectroscopic data in the fit. If a boolean, either all (``True``) or none
-            (``False``) of the data are selected. If a list, a subset of spectrum names (as stored
-            in the database with :func:`~species.data.database.Database.add_object`) can be
-            provided.
+            Include spectroscopic data in the fit. If a boolean, either
+            all (``True``) or none (``False``) of the available data
+            are selected. If a list, a subset of spectrum names
+            (as stored in the database with
+            :func:`~species.data.database.Database.add_object`) can
+            be provided.
         inc_phot : bool, list(str)
-            Include photometric data in the fit. If a boolean, either all (``True``) or none
-            (``False``) of the data are selected. If a list, a subset of filter names (as stored in
-            the database) can be provided.
+            Include photometric data in the fit. If a boolean, either
+            all (``True``) or none (``False``) of the available data
+            are selected. If a list, a subset of filter names (as
+            stored in the database with
+            :func:`~species.data.database.Database.add_object`) can
+            be provided.
         pressure_grid : str
-            The type of pressure grid that is used for the radiative transfer. Either 'standard',
-            to use 180 layers both for the atmospheric structure (e.g. when interpolating the
-            abundances) and 180 layers with the radiative transfer, or 'smaller' to use 60 (instead
-            of 180) with the radiative transfer, or 'clouds' to start with 1440 layers but resample
-            to ~100 layers (depending on the number of cloud species) with a refinement around the
-            cloud decks. For cloudless atmospheres it is recommended to use 'smaller', which runs
-            faster than 'standard' and provides sufficient accuracy. For cloudy atmosphere, one can
-            test with 'smaller' but it is recommended to use 'clouds' for improved accuracy fluxes.
+            The type of pressure grid that is used for the radiative
+            transfer. Either 'standard', to use 180 layers both for
+            the atmospheric structure (e.g. when interpolating the
+            abundances) and 180 layers with the radiative transfer,
+            or 'smaller' to use 60 (instead of 180) with the radiative
+            transfer, or 'clouds' to start with 1440 layers but
+            resample to ~100 layers (depending on the number of cloud
+            species) with a refinement around the cloud decks. For
+            cloudless atmospheres it is recommended to use 'smaller',
+            which runs faster than 'standard' and provides sufficient
+            accuracy. For cloudy atmosphere, it is recommended to
+            test with 'smaller' but it might be required to use
+            'clouds' to improve the accuracy of the retrieved
+            parameters, at the cost of a long runtime.
         weights : dict(str, float), None
-            Weights to be applied to the log-likelihood components of the different spectroscopic
-            and photometric data that are provided with ``inc_spec`` and ``inc_phot``. This
-            parameter can for example be used to bias the weighting of the photometric data points.
-            An equal weighting is applied if the argument is set to ``None``.
+            Weights to be applied to the log-likelihood components
+            of the different spectroscopic and photometric data that
+            are provided with ``inc_spec`` and ``inc_phot``. This
+            parameter can for example be used to increase the weighting
+            of the photometric data points relative to the
+            spectroscopic data. An equal weighting is applied if the
+            argument is set to ``None``.
         lbl_species : list, None
-            List with the line species that will be used for calculating line-by-line spectra for
-            the list of high-resolution spectra that are provided as argument of ``cross_corr``
-            when running :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`. The
-            argument can be set to ``None`` when ``cross_corr=None``.
+            List with the line species that will be used for
+            calculating line-by-line spectra for the list of
+            high-resolution spectra that are provided as argument of
+            ``cross_corr`` when starting the retrieval with
+            :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`.
+            The argument can be set to ``None`` when ``cross_corr=None``.
+            The ``lbl_species`` and ``cross_corr`` parameters should
+            only be used if the log-likelihood component should be
+            determined with a cross-correlation instead of a direct
+            comparison of data and model.
         max_pressure : float
-            Maximum pressure (bar). The default is set to 1000 bar.
+            Maximum pressure  (bar) that is used for the P-T profile.
+            The default is set to 1000 bar.
 
         Returns
         -------
@@ -131,13 +176,15 @@ class AtmosphericRetrieval:
         # Line species
 
         if self.line_species is None:
-            print("Line species: None")
-            self.line_species = []
+            raise ValueError(
+                "At least 1 line species should be "
+                "included in the list of the "
+                "line_species argument."
+            )
 
-        else:
-            print("Line species:")
-            for item in self.line_species:
-                print(f"   - {item}")
+        print("Line species:")
+        for item in self.line_species:
+            print(f"   - {item}")
 
         # Cloud species
 
@@ -301,6 +348,7 @@ class AtmosphericRetrieval:
         # Initiate the optional P-T parameters
 
         self.pt_smooth = None
+        # self.n_smooth = 0
         self.temp_nodes = None
 
         # Weighting of the photometric and spectroscopic data
@@ -340,23 +388,29 @@ class AtmosphericRetrieval:
         Parameters
         ----------
         bounds : dict
-            Dictionary with the parameter boundaries.
+            Dictionary with the boundaries that are used as uniform
+            priors for the parameters.
         chemistry : str
-            The chemistry type: 'equilibrium' for equilibrium chemistry or 'free' for retrieval
-            of free abundances (but constant with altitude).
+            The chemistry type: 'equilibrium' for equilibrium
+            chemistry or 'free' for retrieval of free abundances
+            (but constant with altitude).
         quenching : str, None
-            Quenching type for CO/CH4/H2O abundances. Either the quenching pressure (bar) is a free
-            parameter (``quenching='pressure'``) or the quenching pressure is calculated from the
-            mixing and chemical timescales (``quenching='diffusion'``). The quenching is not
+            Quenching type for CO/CH4/H2O abundances. Either the
+            quenching pressure (bar) is a free parameter
+            (``quenching='pressure'``) or the quenching pressure is
+            calculated from the mixing and chemical timescales
+            (``quenching='diffusion'``). The quenching is not
             applied if the argument is set to ``None``.
         pt_profile : str
-            The parametrization for the pressure-temperature profile ('molliere', 'free', or
-            'monotonic').
+            The parametrization for the pressure-temperature profile
+            ('molliere', 'free', 'monotonic').
         fit_corr : list(str), None
-            List with spectrum names for which the correlation length and fractional amplitude are
-            fitted (see Wang et al. 2020).
+            List with spectrum names for which the correlation lengths
+            and fractional amplitudes are fitted (see `Wang et al. 2020
+            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/abstract>`_)
+            to model the covariances in case these are not available.
         rt_object : petitRADTRANS.radtrans.Radtrans
-            Instance of ``Radtrans``.
+            Instance of ``Radtrans`` from ``petitRADTRANS``.
 
         Returns
         -------
@@ -388,9 +442,9 @@ class AtmosphericRetrieval:
             for i in range(self.temp_nodes):
                 self.parameters.append(f"t{i}")
 
-            if pt_profile == "free":
-                self.parameters.append("gamma_r")
-                self.parameters.append("beta_r")
+            if "log_beta_r" in bounds:
+                self.parameters.append("log_gamma_r")
+                self.parameters.append("log_beta_r")
 
         # Abundance parameters
 
@@ -403,9 +457,6 @@ class AtmosphericRetrieval:
 
             for item in self.line_species:
                 self.parameters.append(item)
-
-            for item in self.cloud_species:
-                self.parameters.append(item[:-3])
 
         # Non-equilibrium chemistry
 
@@ -423,19 +474,27 @@ class AtmosphericRetrieval:
             inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
 
             if "new_simple_cloud_params" not in inspect_prt.args:
-                raise RuntimeError("The Radtrans.calc_flux method "
-                                   "from petitRADTRANS does not have "
-                                   "the new_simple_cloud_params "
-                                   "parameter. Probably you are "
-                                   "using the main package "
-                                   "instead of the fork from "
-                                   "https://gitlab.com/tomasstolker"
-                                   "/petitRADTRANS. The parameterized "
-                                   "cloud opacities (i.e. with "
-                                   "log_kappa_0, opa_index, albedo) "
-                                   "can therefore not be used.")
+                raise RuntimeError(
+                    "The Radtrans.calc_flux method "
+                    "from petitRADTRANS does not have "
+                    "the new_simple_cloud_params "
+                    "parameter. Probably you are "
+                    "using the main package "
+                    "instead of the fork from "
+                    "https://gitlab.com/tomasstolker"
+                    "/petitRADTRANS. The parameterized "
+                    "cloud opacities (i.e. with "
+                    "log_kappa_0, opa_index, albedo) "
+                    "can therefore not be used."
+                )
 
-            self.parameters.append("fsed")
+            if "fsed_1" in bounds and "fsed_2" in bounds:
+                self.parameters.append("fsed_1")
+                self.parameters.append("fsed_2")
+                self.parameters.append("f_clouds")
+            else:
+                self.parameters.append("fsed")
+
             self.parameters.append("log_kappa_0")
             self.parameters.append("opa_index")
             self.parameters.append("log_p_base")
@@ -454,7 +513,11 @@ class AtmosphericRetrieval:
                     self.parameters.append(f"{cloud_lower}_tau")
 
                 elif "log_tau_cloud" not in bounds:
-                    self.parameters.append(f"{cloud_lower}_fraction")
+                    if chemistry == "equilibrium":
+                        self.parameters.append(f"{cloud_lower}_fraction")
+
+                    elif chemistry == "free":
+                        self.parameters.append(item)
 
         # Add the flux scaling parameters
 
@@ -485,8 +548,8 @@ class AtmosphericRetrieval:
         if "ism_red" in bounds:
             if "ism_ext" not in bounds:
                 raise ValueError(
-                    "The 'ism_red' parameter can only be used in combination "
-                    "with 'ism_ext'."
+                    "The 'ism_red' parameter can only be "
+                    "used in combination with 'ism_ext'."
                 )
 
             self.parameters.append("ism_red")
@@ -501,7 +564,35 @@ class AtmosphericRetrieval:
         # Add P-T smoothing parameter
 
         if "pt_smooth" in bounds:
-            self.parameters.append("pt_smooth")
+            for i in range(self.temp_nodes - 1):
+                self.parameters.append(f"pt_smooth_{i}")
+
+            # self.parameters.append("pt_smooth_1")
+            # self.parameters.append("pt_smooth_2")
+            # self.parameters.append("pt_turn")
+            # self.parameters.append("pt_index")
+            # self.n_smooth = 1
+
+        # for i in range(100):
+        #     if f"pt_smooth_{i}" in bounds:
+        #         self.parameters.append(f"pt_smooth_{i}")
+        #         self.n_smooth += 1
+        #
+        #     else:
+        #         break
+        #
+        # if self.n_smooth > 1:
+        #     for i in range(self.n_smooth):
+        #
+        #         if i == 0:
+        #             self.parameters.append(f"pt_connect_{i}_end")
+        #
+        #         elif i == self.n_smooth - 1:
+        #             self.parameters.append(f"pt_connect_{i}_start")
+        #
+        #         else:
+        #             self.parameters.append(f"pt_connect_{i}_end")
+        #             self.parameters.append(f"pt_connect_{i}_start")
 
         # Add mixing-length parameter for convective component
         # of the bolometric flux when using check_flux
@@ -529,17 +620,20 @@ class AtmosphericRetrieval:
             print(f"   - {item}")
 
     @typechecked
-    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out"):
+    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
         """
-        Function for downsampling the ``c-k`` opacities. The downsampled opacities should be stored
-        in the `opacities/lines/corr_k/` folder of the ``pRT_input_data_path``.
+        Function for downsampling the ``c-k`` opacities. The
+        downsampled opacities should be stored in the
+        `opacities/lines/corr_k/` folder of the ``pRT_input_data_path``.
 
         Parameters
         ----------
         spec_res : float
-            Spectral resolution to which the opacities are downsampled.
+            Spectral resolution to which the opacities will be
+            downsampled.
         out_folder : str
-            Path of the output folder where the opacities will be stored.
+            Path of the output folder where the downsampled opacities
+            will be stored.
 
         Returns
         -------
@@ -618,20 +712,23 @@ class AtmosphericRetrieval:
         resume: bool = False,
         plotting: bool = False,
         check_isothermal: bool = False,
-        pt_smooth: float = 0.3,
+        pt_smooth: Optional[float] = 0.3,
         check_flux: Optional[float] = None,
         temp_nodes: Optional[int] = None,
+        prior: Optional[Dict[str, Tuple[float, float]]] = None,
     ) -> None:
         """
-        Function to run the ``PyMultiNest`` wrapper of the
+        Function for running the atmospheric retrieval. The parameter
+        estimation and computation of the marginalized likelihood (i.e.
+        model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
         with ``pip`` from the PyPI repository, ``MultiNest`` has to to
-        be build manually. See the ``PyMultiNest`` documentation for :
-        details http://johannesbuchner.github.io/PyMultiNest/install.html.
+        be build manually. See the ``PyMultiNest`` documentation for
+        details: http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set to
-        the environmental variable ``LD_LIBRARY_PATH`` on a Linux
+        the environment variable ``LD_LIBRARY_PATH`` on a Linux
         machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the
-        variable can be set before importing the ``species`` package,
+        variable can be set before importing the ``species`` toolkit,
         for example:
 
         .. code-block:: python
@@ -647,33 +744,38 @@ class AtmosphericRetrieval:
         Parameters
         ----------
         bounds : dict
-            Dictionary with the prior boundaries.
+            Dictionary with the boundaries that are used as uniform
+            priors for the parameters.
         chemistry : str
-            The chemistry type: 'equilibrium' for equilibrium chemistry
-            or 'free' for retrieval of free abundances (but constant
-            with altitude).
+            The chemistry type: 'equilibrium' for equilibrium
+            chemistry or 'free' for retrieval of free abundances
+            (but constant with altitude).
         quenching : str, None
             Quenching type for CO/CH4/H2O abundances. Either the
             quenching pressure (bar) is a free parameter
             (``quenching='pressure'``) or the quenching pressure is
             calculated from the mixing and chemical timescales
-            (``quenching='diffusion'``). The quenching is not applied
-            if the argument is set to ``None``.
+            (``quenching='diffusion'``). The quenching is not
+            applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile
-            ('molliere', 'free', or 'monotonic').
+            ('molliere', 'free', 'monotonic').
         fit_corr : list(str), None
-            List with spectrum names for which the correlation length
-            and fractional amplitude are fitted (see Wang et al. 2020).
+            List with spectrum names for which the correlation lengths
+            and fractional amplitudes are fitted (see `Wang et al. 2020
+            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/abstract>`_)
+            to model the covariances in case these are not available.
         cross_corr : list(str), None
             List with spectrum names for which a cross-correlation to
-            log-likelihood mapping is calculated instead of the regular
-            least-squares approach (see Brogi & Line 2019). This
-            cross-correlation approach can be applied on high-resolution
-            spectra. Currently, this option only supports spectra that
-            have been shifted to the planet's rest frame.
+            log-likelihood mapping is used (see `Brogi & Line 2019
+            <https://ui.adsabs.harvard.edu/abs/2019AJ....157..114B/abstract>`_)
+            instead of a direct comparison of model an data with
+            a least-squares approach. This parameter should only be
+            used for high-resolution spectra. Currently, it only
+            supports spectra that have been shifted to the planet's
+            rest frame.
         n_live_points : int
-            Number of live points.
+            Number of live points used for the nested sampling.
         resume : bool
             Resume from a previous run.
         plotting : bool
@@ -681,10 +783,9 @@ class AtmosphericRetrieval:
             use when running the full retrieval.
         check_isothermal : bool
             Check if there is an isothermal region below 1 bar. If so,
-            discard the sample. This parameter has not been properly
-            tested. It is recommended to use the ``check_flux``
-            parameter instead.
-        pt_smooth : float
+            discard the sample. This parameter is experimental and has
+            not been properly implemented.
+        pt_smooth : float, None
             Standard deviation of the Gaussian kernel that is used for
             smoothing the P-T profile, after the temperature nodes
             have been interpolated to a higher pressure resolution.
@@ -692,23 +793,33 @@ class AtmosphericRetrieval:
             `pt_profile='monotonic'`. The argument should be given as
             :math:`\\log10{P/\\mathrm{bar}}`, with the default value
             set to 0.3 dex. No smoothing is applied if the argument
-            if set to 0. The ``pt_smooth`` parameter can also be
-            included in ``bounds``, in which case the value is fitted
-            and the ``pt_smooth`` argument of ``run_multinest`` is
-            ignored.
+            if set to 0 or ``None``. The ``pt_smooth`` parameter can
+            also be included in ``bounds``, in which case the value
+            is fitted and the ``pt_smooth`` argument is ignored.
         check_flux : float, None
             Relative tolerance for enforcing a constant bolometric
-            flux at all pressures layers. To use this parameter, the
-            opacities should be recreated with
-            :meth:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
-            at $R = 10$ (i.e. ``spec_res=10``) and placed in
-            ``pRT_input_data_path``. By default, only the radiative
-            flux is considered. The convective flux is added to the
-            bolometric flux if the ``mix_length`` parameter (relative
-            to the pressure scale height) is included in ``bounds``.
+            flux at all pressures layers. By default, only the
+            radiative flux is used for the bolometric flux. The
+            convective flux component is also included if the
+            ``mix_length`` parameter (relative to the pressure scale
+            height) is included in the ``bounds`` dictionary. To use
+            ``check_flux``, the opacities should be recreated with
+            :func:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
+            at $R = 10$ (i.e. ``spec_res=10``) and placed in the
+            folder of ``pRT_input_data_path``. This parameter is
+            experimental and has not been fully tested.
         temp_nodes : int, None
-            Number of free temperature nodes that are used when
+            Number of free temperature nodes that are used with
             ``pt_profile='monotonic'`` or ``pt_profile='free'``.
+        prior : dict(str, tuple(float, float)), None
+            Dictionary with Gaussian priors for one or multiple
+            parameters. The prior can be set for any of the
+            atmosphere or calibration parameters, for example
+            ``prior={'logg': (4.2, 0.1)}``. Additionally, a
+            prior can be set for the mass, for example
+            ``prior={'mass': (13., 3.)}`` for an expected mass
+            of 13 Mjup with an uncertainty of 3 Mjup. The
+            parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -720,16 +831,16 @@ class AtmosphericRetrieval:
 
         if quenching is not None and chemistry != "equilibrium":
             raise ValueError(
-                "The 'quenching' parameter can only be used in combination with "
-                "chemistry='equilibrium'."
+                "The 'quenching' parameter can only be used in "
+                "combination with chemistry='equilibrium'."
             )
 
         # Check quenching parameter
 
         if quenching is not None and quenching not in ["pressure", "diffusion"]:
             raise ValueError(
-                "The argument of 'quenching' should by of the following: "
-                "'pressure', 'diffusion', or None."
+                "The argument of 'quenching' should by of the "
+                "following: 'pressure', 'diffusion', or None."
             )
 
         # Set number of free temperature nodes
@@ -740,7 +851,8 @@ class AtmosphericRetrieval:
             else:
                 self.temp_nodes = temp_nodes
 
-        # Check if clouds are used in combination with equilibrium chemistry
+        # Check if clouds are used in combination
+        # with equilibrium chemistry
 
         # if len(self.cloud_species) > 0 and chemistry != 'equilibrium':
         #     raise ValueError('Clouds are currently only implemented in combination with '
@@ -774,23 +886,28 @@ class AtmosphericRetrieval:
         # Import petitRADTRANS and interpol_abundances here because it is slow
 
         print("Importing petitRADTRANS...", end="", flush=True)
+
         from petitRADTRANS.radtrans import Radtrans
 
         # from petitRADTRANS.fort_spec import feautrier_rad_trans
         # from petitRADTRANS.fort_spec import feautrier_pt_it
+
         print(" [DONE]")
 
         print("Importing chemistry module...", end="", flush=True)
+
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         print(" [DONE]")
 
         print("Importing rebin module...", end="", flush=True)
+
         from petitRADTRANS.retrieval.rebin_give_width import rebin_give_width
 
         print(" [DONE]")
 
-        # List with spectra for which the correlated noise is fitted
+        # List with spectra for which the covariances
+        # are modeled with a Gaussian process
 
         if fit_corr is None:
             fit_corr = []
@@ -800,10 +917,17 @@ class AtmosphericRetrieval:
                 bounds[f"corr_len_{item}"] = (-3.0, 0.0)  # log10(corr_len/um)
                 bounds[f"corr_amp_{item}"] = (0.0, 1.0)
 
-        # List with spectra that will be used for a cross-correlation instead of least-squares
+        # List with spectra that will be used for a
+        # cross-correlation instead of least-squares
 
         if cross_corr is None:
             cross_corr = []
+
+        elif "fsed_1" in bounds or "fsed_2" in bounds:
+            raise ValueError(
+                "The cross_corr parameter can not be "
+                "used with multiple fsed parameters."
+            )
 
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
@@ -823,7 +947,9 @@ class AtmosphericRetrieval:
 
         # Create list with parameters for MultiNest
 
-        self.set_parameters(bounds, chemistry, quenching, pt_profile, fit_corr, rt_object)
+        self.set_parameters(
+            bounds, chemistry, quenching, pt_profile, fit_corr, rt_object
+        )
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -842,7 +968,10 @@ class AtmosphericRetrieval:
 
         # Update the P-T smoothing parameter
 
-        self.pt_smooth = pt_smooth
+        if pt_smooth is None:
+            self.pt_smooth = 0.0
+        else:
+            self.pt_smooth = pt_smooth
 
         # Create instance of Radtrans for high-resolution spectra
 
@@ -871,6 +1000,11 @@ class AtmosphericRetrieval:
         # opacities for enforcing the bolometric flux
 
         if check_flux is not None:
+            if "fsed_1" in self.parameters or "fsed_2" in self.parameters:
+                raise ValueError(
+                    "The check_flux parameter does not "
+                    "support multiple fsed parameters."
+                )
 
             line_species_low_res = []
             for item in self.line_species:
@@ -891,7 +1025,8 @@ class AtmosphericRetrieval:
 
         if self.pressure_grid == "standard":
             print(
-                f"Number of pressure levels used with the radiative transfer: {self.pressure.size}"
+                f"Number of pressure levels used with the "
+                f"radiative transfer: {self.pressure.size}"
             )
 
             rt_object.setup_opa_structure(self.pressure)
@@ -923,8 +1058,9 @@ class AtmosphericRetrieval:
                     "to 'clouds' is only possible with the use of cloud species."
                 )
 
-            # The pressure structure is reinitiated after the refinement around the cloud deck
-            # so the current initializiation to 60 pressure points is not used
+            # The pressure structure is reinitiated after the
+            # refinement around the cloud deck so the current
+            # initializiation to 60 pressure points is not used
             print(
                 "Number of pressure levels used with the radiative transfer: variable}"
             )
@@ -948,9 +1084,10 @@ class AtmosphericRetrieval:
             knot_press = None
 
         @typechecked
-        def prior(cube, n_dim: int, n_param: int) -> None:
+        def prior_func(cube, n_dim: int, n_param: int) -> None:
             """
-            Function to transform the unit cube into the parameter cube.
+            Function to transform the sampled unit cube into a
+            parameter cube with actual values for the model.
 
             Parameters
             ----------
@@ -996,7 +1133,8 @@ class AtmosphericRetrieval:
 
             if pt_profile in ["molliere", "mod-molliere"]:
 
-                # Internal temperature (K) of the Eddington approximation (middle altitudes)
+                # Internal temperature (K) of the Eddington
+                # approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
                 if "tint" in bounds:
                     tint = (
@@ -1084,13 +1222,6 @@ class AtmosphericRetrieval:
                     # Default: 0 - 8000 K
                     cube[cube_index[f"t{i}"]] = 20000.0 * cube[cube_index[f"t{i}"]]
 
-                # Penalization of wiggles in the P-T profile
-                # inverse gamma: a=1, b=5e-5
-                beta_r = cube[cube_index["beta_r"]]
-                gamma_r = invgamma.ppf(cube[cube_index["gamma_r"]], a=1.0, scale=beta_r)
-                cube[cube_index["beta_r"]] = beta_r
-                cube[cube_index["gamma_r"]] = gamma_r
-
             elif pt_profile == "monotonic":
                 # Free temperature node (K) between 300 and
                 # 20000 K for the deepest pressure point
@@ -1118,6 +1249,24 @@ class AtmosphericRetrieval:
                     #
                     #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
                     #         cube[cube_index[f't{i}']]*temp_diff
+
+            # Penalization of wiggles in the P-T profile
+            # Inverse gamma distribution
+            # a=1, b=5e-5 (Line et al. 2015)
+
+            if "log_gamma_r" in self.parameters:
+                log_beta_r = (
+                    bounds["log_beta_r"][0]
+                    + (bounds["log_beta_r"][1] - bounds["log_beta_r"][0])
+                    * cube[cube_index["log_beta_r"]]
+                )
+                cube[cube_index["log_beta_r"]] = log_beta_r
+
+                # Input log_gamma_r is sampled between 0 and 1
+                gamma_r = invgamma.ppf(
+                    cube[cube_index["log_gamma_r"]], a=1.0, scale=10.0 ** log_beta_r
+                )
+                cube[cube_index["log_gamma_r"]] = np.log10(gamma_r)
 
             # Chemical composition
 
@@ -1160,7 +1309,7 @@ class AtmosphericRetrieval:
                             * cube[cube_index[item]]
                         )
 
-                    elif item not in ["K", "K_lor_cut", "K_burrows"]:
+                    elif item not in ["K", "K_lor_cut", "K_burrows", "K_allard"]:
                         # Default: -10. - 0. dex
                         cube[cube_index[item]] = -10.0 * cube[cube_index[item]]
 
@@ -1171,6 +1320,7 @@ class AtmosphericRetrieval:
                     "Na" in self.line_species
                     or "Na_lor_cut" in self.line_species
                     or "Na_burrows" in self.line_species
+                    or "Na_allard" in self.line_species
                 ):
                     log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund)
 
@@ -1183,19 +1333,39 @@ class AtmosphericRetrieval:
                 elif "K_burrows" in self.line_species:
                     cube[cube_index["K_burrows"]] = log_x_k_abund
 
+                elif "K_allard" in self.line_species:
+                    cube[cube_index["K_allard"]] = log_x_k_abund
+
                 # log10 abundances of the cloud species
 
-                for item in self.cloud_species:
-                    if item in bounds:
-                        cube[cube_index[item]] = (
-                            bounds[item][0]
-                            + (bounds[item][1] - bounds[item][0])
-                            * cube[cube_index[item]]
+                if "log_tau_cloud" in bounds:
+                    for item in self.cloud_species[1:]:
+                        cloud_1 = item[:-3].lower()
+                        cloud_2 = self.cloud_species[0][:-3].lower()
+
+                        mass_ratio = (
+                            bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                            + (
+                                bounds[f"{cloud_1}_{cloud_2}_ratio"][1]
+                                - bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                            )
+                            * cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]]
                         )
 
-                    else:
-                        # Default: -10. - 0. dex
-                        cube[cube_index[item]] = -10.0 * cube[cube_index[item]]
+                        cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]] = mass_ratio
+
+                else:
+                    for item in self.cloud_species:
+                        if item in bounds:
+                            cube[cube_index[item]] = (
+                                bounds[item][0]
+                                + (bounds[item][1] - bounds[item][0])
+                                * cube[cube_index[item]]
+                            )
+
+                        else:
+                            # Default: -10. - 0. dex
+                            cube[cube_index[item]] = -10.0 * cube[cube_index[item]]
 
             # CO/CH4/H2O quenching pressure (bar)
 
@@ -1221,17 +1391,38 @@ class AtmosphericRetrieval:
             if "log_kappa_0" in bounds:
                 # Cloud model 2 from Mollière et al. (2020)
 
-                if "fsed" in bounds:
-                    fsed = (
-                        bounds["fsed"][0]
-                        + (bounds["fsed"][1] - bounds["fsed"][0])
-                        * cube[cube_index["fsed"]]
+                if "fsed_1" in bounds and "fsed_2" in bounds:
+                    fsed_1 = (
+                        bounds["fsed_1"][0]
+                        + (bounds["fsed_1"][1] - bounds["fsed_1"][0])
+                        * cube[cube_index["fsed_1"]]
                     )
-                else:
-                    # Default: 0 - 10
-                    fsed = 10.0 * cube[cube_index["fsed"]]
 
-                cube[cube_index["fsed"]] = fsed
+                    cube[cube_index["fsed_1"]] = fsed_1
+
+                    fsed_2 = (
+                        bounds["fsed_2"][0]
+                        + (bounds["fsed_2"][1] - bounds["fsed_2"][0])
+                        * cube[cube_index["fsed_2"]]
+                    )
+
+                    cube[cube_index["fsed_2"]] = fsed_2
+
+                    # Cloud coverage fraction: 0 - 1
+                    cube[cube_index["f_clouds"]] = cube[cube_index["f_clouds"]]
+
+                else:
+                    if "fsed" in bounds:
+                        fsed = (
+                            bounds["fsed"][0]
+                            + (bounds["fsed"][1] - bounds["fsed"][0])
+                            * cube[cube_index["fsed"]]
+                        )
+                    else:
+                        # Default: 0 - 10
+                        fsed = 10.0 * cube[cube_index["fsed"]]
+
+                    cube[cube_index["fsed"]] = fsed
 
                 if "log_kappa_0" in bounds:
                     log_kappa_0 = (
@@ -1303,8 +1494,9 @@ class AtmosphericRetrieval:
                     cube[cube_index["log_tau_cloud"]] = log_tau_cloud
 
             elif len(self.cloud_species) > 0:
-                # Sedimentation parameter: ratio of the settling and mixing velocities of the
-                # cloud particles (used in Eq. 3 of Mollière et al. 2020)
+                # Sedimentation parameter: ratio of the settling and
+                # mixing velocities of the cloud particles
+                # (used in Eq. 3 of Mollière et al. 2020)
 
                 if "fsed" in bounds:
                     fsed = (
@@ -1332,7 +1524,8 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["log_kzz"]] = log_kzz
 
-                # Geometric standard deviation of the log-normal size distribution
+                # Geometric standard deviation of the
+                # log-normal size distribution
 
                 if "sigma_lnorm" in bounds:
                     sigma_lnorm = (
@@ -1372,8 +1565,10 @@ class AtmosphericRetrieval:
                             cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]] = mass_ratio
 
                 elif chemistry == "equilibrium":
-                    # Cloud mass fractions at the cloud base, relative to the maximum values allowed
-                    # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
+                    # Cloud mass fractions at the cloud base,
+                    # relative to the maximum values allowed
+                    # from elemental abundances
+                    # (see Eq. 3 in Mollière et al. 2020)
 
                     for item in self.cloud_species_full:
                         cloud_lower = item[:-6].lower()
@@ -1482,11 +1677,75 @@ class AtmosphericRetrieval:
             # Standard deviation of the Gaussian kernel for smoothing the P-T profile
 
             if "pt_smooth" in bounds:
-                cube[cube_index["pt_smooth"]] = (
-                    bounds["pt_smooth"][0]
-                    + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
-                    * cube[cube_index["pt_smooth"]]
+                for i in range(self.temp_nodes - 1):
+                    cube[cube_index[f"pt_smooth_{i}"]] = (
+                        bounds["pt_smooth"][0]
+                        + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
+                        * cube[cube_index[f"pt_smooth_{i}"]]
+                    )
+
+            elif "pt_smooth_1" in bounds:
+                cube[cube_index["pt_smooth_1"]] = (
+                    bounds["pt_smooth_1"][0]
+                    + (bounds["pt_smooth_1"][1] - bounds["pt_smooth_1"][0])
+                    * cube[cube_index["pt_smooth_1"]]
                 )
+
+                cube[cube_index["pt_smooth_2"]] = (
+                    bounds["pt_smooth_2"][0]
+                    + (bounds["pt_smooth_2"][1] - bounds["pt_smooth_2"][0])
+                    * cube[cube_index["pt_smooth_2"]]
+                )
+
+                cube[cube_index["pt_turn"]] = (
+                    bounds["pt_turn"][0]
+                    + (bounds["pt_turn"][1] - bounds["pt_turn"][0])
+                    * cube[cube_index["pt_turn"]]
+                )
+
+                cube[cube_index["pt_index"]] = (
+                    bounds["pt_index"][0]
+                    + (bounds["pt_index"][1] - bounds["pt_index"][0])
+                    * cube[cube_index["pt_index"]]
+                )
+
+            # elif self.n_smooth > 1:
+            #     for i in range(self.n_smooth):
+            #         cube[cube_index[f"pt_smooth_{i}"]] = (
+            #             bounds[f"pt_smooth_{i}"][0]
+            #             + (bounds[f"pt_smooth_{i}"][1] - bounds[f"pt_smooth_{i}"][0])
+            #             * cube[cube_index[f"pt_smooth_{i}"]]
+            #         )
+            #
+            #         if i == 0:
+            #             cube[cube_index[f"pt_connect_{i}_end"]] = (
+            #                 np.log10(self.pressure[0])
+            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
+            #                 * cube[cube_index[f"pt_connect_{i}_end"]]
+            #             )
+            #
+            #         elif i == self.n_smooth - 1:
+            #             cube[cube_index[f"pt_connect_{i}_start"]] = (
+            #                 np.log10(self.pressure[0])
+            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
+            #                 * cube[cube_index[f"pt_connect_{i}_start"]]
+            #             )
+            #
+            #         else:
+            #             cube[cube_index[f"pt_connect_{i}_start"]] = (
+            #                 np.log10(self.pressure[0])
+            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
+            #                 * cube[cube_index[f"pt_connect_{i}_start"]]
+            #             )
+            #
+            #             cube[cube_index[f"pt_connect_{i}_end"]] = (
+            #                 cube[cube_index[f"pt_connect_{i}_start"]]
+            #                 + (
+            #                     np.log10(self.pressure[-1])
+            #                     - cube[cube_index[f"pt_connect_{i}_start"]]
+            #                 )
+            #                 * cube[cube_index[f"pt_connect_{i}_end"]]
+            #             )
 
             # Mixing-length for convective flux
 
@@ -1498,9 +1757,10 @@ class AtmosphericRetrieval:
                 )
 
         @typechecked
-        def loglike(cube, n_dim: int, n_param: int) -> float:
+        def loglike_func(cube, n_dim: int, n_param: int) -> float:
             """
-            Function for the logarithm of the likelihood, computed from the parameter cube.
+            Function for calculating the log-likelihood function
+            from the sampled parameter cube.
 
             Parameters
             ----------
@@ -1571,6 +1831,24 @@ class AtmosphericRetrieval:
                 if f"corr_amp_{item}" in bounds:
                     corr_amp[item] = cube[cube_index[f"corr_amp_{item}"]]
 
+            # Gaussian priors
+
+            if prior is not None:
+                for key, value in prior.items():
+                    if key == "mass":
+                        mass = read_util.get_mass(
+                            cube[cube_index["logg"]],
+                            cube[cube_index["radius"]],
+                        )
+                        ln_prior += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
+
+                    else:
+                        ln_prior += (
+                            -0.5
+                            * (cube[cube_index[key]] - value[0]) ** 2
+                            / value[1] ** 2
+                        )
+
             # Check if the cloud optical depth is a free parameter
 
             calc_tau_cloud = False
@@ -1579,10 +1857,43 @@ class AtmosphericRetrieval:
                 if item[:-3].lower() + "_tau" in bounds:
                     calc_tau_cloud = True
 
-            # Read the P-T smoothing parameter or use the argument of run_multinest otherwise
+            # Read the P-T smoothing parameter or use
+            # the argument of run_multinest otherwise
 
-            if "pt_smooth" in cube_index:
-                pt_smooth = cube[cube_index["pt_smooth"]]
+            if "pt_smooth_1" in cube_index:
+                # pt_smooth = cube[cube_index["pt_smooth"]]
+                pt_smooth = {}
+
+                for i in range(self.temp_nodes - 1):
+                    pt_smooth[f"pt_smooth_{i}"] = cube[cube_index[f"pt_smooth_{i}"]]
+
+            # if "pt_smooth_1" in cube_index:
+            #     pt_smooth = {"pt_smooth_1": cube[cube_index["pt_smooth_1"]],
+            #                  "pt_smooth_2": cube[cube_index["pt_smooth_2"]],
+            #                  "pt_turn": cube[cube_index["pt_turn"]],
+            #                  "pt_index": cube[cube_index["pt_index"]]}
+
+            # elif self.n_smooth > 1:
+            #     pt_smooth = {'n_smooth': self.n_smooth}
+            #
+            #     for i in range(self.n_smooth):
+            #         pt_smooth[f"pt_smooth_{i}"] = cube[cube_index[f"pt_smooth_{i}"]]
+            #
+            #         if i == 0:
+            #             pt_end = cube[cube_index[f"pt_connect_{i}_end"]]
+            #             pt_smooth[f"pt_connect_{i}_end"] = pt_end
+            #
+            #         elif i == self.n_smooth - 1:
+            #             pt_start = cube[cube_index[f"pt_connect_{i}_start"]]
+            #             pt_smooth[f"pt_connect_{i}_start"] = pt_start
+            #
+            #         else:
+            #             pt_start = cube[cube_index[f"pt_connect_{i}_start"]]
+            #             pt_end = cube[cube_index[f"pt_connect_{i}_end"]]
+            #
+            #             pt_smooth[f"pt_connect_{i}_start"] = pt_start
+            #             pt_smooth[f"pt_connect_{i}_end"] = pt_end
+
             else:
                 pt_smooth = self.pt_smooth
 
@@ -1593,7 +1904,8 @@ class AtmosphericRetrieval:
                 c_o_ratio = cube[cube_index["c_o_ratio"]]
 
             elif chemistry == "free":
-                # TODO Set [Fe/H] = 0 for Molliere P-T profile and cloud condensation profiles
+                # TODO Set [Fe/H] = 0 for Molliere P-T profile
+                # and cloud condensation profiles
                 metallicity = 0.0
 
                 # Create a dictionary with the mass fractions
@@ -1652,6 +1964,84 @@ class AtmosphericRetrieval:
             #     # Maximum pressure (bar) for the radiative-convective boundary
             #     return -np.inf
 
+            # Enforce convective adiabat
+
+            # if plotting:
+            #     plt.plot(temp, self.pressure, "-", lw=1.0)
+            #
+            # if pt_profile == "monotonic":
+            #     ab = interpol_abundances(
+            #         np.full(temp.shape[0], c_o_ratio),
+            #         np.full(temp.shape[0], metallicity),
+            #         temp,
+            #         self.pressure,
+            #     )
+            #
+            #     nabla_ad = ab["nabla_ad"]
+            #
+            #     # Convert pressures from bar to cgs units
+            #     press_cgs = self.pressure * 1e6
+            #
+            #     # Calculate the current, radiative temperature gradient
+            #     nab_rad = np.diff(np.log(temp)) / np.diff(np.log(press_cgs))
+            #
+            #     # Extend to array of same length as pressure structure
+            #     nabla_rad = np.ones_like(temp)
+            #     nabla_rad[0] = nab_rad[0]
+            #     nabla_rad[-1] = nab_rad[-1]
+            #     nabla_rad[1:-1] = (nab_rad[1:] + nab_rad[:-1]) / 2.0
+            #
+            #     # Where is the atmosphere convectively unstable?
+            #     conv_index = nabla_rad > nabla_ad
+            #
+            #     tfinal = None
+            #
+            #     for i in range(10):
+            #         if i == 0:
+            #             t_take = copy.copy(temp)
+            #         else:
+            #             t_take = copy.copy(tfinal)
+            #
+            #         ab = interpol_abundances(
+            #             np.full(t_take.shape[0], c_o_ratio),
+            #             np.full(t_take.shape[0], metallicity),
+            #             t_take,
+            #             self.pressure,
+            #         )
+            #
+            #         nabla_ad = ab["nabla_ad"]
+            #
+            #         # Calculate the average nabla_ad between the layers
+            #         nabla_ad_mean = nabla_ad
+            #         nabla_ad_mean[1:] = (nabla_ad[1:] + nabla_ad[:-1]) / 2.0
+            #
+            #         # What are the increments in temperature due to convection
+            #         tnew = nabla_ad_mean[conv_index] * np.mean(np.diff(np.log(press_cgs)))
+            #
+            #         # What is the last radiative temperature?
+            #         tstart = np.log(t_take[~conv_index][-1])
+            #
+            #         # Integrate and translate to temperature
+            #         # from log(temperature)
+            #         tnew = np.exp(np.cumsum(tnew) + tstart)
+            #
+            #         # Add upper radiative and lower covective
+            #         # part into one single array
+            #         tfinal = copy.copy(t_take)
+            #         tfinal[conv_index] = tnew
+            #
+            #         if np.max(np.abs(t_take - tfinal) / t_take) < 0.01:
+            #             break
+            #
+            #     temp = copy.copy(tfinal)
+
+            if plotting:
+                plt.plot(temp, self.pressure, "-")
+                plt.yscale("log")
+                plt.ylim(1e3, 1e-6)
+                plt.savefig("pt_profile.pdf", bbox_inches="tight")
+                plt.clf()
+
             # Prepare the scaling based on the cloud optical depth
 
             if calc_tau_cloud:
@@ -1697,15 +2087,16 @@ class AtmosphericRetrieval:
 
             # Penalize P-T profiles with oscillations
 
-            if pt_profile == "free":
+            if pt_profile in ["free", "monotonic"] and "log_gamma_r" in self.parameters:
                 temp_sum = np.sum(
                     (knot_temp[2:] + knot_temp[:-2] - 2.0 * knot_temp[1:-1]) ** 2.0
                 )
+
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
                 ln_prior += -1.0 * temp_sum / (
-                    2.0 * cube[cube_index["gamma_r"]]
-                ) - 0.5 * np.log(2.0 * np.pi * cube[cube_index["gamma_r"]])
+                    2.0 * 10.0 ** cube[cube_index["log_gamma_r"]]
+                ) - 0.5 * np.log(2.0 * np.pi * 10.0 ** cube[cube_index["log_gamma_r"]])
 
             # Return zero probability if the minimum temperature is negative
 
@@ -1770,7 +2161,7 @@ class AtmosphericRetrieval:
                                 pressure_grid=self.pressure_grid,
                             )
 
-                            if len(self.cross_corr) != 0:
+                            if len(cross_corr) != 0:
                                 raise ValueError(
                                     "Check if it works correctly with lbl species."
                                 )
@@ -1799,31 +2190,87 @@ class AtmosphericRetrieval:
                 elif chemistry == "free":
                     # Add the log10 mass fractions of the clouds to the dictionary
 
-                    log_x_base = {}
+                    if "log_tau_cloud" in self.parameters:
+                        tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
 
-                    for item in self.cloud_species:
-                        log_x_base[item[:-3]] = cube[cube_index[item]]
+                        log_x_base = {}
+
+                        for i, item in enumerate(self.cloud_species):
+                            if i == 0:
+                                log_x_base[item[:-3]] = 0.0
+
+                            else:
+                                cloud_1 = item[:-3].lower()
+                                cloud_2 = self.cloud_species[0][:-3].lower()
+
+                                log_x_base[item[:-3]] = cube[
+                                    cube_index[f"{cloud_1}_{cloud_2}_ratio"]
+                                ]
+
+                    else:
+                        log_x_base = {}
+                        for item in self.cloud_species:
+                            log_x_base[item[:-3]] = cube[cube_index[item]]
 
                 # Create dictionary with cloud parameters
 
-                cloud_param = [
-                    "fsed",
-                    "log_kzz",
-                    "sigma_lnorm",
-                    "log_kappa_0",
-                    "opa_index",
-                    "log_p_base",
-                    "albedo",
-                    "opa_knee",
-                ]
+                if "fsed" in self.parameters:
+                    cloud_param = [
+                        "fsed",
+                        "log_kzz",
+                        "sigma_lnorm",
+                        "log_kappa_0",
+                        "opa_index",
+                        "log_p_base",
+                        "albedo",
+                        "opa_knee",
+                    ]
 
-                cloud_dict = {}
+                    cloud_dict = {}
+                    for item in cloud_param:
+                        if item in self.parameters:
+                            cloud_dict[item] = cube[cube_index[item]]
+                        # elif item in ['log_kzz', 'sigma_lnorm']:
+                        #     cloud_dict[item] = None
 
-                for item in cloud_param:
-                    if item in self.parameters:
-                        cloud_dict[item] = cube[cube_index[item]]
-                    # elif item in ['log_kzz', 'sigma_lnorm']:
-                    #     cloud_dict[item] = None
+                elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
+                    cloud_param_1 = [
+                        "fsed_1",
+                        "log_kzz",
+                        "sigma_lnorm",
+                        "log_kappa_0",
+                        "opa_index",
+                        "log_p_base",
+                        "albedo",
+                        "opa_knee",
+                    ]
+
+                    cloud_dict_1 = {}
+                    for item in cloud_param_1:
+                        if item in self.parameters:
+                            if item == "fsed_1":
+                                cloud_dict_1["fsed"] = cube[cube_index[item]]
+                            else:
+                                cloud_dict_1[item] = cube[cube_index[item]]
+
+                    cloud_param_2 = [
+                        "fsed_2",
+                        "log_kzz",
+                        "sigma_lnorm",
+                        "log_kappa_0",
+                        "opa_index",
+                        "log_p_base",
+                        "albedo",
+                        "opa_knee",
+                    ]
+
+                    cloud_dict_2 = {}
+                    for item in cloud_param_2:
+                        if item in self.parameters:
+                            if item == "fsed_2":
+                                cloud_dict_2["fsed"] = cube[cube_index[item]]
+                            else:
+                                cloud_dict_2[item] = cube[cube_index[item]]
 
                 # Check if the bolometric flux is conserved in the radiative region
 
@@ -1899,7 +2346,7 @@ class AtmosphericRetrieval:
 
                     if hasattr(lowres_radtrans, "h_bol"):
                         # f_bol = 4 x pi x h_bol (erg s-1 cm-2)
-                        f_bol = -1.0 * 4. * np.pi * lowres_radtrans.h_bol
+                        f_bol = -1.0 * 4.0 * np.pi * lowres_radtrans.h_bol
 
                         # (erg s-1 cm-2) -> (W cm-2)
                         f_bol *= 1e-7
@@ -1907,57 +2354,58 @@ class AtmosphericRetrieval:
                         # (W cm-2) -> (W m-2)
                         f_bol *= 1e4
 
-                        # Number of pressures
-                        n_press = lowres_radtrans.press.size
-
-                        # Interpolate abundances to get MMW and nabla_ad
-                        abund_test = interpol_abundances(
-                            np.full(n_press, cube[cube_index["c_o_ratio"]]),
-                            np.full(n_press, cube[cube_index["metallicity"]]),
-                            lowres_radtrans.temp,
-                            lowres_radtrans.press * 1e-6,  # (bar)
-                            Pquench_carbon=p_quench,
-                        )
-
-                        # Mean molecular weight
-                        mmw = abund_test["MMW"]
-
-                        # Adiabatic temperature gradient
-                        nabla_ad = abund_test["nabla_ad"]
-
-                        # Pressure (Ba) -> (Pa)
-                        press_pa = 1e-1*lowres_radtrans.press
-
-                        # Density (kg m-3)
-                        rho = (
-                            press_pa  # (Pa)
-                            / constants.BOLTZMANN
-                            / lowres_radtrans.temp
-                            * mmw
-                            * constants.ATOMIC_MASS
-                        )
-
-                        # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
-                        # gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
-                        ad_index = 1. / (1. - nabla_ad)
-
-                        # Extend adiabatic index to array of same length as pressure structure
-                        # ad_index = np.zeros(lowres_radtrans.press.shape)
-                        # ad_index[0] = gamma[0]
-                        # ad_index[-1] = gamma[-1]
-                        # ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
-
-                        # Specific heat capacity (J kg-1 K-1)
-                        c_p = (
-                            (1.0 / (ad_index - 1.0) + 1.0)
-                            * press_pa
-                            / (rho * lowres_radtrans.temp)
-                        )
-
-                        # Mixing length in pressure scale heights
+                        # Optionally add the convective flux
 
                         if "mix_length" in cube_index:
+                            # Mixing length in pressure scale heights
                             mix_length = cube[cube_index["mix_length"]]
+
+                            # Number of pressures
+                            n_press = lowres_radtrans.press.size
+
+                            # Interpolate abundances to get MMW and nabla_ad
+                            abund_test = interpol_abundances(
+                                np.full(n_press, cube[cube_index["c_o_ratio"]]),
+                                np.full(n_press, cube[cube_index["metallicity"]]),
+                                lowres_radtrans.temp,
+                                lowres_radtrans.press * 1e-6,  # (bar)
+                                Pquench_carbon=p_quench,
+                            )
+
+                            # Mean molecular weight
+                            mmw = abund_test["MMW"]
+
+                            # Adiabatic temperature gradient
+                            nabla_ad = abund_test["nabla_ad"]
+
+                            # Pressure (Ba) -> (Pa)
+                            press_pa = 1e-1 * lowres_radtrans.press
+
+                            # Density (kg m-3)
+                            rho = (
+                                press_pa  # (Pa)
+                                / constants.BOLTZMANN
+                                / lowres_radtrans.temp
+                                * mmw
+                                * constants.ATOMIC_MASS
+                            )
+
+                            # Adiabatic index: gamma = dln(P) / dln(rho), at constant entropy, S
+                            # gamma = np.diff(np.log(press_pa)) / np.diff(np.log(rho))
+                            ad_index = 1.0 / (1.0 - nabla_ad)
+
+                            # Extend adiabatic index to array of same length as pressure structure
+                            # ad_index = np.zeros(lowres_radtrans.press.shape)
+                            # ad_index[0] = gamma[0]
+                            # ad_index[-1] = gamma[-1]
+                            # ad_index[1:-1] = (gamma[1:] + gamma[:-1]) / 2.0
+
+                            # Specific heat capacity (J kg-1 K-1)
+                            c_p = (
+                                (1.0 / (ad_index - 1.0) + 1.0)
+                                * press_pa
+                                / (rho * lowres_radtrans.temp)
+                            )
 
                             # Calculate the convective flux
 
@@ -1966,16 +2414,16 @@ class AtmosphericRetrieval:
                                 lowres_radtrans.temp,  # (K)
                                 mmw,
                                 nabla_ad,
-                                1e-1*lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
+                                1e-1 * lowres_radtrans.kappa_rosseland,  # (m2 kg-1)
                                 rho,  # (kg m-3)
                                 c_p,  # (J kg-1 K-1)
-                                1e-2*10.**cube[cube_index["logg"]],  # (m s-2)
+                                1e-2 * 10.0 ** cube[cube_index["logg"]],  # (m s-2)
                                 f_bol_spec,  # (W m-2)
                                 mix_length=mix_length,
                             )
 
                             # Bolometric flux = radiative + convective
-                            press_bar = 1e-6*lowres_radtrans.press  # (bar)
+                            press_bar = 1e-6 * lowres_radtrans.press  # (bar)
                             f_bol[press_bar > 0.1] += f_conv[press_bar > 0.1]
 
                         # Accuracy on bolometric flux for Gaussian prior
@@ -1992,6 +2440,7 @@ class AtmosphericRetrieval:
                         ln_prior += (
                             -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
                         )
+
                         # for i in range(i_conv):
                         # for i in range(lowres_radtrans.press.shape[0]):
                         #     if not isclose(
@@ -2014,35 +2463,95 @@ class AtmosphericRetrieval:
                             plt.clf()
 
                     else:
-                        warnings.warn("The Radtrans object from "
-                                      "petitRADTRANS does not contain "
-                                      "the h_bol attribute. Probably "
-                                      "you are using the main package "
-                                      "instead of the fork from "
-                                      "https://gitlab.com/tomasstolker"
-                                      "/petitRADTRANS. The check_flux "
-                                      "parameter can therefore not be "
-                                      "used and could be set to None.")
+                        warnings.warn(
+                            "The Radtrans object from "
+                            "petitRADTRANS does not contain "
+                            "the h_bol attribute. Probably "
+                            "you are using the main package "
+                            "instead of the fork from "
+                            "https://gitlab.com/tomasstolker"
+                            "/petitRADTRANS. The check_flux "
+                            "parameter can therefore not be "
+                            "used and could be set to None."
+                        )
 
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
-                wlen_micron, flux_lambda, _, _ = retrieval_util.calc_spectrum_clouds(
-                    rt_object,
-                    self.pressure,
-                    temp,
-                    c_o_ratio,
-                    metallicity,
-                    p_quench,
-                    log_x_abund,
-                    log_x_base,
-                    cloud_dict,
-                    cube[cube_index["logg"]],
-                    chemistry=chemistry,
-                    pressure_grid=self.pressure_grid,
-                    plotting=plotting,
-                    contribution=False,
-                    tau_cloud=tau_cloud,
-                )
+                if "fsed" in self.parameters:
+                    (
+                        wlen_micron,
+                        flux_lambda,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
+                        rt_object,
+                        self.pressure,
+                        temp,
+                        c_o_ratio,
+                        metallicity,
+                        p_quench,
+                        log_x_abund,
+                        log_x_base,
+                        cloud_dict,
+                        cube[cube_index["logg"]],
+                        chemistry=chemistry,
+                        pressure_grid=self.pressure_grid,
+                        plotting=plotting,
+                        contribution=False,
+                        tau_cloud=tau_cloud,
+                    )
+
+                elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
+                    (
+                        wlen_micron,
+                        flux_lambda_1,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
+                        rt_object,
+                        self.pressure,
+                        temp,
+                        c_o_ratio,
+                        metallicity,
+                        p_quench,
+                        log_x_abund,
+                        log_x_base,
+                        cloud_dict_1,
+                        cube[cube_index["logg"]],
+                        chemistry=chemistry,
+                        pressure_grid=self.pressure_grid,
+                        plotting=plotting,
+                        contribution=False,
+                        tau_cloud=tau_cloud,
+                    )
+
+                    (
+                        wlen_micron,
+                        flux_lambda_2,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
+                        rt_object,
+                        self.pressure,
+                        temp,
+                        c_o_ratio,
+                        metallicity,
+                        p_quench,
+                        log_x_abund,
+                        log_x_base,
+                        cloud_dict_2,
+                        cube[cube_index["logg"]],
+                        chemistry=chemistry,
+                        pressure_grid=self.pressure_grid,
+                        plotting=plotting,
+                        contribution=False,
+                        tau_cloud=tau_cloud,
+                    )
+
+                    flux_lambda = (
+                        cube[cube_index["f_clouds"]] * flux_lambda_1
+                        + (1.0 - cube[cube_index["f_clouds"]]) * flux_lambda_2
+                    )
 
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
@@ -2081,17 +2590,19 @@ class AtmosphericRetrieval:
                         )
 
                     else:
-                        warnings.warn("The Radtrans object from "
-                                      "petitRADTRANS does not contain "
-                                      "the tau_pow attribute. Probably "
-                                      "you are using the main package "
-                                      "instead of the fork from "
-                                      "https://gitlab.com/tomasstolker"
-                                      "/petitRADTRANS. The "
-                                      "log_sigma_alpha parameter can "
-                                      "therefore not be used and can "
-                                      "be removed from the bounds "
-                                      "dictionary.")
+                        warnings.warn(
+                            "The Radtrans object from "
+                            "petitRADTRANS does not contain "
+                            "the tau_pow attribute. Probably "
+                            "you are using the main package "
+                            "instead of the fork from "
+                            "https://gitlab.com/tomasstolker"
+                            "/petitRADTRANS. The "
+                            "log_sigma_alpha parameter can "
+                            "therefore not be used and can "
+                            "be removed from the bounds "
+                            "dictionary."
+                        )
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 
@@ -2272,7 +2783,8 @@ class AtmosphericRetrieval:
                     model_wavel = wlen_micron
                     model_flux = flux_lambda
 
-                # Shift the wavelengths of the data with the fitted calibration parameter
+                # Shift the wavelengths of the data with
+                # the fitted calibration parameter
                 data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
 
                 # Flux density
@@ -2550,6 +3062,9 @@ class AtmosphericRetrieval:
         radtrans_dict["temp_nodes"] = self.temp_nodes
         radtrans_dict["max_press"] = self.max_pressure
 
+        # if "pt_smooth" not in bounds and "pt_smooth_0" not in bounds:
+        #     radtrans_dict["pt_smooth"] = self.pt_smooth
+
         if "pt_smooth" not in bounds:
             radtrans_dict["pt_smooth"] = self.pt_smooth
 
@@ -2563,8 +3078,8 @@ class AtmosphericRetrieval:
         out_basename = os.path.join(self.output_folder, "retrieval_")
 
         pymultinest.run(
-            loglike,
-            prior,
+            loglike_func,
+            prior_func,
             len(self.parameters),
             outputfiles_basename=out_basename,
             resume=resume,

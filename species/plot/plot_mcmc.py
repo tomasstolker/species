@@ -316,6 +316,9 @@ def plot_posterior(
             elif item == "CO_all_iso":
                 abund_index["CO_all_iso"] = i
 
+            elif item == "CO_all_iso_HITEMP":
+                abund_index["CO_all_iso_HITEMP"] = i
+
             elif item == "CO2":
                 abund_index["CO2"] = i
 
@@ -324,6 +327,9 @@ def plot_posterior(
 
             elif item == "H2O":
                 abund_index["H2O"] = i
+
+            elif item == "H2O_HITEMP":
+                abund_index["H2O_HITEMP"] = i
 
             elif item == "H2S":
                 abund_index["H2S"] = i
@@ -343,8 +349,14 @@ def plot_posterior(
             elif item == "TiO":
                 abund_index["TiO"] = i
 
+            elif item == "TiO_all_Exomol":
+                abund_index["TiO_all_Exomol"] = i
+
             elif item == "VO":
                 abund_index["VO"] = i
+
+            elif item == "VO_Plez":
+                abund_index["VO_Plez"] = i
 
         c_h_ratio = np.zeros(samples.shape[0])
         o_h_ratio = np.zeros(samples.shape[0])
@@ -360,7 +372,10 @@ def plot_posterior(
                 abund["CO"] = item[abund_index["CO"]]
 
             if "CO_all_iso" in box.parameters:
-                abund["CO_all_iso"] = item[abund_index["CO_all_iso"]]
+                abund["CO_all_iso"] = item[abund_index["CO"]]
+
+            if "CO_all_iso_HITEMP" in box.parameters:
+                abund["CO_all_iso_HITEMP"] = item[abund_index["CO_all_iso_HITEMP"]]
 
             if "CO2" in box.parameters:
                 abund["CO2"] = item[abund_index["CO2"]]
@@ -371,17 +386,20 @@ def plot_posterior(
             if "H2O" in box.parameters:
                 abund["H2O"] = item[abund_index["H2O"]]
 
+            if "H2O_HITEMP" in box.parameters:
+                abund["H2O_HITEMP"] = item[abund_index["H2O_HITEMP"]]
+
             if "H2S" in box.parameters:
                 abund["H2S"] = item[abund_index["H2S"]]
 
             if "Na" in box.parameters:
                 abund["Na"] = item[abund_index["Na"]]
 
-            if "NH3" in box.parameters:
-                abund["NH3"] = item[abund_index["NH3"]]
-
             if "K" in box.parameters:
                 abund["K"] = item[abund_index["K"]]
+
+            if "NH3" in box.parameters:
+                abund["NH3"] = item[abund_index["NH3"]]
 
             if "PH3" in box.parameters:
                 abund["PH3"] = item[abund_index["PH3"]]
@@ -389,11 +407,14 @@ def plot_posterior(
             if "TiO" in box.parameters:
                 abund["TiO"] = item[abund_index["TiO"]]
 
-            if "VO" in box.parameters:
-                abund["VO"] = item[abund_index["VO"]]
+            if "TiO_all_Exomol" in box.parameters:
+                abund["TiO_all_Exomol"] = item[abund_index["TiO_all_Exomol"]]
 
             if "VO" in box.parameters:
                 abund["VO"] = item[abund_index["VO"]]
+
+            if "VO_Plez" in box.parameters:
+                abund["VO_Plez"] = item[abund_index["VO_Plez"]]
 
             c_h_ratio[i], o_h_ratio[i], c_o_ratio[i] = retrieval_util.calc_metal_ratio(
                 abund
@@ -484,7 +505,7 @@ def plot_posterior(
     else:
         print(f"Plotting the posterior: {output}...", end="", flush=True)
 
-    if "H2O" in box.parameters:
+    if "H2O" in box.parameters or "H2O_HITEMP" in box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
 
     if inc_luminosity:

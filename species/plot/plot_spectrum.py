@@ -969,10 +969,8 @@ def plot_spectrum(
                                     **plot_kwargs[obj_index][item],
                                 )
 
-                res_test = np.nanmax(np.abs(residuals.photometry[item][1]))
-
-                if not np.isnan(res_test):
-                    res_max = np.nanmax(np.abs(residuals.photometry[item][1]))
+                finite = np.isfinite(residuals.photometry[item][1])
+                res_max = np.max(np.abs(residuals.photometry[item][1][finite]))
 
         if residuals.spectrum is not None:
             for key, value in residuals.spectrum.items():

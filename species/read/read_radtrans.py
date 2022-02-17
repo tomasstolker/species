@@ -39,6 +39,7 @@ class ReadRadtrans:
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
         max_press: float = None,
+        pt_profile: Optional[np.ndarray] = None,
     ) -> None:
         """
         Parameters
@@ -92,6 +93,12 @@ class ReadRadtrans:
         max_pressure : float, None
             Maximum pressure (bar) for the free temperature nodes. The
             default is set to 1000 bar.
+        pt_profile : np.ndarray, None
+            A 2D array that contains the P-T profile that is used
+            when ``pressure_grid="manual"``. The shape of array should
+            be (n_pressure, 2), with pressure (bar) as first column
+            and temperature (K) as second column. It is recommended
+            that the pressures are logarithmically spaced.
 
         Returns
         -------
@@ -106,6 +113,7 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
+        self.pt_profile = pt_profile
 
         # Set maximum pressure
 
@@ -144,7 +152,17 @@ class ReadRadtrans:
 
         # Create 180 pressure layers in log space
 
-        self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
+        if self.pressure_grid == "manual":
+            if self.pt_profile is None:
+                raise UserWarning("A 2D array with the P-T profile "
+                                  "should be provided as argument "
+                                  "of pt_profile when using "
+                                  "pressure_grid='manual'.")
+
+            self.pressure = self.pt_profile[:, 0]
+
+        else:
+            self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
 
         # Import petitRADTRANS here because it is slow
 
@@ -169,6 +187,9 @@ class ReadRadtrans:
         # Setup the opacity arrays
 
         if self.pressure_grid == "standard":
+            self.rt_object.setup_opa_structure(self.pressure)
+
+        elif self.pressure_grid == "manual":
             self.rt_object.setup_opa_structure(self.pressure)
 
         elif self.pressure_grid == "smaller":
@@ -229,25 +250,23 @@ class ReadRadtrans:
         # else:
         #     contribution = False
 
-        # Determine chemistry type
+        # Set chemistry type
 
-        check_free_abund = True
-
-        for item in self.line_species:
-            if item not in model_param:
-                check_free_abund = False
-
-        if check_free_abund:
-            chemistry = "free"
-
-        elif "metallicity" in model_param and "c_o_ratio" in model_param:
+        if "metallicity" in model_param and "c_o_ratio" in model_param:
             chemistry = "equilibrium"
 
         else:
-            raise ValueError(
-                "Chemistry type not recognized. Please check the dictionary with "
-                "parameters of 'model_param'."
-            )
+            chemistry = "free"
+
+            # Check if all line species from the Radtrans object
+            # are also present in the model_param dictionary
+
+            for item in self.line_species:
+                if item not in model_param:
+                    raise RuntimeError(f"The abundance of {item} is not found "
+                                       f"in the dictionary with parameters of "
+                                       f"'model_param'. Please add the log10 "
+                                       f"mass fraction of {item}.")
 
         # Check quenching parameter
 
@@ -296,7 +315,10 @@ class ReadRadtrans:
 
         # Create the P-T profile
 
-        if "tint" in model_param:
+        if self.pressure_grid == "manual":
+            temp = self.pt_profile[:, 1]
+
+        elif "tint" in model_param:
             temp, _, conv_press = retrieval_util.pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],
@@ -328,17 +350,28 @@ class ReadRadtrans:
             knot_temp = np.asarray(knot_temp)
 
             if "pt_smooth" in model_param:
-                temp = retrieval_util.pt_spline_interp(
-                    knot_press,
-                    knot_temp,
-                    self.pressure,
-                    pt_smooth=model_param["pt_smooth"],
-                )
+                pt_smooth = model_param["pt_smooth"]
+
+            elif "pt_turn" in model_param:
+                pt_smooth = {"pt_smooth_1": model_param["pt_smooth_1"],
+                             "pt_smooth_2": model_param["pt_smooth_2"],
+                             "pt_turn": model_param["pt_turn"],
+                             "pt_index": model_param["pt_index"]}
+
+            elif "pt_smooth_0" in model_param:
+                pt_smooth = {}
+                for i in range(temp_nodes-1):
+                    pt_smooth[f"pt_smooth_{i}"] = model_param[f"pt_smooth_{i}"]
 
             else:
-                temp = retrieval_util.pt_spline_interp(
-                    knot_press, knot_temp, self.pressure
-                )
+                pt_smooth = None
+
+            temp = retrieval_util.pt_spline_interp(
+                knot_press,
+                knot_temp,
+                self.pressure,
+                pt_smooth=pt_smooth,
+            )
 
         # Set the log quenching pressure, log(P/bar)
 
@@ -465,8 +498,43 @@ class ReadRadtrans:
 
                 log_x_base = {}
 
-                for item in self.cloud_species:
-                    log_x_base[item[:-3]] = model_param[item]
+                if "log_tau_cloud" in model_param:
+                    # Set the log mass fraction to zero and use the
+                    # optical depth parameter to scale the cloud mass
+                    # fraction with petitRADTRANS
+
+                    tau_cloud = 10.0 ** model_param["log_tau_cloud"]
+
+                elif "tau_cloud" in model_param:
+                    # Set the log mass fraction to zero and use the
+                    # optical depth parameter to scale the cloud mass
+                    # fraction with petitRADTRANS
+
+                    tau_cloud = model_param["tau_cloud"]
+
+                if tau_cloud is None:
+                    for item in self.cloud_species:
+                        # Set the log10 of the mass fractions at th
+                        # cloud base equal to the value from the
+                        # parameter dictionary
+                        log_x_base[item[:-3]] = model_param[item]
+
+                else:
+                    # Set the log10 of the mass fractions with the
+                    # ratios from the parameter dictionary and
+                    # scale to the actual mass fractions with
+                    # tau_cloud that is used in calc_spectrum_clouds
+                    for i, item in enumerate(self.cloud_species):
+                        if i == 0:
+                            log_x_base[item[:-3]] = 0.0
+
+                        else:
+                            cloud_1 = item[:-3].lower()
+                            cloud_2 = self.cloud_species[0][:-3].lower()
+
+                            log_x_base[item[:-3]] = model_param[
+                                f"{cloud_1}_{cloud_2}_ratio"
+                            ]
 
             # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
 
@@ -685,8 +753,8 @@ class ReadRadtrans:
             wavelength = wavel_resample
 
         if hasattr(self.rt_object, "h_bol"):
-            pressure = 1e-6*self.rt_object.press  # (bar)
-            f_bol = -4.*np.pi*self.rt_object.h_bol
+            pressure = 1e-6 * self.rt_object.press  # (bar)
+            f_bol = -4.0 * np.pi * self.rt_object.h_bol
             f_bol *= 1e-3  # (erg s-1 cm-2) -> (W m-2)
             bol_flux = np.column_stack((pressure, f_bol))
 
