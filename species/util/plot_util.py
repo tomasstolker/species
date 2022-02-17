@@ -543,6 +543,18 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("spec_weight")
         param[index] = r"w$_\mathregular{spec}$"
 
+    if "log_beta_r" in param:
+        index = param.index("log_beta_r")
+        param[index] = r"$\mathregular{log}\,\beta_\mathregular{r}$"
+
+    if "log_gamma_r" in param:
+        index = param.index("log_gamma_r")
+        param[index] = r"$\mathregular{log}\,\gamma_\mathregular{r}$"
+
+    if "gamma_r" in param:
+        index = param.index("gamma_r")
+        param[index] = r"$\gamma_\mathregular{r}$"
+
     return param
 
 

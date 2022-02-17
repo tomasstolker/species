@@ -171,15 +171,15 @@ def plot_pt_profile(
         # For backward compatibility
         max_press = 1e3  # (bar)
 
-    if xlim:
-        ax.set_xlim(xlim[0], xlim[1])
-    else:
+    if xlim is None:
         ax.set_xlim(1000.0, 5000.0)
-
-    if ylim:
-        ax.set_ylim(ylim[0], ylim[1])
     else:
+        ax.set_xlim(xlim[0], xlim[1])
+
+    if ylim is None:
         ax.set_ylim(max_press, 1e-6)
+    else:
+        ax.set_ylim(ylim[0], ylim[1])
 
     ax.set_yscale("log")
 
@@ -193,10 +193,12 @@ def plot_pt_profile(
         pt_profile = "free"
 
         temp_index = []
-        for i in range(temp_nodes):            
+        for i in range(temp_nodes):
             temp_index.append(np.argwhere(parameters == f"t{i}")[0])
 
-        knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
+        knot_press = np.logspace(
+            np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
+        )
 
     if pt_profile == "molliere":
         conv_press = np.zeros(samples.shape[0])
@@ -255,14 +257,16 @@ def plot_pt_profile(
 
             elif "pt_smooth_0" in parameters:
                 pt_smooth = {}
-                for i in range(temp_nodes-1):
+                for i in range(temp_nodes - 1):
                     pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
 
             elif "pt_turn" in parameters:
-                pt_smooth = {"pt_smooth_1": item[param_index["pt_smooth_1"]],
-                             "pt_smooth_2": item[param_index["pt_smooth_2"]],
-                             "pt_turn": item[param_index["pt_turn"]],
-                             "pt_index": item[param_index["pt_index"]]}
+                pt_smooth = {
+                    "pt_smooth_1": item[param_index["pt_smooth_1"]],
+                    "pt_smooth_2": item[param_index["pt_smooth_2"]],
+                    "pt_turn": item[param_index["pt_turn"]],
+                    "pt_index": item[param_index["pt_index"]],
+                }
 
             else:
                 pt_smooth = box.attributes["pt_smooth"]
@@ -387,14 +391,16 @@ def plot_pt_profile(
 
         elif "pt_smooth_0" in parameters:
             pt_smooth = {}
-            for i in range(temp_nodes-1):
+            for i in range(temp_nodes - 1):
                 pt_smooth[f"pt_smooth_{i}"] = item[param_index[f"pt_smooth_{i}"]]
 
         elif "pt_turn" in parameters:
-            pt_smooth = {"pt_smooth_1": median["pt_smooth_1"],
-                         "pt_smooth_2": median["pt_smooth_2"],
-                         "pt_turn": median["pt_turn"],
-                         "pt_index": median["pt_index"]}
+            pt_smooth = {
+                "pt_smooth_1": median["pt_smooth_1"],
+                "pt_smooth_2": median["pt_smooth_2"],
+                "pt_turn": median["pt_turn"],
+                "pt_index": median["pt_index"],
+            }
 
         else:
             pt_smooth = box.attributes["pt_smooth"]
@@ -538,21 +544,24 @@ def plot_pt_profile(
         )
 
         if extra_axis == "photosphere":
-            # Calculate the total optical depth (line and continuum opacities)
+            # Calculate the total optical depth
+            # (line and continuum opacities)
             # radtrans.rt_object.calc_opt_depth(10.**median['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem * 1e-4  # (um)
 
-            # From Paul: The first axis of total_tau is the coordinate of the cumulative opacity
-            # distribution function (ranging from 0 to 1). A correct average is obtained by
-            # multiplying the first axis with self.w_gauss, then summing them. This is then the
-            # actual wavelength-mean.
+            # From Paul: The first axis of total_tau is the coordinate
+            # of the cumulative opacity distribution function (ranging
+            # from 0 to 1). A correct average is obtained by
+            # multiplying the first axis with self.w_gauss, then
+            # summing them. This is then the actual wavelength-mean.
 
             if radtrans.scattering:
                 w_gauss = radtrans.rt_object.w_gauss[..., np.newaxis, np.newaxis]
 
-                # From petitRADTRANS: Only use 0 index for species because for lbl or
-                # test_ck_shuffle_comp = True everything has been moved into the 0th index
+                # From petitRADTRANS: Only use 0 index for species
+                # because for lbl or test_ck_shuffle_comp = True
+                # everything has been moved into the 0th index
                 optical_depth = np.sum(
                     w_gauss * radtrans.rt_object.total_tau[:, :, 0, :], axis=0
                 )
@@ -601,10 +610,10 @@ def plot_pt_profile(
                 right=True,
             )
 
-            if ylim:
-                ax2.set_ylim(ylim[0], ylim[1])
-            else:
+            if ylim is None:
                 ax2.set_ylim(max_press, 1e-6)
+            else:
+                ax2.set_ylim(ylim[0], ylim[1])
 
             ax2.set_yscale("log")
 
@@ -618,10 +627,18 @@ def plot_pt_profile(
             photo_press = np.zeros(wavelength.shape[0])
 
             for i in range(photo_press.shape[0]):
+                # Interpolate the optical depth to
+                # the photosphere at tau = 2/3
                 press_interp = interp1d(optical_depth[i, :], radtrans.rt_object.press)
-                photo_press[i] = press_interp(1.0) * 1e-6  # cgs to (bar)
+                photo_press[i] = press_interp(2.0 / 3.0) * 1e-6  # cgs to (bar)
 
-            ax2.plot(wavelength, photo_press, lw=0.5, color="tab:blue")
+            ax2.plot(
+                wavelength,
+                photo_press,
+                lw=0.5,
+                color="tab:blue",
+                label=r"Photosphere ($\tau$ = 2/3)",
+            )
 
         elif extra_axis == "grains":
 
@@ -658,10 +675,10 @@ def plot_pt_profile(
                     right=True,
                 )
 
-                if ylim:
-                    ax2.set_ylim(ylim[0], ylim[1])
-                else:
+                if ylim is None:
                     ax2.set_ylim(max_press, 1e-6)
+                else:
+                    ax2.set_ylim(ylim[0], ylim[1])
 
                 ax2.set_xscale("log")
                 ax2.set_yscale("log")

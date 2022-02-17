@@ -39,6 +39,7 @@ class ReadRadtrans:
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
         max_press: float = None,
+        pt_profile: Optional[np.ndarray] = None,
     ) -> None:
         """
         Parameters
@@ -92,6 +93,12 @@ class ReadRadtrans:
         max_pressure : float, None
             Maximum pressure (bar) for the free temperature nodes. The
             default is set to 1000 bar.
+        pt_profile : np.ndarray, None
+            A 2D array that contains the P-T profile that is used
+            when ``pressure_grid="manual"``. The shape of array should
+            be (n_pressure, 2), with pressure (bar) as first column
+            and temperature (K) as second column. It is recommended
+            that the pressures are logarithmically spaced.
 
         Returns
         -------
@@ -106,6 +113,7 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
+        self.pt_profile = pt_profile
 
         # Set maximum pressure
 
@@ -144,7 +152,17 @@ class ReadRadtrans:
 
         # Create 180 pressure layers in log space
 
-        self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
+        if self.pressure_grid == "manual":
+            if self.pt_profile is None:
+                raise UserWarning("A 2D array with the P-T profile "
+                                  "should be provided as argument "
+                                  "of pt_profile when using "
+                                  "pressure_grid='manual'.")
+
+            self.pressure = self.pt_profile[:, 0]
+
+        else:
+            self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
 
         # Import petitRADTRANS here because it is slow
 
@@ -169,6 +187,9 @@ class ReadRadtrans:
         # Setup the opacity arrays
 
         if self.pressure_grid == "standard":
+            self.rt_object.setup_opa_structure(self.pressure)
+
+        elif self.pressure_grid == "manual":
             self.rt_object.setup_opa_structure(self.pressure)
 
         elif self.pressure_grid == "smaller":
@@ -294,7 +315,10 @@ class ReadRadtrans:
 
         # Create the P-T profile
 
-        if "tint" in model_param:
+        if self.pressure_grid == "manual":
+            temp = self.pt_profile[:, 1]
+
+        elif "tint" in model_param:
             temp, _, conv_press = retrieval_util.pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],

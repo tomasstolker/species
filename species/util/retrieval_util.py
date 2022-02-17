@@ -93,7 +93,7 @@ def pt_ret_model(
         Power law index in
         :math:`\\tau = \\delta * P_\\mathrm{cgs}**\\alpha`.
         For the tau model: use the proximity to the
-        :math:`\\kappa_\mathrm{rosseland}` photosphere as prior.
+        :math:`\\kappa_\\mathrm{rosseland}` photosphere as prior.
     tint : float
         Internal temperature for the Eddington model.
     press : np.ndarray
@@ -1332,36 +1332,56 @@ def calc_spectrum_clouds(
             hack_cloud_photospheric_tau=tau_cloud,
         )
 
-    if (
-        hasattr(rt_object, "scaling_physicality")
-        and rt_object.scaling_physicality > 1.0
-    ):
-        # cloud_scaling_factor > 2 * (fsed + 1)
-        # Set to None such that -inf will be returned as ln_like
-        wavel = None
-        f_lambda = None
-        contr_em = None
+    # if (
+    #     hasattr(rt_object, "scaling_physicality")
+    #     and rt_object.scaling_physicality > 1.0
+    # ):
+    #     # cloud_scaling_factor > 2 * (fsed + 1)
+    #     # Set to None such that -inf will be returned as ln_like
+    #     wavel = None
+    #     f_lambda = None
+    #     contr_em = None
+    #
+    # else:
+    #     wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+    #
+    #     # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+    #     f_lambda = 1e4 * rt_object.flux
+    #
+    #     # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+    #     f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+    #
+    #     # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+    #     f_lambda *= 1e-6
+    #
+    #     # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+    #     f_lambda *= 1e-7
+    #
+    #     # Optionally return the emission contribution
+    #     if contribution:
+    #         contr_em = rt_object.contr_em
+    #     else:
+    #         contr_em = None
 
+    wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+
+    # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+    f_lambda = 1e4 * rt_object.flux
+
+    # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+    f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+
+    # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+    f_lambda *= 1e-6
+
+    # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+    f_lambda *= 1e-7
+
+    # Optionally return the emission contribution
+    if contribution:
+        contr_em = rt_object.contr_em
     else:
-        wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-
-        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-        f_lambda = 1e4 * rt_object.flux
-
-        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-        f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-
-        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-        f_lambda *= 1e-6
-
-        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-        f_lambda *= 1e-7
-
-        # Optionally return the emission contribution
-        if contribution:
-            contr_em = rt_object.contr_em
-        else:
-            contr_em = None
+        contr_em = None
 
     if (
         plotting
