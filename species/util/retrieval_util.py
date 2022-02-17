@@ -386,18 +386,20 @@ def pt_spline_interp(
     if isinstance(pt_smooth, dict):
         for i, item in enumerate(knot_temp[:-1]):
             if i == 0:
-                pt_interp = PchipInterpolator(np.log10(knot_press[:i+2]), knot_temp[:i+2])
+                pt_interp = PchipInterpolator(
+                    np.log10(knot_press[: i + 2]), knot_temp[: i + 2]
+                )
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
+                indices = np.log10(pressure) <= np.log10(knot_press[i + 1])
                 press_interp = np.log10(pressure[indices])
                 temp_interp = pt_interp(press_interp)
 
             else:
-                press_new = np.append(press_interp, np.log10(knot_press[i+1]))
-                temp_new = np.append(temp_interp, knot_temp[i+1])
+                press_new = np.append(press_interp, np.log10(knot_press[i + 1]))
+                temp_new = np.append(temp_interp, knot_temp[i + 1])
                 pt_interp = PchipInterpolator(press_new, temp_new)
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
+                indices = np.log10(pressure) <= np.log10(knot_press[i + 1])
                 press_interp = np.log10(pressure[indices])
                 temp_interp = pt_interp(press_interp)
 
@@ -501,7 +503,7 @@ def create_pt_profile(
         Dictionary with the index of each parameter in the ``cube``.
     pt_profile : str
         The parametrization for the pressure-temperature profile
-        ('molliere', 'free', or 'monotonic').
+        ('molliere', 'free', 'monotonic', 'eddington').
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
@@ -525,8 +527,8 @@ def create_pt_profile(
     np.ndarray
         Temperatures (K).
     np.ndarray, None
-        Temperature at the knots (K). A None is returned if
-        ``pt_profile`` is set to 'molliere'.
+        Temperature at the knots (K). A ``None`` is returned if
+        ``pt_profile`` is set to 'molliere' or 'eddington'.
     float
         Pressure (bar) where the optical depth is 1.
     float, None
@@ -567,6 +569,15 @@ def create_pt_profile(
         knot_temp = np.asarray(knot_temp)
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+
+        phot_press = None
+        conv_press = None
+
+    elif pt_profile == "eddington":
+        # Eddington approximation
+        # delta = kappa_ir/gravity
+        tau = pressure * 1e6 * 10.0 ** cube[cube_index["log_delta"]]
+        temp = (0.75 * cube[cube_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
         phot_press = None
         conv_press = None
@@ -1250,45 +1261,59 @@ def calc_spectrum_clouds(
 
         @typechecked
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
-            p_base = 10.**cloud_dict["log_p_base"]  # (bar)
-            kappa_0 = 10.**cloud_dict["log_kappa_0"]  # (cm2 g-1)
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
 
             # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
             # See Eq. 5 in Mollière et al. 2020
-            kappa_p = kappa_0 * (press_bar/p_base)**cloud_dict["fsed"]
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
 
             # Opacity (cm2 g-1) as function of wavelength (um)
             # See Eq. 4 in Mollière et al. 2020
             kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
-            kappa_tot = kappa_grid * wavel_grid**cloud_dict["opa_index"]
-            kappa_tot[:, press_bar > p_base] = 0.
+            kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
+            kappa_tot[:, press_bar > p_base] = 0.0
 
-            if "opa_knee" in cloud_dict and cloud_dict["opa_knee"] > wavel_micron[0] and cloud_dict["opa_knee"] < wavel_micron[-1]:
+            if (
+                "opa_knee" in cloud_dict
+                and cloud_dict["opa_knee"] > wavel_micron[0]
+                and cloud_dict["opa_knee"] < wavel_micron[-1]
+            ):
                 indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
                 for i in range(press_bar.size):
-                    kappa_tot[indices, i] = kappa_tot[indices[0], i] * (wavel_micron[indices]/wavel_micron[indices[0]])**-4.
+                    kappa_tot[indices, i] = (
+                        kappa_tot[indices[0], i]
+                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+                    )
 
-            return (1. - cloud_dict["albedo"]) * kappa_tot
+            return (1.0 - cloud_dict["albedo"]) * kappa_tot
 
         @typechecked
         def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
-            p_base = 10.**cloud_dict["log_p_base"]  # (bar)
-            kappa_0 = 10.**cloud_dict["log_kappa_0"]  # (cm2 g-1)
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
 
             # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
             # See Eq. 5 in Mollière et al. 2020
-            kappa_p = kappa_0 * (press_bar/p_base)**cloud_dict["fsed"]
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
 
             # Opacity (cm2 g-1) as function of wavelength (um)
             # See Eq. 4 in Mollière et al. 2020
             kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
-            kappa_tot = kappa_grid * wavel_grid**cloud_dict["opa_index"]
-            kappa_tot[:, press_bar > p_base] = 0.
+            kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
+            kappa_tot[:, press_bar > p_base] = 0.0
 
-            if "opa_knee" in cloud_dict and cloud_dict["opa_knee"] > wavel_micron[0] and cloud_dict["opa_knee"] < wavel_micron[-1]:
+            if (
+                "opa_knee" in cloud_dict
+                and cloud_dict["opa_knee"] > wavel_micron[0]
+                and cloud_dict["opa_knee"] < wavel_micron[-1]
+            ):
                 indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
                 for i in range(press_bar.size):
-                    kappa_tot[indices, i] = kappa_tot[indices[0], i] * (wavel_micron[indices]/wavel_micron[indices[0]])**-4.
+                    kappa_tot[indices, i] = (
+                        kappa_tot[indices[0], i]
+                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+                    )
 
             return cloud_dict["albedo"] * kappa_tot
 

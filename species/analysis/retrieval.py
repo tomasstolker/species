@@ -403,7 +403,7 @@ class AtmosphericRetrieval:
             applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile
-            ('molliere', 'free', 'monotonic').
+            ('molliere', 'free', 'monotonic', 'eddington').
         fit_corr : list(str), None
             List with spectrum names for which the correlation lengths
             and fractional amplitudes are fitted (see `Wang et al. 2020
@@ -445,6 +445,10 @@ class AtmosphericRetrieval:
             if "log_beta_r" in bounds:
                 self.parameters.append("log_gamma_r")
                 self.parameters.append("log_beta_r")
+
+        if pt_profile == "eddington":
+            self.parameters.append("log_delta")
+            self.parameters.append("tint")
 
         # Abundance parameters
 
@@ -756,7 +760,7 @@ class AtmosphericRetrieval:
             applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile
-            ('molliere', 'free', 'monotonic').
+            ('molliere', 'free', 'monotonic', 'eddington').
         fit_corr : list(str), None
             List with spectrum names for which the correlation lengths
             and fractional amplitudes are fitted (see `Wang et al. 2020
@@ -1246,6 +1250,37 @@ class AtmosphericRetrieval:
                     #
                     #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
                     #         cube[cube_index[f't{i}']]*temp_diff
+
+            if pt_profile == "eddington":
+
+                # Internal temperature (K) of the Eddington
+                if "tint" in bounds:
+                    tint = (
+                        bounds["tint"][0]
+                        + (bounds["tint"][1] - bounds["tint"][0])
+                        * cube[cube_index["tint"]]
+                    )
+                else:
+                    # Default: 500 - 3000 K
+                    tint = 500.0 + 2500.0 * cube[cube_index["tint"]]
+
+                cube[cube_index["tint"]] = tint
+
+                # Photospheric pressure (bar)
+
+                if "log_delta" in bounds:
+                    log_delta = (
+                        bounds["log_delta"][0]
+                        + (bounds["log_delta"][1] - bounds["log_delta"][0])
+                        * cube[cube_index["log_delta"]]
+                    )
+                else:
+                    # Default: -3 - 2
+                    log_delta = -3.0 + 5.0 * cube[cube_index["log_delta"]]
+
+                # delta: proportionality factor in tau = delta * press_cgs**alpha
+                # see Eq. 1 in Mollière et al. (2020)
+                cube[cube_index["log_delta"]] = log_delta
 
             # Penalization of wiggles in the P-T profile
             # Inverse gamma distribution
