@@ -564,7 +564,7 @@ class AtmosphericRetrieval:
         # Add P-T smoothing parameter
 
         if "pt_smooth" in bounds:
-            for i in range(self.temp_nodes-1):
+            for i in range(self.temp_nodes - 1):
                 self.parameters.append(f"pt_smooth_{i}")
 
             # self.parameters.append("pt_smooth_1")
@@ -886,23 +886,28 @@ class AtmosphericRetrieval:
         # Import petitRADTRANS and interpol_abundances here because it is slow
 
         print("Importing petitRADTRANS...", end="", flush=True)
+
         from petitRADTRANS.radtrans import Radtrans
 
         # from petitRADTRANS.fort_spec import feautrier_rad_trans
         # from petitRADTRANS.fort_spec import feautrier_pt_it
+
         print(" [DONE]")
 
         print("Importing chemistry module...", end="", flush=True)
+
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         print(" [DONE]")
 
         print("Importing rebin module...", end="", flush=True)
+
         from petitRADTRANS.retrieval.rebin_give_width import rebin_give_width
 
         print(" [DONE]")
 
-        # List with spectra for which the correlated noise is fitted
+        # List with spectra for which the covariances
+        # are modeled with a Gaussian process
 
         if fit_corr is None:
             fit_corr = []
@@ -919,8 +924,10 @@ class AtmosphericRetrieval:
             cross_corr = []
 
         elif "fsed_1" in bounds or "fsed_2" in bounds:
-            raise ValueError("The cross_corr parameter can not be "
-                             "used with multiple fsed parameters.")
+            raise ValueError(
+                "The cross_corr parameter can not be "
+                "used with multiple fsed parameters."
+            )
 
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
@@ -994,8 +1001,10 @@ class AtmosphericRetrieval:
 
         if check_flux is not None:
             if "fsed_1" in self.parameters or "fsed_2" in self.parameters:
-                raise ValueError("The check_flux parameter does not "
-                                 "support multiple fsed parameters.")
+                raise ValueError(
+                    "The check_flux parameter does not "
+                    "support multiple fsed parameters."
+                )
 
             line_species_low_res = []
             for item in self.line_species:
@@ -1016,7 +1025,8 @@ class AtmosphericRetrieval:
 
         if self.pressure_grid == "standard":
             print(
-                f"Number of pressure levels used with the radiative transfer: {self.pressure.size}"
+                f"Number of pressure levels used with the "
+                f"radiative transfer: {self.pressure.size}"
             )
 
             rt_object.setup_opa_structure(self.pressure)
@@ -1048,8 +1058,9 @@ class AtmosphericRetrieval:
                     "to 'clouds' is only possible with the use of cloud species."
                 )
 
-            # The pressure structure is reinitiated after the refinement around the cloud deck
-            # so the current initializiation to 60 pressure points is not used
+            # The pressure structure is reinitiated after the
+            # refinement around the cloud deck so the current
+            # initializiation to 60 pressure points is not used
             print(
                 "Number of pressure levels used with the radiative transfer: variable}"
             )
@@ -1122,7 +1133,8 @@ class AtmosphericRetrieval:
 
             if pt_profile in ["molliere", "mod-molliere"]:
 
-                # Internal temperature (K) of the Eddington approximation (middle altitudes)
+                # Internal temperature (K) of the Eddington
+                # approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
                 if "tint" in bounds:
                     tint = (
@@ -1243,11 +1255,17 @@ class AtmosphericRetrieval:
             # a=1, b=5e-5 (Line et al. 2015)
 
             if "log_gamma_r" in self.parameters:
-                log_beta_r = bounds["log_beta_r"][0] + (bounds["log_beta_r"][1] - bounds["log_beta_r"][0]) * cube[cube_index["log_beta_r"]]
+                log_beta_r = (
+                    bounds["log_beta_r"][0]
+                    + (bounds["log_beta_r"][1] - bounds["log_beta_r"][0])
+                    * cube[cube_index["log_beta_r"]]
+                )
                 cube[cube_index["log_beta_r"]] = log_beta_r
 
                 # Input log_gamma_r is sampled between 0 and 1
-                gamma_r = invgamma.ppf(cube[cube_index["log_gamma_r"]], a=1.0, scale=10.**log_beta_r)
+                gamma_r = invgamma.ppf(
+                    cube[cube_index["log_gamma_r"]], a=1.0, scale=10.0 ** log_beta_r
+                )
                 cube[cube_index["log_gamma_r"]] = np.log10(gamma_r)
 
             # Chemical composition
@@ -1506,7 +1524,8 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["log_kzz"]] = log_kzz
 
-                # Geometric standard deviation of the log-normal size distribution
+                # Geometric standard deviation of the
+                # log-normal size distribution
 
                 if "sigma_lnorm" in bounds:
                     sigma_lnorm = (
@@ -1546,8 +1565,10 @@ class AtmosphericRetrieval:
                             cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]] = mass_ratio
 
                 elif chemistry == "equilibrium":
-                    # Cloud mass fractions at the cloud base, relative to the maximum values allowed
-                    # from elemental abundances (see Eq. 3 in Mollière et al. 2020)
+                    # Cloud mass fractions at the cloud base,
+                    # relative to the maximum values allowed
+                    # from elemental abundances
+                    # (see Eq. 3 in Mollière et al. 2020)
 
                     for item in self.cloud_species_full:
                         cloud_lower = item[:-6].lower()
@@ -1656,7 +1677,7 @@ class AtmosphericRetrieval:
             # Standard deviation of the Gaussian kernel for smoothing the P-T profile
 
             if "pt_smooth" in bounds:
-                for i in range(self.temp_nodes-1):
+                for i in range(self.temp_nodes - 1):
                     cube[cube_index[f"pt_smooth_{i}"]] = (
                         bounds["pt_smooth"][0]
                         + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
@@ -1836,13 +1857,14 @@ class AtmosphericRetrieval:
                 if item[:-3].lower() + "_tau" in bounds:
                     calc_tau_cloud = True
 
-            # Read the P-T smoothing parameter or use the argument of run_multinest otherwise
+            # Read the P-T smoothing parameter or use
+            # the argument of run_multinest otherwise
 
             if "pt_smooth_1" in cube_index:
                 # pt_smooth = cube[cube_index["pt_smooth"]]
                 pt_smooth = {}
 
-                for i in range(self.temp_nodes-1):
+                for i in range(self.temp_nodes - 1):
                     pt_smooth[f"pt_smooth_{i}"] = cube[cube_index[f"pt_smooth_{i}"]]
 
             # if "pt_smooth_1" in cube_index:
@@ -1882,7 +1904,8 @@ class AtmosphericRetrieval:
                 c_o_ratio = cube[cube_index["c_o_ratio"]]
 
             elif chemistry == "free":
-                # TODO Set [Fe/H] = 0 for Molliere P-T profile and cloud condensation profiles
+                # TODO Set [Fe/H] = 0 for Molliere P-T profile
+                # and cloud condensation profiles
                 metallicity = 0.0
 
                 # Create a dictionary with the mass fractions
@@ -2072,8 +2095,8 @@ class AtmosphericRetrieval:
                 # temp_sum = np.sum((temp[::3][2:] + temp[::3][:-2] - 2.*temp[::3][1:-1])**2.)
 
                 ln_prior += -1.0 * temp_sum / (
-                    2.0 * 10.**cube[cube_index["log_gamma_r"]]
-                ) - 0.5 * np.log(2.0 * np.pi * 10.**cube[cube_index["log_gamma_r"]])
+                    2.0 * 10.0 ** cube[cube_index["log_gamma_r"]]
+                ) - 0.5 * np.log(2.0 * np.pi * 10.0 ** cube[cube_index["log_gamma_r"]])
 
             # Return zero probability if the minimum temperature is negative
 
@@ -2229,7 +2252,7 @@ class AtmosphericRetrieval:
                                 cloud_dict_1["fsed"] = cube[cube_index[item]]
                             else:
                                 cloud_dict_1[item] = cube[cube_index[item]]
-                    
+
                     cloud_param_2 = [
                         "fsed_2",
                         "log_kzz",
@@ -2455,7 +2478,12 @@ class AtmosphericRetrieval:
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
                 if "fsed" in self.parameters:
-                    wlen_micron, flux_lambda, _, _ = retrieval_util.calc_spectrum_clouds(
+                    (
+                        wlen_micron,
+                        flux_lambda,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -2474,7 +2502,12 @@ class AtmosphericRetrieval:
                     )
 
                 elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
-                    wlen_micron, flux_lambda_1, _, _ = retrieval_util.calc_spectrum_clouds(
+                    (
+                        wlen_micron,
+                        flux_lambda_1,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -2492,7 +2525,12 @@ class AtmosphericRetrieval:
                         tau_cloud=tau_cloud,
                     )
 
-                    wlen_micron, flux_lambda_2, _, _ = retrieval_util.calc_spectrum_clouds(
+                    (
+                        wlen_micron,
+                        flux_lambda_2,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -2510,8 +2548,10 @@ class AtmosphericRetrieval:
                         tau_cloud=tau_cloud,
                     )
 
-                    flux_lambda = cube[cube_index["f_clouds"]] * flux_lambda_1 \
-                        + (1. - cube[cube_index["f_clouds"]]) * flux_lambda_2
+                    flux_lambda = (
+                        cube[cube_index["f_clouds"]] * flux_lambda_1
+                        + (1.0 - cube[cube_index["f_clouds"]]) * flux_lambda_2
+                    )
 
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
@@ -2743,7 +2783,8 @@ class AtmosphericRetrieval:
                     model_wavel = wlen_micron
                     model_flux = flux_lambda
 
-                # Shift the wavelengths of the data with the fitted calibration parameter
+                # Shift the wavelengths of the data with
+                # the fitted calibration parameter
                 data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
 
                 # Flux density
