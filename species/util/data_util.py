@@ -778,8 +778,8 @@ def retrieval_spectrum(
     sample: np.ndarray,
 ) -> box.ModelBox:
     """
-    Function for calculating a petitRADTRANS spectrum from a
-    posterior sample.
+    Function for calculating a petitRADTRANS spectrum
+    from a posterior sample.
 
     Parameters
     ----------
@@ -879,7 +879,12 @@ def retrieval_spectrum(
         model_param["opa_index"] = sample[indices["opa_index"]]
         model_param["log_p_base"] = sample[indices["log_p_base"]]
         model_param["albedo"] = sample[indices["albedo"]]
-        model_param["fsed"] = sample[indices["fsed"]]
+
+        if "fsed" in indices:
+            model_param["fsed"] = sample[indices["fsed"]]
+        elif "fsed_1" in indices and "fsed_2" in indices:
+            model_param["fsed_1"] = sample[indices["fsed_1"]]
+            model_param["fsed_2"] = sample[indices["fsed_2"]]
 
         if "opa_knee" in indices:
             model_param["opa_knee"] = sample[indices["opa_knee"]]

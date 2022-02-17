@@ -3197,10 +3197,11 @@ class Database:
     @typechecked
     def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[float, float]:
         """
-        Function for calculating Teff from randomly drawn samples of the posterior
-        distribution from :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
-        This requires the recalculation of the spectra across a broad wavelength
-        range (0.5-50 um).
+        Function for calculating Teff from randomly drawn samples
+        of the posterior distribution from
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        This requires the recalculation of the spectra across a
+        broad wavelength range (0.5-50 um).
 
         Parameters
         ----------
@@ -3257,8 +3258,9 @@ class Database:
         self, tag: str, sample_type: str = "median", json_file: Optional[str] = None
     ) -> Dict[str, float]:
         """
-        Function for converting the median are maximum likelihood posterior parameters of
-        ``petitRADTRANS`` into a dictionary of input parameters for ``petitCODE``.
+        Function for converting the median are maximum likelihood
+        posterior parameters of ``petitRADTRANS`` into a dictionary
+        of input parameters for ``petitCODE``.
 
         Parameters
         ----------
@@ -3313,9 +3315,6 @@ class Database:
 
         if "log_kzz" in model_param:
             pcode_param["log_kzz"] = model_param["log_kzz"]
-
-        if "fsed" in model_param:
-            pcode_param["fsed"] = model_param["fsed"]
 
         if "sigma_lnorm" in model_param:
             pcode_param["sigma_lnorm"] = model_param["sigma_lnorm"]
