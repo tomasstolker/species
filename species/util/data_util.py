@@ -848,6 +848,10 @@ def retrieval_spectrum(
         model_param["alpha"] = sample[indices["alpha"]]
         model_param["tint"] = sample[indices["tint"]]
 
+    elif pt_profile == "eddington":
+        model_param["log_delta"] = sample[indices["log_delta"]]
+        model_param["tint"] = sample[indices["tint"]]
+
     elif pt_profile in ["free", "monotonic"]:
         if temp_nodes is None:
             # For backward compatibility
@@ -890,6 +894,10 @@ def retrieval_spectrum(
 
         if "opa_knee" in indices:
             model_param["opa_knee"] = sample[indices["opa_knee"]]
+
+    elif "log_kappa_gray" in indices:
+        model_param["log_kappa_gray"] = sample[indices["log_kappa_gray"]]
+        model_param["log_cloud_top"] = sample[indices["log_cloud_top"]]
 
     elif len(cloud_species) > 0:
         model_param["fsed"] = sample[indices["fsed"]]

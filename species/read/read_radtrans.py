@@ -318,7 +318,7 @@ class ReadRadtrans:
         if self.pressure_grid == "manual":
             temp = self.pt_profile[:, 1]
 
-        elif "tint" in model_param:
+        elif "tint" in model_param and "log_delta" in model_param and "alpha" in model_param:
             temp, _, conv_press = retrieval_util.pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],
@@ -328,6 +328,10 @@ class ReadRadtrans:
                 metallicity,
                 c_o_ratio,
             )
+
+        elif "tint" in model_param and "log_delta" in model_param:
+            tau = self.pressure * 1e6 * 10.0 ** model_param["log_delta"]
+            temp = (0.75 * model_param["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
         else:
             if temp_nodes is None:

@@ -186,8 +186,11 @@ def plot_pt_profile(
     # Create the pressure points (bar)
     pressure = np.logspace(-6.0, np.log10(max_press), 180)
 
-    if "tint" in parameters:
+    if "tint" in parameters and "log_delta" in parameters and "alpha" in parameters:
         pt_profile = "molliere"
+
+    elif "tint" in parameters and "log_delta" in parameters:
+        pt_profile = "eddington"
 
     else:
         pt_profile = "free"
@@ -244,6 +247,10 @@ def plot_pt_profile(
                 metallicity,
                 c_o_ratio,
             )
+
+        elif pt_profile == "eddington":
+            tau = pressure * 1e6 * 10.0 ** item[param_index["log_delta"]]
+            temp = (0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
         elif pt_profile == "free":
             knot_temp = []
@@ -376,6 +383,10 @@ def plot_pt_profile(
             )
 
             ax.axhline(conv_press_median, zorder=0, color="cornflowerblue", alpha=0.5)
+
+    elif pt_profile == "eddington":
+        tau = pressure * 1e6 * 10.0 ** median["log_delta"]
+        temp = (0.75 * median["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
     elif pt_profile == "free":
         knot_temp = []

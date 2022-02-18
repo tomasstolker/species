@@ -567,6 +567,14 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("gamma_r")
         param[index] = r"$\gamma_\mathregular{r}$"
 
+    if "log_kappa_gray" in param:
+        index = param.index("log_kappa_gray")
+        param[index] = r"$\mathregular{log}\,\kappa_\mathregular{gray}$"
+
+    if "log_cloud_top" in param:
+        index = param.index("log_cloud_top")
+        param[index] = r"$\mathregular{log}\,\mathregular{P}_\mathregular{top}$"
+
     return param
 
 
