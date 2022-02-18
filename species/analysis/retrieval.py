@@ -1279,8 +1279,8 @@ class AtmosphericRetrieval:
                         * cube[cube_index["tint"]]
                     )
                 else:
-                    # Default: 500 - 3000 K
-                    tint = 500.0 + 2500.0 * cube[cube_index["tint"]]
+                    # Default: 0 - 10000 K
+                    tint = 10000.0 * cube[cube_index["tint"]]
 
                 cube[cube_index["tint"]] = tint
 
@@ -1293,8 +1293,8 @@ class AtmosphericRetrieval:
                         * cube[cube_index["log_delta"]]
                     )
                 else:
-                    # Default: -3 - 2
-                    log_delta = -3.0 + 5.0 * cube[cube_index["log_delta"]]
+                    # Default: -10 - 10
+                    log_delta = -10.0 + 20.0 * cube[cube_index["log_delta"]]
 
                 # delta: proportionality factor in tau = delta * press_cgs**alpha
                 # see Eq. 1 in Mollière et al. (2020)
