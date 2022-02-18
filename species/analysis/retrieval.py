@@ -502,6 +502,23 @@ class AtmosphericRetrieval:
             self.parameters.append("albedo")
             self.parameters.append("opa_knee")
 
+        elif "log_kappa_gray" in bounds:
+            inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+
+            if "give_absorption_opacity" not in inspect_prt.args:
+                raise RuntimeError(
+                    "The Radtrans.calc_flux method "
+                    "from petitRADTRANS does not have "
+                    "the give_absorption_opacity "
+                    "parameter. Probably you are "
+                    "using an outdated version so "
+                    "please update petitRADTRANS "
+                    "to the latest version."
+                )
+
+            self.parameters.append("log_kappa_gray")
+            self.parameters.append("log_cloud_top")
+
         elif len(self.cloud_species) > 0:
             self.parameters.append("fsed")
             self.parameters.append("log_kzz")
@@ -1253,7 +1270,8 @@ class AtmosphericRetrieval:
 
             if pt_profile == "eddington":
 
-                # Internal temperature (K) of the Eddington
+                # Internal temperature (K) for the
+                # Eddington approximation
                 if "tint" in bounds:
                     tint = (
                         bounds["tint"][0]
@@ -1266,7 +1284,7 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["tint"]] = tint
 
-                # Photospheric pressure (bar)
+                # Proportionality factor in tau = 10**log_delta * press_cgs
 
                 if "log_delta" in bounds:
                     log_delta = (
@@ -1515,6 +1533,42 @@ class AtmosphericRetrieval:
                     opa_knee = 0.5 + 5.5 * cube[cube_index["opa_knee"]]
 
                 cube[cube_index["opa_knee"]] = opa_knee
+
+                if "log_tau_cloud" in bounds:
+                    log_tau_cloud = (
+                        bounds["log_tau_cloud"][0]
+                        + (bounds["log_tau_cloud"][1] - bounds["log_tau_cloud"][0])
+                        * cube[cube_index["log_tau_cloud"]]
+                    )
+
+                    cube[cube_index["log_tau_cloud"]] = log_tau_cloud
+
+            elif "log_kappa_gray" in bounds:
+                # Non-scattering, gray clouds with fixed opacity
+                # with pressure but a free cloud top (bar)
+                # log_cloud_top is the log pressure,
+                # log10(P/bar), at the cloud top
+
+                log_kappa_gray = (
+                    bounds["log_kappa_gray"][0]
+                    + (bounds["log_kappa_gray"][1] - bounds["log_kappa_gray"][0])
+                    * cube[cube_index["log_kappa_gray"]]
+                )
+
+                cube[cube_index["log_kappa_gray"]] = log_kappa_gray
+
+                if "log_cloud_top" in bounds:
+                    log_cloud_top = (
+                        bounds["log_cloud_top"][0]
+                        + (bounds["log_cloud_top"][1] - bounds["log_cloud_top"][0])
+                        * cube[cube_index["log_cloud_top"]]
+                    )
+
+                else:
+                    # Default: -6 - 3
+                    log_cloud_top = -6.0 + 9.0 * cube[cube_index["log_cloud_top"]]
+
+                cube[cube_index["log_cloud_top"]] = log_cloud_top
 
                 if "log_tau_cloud" in bounds:
                     log_tau_cloud = (
@@ -2159,12 +2213,16 @@ class AtmosphericRetrieval:
 
             start = time.time()
 
-            if len(self.cloud_species) > 0 or "log_kappa_0" in bounds:
+            if len(self.cloud_species) > 0 or "log_kappa_0" in bounds or "log_kappa_gray" in bounds:
                 # Cloudy atmosphere
 
                 tau_cloud = None
 
                 if "log_kappa_0" in bounds:
+                    if "log_tau_cloud" in self.parameters:
+                        tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
+
+                elif "log_kappa_gray" in bounds:
                     if "log_tau_cloud" in self.parameters:
                         tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
 
@@ -2303,6 +2361,10 @@ class AtmosphericRetrieval:
                                 cloud_dict_2["fsed"] = cube[cube_index[item]]
                             else:
                                 cloud_dict_2[item] = cube[cube_index[item]]
+
+                elif "log_kappa_gray" in self.parameters:
+                    cloud_dict = {"log_kappa_gray": cube[cube_index["log_kappa_gray"]],
+                                  "log_cloud_top": cube[cube_index["log_cloud_top"]]}
 
                 # Check if the bolometric flux is conserved in the radiative region
 
@@ -2509,31 +2571,7 @@ class AtmosphericRetrieval:
 
                 # Calculate a cloudy spectrum for low- and medium-resolution data (i.e. corr-k)
 
-                if "fsed" in self.parameters:
-                    (
-                        wlen_micron,
-                        flux_lambda,
-                        _,
-                        _,
-                    ) = retrieval_util.calc_spectrum_clouds(
-                        rt_object,
-                        self.pressure,
-                        temp,
-                        c_o_ratio,
-                        metallicity,
-                        p_quench,
-                        log_x_abund,
-                        log_x_base,
-                        cloud_dict,
-                        cube[cube_index["logg"]],
-                        chemistry=chemistry,
-                        pressure_grid=self.pressure_grid,
-                        plotting=plotting,
-                        contribution=False,
-                        tau_cloud=tau_cloud,
-                    )
-
-                elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
+                if "fsed_1" in self.parameters and "fsed_2" in self.parameters:
                     (
                         wlen_micron,
                         flux_lambda_1,
@@ -2583,6 +2621,30 @@ class AtmosphericRetrieval:
                     flux_lambda = (
                         cube[cube_index["f_clouds"]] * flux_lambda_1
                         + (1.0 - cube[cube_index["f_clouds"]]) * flux_lambda_2
+                    )
+
+                else:
+                    (
+                        wlen_micron,
+                        flux_lambda,
+                        _,
+                        _,
+                    ) = retrieval_util.calc_spectrum_clouds(
+                        rt_object,
+                        self.pressure,
+                        temp,
+                        c_o_ratio,
+                        metallicity,
+                        p_quench,
+                        log_x_abund,
+                        log_x_base,
+                        cloud_dict,
+                        cube[cube_index["logg"]],
+                        chemistry=chemistry,
+                        pressure_grid=self.pressure_grid,
+                        plotting=plotting,
+                        contribution=False,
+                        tau_cloud=tau_cloud,
                     )
 
                 if wlen_micron is None and flux_lambda is None:

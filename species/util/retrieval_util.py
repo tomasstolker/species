@@ -1255,9 +1255,8 @@ def calc_spectrum_clouds(
     else:
         param_cloud_wlen = False
 
-    # Cloud model 2
-
     if "log_kappa_0" in cloud_dict:
+        # Cloud model 2
 
         @typechecked
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
@@ -1275,8 +1274,7 @@ def calc_spectrum_clouds(
             kappa_tot[:, press_bar > p_base] = 0.0
 
             if (
-                "opa_knee" in cloud_dict
-                and cloud_dict["opa_knee"] > wavel_micron[0]
+                cloud_dict["opa_knee"] > wavel_micron[0]
                 and cloud_dict["opa_knee"] < wavel_micron[-1]
             ):
                 indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
@@ -1304,8 +1302,7 @@ def calc_spectrum_clouds(
             kappa_tot[:, press_bar > p_base] = 0.0
 
             if (
-                "opa_knee" in cloud_dict
-                and cloud_dict["opa_knee"] > wavel_micron[0]
+                cloud_dict["opa_knee"] > wavel_micron[0]
                 and cloud_dict["opa_knee"] < wavel_micron[-1]
             ):
                 indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
@@ -1316,6 +1313,19 @@ def calc_spectrum_clouds(
                     )
 
             return cloud_dict["albedo"] * kappa_tot
+
+    elif "log_kappa_gray" in cloud_dict:
+        # Non-scattering, gray clouds with cloud top
+
+        @typechecked
+        def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            kappa_gray = 10.0 ** cloud_dict["log_kappa_gray"]  # (cm2 g-1)
+            return np.full((wavel_micron.size, press_bar.size), kappa_gray)
+
+        @typechecked
+        def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
+            # return np.full((wavel_micron.size, press_bar.size), 1e-10)
+            return np.zeros((wavel_micron.size, press_bar.size))
 
     else:
         kappa_abs = None
@@ -1418,23 +1428,20 @@ def calc_spectrum_clouds(
     else:
         contr_em = None
 
-    if (
-        plotting
-        and Kzz_use is None
-        and hasattr(rt_object, "ret_test_cloud_scat_plus_abs")
-    ):
-        scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
-        plt.plot(
-            wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label="Total opacity"
-        )
-        plt.plot(wavel, rt_object.ret_test_cloud_abs[:, 0], label="Absorption opacity")
-        plt.plot(wavel, scat_opa[:, 0], label="Scattering opacity")
-        plt.xlabel(r"Wavelength ($\mu$m)")
-        plt.ylabel("Opacity at smallest pressure")
-        plt.yscale("log")
-        plt.legend(loc="best")
-        plt.savefig("cloud_opacity.pdf", bbox_inches="tight")
-        plt.clf()
+    # if (
+    #     plotting
+    #     and Kzz_use is None
+    #     and hasattr(rt_object, "continuum_opa")
+    # ):
+    #     plt.plot(wavel, rt_object.continuum_opa[:, 0], label="Total continuum opacity")
+    #     # plt.plot(wavel, rt_object.continuum_opa[:, 0] - rt_object.continuum_opa_scat[:, 0], label="Absorption continuum opacity")
+    #     # plt.plot(wavel, rt_object.continuum_opa_scat[:, 0], label="Scattering continuum opacity")
+    #     plt.xlabel(r"Wavelength ($\mu$m)")
+    #     plt.ylabel("Opacity at smallest pressure")
+    #     plt.yscale("log")
+    #     plt.legend(loc="best")
+    #     plt.savefig("continuum_opacity.pdf", bbox_inches="tight")
+    #     plt.clf()
 
     return wavel, f_lambda, contr_em, mmw
 
