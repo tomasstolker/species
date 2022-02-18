@@ -1319,12 +1319,16 @@ def calc_spectrum_clouds(
 
         @typechecked
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            p_top = 10.0 ** cloud_dict["log_cloud_top"]  # (bar)
             kappa_gray = 10.0 ** cloud_dict["log_kappa_gray"]  # (cm2 g-1)
-            return np.full((wavel_micron.size, press_bar.size), kappa_gray)
+
+            opa_abs = np.full((wavel_micron.size, press_bar.size), kappa_gray)
+            opa_abs[:, press_bar < p_top] = 0.0
+
+            return opa_abs
 
         @typechecked
         def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
-            # return np.full((wavel_micron.size, press_bar.size), 1e-10)
             return np.zeros((wavel_micron.size, press_bar.size))
 
     else:

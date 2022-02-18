@@ -1279,8 +1279,8 @@ class AtmosphericRetrieval:
                         * cube[cube_index["tint"]]
                     )
                 else:
-                    # Default: 0 - 10000 K
-                    tint = 10000.0 * cube[cube_index["tint"]]
+                    # Default: 100 - 10000 K
+                    tint = 100. + 9900.*cube[cube_index["tint"]]
 
                 cube[cube_index["tint"]] = tint
 

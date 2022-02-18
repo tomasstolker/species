@@ -402,12 +402,12 @@ class ReadRadtrans:
 
             p_quench = None
 
-        if len(self.cloud_species) > 0 or "log_kappa_0" in model_param:
+        if len(self.cloud_species) > 0 or "log_kappa_0" in model_param or "log_kappa_gray" in model_param:
 
             tau_cloud = None
             log_x_base = None
 
-            if "log_kappa_0" in model_param:
+            if "log_kappa_0" in model_param or "log_kappa_gray":
                 if "log_tau_cloud" in model_param:
                     tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
@@ -543,27 +543,7 @@ class ReadRadtrans:
             # Calculate the petitRADTRANS spectrum
             # for a cloudy atmosphere
 
-            if "fsed" in model_param:
-                wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
-                    self.rt_object,
-                    self.pressure,
-                    temp,
-                    c_o_ratio,
-                    metallicity,
-                    p_quench,
-                    log_x_abund,
-                    log_x_base,
-                    model_param,
-                    model_param["logg"],
-                    chemistry=chemistry,
-                    pressure_grid=self.pressure_grid,
-                    plotting=False,
-                    contribution=True,
-                    tau_cloud=tau_cloud,
-                    cloud_wavel=self.cloud_wavel,
-                )
-
-            elif "fsed_1" in model_param and "fsed_2" in model_param:
+            if "fsed_1" in model_param and "fsed_2" in model_param:
                 cloud_dict = model_param.copy()
                 cloud_dict["fsed"] = cloud_dict["fsed_1"]
 
@@ -616,6 +596,26 @@ class ReadRadtrans:
                 emission_contr = (
                     model_param["f_clouds"] * emission_contr_1
                     + (1.0 - model_param["f_clouds"]) * emission_contr_2
+                )
+
+            else:
+                wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    model_param,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
                 )
 
         elif chemistry == "equilibrium":
