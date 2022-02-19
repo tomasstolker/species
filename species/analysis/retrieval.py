@@ -129,8 +129,8 @@ class AtmosphericRetrieval:
             Weights to be applied to the log-likelihood components
             of the different spectroscopic and photometric data that
             are provided with ``inc_spec`` and ``inc_phot``. This
-            parameter can for example be used to increase the weighting
-            of the photometric data points relative to the
+            parameter can for example be used to increase the
+            weighting of the photometric data points relative to the
             spectroscopic data. An equal weighting is applied if the
             argument is set to ``None``.
         lbl_species : list, None
@@ -1248,25 +1248,35 @@ class AtmosphericRetrieval:
                 )
 
                 for i in range(self.temp_nodes - 2, -1, -1):
-                    cube[cube_index[f"t{i}"]] = (
-                        cube[cube_index[f"t{i+1}"]]
-                        - (cube[cube_index[f"t{i+1}"]] - 300.0)
-                        * cube[cube_index[f"t{i}"]]
-                    )
+                    # Sample temperature node relative
+                    # to previous/deeper point
+                    # cube[cube_index[f"t{i}"]] = (
+                    #     cube[cube_index[f"t{i+1}"]]
+                    #     - (cube[cube_index[f"t{i+1}"]] - 300.0)
+                    #     * cube[cube_index[f"t{i}"]]
+                    # )
 
-                    # Increasing temperature steps with increasing pressure
-                    # if i == 13:
-                    #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
-                    #         (1.-cube[cube_index[f't{i}']])
-                    #
-                    # else:
-                    #     temp_diff = cube[cube_index[f't{i+2}']] - cube[cube_index[f't{i+1}']]
-                    #
-                    #     if cube[cube_index[f't{i+1}']] - temp_diff < 0.:
-                    #         temp_diff = cube[cube_index[f't{i+1}']]
-                    #
-                    #     cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
-                    #         cube[cube_index[f't{i}']]*temp_diff
+                    # Increasing temperature steps with
+                    # constant log-pressure steps
+                    if i == self.temp_nodes - 2:
+                        # First temperature step has no constraints
+                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
+                            (1.-cube[cube_index[f't{i}']])
+
+                    else:
+                        # Temperature difference of previous step
+                        temp_diff = cube[cube_index[f't{i+2}']] - cube[cube_index[f't{i+1}']]
+
+                        if cube[cube_index[f't{i+1}']] - temp_diff < 0.:
+                            # If previous step would make the next point
+                            # smaller than zero than use the maximum
+                            # temperature step possible
+                            temp_diff = cube[cube_index[f't{i+1}']]
+
+                        # Sample next temperature point with a smaller
+                        # temperature step than the previous one 
+                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
+                            cube[cube_index[f't{i}']]*temp_diff
 
             if pt_profile == "eddington":
 
@@ -1280,7 +1290,7 @@ class AtmosphericRetrieval:
                     )
                 else:
                     # Default: 100 - 10000 K
-                    tint = 100. + 9900.*cube[cube_index["tint"]]
+                    tint = 100.0 + 9900.0 * cube[cube_index["tint"]]
 
                 cube[cube_index["tint"]] = tint
 
@@ -2213,16 +2223,16 @@ class AtmosphericRetrieval:
 
             start = time.time()
 
-            if len(self.cloud_species) > 0 or "log_kappa_0" in bounds or "log_kappa_gray" in bounds:
+            if (
+                len(self.cloud_species) > 0
+                or "log_kappa_0" in bounds
+                or "log_kappa_gray" in bounds
+            ):
                 # Cloudy atmosphere
 
                 tau_cloud = None
 
-                if "log_kappa_0" in bounds:
-                    if "log_tau_cloud" in self.parameters:
-                        tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
-
-                elif "log_kappa_gray" in bounds:
+                if "log_kappa_0" in bounds or "log_kappa_gray" in bounds:
                     if "log_tau_cloud" in self.parameters:
                         tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
 
@@ -2363,8 +2373,10 @@ class AtmosphericRetrieval:
                                 cloud_dict_2[item] = cube[cube_index[item]]
 
                 elif "log_kappa_gray" in self.parameters:
-                    cloud_dict = {"log_kappa_gray": cube[cube_index["log_kappa_gray"]],
-                                  "log_cloud_top": cube[cube_index["log_cloud_top"]]}
+                    cloud_dict = {
+                        "log_kappa_gray": cube[cube_index["log_kappa_gray"]],
+                        "log_cloud_top": cube[cube_index["log_cloud_top"]],
+                    }
 
                 # Check if the bolometric flux is conserved in the radiative region
 

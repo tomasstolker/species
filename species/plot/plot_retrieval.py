@@ -808,6 +808,8 @@ def plot_opacities(
 
     radtrans.get_model(median)
 
+    # Line opacities
+
     wavelength, opacity = radtrans.rt_object.get_opa(radtrans.rt_object.temp)
 
     wavelength *= 1e4  # (um)
@@ -819,11 +821,14 @@ def plot_opacities(
     for item in opacity.values():
         opacity_line += item
 
-    if not radtrans.scattering:
+    # Continuum opacities
+
+    if radtrans.scattering:
+        # opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
         opacity_cont = radtrans.rt_object.continuum_opa
 
     else:
-        opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
+        opacity_cont = radtrans.rt_object.continuum_opa
 
     ax1.tick_params(
         axis="both",
