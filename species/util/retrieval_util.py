@@ -1327,9 +1327,7 @@ def calc_spectrum_clouds(
 
             return opa_abs
 
-        @typechecked
-        def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
-            return np.zeros((wavel_micron.size, press_bar.size))
+        kappa_scat = None
 
     else:
         kappa_abs = None

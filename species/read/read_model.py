@@ -796,7 +796,7 @@ class ReadModel:
             and "lognorm_ext" in model_param
         ):
 
-            model_box.flux = self.apply_ext_norm_distr(
+            model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["lognorm_radius"],
@@ -810,7 +810,7 @@ class ReadModel:
             and "powerlaw_ext" in model_param
         ):
 
-            model_box.flux = self.apply_ext_plaw_distr(
+            model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["powerlaw_max"],

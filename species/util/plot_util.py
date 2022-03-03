@@ -387,19 +387,34 @@ def update_labels(param: List[str]) -> List[str]:
 
     for i, item in enumerate(param):
         if item[0:8] == "scaling_":
-            param[i] = rf"$\mathregular{{a}}_\mathregular{{{item[8:]}}}$"
+            item_name = item[8:]
+            if item_name.find("\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\_")
+            param[i] = rf"$\mathregular{{a}}_\mathregular{{{item_name}}}$"
 
         elif item[0:6] == "error_":
-            param[i] = rf"$\mathregular{{b}}_\mathregular{{{item[6:]}}}$"
+            item_name = item[6:]
+            if item_name.find("\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\_")
+            param[i] = rf"$\mathregular{{b}}_\mathregular{{{item_name}}}$"
 
         elif item[0:11] == "wavelength_":
-            param[i] = rf"$\mathregular{{c}}_\mathregular{{{item[11:]}}}$ (nm)"
+            item_name = item[11:]
+            if item_name.find("\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\_")
+            param[i] = rf"$\mathregular{{c}}_\mathregular{{{item_name}}}$ (nm)"
 
         elif item[0:9] == "corr_len_":
-            param[i] = rf"$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}$"
+            item_name = item[9:]
+            if item_name.find("\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\_")
+            param[i] = rf"$\mathregular{{log}}\,\ell_\mathregular{{{item_name}}}$"
 
         elif item[0:9] == "corr_amp_":
-            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item[9:]}}}$"
+            item_name = item[9:]
+            if item_name.find("\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\_")
+            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item_name}}}$"
 
     if "c_h_ratio" in param:
         index = param.index("c_h_ratio")

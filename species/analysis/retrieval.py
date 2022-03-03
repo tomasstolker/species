@@ -2662,15 +2662,33 @@ class AtmosphericRetrieval:
                 if wlen_micron is None and flux_lambda is None:
                     return -np.inf
 
-                # if hasattr(rt_object, "pphot") and phot_press is not None \
-                #     and (phot_press / rt_object.pphot > 5.0
-                #     or phot_press / rt_object.pphot < 0.2
-                # ):
-                #     # Remove the sample if the photospheric pressure from the P-T profile is more
-                #     # than a factor 5 larger than the photospheric pressure that is calculated from
-                #     # the Rosseland mean opacity, using the non-gray opacities of the atmosphere
-                #     # See Eq. 7 in GRAVITY Collaboration et al. (2020)
-                #     return -np.inf
+                if hasattr(rt_object, "tau_rosse") and phot_press is not None:
+                    # Remove the sample if the photospheric pressure
+                    # from the P-T profile is more than a factor 5
+                    # larger than the photospheric pressure that is
+                    # calculated from the Rosseland mean opacity,
+                    # using the non-gray opacities of the atmosphere
+                    # See Eq. 7 in GRAVITY Collaboration et al. (2020)
+
+                    if self.pressure_grid == "standard":
+                        press_tmp = self.pressure
+                    elif self.pressure_grid == "smaller":
+                        press_tmp = self.pressure[::3]
+                    else:
+                        raise RuntimeError("Not yet implemented")
+
+                    rosse_pphot = press_tmp[
+                        np.argmin(np.abs(rt_object.tau_rosse - 1.))]
+
+                    index_tp = (press_tmp > rosse_pphot/10.) & \
+                               (press_tmp < rosse_pphot*10.)
+
+                    tau_pow = np.mean(np.diff(np.log(
+                        rt_object.tau_rosse[index_tp]))/
+                        np.diff(np.log(press_tmp[index_tp])))
+
+                    if phot_press / rosse_pphot > 5.0 or phot_press / rosse_pphot < 0.2:
+                        return -np.inf
 
                 # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
                 #     # Remove the sample if the parametrized, pressure-dependent opacity is not

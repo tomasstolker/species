@@ -39,7 +39,7 @@ class ReadRadtrans:
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
         max_press: float = None,
-        pt_profile: Optional[np.ndarray] = None,
+        pt_manual: Optional[np.ndarray] = None,
     ) -> None:
         """
         Parameters
@@ -93,7 +93,7 @@ class ReadRadtrans:
         max_pressure : float, None
             Maximum pressure (bar) for the free temperature nodes. The
             default is set to 1000 bar.
-        pt_profile : np.ndarray, None
+        pt_manual : np.ndarray, None
             A 2D array that contains the P-T profile that is used
             when ``pressure_grid="manual"``. The shape of array should
             be (n_pressure, 2), with pressure (bar) as first column
@@ -113,7 +113,7 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
-        self.pt_profile = pt_profile
+        self.pt_manual = pt_manual
 
         # Set maximum pressure
 
@@ -153,13 +153,15 @@ class ReadRadtrans:
         # Create 180 pressure layers in log space
 
         if self.pressure_grid == "manual":
-            if self.pt_profile is None:
-                raise UserWarning("A 2D array with the P-T profile "
-                                  "should be provided as argument "
-                                  "of pt_profile when using "
-                                  "pressure_grid='manual'.")
+            if self.pt_manual is None:
+                raise UserWarning(
+                    "A 2D array with the P-T profile "
+                    "should be provided as argument "
+                    "of pt_manual when using "
+                    "pressure_grid='manual'."
+                )
 
-            self.pressure = self.pt_profile[:, 0]
+            self.pressure = self.pt_manual[:, 0]
 
         else:
             self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
@@ -263,10 +265,12 @@ class ReadRadtrans:
 
             for item in self.line_species:
                 if item not in model_param:
-                    raise RuntimeError(f"The abundance of {item} is not found "
-                                       f"in the dictionary with parameters of "
-                                       f"'model_param'. Please add the log10 "
-                                       f"mass fraction of {item}.")
+                    raise RuntimeError(
+                        f"The abundance of {item} is not found "
+                        f"in the dictionary with parameters of "
+                        f"'model_param'. Please add the log10 "
+                        f"mass fraction of {item}."
+                    )
 
         # Check quenching parameter
 
@@ -316,10 +320,14 @@ class ReadRadtrans:
         # Create the P-T profile
 
         if self.pressure_grid == "manual":
-            temp = self.pt_profile[:, 1]
+            temp = self.pt_manual[:, 1]
 
-        elif "tint" in model_param and "log_delta" in model_param and "alpha" in model_param:
-            temp, _, conv_press = retrieval_util.pt_ret_model(
+        elif (
+            "tint" in model_param
+            and "log_delta" in model_param
+            and "alpha" in model_param
+        ):
+            temp, _, _ = retrieval_util.pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],
                 model_param["alpha"],
@@ -357,14 +365,16 @@ class ReadRadtrans:
                 pt_smooth = model_param["pt_smooth"]
 
             elif "pt_turn" in model_param:
-                pt_smooth = {"pt_smooth_1": model_param["pt_smooth_1"],
-                             "pt_smooth_2": model_param["pt_smooth_2"],
-                             "pt_turn": model_param["pt_turn"],
-                             "pt_index": model_param["pt_index"]}
+                pt_smooth = {
+                    "pt_smooth_1": model_param["pt_smooth_1"],
+                    "pt_smooth_2": model_param["pt_smooth_2"],
+                    "pt_turn": model_param["pt_turn"],
+                    "pt_index": model_param["pt_index"],
+                }
 
             elif "pt_smooth_0" in model_param:
                 pt_smooth = {}
-                for i in range(temp_nodes-1):
+                for i in range(temp_nodes - 1):
                     pt_smooth[f"pt_smooth_{i}"] = model_param[f"pt_smooth_{i}"]
 
             else:
@@ -402,12 +412,16 @@ class ReadRadtrans:
 
             p_quench = None
 
-        if len(self.cloud_species) > 0 or "log_kappa_0" in model_param or "log_kappa_gray" in model_param:
+        if (
+            len(self.cloud_species) > 0
+            or "log_kappa_0" in model_param
+            or "log_kappa_gray" in model_param
+        ):
 
             tau_cloud = None
             log_x_base = None
 
-            if "log_kappa_0" in model_param or "log_kappa_gray":
+            if "log_kappa_0" in model_param or "log_kappa_gray" in model_param:
                 if "log_tau_cloud" in model_param:
                     tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
@@ -547,7 +561,12 @@ class ReadRadtrans:
                 cloud_dict = model_param.copy()
                 cloud_dict["fsed"] = cloud_dict["fsed_1"]
 
-                wavelength, flux_1, emission_contr_1, _ = retrieval_util.calc_spectrum_clouds(
+                (
+                    wavelength,
+                    flux_1,
+                    emission_contr_1,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -569,7 +588,12 @@ class ReadRadtrans:
                 cloud_dict = model_param.copy()
                 cloud_dict["fsed"] = cloud_dict["fsed_2"]
 
-                wavelength, flux_2, emission_contr_2, _ = retrieval_util.calc_spectrum_clouds(
+                (
+                    wavelength,
+                    flux_2,
+                    emission_contr_2,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -599,7 +623,12 @@ class ReadRadtrans:
                 )
 
             else:
-                wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
+                (
+                    wavelength,
+                    flux,
+                    emission_contr,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -707,7 +736,7 @@ class ReadRadtrans:
                 )
 
             else:
-                # TODO Ask Paul if correct
+                # TODO Is this correct?
                 w_gauss = self.rt_object.w_gauss[
                     ..., np.newaxis, np.newaxis, np.newaxis
                 ]

@@ -2,7 +2,7 @@
 Module for plotting atmospheric retrieval results.
 """
 
-import copy
+# import copy
 import os
 import warnings
 
@@ -221,8 +221,8 @@ def plot_pt_profile(
 
             log_x_abund = {}
 
-            for i in range(box.attributes["n_line_species"]):
-                line_item = box.attributes[f"line_species{i}"]
+            for j in range(box.attributes["n_line_species"]):
+                line_item = box.attributes[f"line_species{j}"]
                 log_x_abund[line_item] = item[param_index[line_item]]
 
             # Check if the C/H and O/H ratios are within the prior boundaries
@@ -254,8 +254,8 @@ def plot_pt_profile(
 
         elif pt_profile == "free":
             knot_temp = []
-            for i in range(temp_nodes):
-                knot_temp.append(item[temp_index[i]])
+            for j in range(temp_nodes):
+                knot_temp.append(item[temp_index[j]])
 
             knot_temp = np.asarray(knot_temp)
 
@@ -762,20 +762,22 @@ def plot_opacities(
     output: Optional[str] = "opacities.pdf",
 ) -> None:
     """
-    Function to plot the line and continuum opacity structure from the median posterior samples.
+    Function to plot the line and continuum opacity
+    structure from the median posterior samples.
 
     Parameters
     ----------
     tag : str
         Database tag with the posterior samples.
+    radtrans : read_radtrans.ReadRadtrans
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        The parameter is not used if set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
-    output : str
+        Offset of the x- and y-axis label. Default values are used
+        if set to ``None``.
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
-    radtrans : read_radtrans.ReadRadtrans
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. The parameter is not used if
-        set to ``None``.
 
     Returns
     -------
@@ -783,7 +785,7 @@ def plot_opacities(
         None
     """
 
-    if output:
+    if output is not None:
         print("Plotting opacities...", end="", flush=True)
     else:
         print(f"Plotting opacities: {output}...", end="", flush=True)
@@ -797,14 +799,19 @@ def plot_opacities(
 
     plt.rc("axes", edgecolor="black", linewidth=2.5)
 
-    plt.figure(1, figsize=(4.0, 6.0))
-    gridsp = mpl.gridspec.GridSpec(2, 2, width_ratios=[4, 0.25])
+    plt.figure(1, figsize=(10.0, 6.0))
+    gridsp = mpl.gridspec.GridSpec(2, 5, width_ratios=[4, 0.25, 1.5, 4, 0.25])
     gridsp.update(wspace=0.1, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
     ax1 = plt.subplot(gridsp[0, 0])
     ax2 = plt.subplot(gridsp[1, 0])
     ax3 = plt.subplot(gridsp[0, 1])
     ax4 = plt.subplot(gridsp[1, 1])
+
+    ax5 = plt.subplot(gridsp[0, 3])
+    ax6 = plt.subplot(gridsp[1, 3])
+    ax7 = plt.subplot(gridsp[0, 4])
+    ax8 = plt.subplot(gridsp[1, 4])
 
     radtrans.get_model(median)
 
@@ -823,12 +830,17 @@ def plot_opacities(
 
     # Continuum opacities
 
-    if radtrans.scattering:
-        # opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
-        opacity_cont = radtrans.rt_object.continuum_opa
+    opacity_cont_abs = radtrans.rt_object.continuum_opa
+    opacity_cont_scat = radtrans.rt_object.continuum_opa_scat
+    # opacity_cont_scat = radtrans.rt_object.continuum_opa_scat_emis
+    opacity_total = opacity_line + opacity_cont_abs + opacity_cont_scat
 
-    else:
-        opacity_cont = radtrans.rt_object.continuum_opa
+    albedo = opacity_cont_scat / opacity_total
+
+    # if radtrans.scattering:
+    #     opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
+    # else:
+    #     opacity_cont = radtrans.rt_object.continuum_opa_scat
 
     ax1.tick_params(
         axis="both",
@@ -938,6 +950,128 @@ def plot_opacities(
     )
 
     ax4.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax5.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+        labelbottom=False,
+    )
+
+    ax5.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+        labelbottom=False,
+    )
+
+    ax6.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax6.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax7.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax7.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax8.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax8.tick_params(
         axis="both",
         which="minor",
         colors="black",
@@ -957,6 +1091,12 @@ def plot_opacities(
 
     ax1.xaxis.set_minor_locator(MultipleLocator(0.2))
     ax2.xaxis.set_minor_locator(MultipleLocator(0.2))
+
+    ax5.xaxis.set_major_locator(MultipleLocator(1.0))
+    ax6.xaxis.set_major_locator(MultipleLocator(1.0))
+
+    ax5.xaxis.set_minor_locator(MultipleLocator(0.2))
+    ax6.xaxis.set_minor_locator(MultipleLocator(0.2))
 
     # ax1.yaxis.set_major_locator(LogLocator(base=10.))
     # ax2.yaxis.set_major_locator(LogLocator(base=10.))
@@ -985,15 +1125,47 @@ def plot_opacities(
     fig = ax2.pcolormesh(
         xx_grid,
         yy_grid,
-        np.transpose(opacity_cont),
+        np.transpose(albedo),
         cmap="viridis",
         shading="gouraud",
-        norm=LogNorm(vmin=1e-6 * np.amax(opacity_cont), vmax=np.amax(opacity_cont)),
+        norm=LogNorm(vmin=1e-4*np.amax(albedo), vmax=np.amax(albedo)),
     )
 
     cb = Colorbar(ax=ax4, mappable=fig, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel(
-        "Continuum opacity (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11
+        "Single scattering albedo", rotation=270, labelpad=20, fontsize=11
+    )
+
+    fig = ax5.pcolormesh(
+        xx_grid,
+        yy_grid,
+        np.transpose(opacity_cont_abs),
+        cmap="viridis",
+        shading="gouraud",
+        norm=LogNorm(
+            vmin=1e-6 * np.amax(opacity_cont_abs), vmax=np.amax(opacity_cont_abs)
+        ),
+    )
+
+    cb = Colorbar(ax=ax7, mappable=fig, orientation="vertical", ticklocation="right")
+    cb.ax.set_ylabel(
+        "Continuum absorption (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11
+    )
+
+    fig = ax6.pcolormesh(
+        xx_grid,
+        yy_grid,
+        np.transpose(opacity_cont_scat),
+        cmap="viridis",
+        shading="gouraud",
+        norm=LogNorm(
+            vmin=1e-6 * np.amax(opacity_cont_scat), vmax=np.amax(opacity_cont_scat)
+        ),
+    )
+
+    cb = Colorbar(ax=ax8, mappable=fig, orientation="vertical", ticklocation="right")
+    cb.ax.set_ylabel(
+        "Continuum scattering (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11
     )
 
     ax1.set_ylabel("Pressure (bar)", fontsize=13)
@@ -1001,13 +1173,28 @@ def plot_opacities(
     ax2.set_xlabel("Wavelength (µm)", fontsize=13)
     ax2.set_ylabel("Pressure (bar)", fontsize=13)
 
+    ax5.set_ylabel("Pressure (bar)", fontsize=13)
+
+    ax6.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax6.set_ylabel("Pressure (bar)", fontsize=13)
+
     ax1.set_xlim(wavelength[0], wavelength[-1])
     ax2.set_xlim(wavelength[0], wavelength[-1])
+
+    ax5.set_xlim(wavelength[0], wavelength[-1])
+    ax6.set_xlim(wavelength[0], wavelength[-1])
 
     ax1.set_ylim(
         radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
     )
     ax2.set_ylim(
+        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+    )
+
+    ax5.set_ylim(
+        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+    )
+    ax6.set_ylim(
         radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
     )
 
@@ -1018,6 +1205,12 @@ def plot_opacities(
         ax2.get_xaxis().set_label_coords(0.5, offset[0])
         ax2.get_yaxis().set_label_coords(offset[1], 0.5)
 
+        ax5.get_xaxis().set_label_coords(0.5, offset[0])
+        ax5.get_yaxis().set_label_coords(offset[1], 0.5)
+
+        ax6.get_xaxis().set_label_coords(0.5, offset[0])
+        ax6.get_yaxis().set_label_coords(offset[1], 0.5)
+
     else:
         ax1.get_xaxis().set_label_coords(0.5, -0.1)
         ax1.get_yaxis().set_label_coords(-0.14, 0.5)
@@ -1025,10 +1218,21 @@ def plot_opacities(
         ax2.get_xaxis().set_label_coords(0.5, -0.1)
         ax2.get_yaxis().set_label_coords(-0.14, 0.5)
 
+        ax5.get_xaxis().set_label_coords(0.5, -0.1)
+        ax5.get_yaxis().set_label_coords(-0.14, 0.5)
+
+        ax6.get_xaxis().set_label_coords(0.5, -0.1)
+        ax6.get_yaxis().set_label_coords(-0.14, 0.5)
+
     ax1.set_yscale("log")
     ax2.set_yscale("log")
     ax3.set_yscale("log")
     ax4.set_yscale("log")
+
+    ax5.set_yscale("log")
+    ax6.set_yscale("log")
+    ax7.set_yscale("log")
+    ax8.set_yscale("log")
 
     if output is None:
         plt.show()
