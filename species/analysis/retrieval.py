@@ -2660,6 +2660,7 @@ class AtmosphericRetrieval:
                     )
 
                 if wlen_micron is None and flux_lambda is None:
+                    # This is perhaps no longer needed?
                     return -np.inf
 
                 if hasattr(rt_object, "tau_rosse") and phot_press is not None:
@@ -2687,18 +2688,21 @@ class AtmosphericRetrieval:
                         rt_object.tau_rosse[index_tp]))/
                         np.diff(np.log(press_tmp[index_tp])))
 
-                    if phot_press / rosse_pphot > 5.0 or phot_press / rosse_pphot < 0.2:
+                    if phot_press > rosse_pphot*5.0 or phot_press < rosse_pphot/5.0:
                         return -np.inf
 
-                # if np.abs(cube[cube_index['alpha']]-rt_object.tau_pow) > 0.1:
-                #     # Remove the sample if the parametrized, pressure-dependent opacity is not
-                #     # consistent with the atmosphere's non-gray opacity structure
-                #     # See Eq. 5 in GRAVITY Collaboration et al. (2020)
-                #     return -np.inf
+                    # if np.abs(cube[cube_index['alpha']]-tau_pow) > 0.1:
+                    #     # Remove the sample if the parametrized,
+                    #     # pressure-dependent opacity is not consistent
+                    #     # consistent with the atmosphere's non-gray
+                    #     # opacity structure. See Eq. 5 in
+                    #     # GRAVITY Collaboration et al. (2020)
+                    #     return -np.inf
 
-                # Penalize samples if the parametrized, pressure-dependent opacity is not
-                # consistent with the atmosphere's non-gray opacity structure
-                # See Eqs. 5 and 6 in GRAVITY Collaboration et al. (2020)
+                # Penalize samples if the parametrized, pressure-
+                # dependent opacity is not consistent with the
+                # atmosphere's non-gray opacity structure. See Eqs.
+                # 5 and 6 in GRAVITY Collaboration et al. (2020)
 
                 if (
                     pt_profile in ["molliere", "mod-molliere"]

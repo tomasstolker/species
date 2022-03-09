@@ -72,7 +72,7 @@ class Database:
     @typechecked
     def list_content(self) -> None:
         """
-        Method for listing the content of the HDF5 database. The
+        Function for listing the content of the HDF5 database. The
         database structure will be descended while printing the paths
         of all the groups and datasets, as well as the dataset
         attributes.
@@ -125,9 +125,9 @@ class Database:
     @typechecked
     def list_companions() -> List[str]:
         """
-        Method for printing an overview of the companion data that are
-        stored in the database. It will return a list with all the
-        companion names. Each name can be used as input for
+        Function for printing an overview of the companion data that
+        are stored in the database. It will return a list with all
+        the companion names. Each name can be used as input for
         :class:`~species.read.read_object.ReadObject`.
 
         Returns
@@ -168,7 +168,7 @@ class Database:
     @typechecked
     def available_models() -> Dict:
         """
-        Method for printing an overview of the available model grids
+        Function for printing an overview of the available model grids
         that can be downloaded and added to the database with
         :class:`~species.data.database.Database.add_model`.
 
@@ -471,7 +471,7 @@ class Database:
         teff_range: Optional[Tuple[float, float]] = None,
     ) -> None:
         """
-        Method for adding a grid of model spectra to the database.
+        Function for adding a grid of model spectra to the database.
         All spectra have been resampled to logarithmically-spaced
         wavelengths. The spectral resolution is returned with the
         :meth:`~species.read.read_model.ReadModel.get_spec_res`
@@ -844,6 +844,8 @@ class Database:
 
             # Read spectra
 
+            spec_nan = {}
+
             for key, value in spectrum.items():
                 if value[0].endswith(".fits") or value[0].endswith(".fit"):
                     with fits.open(value[0]) as hdulist:
@@ -928,6 +930,10 @@ class Database:
                     read_spec[key] = read_spec[key].transpose()
 
                 nan_index = np.isnan(read_spec[key][:, 1])
+
+                # Add NaN booleans to dictionary for adjusting
+                # the covariance matrix later on
+                spec_nan[key] = nan_index
 
                 if sum(nan_index) != 0:
                     read_spec[key] = read_spec[key][~nan_index, :]
@@ -1050,6 +1056,11 @@ class Database:
 
                     else:
                         read_cov[key] = data
+
+                if read_cov[key] is not None:
+                    # Remove the wavelengths for which the flux was Nan
+                    read_cov[key] = read_cov[key][~spec_nan[key], :]
+                    read_cov[key] = read_cov[key][:, ~spec_nan[key]]
 
                 if verbose and read_cov[key] is not None:
                     print(f"      - Database tag: {key}")
@@ -1336,6 +1347,10 @@ class Database:
         spec_labels: Optional[List[str]],
     ):
         """
+        This function stores the posterior samples from
+        :class:`~species.analysis.fit_model.FitModel` in the
+        database, including some additional attributes.
+
         Parameters
         ----------
         sampler : str
@@ -1345,13 +1360,14 @@ class Database:
         ln_prob : np.ndarray
             Log posterior for each sample.
         ln_evidence : tuple(float, float)
-            Log evidence and uncertainty. Set to ``None`` when ``sampler`` is 'emcee'.
+            Log evidence and uncertainty. Set to ``None`` when
+            ``sampler`` is 'emcee'.
         mean_accept : float, None
-            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'multinest' or
-            'ultranest'.
+            Mean acceptance fraction. Set to ``None`` when
+            ``sampler`` is 'multinest' or 'ultranest'.
         spectrum : tuple(str, str)
-            Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
-            'drift-phoenix').
+            Tuple with the spectrum type ('model' or 'calibration')
+            and spectrum name (e.g. 'drift-phoenix').
         tag : str
             Database tag.
         modelpar : list(str)
@@ -1359,8 +1375,8 @@ class Database:
         distance : float, None
             Distance to the object (pc). Not used if set to ``None``.
         spec_labels : list(str), None
-            List with the spectrum labels that are used for fitting an additional scaling
-            parameter. Not used if set to ``None``.
+            List with the spectrum labels that are used for fitting an
+            additional scaling parameter. Not used if set to ``None``.
 
         Returns
         -------
@@ -1494,7 +1510,7 @@ class Database:
 
             prob_sample[par_key] = par_value
 
-        if "distance" in dset.attrs:
+        if "distance" not in prob_sample and "distance" in dset.attrs:
             prob_sample["distance"] = dset.attrs["distance"]
 
         if "pt_smooth" in dset.attrs:
@@ -1558,7 +1574,7 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if "distance" in dset.attrs:
+            if "distance" not in median_sample and "distance" in dset.attrs:
                 median_sample["distance"] = dset.attrs["distance"]
 
             if "pt_smooth" in dset.attrs:
@@ -1749,7 +1765,7 @@ class Database:
                 if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
-            if distance:
+            if "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -1919,7 +1935,7 @@ class Database:
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
-            if distance is not None:
+            if "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -2104,15 +2120,17 @@ class Database:
         tag: str
             Database tag with the samples.
         burnin : int, None
-            Number of burnin samples to exclude. All samples are selected if set to ``None``.
-            The parameter is only required for samples obtained with ``emcee`` and is therefore
-            not used for samples obtained with ``MultiNest`` or ``UltraNest``.
+            Number of burnin samples to exclude. All samples are
+            selected if set to ``None``. The parameter is only
+            required for samples obtained with ``emcee`` and is
+            therefore not used for samples obtained with
+            ``MultiNest`` or ``UltraNest``.
         random : int, None
-            Number of random samples to select. All samples (with the burnin excluded) are
-            selected if set to ``None``.
+            Number of random samples to select. All samples (with
+            the burnin excluded) are selected if set to ``None``.
         json_file : str, None
-            JSON file to store the posterior samples. The data will not be written if the argument
-            is set to ``None``.
+            JSON file to store the posterior samples. The data will
+            not be written if the argument is set to ``None``.
 
         Returns
         -------
@@ -2139,9 +2157,9 @@ class Database:
             n_param = dset.attrs["nparam"]
 
         if "ln_evidence" in dset.attrs:
-            # For backward compatibility
             ln_evidence = dset.attrs["ln_evidence"]
         else:
+            # For backward compatibility
             ln_evidence = None
 
         samples = np.asarray(dset)
@@ -2199,35 +2217,75 @@ class Database:
         )
 
     @typechecked
-    def get_pt_profiles(
-        self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def get_evidence(self, tag: str) -> Tuple[float, float]:
         """
-        Method for returning the pressure-temperature profiles from the atmospheric retrieval
-        with ``petitRADTRANS``. The data can also be optionally stored to an output file.
+        Function for returning the log-evidence (i.e.
+        marginalized likelihood) that was computed by
+        the nested sampling algorithm when using
+        :class:`~species.analysis.fit_model.FitModel` or
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
         Parameters
         ----------
         tag: str
-            Database tag with the posterior samples from the atmospheric retrieval with
+            Database tag with the posterior samples.
+
+        Returns
+        -------
+        float
+            Log-evidence.
+        float
+            Uncertainty on the log-evidence.
+        """
+
+        h5_file = h5py.File(self.database, "r")
+        dset = h5_file[f"results/fit/{tag}/samples"]
+
+        if "ln_evidence" in dset.attrs:
+            ln_evidence = dset.attrs["ln_evidence"]
+        else:
+            # For backward compatibility
+            ln_evidence = (None, None)
+
+        h5_file.close()
+
+        return ln_evidence[0], ln_evidence[1]
+
+    @typechecked
+    def get_pt_profiles(
+        self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Function for returning the pressure-temperature profiles from
+        the posterior of the atmospheric retrieval with
+        ``petitRADTRANS``. The data can also optionally be written to
+        an output file.
+
+        Parameters
+        ----------
+        tag: str
+            Database tag with the posterior samples from the
+            atmospheric retrieval with
             :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
         random : int, None
-            Number of random samples that will be used for the P-T profiles. All samples
-            will be selected if set to ``None``.
+            Number of random samples that will be used for the P-T
+            profiles. All samples will be selected if set to ``None``.
         out_file : str, None
-            Output file to store the P-T profiles. The data will be stored in a FITS file if the
-            argument of ``out_file`` ends with `.fits`. Otherwise, the data will be written to a
-            text file. The data has two dimensions with the first column containing the pressures
-            (bar) and the remaining columns the temperature profiles (K). The data will not be
-            written to a file if the argument is set to ``None``.
+            Output file to store the P-T profiles. The data will be
+            stored in a FITS file if the argument of ``out_file`` ends
+            with `.fits`. Otherwise, the data will be written to a
+            text file. The data has two dimensions with the first
+            column containing the pressures (bar) and the remaining
+            columns the temperature profiles (K). The data will not
+            be written to a file if the argument is set to ``None``.
 
         Returns
         -------
         np.ndarray
             Array (1D) with the pressures (bar).
         np.ndarray
-            Array (2D) with the temperature profiles (K). The shape of the array is
-            (n_pressures, n_samples).
+            Array (2D) with the temperature profiles (K). The shape
+            of the array is (n_pressures, n_samples).
         """
 
         h5_file = h5py.File(self.database, "r")
@@ -2303,6 +2361,12 @@ class Database:
                     item[param_index["metallicity"]],
                     item[param_index["c_o_ratio"]],
                 )
+
+            elif pt_profile == "eddington":
+                # Eddington approximation
+                # delta = kappa_ir/gravity
+                tau = press * 1e6 * 10.0 ** item[param_index["log_delta"]]
+                temp[:, i] = (0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
             elif pt_profile in ["free", "monotonic"]:
                 if "pt_smooth" in param_index:

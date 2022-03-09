@@ -262,6 +262,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("radius")
         param[index] = r"$\mathregular{R}$ ($\mathregular{R_J}$)"
 
+    if "distance" in param:
+        index = param.index("distance")
+        param[index] = "d (pc)"
+
     if "mass" in param:
         index = param.index("mass")
         param[index] = r"$\mathregular{M}$ ($\mathregular{M_J}$)"

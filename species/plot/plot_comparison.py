@@ -178,7 +178,7 @@ def plot_statistic(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -427,7 +427,7 @@ def plot_empirical_spectra(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -754,7 +754,7 @@ def plot_grid_statistic(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()

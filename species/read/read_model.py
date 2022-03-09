@@ -98,10 +98,13 @@ class ReadModel:
             "veil_ref",
         ]
 
+        # Test if the spectra are present in the database
+        self.open_database()
+
     @typechecked
     def open_database(self) -> h5py._hl.files.File:
         """
-        Internal function for opening the `species` database.
+        Internal function for opening the HDF5 database.
 
         Returns
         -------
@@ -122,6 +125,8 @@ class ReadModel:
             h5_file[f"models/{self.model}"]
 
         except KeyError:
+            h5_file.close()
+
             raise ValueError(
                 f"The '{self.model}' model spectra are not present in the database."
             )

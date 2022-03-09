@@ -173,7 +173,7 @@ def plot_walkers(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -807,7 +807,7 @@ def plot_posterior(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -913,7 +913,7 @@ def plot_mag_posterior(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -1089,7 +1089,7 @@ def plot_size_distributions(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
@@ -1354,7 +1354,7 @@ def plot_extinction(
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
