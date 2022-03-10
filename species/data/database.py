@@ -1058,7 +1058,7 @@ class Database:
                         read_cov[key] = data
 
                 if read_cov[key] is not None:
-                    # Remove the wavelengths for which the flux was Nan
+                    # Remove the wavelengths for which the flux is NaN
                     read_cov[key] = read_cov[key][~spec_nan[key], :]
                     read_cov[key] = read_cov[key][:, ~spec_nan[key]]
 

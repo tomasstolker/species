@@ -109,6 +109,8 @@ def create_box(boxtype, **kwargs):
         box.name = kwargs["name"]
         box.photometry = kwargs["photometry"]
         box.spectrum = kwargs["spectrum"]
+        if "chi2_red" in kwargs:
+            box.chi2_red = kwargs["chi2_red"]
 
     elif boxtype == "samples":
         box = SamplesBox()
@@ -440,6 +442,7 @@ class ResidualsBox(Box):
         self.name = None
         self.photometry = None
         self.spectrum = None
+        self.chi2_red = None
 
 
 class SamplesBox(Box):

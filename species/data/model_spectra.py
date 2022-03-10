@@ -7,6 +7,7 @@ import os
 import pathlib
 import tarfile
 import urllib.request
+import warnings
 
 from typing import Optional, Tuple
 
@@ -80,6 +81,13 @@ def add_model_grid(
             f"'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
             f"'sonora-bobcat', 'sonora-bobcat-co'"
         )
+
+    if model_name == "bt-settl":
+        warnings.warn("It is recommended to use the CIFIST "
+                      "grid of the BT-Settl, because it is "
+                      "a newer version. In that case, set "
+                      "model='bt-settl-cifist' when using "
+                      "add_model of Database.")
 
     if not os.path.exists(input_path):
         os.makedirs(input_path)
