@@ -55,6 +55,13 @@ class ReadModel:
 
         self.model = model
 
+        if self.model_name == "bt-settl":
+            warnings.warn("It is recommended to use the CIFIST "
+                          "grid of the BT-Settl, because it is "
+                          "a newer version. In that case, set "
+                          "model='bt-settl-cifist' when using "
+                          "add_model of Database.")
+
         self.spectrum_interp = None
         self.wl_points = None
         self.wl_index = None

@@ -734,6 +734,7 @@ class AtmosphericRetrieval:
         check_flux: Optional[float] = None,
         temp_nodes: Optional[int] = None,
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        check_phot_press: Optional[float] = None,
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -838,6 +839,19 @@ class AtmosphericRetrieval:
             ``prior={'mass': (13., 3.)}`` for an expected mass
             of 13 Mjup with an uncertainty of 3 Mjup. The
             parameter is not used if set to ``None``.
+        check_phot_press : float, None
+            Remove the sample if the photospheric pressure that is
+            calculated for the P-T profile is more than a factor
+            ``check_phot_press`` larger or smaller than the
+            photospheric pressure that is calculated from the
+            Rosseland mean opacity of the non-gray opacities of
+            the atmospheric structure (see Eq. 7 in GRAVITY
+            Collaboration et al. 2020, where a factor of 5 was
+            used). This parameter can only in combination with
+            ``pt_profile='molliere'``. The parameter is not used
+            used if set to ``None``. Finally, since samples are
+            removed when not full-filling this requirement, the
+            runtime of the retrieval may increase significantly.
 
         Returns
         -------
@@ -1260,23 +1274,28 @@ class AtmosphericRetrieval:
                     # constant log-pressure steps
                     if i == self.temp_nodes - 2:
                         # First temperature step has no constraints
-                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] * \
-                            (1.-cube[cube_index[f't{i}']])
+                        cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
+                            1.0 - cube[cube_index[f"t{i}"]]
+                        )
 
                     else:
                         # Temperature difference of previous step
-                        temp_diff = cube[cube_index[f't{i+2}']] - cube[cube_index[f't{i+1}']]
+                        temp_diff = (
+                            cube[cube_index[f"t{i+2}"]] - cube[cube_index[f"t{i+1}"]]
+                        )
 
-                        if cube[cube_index[f't{i+1}']] - temp_diff < 0.:
+                        if cube[cube_index[f"t{i+1}"]] - temp_diff < 0.0:
                             # If previous step would make the next point
                             # smaller than zero than use the maximum
                             # temperature step possible
-                            temp_diff = cube[cube_index[f't{i+1}']]
+                            temp_diff = cube[cube_index[f"t{i+1}"]]
 
                         # Sample next temperature point with a smaller
-                        # temperature step than the previous one 
-                        cube[cube_index[f't{i}']] = cube[cube_index[f't{i+1}']] - \
-                            cube[cube_index[f't{i}']]*temp_diff
+                        # temperature step than the previous one
+                        cube[cube_index[f"t{i}"]] = (
+                            cube[cube_index[f"t{i+1}"]]
+                            - cube[cube_index[f"t{i}"]] * temp_diff
+                        )
 
             if pt_profile == "eddington":
 
@@ -2663,7 +2682,11 @@ class AtmosphericRetrieval:
                     # This is perhaps no longer needed?
                     return -np.inf
 
-                if hasattr(rt_object, "tau_rosse") and phot_press is not None:
+                if (
+                    check_phot_press is not None
+                    and hasattr(rt_object, "tau_rosse")
+                    and phot_press is not None
+                ):
                     # Remove the sample if the photospheric pressure
                     # from the P-T profile is more than a factor 5
                     # larger than the photospheric pressure that is
@@ -2679,16 +2702,22 @@ class AtmosphericRetrieval:
                         raise RuntimeError("Not yet implemented")
 
                     rosse_pphot = press_tmp[
-                        np.argmin(np.abs(rt_object.tau_rosse - 1.))]
+                        np.argmin(np.abs(rt_object.tau_rosse - 1.0))
+                    ]
 
-                    index_tp = (press_tmp > rosse_pphot/10.) & \
-                               (press_tmp < rosse_pphot*10.)
+                    index_tp = (press_tmp > rosse_pphot / 10.0) & (
+                        press_tmp < rosse_pphot * 10.0
+                    )
 
-                    tau_pow = np.mean(np.diff(np.log(
-                        rt_object.tau_rosse[index_tp]))/
-                        np.diff(np.log(press_tmp[index_tp])))
+                    # tau_pow = np.mean(
+                    #     np.diff(np.log(rt_object.tau_rosse[index_tp]))
+                    #     / np.diff(np.log(press_tmp[index_tp]))
+                    # )
 
-                    if phot_press > rosse_pphot*5.0 or phot_press < rosse_pphot/5.0:
+                    if (
+                        phot_press > rosse_pphot * check_phot_press
+                        or phot_press < rosse_pphot / check_phot_press
+                    ):
                         return -np.inf
 
                     # if np.abs(cube[cube_index['alpha']]-tau_pow) > 0.1:

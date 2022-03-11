@@ -763,6 +763,13 @@ class FitModel:
         self.model = model
         self.bounds = bounds
 
+        if self.model_name == "bt-settl":
+            warnings.warn("It is recommended to use the CIFIST "
+                          "grid of the BT-Settl, because it is "
+                          "a newer version. In that case, set "
+                          "model='bt-settl-cifist' when using "
+                          "add_model of Database.")
+
         if self.model == "planck":
             # Fitting blackbody radiation
             if isinstance(bounds["teff"], list) and isinstance(bounds["radius"], list):
