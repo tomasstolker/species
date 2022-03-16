@@ -519,6 +519,9 @@ class AtmosphericRetrieval:
             self.parameters.append("log_kappa_gray")
             self.parameters.append("log_cloud_top")
 
+            if "albedo" in bounds:
+                self.parameters.append("albedo")
+
         elif len(self.cloud_species) > 0:
             self.parameters.append("fsed")
             self.parameters.append("log_kzz")
@@ -638,17 +641,18 @@ class AtmosphericRetrieval:
             print(f"   - {item}")
 
     @typechecked
-    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
+    def rebin_opacities(self, wavel_bin: float, out_folder: str = "rebin_out") -> None:
         """
-        Function for downsampling the ``c-k`` opacities. The
-        downsampled opacities should be stored in the
-        `opacities/lines/corr_k/` folder of the ``pRT_input_data_path``.
+        Function for downsampling the ``c-k`` opacities from
+        :math:`\\lambda/\\Delta\\lambda = 1000` to a smaller wavelength
+        binning. The downsampled opacities should be stored in the
+        `opacities/lines/corr_k/` folder of ``pRT_input_data_path``.
 
         Parameters
         ----------
-        spec_res : float
-            Spectral resolution to which the opacities will be
-            downsampled.
+        wavel_bin : float
+            Wavelength binning, :math:`\\lambda/\\Delta\\lambda`, to
+            which the opacities will be downsampled.
         out_folder : str
             Path of the output folder where the downsampled opacities
             will be stored.
@@ -714,7 +718,7 @@ class AtmosphericRetrieval:
                 mol_masses[item] = Formula(item).isotope.massnumber
 
         rt_object.write_out_rebin(
-            spec_res, path=out_folder, species=self.line_species, masses=mol_masses
+            wavel_bin, path=out_folder, species=self.line_species, masses=mol_masses
         )
 
     @typechecked
@@ -1608,6 +1612,15 @@ class AtmosphericRetrieval:
 
                     cube[cube_index["log_tau_cloud"]] = log_tau_cloud
 
+                if "albedo" in bounds:
+                    albedo = (
+                        bounds["albedo"][0]
+                        + (bounds["albedo"][1] - bounds["albedo"][0])
+                        * cube[cube_index["albedo"]]
+                    )
+
+                    cube[cube_index["albedo"]] = albedo
+
             elif len(self.cloud_species) > 0:
                 # Sedimentation parameter: ratio of the settling and
                 # mixing velocities of the cloud particles
@@ -2396,6 +2409,9 @@ class AtmosphericRetrieval:
                         "log_kappa_gray": cube[cube_index["log_kappa_gray"]],
                         "log_cloud_top": cube[cube_index["log_cloud_top"]],
                     }
+
+                    if "albedo" in self.parameters:
+                        cloud_dict["albedo"] = cube[cube_index["albedo"]]
 
                 # Check if the bolometric flux is conserved in the radiative region
 

@@ -1012,8 +1012,7 @@ def calc_spectrum_clouds(
         base. Only required when the ``cloud_dict`` contains ``fsed``,
         ``log_kzz``, and ``sigma_lnorm``.
     cloud_dict : dict
-        Dictionary with the cloud parameters. A parameter value is set
-        to ``None`` if the parameter is not in use.
+        Dictionary with the cloud parameters.
     log_g : float
         Log10 of the surface gravity (cm s-2).
     chemistry : str
@@ -1139,7 +1138,10 @@ def calc_spectrum_clouds(
 
     fseds = {}
     for item in rt_object.cloud_species:
-        # item has the form of e.g. MgSiO3(c)
+        # The item has the form of e.g. MgSiO3(c)
+        # For parametrized cloud opacities,
+        # then number of cloud_species is zero
+        # so the fseds dictionary remains empty
         fseds[item] = cloud_dict["fsed"]
 
     # Create an array with a constant eddy diffusion coefficient (cm2 s-1)
@@ -1327,7 +1329,21 @@ def calc_spectrum_clouds(
 
             return opa_abs
 
-        kappa_scat = None
+        # Add optional scattering opacity
+
+        if "albedo" in cloud_dict:
+            @typechecked
+            def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+                # Absorption opacity (cm2 g-1)
+                opa_abs = kappa_abs(wavel_micron, press_bar)
+
+                # Scattering opacity (cm2 g-1)
+                opa_scat = cloud_dict["albedo"] * opa_abs / (1. - cloud_dict["albedo"])
+
+                return opa_scat
+
+        else:
+            kappa_scat = None
 
     else:
         kappa_abs = None

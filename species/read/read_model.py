@@ -55,7 +55,7 @@ class ReadModel:
 
         self.model = model
 
-        if self.model_name == "bt-settl":
+        if self.model == "bt-settl":
             warnings.warn("It is recommended to use the CIFIST "
                           "grid of the BT-Settl, because it is "
                           "a newer version. In that case, set "
