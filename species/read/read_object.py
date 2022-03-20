@@ -84,7 +84,7 @@ class ReadObject:
         Parameters
         ----------
         filter_name : str
-            Filter ID.
+            Filter name as stored in the database.
 
         Returns
         -------
@@ -178,7 +178,7 @@ class ReadObject:
         Parameters
         ----------
         filter_name : str
-            Filter name.
+            Filter name as stored in the database.
 
         Returns
         -------

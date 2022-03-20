@@ -1426,25 +1426,31 @@ def calc_spectrum_clouds(
     #     else:
     #         contr_em = None
 
-    wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-
-    # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-    f_lambda = 1e4 * rt_object.flux
-
-    # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-    f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-
-    # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-    f_lambda *= 1e-6
-
-    # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-    f_lambda *= 1e-7
-
-    # Optionally return the emission contribution
-    if contribution:
-        contr_em = rt_object.contr_em
-    else:
+    if rt_object.flux is None:
+        wavel = None
+        f_lambda = None
         contr_em = None
+
+    else:
+        wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+
+        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+        f_lambda = 1e4 * rt_object.flux
+
+        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+        f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+
+        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+        f_lambda *= 1e-6
+
+        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+        f_lambda *= 1e-7
+
+        # Optionally return the emission contribution
+        if contribution:
+            contr_em = rt_object.contr_em
+        else:
+            contr_em = None
 
     # if (
     #     plotting

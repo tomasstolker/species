@@ -1316,7 +1316,7 @@ def plot_clouds(
     radius_g = radtrans.rt_object.r_g[:, cloud_index] * 1e4  # (cm) -> (um)
     sigma_g = median["sigma_lnorm"]
 
-    r_bins = np.logspace(-4.0, 2.0, 1000)
+    r_bins = np.logspace(-3.0, 3.0, 1000)
     radii = (r_bins[1:] + r_bins[:-1]) / 2.0
 
     dn_dr = np.zeros((radius_g.shape[0], radii.shape[0]))
