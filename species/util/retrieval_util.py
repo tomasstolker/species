@@ -1317,7 +1317,7 @@ def calc_spectrum_clouds(
             return cloud_dict["albedo"] * kappa_tot
 
     elif "log_kappa_gray" in cloud_dict:
-        # Non-scattering, gray clouds with cloud top
+        # Gray clouds with cloud top
 
         @typechecked
         def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:

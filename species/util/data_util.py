@@ -899,6 +899,9 @@ def retrieval_spectrum(
         model_param["log_kappa_gray"] = sample[indices["log_kappa_gray"]]
         model_param["log_cloud_top"] = sample[indices["log_cloud_top"]]
 
+        if "albedo" in indices:
+            model_param["albedo"] = sample[indices["albedo"]]
+
     elif len(cloud_species) > 0:
         model_param["fsed"] = sample[indices["fsed"]]
         model_param["sigma_lnorm"] = sample[indices["sigma_lnorm"]]

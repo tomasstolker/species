@@ -2617,20 +2617,25 @@ class Database:
         self, tag: str, output_folder: str, inc_teff: bool = False
     ) -> None:
         """
-        Function for adding the output data from the atmospheric retrieval with
-        :class:`~species.analysis.retrieval.AtmosphericRetrieval` to the database.
+        Function for adding the output data from
+        the atmospheric retrieval with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`
+        to the database.
 
         Parameters
         ----------
         tag : str
             Database tag to store the posterior samples.
         output_folder : str
-            Output folder that was used for the output files by ``MultiNest``.
+            Output folder that was used for the output files by
+            ``MultiNest``.
         inc_teff : bool
-            Calculate Teff for each sample by integrating the model spectrum from 0.5 to 50 um.
-            The Teff samples are added to the array with samples that are stored in the database.
-            The computation time for adding Teff will be long because the spectra need to be
-            calculated and integrated for all samples.
+            Calculate Teff for each sample by integrating the model
+            spectrum from 0.5 to 50 um. The Teff samples are added to
+            the array with samples that are stored in the database.
+            The computation time for adding Teff will be long because
+            the spectra need to be calculated and integrated for all
+            samples.
 
         Returns
         -------
@@ -2660,7 +2665,8 @@ class Database:
             samples = np.loadtxt(post_old)
 
         else:
-            raise RuntimeError("Can not find the post_equal_weights.dat file.")
+            raise RuntimeError("Can not find the "
+                               "post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
@@ -3026,7 +3032,8 @@ class Database:
         spec_res: Optional[float] = None,
     ) -> Tuple[List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
-        Function for extracting random spectra from the posterior distribution obtained with
+        Function for extracting random spectra from the
+        posterior distribution that was sampled with
         :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
         Parameters
@@ -3034,16 +3041,20 @@ class Database:
         tag : str
             Database tag with the posterior samples.
         random : int, None
-            Number of randomly selected samples. All samples are used if set to ``None``.
+            Number of randomly selected samples. All samples
+            are used if set to ``None``.
         wavel_range : tuple(float, float), str, None
-            Wavelength range (um) or filter name. The wavelength range from the retrieval is
-            adopted (i.e. the ``wavel_range`` parameter of
-            :class:`~species.analysis.retrieval.AtmosphericRetrieval`) when set to ``None``. It is
-            mandatory to set the argument to ``None`` in case the ``log_tau_cloud`` parameter has
+            Wavelength range (um) or filter name. The
+            wavelength range from the retrieval is adopted
+            (i.e. the``wavel_range`` parameter of
+            :class:`~species.analysis.retrieval.AtmosphericRetrieval`)
+            when set to ``None``. It is mandatory to set the argument
+            to ``None`` in case the ``log_tau_cloud`` parameter has
             been used with the retrieval.
         spec_res : float, None
-            Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied when the argument is set to ``None``.
+            Spectral resolution that is used for the smoothing with a
+            Gaussian kernel. No smoothing is applied when the argument
+            is set to ``None``.
 
         Returns
         -------
