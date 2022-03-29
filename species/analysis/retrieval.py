@@ -587,8 +587,11 @@ class AtmosphericRetrieval:
         # Add P-T smoothing parameter
 
         if "pt_smooth" in bounds:
-            for i in range(self.temp_nodes - 1):
-                self.parameters.append(f"pt_smooth_{i}")
+            self.parameters.append("pt_smooth")
+
+        # if "pt_smooth" in bounds:
+        #     for i in range(self.temp_nodes - 1):
+        #         self.parameters.append(f"pt_smooth_{i}")
 
             # self.parameters.append("pt_smooth_1")
             # self.parameters.append("pt_smooth_2")
@@ -1114,7 +1117,9 @@ class AtmosphericRetrieval:
 
         if pt_profile in ["free", "monotonic"]:
             knot_press = np.logspace(
-                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), temp_nodes
+                np.log10(self.pressure[0]),
+                np.log10(self.pressure[-1]),
+                self.temp_nodes
             )
 
         else:
