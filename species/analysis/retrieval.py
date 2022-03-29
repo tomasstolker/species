@@ -589,9 +589,8 @@ class AtmosphericRetrieval:
         if "pt_smooth" in bounds:
             self.parameters.append("pt_smooth")
 
-        # if "pt_smooth" in bounds:
-        #     for i in range(self.temp_nodes - 1):
-        #         self.parameters.append(f"pt_smooth_{i}")
+            # for i in range(self.temp_nodes - 1):
+            #     self.parameters.append(f"pt_smooth_{i}")
 
             # self.parameters.append("pt_smooth_1")
             # self.parameters.append("pt_smooth_2")
@@ -1811,12 +1810,18 @@ class AtmosphericRetrieval:
             # Standard deviation of the Gaussian kernel for smoothing the P-T profile
 
             if "pt_smooth" in bounds:
-                for i in range(self.temp_nodes - 1):
-                    cube[cube_index[f"pt_smooth_{i}"]] = (
-                        bounds["pt_smooth"][0]
-                        + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
-                        * cube[cube_index[f"pt_smooth_{i}"]]
-                    )
+                cube[cube_index[f"pt_smooth"]] = (
+                    bounds["pt_smooth"][0]
+                    + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
+                    * cube[cube_index[f"pt_smooth"]]
+                )
+
+                # for i in range(self.temp_nodes - 1):
+                #     cube[cube_index[f"pt_smooth_{i}"]] = (
+                #         bounds["pt_smooth"][0]
+                #         + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
+                #         * cube[cube_index[f"pt_smooth_{i}"]]
+                #     )
 
             elif "pt_smooth_1" in bounds:
                 cube[cube_index["pt_smooth_1"]] = (
