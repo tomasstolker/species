@@ -2737,6 +2737,7 @@ class Database:
             dset.attrs["n_cloud_species"] = len(radtrans["cloud_species"])
 
             dset.attrs["scattering"] = radtrans["scattering"]
+            dset.attrs["pressure_grid"] = radtrans["pressure_grid"]
             dset.attrs["pt_profile"] = radtrans["pt_profile"]
             dset.attrs["chemistry"] = radtrans["chemistry"]
             dset.attrs["wavel_min"] = radtrans["wavel_range"][0]
@@ -2760,11 +2761,19 @@ class Database:
 
         print(" [DONE]")
 
+        # Set number of pressures
+
+        if dset.attrs["pressure_grid"] in ["standard", "smaller"]:
+            n_pressures = 180
+
+        elif dset.attrs["pressure_grid"] == "clouds":
+            n_pressures = 1440
+
         rt_object = None
 
         for i, cloud_item in enumerate(radtrans["cloud_species"]):
             if f"{cloud_item[:-6].lower()}_tau" in parameters:
-                pressure = np.logspace(-6, 3, 180)
+                pressure = np.logspace(-6, 3, n_pressures)
                 cloud_mass = np.zeros(samples.shape[0])
 
                 if rt_object is None:
@@ -2912,7 +2921,7 @@ class Database:
 
                 # Recalculate the P-T profile from the sampled parameters
 
-                pressure = np.logspace(-6, 3, 180)  # (bar)
+                pressure = np.logspace(-6, 3, n_pressures)  # (bar)
 
                 if radtrans["pt_profile"] == "molliere":
                     upper_temp = np.array(
@@ -3524,7 +3533,7 @@ class Database:
             cloud_species=cloud_species,
             scattering=True,
             wavel_range=(0.5, 50.0),
-            pressure_grid="smaller",
+            pressure_grid=sample_box.attributes["pressure_grid"],
             res_mode="c-k",
             cloud_wavel=cloud_wavel,
         )

@@ -319,13 +319,15 @@ class AtmosphericRetrieval:
         # Create the pressure layers for the Radtrans object
 
         if self.pressure_grid in ["standard", "smaller"]:
-            # Initiate 180 pressure layers but use only 60 layers during the radiative transfer
+            # Initiate 180 pressure layers but use only
+            # 60 layers during the radiative transfer
             # when pressure_grid is set to 'smaller'
             n_pressure = 180
 
         elif self.pressure_grid == "clouds":
-            # Initiate 1140 pressure layers but use fewer layers (~100) during the radiative
-            # tranfer after running make_half_pressure_better
+            # Initiate 1140 pressure layers but use fewer
+            # layers (~100) during the radiative tranfer
+            # after running make_half_pressure_better
             n_pressure = 1440
 
         else:
@@ -1097,9 +1099,8 @@ class AtmosphericRetrieval:
             # The pressure structure is reinitiated after the
             # refinement around the cloud deck so the current
             # initializiation to 60 pressure points is not used
-            print(
-                "Number of pressure levels used with the radiative transfer: variable}"
-            )
+            print("Number of pressure levels used with the "
+                  "radiative transfer: adaptive refinement")
 
             rt_object.setup_opa_structure(self.pressure[::24])
 

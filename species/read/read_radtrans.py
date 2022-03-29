@@ -143,12 +143,30 @@ class ReadRadtrans:
 
         if cloud_species is None:
             self.cloud_species = []
-            n_pressure = 180
-
         else:
             self.cloud_species = cloud_species
-            # n_pressure = 1440
+
+        # Set the number of pressures
+
+        if self.pressure_grid in ["standard", "smaller"]:
+            # Initiate 180 pressure layers but use only
+            # 60 layers during the radiative transfer
+            # when pressure_grid is set to 'smaller'
             n_pressure = 180
+
+        elif self.pressure_grid == "clouds":
+            # Initiate 1140 pressure layers but use fewer
+            # layers (~100) during the radiative tranfer
+            # after running make_half_pressure_better
+            n_pressure = 1440
+
+        else:
+            raise ValueError(
+                f"The argument of pressure_grid "
+                f"('{self.pressure_grid}') is "
+                f"not recognized. Please use "
+                f"'standard', 'smaller', or 'clouds'."
+            )
 
         # Create 180 pressure layers in log space
 
@@ -405,9 +423,10 @@ class ReadRadtrans:
         else:
             if "log_p_quench" in model_param:
                 warnings.warn(
-                    "The 'model_param' dictionary contains the 'log_p_quench' "
-                    "parameter but 'quenching=None'. The quenching pressure from "
-                    "the dictionary is therefore ignored."
+                    "The 'model_param' dictionary contains the "
+                    "'log_p_quench' parameter but 'quenching=None'. "
+                    "The quenching pressure from the dictionary is "
+                    "therefore ignored."
                 )
 
             p_quench = None
@@ -799,7 +818,10 @@ class ReadRadtrans:
             ax.xaxis.set_major_locator(MultipleLocator(1.0))
             ax.xaxis.set_minor_locator(MultipleLocator(0.2))
 
-            xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure[::3])
+            press_bar = 1e-6 * self.rt_object.press  # (Ba) -> (Bar)
+
+            xx_grid, yy_grid = np.meshgrid(wavelength, press_bar)
+
             ax.pcolormesh(
                 xx_grid,
                 yy_grid,
@@ -817,7 +839,7 @@ class ReadRadtrans:
             ax.plot(wavelength, photo_press, lw=0.5, color="gray")
 
             ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
-            ax.set_ylim(np.amax(self.pressure[::3]), np.amin(self.pressure[::3]))
+            ax.set_ylim(np.amax(press_bar), np.amin(press_bar))
 
             plt.savefig(plot_contribution, bbox_inches="tight")
             plt.clf()

@@ -724,10 +724,11 @@ def plot_pt_profile(
                 if label == "KCL":
                     label = "KCl"
 
-                # Convert from (cm) to (um)
                 ax2.plot(
+                    # (cm) -> (um)
                     radtrans.rt_object.r_g[:, cloud_index] * 1e4,
-                    pressure[::3],
+                    # (Ba) -> (Bar)
+                    radtrans.rt_object.press * 1e-6,
                     lw=0.8,
                     color=cloud_color[item],
                     label=label,
