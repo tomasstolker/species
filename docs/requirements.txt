@@ -1,3 +1,4 @@
+markupsafe==2.0.1
 cython
 jupyter
 nbsphinx
