@@ -35,7 +35,7 @@ jobs:
           pip install -r docs/requirements.txt
           pip install flake8 pytest pytest-cov sphinx cython
           pip install -r requirements.txt
-          # pip install .
+          pip install .
 
       # - name: Lint with flake8
       #   run: |
