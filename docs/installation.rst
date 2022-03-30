@@ -3,7 +3,7 @@
 Installation
 ============
 
-``species`` is compatible with `Python <https://www.python.org>`_ versions 3.7/3.8/3.9 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
+``species`` is compatible with `Python <https://www.python.org>`_ versions 3.8/3.9/3.10 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
 Installation from PyPI
 ----------------------
