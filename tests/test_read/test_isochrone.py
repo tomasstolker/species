@@ -88,7 +88,7 @@ class TestIsochrone:
         assert colormag_box.magnitude.shape == (10,)
 
         assert np.sum(colormag_box.color) == pytest.approx(
-            2.4964059611579543, rel=self.limit, abs=0.0
+            2.4964066299231042, rel=self.limit, abs=0.0
         )
 
         assert np.sum(colormag_box.magnitude) == pytest.approx(
@@ -114,11 +114,11 @@ class TestIsochrone:
         assert colorcolor_box.color2.shape == (10,)
 
         assert np.sum(colorcolor_box.color1) == pytest.approx(
-            2.4964059611579543, rel=self.limit, abs=0.0
+            2.4964066299231042, rel=self.limit, abs=0.0
         )
 
         assert np.sum(colorcolor_box.color2) == pytest.approx(
-            3.353082838751771, rel=self.limit, abs=0.0
+            3.3530823899681383, rel=self.limit, abs=0.0
         )
 
         assert np.sum(colorcolor_box.sptype) == pytest.approx(

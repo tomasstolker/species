@@ -80,4 +80,4 @@ class TestFilter:
         read_filter = species.ReadFilter("MKO/NSFCam.H")
         filter_fwhm = read_filter.filter_fwhm()
 
-        assert filter_fwhm == pytest.approx(0.2956945805173905, rel=self.limit, abs=0.0)
+        assert filter_fwhm == pytest.approx(0.2956945960962718, rel=self.limit, abs=0.0)

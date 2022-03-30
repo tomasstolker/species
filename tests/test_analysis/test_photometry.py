@@ -33,8 +33,8 @@ class TestPhotometry:
         synphot = species.SyntheticPhotometry("MKO/NSFCam.J")
         flux, error = synphot.magnitude_to_flux(20.0, error=0.5)
 
-        assert flux == pytest.approx(3.104545900342411e-17, rel=self.limit, abs=0.0)
-        assert error == pytest.approx(1.4807688130194138e-17, rel=self.limit, abs=0.0)
+        assert flux == pytest.approx(3.104545952461071e-17, rel=self.limit, abs=0.0)
+        assert error == pytest.approx(1.480768837878343e-17, rel=self.limit, abs=0.0)
 
     def test_flux_to_magnitude(self):
         synphot = species.SyntheticPhotometry("MKO/NSFCam.J")
@@ -43,7 +43,7 @@ class TestPhotometry:
         )
 
         assert app_mag[0] == pytest.approx(3.729995213054507, rel=self.limit, abs=0.0)
-        assert abs_mag[0] == pytest.approx(0.23514519137441336, rel=self.limit, abs=0.0)
+        assert abs_mag[0] == pytest.approx(0.23514520960159224, rel=self.limit, abs=0.0)
 
     def test_spectrum_to_flux(self):
         jup_wavel, jup_flux, jup_err = np.loadtxt("plnt_Jupiter.txt", unpack=True)
@@ -99,7 +99,7 @@ class TestPhotometry:
         )
 
         assert phot_flux == pytest.approx(
-            1.8139884828774647e-09, rel=self.limit, abs=0.0
+            1.8139883721554032e-09, rel=self.limit, abs=0.0
         )
 
         # The error is estimated with Monte Carlo sampling
@@ -114,7 +114,7 @@ class TestPhotometry:
             jup_wavel, jup_flux, error=jup_err, distance=(1.0, 0.01), threshold=None
         )
 
-        assert app_mag[0] == pytest.approx(0.5900070089410099, rel=self.limit, abs=0.0)
+        assert app_mag[0] == pytest.approx(0.5900070243451384, rel=self.limit, abs=0.0)
         assert abs_mag[0] == pytest.approx(5.59000700894101, rel=self.limit, abs=0.0)
 
         # The error is estimated with Monte Carlo sampling
