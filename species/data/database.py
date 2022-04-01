@@ -305,9 +305,11 @@ class Database:
     @typechecked
     def add_dust(self) -> None:
         """
-        Function for adding optical constants of MgSiO3 and Fe, and MgSiO3 cross sections for
-        a log-normal and power-law size distribution to the database. The optical constants have
-        been compiled by Mollière et al. (2019) for petitRADTRANS from the following sources:
+        Function for adding optical constants of MgSiO3 and Fe, and
+        MgSiO3 cross sections for a log-normal and power-law size
+        distribution to the database. The optical constants have
+        been compiled by Mollière et al. (2019) for petitRADTRANS
+        from the following sources:
 
         - MgSiO3, crystalline
             - Scott & Duley (1996), ApJS, 105, 401
@@ -349,27 +351,34 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or from an input file. Additional filters that are automatically added are
-        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp, Magellan/VisAO.Ys, ALMA/band6,
-        and ALMA/band7.
+        Function for adding a filter profile to the database, either
+        from the SVO Filter profile Service or from an input file.
+        Additional filters that are automatically added are
+        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp,
+        Magellan/VisAO.Ys, ALMA/band6, and ALMA/band7.
 
         Parameters
         ----------
         filter_name : str
-            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp') or a
-            user-defined name if a ``filename`` is specified.
+            Filter name from the SVO Filter Profile Service (e.g.,
+            'Paranal/NACO.Lp') or a user-defined name if a ``filename``
+            is specified.
         filename : str
-            Filename of the filter profile. The first column should contain the wavelength
-            (um) and the second column the fractional transmission. The profile is downloaded from
-            the SVO Filter Profile Service if the argument of ``filename`` is set to ``None``.
+            Filename of the filter profile. The first column should
+            contain the wavelength (um) and the second column the
+            fractional transmission. The profile is downloaded from
+            the SVO Filter Profile Service if the argument of
+            ``filename`` is set to ``None``.
         detector_type : str
-            The detector type ('photon' or 'energy'). The argument is only used if a ``filename``
-            is provided. Otherwise, for filters that are fetched from the SVO website, the detector
-            type is read from the SVO data. The detector type determines if a wavelength factor
-            is included in the integral for the synthetic photometry.
+            The detector type ('photon' or 'energy'). The argument is
+            only used if a ``filename`` is provided. Otherwise, for
+            filters that are fetched from the SVO website, the detector
+            type is read from the SVO data. The detector type determines
+            if a wavelength factor is included in the integral for the
+            synthetic photometry.
         verbose : bool
-            Print details on the companion data that are added to the database.
+            Print details on the companion data that are added
+            to the database.
 
         Returns
         -------
@@ -436,9 +445,10 @@ class Database:
         tag : str
             Database tag name where the isochrone that will be stored.
         model : str
-            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe' models, the isochrone data
-            can be downloaded from https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models, the
-            data can be requested from Gabriel Marleau.
+            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe'
+            models, the isochrone data can be downloaded from
+            https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models,
+            the data can be requested from Gabriel Marleau.
 
         Returns
         -------
@@ -485,21 +495,26 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl', 'bt-settl-cifist',
-            'bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
-            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'blackbody', bt-cond',
-            'bt-cond-feh, 'morley-2012', 'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co').
+            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl',
+            'bt-settl-cifist', 'bt-nextgen', 'drift-phoenix',
+            'petitcode-cool-clear', 'petitcode-cool-cloudy',
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem',
+            'blackbody', bt-cond', 'bt-cond-feh, 'morley-2012',
+            'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co').
         wavel_range : tuple(float, float), None
-            Wavelength range (um) for adding a subset of the spectra. The full wavelength range
-            is used if the argument is set to ``None``.
+            Wavelength range (um) for adding a subset of the spectra.
+            The full wavelength range is used if the argument is set
+            to ``None``.
         spec_res : float, None
-            Spectral resolution to which the spectra will be resampled. This parameter is optional
-            since the spectra have already been resampled to a lower, constant resolution
-            (typically :math:`R = 5000`). The argument is only used if ``wavel_range`` is not
-            ``None``.
+            Spectral resolution to which the spectra will be resampled.
+            This parameter is optional since the spectra have already
+            been resampled to a lower, constant resolution (typically
+            :math:`R = 5000`). The argument is only used if
+            ``wavel_range`` is not ``None``.
         teff_range : tuple(float, float), None
-            Effective temperature range (K) for adding a subset of the model grid. The full
-            parameter grid will be added if the argument is set to ``None``.
+            Effective temperature range (K) for adding a subset of the
+            model grid. The full parameter grid will be added if the
+            argument is set to ``None``.
 
         Returns
         -------
@@ -2763,10 +2778,10 @@ class Database:
 
         # Set number of pressures
 
-        if dset.attrs["pressure_grid"] in ["standard", "smaller"]:
+        if radtrans["pressure_grid"] in ["standard", "smaller"]:
             n_pressures = 180
 
-        elif dset.attrs["pressure_grid"] == "clouds":
+        elif radtrans["pressure_grid"] == "clouds":
             n_pressures = 1440
 
         rt_object = None
