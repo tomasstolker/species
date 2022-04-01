@@ -382,19 +382,6 @@ class ReadRadtrans:
             if "pt_smooth" in model_param:
                 pt_smooth = model_param["pt_smooth"]
 
-            elif "pt_turn" in model_param:
-                pt_smooth = {
-                    "pt_smooth_1": model_param["pt_smooth_1"],
-                    "pt_smooth_2": model_param["pt_smooth_2"],
-                    "pt_turn": model_param["pt_turn"],
-                    "pt_index": model_param["pt_index"],
-                }
-
-            elif "pt_smooth_0" in model_param:
-                pt_smooth = {}
-                for i in range(temp_nodes - 1):
-                    pt_smooth[f"pt_smooth_{i}"] = model_param[f"pt_smooth_{i}"]
-
             else:
                 pt_smooth = None
 

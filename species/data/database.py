@@ -2849,10 +2849,8 @@ class Database:
                             sample_dict["c_o_ratio"],
                         )
 
-                    elif (
-                        radtrans["pt_profile"] == "free"
-                        or radtrans["pt_profile"] == "monotonic"
-                    ):
+                    elif (radtrans["pt_profile"] == "free" or
+                          radtrans["pt_profile"] == "monotonic"):
                         knot_press = np.logspace(
                             np.log10(pressure[0]), np.log10(pressure[-1]), 15
                         )

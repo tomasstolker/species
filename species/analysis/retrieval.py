@@ -350,7 +350,6 @@ class AtmosphericRetrieval:
         # Initiate the optional P-T parameters
 
         self.pt_smooth = None
-        # self.n_smooth = 0
         self.temp_nodes = None
 
         # Weighting of the photometric and spectroscopic data
@@ -588,36 +587,6 @@ class AtmosphericRetrieval:
 
         if "pt_smooth" in bounds:
             self.parameters.append("pt_smooth")
-
-            # for i in range(self.temp_nodes - 1):
-            #     self.parameters.append(f"pt_smooth_{i}")
-
-            # self.parameters.append("pt_smooth_1")
-            # self.parameters.append("pt_smooth_2")
-            # self.parameters.append("pt_turn")
-            # self.parameters.append("pt_index")
-            # self.n_smooth = 1
-
-        # for i in range(100):
-        #     if f"pt_smooth_{i}" in bounds:
-        #         self.parameters.append(f"pt_smooth_{i}")
-        #         self.n_smooth += 1
-        #
-        #     else:
-        #         break
-        #
-        # if self.n_smooth > 1:
-        #     for i in range(self.n_smooth):
-        #
-        #         if i == 0:
-        #             self.parameters.append(f"pt_connect_{i}_end")
-        #
-        #         elif i == self.n_smooth - 1:
-        #             self.parameters.append(f"pt_connect_{i}_start")
-        #
-        #         else:
-        #             self.parameters.append(f"pt_connect_{i}_end")
-        #             self.parameters.append(f"pt_connect_{i}_start")
 
         # Add mixing-length parameter for convective component
         # of the bolometric flux when using check_flux
@@ -1816,76 +1785,6 @@ class AtmosphericRetrieval:
                     * cube[cube_index[f"pt_smooth"]]
                 )
 
-                # for i in range(self.temp_nodes - 1):
-                #     cube[cube_index[f"pt_smooth_{i}"]] = (
-                #         bounds["pt_smooth"][0]
-                #         + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
-                #         * cube[cube_index[f"pt_smooth_{i}"]]
-                #     )
-
-            elif "pt_smooth_1" in bounds:
-                cube[cube_index["pt_smooth_1"]] = (
-                    bounds["pt_smooth_1"][0]
-                    + (bounds["pt_smooth_1"][1] - bounds["pt_smooth_1"][0])
-                    * cube[cube_index["pt_smooth_1"]]
-                )
-
-                cube[cube_index["pt_smooth_2"]] = (
-                    bounds["pt_smooth_2"][0]
-                    + (bounds["pt_smooth_2"][1] - bounds["pt_smooth_2"][0])
-                    * cube[cube_index["pt_smooth_2"]]
-                )
-
-                cube[cube_index["pt_turn"]] = (
-                    bounds["pt_turn"][0]
-                    + (bounds["pt_turn"][1] - bounds["pt_turn"][0])
-                    * cube[cube_index["pt_turn"]]
-                )
-
-                cube[cube_index["pt_index"]] = (
-                    bounds["pt_index"][0]
-                    + (bounds["pt_index"][1] - bounds["pt_index"][0])
-                    * cube[cube_index["pt_index"]]
-                )
-
-            # elif self.n_smooth > 1:
-            #     for i in range(self.n_smooth):
-            #         cube[cube_index[f"pt_smooth_{i}"]] = (
-            #             bounds[f"pt_smooth_{i}"][0]
-            #             + (bounds[f"pt_smooth_{i}"][1] - bounds[f"pt_smooth_{i}"][0])
-            #             * cube[cube_index[f"pt_smooth_{i}"]]
-            #         )
-            #
-            #         if i == 0:
-            #             cube[cube_index[f"pt_connect_{i}_end"]] = (
-            #                 np.log10(self.pressure[0])
-            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
-            #                 * cube[cube_index[f"pt_connect_{i}_end"]]
-            #             )
-            #
-            #         elif i == self.n_smooth - 1:
-            #             cube[cube_index[f"pt_connect_{i}_start"]] = (
-            #                 np.log10(self.pressure[0])
-            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
-            #                 * cube[cube_index[f"pt_connect_{i}_start"]]
-            #             )
-            #
-            #         else:
-            #             cube[cube_index[f"pt_connect_{i}_start"]] = (
-            #                 np.log10(self.pressure[0])
-            #                 + (np.log10(self.pressure[-1]) - np.log10(self.pressure[0]))
-            #                 * cube[cube_index[f"pt_connect_{i}_start"]]
-            #             )
-            #
-            #             cube[cube_index[f"pt_connect_{i}_end"]] = (
-            #                 cube[cube_index[f"pt_connect_{i}_start"]]
-            #                 + (
-            #                     np.log10(self.pressure[-1])
-            #                     - cube[cube_index[f"pt_connect_{i}_start"]]
-            #                 )
-            #                 * cube[cube_index[f"pt_connect_{i}_end"]]
-            #             )
-
             # Mixing-length for convective flux
 
             if "mix_length" in bounds:
@@ -1999,39 +1898,8 @@ class AtmosphericRetrieval:
             # Read the P-T smoothing parameter or use
             # the argument of run_multinest otherwise
 
-            if "pt_smooth_1" in cube_index:
-                # pt_smooth = cube[cube_index["pt_smooth"]]
-                pt_smooth = {}
-
-                for i in range(self.temp_nodes - 1):
-                    pt_smooth[f"pt_smooth_{i}"] = cube[cube_index[f"pt_smooth_{i}"]]
-
-            # if "pt_smooth_1" in cube_index:
-            #     pt_smooth = {"pt_smooth_1": cube[cube_index["pt_smooth_1"]],
-            #                  "pt_smooth_2": cube[cube_index["pt_smooth_2"]],
-            #                  "pt_turn": cube[cube_index["pt_turn"]],
-            #                  "pt_index": cube[cube_index["pt_index"]]}
-
-            # elif self.n_smooth > 1:
-            #     pt_smooth = {'n_smooth': self.n_smooth}
-            #
-            #     for i in range(self.n_smooth):
-            #         pt_smooth[f"pt_smooth_{i}"] = cube[cube_index[f"pt_smooth_{i}"]]
-            #
-            #         if i == 0:
-            #             pt_end = cube[cube_index[f"pt_connect_{i}_end"]]
-            #             pt_smooth[f"pt_connect_{i}_end"] = pt_end
-            #
-            #         elif i == self.n_smooth - 1:
-            #             pt_start = cube[cube_index[f"pt_connect_{i}_start"]]
-            #             pt_smooth[f"pt_connect_{i}_start"] = pt_start
-            #
-            #         else:
-            #             pt_start = cube[cube_index[f"pt_connect_{i}_start"]]
-            #             pt_end = cube[cube_index[f"pt_connect_{i}_end"]]
-            #
-            #             pt_smooth[f"pt_connect_{i}_start"] = pt_start
-            #             pt_smooth[f"pt_connect_{i}_end"] = pt_end
+            if "pt_smooth" in cube_index:
+                pt_smooth = cube[cube_index["pt_smooth"]]
 
             else:
                 pt_smooth = self.pt_smooth
@@ -3245,9 +3113,6 @@ class AtmosphericRetrieval:
         radtrans_dict["wavel_range"] = self.wavel_range
         radtrans_dict["temp_nodes"] = self.temp_nodes
         radtrans_dict["max_press"] = self.max_pressure
-
-        # if "pt_smooth" not in bounds and "pt_smooth_0" not in bounds:
-        #     radtrans_dict["pt_smooth"] = self.pt_smooth
 
         if "pt_smooth" not in bounds:
             radtrans_dict["pt_smooth"] = self.pt_smooth
