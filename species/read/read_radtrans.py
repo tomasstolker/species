@@ -5,7 +5,7 @@ Details on the  transfer code can be found in Mollière et al. (2019).
 
 import warnings
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -39,7 +39,7 @@ class ReadRadtrans:
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
         max_press: float = None,
-        pt_profile: Optional[np.ndarray] = None,
+        pt_manual: Optional[np.ndarray] = None,
     ) -> None:
         """
         Parameters
@@ -93,7 +93,7 @@ class ReadRadtrans:
         max_pressure : float, None
             Maximum pressure (bar) for the free temperature nodes. The
             default is set to 1000 bar.
-        pt_profile : np.ndarray, None
+        pt_manual : np.ndarray, None
             A 2D array that contains the P-T profile that is used
             when ``pressure_grid="manual"``. The shape of array should
             be (n_pressure, 2), with pressure (bar) as first column
@@ -113,7 +113,7 @@ class ReadRadtrans:
         self.scattering = scattering
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
-        self.pt_profile = pt_profile
+        self.pt_manual = pt_manual
 
         # Set maximum pressure
 
@@ -143,23 +143,43 @@ class ReadRadtrans:
 
         if cloud_species is None:
             self.cloud_species = []
-            n_pressure = 180
-
         else:
             self.cloud_species = cloud_species
-            # n_pressure = 1440
+
+        # Set the number of pressures
+
+        if self.pressure_grid in ["standard", "smaller"]:
+            # Initiate 180 pressure layers but use only
+            # 60 layers during the radiative transfer
+            # when pressure_grid is set to 'smaller'
             n_pressure = 180
+
+        elif self.pressure_grid == "clouds":
+            # Initiate 1140 pressure layers but use fewer
+            # layers (~100) during the radiative tranfer
+            # after running make_half_pressure_better
+            n_pressure = 1440
+
+        else:
+            raise ValueError(
+                f"The argument of pressure_grid "
+                f"('{self.pressure_grid}') is "
+                f"not recognized. Please use "
+                f"'standard', 'smaller', or 'clouds'."
+            )
 
         # Create 180 pressure layers in log space
 
         if self.pressure_grid == "manual":
-            if self.pt_profile is None:
-                raise UserWarning("A 2D array with the P-T profile "
-                                  "should be provided as argument "
-                                  "of pt_profile when using "
-                                  "pressure_grid='manual'.")
+            if self.pt_manual is None:
+                raise UserWarning(
+                    "A 2D array with the P-T profile "
+                    "should be provided as argument "
+                    "of pt_manual when using "
+                    "pressure_grid='manual'."
+                )
 
-            self.pressure = self.pt_profile[:, 0]
+            self.pressure = self.pt_manual[:, 0]
 
         else:
             self.pressure = np.logspace(-6, np.log10(self.max_press), n_pressure)
@@ -205,7 +225,7 @@ class ReadRadtrans:
         quenching: Optional[str] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
-        plot_contribution: Optional[str] = None,
+        plot_contribution: Optional[Union[bool, str]] = False,
         temp_nodes: Optional[int] = None,
     ) -> box.ModelBox:
         """
@@ -231,9 +251,11 @@ class ReadRadtrans:
             Wavelength points (um) to which the spectrum will be
             resampled. The original wavelengths points will be used if
             the argument is set to ``None``.
-        plot_contribution : str, None
+        plot_contribution : bool, str, None
             Filename for the plot with the emission contribution. The
-            plot is not created if the argument is set to ``None``.
+            plot is not created if the argument is set to ``False`` or
+            ``None``. If set to ``True``, the plot is shown in an
+            interface window instead of written to a file.
         temp_nodes : int, None
             Number of free temperature nodes.
 
@@ -242,13 +264,6 @@ class ReadRadtrans:
         species.core.box.ModelBox
             Box with the petitRADTRANS model spectrum.
         """
-
-        # Set contribution boolean
-
-        # if plot_contribution:
-        #     contribution = True
-        # else:
-        #     contribution = False
 
         # Set chemistry type
 
@@ -263,10 +278,12 @@ class ReadRadtrans:
 
             for item in self.line_species:
                 if item not in model_param:
-                    raise RuntimeError(f"The abundance of {item} is not found "
-                                       f"in the dictionary with parameters of "
-                                       f"'model_param'. Please add the log10 "
-                                       f"mass fraction of {item}.")
+                    raise RuntimeError(
+                        f"The abundance of {item} is not found "
+                        f"in the dictionary with parameters of "
+                        f"'model_param'. Please add the log10 "
+                        f"mass fraction of {item}."
+                    )
 
         # Check quenching parameter
 
@@ -316,10 +333,14 @@ class ReadRadtrans:
         # Create the P-T profile
 
         if self.pressure_grid == "manual":
-            temp = self.pt_profile[:, 1]
+            temp = self.pt_manual[:, 1]
 
-        elif "tint" in model_param:
-            temp, _, conv_press = retrieval_util.pt_ret_model(
+        elif (
+            "tint" in model_param
+            and "log_delta" in model_param
+            and "alpha" in model_param
+        ):
+            temp, _, _ = retrieval_util.pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],
                 model_param["alpha"],
@@ -328,6 +349,10 @@ class ReadRadtrans:
                 metallicity,
                 c_o_ratio,
             )
+
+        elif "tint" in model_param and "log_delta" in model_param:
+            tau = self.pressure * 1e6 * 10.0 ** model_param["log_delta"]
+            temp = (0.75 * model_param["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
         else:
             if temp_nodes is None:
@@ -351,17 +376,6 @@ class ReadRadtrans:
 
             if "pt_smooth" in model_param:
                 pt_smooth = model_param["pt_smooth"]
-
-            elif "pt_turn" in model_param:
-                pt_smooth = {"pt_smooth_1": model_param["pt_smooth_1"],
-                             "pt_smooth_2": model_param["pt_smooth_2"],
-                             "pt_turn": model_param["pt_turn"],
-                             "pt_index": model_param["pt_index"]}
-
-            elif "pt_smooth_0" in model_param:
-                pt_smooth = {}
-                for i in range(temp_nodes-1):
-                    pt_smooth[f"pt_smooth_{i}"] = model_param[f"pt_smooth_{i}"]
 
             else:
                 pt_smooth = None
@@ -391,19 +405,24 @@ class ReadRadtrans:
         else:
             if "log_p_quench" in model_param:
                 warnings.warn(
-                    "The 'model_param' dictionary contains the 'log_p_quench' "
-                    "parameter but 'quenching=None'. The quenching pressure from "
-                    "the dictionary is therefore ignored."
+                    "The 'model_param' dictionary contains the "
+                    "'log_p_quench' parameter but 'quenching=None'. "
+                    "The quenching pressure from the dictionary is "
+                    "therefore ignored."
                 )
 
             p_quench = None
 
-        if len(self.cloud_species) > 0 or "log_kappa_0" in model_param:
+        if (
+            len(self.cloud_species) > 0
+            or "log_kappa_0" in model_param
+            or "log_kappa_gray" in model_param
+        ):
 
             tau_cloud = None
             log_x_base = None
 
-            if "log_kappa_0" in model_param:
+            if "log_kappa_0" in model_param or "log_kappa_gray" in model_param:
                 if "log_tau_cloud" in model_param:
                     tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
@@ -536,26 +555,98 @@ class ReadRadtrans:
                                 f"{cloud_1}_{cloud_2}_ratio"
                             ]
 
-            # Calculate the petitRADTRANS spectrum for a cloudy atmosphere
+            # Calculate the petitRADTRANS spectrum
+            # for a cloudy atmosphere
 
-            wavelength, flux, emission_contr, _ = retrieval_util.calc_spectrum_clouds(
-                self.rt_object,
-                self.pressure,
-                temp,
-                c_o_ratio,
-                metallicity,
-                p_quench,
-                log_x_abund,
-                log_x_base,
-                model_param,
-                model_param["logg"],
-                chemistry=chemistry,
-                pressure_grid=self.pressure_grid,
-                plotting=False,
-                contribution=True,
-                tau_cloud=tau_cloud,
-                cloud_wavel=self.cloud_wavel,
-            )
+            if "fsed_1" in model_param and "fsed_2" in model_param:
+                cloud_dict = model_param.copy()
+                cloud_dict["fsed"] = cloud_dict["fsed_1"]
+
+                (
+                    wavelength,
+                    flux_1,
+                    emission_contr_1,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    cloud_dict,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
+
+                cloud_dict = model_param.copy()
+                cloud_dict["fsed"] = cloud_dict["fsed_2"]
+
+                (
+                    wavelength,
+                    flux_2,
+                    emission_contr_2,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    cloud_dict,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
+
+                flux = (
+                    model_param["f_clouds"] * flux_1
+                    + (1.0 - model_param["f_clouds"]) * flux_2
+                )
+
+                emission_contr = (
+                    model_param["f_clouds"] * emission_contr_1
+                    + (1.0 - model_param["f_clouds"]) * emission_contr_2
+                )
+
+            else:
+                (
+                    wavelength,
+                    flux,
+                    emission_contr,
+                    _,
+                ) = retrieval_util.calc_spectrum_clouds(
+                    self.rt_object,
+                    self.pressure,
+                    temp,
+                    c_o_ratio,
+                    metallicity,
+                    p_quench,
+                    log_x_abund,
+                    log_x_base,
+                    model_param,
+                    model_param["logg"],
+                    chemistry=chemistry,
+                    pressure_grid=self.pressure_grid,
+                    plotting=False,
+                    contribution=True,
+                    tau_cloud=tau_cloud,
+                    cloud_wavel=self.cloud_wavel,
+                )
 
         elif chemistry == "equilibrium":
             # Calculate the petitRADTRANS spectrum for a clear atmosphere
@@ -602,7 +693,8 @@ class ReadRadtrans:
             )
 
             if "distance" in model_param:
-                # Use the radius and distance to scale the fluxes to the observer
+                # Use the radius and distance to
+                # scale the fluxes to the observer
 
                 scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
                     model_param["distance"] * constants.PARSEC
@@ -626,7 +718,7 @@ class ReadRadtrans:
 
         # Plot 2D emission contribution
 
-        if plot_contribution is not None:
+        if plot_contribution:
             # Calculate the total optical depth (line and continuum opacities)
             # self.rt_object.calc_opt_depth(10.**model_param['logg'])
 
@@ -646,7 +738,7 @@ class ReadRadtrans:
                 )
 
             else:
-                # TODO Ask Paul if correct
+                # TODO Is this correct?
                 w_gauss = self.rt_object.w_gauss[
                     ..., np.newaxis, np.newaxis, np.newaxis
                 ]
@@ -709,7 +801,10 @@ class ReadRadtrans:
             ax.xaxis.set_major_locator(MultipleLocator(1.0))
             ax.xaxis.set_minor_locator(MultipleLocator(0.2))
 
-            xx_grid, yy_grid = np.meshgrid(wavelength, self.pressure[::3])
+            press_bar = 1e-6 * self.rt_object.press  # (Ba) -> (Bar)
+
+            xx_grid, yy_grid = np.meshgrid(wavelength, press_bar)
+
             ax.pcolormesh(
                 xx_grid,
                 yy_grid,
@@ -727,9 +822,13 @@ class ReadRadtrans:
             ax.plot(wavelength, photo_press, lw=0.5, color="gray")
 
             ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
-            ax.set_ylim(np.amax(self.pressure[::3]), np.amin(self.pressure[::3]))
+            ax.set_ylim(np.amax(press_bar), np.amin(press_bar))
 
-            plt.savefig(plot_contribution, bbox_inches="tight")
+            if isinstance(plot_contribution, str):
+                plt.savefig(plot_contribution, bbox_inches="tight")
+            else:
+                plt.show()
+
             plt.clf()
             plt.close()
 

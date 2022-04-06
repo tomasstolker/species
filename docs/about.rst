@@ -13,6 +13,11 @@ Attribution
 
 Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A...635A.182S/abstract>`_ whenever results from *species* are used in a publication. Please also make sure to give credit the relevant papers regarding the use of the publicly available data that *species* is using.
 
+License
+-------
+
+*species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/pycrires/blob/main/LICENSE>`_ for the terms and conditions.
+
 Logo
 ----
 

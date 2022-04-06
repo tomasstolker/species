@@ -10,7 +10,7 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 
 from scipy.integrate import simps
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from typeguard import typechecked
 
 from species.core import box, constants

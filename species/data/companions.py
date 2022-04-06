@@ -816,14 +816,14 @@ def companion_spectra(
         be returned if there are not any spectra available.
     """
 
-    data_folder = os.path.join(input_path, "companion_data/")
-
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
-
     spec_data = get_spec_data()
 
     if comp_name in spec_data:
+        data_folder = os.path.join(input_path, "companion_data/")
+
+        if not os.path.exists(data_folder):
+            os.makedirs(data_folder)
+
         spec_dict = {}
 
         for key, value in spec_data[comp_name].items():

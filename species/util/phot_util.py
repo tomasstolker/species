@@ -230,6 +230,9 @@ def get_residuals(
 ) -> box.ResidualsBox:
 
     """
+    Function for calculating the residuals from fitting model or
+    calibration spectra to a set of spectra and/or photometry.
+
     Parameters
     ----------
     datatype : str
@@ -430,6 +433,32 @@ def get_residuals(
                     f"max: {np.nanmax(res_spec[key]):.2f}"
                 )
 
+    chi2_stat = 0
+    n_dof = 0
+
+    if res_phot is not None:
+        for key, value in res_phot.items():
+            chi2_stat += value[1] ** 2
+            n_dof += 1
+
+    if res_spec is not None:
+        for key, value in res_spec.items():
+            chi2_stat += np.sum(value[:, 1] ** 2)
+            n_dof += value.shape[0]
+
+    for item in parameters:
+        if item not in ["mass", "luminosity", "distance"]:
+            n_dof -= 1
+
+    chi2_red = chi2_stat / n_dof
+
+    print(f"Reduced chi2 = {chi2_red:.2f}")
+    print(f"Number of degrees of freedom = {n_dof}")
+
     return box.create_box(
-        boxtype="residuals", name=objectbox.name, photometry=res_phot, spectrum=res_spec
+        boxtype="residuals",
+        name=objectbox.name,
+        photometry=res_phot,
+        spectrum=res_spec,
+        chi2_red=chi2_red,
     )

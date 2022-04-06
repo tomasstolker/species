@@ -170,15 +170,15 @@ def plot_walkers(
         for j in range(samples.shape[0]):
             ax.plot(samples[j, :, i], ls="-", lw=0.5, color="black", alpha=0.5)
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -804,15 +804,15 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -910,15 +910,15 @@ def plot_mag_posterior(
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
     return samples
 
@@ -1086,15 +1086,15 @@ def plot_size_distributions(
 
         ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="black", alpha=0.5)
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -1351,12 +1351,12 @@ def plot_extinction(
     else:
         print(f"Plotting extinction: {output}...", end="", flush=True)
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")

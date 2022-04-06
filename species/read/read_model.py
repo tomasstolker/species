@@ -55,6 +55,13 @@ class ReadModel:
 
         self.model = model
 
+        if self.model == "bt-settl":
+            warnings.warn("It is recommended to use the CIFIST "
+                          "grid of the BT-Settl, because it is "
+                          "a newer version. In that case, set "
+                          "model='bt-settl-cifist' when using "
+                          "add_model of Database.")
+
         self.spectrum_interp = None
         self.wl_points = None
         self.wl_index = None
@@ -98,10 +105,13 @@ class ReadModel:
             "veil_ref",
         ]
 
+        # Test if the spectra are present in the database
+        self.open_database()
+
     @typechecked
     def open_database(self) -> h5py._hl.files.File:
         """
-        Internal function for opening the `species` database.
+        Internal function for opening the HDF5 database.
 
         Returns
         -------
@@ -122,6 +132,8 @@ class ReadModel:
             h5_file[f"models/{self.model}"]
 
         except KeyError:
+            h5_file.close()
+
             raise ValueError(
                 f"The '{self.model}' model spectra are not present in the database."
             )
@@ -796,7 +808,7 @@ class ReadModel:
             and "lognorm_ext" in model_param
         ):
 
-            model_box.flux = self.apply_ext_norm_distr(
+            model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["lognorm_radius"],
@@ -810,7 +822,7 @@ class ReadModel:
             and "powerlaw_ext" in model_param
         ):
 
-            model_box.flux = self.apply_ext_plaw_distr(
+            model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["powerlaw_max"],

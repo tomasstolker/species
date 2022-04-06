@@ -72,7 +72,7 @@ class Database:
     @typechecked
     def list_content(self) -> None:
         """
-        Method for listing the content of the HDF5 database. The
+        Function for listing the content of the HDF5 database. The
         database structure will be descended while printing the paths
         of all the groups and datasets, as well as the dataset
         attributes.
@@ -125,9 +125,9 @@ class Database:
     @typechecked
     def list_companions() -> List[str]:
         """
-        Method for printing an overview of the companion data that are
-        stored in the database. It will return a list with all the
-        companion names. Each name can be used as input for
+        Function for printing an overview of the companion data that
+        are stored in the database. It will return a list with all
+        the companion names. Each name can be used as input for
         :class:`~species.read.read_object.ReadObject`.
 
         Returns
@@ -168,7 +168,7 @@ class Database:
     @typechecked
     def available_models() -> Dict:
         """
-        Method for printing an overview of the available model grids
+        Function for printing an overview of the available model grids
         that can be downloaded and added to the database with
         :class:`~species.data.database.Database.add_model`.
 
@@ -305,9 +305,11 @@ class Database:
     @typechecked
     def add_dust(self) -> None:
         """
-        Function for adding optical constants of MgSiO3 and Fe, and MgSiO3 cross sections for
-        a log-normal and power-law size distribution to the database. The optical constants have
-        been compiled by Mollière et al. (2019) for petitRADTRANS from the following sources:
+        Function for adding optical constants of MgSiO3 and Fe, and
+        MgSiO3 cross sections for a log-normal and power-law size
+        distribution to the database. The optical constants have
+        been compiled by Mollière et al. (2019) for petitRADTRANS
+        from the following sources:
 
         - MgSiO3, crystalline
             - Scott & Duley (1996), ApJS, 105, 401
@@ -349,27 +351,34 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding a filter profile to the database, either from the SVO Filter profile
-        Service or from an input file. Additional filters that are automatically added are
-        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp, Magellan/VisAO.Ys, ALMA/band6,
-        and ALMA/band7.
+        Function for adding a filter profile to the database, either
+        from the SVO Filter profile Service or from an input file.
+        Additional filters that are automatically added are
+        Magellan/VisAO.rp, Magellan/VisAO.ip, Magellan/VisAO.zp,
+        Magellan/VisAO.Ys, ALMA/band6, and ALMA/band7.
 
         Parameters
         ----------
         filter_name : str
-            Filter name from the SVO Filter Profile Service (e.g., 'Paranal/NACO.Lp') or a
-            user-defined name if a ``filename`` is specified.
+            Filter name from the SVO Filter Profile Service (e.g.,
+            'Paranal/NACO.Lp') or a user-defined name if a ``filename``
+            is specified.
         filename : str
-            Filename of the filter profile. The first column should contain the wavelength
-            (um) and the second column the fractional transmission. The profile is downloaded from
-            the SVO Filter Profile Service if the argument of ``filename`` is set to ``None``.
+            Filename of the filter profile. The first column should
+            contain the wavelength (um) and the second column the
+            fractional transmission. The profile is downloaded from
+            the SVO Filter Profile Service if the argument of
+            ``filename`` is set to ``None``.
         detector_type : str
-            The detector type ('photon' or 'energy'). The argument is only used if a ``filename``
-            is provided. Otherwise, for filters that are fetched from the SVO website, the detector
-            type is read from the SVO data. The detector type determines if a wavelength factor
-            is included in the integral for the synthetic photometry.
+            The detector type ('photon' or 'energy'). The argument is
+            only used if a ``filename`` is provided. Otherwise, for
+            filters that are fetched from the SVO website, the detector
+            type is read from the SVO data. The detector type determines
+            if a wavelength factor is included in the integral for the
+            synthetic photometry.
         verbose : bool
-            Print details on the companion data that are added to the database.
+            Print details on the companion data that are added
+            to the database.
 
         Returns
         -------
@@ -436,9 +445,10 @@ class Database:
         tag : str
             Database tag name where the isochrone that will be stored.
         model : str
-            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe' models, the isochrone data
-            can be downloaded from https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models, the
-            data can be requested from Gabriel Marleau.
+            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe'
+            models, the isochrone data can be downloaded from
+            https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models,
+            the data can be requested from Gabriel Marleau.
 
         Returns
         -------
@@ -471,7 +481,7 @@ class Database:
         teff_range: Optional[Tuple[float, float]] = None,
     ) -> None:
         """
-        Method for adding a grid of model spectra to the database.
+        Function for adding a grid of model spectra to the database.
         All spectra have been resampled to logarithmically-spaced
         wavelengths. The spectral resolution is returned with the
         :meth:`~species.read.read_model.ReadModel.get_spec_res`
@@ -485,21 +495,26 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl', 'bt-settl-cifist',
-            'bt-nextgen', 'drift-phoenix', 'petitcode-cool-clear', 'petitcode-cool-cloudy',
-            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem', 'blackbody', bt-cond',
-            'bt-cond-feh, 'morley-2012', 'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co').
+            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl',
+            'bt-settl-cifist', 'bt-nextgen', 'drift-phoenix',
+            'petitcode-cool-clear', 'petitcode-cool-cloudy',
+            'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem',
+            'blackbody', bt-cond', 'bt-cond-feh, 'morley-2012',
+            'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co').
         wavel_range : tuple(float, float), None
-            Wavelength range (um) for adding a subset of the spectra. The full wavelength range
-            is used if the argument is set to ``None``.
+            Wavelength range (um) for adding a subset of the spectra.
+            The full wavelength range is used if the argument is set
+            to ``None``.
         spec_res : float, None
-            Spectral resolution to which the spectra will be resampled. This parameter is optional
-            since the spectra have already been resampled to a lower, constant resolution
-            (typically :math:`R = 5000`). The argument is only used if ``wavel_range`` is not
-            ``None``.
+            Spectral resolution to which the spectra will be resampled.
+            This parameter is optional since the spectra have already
+            been resampled to a lower, constant resolution (typically
+            :math:`R = 5000`). The argument is only used if
+            ``wavel_range`` is not ``None``.
         teff_range : tuple(float, float), None
-            Effective temperature range (K) for adding a subset of the model grid. The full
-            parameter grid will be added if the argument is set to ``None``.
+            Effective temperature range (K) for adding a subset of the
+            model grid. The full parameter grid will be added if the
+            argument is set to ``None``.
 
         Returns
         -------
@@ -844,6 +859,8 @@ class Database:
 
             # Read spectra
 
+            spec_nan = {}
+
             for key, value in spectrum.items():
                 if value[0].endswith(".fits") or value[0].endswith(".fit"):
                     with fits.open(value[0]) as hdulist:
@@ -928,6 +945,10 @@ class Database:
                     read_spec[key] = read_spec[key].transpose()
 
                 nan_index = np.isnan(read_spec[key][:, 1])
+
+                # Add NaN booleans to dictionary for adjusting
+                # the covariance matrix later on
+                spec_nan[key] = nan_index
 
                 if sum(nan_index) != 0:
                     read_spec[key] = read_spec[key][~nan_index, :]
@@ -1051,6 +1072,11 @@ class Database:
                     else:
                         read_cov[key] = data
 
+                if read_cov[key] is not None:
+                    # Remove the wavelengths for which the flux is NaN
+                    read_cov[key] = read_cov[key][~spec_nan[key], :]
+                    read_cov[key] = read_cov[key][:, ~spec_nan[key]]
+
                 if verbose and read_cov[key] is not None:
                     print(f"      - Database tag: {key}")
                     print(f"      - Filename: {value[1]}")
@@ -1138,20 +1164,26 @@ class Database:
         tag : str
             Tag name in the database.
         filename : str, None
-            Filename with the calibration spectrum. The first column should contain the wavelength
-            (um), the second column the flux density (W m-2 um-1), and the third column
-            the error (W m-2 um-1). The ``data`` argument is used if set to ``None``.
+            Filename with the calibration spectrum. The first column
+            should contain the wavelength (um), the second column the
+            flux density (W m-2 um-1), and the third column the error
+            (W m-2 um-1). The ``data`` argument is used if set to
+            ``None``.
         data : np.ndarray, None
-            Spectrum stored as 3D array with shape ``(n_wavelength, 3)``. The first column should
-            contain the wavelength (um), the second column the flux density (W m-2 um-1),
-            and the third column the error (W m-2 um-1). The ``filename`` argument is used if set
-            to ``None``.
+            Spectrum stored as 3D array with shape
+            ``(n_wavelength, 3)``. The first column should contain the
+            wavelength (um), the second column the flux density
+            (W m-2 um-1), and the third column the error (W m-2 um-1).
+            The ``filename`` argument is used if set to ``None``.
         units : dict, None
-            Dictionary with the wavelength and flux units, e.g. ``{'wavelength': 'angstrom',
-            'flux': 'w m-2'}``. The default units (um and W m-2 um-1) are used if set to ``None``.
+            Dictionary with the wavelength and flux units, e.g.
+            ``{'wavelength': 'angstrom', 'flux': 'w m-2'}``. The
+            default units (um and W m-2 um-1) are used if set to
+            ``None``.
         scaling : tuple(float, float), None
-            Scaling for the wavelength and flux as ``(scaling_wavelength, scaling_flux)``. Not used
-            if set to ``None``.
+            Scaling for the wavelength and flux as
+            ``(scaling_wavelength, scaling_flux)``. Not
+            used if set to ``None``.
 
         Returns
         -------
@@ -1336,6 +1368,10 @@ class Database:
         spec_labels: Optional[List[str]],
     ):
         """
+        This function stores the posterior samples from
+        :class:`~species.analysis.fit_model.FitModel` in the
+        database, including some additional attributes.
+
         Parameters
         ----------
         sampler : str
@@ -1345,13 +1381,14 @@ class Database:
         ln_prob : np.ndarray
             Log posterior for each sample.
         ln_evidence : tuple(float, float)
-            Log evidence and uncertainty. Set to ``None`` when ``sampler`` is 'emcee'.
+            Log evidence and uncertainty. Set to ``None`` when
+            ``sampler`` is 'emcee'.
         mean_accept : float, None
-            Mean acceptance fraction. Set to ``None`` when ``sampler`` is 'multinest' or
-            'ultranest'.
+            Mean acceptance fraction. Set to ``None`` when
+            ``sampler`` is 'multinest' or 'ultranest'.
         spectrum : tuple(str, str)
-            Tuple with the spectrum type ('model' or 'calibration') and spectrum name (e.g.
-            'drift-phoenix').
+            Tuple with the spectrum type ('model' or 'calibration')
+            and spectrum name (e.g. 'drift-phoenix').
         tag : str
             Database tag.
         modelpar : list(str)
@@ -1359,8 +1396,8 @@ class Database:
         distance : float, None
             Distance to the object (pc). Not used if set to ``None``.
         spec_labels : list(str), None
-            List with the spectrum labels that are used for fitting an additional scaling
-            parameter. Not used if set to ``None``.
+            List with the spectrum labels that are used for fitting an
+            additional scaling parameter. Not used if set to ``None``.
 
         Returns
         -------
@@ -1494,7 +1531,7 @@ class Database:
 
             prob_sample[par_key] = par_value
 
-        if "distance" in dset.attrs:
+        if "distance" not in prob_sample and "distance" in dset.attrs:
             prob_sample["distance"] = dset.attrs["distance"]
 
         if "pt_smooth" in dset.attrs:
@@ -1558,7 +1595,7 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if "distance" in dset.attrs:
+            if "distance" not in median_sample and "distance" in dset.attrs:
                 median_sample["distance"] = dset.attrs["distance"]
 
             if "pt_smooth" in dset.attrs:
@@ -1749,7 +1786,7 @@ class Database:
                 if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
-            if distance:
+            if "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -1919,7 +1956,7 @@ class Database:
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
-            if distance is not None:
+            if "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -2104,15 +2141,17 @@ class Database:
         tag: str
             Database tag with the samples.
         burnin : int, None
-            Number of burnin samples to exclude. All samples are selected if set to ``None``.
-            The parameter is only required for samples obtained with ``emcee`` and is therefore
-            not used for samples obtained with ``MultiNest`` or ``UltraNest``.
+            Number of burnin samples to exclude. All samples are
+            selected if set to ``None``. The parameter is only
+            required for samples obtained with ``emcee`` and is
+            therefore not used for samples obtained with
+            ``MultiNest`` or ``UltraNest``.
         random : int, None
-            Number of random samples to select. All samples (with the burnin excluded) are
-            selected if set to ``None``.
+            Number of random samples to select. All samples (with
+            the burnin excluded) are selected if set to ``None``.
         json_file : str, None
-            JSON file to store the posterior samples. The data will not be written if the argument
-            is set to ``None``.
+            JSON file to store the posterior samples. The data will
+            not be written if the argument is set to ``None``.
 
         Returns
         -------
@@ -2139,9 +2178,9 @@ class Database:
             n_param = dset.attrs["nparam"]
 
         if "ln_evidence" in dset.attrs:
-            # For backward compatibility
             ln_evidence = dset.attrs["ln_evidence"]
         else:
+            # For backward compatibility
             ln_evidence = None
 
         samples = np.asarray(dset)
@@ -2199,35 +2238,75 @@ class Database:
         )
 
     @typechecked
-    def get_pt_profiles(
-        self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def get_evidence(self, tag: str) -> Tuple[float, float]:
         """
-        Method for returning the pressure-temperature profiles from the atmospheric retrieval
-        with ``petitRADTRANS``. The data can also be optionally stored to an output file.
+        Function for returning the log-evidence (i.e.
+        marginalized likelihood) that was computed by
+        the nested sampling algorithm when using
+        :class:`~species.analysis.fit_model.FitModel` or
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
         Parameters
         ----------
         tag: str
-            Database tag with the posterior samples from the atmospheric retrieval with
+            Database tag with the posterior samples.
+
+        Returns
+        -------
+        float
+            Log-evidence.
+        float
+            Uncertainty on the log-evidence.
+        """
+
+        h5_file = h5py.File(self.database, "r")
+        dset = h5_file[f"results/fit/{tag}/samples"]
+
+        if "ln_evidence" in dset.attrs:
+            ln_evidence = dset.attrs["ln_evidence"]
+        else:
+            # For backward compatibility
+            ln_evidence = (None, None)
+
+        h5_file.close()
+
+        return ln_evidence[0], ln_evidence[1]
+
+    @typechecked
+    def get_pt_profiles(
+        self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Function for returning the pressure-temperature profiles from
+        the posterior of the atmospheric retrieval with
+        ``petitRADTRANS``. The data can also optionally be written to
+        an output file.
+
+        Parameters
+        ----------
+        tag: str
+            Database tag with the posterior samples from the
+            atmospheric retrieval with
             :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
         random : int, None
-            Number of random samples that will be used for the P-T profiles. All samples
-            will be selected if set to ``None``.
+            Number of random samples that will be used for the P-T
+            profiles. All samples will be selected if set to ``None``.
         out_file : str, None
-            Output file to store the P-T profiles. The data will be stored in a FITS file if the
-            argument of ``out_file`` ends with `.fits`. Otherwise, the data will be written to a
-            text file. The data has two dimensions with the first column containing the pressures
-            (bar) and the remaining columns the temperature profiles (K). The data will not be
-            written to a file if the argument is set to ``None``.
+            Output file to store the P-T profiles. The data will be
+            stored in a FITS file if the argument of ``out_file`` ends
+            with `.fits`. Otherwise, the data will be written to a
+            text file. The data has two dimensions with the first
+            column containing the pressures (bar) and the remaining
+            columns the temperature profiles (K). The data will not
+            be written to a file if the argument is set to ``None``.
 
         Returns
         -------
         np.ndarray
             Array (1D) with the pressures (bar).
         np.ndarray
-            Array (2D) with the temperature profiles (K). The shape of the array is
-            (n_pressures, n_samples).
+            Array (2D) with the temperature profiles (K). The shape
+            of the array is (n_pressures, n_samples).
         """
 
         h5_file = h5py.File(self.database, "r")
@@ -2303,6 +2382,12 @@ class Database:
                     item[param_index["metallicity"]],
                     item[param_index["c_o_ratio"]],
                 )
+
+            elif pt_profile == "eddington":
+                # Eddington approximation
+                # delta = kappa_ir/gravity
+                tau = press * 1e6 * 10.0 ** item[param_index["log_delta"]]
+                temp[:, i] = (0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
             elif pt_profile in ["free", "monotonic"]:
                 if "pt_smooth" in param_index:
@@ -2553,20 +2638,26 @@ class Database:
         self, tag: str, output_folder: str, inc_teff: bool = False
     ) -> None:
         """
-        Function for adding the output data from the atmospheric retrieval with
-        :class:`~species.analysis.retrieval.AtmosphericRetrieval` to the database.
+        Function for adding the output data from
+        the atmospheric retrieval with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`
+        to the database.
 
         Parameters
         ----------
         tag : str
             Database tag to store the posterior samples.
         output_folder : str
-            Output folder that was used for the output files by ``MultiNest``.
+            Output folder that was used for the output files by
+            ``MultiNest``.
         inc_teff : bool
-            Calculate Teff for each sample by integrating the model spectrum from 0.5 to 50 um.
-            The Teff samples are added to the array with samples that are stored in the database.
-            The computation time for adding Teff will be long because the spectra need to be
-            calculated and integrated for all samples.
+            Calculate :math:`T_\\mathrm{eff}` for each sample by
+            integrating the model spectrum from 0.5 to 50 um. The
+            :math:`T_\\mathrm{eff}` samples are added to the array
+            with samples that are stored in the database. The
+            computation time for adding :math:`T_\\mathrm{eff}` will
+            be long because the spectra need to be calculated and
+            integrated for all samples.
 
         Returns
         -------
@@ -2596,7 +2687,8 @@ class Database:
             samples = np.loadtxt(post_old)
 
         else:
-            raise RuntimeError("Can not find the post_equal_weights.dat file.")
+            raise RuntimeError("Can not find the "
+                               "post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
@@ -2667,6 +2759,7 @@ class Database:
             dset.attrs["n_cloud_species"] = len(radtrans["cloud_species"])
 
             dset.attrs["scattering"] = radtrans["scattering"]
+            dset.attrs["pressure_grid"] = radtrans["pressure_grid"]
             dset.attrs["pt_profile"] = radtrans["pt_profile"]
             dset.attrs["chemistry"] = radtrans["chemistry"]
             dset.attrs["wavel_min"] = radtrans["wavel_range"][0]
@@ -2690,11 +2783,19 @@ class Database:
 
         print(" [DONE]")
 
+        # Set number of pressures
+
+        if radtrans["pressure_grid"] in ["standard", "smaller"]:
+            n_pressures = 180
+
+        elif radtrans["pressure_grid"] == "clouds":
+            n_pressures = 1440
+
         rt_object = None
 
         for i, cloud_item in enumerate(radtrans["cloud_species"]):
             if f"{cloud_item[:-6].lower()}_tau" in parameters:
-                pressure = np.logspace(-6, 3, 180)
+                pressure = np.logspace(-6, 3, n_pressures)
                 cloud_mass = np.zeros(samples.shape[0])
 
                 if rt_object is None:
@@ -2755,10 +2856,8 @@ class Database:
                             sample_dict["c_o_ratio"],
                         )
 
-                    elif (
-                        radtrans["pt_profile"] == "free"
-                        or radtrans["pt_profile"] == "monotonic"
-                    ):
+                    elif (radtrans["pt_profile"] == "free" or
+                          radtrans["pt_profile"] == "monotonic"):
                         knot_press = np.logspace(
                             np.log10(pressure[0]), np.log10(pressure[-1]), 15
                         )
@@ -2842,7 +2941,7 @@ class Database:
 
                 # Recalculate the P-T profile from the sampled parameters
 
-                pressure = np.logspace(-6, 3, 180)  # (bar)
+                pressure = np.logspace(-6, 3, n_pressures)  # (bar)
 
                 if radtrans["pt_profile"] == "molliere":
                     upper_temp = np.array(
@@ -2962,7 +3061,8 @@ class Database:
         spec_res: Optional[float] = None,
     ) -> Tuple[List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """
-        Function for extracting random spectra from the posterior distribution obtained with
+        Function for extracting random spectra from the
+        posterior distribution that was sampled with
         :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
 
         Parameters
@@ -2970,16 +3070,20 @@ class Database:
         tag : str
             Database tag with the posterior samples.
         random : int, None
-            Number of randomly selected samples. All samples are used if set to ``None``.
+            Number of randomly selected samples. All samples
+            are used if set to ``None``.
         wavel_range : tuple(float, float), str, None
-            Wavelength range (um) or filter name. The wavelength range from the retrieval is
-            adopted (i.e. the ``wavel_range`` parameter of
-            :class:`~species.analysis.retrieval.AtmosphericRetrieval`) when set to ``None``. It is
-            mandatory to set the argument to ``None`` in case the ``log_tau_cloud`` parameter has
+            Wavelength range (um) or filter name. The
+            wavelength range from the retrieval is adopted
+            (i.e. the``wavel_range`` parameter of
+            :class:`~species.analysis.retrieval.AtmosphericRetrieval`)
+            when set to ``None``. It is mandatory to set the argument
+            to ``None`` in case the ``log_tau_cloud`` parameter has
             been used with the retrieval.
         spec_res : float, None
-            Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied when the argument is set to ``None``.
+            Spectral resolution that is used for the smoothing with a
+            Gaussian kernel. No smoothing is applied when the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -3208,10 +3312,11 @@ class Database:
     @typechecked
     def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[float, float]:
         """
-        Function for calculating Teff from randomly drawn samples of the posterior
-        distribution from :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
-        This requires the recalculation of the spectra across a broad wavelength
-        range (0.5-50 um).
+        Function for calculating :math:`T_\\mathrm{eff}` from
+        randomly drawn samples of the posterior distribution from
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        This requires the recalculation of the spectra across a
+        broad wavelength range (0.5-50 um).
 
         Parameters
         ----------
@@ -3223,9 +3328,9 @@ class Database:
         Returns
         -------
         float
-            Mean of Teff samples.
+            Mean of :math:`T_\\mathrm{eff}` samples.
         float
-            Standard deviation of Teff samples.
+            Standard deviation of :math:`T_\\mathrm{eff}` samples.
         """
 
         print(f"Calculating Teff from {random} posterior samples... ")
@@ -3269,8 +3374,8 @@ class Database:
     ) -> Dict[str, float]:
         """
         Function for converting the median are maximum likelihood
-        posterior parameters of ``petitRADTRANS`` into a dictionary of
-        input parameters for ``petitCODE``.
+        posterior parameters of ``petitRADTRANS`` into a dictionary
+        of input parameters for ``petitCODE``.
 
         Parameters
         ----------
@@ -3326,9 +3431,6 @@ class Database:
 
         if "log_kzz" in model_param:
             pcode_param["log_kzz"] = model_param["log_kzz"]
-
-        if "fsed" in model_param:
-            pcode_param["fsed"] = model_param["fsed"]
 
         if "sigma_lnorm" in model_param:
             pcode_param["sigma_lnorm"] = model_param["sigma_lnorm"]
@@ -3451,7 +3553,7 @@ class Database:
             cloud_species=cloud_species,
             scattering=True,
             wavel_range=(0.5, 50.0),
-            pressure_grid="smaller",
+            pressure_grid=sample_box.attributes["pressure_grid"],
             res_mode="c-k",
             cloud_wavel=cloud_wavel,
         )

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy.interpolate import interp1d, PchipInterpolator
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from typeguard import typechecked
 
 from species.core import constants
@@ -352,7 +352,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: Union[float, Dict[str, float]] = 0.3,
+    pt_smooth: float = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -375,7 +375,7 @@ def pt_spline_interp(
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex. TODO
+        set to 0.3 dex.
 
     Returns
     -------
@@ -383,98 +383,19 @@ def pt_spline_interp(
         Interpolated, smoothed temperature points (K).
     """
 
-    if isinstance(pt_smooth, dict):
-        for i, item in enumerate(knot_temp[:-1]):
-            if i == 0:
-                pt_interp = PchipInterpolator(np.log10(knot_press[:i+2]), knot_temp[:i+2])
+    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
-                press_interp = np.log10(pressure[indices])
-                temp_interp = pt_interp(press_interp)
+    temp_interp = pt_interp(np.log10(pressure))
 
-            else:
-                press_new = np.append(press_interp, np.log10(knot_press[i+1]))
-                temp_new = np.append(temp_interp, knot_temp[i+1])
-                pt_interp = PchipInterpolator(press_new, temp_new)
+    log_press = np.log10(pressure)
+    log_diff = np.mean(np.diff(log_press))
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i+1])
-                press_interp = np.log10(pressure[indices])
-                temp_interp = pt_interp(press_interp)
+    if np.std(np.diff(log_press)) / log_diff > 1e-6:
+        raise ValueError("Expecting equally spaced pressures in log space.")
 
-            log_press = np.log10(pressure)
-            log_diff = np.mean(np.diff(log_press))
-
-            if np.std(np.diff(log_press)) / log_diff > 1e-6:
-                raise ValueError("Expecting equally spaced pressures in log space.")
-
-            pt_profile = gaussian_filter(
-                temp_interp,
-                sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
-                mode="nearest",
-            )
-
-            # pt_profile = gaussian_filter(
-            #     pt_profile,
-            #     sigma=pt_smooth["pt_smooth_2"] / log_diff,
-            #     mode="nearest",
-            # )
-
-        # pt_profile = copy.copy(temp_interp)
-        #
-        # pt_profile = gaussian_filter(
-        #     pt_profile,
-        #     sigma=pt_smooth["pt_smooth_1"] / log_diff,
-        #     mode="nearest",
-        # )
-        #
-        # indices = np.where(temp_interp > pt_smooth["pt_turn"])[0]
-        #
-        # if len(indices) > 0:
-        #     pt_profile[indices] = (
-        #         pt_profile[indices[0]]
-        #         * (temp_interp[indices] / temp_interp[indices[0]]) ** pt_smooth["pt_index"]
-        #     )
-        #
-        #     pt_profile = gaussian_filter(
-        #         pt_profile,
-        #         sigma=pt_smooth["pt_smooth_2"] / log_diff,
-        #         mode="nearest",
-        #     )
-        #
-        # for i in range(pt_smooth["n_smooth"]):
-        #     if i == 0:
-        #         indices = log_press < pt_smooth["pt_connect_0_end"]
-        #
-        #     elif i == pt_smooth["n_smooth"] - 1:
-        #         indices = log_press > pt_smooth[f"pt_connect_{i}_start"]
-        #
-        #     else:
-        #         indices = (log_press > pt_smooth[f"pt_connect_{i}_start"]) \
-        #             & (log_press < pt_smooth[f"pt_connect_{i}_end"])
-        #
-        #     pt_profile[indices] = gaussian_filter(
-        #         pt_profile[indices],
-        #         sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
-        #         mode="nearest",
-        #     )
-        #
-        #     if i == pt_smooth["n_smooth"] - 1:
-        #         break
-
-    else:
-        pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
-
-        temp_interp = pt_interp(np.log10(pressure))
-
-        log_press = np.log10(pressure)
-        log_diff = np.mean(np.diff(log_press))
-
-        if np.std(np.diff(log_press)) / log_diff > 1e-6:
-            raise ValueError("Expecting equally spaced pressures in log space.")
-
-        temp_interp = gaussian_filter(
-            temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
-        )
+    temp_interp = gaussian_filter(
+        temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
+    )
 
     return temp_interp
 
@@ -501,7 +422,7 @@ def create_pt_profile(
         Dictionary with the index of each parameter in the ``cube``.
     pt_profile : str
         The parametrization for the pressure-temperature profile
-        ('molliere', 'free', or 'monotonic').
+        ('molliere', 'free', 'monotonic', 'eddington').
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
@@ -525,8 +446,8 @@ def create_pt_profile(
     np.ndarray
         Temperatures (K).
     np.ndarray, None
-        Temperature at the knots (K). A None is returned if
-        ``pt_profile`` is set to 'molliere'.
+        Temperature at the knots (K). A ``None`` is returned if
+        ``pt_profile`` is set to 'molliere' or 'eddington'.
     float
         Pressure (bar) where the optical depth is 1.
     float, None
@@ -567,6 +488,15 @@ def create_pt_profile(
         knot_temp = np.asarray(knot_temp)
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+
+        phot_press = None
+        conv_press = None
+
+    elif pt_profile == "eddington":
+        # Eddington approximation
+        # delta = kappa_ir/gravity
+        tau = pressure * 1e6 * 10.0 ** cube[cube_index["log_delta"]]
+        temp = (0.75 * cube[cube_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
         phot_press = None
         conv_press = None
@@ -1001,8 +931,7 @@ def calc_spectrum_clouds(
         base. Only required when the ``cloud_dict`` contains ``fsed``,
         ``log_kzz``, and ``sigma_lnorm``.
     cloud_dict : dict
-        Dictionary with the cloud parameters. A parameter value is set
-        to ``None`` if the parameter is not in use.
+        Dictionary with the cloud parameters.
     log_g : float
         Log10 of the surface gravity (cm s-2).
     chemistry : str
@@ -1128,7 +1057,10 @@ def calc_spectrum_clouds(
 
     fseds = {}
     for item in rt_object.cloud_species:
-        # item has the form of e.g. MgSiO3(c)
+        # The item has the form of e.g. MgSiO3(c)
+        # For parametrized cloud opacities,
+        # then number of cloud_species is zero
+        # so the fseds dictionary remains empty
         fseds[item] = cloud_dict["fsed"]
 
     # Create an array with a constant eddy diffusion coefficient (cm2 s-1)
@@ -1239,20 +1171,107 @@ def calc_spectrum_clouds(
 
     inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
 
-    if "new_simple_cloud_params" in inspect_prt.args:
-        param_cloud_model_2 = True
-    else:
-        param_cloud_model_2 = False
-
     if "cloud_wlen" in inspect_prt.args:
         param_cloud_wlen = True
     else:
         param_cloud_wlen = False
 
+    if "log_kappa_0" in cloud_dict:
+        # Cloud model 2
+
+        @typechecked
+        def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
+
+            # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
+            # See Eq. 5 in Mollière et al. 2020
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
+
+            # Opacity (cm2 g-1) as function of wavelength (um)
+            # See Eq. 4 in Mollière et al. 2020
+            kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
+            kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
+            kappa_tot[:, press_bar > p_base] = 0.0
+
+            if (
+                cloud_dict["opa_knee"] > wavel_micron[0]
+                and cloud_dict["opa_knee"] < wavel_micron[-1]
+            ):
+                indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
+                for i in range(press_bar.size):
+                    kappa_tot[indices, i] = (
+                        kappa_tot[indices[0], i]
+                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+                    )
+
+            return (1.0 - cloud_dict["albedo"]) * kappa_tot
+
+        @typechecked
+        def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_0"]  # (cm2 g-1)
+
+            # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
+            # See Eq. 5 in Mollière et al. 2020
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
+
+            # Opacity (cm2 g-1) as function of wavelength (um)
+            # See Eq. 4 in Mollière et al. 2020
+            kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
+            kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
+            kappa_tot[:, press_bar > p_base] = 0.0
+
+            if (
+                cloud_dict["opa_knee"] > wavel_micron[0]
+                and cloud_dict["opa_knee"] < wavel_micron[-1]
+            ):
+                indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
+                for i in range(press_bar.size):
+                    kappa_tot[indices, i] = (
+                        kappa_tot[indices[0], i]
+                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+                    )
+
+            return cloud_dict["albedo"] * kappa_tot
+
+    elif "log_kappa_gray" in cloud_dict:
+        # Gray clouds with cloud top
+
+        @typechecked
+        def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            p_top = 10.0 ** cloud_dict["log_cloud_top"]  # (bar)
+            kappa_gray = 10.0 ** cloud_dict["log_kappa_gray"]  # (cm2 g-1)
+
+            opa_abs = np.full((wavel_micron.size, press_bar.size), kappa_gray)
+            opa_abs[:, press_bar < p_top] = 0.0
+
+            return opa_abs
+
+        # Add optional scattering opacity
+
+        if "albedo" in cloud_dict:
+            @typechecked
+            def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+                # Absorption opacity (cm2 g-1)
+                opa_abs = kappa_abs(wavel_micron, press_bar)
+
+                # Scattering opacity (cm2 g-1)
+                opa_scat = cloud_dict["albedo"] * opa_abs / (1. - cloud_dict["albedo"])
+
+                return opa_scat
+
+        else:
+            kappa_scat = None
+
+    else:
+        kappa_abs = None
+        kappa_scat = None
+
     # Calculate the emission spectrum
     # TODO Update after PR in pRT repo
 
-    if param_cloud_model_2 and param_cloud_wlen:
+    if param_cloud_wlen:
         rt_object.calc_flux(
             temperature,
             abundances,
@@ -1269,47 +1288,8 @@ def calc_spectrum_clouds(
             gamma_scat=None,
             add_cloud_scat_as_abs=False,
             hack_cloud_photospheric_tau=tau_cloud,
-            cloud_wlen=cloud_wavel,
-            new_simple_cloud_params=cloud_dict,
-        )
-
-    elif param_cloud_model_2 and not param_cloud_wlen:
-        rt_object.calc_flux(
-            temperature,
-            abundances,
-            10.0 ** log_g,
-            mmw,
-            sigma_lnorm=sigma_lnorm,
-            Kzz=Kzz_use,
-            fsed=fseds,
-            radius=None,
-            contribution=contribution,
-            gray_opacity=None,
-            Pcloud=None,
-            kappa_zero=None,
-            gamma_scat=None,
-            add_cloud_scat_as_abs=False,
-            hack_cloud_photospheric_tau=tau_cloud,
-            new_simple_cloud_params=cloud_dict,
-        )
-
-    elif not param_cloud_model_2 and param_cloud_wlen:
-        rt_object.calc_flux(
-            temperature,
-            abundances,
-            10.0 ** log_g,
-            mmw,
-            sigma_lnorm=sigma_lnorm,
-            Kzz=Kzz_use,
-            fsed=fseds,
-            radius=None,
-            contribution=contribution,
-            gray_opacity=None,
-            Pcloud=None,
-            kappa_zero=None,
-            gamma_scat=None,
-            add_cloud_scat_as_abs=False,
-            hack_cloud_photospheric_tau=tau_cloud,
+            give_absorption_opacity=kappa_abs,
+            give_scattering_opacity=kappa_scat,
             cloud_wlen=cloud_wavel,
         )
 
@@ -1330,6 +1310,8 @@ def calc_spectrum_clouds(
             gamma_scat=None,
             add_cloud_scat_as_abs=False,
             hack_cloud_photospheric_tau=tau_cloud,
+            give_absorption_opacity=kappa_abs,
+            give_scattering_opacity=kappa_scat,
         )
 
     # if (
@@ -1363,43 +1345,46 @@ def calc_spectrum_clouds(
     #     else:
     #         contr_em = None
 
-    wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-
-    # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-    f_lambda = 1e4 * rt_object.flux
-
-    # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-    f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-
-    # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-    f_lambda *= 1e-6
-
-    # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-    f_lambda *= 1e-7
-
-    # Optionally return the emission contribution
-    if contribution:
-        contr_em = rt_object.contr_em
-    else:
+    if rt_object.flux is None:
+        wavel = None
+        f_lambda = None
         contr_em = None
 
-    if (
-        plotting
-        and Kzz_use is None
-        and hasattr(rt_object, "ret_test_cloud_scat_plus_abs")
-    ):
-        scat_opa = rt_object.ret_test_cloud_scat_plus_abs - rt_object.ret_test_cloud_abs
-        plt.plot(
-            wavel, rt_object.ret_test_cloud_scat_plus_abs[:, 0], label="Total opacity"
-        )
-        plt.plot(wavel, rt_object.ret_test_cloud_abs[:, 0], label="Absorption opacity")
-        plt.plot(wavel, scat_opa[:, 0], label="Scattering opacity")
-        plt.xlabel(r"Wavelength ($\mu$m)")
-        plt.ylabel("Opacity at smallest pressure")
-        plt.yscale("log")
-        plt.legend(loc="best")
-        plt.savefig("cloud_opacity.pdf", bbox_inches="tight")
-        plt.clf()
+    else:
+        wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
+
+        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
+        f_lambda = 1e4 * rt_object.flux
+
+        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
+        f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
+
+        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
+        f_lambda *= 1e-6
+
+        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
+        f_lambda *= 1e-7
+
+        # Optionally return the emission contribution
+        if contribution:
+            contr_em = rt_object.contr_em
+        else:
+            contr_em = None
+
+    # if (
+    #     plotting
+    #     and Kzz_use is None
+    #     and hasattr(rt_object, "continuum_opa")
+    # ):
+    #     plt.plot(wavel, rt_object.continuum_opa[:, 0], label="Total continuum opacity")
+    #     # plt.plot(wavel, rt_object.continuum_opa[:, 0] - rt_object.continuum_opa_scat[:, 0], label="Absorption continuum opacity")
+    #     # plt.plot(wavel, rt_object.continuum_opa_scat[:, 0], label="Scattering continuum opacity")
+    #     plt.xlabel(r"Wavelength ($\mu$m)")
+    #     plt.ylabel("Opacity at smallest pressure")
+    #     plt.yscale("log")
+    #     plt.legend(loc="best")
+    #     plt.savefig("continuum_opacity.pdf", bbox_inches="tight")
+    #     plt.clf()
 
     return wavel, f_lambda, contr_em, mmw
 

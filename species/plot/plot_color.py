@@ -115,7 +115,8 @@ def plot_color_magnitude(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
     legend : str, tuple(float, float), dict, None
-        Legend position or keyword arguments. No legend is shown if set to ``None``.
+        Legend position or keyword arguments. No legend
+        is shown if set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -771,15 +772,15 @@ def plot_color_magnitude(
                 numpoints=1,
             )
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -1469,12 +1470,12 @@ def plot_color_color(
                 numpoints=1,
             )
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")

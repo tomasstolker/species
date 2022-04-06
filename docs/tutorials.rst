@@ -14,14 +14,14 @@ This page contains a list of tutorials which highlight some of the functionaliti
    :maxdepth: 1
 
    tutorials/fitting_model_spectra.ipynb
-   tutorials/free_retrieval.ipynb
+   tutorials/atmospheric_retrieval.ipynb
 
 **Atmospheric models**
 
 .. toctree::
    :maxdepth: 1
 
-   tutorials/atmospheric_models.ipynb
+   tutorials/model_spectra.ipynb
    tutorials/data_model.ipynb
 
 **Photometry**

@@ -13,6 +13,8 @@ import emcee
 import numpy as np
 import spectres
 
+from scipy import stats
+
 try:
     import ultranest
 except:
@@ -193,11 +195,11 @@ def lnlike(
             param_dict[item] = param[param_index[item]]
 
     if model == "planck":
-        param_dict["distance"] = distance[0]
+        param_dict["distance"] = param[param_index["distance"]]
 
     else:
         flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-            distance[0] * constants.PARSEC
+            param_dict["distance"] * constants.PARSEC
         ) ** 2
 
         # The scaling is applied manually because of the interpolation
@@ -761,6 +763,13 @@ class FitModel:
         self.model = model
         self.bounds = bounds
 
+        if self.model == "bt-settl":
+            warnings.warn("It is recommended to use the CIFIST "
+                          "grid of the BT-Settl, because it is "
+                          "a newer version. In that case, set "
+                          "model='bt-settl-cifist' when using "
+                          "add_model of Database.")
+
         if self.model == "planck":
             # Fitting blackbody radiation
             if isinstance(bounds["teff"], list) and isinstance(bounds["radius"], list):
@@ -783,6 +792,8 @@ class FitModel:
 
                 self.modelpar = ["teff", "radius"]
                 self.bounds = bounds
+
+            self.modelpar.append("distance")
 
         elif self.model == "powerlaw":
             self.n_planck = 0
@@ -857,6 +868,7 @@ class FitModel:
 
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append("radius")
+            self.modelpar.append("distance")
 
             if self.binary:
                 if "radius" in self.bounds:
@@ -1454,7 +1466,7 @@ class FitModel:
 
     @typechecked
     def lnlike_func(
-        self, params, prior: Optional[Dict[str, Tuple[float, float]]] = None
+        self, params, prior: Optional[Dict[str, Tuple[float, float]]]
     ) -> np.float64:
         """
         Function for calculating the log-likelihood for the sampled
@@ -1464,14 +1476,14 @@ class FitModel:
         ----------
         params : np.ndarray, pymultinest.run.LP_c_double
             Cube with physical parameters.
-        prior : dict(str, tuple(float, float)), None
+        prior : dict(str, tuple(float, float))
             Dictionary with Gaussian priors for one or multiple
             parameters. The prior can be set for any of the atmosphere
             or calibration parameters, e.g.
             ``prior={'teff': (1200., 100.)}``. Additionally, a prior
             can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
             for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup. The parameter is not used if set to ``None``.
+            3 Mjup.
 
         Returns
         -------
@@ -1542,6 +1554,10 @@ class FitModel:
             else:
                 param_dict[item] = params[self.cube_index[item]]
 
+        # Add the distance manually because it should
+        # not be provided in the bounds dictionary
+        param_dict["distance"] = params[self.cube_index["distance"]]
+
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries
 
@@ -1593,17 +1609,14 @@ class FitModel:
             if disk_param["radius"] < param_dict["radius"]:
                 return -np.inf
 
-        if self.model == "planck":
-            param_dict["distance"] = self.distance[0]
-
-        elif self.model != "powerlaw":
+        if self.model != "powerlaw":
             if "radius_0" in param_dict and "radius_1" in param_dict:
                 flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
-                    self.distance[0] * constants.PARSEC
+                    param_dict["distance"] * constants.PARSEC
                 ) ** 2
 
                 flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
-                    self.distance[0] * constants.PARSEC
+                    param_dict["distance"] * constants.PARSEC
                 ) ** 2
 
                 # The scaling is applied manually because of the interpolation
@@ -1612,7 +1625,7 @@ class FitModel:
 
             else:
                 flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-                    self.distance[0] * constants.PARSEC
+                    param_dict["distance"] * constants.PARSEC
                 ) ** 2
 
                 # The scaling is applied manually because of the interpolation
@@ -1636,22 +1649,21 @@ class FitModel:
 
         ln_like = 0.0
 
-        if prior is not None:
-            for key, value in prior.items():
-                if key == "mass":
-                    mass = read_util.get_mass(
-                        params[self.cube_index["logg"]],
-                        params[self.cube_index["radius"]],
-                    )
+        for key, value in prior.items():
+            if key == "mass":
+                mass = read_util.get_mass(
+                    params[self.cube_index["logg"]],
+                    params[self.cube_index["radius"]],
+                )
 
-                    ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
+                ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
 
-                else:
-                    ln_like += (
-                        -0.5
-                        * (params[self.cube_index[key]] - value[0]) ** 2
-                        / value[1] ** 2
-                    )
+            else:
+                ln_like += (
+                    -0.5
+                    * (params[self.cube_index[key]] - value[0]) ** 2
+                    / value[1] ** 2
+                )
 
         if "lognorm_ext" in dust_param:
             cross_tmp = self.cross_sections["Generic/Bessell.V"](
@@ -1747,7 +1759,7 @@ class FitModel:
                 phot_flux += (
                     phot_tmp
                     * (disk_param["radius"] * constants.R_JUP) ** 2
-                    / (self.distance[0] * constants.PARSEC) ** 2
+                    / (param_dict["distance"] * constants.PARSEC) ** 2
                 )
 
             if "lognorm_ext" in dust_param:
@@ -1938,7 +1950,7 @@ class FitModel:
                 model_tmp = self.diskspec[i].spectrum_interp([disk_param["teff"]])[0, :]
 
                 model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 / (
-                    self.distance[0] * constants.PARSEC
+                    param_dict["distance"] * constants.PARSEC
                 ) ** 2
 
                 model_flux += model_tmp
@@ -2089,6 +2101,13 @@ class FitModel:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
+        # Add distance to dictionary with Gaussian priors
+
+        if prior is None:
+            prior = {}
+
+        prior['distance'] = self.distance
+
         @typechecked
         def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
@@ -2112,12 +2131,21 @@ class FitModel:
             """
 
             for item in self.cube_index:
-                # Uniform priors for all parameters
-                cube[self.cube_index[item]] = (
-                    self.bounds[item][0]
-                    + (self.bounds[item][1] - self.bounds[item][0])
-                    * cube[self.cube_index[item]]
-                )
+                if item == "distance":
+                    # Gaussian prior for the distance
+                    cube[self.cube_index[item]] = stats.norm.ppf(
+                        cube[self.cube_index[item]],
+                        loc=self.distance[0],
+                        scale=self.distance[1]
+                    )
+
+                else:
+                    # Uniform priors for all parameters
+                    cube[self.cube_index[item]] = (
+                        self.bounds[item][0]
+                        + (self.bounds[item][1] - self.bounds[item][0])
+                        * cube[self.cube_index[item]]
+                    )
 
         @typechecked
         def lnlike_multinest(params, n_dim: int, n_param: int) -> np.float64:
@@ -2155,18 +2183,19 @@ class FitModel:
             len(self.modelpar), outputfiles_basename=output
         )
 
-        # Get a dictionary with the ln(Z) and its errors, the individual modes and their parameters
-        # quantiles of the parameter posteriors
-        stats = analyzer.get_stats()
+        # Get a dictionary with the ln(Z) and its errors, the
+        # individual modes and their parameters quantiles of
+        # the parameter posteriors
+        sampling_stats = analyzer.get_stats()
 
         # Nested sampling global log-evidence
-        ln_z = stats["nested sampling global log-evidence"]
-        ln_z_error = stats["nested sampling global log-evidence error"]
+        ln_z = sampling_stats["nested sampling global log-evidence"]
+        ln_z_error = sampling_stats["nested sampling global log-evidence error"]
         print(f"Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Nested sampling global log-evidence
-        ln_z = stats["nested importance sampling global log-evidence"]
-        ln_z_error = stats["nested importance sampling global log-evidence error"]
+        ln_z = sampling_stats["nested importance sampling global log-evidence"]
+        ln_z_error = sampling_stats["nested importance sampling global log-evidence error"]
         print(
             f"Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}"
         )
@@ -2295,6 +2324,13 @@ class FitModel:
 
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
+
+        # Add distance to dictionary with Gaussian priors
+
+        if prior is None:
+            prior = {}
+
+        prior['distance'] = self.distance
 
         @typechecked
         def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:

@@ -58,7 +58,7 @@ class TestCalibration:
         read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
         flux = read_calib.get_flux(model_param=self.model_param)
 
-        assert flux[0] == pytest.approx(1.132902304231636e-09, rel=self.limit, abs=0.0)
+        assert flux[0] == pytest.approx(1.1329023591019857e-09, rel=self.limit, abs=0.0)
 
     def test_get_magnitude(self):
         read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")

@@ -2,7 +2,7 @@
 Utility functions for data processing.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
@@ -772,14 +772,14 @@ def retrieval_spectrum(
     quenching: Optional[str],
     spec_res: float,
     distance: Optional[float],
-    pt_smooth: Optional[Union[float, Dict[str, float]]],
+    pt_smooth: Optional[float],
     temp_nodes: Optional[np.integer],
     read_rad: read_radtrans.ReadRadtrans,
     sample: np.ndarray,
 ) -> box.ModelBox:
     """
-    Function for calculating a petitRADTRANS spectrum from a
-    posterior sample.
+    Function for calculating a petitRADTRANS spectrum
+    from a posterior sample.
 
     Parameters
     ----------
@@ -804,12 +804,12 @@ def retrieval_spectrum(
         Spectral resolution.
     distance : float, None
         Distance (pc).
-    pt_smooth : float, dict
+    pt_smooth : float
         Standard deviation of the Gaussian kernel that is used for
         smoothing the sampled temperature nodes of the P-T profile.
         Only required with `pt_profile='free'` or
         `pt_profile='monotonic'`. The argument should be given as
-        log10(P/bar). TODO
+        log10(P/bar).
     temp_nodes : int, None
         Number of free temperature nodes that are used when
         ``pt_profile='monotonic'`` or ``pt_profile='free'``.
@@ -848,6 +848,10 @@ def retrieval_spectrum(
         model_param["alpha"] = sample[indices["alpha"]]
         model_param["tint"] = sample[indices["tint"]]
 
+    elif pt_profile == "eddington":
+        model_param["log_delta"] = sample[indices["log_delta"]]
+        model_param["tint"] = sample[indices["tint"]]
+
     elif pt_profile in ["free", "monotonic"]:
         if temp_nodes is None:
             # For backward compatibility
@@ -856,11 +860,7 @@ def retrieval_spectrum(
         for j in range(temp_nodes):
             model_param[f"t{j}"] = sample[indices[f"t{j}"]]
 
-    if isinstance(pt_smooth, dict):
-        for i in range(temp_nodes-1):
-            model_param[f"pt_smooth_{i}"] = sample[indices[f"pt_smooth_{i}"]]
-
-    elif pt_smooth is not None:
+    if pt_smooth is not None:
         model_param["pt_smooth"] = pt_smooth
 
     # Add chemistry parameters
@@ -883,10 +883,24 @@ def retrieval_spectrum(
         model_param["opa_index"] = sample[indices["opa_index"]]
         model_param["log_p_base"] = sample[indices["log_p_base"]]
         model_param["albedo"] = sample[indices["albedo"]]
-        model_param["fsed"] = sample[indices["fsed"]]
+
+        if "fsed" in indices:
+            model_param["fsed"] = sample[indices["fsed"]]
+
+        elif "fsed_1" in indices and "fsed_2" in indices:
+            model_param["fsed_1"] = sample[indices["fsed_1"]]
+            model_param["fsed_2"] = sample[indices["fsed_2"]]
+            model_param["f_clouds"] = sample[indices["f_clouds"]]
 
         if "opa_knee" in indices:
             model_param["opa_knee"] = sample[indices["opa_knee"]]
+
+    elif "log_kappa_gray" in indices:
+        model_param["log_kappa_gray"] = sample[indices["log_kappa_gray"]]
+        model_param["log_cloud_top"] = sample[indices["log_cloud_top"]]
+
+        if "albedo" in indices:
+            model_param["albedo"] = sample[indices["albedo"]]
 
     elif len(cloud_species) > 0:
         model_param["fsed"] = sample[indices["fsed"]]

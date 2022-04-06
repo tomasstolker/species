@@ -42,7 +42,7 @@ class TestPlanck:
         assert modelbox.flux.shape == (204,)
 
         assert np.sum(modelbox.wavelength) == pytest.approx(
-            255.377278282184, rel=self.limit, abs=0.0
+            255.37728257033913, rel=self.limit, abs=0.0
         )
         assert np.sum(modelbox.flux) == pytest.approx(
             4.0434750652879004e-12, rel=self.limit, abs=0.0

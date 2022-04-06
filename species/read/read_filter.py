@@ -82,13 +82,13 @@ class ReadFilter:
         return data
 
     @typechecked
-    def interpolate_filter(self) -> interpolate.interp1d:
+    def interpolate_filter(self) -> interp1d:
         """
         Function for linearly interpolating a filter profile.
 
         Returns
         -------
-        scipy.interpolate.interpolate.interp1d
+        scipy.interpolate.interp1d
             Linearly interpolated filter.
         """
 

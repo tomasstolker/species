@@ -459,7 +459,6 @@ def plot_spectrum(
                             "logg",
                             "feh",
                             "metallicity",
-                            "fsed",
                             "lognorm_ext",
                             "powerlaw_ext",
                             "ism_ext",
@@ -1147,12 +1146,12 @@ def plot_spectrum(
     # ax1.text(1.26, 0.58, 'VLT/SPHERE', ha='center', va='center', fontsize=8., color='slateblue', rotation=43.)
     # ax1.text(2.5, 1.28, 'VLT/SINFONI', ha='left', va='center', fontsize=8., color='darkgray')
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
-        plt.savefig(os.getcwd() + "/" + output, bbox_inches="tight")
+        plt.savefig(output, bbox_inches="tight")
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")

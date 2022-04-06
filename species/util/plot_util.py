@@ -242,6 +242,18 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("fsed")
         param[index] = r"$\mathregular{f}_\mathregular{sed}$"
 
+    if "fsed_1" in param:
+        index = param.index("fsed_1")
+        param[index] = r"$\mathregular{f}_\mathregular{sed,1}$"
+
+    if "fsed_2" in param:
+        index = param.index("fsed_2")
+        param[index] = r"$\mathregular{f}_\mathregular{sed,2}$"
+
+    if "f_clouds" in param:
+        index = param.index("f_clouds")
+        param[index] = r"$\mathregular{w}_\mathregular{clouds}$"
+
     if "c_o_ratio" in param:
         index = param.index("c_o_ratio")
         param[index] = r"C/O"
@@ -249,6 +261,10 @@ def update_labels(param: List[str]) -> List[str]:
     if "radius" in param:
         index = param.index("radius")
         param[index] = r"$\mathregular{R}$ ($\mathregular{R_J}$)"
+
+    if "distance" in param:
+        index = param.index("distance")
+        param[index] = "d (pc)"
 
     if "mass" in param:
         index = param.index("mass")
@@ -375,19 +391,34 @@ def update_labels(param: List[str]) -> List[str]:
 
     for i, item in enumerate(param):
         if item[0:8] == "scaling_":
-            param[i] = rf"$\mathregular{{a}}_\mathregular{{{item[8:]}}}$"
+            item_name = item[8:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{a}}_\mathregular{{{item_name}}}$"
 
         elif item[0:6] == "error_":
-            param[i] = rf"$\mathregular{{b}}_\mathregular{{{item[6:]}}}$"
+            item_name = item[6:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{b}}_\mathregular{{{item_name}}}$"
 
         elif item[0:11] == "wavelength_":
-            param[i] = rf"$\mathregular{{c}}_\mathregular{{{item[11:]}}}$ (nm)"
+            item_name = item[11:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{c}}_\mathregular{{{item_name}}}$ (nm)"
 
         elif item[0:9] == "corr_len_":
-            param[i] = rf"$\mathregular{{log}}\,\ell_\mathregular{{{item[9:]}}}$"
+            item_name = item[9:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{log}}\,\ell_\mathregular{{{item_name}}}$"
 
         elif item[0:9] == "corr_amp_":
-            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item[9:]}}}$"
+            item_name = item[9:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item_name}}}$"
 
     if "c_h_ratio" in param:
         index = param.index("c_h_ratio")
@@ -554,6 +585,14 @@ def update_labels(param: List[str]) -> List[str]:
     if "gamma_r" in param:
         index = param.index("gamma_r")
         param[index] = r"$\gamma_\mathregular{r}$"
+
+    if "log_kappa_gray" in param:
+        index = param.index("log_kappa_gray")
+        param[index] = r"$\mathregular{log}\,\kappa_\mathregular{gray}$"
+
+    if "log_cloud_top" in param:
+        index = param.index("log_cloud_top")
+        param[index] = r"$\mathregular{log}\,\mathregular{P}_\mathregular{top}$"
 
     return param
 
