@@ -5,7 +5,7 @@ Details on the  transfer code can be found in Mollière et al. (2019).
 
 import warnings
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -225,7 +225,7 @@ class ReadRadtrans:
         quenching: Optional[str] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
-        plot_contribution: Optional[str] = None,
+        plot_contribution: Optional[Union[bool, str]] = False,
         temp_nodes: Optional[int] = None,
     ) -> box.ModelBox:
         """
@@ -251,9 +251,11 @@ class ReadRadtrans:
             Wavelength points (um) to which the spectrum will be
             resampled. The original wavelengths points will be used if
             the argument is set to ``None``.
-        plot_contribution : str, None
+        plot_contribution : bool, str, None
             Filename for the plot with the emission contribution. The
-            plot is not created if the argument is set to ``None``.
+            plot is not created if the argument is set to ``False`` or
+            ``None``. If set to ``True``, the plot is shown in an
+            interface window instead of written to a file.
         temp_nodes : int, None
             Number of free temperature nodes.
 
@@ -262,13 +264,6 @@ class ReadRadtrans:
         species.core.box.ModelBox
             Box with the petitRADTRANS model spectrum.
         """
-
-        # Set contribution boolean
-
-        # if plot_contribution:
-        #     contribution = True
-        # else:
-        #     contribution = False
 
         # Set chemistry type
 
@@ -698,7 +693,8 @@ class ReadRadtrans:
             )
 
             if "distance" in model_param:
-                # Use the radius and distance to scale the fluxes to the observer
+                # Use the radius and distance to
+                # scale the fluxes to the observer
 
                 scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
                     model_param["distance"] * constants.PARSEC
@@ -722,7 +718,7 @@ class ReadRadtrans:
 
         # Plot 2D emission contribution
 
-        if plot_contribution is not None:
+        if plot_contribution:
             # Calculate the total optical depth (line and continuum opacities)
             # self.rt_object.calc_opt_depth(10.**model_param['logg'])
 
@@ -828,7 +824,11 @@ class ReadRadtrans:
             ax.set_xlim(np.amin(wavelength), np.amax(wavelength))
             ax.set_ylim(np.amax(press_bar), np.amin(press_bar))
 
-            plt.savefig(plot_contribution, bbox_inches="tight")
+            if isinstance(plot_contribution, str):
+                plt.savefig(plot_contribution, bbox_inches="tight")
+            else:
+                plt.show()
+
             plt.clf()
             plt.close()
 

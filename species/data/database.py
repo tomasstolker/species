@@ -1164,20 +1164,26 @@ class Database:
         tag : str
             Tag name in the database.
         filename : str, None
-            Filename with the calibration spectrum. The first column should contain the wavelength
-            (um), the second column the flux density (W m-2 um-1), and the third column
-            the error (W m-2 um-1). The ``data`` argument is used if set to ``None``.
+            Filename with the calibration spectrum. The first column
+            should contain the wavelength (um), the second column the
+            flux density (W m-2 um-1), and the third column the error
+            (W m-2 um-1). The ``data`` argument is used if set to
+            ``None``.
         data : np.ndarray, None
-            Spectrum stored as 3D array with shape ``(n_wavelength, 3)``. The first column should
-            contain the wavelength (um), the second column the flux density (W m-2 um-1),
-            and the third column the error (W m-2 um-1). The ``filename`` argument is used if set
-            to ``None``.
+            Spectrum stored as 3D array with shape
+            ``(n_wavelength, 3)``. The first column should contain the
+            wavelength (um), the second column the flux density
+            (W m-2 um-1), and the third column the error (W m-2 um-1).
+            The ``filename`` argument is used if set to ``None``.
         units : dict, None
-            Dictionary with the wavelength and flux units, e.g. ``{'wavelength': 'angstrom',
-            'flux': 'w m-2'}``. The default units (um and W m-2 um-1) are used if set to ``None``.
+            Dictionary with the wavelength and flux units, e.g.
+            ``{'wavelength': 'angstrom', 'flux': 'w m-2'}``. The
+            default units (um and W m-2 um-1) are used if set to
+            ``None``.
         scaling : tuple(float, float), None
-            Scaling for the wavelength and flux as ``(scaling_wavelength, scaling_flux)``. Not used
-            if set to ``None``.
+            Scaling for the wavelength and flux as
+            ``(scaling_wavelength, scaling_flux)``. Not
+            used if set to ``None``.
 
         Returns
         -------
@@ -2645,12 +2651,13 @@ class Database:
             Output folder that was used for the output files by
             ``MultiNest``.
         inc_teff : bool
-            Calculate Teff for each sample by integrating the model
-            spectrum from 0.5 to 50 um. The Teff samples are added to
-            the array with samples that are stored in the database.
-            The computation time for adding Teff will be long because
-            the spectra need to be calculated and integrated for all
-            samples.
+            Calculate :math:`T_\\mathrm{eff}` for each sample by
+            integrating the model spectrum from 0.5 to 50 um. The
+            :math:`T_\\mathrm{eff}` samples are added to the array
+            with samples that are stored in the database. The
+            computation time for adding :math:`T_\\mathrm{eff}` will
+            be long because the spectra need to be calculated and
+            integrated for all samples.
 
         Returns
         -------
@@ -3305,8 +3312,8 @@ class Database:
     @typechecked
     def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[float, float]:
         """
-        Function for calculating Teff from randomly drawn samples
-        of the posterior distribution from
+        Function for calculating :math:`T_\\mathrm{eff}` from
+        randomly drawn samples of the posterior distribution from
         :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
         This requires the recalculation of the spectra across a
         broad wavelength range (0.5-50 um).
@@ -3321,9 +3328,9 @@ class Database:
         Returns
         -------
         float
-            Mean of Teff samples.
+            Mean of :math:`T_\\mathrm{eff}` samples.
         float
-            Standard deviation of Teff samples.
+            Standard deviation of :math:`T_\\mathrm{eff}` samples.
         """
 
         print(f"Calculating Teff from {random} posterior samples... ")

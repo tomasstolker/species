@@ -352,7 +352,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: Union[float, Dict[str, float]] = 0.3,
+    pt_smooth: float = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -375,7 +375,7 @@ def pt_spline_interp(
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex. TODO
+        set to 0.3 dex.
 
     Returns
     -------
@@ -383,100 +383,19 @@ def pt_spline_interp(
         Interpolated, smoothed temperature points (K).
     """
 
-    if isinstance(pt_smooth, dict):
-        for i, item in enumerate(knot_temp[:-1]):
-            if i == 0:
-                pt_interp = PchipInterpolator(
-                    np.log10(knot_press[: i + 2]), knot_temp[: i + 2]
-                )
+    pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i + 1])
-                press_interp = np.log10(pressure[indices])
-                temp_interp = pt_interp(press_interp)
+    temp_interp = pt_interp(np.log10(pressure))
 
-            else:
-                press_new = np.append(press_interp, np.log10(knot_press[i + 1]))
-                temp_new = np.append(temp_interp, knot_temp[i + 1])
-                pt_interp = PchipInterpolator(press_new, temp_new)
+    log_press = np.log10(pressure)
+    log_diff = np.mean(np.diff(log_press))
 
-                indices = np.log10(pressure) <= np.log10(knot_press[i + 1])
-                press_interp = np.log10(pressure[indices])
-                temp_interp = pt_interp(press_interp)
+    if np.std(np.diff(log_press)) / log_diff > 1e-6:
+        raise ValueError("Expecting equally spaced pressures in log space.")
 
-            log_press = np.log10(pressure)
-            log_diff = np.mean(np.diff(log_press))
-
-            if np.std(np.diff(log_press)) / log_diff > 1e-6:
-                raise ValueError("Expecting equally spaced pressures in log space.")
-
-            pt_profile = gaussian_filter(
-                temp_interp,
-                sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
-                mode="nearest",
-            )
-
-            # pt_profile = gaussian_filter(
-            #     pt_profile,
-            #     sigma=pt_smooth["pt_smooth_2"] / log_diff,
-            #     mode="nearest",
-            # )
-
-        # pt_profile = copy.copy(temp_interp)
-        #
-        # pt_profile = gaussian_filter(
-        #     pt_profile,
-        #     sigma=pt_smooth["pt_smooth_1"] / log_diff,
-        #     mode="nearest",
-        # )
-        #
-        # indices = np.where(temp_interp > pt_smooth["pt_turn"])[0]
-        #
-        # if len(indices) > 0:
-        #     pt_profile[indices] = (
-        #         pt_profile[indices[0]]
-        #         * (temp_interp[indices] / temp_interp[indices[0]]) ** pt_smooth["pt_index"]
-        #     )
-        #
-        #     pt_profile = gaussian_filter(
-        #         pt_profile,
-        #         sigma=pt_smooth["pt_smooth_2"] / log_diff,
-        #         mode="nearest",
-        #     )
-        #
-        # for i in range(pt_smooth["n_smooth"]):
-        #     if i == 0:
-        #         indices = log_press < pt_smooth["pt_connect_0_end"]
-        #
-        #     elif i == pt_smooth["n_smooth"] - 1:
-        #         indices = log_press > pt_smooth[f"pt_connect_{i}_start"]
-        #
-        #     else:
-        #         indices = (log_press > pt_smooth[f"pt_connect_{i}_start"]) \
-        #             & (log_press < pt_smooth[f"pt_connect_{i}_end"])
-        #
-        #     pt_profile[indices] = gaussian_filter(
-        #         pt_profile[indices],
-        #         sigma=pt_smooth[f"pt_smooth_{i}"] / log_diff,
-        #         mode="nearest",
-        #     )
-        #
-        #     if i == pt_smooth["n_smooth"] - 1:
-        #         break
-
-    else:
-        pt_interp = PchipInterpolator(np.log10(knot_press), knot_temp)
-
-        temp_interp = pt_interp(np.log10(pressure))
-
-        log_press = np.log10(pressure)
-        log_diff = np.mean(np.diff(log_press))
-
-        if np.std(np.diff(log_press)) / log_diff > 1e-6:
-            raise ValueError("Expecting equally spaced pressures in log space.")
-
-        temp_interp = gaussian_filter(
-            temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
-        )
+    temp_interp = gaussian_filter(
+        temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
+    )
 
     return temp_interp
 

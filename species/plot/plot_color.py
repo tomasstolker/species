@@ -772,6 +772,8 @@ def plot_color_magnitude(
                 numpoints=1,
             )
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -779,8 +781,6 @@ def plot_color_magnitude(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -1470,6 +1470,8 @@ def plot_color_color(
                 numpoints=1,
             )
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -1477,5 +1479,3 @@ def plot_color_color(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")

@@ -48,6 +48,7 @@ clean:
 	rm -rf docs/tutorials/.ipynb_checkpoints
 	rm -f docs/tutorials/species_config.ini
 	rm -f docs/tutorials/species_database.hdf5
+	rm -f docs/tutorials/retrieval.tgz
 	rm -f docs/tutorials/*.png
 	rm -f docs/tutorials/*.fits
 	rm -f docs/tutorials/*.dat

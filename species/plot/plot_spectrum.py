@@ -1146,6 +1146,8 @@ def plot_spectrum(
     # ax1.text(1.26, 0.58, 'VLT/SPHERE', ha='center', va='center', fontsize=8., color='slateblue', rotation=43.)
     # ax1.text(2.5, 1.28, 'VLT/SINFONI', ha='left', va='center', fontsize=8., color='darkgray')
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -1153,5 +1155,3 @@ def plot_spectrum(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")

@@ -744,6 +744,8 @@ def plot_pt_profile(
                 "contain a ReadRadtrans object."
             )
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -751,8 +753,6 @@ def plot_pt_profile(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -786,7 +786,7 @@ def plot_opacities(
         None
     """
 
-    if output is not None:
+    if output is None:
         print("Plotting opacities...", end="", flush=True)
     else:
         print(f"Plotting opacities: {output}...", end="", flush=True)
@@ -1235,6 +1235,8 @@ def plot_opacities(
     ax7.set_yscale("log")
     ax8.set_yscale("log")
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -1242,8 +1244,6 @@ def plot_opacities(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
 
 
 @typechecked
@@ -1295,7 +1295,7 @@ def plot_clouds(
         )
 
     if output is None:
-        print("Plotting {composition} clouds...", end="", flush=True)
+        print(f"Plotting {composition} clouds...", end="", flush=True)
     else:
         print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
@@ -1440,6 +1440,8 @@ def plot_clouds(
     ax1.set_yscale("log")
     ax2.set_yscale("log")
 
+    print(" [DONE]")
+
     if output is None:
         plt.show()
     else:
@@ -1447,5 +1449,3 @@ def plot_clouds(
 
     plt.clf()
     plt.close()
-
-    print(" [DONE]")
