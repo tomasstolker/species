@@ -525,7 +525,7 @@ class FitModel:
                  automatically included in the fit, as it sets the
                  weight of the two components. Modeling blended data
                  is only supported by ``run_ultranest`` and
-                 ``run_multinest``. 
+                 ``run_multinest``.
 
             Blackbody parameters (with ``model='planck'``):
 

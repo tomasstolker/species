@@ -169,7 +169,9 @@ def add_model_grid(
 
     else:
         wavelength = None
-        print(f"Wavelength range (um) = {model_info['wavelength range'][0]} - {model_info['wavelength range'][1]}")
+        print(f"Wavelength range (um) = "
+              f"{model_info['wavelength range'][0]} -"
+              f"{model_info['wavelength range'][1]}")
         print(f"Spectral resolution = {model_info['resolution']}")
 
     if teff_range is None:

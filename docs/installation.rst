@@ -9,11 +9,14 @@ Installation from PyPI
 ----------------------
 
 .. important::
-   Before installing ``species``, it is required to separately install ``cython``:
+   Before installing ``species``, it is required to separately install ``cython`` and ``ultranest``:
 
    .. code-block:: console
 
        $ pip install cython
+       $ pip install ultranest
+
+   The installation of ``ultranest`` has caused problems on some machines. It is possible to skip the installation of that package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `UltraNest <https://johannesbuchner.github.io/UltraNest/index.html>`_.
 
 The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
 

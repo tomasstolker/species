@@ -3166,7 +3166,7 @@ class Database:
                 temp_nodes = dset.attrs["temp_nodes"]
 
         else:
-            # For backward compatibility 
+            # For backward compatibility
             temp_nodes = None
 
         # Get distance
