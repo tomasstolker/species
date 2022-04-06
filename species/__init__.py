@@ -80,7 +80,7 @@ from species.util.read_util import (
 
 __author__ = "Tomas Stolker"
 __license__ = "MIT"
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __maintainer__ = "Tomas Stolker"
 __email__ = "stolker@strw.leidenuniv.nl"
 __status__ = "Development"
