@@ -402,11 +402,18 @@ def update_labels(param: List[str]) -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$\mathregular{{b}}_\mathregular{{{item_name}}}$"
 
+
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$\mathregular{{c}}_\mathregular{{{item_name}}}$ (nm)"
+
+        elif item[-6:] == "_error":
+            item_name = item[:-6]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item_name}}}$"
 
         elif item[0:9] == "corr_len_":
             item_name = item[9:]

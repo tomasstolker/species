@@ -48,7 +48,7 @@ class SpeciesInit:
 
         if latest_version is not None and species.__version__ != latest_version:
             print(f"A new version ({latest_version}) is available!")
-            print("Want to stay informed about updates, bug fixes, and new features?")
+            print("Want to stay informed about updates?")
             print("Please have a look at the Github page:")
             print("https://github.com/tomasstolker/species")
 

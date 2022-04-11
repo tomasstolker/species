@@ -8,7 +8,6 @@ import configparser
 from typing import Optional, Union, Tuple, List, Dict
 
 import h5py
-import PyMieScatt
 import numpy as np
 
 from typeguard import typechecked
@@ -194,6 +193,9 @@ def dust_cross_section(
     float
         Extinction cross section (um2)
     """
+
+    # Importing here because it causes an error with Python 3.10
+    import PyMieScatt
 
     c_ext = 0.0
 

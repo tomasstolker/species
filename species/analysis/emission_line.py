@@ -16,8 +16,8 @@ try:
     import ultranest
 except:
     warnings.warn(
-        "UltraNest could not be imported. "
-        "Perhaps because cython was not correctly compiled?"
+        "UltraNest could not be imported. Perhaps "
+        "because cython was not correctly compiled?"
     )
 
 from astropy import units as u
@@ -56,13 +56,16 @@ class EmissionLine:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         spec_name : str
-            Name of the spectrum that is stored at the object data of ``object_name``.
+            Name of the spectrum that is stored at the object data
+            of ``object_name``.
         lambda_rest : float, None
-            Rest wavelength (um) of the emission line. The parameter is used for calculating
-            the radial velocity and its uncertainty.
+            Rest wavelength (um) of the emission line. The parameter
+            if used for calculating the radial velocity and its
+            uncertainty.
         wavel_range : tuple(float, float), None
-            Wavelength range (um) that is cropped from the spectrum. The full spectrum is used if
-            the argument is set to ``None``.
+            Wavelength range (um) that is cropped from the
+            spectrum. The full spectrum is used if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -115,23 +118,27 @@ class EmissionLine:
     def subtract_continuum(
         self,
         poly_degree: int = 3,
-        plot_filename: str = "continuum.pdf",
+        plot_filename: Optional[str] = "continuum.pdf",
         spec_filename: Optional[str] = None,
     ) -> None:
         """
-        Method for fitting the continuum with a polynomial function of the following form:
-        :math:`P = \\sum_{i=0}^{i=n}C_{i} * x^{i}`. The spectrum is first smoothed with a median
-        filter and then fitted with a linear least squares algorithm.
+        Method for fitting the continuum with a polynomial function of
+        the following form: :math:`P = \\sum_{i=0}^{i=n}C_{i} * x^{i}`.
+        The spectrum is first smoothed with a median filter and then
+        fitted with a linear least squares algorithm.
 
         Parameters
         ----------
         poly_degree : int
             Degree of the polynomial series.
-        plot_filename : str
-            Filename for the plots with the continuum fit and the continuum-subtracted spectrum.
+        plot_filename : str, None
+            Filename for the plots with the continuum fit and the
+            continuum-subtracted spectrum. The plot is shown in an
+            interface window if the argument is set to ``None``.
         spec_filename : str, None
-            Output text file for writing the continuum-subtracted spectrum. The file will not be
-            created if the argument is set to ``None``.
+            Output text file for writing the continuum-subtracted
+            spectrum. The file will not be created if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -168,7 +175,10 @@ class EmissionLine:
 
         # Create plot
 
-        print(f"Plotting continuum fit: {plot_filename}...", end="", flush=True)
+        if plot_filename is None:
+            print("Plotting continuum fit...", end="", flush=True)
+        else:
+            print(f"Plotting continuum fit: {plot_filename}...", end="", flush=True)
 
         mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
         mpl.rcParams["font.family"] = "serif"
@@ -345,11 +355,15 @@ class EmissionLine:
         ax1.legend(loc="upper right", frameon=False, fontsize=12.0)
         ax2.legend(loc="upper right", frameon=False, fontsize=12.0)
 
-        plt.savefig(plot_filename, bbox_inches="tight")
+        print(" [DONE]")
+
+        if plot_filename is None:
+            plt.show()
+        else:
+            plt.savefig(plot_filename, bbox_inches="tight")
+
         plt.clf()
         plt.close()
-
-        print(" [DONE]")
 
         # Overwrite original spectrum with continuum-subtracted spectrum
         self.spectrum[:, 1] = spec_cont_sub.flux
@@ -371,22 +385,27 @@ class EmissionLine:
         self,
         wavel_int: Tuple[float, float],
         interp_kind: str = "linear",
-        plot_filename: str = "int_line.pdf",
+        plot_filename: Optional[str] = "int_line.pdf",
     ) -> Union[np.float64, np.float64]:
         """
-        Method for calculating the integrated line flux and error. The spectrum is first
-        interpolated to :math:`R = 100000` and then integrated across the specified wavelength
-        range with the composite trapezoidal rule of ``np.trapz``. The error is estimated with
-        a Monte Carlo approach from 1000 samples.
+        Method for calculating the integrated line flux and error. The
+        spectrum is first interpolated to :math:`R = 100000` and then
+        integrated across the specified wavelength range with the
+        composite trapezoidal rule of ``np.trapz``. The error is
+        estimated with a Monte Carlo approach from 1000 samples.
 
         Parameters
         ----------
         wavel_int : tuple(float, float)
-            Wavelength range (um) across which the flux will be integrated.
+            Wavelength range (um) across which the flux
+            will be integrated.
         interp_kind : str
-            Kind of interpolation kind for ``scipy.interpolate.interp1d`` (default: 'linear').
-        plot_filename : str
+            Kind of interpolation kind for
+            ``scipy.interpolate.interp1d`` (default: 'linear').
+        plot_filename : str, None
             Filename for the plot with the interpolated line profile.
+            The plot is shown in an interface window if the argument
+            is set to ``None``.
 
         Returns
         -------
@@ -396,7 +415,10 @@ class EmissionLine:
             Flux error (W m-2).
         """
 
-        print(f"Plotting integrated line: {plot_filename}...", end="", flush=True)
+        if plot_filename is None:
+            print("Plotting integrated line...", end="", flush=True)
+        else:
+            print(f"Plotting integrated line: {plot_filename}...", end="", flush=True)
 
         n_samples = 1000
 
@@ -584,11 +606,15 @@ class EmissionLine:
 
         ax1.legend(loc="upper right", frameon=False, fontsize=12.0)
 
-        plt.savefig(plot_filename, bbox_inches="tight")
+        print(" [DONE]")
+
+        if plot_filename is None:
+            plt.show()
+        else:
+            plt.savefig(plot_filename, bbox_inches="tight")
+
         plt.clf()
         plt.close()
-
-        print(" [DONE]")
 
         wavel_mean, wavel_std = np.mean(mean_sample), np.std(mean_sample)
         print(f"Mean wavelength (nm): {1e3*wavel_mean:.2f} +/- {1e3*wavel_std:.2f}")
@@ -614,13 +640,14 @@ class EmissionLine:
         min_num_live_points: float = 400,
         bounds: Dict[str, Union[Tuple[float, float]]] = None,
         output: str = "ultranest/",
-        plot_filename: str = "line_fit.pdf",
+        plot_filename: Optional[str] = "line_fit.pdf",
         show_status: bool = True,
         double_gaussian: bool = False,
     ) -> None:
         """
-        Method for fitting a Gaussian profile to an emission line and using ``UltraNest`` for
-        sampling the posterior distributions and estimating the evidence.
+        Method for fitting a Gaussian profile to an emission line and
+        using ``UltraNest`` for sampling the posterior distributions
+        and estimating the evidence.
 
         Parameters
         ----------
@@ -630,21 +657,26 @@ class EmissionLine:
             Minimum number of live points (see
             https://johannesbuchner.github.io/UltraNest/issues.html).
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors of the 3 Gaussian parameters
-            (``gauss_amplitude``, ``gauss_mean``, and ``gauss_sigma``). Conservative prior
-            boundaries will be estimated from the spectrum if the argument is set to ``None``
-            or if any of the required parameters is missing in the ``bounds`` dictionary.
+            The boundaries that are used for the uniform priors of the
+            3 Gaussian parameters (``gauss_amplitude``, ``gauss_mean``,
+            and ``gauss_sigma``). Conservative prior boundaries will
+            be estimated from the spectrum if the argument is set to
+            ``None`` or if any of the required parameters is missing
+            in the ``bounds`` dictionary.
         output : str
             Path that is used for the output files from ``UltraNest``.
         plot_filename : str
             Filename for the plot with the best-fit line profile.
+            The plot is shown in an interface window if the
+            argument is set to ``None``.
         show_status : bool
             Print information about the convergence.
         double_gaussian : bool
-            Set to ``True`` for fitting a double instead of a single Gaussian. In that case, the
-            ``bounds`` dictionary may also contain ``'gauss_amplitude_2'``, ``'gauss_mean_2'``,
-            and ``'gauss_sigma_2'`` (otherwise conservative parameter boundaries are estimated
-            from the data).
+            Set to ``True`` for fitting a double instead of a single
+            Gaussian. In that case, the ``bounds`` dictionary may also
+            contain ``'gauss_amplitude_2'``, ``'gauss_mean_2'``, and
+            ``'gauss_sigma_2'`` (otherwise conservative parameter
+            boundaries are estimated from the data).
 
         Returns
         -------
@@ -721,7 +753,8 @@ class EmissionLine:
         @typechecked
         def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
-            Function for transforming the unit cube into the parameter cube.
+            Function for transforming the unit cube
+            into the parameter cube.
 
             Parameters
             ----------
@@ -748,7 +781,8 @@ class EmissionLine:
         @typechecked
         def lnlike_ultranest(params: np.ndarray) -> np.float64:
             """
-            Function for calculating the log-likelihood for the sampled parameter cube.
+            Function for calculating the log-likelihood for the
+            sampled parameter cube.
 
             Parameters
             ----------
@@ -977,7 +1011,8 @@ class EmissionLine:
         # Add samples to the database
 
         if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single process
+            # Writing the samples to the database is only
+            # possible when using a single process
 
             species_db = database.Database()
 
@@ -996,7 +1031,10 @@ class EmissionLine:
 
         # Create plot
 
-        print(f"Plotting best-fit line profile: {plot_filename}...", end="", flush=True)
+        if plot_filename is None:
+            print("Plotting best-fit line profile...", end="", flush=True)
+        else:
+            print(f"Plotting best-fit line profile: {plot_filename}...", end="", flush=True)
 
         mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
         mpl.rcParams["font.family"] = "serif"
@@ -1183,8 +1221,12 @@ class EmissionLine:
         ax1.legend(loc="upper left", frameon=False, fontsize=12.0)
         ax2.legend(loc="upper left", frameon=False, fontsize=12.0)
 
-        plt.savefig(plot_filename, bbox_inches="tight")
+        print(" [DONE]")
+
+        if plot_filename is None:
+            plt.show()
+        else:
+            plt.savefig(plot_filename, bbox_inches="tight")
+
         plt.clf()
         plt.close()
-
-        print(" [DONE]")

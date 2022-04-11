@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+import pkg_resources
+import setuptools
 
-from pip._internal.network.session import PipSession
-from pip._internal.req import parse_requirements
+with open('requirements.txt') as req_txt:
+    parse_req = pkg_resources.parse_requirements(req_txt)
+    install_requires = [str(req) for req in parse_req]
 
-reqs = parse_requirements('requirements.txt', session=PipSession())
-reqs = [str(req.requirement) for req in reqs]
-
-setup(
+setuptools.setup(
     name='species',
     version='0.5.0',
     description='Toolkit for atmospheric characterization of directly imaged exoplanets',
@@ -25,9 +24,8 @@ setup(
               'species.plot',
               'species.read',
               'species.util'],
-    package_dir={'species': 'species'},
-    include_package_data=True,
-    install_requires=reqs,
+    package_data={'species': ['data/*.json']},
+    install_requires=install_requires,
     license='MIT',
     zip_safe=False,
     keywords='species',

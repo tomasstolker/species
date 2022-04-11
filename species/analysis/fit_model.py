@@ -2353,12 +2353,21 @@ class FitModel:
             params = cube.copy()
 
             for item in self.cube_index:
-                # Uniform priors for all parameters
-                params[self.cube_index[item]] = (
-                    self.bounds[item][0]
-                    + (self.bounds[item][1] - self.bounds[item][0])
-                    * params[self.cube_index[item]]
-                )
+                if item == "distance":
+                    # Gaussian prior for the distance
+                    params[self.cube_index[item]] = stats.norm.ppf(
+                        cube[self.cube_index[item]],
+                        loc=self.distance[0],
+                        scale=self.distance[1]
+                    )
+
+                else:
+                    # Uniform priors for all parameters
+                    params[self.cube_index[item]] = (
+                        self.bounds[item][0]
+                        + (self.bounds[item][1] - self.bounds[item][0])
+                        * params[self.cube_index[item]]
+                    )
 
             return params
 

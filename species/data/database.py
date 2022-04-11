@@ -616,6 +616,8 @@ class Database:
 
         if verbose:
             print(f"Adding object: {object_name}")
+        else:
+            print(f"Adding object: {object_name}", end="", flush=True)
 
         if "objects" not in h5_file:
             h5_file.create_group("objects")
@@ -1115,6 +1117,9 @@ class Database:
                         print(f"      - {key}: {value[2]:.1f}")
                     dset.attrs["specres"] = value[2]
 
+        if not verbose:
+            print(" [DONE]")
+
         h5_file.close()
 
     @typechecked
@@ -1453,21 +1458,18 @@ class Database:
         else:
             dset.attrs["binary"] = False
 
-        try:
-            int_auto = emcee.autocorr.integrated_time(samples)
-            print(f"Integrated autocorrelation time = {int_auto}")
+        print(f"Integrated autocorrelation time:")
 
-        except emcee.autocorr.AutocorrError:
-            int_auto = None
+        for i, item in enumerate(modelpar):
+            auto_corr = emcee.autocorr.integrated_time(
+                samples[:, i], quiet=True)[0]
 
-            print(
-                "The chain is shorter than 50 times the integrated autocorrelation time. "
-                "[WARNING]"
-            )
+            if np.allclose(samples[:, i], np.mean(samples[:, i])):
+                print(f"   - {item}: fixed")
+            else:
+                print(f"   - {item}: {auto_corr:.2f}")
 
-        if int_auto is not None:
-            for i, item in enumerate(int_auto):
-                dset.attrs[f"autocorrelation{i}"] = float(item)
+            dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
 
         h5_file.close()
 
