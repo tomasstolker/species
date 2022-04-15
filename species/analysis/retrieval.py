@@ -8,6 +8,7 @@ radiative transfer and retrieval code ``petitRADTRANS``
 import os
 import inspect
 import json
+import sys
 import time
 import warnings
 
@@ -905,7 +906,10 @@ class AtmosphericRetrieval:
 
         print("Importing chemistry module...", end="", flush=True)
 
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        if "poor_mans_nonequ_chem" in sys.modules:
+            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        else:
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         print(" [DONE]")
 

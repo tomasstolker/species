@@ -9,16 +9,17 @@ Installation from PyPI
 ----------------------
 
 .. important::
-   Before installing ``species``, it is required to separately install ``cython`` and ``ultranest``:
+   Before installing ``species``, it is required to separately install ``cython``, ``ultranest``, and ``petitRADTRANS``:
 
    .. code-block:: console
 
        $ pip install cython
        $ pip install ultranest
+       $ pip install petitRADTRANS
 
-   The installation of ``ultranest`` has caused problems on some machines. It is possible to skip the installation of that package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `UltraNest <https://johannesbuchner.github.io/UltraNest/index.html>`_.
+   The installation of ``ultranest`` and ``petitRADTRANS`` has been problematic on some machines. It is possible to skip the installation of these package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `UltraNest <https://johannesbuchner.github.io/UltraNest/index.html>`_ and `petitRADTRANS <https://petitradtrans.readthedocs.io>`_.
 
-The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
+The ``species`` toolkit can now be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
 
 .. code-block:: console
 
