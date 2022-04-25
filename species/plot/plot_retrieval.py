@@ -4,6 +4,7 @@ Module for plotting atmospheric retrieval results.
 
 # import copy
 import os
+import sys
 import warnings
 
 from typing import Optional, Tuple
@@ -285,7 +286,11 @@ def plot_pt_profile(
         # if pt_profile == "free":
         #     temp = temp[:, 0]
         #
-        #     from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        #     if "poor_mans_nonequ_chem" in sys.modules:
+        #         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        #     else:
+        #         from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        #
         #     ab = interpol_abundances(
         #         np.full(temp.shape[0], c_o_ratio),
         #         np.full(temp.shape[0], metallicity),
@@ -447,7 +452,10 @@ def plot_pt_profile(
 
         # Import interpol_abundances here because it is slow
 
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        if "poor_mans_nonequ_chem" in sys.modules:
+            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        else:
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         abund_in = interpol_abundances(
             np.full(pressure.shape[0], median["c_o_ratio"]),

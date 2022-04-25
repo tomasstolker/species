@@ -628,7 +628,7 @@ def get_data() -> Dict[
             "accretion": True,
         },  # Wu et al. 2015
         "SR 12 C": {
-            "distance": (125.0, 25.0),  # Bouvier & Appenzeller 1992
+            "distance": (112.5, 5.8),
             "app_mag": {
                 "MKO/NSFCam.J": (15.93, 0.03),  # Kuzuhara et al. 2011
                 "MKO/NSFCam.H": (15.18, 0.03),  # Kuzuhara et al. 2011
@@ -712,6 +712,19 @@ def get_data() -> Dict[
             "mass_companion": (74., 12.),  # Maire et al. 2020
             "accretion": False,
         },
+        "b Cen (AB)b": {
+            "distance": (99.66, 3.12),
+            "app_mag": {
+                "Paranal/SPHERE.IRDIS_D_J23_2": (17.98, 0.25),  # Janson et al. 2021
+                "Paranal/SPHERE.IRDIS_D_J23_3": (17.64, 0.25),  # Janson et al. 2021
+                "Paranal/SPHERE.IRDIS_D_K12_1": (16.37, 0.06),  # Janson et al. 2021
+                "Paranal/SPHERE.IRDIS_D_K12_2": (16.13, 0.06),  # Janson et al. 2021
+            },
+            "semi_major": (530., 530.),  # Janson et al. 2021
+            "mass_star": (8., 2.),  # Janson et al. 2021
+            "mass_companion": (10.9, 1.6),  # Janson et al. 2021
+            "accretion": False,
+        }
     }
 
     return data

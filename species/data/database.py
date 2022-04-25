@@ -3312,10 +3312,11 @@ class Database:
         return boxes, read_rad
 
     @typechecked
-    def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[float, float]:
+    def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Function for calculating :math:`T_\\mathrm{eff}` from
-        randomly drawn samples of the posterior distribution from
+        Function for calculating :math:`T_\\mathrm{eff}`
+        and :math:`L_\\mathrm{bol}` from randomly drawn samples of
+        the posterior distribution that is estimated with
         :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
         This requires the recalculation of the spectra across a
         broad wavelength range (0.5-50 um).
@@ -3329,10 +3330,10 @@ class Database:
 
         Returns
         -------
-        float
-            Mean of :math:`T_\\mathrm{eff}` samples.
-        float
-            Standard deviation of :math:`T_\\mathrm{eff}` samples.
+        np.ndarray
+            Array with :math:`T_\\mathrm{eff}` samples.
+        np.ndarray
+            Array with :math:`\\log(L/L_\\mathrm{sun})` samples.
         """
 
         print(f"Calculating Teff from {random} posterior samples... ")
@@ -3341,7 +3342,8 @@ class Database:
             tag=tag, random=random, wavel_range=(0.5, 50.0), spec_res=500.0
         )
 
-        teff = np.zeros(len(boxes))
+        t_eff = np.zeros(len(boxes))
+        l_bol = np.zeros(len(boxes))
 
         for i, box_item in enumerate(boxes):
             sample_distance = box_item.parameters["distance"] * constants.PARSEC
@@ -3352,23 +3354,48 @@ class Database:
 
             # Blackbody flux: sigma * Teff^4
             flux_int = simps(sample_scale * box_item.flux, box_item.wavelength)
-            teff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
+            t_eff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
+
+            # Bolometric luminosity: 4 * pi * R^2 * sigma * Teff^4
+            l_bol[i] = 4. * np.pi * sample_radius**2 * flux_int
+            l_bol[i] = np.log10(l_bol[i] / constants.L_SUN)
 
             # np.savetxt(f'output/spectrum/spectrum{i:04d}.dat',
             #            np.column_stack([box_item.wavelength, sample_scale*box_item.flux]),
             #            header='Wavelength (um) - Flux (W m-2 um-1)')
 
-        q_16, q_50, q_84 = np.percentile(teff, [16.0, 50.0, 84.0])
+        q_16_teff, q_50_teff, q_84_teff = np.percentile(t_eff, [16.0, 50.0, 84.0])
+        print(f"Teff (K) = {q_50_teff:.2f} "
+              f"(-{q_50_teff-q_16_teff:.2f} "
+              f"+{q_84_teff-q_50_teff:.2f})")
 
-        print(f"Teff (K) = {q_50:.2f} -{q_50-q_16:.2f} +{q_84-q_50:.2f}")
+        q_16_lbol, q_50_lbol, q_84_lbol = np.percentile(l_bol, [16.0, 50.0, 84.0])
+        print(f"log(L/Lsun) = {q_50_lbol:.2f} "
+              f"(-{q_50_lbol-q_16_lbol:.2f} "
+              f"+{q_84_lbol-q_50_lbol:.2f})")
 
         with h5py.File(self.database, "a") as h5_file:
-            print(f"Storing Teff as attribute of results/fit/{tag}/samples...", end="")
+            print(f"Storing T_eff (K) as attribute of "
+                  f"results/fit/{tag}/samples...", end="")
+
             dset = h5_file[f"results/fit/{tag}/samples"]
-            dset.attrs["teff"] = (q_50 - q_16, q_50, q_84 - q_50)
+
+            dset.attrs["teff"] = (q_50_teff - q_16_teff,
+                                  q_50_teff,
+                                  q_84_teff - q_50_teff)
+
             print(" [DONE]")
 
-        return np.mean(teff), np.std(teff)
+            print(f"Storing log(L/Lsun) as attribute of "
+                  f"results/fit/{tag}/samples...", end="")
+
+            dset.attrs["log_l_bol"] = (q_50_lbol - q_16_lbol,
+                                       q_50_lbol,
+                                       q_84_lbol - q_50_lbol)
+
+            print(" [DONE]")
+
+        return t_eff, l_bol
 
     @typechecked
     def petitcode_param(

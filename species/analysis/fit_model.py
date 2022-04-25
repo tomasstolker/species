@@ -1556,7 +1556,7 @@ class FitModel:
 
         # Add the distance manually because it should
         # not be provided in the bounds dictionary
-        param_dict["distance"] = params[self.cube_index["distance"]]
+        distance = params[self.cube_index["distance"]]
 
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries
@@ -1612,11 +1612,11 @@ class FitModel:
         if self.model != "powerlaw":
             if "radius_0" in param_dict and "radius_1" in param_dict:
                 flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
-                    param_dict["distance"] * constants.PARSEC
+                    distance * constants.PARSEC
                 ) ** 2
 
                 flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
-                    param_dict["distance"] * constants.PARSEC
+                    distance * constants.PARSEC
                 ) ** 2
 
                 # The scaling is applied manually because of the interpolation
@@ -1625,7 +1625,7 @@ class FitModel:
 
             else:
                 flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-                    param_dict["distance"] * constants.PARSEC
+                    distance * constants.PARSEC
                 ) ** 2
 
                 # The scaling is applied manually because of the interpolation
@@ -1639,8 +1639,9 @@ class FitModel:
                 err_scaling[item] = None
 
         if self.param_interp is not None:
-            # Sort the parameters in the correct order for spectrum_interp because
-            # spectrum_interp creates a list in the order of the keys in param_dict
+            # Sort the parameters in the correct order for
+            # spectrum_interp because spectrum_interp creates
+            # a list in the order of the keys in param_dict
             param_tmp = param_dict.copy()
 
             param_dict = {}
@@ -1759,7 +1760,7 @@ class FitModel:
                 phot_flux += (
                     phot_tmp
                     * (disk_param["radius"] * constants.R_JUP) ** 2
-                    / (param_dict["distance"] * constants.PARSEC) ** 2
+                    / (distance * constants.PARSEC) ** 2
                 )
 
             if "lognorm_ext" in dust_param:
@@ -1950,7 +1951,7 @@ class FitModel:
                 model_tmp = self.diskspec[i].spectrum_interp([disk_param["teff"]])[0, :]
 
                 model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 / (
-                    param_dict["distance"] * constants.PARSEC
+                    distance * constants.PARSEC
                 ) ** 2
 
                 model_flux += model_tmp
