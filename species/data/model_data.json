@@ -93,6 +93,16 @@
         "reference": "Charney et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
     },
+    "koester-wd": {
+        "parameters": ["teff", "logg"],
+        "name": "Koester WD spectra",
+        "file size": "291 MB",
+        "wavelength range": [0.09, 3],
+        "resolution": 2000,
+        "teff range": [5000, 80000],
+        "reference": "Koester (2010)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K/abstract"
+    },
     "morley-2012": {
         "parameters": ["teff", "logg", "fsed"],
         "name": "Morley et al. (2012)",

@@ -79,7 +79,7 @@ def add_model_grid(
             f"'petitcode-cool-cloudy', 'petitcode-hot-clear', "
             f"'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
             f"'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
-            f"'sonora-bobcat', 'sonora-bobcat-co'"
+            f"'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd'"
         )
 
     if model_name == "bt-settl":
@@ -170,7 +170,7 @@ def add_model_grid(
     else:
         wavelength = None
         print(f"Wavelength range (um) = "
-              f"{model_info['wavelength range'][0]} -"
+              f"{model_info['wavelength range'][0]} - "
               f"{model_info['wavelength range'][1]}")
         print(f"Spectral resolution = {model_info['resolution']}")
 
