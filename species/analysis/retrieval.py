@@ -502,7 +502,15 @@ class AtmosphericRetrieval:
             self.parameters.append("opa_index")
             self.parameters.append("log_p_base")
             self.parameters.append("albedo")
-            self.parameters.append("opa_knee")
+
+        elif "log_kappa_abs" in bounds:
+            self.parameters.append("log_p_base")
+            self.parameters.append("fsed")
+            self.parameters.append("log_kappa_abs")
+            self.parameters.append("log_kappa_sca")
+            self.parameters.append("opa_abs_index")
+            self.parameters.append("opa_sca_index")
+            self.parameters.append("lambda_ray")
 
         elif "log_kappa_gray" in bounds:
             inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
@@ -1533,17 +1541,101 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["albedo"]] = albedo
 
-                if "opa_knee" in bounds:
-                    opa_knee = (
-                        bounds["opa_knee"][0]
-                        + (bounds["opa_knee"][1] - bounds["opa_knee"][0])
-                        * cube[cube_index["opa_knee"]]
+                if "log_tau_cloud" in bounds:
+                    log_tau_cloud = (
+                        bounds["log_tau_cloud"][0]
+                        + (bounds["log_tau_cloud"][1] - bounds["log_tau_cloud"][0])
+                        * cube[cube_index["log_tau_cloud"]]
+                    )
+
+                    cube[cube_index["log_tau_cloud"]] = log_tau_cloud
+
+            if "log_kappa_abs" in bounds:
+                # Parametrized absorption and scattering opacity
+
+                if "log_p_base" in bounds:
+                    log_p_base = (
+                        bounds["log_p_base"][0]
+                        + (bounds["log_p_base"][1] - bounds["log_p_base"][0])
+                        * cube[cube_index["log_p_base"]]
+                    )
+                else:
+                    # Default: -6 - 3
+                    log_p_base = -6.0 + 9.0 * cube[cube_index["log_p_base"]]
+
+                cube[cube_index["log_p_base"]] = log_p_base
+
+                if "fsed" in bounds:
+                    fsed = (
+                        bounds["fsed"][0]
+                        + (bounds["fsed"][1] - bounds["fsed"][0])
+                        * cube[cube_index["fsed"]]
+                    )
+                else:
+                    # Default: 0 - 10
+                    fsed = 10.0 * cube[cube_index["fsed"]]
+
+                cube[cube_index["fsed"]] = fsed
+
+                if "log_kappa_abs" in bounds:
+                    log_kappa_abs = (
+                        bounds["log_kappa_abs"][0]
+                        + (bounds["log_kappa_abs"][1] - bounds["log_kappa_abs"][0])
+                        * cube[cube_index["log_kappa_abs"]]
+                    )
+                else:
+                    # Default: -8 - 3
+                    log_kappa_abs = -8.0 + 11.0 * cube[cube_index["log_kappa_abs"]]
+
+                cube[cube_index["log_kappa_abs"]] = log_kappa_abs
+
+                if "log_kappa_sca" in bounds:
+                    log_kappa_sca = (
+                        bounds["log_kappa_sca"][0]
+                        + (bounds["log_kappa_sca"][1] - bounds["log_kappa_sca"][0])
+                        * cube[cube_index["log_kappa_sca"]]
+                    )
+                else:
+                    # Default: -8 - 3
+                    log_kappa_sca = -8.0 + 11.0 * cube[cube_index["log_kappa_sca"]]
+
+                cube[cube_index["log_kappa_sca"]] = log_kappa_sca
+
+                if "opa_abs_index" in bounds:
+                    opa_abs_index = (
+                        bounds["opa_abs_index"][0]
+                        + (bounds["opa_abs_index"][1] - bounds["opa_abs_index"][0])
+                        * cube[cube_index["opa_abs_index"]]
+                    )
+                else:
+                    # Default: -6 - 1
+                    opa_abs_index = -6.0 + 7.0 * cube[cube_index["opa_abs_index"]]
+
+                cube[cube_index["opa_abs_index"]] = opa_abs_index
+
+                if "opa_sca_index" in bounds:
+                    opa_sca_index = (
+                        bounds["opa_sca_index"][0]
+                        + (bounds["opa_sca_index"][1] - bounds["opa_sca_index"][0])
+                        * cube[cube_index["opa_sca_index"]]
+                    )
+                else:
+                    # Default: -6 - 1
+                    opa_sca_index = -6.0 + 7.0 * cube[cube_index["opa_sca_index"]]
+
+                cube[cube_index["opa_sca_index"]] = opa_sca_index
+
+                if "lambda_ray" in bounds:
+                    lambda_ray = (
+                        bounds["lambda_ray"][0]
+                        + (bounds["lambda_ray"][1] - bounds["lambda_ray"][0])
+                        * cube[cube_index["lambda_ray"]]
                     )
                 else:
                     # Default: 0.5 - 5.0
-                    opa_knee = 0.5 + 5.5 * cube[cube_index["opa_knee"]]
+                    lambda_ray = 0.5 + 5.5 * cube[cube_index["lambda_ray"]]
 
-                cube[cube_index["opa_knee"]] = opa_knee
+                cube[cube_index["lambda_ray"]] = lambda_ray
 
                 if "log_tau_cloud" in bounds:
                     log_tau_cloud = (
@@ -2142,12 +2234,13 @@ class AtmosphericRetrieval:
                 len(self.cloud_species) > 0
                 or "log_kappa_0" in bounds
                 or "log_kappa_gray" in bounds
+                or "log_kappa_abs" in bounds
             ):
                 # Cloudy atmosphere
 
                 tau_cloud = None
 
-                if "log_kappa_0" in bounds or "log_kappa_gray" in bounds:
+                if "log_kappa_0" in bounds or "log_kappa_gray" in bounds or "log_kappa_abs" in bounds:
                     if "log_tau_cloud" in self.parameters:
                         tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
 
@@ -2238,7 +2331,11 @@ class AtmosphericRetrieval:
                         "opa_index",
                         "log_p_base",
                         "albedo",
-                        "opa_knee",
+                        "log_kappa_abs",
+                        "log_kappa_sca",
+                        "opa_abs_index",
+                        "opa_sca_index",
+                        "lambda_ray",
                     ]
 
                     cloud_dict = {}
@@ -2257,7 +2354,6 @@ class AtmosphericRetrieval:
                         "opa_index",
                         "log_p_base",
                         "albedo",
-                        "opa_knee",
                     ]
 
                     cloud_dict_1 = {}
@@ -2276,7 +2372,6 @@ class AtmosphericRetrieval:
                         "opa_index",
                         "log_p_base",
                         "albedo",
-                        "opa_knee",
                     ]
 
                     cloud_dict_2 = {}

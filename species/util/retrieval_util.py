@@ -5,7 +5,6 @@ This module was put together many contributions by Paul Mollière
 """
 
 import copy
-import inspect
 import sys
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -1177,15 +1176,6 @@ def calc_spectrum_clouds(
     else:
         sigma_lnorm = None
 
-    # Check new parameters in petitRADTRANS function
-
-    inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
-
-    if "cloud_wlen" in inspect_prt.args:
-        param_cloud_wlen = True
-    else:
-        param_cloud_wlen = False
-
     if "log_kappa_0" in cloud_dict:
         # Cloud model 2
 
@@ -1204,16 +1194,16 @@ def calc_spectrum_clouds(
             kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
             kappa_tot[:, press_bar > p_base] = 0.0
 
-            if (
-                cloud_dict["opa_knee"] > wavel_micron[0]
-                and cloud_dict["opa_knee"] < wavel_micron[-1]
-            ):
-                indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
-                for i in range(press_bar.size):
-                    kappa_tot[indices, i] = (
-                        kappa_tot[indices[0], i]
-                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
-                    )
+            # if (
+            #     cloud_dict["opa_knee"] > wavel_micron[0]
+            #     and cloud_dict["opa_knee"] < wavel_micron[-1]
+            # ):
+            #     indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
+            #     for i in range(press_bar.size):
+            #         kappa_tot[indices, i] = (
+            #             kappa_tot[indices[0], i]
+            #             * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+            #         )
 
             return (1.0 - cloud_dict["albedo"]) * kappa_tot
 
@@ -1232,18 +1222,62 @@ def calc_spectrum_clouds(
             kappa_tot = kappa_grid * wavel_grid ** cloud_dict["opa_index"]
             kappa_tot[:, press_bar > p_base] = 0.0
 
+            # if (
+            #     cloud_dict["opa_knee"] > wavel_micron[0]
+            #     and cloud_dict["opa_knee"] < wavel_micron[-1]
+            # ):
+            #     indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
+            #     for i in range(press_bar.size):
+            #         kappa_tot[indices, i] = (
+            #             kappa_tot[indices[0], i]
+            #             * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+            #         )
+
+            return cloud_dict["albedo"] * kappa_tot
+
+    elif "log_kappa_abs" in cloud_dict:
+        # Powerlaw absorption and scattering opacities
+
+        @typechecked
+        def kappa_abs(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_abs"]  # (cm2 g-1)
+
+            # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
+
+            # Opacity (cm2 g-1) as function of wavelength (um)
+            kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
+            kappa_abs = kappa_grid * wavel_grid ** cloud_dict["opa_abs_index"]
+            kappa_abs[:, press_bar > p_base] = 0.0
+
+            return kappa_abs
+
+        @typechecked
+        def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
+            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+            kappa_0 = 10.0 ** cloud_dict["log_kappa_sca"]  # (cm2 g-1)
+
+            # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
+            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
+
+            # Opacity (cm2 g-1) as function of wavelength (um)
+            kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
+            kappa_sca = kappa_grid * wavel_grid ** cloud_dict["opa_sca_index"]
+            kappa_sca[:, press_bar > p_base] = 0.0
+
             if (
-                cloud_dict["opa_knee"] > wavel_micron[0]
-                and cloud_dict["opa_knee"] < wavel_micron[-1]
+                cloud_dict["lambda_ray"] > wavel_micron[0]
+                and cloud_dict["lambda_ray"] < wavel_micron[-1]
             ):
-                indices = np.where(wavel_micron > cloud_dict["opa_knee"])[0]
+                indices = np.where(wavel_micron > cloud_dict["lambda_ray"])[0]
                 for i in range(press_bar.size):
-                    kappa_tot[indices, i] = (
-                        kappa_tot[indices[0], i]
+                    kappa_sca[indices, i] = (
+                        kappa_sca[indices[0], i]
                         * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
                     )
 
-            return cloud_dict["albedo"] * kappa_tot
+            return kappa_sca
 
     elif "log_kappa_gray" in cloud_dict:
         # Gray clouds with cloud top
@@ -1279,50 +1313,27 @@ def calc_spectrum_clouds(
         kappa_scat = None
 
     # Calculate the emission spectrum
-    # TODO Update after PR in pRT repo
 
-    if param_cloud_wlen:
-        rt_object.calc_flux(
-            temperature,
-            abundances,
-            10.0 ** log_g,
-            mmw,
-            sigma_lnorm=sigma_lnorm,
-            Kzz=Kzz_use,
-            fsed=fseds,
-            radius=None,
-            contribution=contribution,
-            gray_opacity=None,
-            Pcloud=None,
-            kappa_zero=None,
-            gamma_scat=None,
-            add_cloud_scat_as_abs=False,
-            hack_cloud_photospheric_tau=tau_cloud,
-            give_absorption_opacity=kappa_abs,
-            give_scattering_opacity=kappa_scat,
-            cloud_wlen=cloud_wavel,
-        )
-
-    else:
-        rt_object.calc_flux(
-            temperature,
-            abundances,
-            10.0 ** log_g,
-            mmw,
-            sigma_lnorm=sigma_lnorm,
-            Kzz=Kzz_use,
-            fsed=fseds,
-            radius=None,
-            contribution=contribution,
-            gray_opacity=None,
-            Pcloud=None,
-            kappa_zero=None,
-            gamma_scat=None,
-            add_cloud_scat_as_abs=False,
-            hack_cloud_photospheric_tau=tau_cloud,
-            give_absorption_opacity=kappa_abs,
-            give_scattering_opacity=kappa_scat,
-        )
+    rt_object.calc_flux(
+        temperature,
+        abundances,
+        10.0 ** log_g,
+        mmw,
+        sigma_lnorm=sigma_lnorm,
+        Kzz=Kzz_use,
+        fsed=fseds,
+        radius=None,
+        contribution=contribution,
+        gray_opacity=None,
+        Pcloud=None,
+        kappa_zero=None,
+        gamma_scat=None,
+        add_cloud_scat_as_abs=False,
+        hack_cloud_photospheric_tau=tau_cloud,
+        give_absorption_opacity=kappa_abs,
+        give_scattering_opacity=kappa_scat,
+        cloud_wlen=cloud_wavel,
+    )
 
     # if (
     #     hasattr(rt_object, "scaling_physicality")
@@ -2698,7 +2709,7 @@ def convective_flux(
 
     W = nabla_rad - nabla_ad
 
-    # TODO thesis: 2336U^4W
+    # FIXME thesis: 2336U^4W
     A = (
         1168.0 * U ** 3.0
         + 2187 * U * W
