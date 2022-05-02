@@ -1,5 +1,6 @@
 """
-Module for downloading filter data from the website of the SVO Filter Profile Service.
+Module for downloading filter data from the website
+of the SVO Filter Profile Service.
 """
 
 import os
@@ -19,13 +20,15 @@ def download_filter(
     filter_id: str,
 ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[str]]:
     """
-    Function for downloading filter profile data from the SVO Filter Profile Service.
+    Function for downloading filter profile data
+    from the SVO Filter Profile Service.
 
     Parameters
     ----------
     filter_id : str
-        Filter name as listed on the website of the SVO Filter Profile Service
-        (see http://svo2.cab.inta-csic.es/svo/theory/fps/).
+        Filter name as listed on the website of the SVO
+        Filter Profile Service (see
+        http://svo2.cab.inta-csic.es/svo/theory/fps/).
 
     Returns
     -------
@@ -143,18 +146,18 @@ def download_filter(
             det_type = None
 
             warnings.warn(
-                f"Filter '{filter_id}' is not available on the SVO Filter Profile "
-                f"Service."
+                f"Filter '{filter_id}' is not available "
+                f"on the SVO Filter ProfileService."
             )
 
         except:
             os.remove("filter.xml")
 
             raise ValueError(
-                f"The filter data of '{filter_id}' could not be downloaded. "
-                f"Perhaps the website of the SVO Filter Profile Service "
-                f"(http://svo2.cab.inta-csic.es/svo/theory/fps/) is not "
-                f"available?"
+                f"The filter data of '{filter_id}' could not "
+                f"be downloaded. Perhaps the website of the "
+                f"SVO Filter Profile Service (http://svo2.cab."
+                f"inta-csic.es/svo/theory/fps/) is not available?"
             )
 
         if transmission is not None:
@@ -174,8 +177,9 @@ def download_filter(
                 det_type = "photon"
 
                 warnings.warn(
-                    f"Detector type ({det_type}) not recognized. Setting detector type "
-                    f"to photon-counting detector."
+                    f"Detector type ({det_type}) not "
+                    f"recognized. Setting detector "
+                    f"type to photon-counting detector."
                 )
 
             wavelength *= 1e-4  # (um)
@@ -208,8 +212,9 @@ def download_filter(
 
         if np.amin(transmission) < 0.0:
             warnings.warn(
-                f"The minimum transmission value of {filter_id} is smaller than zero "
-                f"({np.amin(transmission):.2e}). Wavelengths with negative transmission "
+                f"The minimum transmission value of {filter_id} is "
+                f"smaller than zero ({np.amin(transmission):.2e}). "
+                f"Wavelengths with negative transmission "
                 f"values will be removed."
             )
 

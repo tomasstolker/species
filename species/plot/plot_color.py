@@ -1,11 +1,11 @@
 """
-Module with functions for creating color-magnitude and color-color plot.
+Module with functions for creating plots with color-magnitude
+diagrams and color-color diagrams.
 """
 
-import math
-import os
+import warnings
 
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -31,7 +31,9 @@ def plot_color_magnitude(
             List[Tuple[str, str, str, str, Optional[dict], Optional[dict]]],
         ]
     ] = None,
-    mass_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+    mass_labels: Optional[Union[List[float],
+                                List[Tuple[float, str]],
+                                Dict[str, List[Tuple[float, str]]]]] = None,
     teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
     companion_labels: bool = False,
     accretion: bool = False,
@@ -48,6 +50,7 @@ def plot_color_magnitude(
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
+    figsize: Optional[Tuple[float, float]] = (4.0, 4.8),
     output: Optional[str] = "color-magnitude.pdf",
 ) -> None:
     """
@@ -55,55 +58,76 @@ def plot_color_magnitude(
 
     Parameters
     ----------
-    boxes : list(species.core.box.ColorMagBox, species.core.box.IsochroneBox, )
-        Boxes with the color-magnitude and isochrone data from photometric libraries, spectral
-        libraries, and/or atmospheric models. The synthetic data have to be created with
-        :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`. These boxes
-        contain synthetic colors and magnitudes for a given age and a range of masses.
-    objects : list(tuple(str, str, str, str), ),
-              list(tuple(str, str, str, str, dict, dict), ), None
-        Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter names for the color, and the filter name for the absolute magnitude. Optionally, a
-        dictionary with keyword arguments can be provided for the object's marker and label,
-        respectively. For example, ``{'marker': 'o', 'ms': 10}`` for the marker and
-        ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the label. Not used if set to
-        None.
-    mass_labels : list(float, ), list(tuple(float, str), ), None
-        Plot labels with masses next to the isochrone data of `models`. The list with masses has
-        to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
-        the planet mass and position of the label ('left' or 'right), for example
-        ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
-    teff_labels : list(float, ), list(tuple(float, str), ), None
-        Plot labels with temperatures (K) next to the synthetic Planck photometry. Alternatively,
-        a list of tuples can be provided with the planet mass and position of the label ('left' or
-        'right), for example ``[(1000., 'left'), (1200., 'right')]``. No labels are shown if set
-        to None.
+    boxes : list(species.core.box.ColorMagBox, species.core.box.IsochroneBox)
+        Boxes with the color-magnitude and isochrone data from
+        photometric libraries, spectral libraries, and/or atmospheric
+        models. The synthetic data have to be created with
+        :func:`~species.read.read_isochrone.ReadIsochrone.get_color_magnitude`.
+        These boxes contain synthetic colors and magnitudes for a
+        given age and a range of masses.
+    objects : list(tuple(str, str, str, str)),
+            list(tuple(str, str, str, str, dict, dict)), None
+        Tuple with individual objects. The objects require a tuple with
+        their database tag, the two filter names for the color, and the
+        filter name for the absolute magnitude. Optionally, a
+        dictionary with keyword arguments can be provided for the
+        object's marker and label, respectively. For example,
+        ``{'marker': 'o', 'ms': 10}`` for the marker and
+        ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the
+        label. The parameter is not used if set to ``None``.
+    mass_labels : dict(str, list(tuple(float, str))), None
+        Plot labels with masses next to the isochrone data.
+        The argument is a dictionary. The keys are the isochrone tags
+        and the values are lists of tuples. Each tuple contains the
+        mass in :math:`M_\\mathrm{J}` and the position of the label
+        ('left' or 'right), for
+        example ``{'sonora+0.5': [(10., 'left'), (20., 'right')]}``.
+        No labels will be shown if the argument is set to ``None`` or
+        if an isochrone tag is not included in the dictionary. The
+        tags are stored as the ``iso_tag`` attribute of each
+        :class:`~species.core.box.ColorColorBox`.
+    teff_labels : list(float), list(tuple(float, str)), None
+        Plot labels with temperatures (K) next to the synthetic Planck
+        photometry. Alternatively, a list of tuples can be provided
+        with the planet mass and position of the label ('left' or
+        'right), for example ``[(1000., 'left'), (1200., 'right')]``.
+        No labels are shown if set to ``None``.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     accretion : bool
-        Plot accreting, directly imaged objects with a different symbol than the regular, directly
-        imaged objects. The object names from ``objects`` will be compared with the data from
-        :func:`~species.data.companions.get_data` to check if a companion is accreting or not.
-    reddening : list(tuple(tuple(str, str), tuple(str, float), str, float,
-                tuple(float, float))), None
-        Include reddening arrows by providing a list with tuples. Each tuple contains the filter
-        names for the color, the filter name and value of the magnitude, the mean particle radius
-        (um), and the start position (color, mag) of the arrow in the plot, so ``((filter_color_1,
-        filter_color_2), (filter_mag, mag_value), composition, radius, (x_pos, y_pos))``. The
-        composition can be either ``'Fe'`` or ``'MgSiO3'`` (both with crystalline structure). A
-        log-normal size distribution is used with the specified mean radius and the geometric
-        standard deviation is fixed to 2. Both ``xlim`` and ``ylim`` need to be set for the correct
-        rotation of the reddening label. The parameter is not used if set to ``None``.
-    ism_red : list(tuple(tuple(str, str), str, float, tuple(float, float))), None
-        List with reddening arrows for ISM extinction. Each item in the list is a tuple that itself
-        contain a tuple with the filter names for the color, the filter name of the magnitude, the
-        visual extinction, and the start position (color, mag) of the arrow in the plot, so
-        ``((filter_color_1, filter_color_2), filter_mag, A_V, (x_pos, y_pos))``. The parameter is
-        not used if the argument is set to ``None``.
+        Plot accreting, directly imaged objects with a different symbol
+        than the regular, directly imaged objects. The object names
+        from ``objects`` will be compared with the data from
+        :func:`~species.data.companions.get_data` to check if a
+        companion is accreting or not.
+    reddening : list(tuple(tuple(str, str), tuple(str, float),
+            str, float, tuple(float, float))), None
+        Include reddening arrows by providing a list with tuples. Each
+        tuple contains the filter names for the color, the filter name
+        and value of the magnitude, the mean particle radius (um), and
+        the start position (color, mag) of the arrow in the plot, so
+        ``((filter_color_1, filter_color_2), (filter_mag, mag_value),
+        composition, radius, (x_pos, y_pos))``. The composition can be
+        either ``'Fe'`` or ``'MgSiO3'`` (both with crystalline
+        structure). A log-normal size distribution is used with the
+        specified mean radius and the geometric standard deviation is
+        fixed to 2. Both ``xlim`` and ``ylim`` need to be set for the
+        correct rotation of the reddening label. The parameter is not
+        used if set to ``None``.
+    ism_red : list(tuple(tuple(str, str), str, float,
+            tuple(float, float))), None
+        List with reddening arrows for ISM extinction. Each item in the
+        list is a tuple that itself contain a tuple with the filter
+        names for the color, the filter name of the magnitude, the
+        visual extinction, and the start position (color, mag) of the
+        arrow in the plot, so ``((filter_color_1, filter_color_2),
+        filter_mag, A_V, (x_pos, y_pos))``. The parameter is not used
+        if the argument is set to ``None``.
     field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
-        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
-        The full range is used if set to None.
+        Range of the discrete colorbar for the field dwarfs. The tuple
+        should contain the lower and upper value ('early M', 'late M',
+        'early L', 'late L', 'early T', 'late T', 'early Y). The full
+        range is used if set to ``None``.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -117,6 +141,8 @@ def plot_color_magnitude(
     legend : str, tuple(float, float), dict, None
         Legend position or keyword arguments. No legend
         is shown if set to ``None``.
+    figsize : tuple(float, float)
+        Figure size.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -133,7 +159,12 @@ def plot_color_magnitude(
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
-    model_color = ("#234398", "#f6a432", "black")
+    # model_color = ("#234398", "#f6a432", "black")
+
+    model_color = ("tab:blue", "tab:orange", "tab:green",
+                   "tab:red", "tab:purple", "tab:brown",
+                   "tab:pink", "tab:olive", "tab:cyan")
+
     model_linestyle = ("-", "--", ":", "-.")
 
     isochrones = []
@@ -162,7 +193,7 @@ def plot_color_magnitude(
             )
 
     if empirical:
-        plt.figure(1, figsize=(4.0, 4.8))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -170,7 +201,7 @@ def plot_color_magnitude(
         ax2 = plt.subplot(gridsp[0, 0])
 
     else:
-        plt.figure(1, figsize=(4.0, 4.5))
+        plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(1, 1)
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -237,25 +268,29 @@ def plot_color_magnitude(
         model_dict = {}
 
         for j, item in enumerate(models):
-            if item.library not in model_dict:
-                model_dict[item.library] = [count, 0]
+            if item.library == "sonora-bobcat":
+                model_key = item.library + item.iso_tag[-4:]
+            else:
+                model_key = item.library
+
+            if model_key not in model_dict:
+                model_dict[model_key] = [count, 0]
                 count += 1
 
             else:
-                model_dict[item.library] = [
-                    model_dict[item.library][0],
-                    model_dict[item.library][1] + 1,
+                model_dict[model_key] = [
+                    model_dict[model_key][0],
+                    model_dict[model_key][1] + 1,
                 ]
 
-            model_count = model_dict[item.library]
-
-            if model_count[0] == 3:
-                raise ValueError(
-                    "Only three different types of model atmospheres can be added."
-                )
+            model_count = model_dict[model_key]
 
             if model_count[1] == 0:
                 label = plot_util.model_name(item.library)
+
+                if item.library == "sonora-bobcat":
+                    metal = float(item.iso_tag[-4:])
+                    label += f", [M/H] = {metal}"
 
                 if item.library == "zhu2015":
                     ax1.plot(
@@ -305,7 +340,12 @@ def plot_color_magnitude(
                         interp_magnitude = interp1d(item.sptype, item.magnitude)
                         interp_color = interp1d(item.sptype, item.color)
 
-                        for i, mass_item in enumerate(mass_labels):
+                        if item.iso_tag in mass_labels:
+                            m_select = mass_labels[item.iso_tag]
+                        else:
+                            m_select = []
+
+                        for i, mass_item in enumerate(m_select):
                             if isinstance(mass_item, tuple):
                                 mass_val = mass_item[0]
                                 mass_pos = mass_item[1]
@@ -386,7 +426,7 @@ def plot_color_magnitude(
                 item.magnitude,
                 linestyle="--",
                 linewidth=0.8,
-                color="black",
+                color="gray",
                 label=label,
                 zorder=0,
             )
@@ -427,14 +467,14 @@ def plot_color_magnitude(
                         ):
 
                             ax1.scatter(
-                                pos_color, pos_mag, c="black", s=15, ec="none", zorder=0
+                                pos_color, pos_mag, c="gray", s=15, ec="none", zorder=0
                             )
 
                             if planck_count == 0:
                                 ax1.annotate(
                                     teff_label,
                                     (pos_color, pos_mag),
-                                    color="black",
+                                    color="gray",
                                     fontsize=9,
                                     xytext=teff_xytext,
                                     zorder=3,
@@ -573,7 +613,7 @@ def plot_color_magnitude(
             x_pos_text = item[4][0] + delta_x / 2.0
             y_pos_text = item[4][1] + delta_y / 2.0
 
-            vector_len = math.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
             if item[2] == "MgSiO3":
                 dust_species = r"MgSiO$_{3}$"
@@ -642,7 +682,7 @@ def plot_color_magnitude(
             x_pos_text = item[3][0] + delta_x / 2.0
             y_pos_text = item[3][1] + delta_y / 2.0
 
-            vector_len = math.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
             if (item[2]).is_integer():
                 red_label = fr"A$_\mathregular{{V}}$ = {item[2]:.0f}"
@@ -699,7 +739,7 @@ def plot_color_magnitude(
                 abs_mag = abs_mag[0]
                 abs_err = abs_err[0]
 
-            colorerr = math.sqrt(objcolor1[1] ** 2 + objcolor2[1] ** 2)
+            colorerr = np.sqrt(objcolor1[1] ** 2 + objcolor2[1] ** 2)
             x_color = objcolor1[0] - objcolor2[0]
 
             companion_data = companions.get_data()
@@ -731,7 +771,7 @@ def plot_color_magnitude(
             )
 
             if companion_labels:
-                if len(item) > 4:
+                if len(item) > 4 and item[5] is not None:
                     kwargs = item[5]
 
                 else:
@@ -759,7 +799,7 @@ def plot_color_magnitude(
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
 
-        # prevent duplicates
+        # Prevent duplicates
         by_label = dict(zip(labels, handles))
 
         if handles:
@@ -800,7 +840,9 @@ def plot_color_color(
             ],
         ]
     ] = None,
-    mass_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+    mass_labels: Optional[Union[List[float],
+                                List[Tuple[float, str]],
+                                Dict[str, List[Tuple[float, str]]]]] = None,
     teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
     companion_labels: bool = False,
     reddening: Optional[
@@ -830,42 +872,53 @@ def plot_color_color(
 
     Parameters
     ----------
-    boxes : list(species.core.box.ColorColorBox, species.core.box.IsochroneBox, )
-        Boxes with the color-color and isochrone data from photometric libraries, spectral
-        libraries, and/or atmospheric models. The synthetic data have to be created with
-        :func:`~species.read.read_isochrone.ReadIsochrone.get_color_color`. These boxes
-        contain synthetic colors for a given age and a range of masses.
-    objects : tuple(tuple(str, tuple(str, str), tuple(str, str)), ),
-              tuple(tuple(str, tuple(str, str), tuple(str, str), dict, dict), ), None
-        Tuple with individual objects. The objects require a tuple with their database tag, the two
-        filter names for the first color, and the two filter names for the second color.
-        Optionally, a dictionary with keyword arguments can be provided for the object's marker and
-        label, respectively. For example, ``{'marker': 'o', 'ms': 10}`` for the marker and
-        ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})`` for the label. Not used if set to
-        None.
-    mass_labels : list(float, ), list(tuple(float, str), ), None
-        Plot labels with masses next to the isochrone data of `models`. The list with masses has
-        to be provided in Jupiter mass. Alternatively, a list of tuples can be provided with
-        the planet mass and position of the label ('left' or 'right), for example
-        ``[(10., 'left'), (20., 'right')]``. No labels are shown if set to None.
-    teff_labels : list(float, ), list(tuple(float, str), ), None
-        Plot labels with temperatures (K) next to the synthetic Planck photometry. Alternatively,
-        a list of tuples can be provided with the planet mass and position of the label ('left' or
-        'right), for example ``[(1000., 'left'), (1200., 'right')]``. No labels are shown if set
-        to None.
+    boxes : list(species.core.box.ColorColorBox, species.core.box.IsochroneBox)
+        Boxes with the color-color from photometric libraries,
+        spectral libraries, isochrones, and/or atmospheric models.
+    objects : tuple(tuple(str, tuple(str, str), tuple(str, str))),
+            tuple(tuple(str, tuple(str, str), tuple(str, str), dict, dict)), None
+        Tuple with individual objects. The objects require a tuple
+        with their database tag, the two filter names for the first
+        color, and the two filter names for the second color.
+        Optionally, a dictionary with keyword arguments can be provided
+        for the object's marker and label, respectively. For
+        example, ``{'marker': 'o', 'ms': 10}`` for the marker
+        and ``{'ha': 'left', 'va': 'bottom', 'xytext': (5, 5)})``
+        for the label. The parameter is not used if set to ``None``.
+    mass_labels : dict(str, list(tuple(float, str))), None
+        Plot labels with masses next to the isochrone data.
+        The argument is a dictionary. The keys are the isochrone tags
+        and the values are lists of tuples. Each tuple contains the
+        mass in :math:`M_\\mathrm{J}` and the position of the label
+        ('left' or 'right), for
+        example ``{'sonora+0.5': [(10., 'left'), (20., 'right')]}``.
+        No labels will be shown if the argument is set to ``None`` or
+        if an isochrone tag is not included in the dictionary. The
+        tags are stored as the ``iso_tag`` attribute of each
+        :class:`~species.core.box.ColorColorBox`.
+    teff_labels : list(float), list(tuple(float, str)), None
+        Plot labels with temperatures (K) next to the synthetic Planck
+        photometry. Alternatively, a list of tuples can be provided
+        with the planet mass and position of the label ('left' or
+        'right), for example ``[(1000., 'left'), (1200., 'right')]``.
+        No labels are shown if the argument is set to ``None``.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
-    reddening : list(tuple(tuple(str, str), tuple(str, str), tuple(str, float), str, float,
-                tuple(float, float)), None
-        Include reddening arrows by providing a list with tuples. Each tuple contains the filter
-        names for the color, the filter name for the magnitude, the particle radius (um), and the
-        start position (color, mag) of the arrow in the plot, so (filter_color_1, filter_color_2,
-        filter_mag, composition, radius, (x_pos, y_pos)). The composition can be either 'Fe' or
-        'MgSiO3' (both with crystalline structure). The parameter is not used if set to ``None``.
+    reddening : list(tuple(tuple(str, str), tuple(str, str),
+            tuple(str, float), str, float, tuple(float, float)), None
+        Include reddening arrows by providing a list with tuples.
+        Each tuple contains the filter names for the color, the filter
+        name for the magnitude, the particle radius (um), and the start
+        position (color, mag) of the arrow in the plot, so
+        (filter_color_1, filter_color_2, filter_mag, composition,
+        radius, (x_pos, y_pos)). The composition can be either 'Fe' or
+        'MgSiO3' (both with crystalline structure). The parameter is
+        not used if set to ``None``.
     field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple should contain the lower
-        and upper value ('early M', 'late M', 'early L', 'late L', 'early T', 'late T', 'early Y).
-        The full range is used if set to None.
+        Range of the discrete colorbar for the field dwarfs. The tuple
+        should contain the lower and upper value ('early M', 'late M',
+        'early L', 'late L', 'early T', 'late T', 'early Y).
+        The full range is used if the argument is set to ``None``.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -877,7 +930,8 @@ def plot_color_color(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label.
     legend : str, tuple(float, float), dict, None
-        Legend position or keyword arguments. No legend is shown if set to ``None``.
+        Legend position or dictionary with keyword arguments.
+        No legend is shown if the argument is set to ``None``.
     figsize : tuple(float, float)
         Figure size.
     output : str
@@ -895,7 +949,12 @@ def plot_color_color(
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
-    model_color = ("#234398", "#f6a432", "black")
+    # model_color = ("#234398", "#f6a432", "black")
+
+    model_color = ("tab:blue", "tab:orange", "tab:green",
+                   "tab:red", "tab:purple", "tab:brown",
+                   "tab:pink", "tab:olive", "tab:cyan")
+
     model_linestyle = ("-", "--", ":", "-.")
 
     isochrones = []
@@ -919,16 +978,25 @@ def plot_color_color(
 
         else:
             raise ValueError(
-                f"Found a {type(item)} while only ColorColorBox and IsochroneBox "
-                f"objects can be provided to 'boxes'."
+                f"Found a {type(item)} while only ColorColorBox and "
+                f"IsochroneBox objects can be provided to 'boxes'."
             )
 
     plt.figure(1, figsize=figsize)
-    gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.0])
+
+    if empirical:
+        gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.0])
+    else:
+        gridsp = mpl.gridspec.GridSpec(1, 1)
+
     gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
-    ax1 = plt.subplot(gridsp[2, 0])
-    ax2 = plt.subplot(gridsp[0, 0])
+    if empirical:
+        ax1 = plt.subplot(gridsp[2, 0])
+        ax2 = plt.subplot(gridsp[0, 0])
+    else:
+        ax1 = plt.subplot(gridsp[0, 0])
+        ax2 = None
 
     ax1.tick_params(
         axis="both",
@@ -990,20 +1058,29 @@ def plot_color_color(
         model_dict = {}
 
         for j, item in enumerate(models):
-            if item.library not in model_dict:
-                model_dict[item.library] = [count, 0]
+            if item.library == "sonora-bobcat":
+                model_key = item.library + item.iso_tag[-4:]
+            else:
+                model_key = item.library
+
+            if model_key not in model_dict:
+                model_dict[model_key] = [count, 0]
                 count += 1
 
             else:
-                model_dict[item.library] = [
-                    model_dict[item.library][0],
-                    model_dict[item.library][1] + 1,
+                model_dict[model_key] = [
+                    model_dict[model_key][0],
+                    model_dict[model_key][1] + 1,
                 ]
 
-            model_count = model_dict[item.library]
+            model_count = model_dict[model_key]
 
             if model_count[1] == 0:
                 label = plot_util.model_name(item.library)
+
+                if item.library == "sonora-bobcat":
+                    metal = float(item.iso_tag[-4:])
+                    label += f", [M/H] = {metal}"
 
                 if item.library == "zhu2015":
                     ax1.plot(
@@ -1053,59 +1130,60 @@ def plot_color_color(
                         interp_color1 = interp1d(item.sptype, item.color1)
                         interp_color2 = interp1d(item.sptype, item.color2)
 
-                        for i, mass_item in enumerate(mass_labels):
-                            if isinstance(mass_item, tuple):
-                                mass_val = mass_item[0]
-                                mass_pos = mass_item[1]
+                        if item.iso_tag in mass_labels:
+                            m_select = mass_labels[item.iso_tag]
+                        else:
+                            m_select = []
+
+                        for i, mass_item in enumerate(m_select):
+                            mass_val = mass_item[0]
+                            mass_pos = mass_item[1]
+
+                            pos_color1 = interp_color1(mass_val)
+                            pos_color2 = interp_color2(mass_val)
+
+                            if mass_pos == "left":
+                                mass_ha = "right"
+                                mass_xytext = (pos_color1 - 0.05, pos_color2)
 
                             else:
-                                mass_val = mass_item
-                                mass_pos = "right"
+                                mass_ha = "left"
+                                mass_xytext = (pos_color1 + 0.05, pos_color2)
 
-                            # if j == 0 or (j > 0 and mass_val < 20.):
-                            if j == 0:
-                                pos_color1 = interp_color1(mass_val)
-                                pos_color2 = interp_color2(mass_val)
+                            mass_label = str(int(mass_val)) \
+                                + r" M$_\mathregular{J}$"
 
-                                if mass_pos == "left":
-                                    mass_ha = "right"
-                                    mass_xytext = (pos_color1 - 0.05, pos_color2)
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
 
-                                else:
-                                    mass_ha = "left"
-                                    mass_xytext = (pos_color1 + 0.05, pos_color2)
+                            if (xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
+                                    and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2):
 
-                                mass_label = (
-                                    str(int(mass_val)) + r" M$_\mathregular{J}$"
+                                ax1.scatter(
+                                    pos_color1,
+                                    pos_color2,
+                                    c=model_color[model_count[0]],
+                                    s=15,
+                                    edgecolor="none",
+                                    zorder=0,
                                 )
 
-                                xlim = ax1.get_xlim()
-                                ylim = ax1.get_ylim()
+                                ax1.annotate(
+                                    mass_label,
+                                    (pos_color1, pos_color2),
+                                    color=model_color[model_count[0]],
+                                    fontsize=9,
+                                    xytext=mass_xytext,
+                                    ha=mass_ha,
+                                    va="center",
+                                    zorder=3,
+                                )
 
-                                if (
-                                    xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
-                                    and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
-                                ):
-
-                                    ax1.scatter(
-                                        pos_color1,
-                                        pos_color2,
-                                        c=model_color[model_count[0]],
-                                        s=15,
-                                        edgecolor="none",
-                                        zorder=0,
-                                    )
-
-                                    ax1.annotate(
-                                        mass_label,
-                                        (pos_color1, pos_color2),
-                                        color=model_color[model_count[0]],
-                                        fontsize=9,
-                                        xytext=mass_xytext,
-                                        ha=mass_ha,
-                                        va="center",
-                                        zorder=3,
-                                    )
+                            else:
+                                warnings.warn(
+                                    f"Please use larger axes limits "
+                                    f"to include the mass label for "
+                                    f"{mass_val} Mjup.")
 
             else:
                 ax1.plot(
@@ -1114,7 +1192,7 @@ def plot_color_color(
                     linestyle=model_linestyle[model_count[1]],
                     linewidth=0.6,
                     color=model_color[model_count[0]],
-                    label=label,
+                    label=None,
                     zorder=0,
                 )
 
@@ -1131,7 +1209,7 @@ def plot_color_color(
                     item.color2,
                     ls="--",
                     linewidth=0.8,
-                    color="black",
+                    color="gray",
                     label=label,
                     zorder=0,
                 )
@@ -1174,7 +1252,7 @@ def plot_color_color(
                                 ax1.scatter(
                                     pos_color1,
                                     pos_color2,
-                                    c="black",
+                                    c="gray",
                                     s=15,
                                     edgecolor="none",
                                     zorder=0,
@@ -1183,7 +1261,7 @@ def plot_color_color(
                                 ax1.annotate(
                                     teff_label,
                                     (pos_color1, pos_color2),
-                                    color="black",
+                                    color="gray",
                                     fontsize=9,
                                     xytext=teff_xytext,
                                     zorder=3,
@@ -1193,7 +1271,7 @@ def plot_color_color(
 
             else:
                 ax1.plot(
-                    item.color1, item.color2, ls="--", lw=0.5, color="black", zorder=0
+                    item.color1, item.color2, ls="--", lw=0.5, color="gray", zorder=0
                 )
 
             planck_count += 1
@@ -1327,7 +1405,7 @@ def plot_color_color(
             x_pos_text = item[5][0] + delta_x / 2.0
             y_pos_text = item[5][1] + delta_y / 2.0
 
-            vector_len = math.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
             if item[3] == "MgSiO3":
                 dust_species = r"MgSiO$_{3}$"
@@ -1370,46 +1448,42 @@ def plot_color_color(
             objphot4 = objdata.get_photometry(item[2][1])
 
             if objphot1.ndim == 2:
-                print(
-                    f"Found {objphot1.shape[1]} values for filter {item[1][0]} of {item[0]}"
-                )
-                print(
-                    f"so using the first value:  {objphot1[0, 0]} +/- {objphot1[1, 0]} mag"
-                )
+                print(f"Found {objphot1.shape[1]} values for "
+                      f"filter {item[1][0]} of {item[0]} "
+                      f"so using the first magnitude: "
+                      f"{objphot1[0, 0]} +/- {objphot1[1, 0]}")
+
                 objphot1 = objphot1[:, 0]
 
             if objphot2.ndim == 2:
-                print(
-                    f"Found {objphot2.shape[1]} values for filter {item[1][1]} of {item[0]}"
-                )
-                print(
-                    f"so using the first value:  {objphot2[0, 0]} +/- {objphot2[1, 0]} mag"
-                )
+                print(f"Found {objphot2.shape[1]} values for "
+                      f"filter {item[1][1]} of {item[0]} "
+                      f"so using the first magnitude: "
+                      f"{objphot2[0, 0]} +/- {objphot2[1, 0]}")
+
                 objphot2 = objphot2[:, 0]
 
             if objphot3.ndim == 2:
-                print(
-                    f"Found {objphot3.shape[1]} values for filter {item[2][0]} of {item[0]}"
-                )
-                print(
-                    f"so using the first value:  {objphot3[0, 0]} +/- {objphot3[1, 0]} mag"
-                )
+                print(f"Found {objphot3.shape[1]} values for "
+                      f"filter {item[2][0]} of {item[0]} "
+                      f"so using the first magnitude: "
+                      f"{objphot3[0, 0]} +/- {objphot3[1, 0]}")
+
                 objphot3 = objphot3[:, 0]
 
             if objphot4.ndim == 2:
-                print(
-                    f"Found {objphot4.shape[1]} values for filter {item[2][1]} of {item[0]}"
-                )
-                print(
-                    f"so using the first value:  {objphot4[0, 0]} +/- {objphot4[1, 0]} mag"
-                )
+                print(f"Found {objphot4.shape[1]} values for "
+                      f"filter {item[2][1]} of {item[0]} "
+                      f"so using the first magnitude: "
+                      f"{objphot4[0, 0]} +/- {objphot4[1, 0]}")
+
                 objphot4 = objphot4[:, 0]
 
             color1 = objphot1[0] - objphot2[0]
             color2 = objphot3[0] - objphot4[0]
 
-            error1 = math.sqrt(objphot1[1] ** 2 + objphot2[1] ** 2)
-            error2 = math.sqrt(objphot3[1] ** 2 + objphot4[1] ** 2)
+            error1 = np.sqrt(objphot1[1] ** 2 + objphot2[1] ** 2)
+            error2 = np.sqrt(objphot3[1] ** 2 + objphot4[1] ** 2)
 
             if len(item) > 3 and item[3] is not None:
                 kwargs = item[3]
@@ -1427,7 +1501,7 @@ def plot_color_color(
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, zorder=3, **kwargs)
 
             if companion_labels:
-                if len(item) > 3:
+                if len(item) > 3 and item[4] is not None:
                     kwargs = item[4]
 
                 else:
@@ -1457,7 +1531,7 @@ def plot_color_color(
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
 
-        # prevent duplicates
+        # Prevent duplicates
         by_label = dict(zip(labels, handles))
 
         if handles:

@@ -434,21 +434,32 @@ class Database:
             print(" [DONE]")
 
     @typechecked
-    def add_isochrones(self, filename: str, tag: str, model: str = "baraffe") -> None:
+    def add_isochrones(
+        self,
+        model: str,
+        filename: Optional[str] = None,
+        tag: Optional[str] = None,
+    ) -> None:
         """
         Function for adding isochrone data to the database.
 
         Parameters
         ----------
-        filename : str
-            Filename with the isochrone data.
+        model : str
+            Evolutionary model ('ames', 'sonora', or 'baraffe').
+            For 'ames' and 'sonora', the isochrones will be
+            automatically downloaded and added to the database.
+            For 'baraffe', the isochrone data can be downloaded
+            from https://phoenix.ens-lyon.fr/Grids/ and manually
+            added by setting the ``filename`` and ``tag``
+            arguments.
+        filename : str, None
+            Filename with the isochrone data. Only required with
+            ``model='baraffe'`` and can be set to ``None`` otherwise.
         tag : str
             Database tag name where the isochrone that will be stored.
-        model : str
-            Evolutionary model ('baraffe' or 'marleau'). For 'baraffe'
-            models, the isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/. For 'marleau' models,
-            the data can be requested from Gabriel Marleau.
+            Only required with ``model='baraffe'`` and can be set to
+            ``None`` otherwise.
 
         Returns
         -------
@@ -461,13 +472,34 @@ class Database:
         if "isochrones" not in h5_file:
             h5_file.create_group("isochrones")
 
-        if "isochrones/" + tag in h5_file:
-            del h5_file[f"isochrones/{tag}"]
+        if model == "ames":
+            if "isochrones/ames-cond" in h5_file:
+                del h5_file["isochrones/ames-cond"]
+            if "isochrones/ames-dusty" in h5_file:
+                del h5_file["isochrones/ames-dusty"]
 
-        if model[0:7] == "baraffe":
+        elif model == "sonora":
+            if "isochrones/sonora+0.0" in h5_file:
+                del h5_file["isochrones/sonora+0.0"]
+            if "isochrones/sonora+0.5" in h5_file:
+                del h5_file["isochrones/sonora+0.5"]
+            if "isochrones/sonora-0.5" in h5_file:
+                del h5_file["isochrones/sonora-0.5"]
+
+        elif model in ["baraffe", "marleau"]:
+            if f"isochrones/{tag}" in h5_file:
+                del h5_file[f"isochrones/{tag}"]
+
+        if model == "ames":
+            isochrones.add_ames(h5_file, self.input_path)
+
+        elif model == "sonora":
+            isochrones.add_sonora(h5_file, self.input_path)
+
+        elif model == "baraffe":
             isochrones.add_baraffe(h5_file, tag, filename)
 
-        elif model[0:7] == "marleau":
+        elif model == "marleau":
             isochrones.add_marleau(h5_file, tag, filename)
 
         h5_file.close()

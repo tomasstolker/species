@@ -47,6 +47,11 @@ class ReadIsochrone:
 
         self.database = config["species"]["database"]
 
+        with h5py.File(self.database, "r") as h5_file:
+            if f"isochrones/{self.tag}" not in h5_file:
+                raise ValueError(f"There is no isochrone data stored "
+                                 f"with the selected tag \'{tag}\'.")
+
     @typechecked
     def get_isochrone(
         self,
@@ -63,7 +68,8 @@ class ReadIsochrone:
         age : float
             Age (Myr) at which the isochrone data is interpolated.
         masses : np.ndarray
-            Masses (Mjup) at which the isochrone data is interpolated.
+            Masses (:math:`M_\\mathrm{J}`) at which the isochrone
+            data is interpolated.
         filters_color : tuple(str, str), None
             Filter names for the color as listed in the file with the
             isochrone data. Not selected if set to ``None`` or if only
@@ -182,15 +188,16 @@ class ReadIsochrone:
         adapt_logg: bool = False,
     ) -> box.ColorMagBox:
         """
-        Function for calculating color-magnitude combinations from a
-        selected isochrone.
+        Function for calculating color-magnitude
+        combinations from a selected isochrone.
 
         Parameters
         ----------
         age : float
             Age (Myr) at which the isochrone data is interpolated.
         masses : np.ndarray
-            Masses (Mjup) at which the isochrone data is interpolated.
+            Masses (:math:`M_\\mathrm{J}`) at which the isochrone
+            data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_color : tuple(str, str)
@@ -224,13 +231,23 @@ class ReadIsochrone:
 
         param_bounds = model1.get_bounds()
 
-        if model1.get_parameters() != ["teff", "logg"]:
+        if model1.get_parameters() == ["teff", "logg", "feh"]:
+            if model == "sonora-bobcat":
+                iso_feh = float(self.tag[-4:])
+            else:
+                iso_feh = 0.0
+
+        elif model1.get_parameters() != ["teff", "logg"]:
             raise ValueError(
-                "Creating synthetic colors and magnitudes from isochrones is "
-                "currently only implemented for models with only Teff and log(g) "
-                "as free parameters. Please create an issue on the Github page if "
-                "additional functionalities are required."
+                "Creating synthetic colors and magnitudes from "
+                "isochrones is currently only implemented for "
+                "models with only Teff and log(g) as free parameters. "
+                "Please contact Tomas Stolker if additional "
+                "functionalities are required."
             )
+
+        else:
+            iso_feh = None
 
         mag1 = np.zeros(isochrone.masses.shape[0])
         mag2 = np.zeros(isochrone.masses.shape[0])
@@ -244,6 +261,9 @@ class ReadIsochrone:
                 "distance": 10.0,
             }
 
+            if iso_feh is not None:
+                model_param['feh'] = iso_feh
+
             radius[i] = read_util.get_radius(
                 model_param["logg"], model_param["mass"]
             )  # (Rjup)
@@ -253,13 +273,14 @@ class ReadIsochrone:
                 mag2[i] = np.nan
 
                 warnings.warn(
-                    f"The value of Teff is NaN for the following isochrone sample: "
-                    f"{model_param}. Setting the magnitudes to NaN."
+                    f"The value of Teff is NaN for the following "
+                    f"isochrone sample: {model_param}. Setting "
+                    f"the magnitudes to NaN."
                 )
 
             else:
                 for item_bounds in param_bounds:
-                    if model_param[item_bounds] <= param_bounds[item_bounds][0]:
+                    if model_param[item_bounds] < param_bounds[item_bounds][0]:
                         if adapt_logg and item_bounds == "logg":
                             warnings.warn(
                                 f"The log(g) is {model_param[item_bounds]} but the "
@@ -284,7 +305,7 @@ class ReadIsochrone:
                                 f"sample: {model_param}."
                             )
 
-                    elif model_param[item_bounds] >= param_bounds[item_bounds][1]:
+                    elif model_param[item_bounds] > param_bounds[item_bounds][1]:
                         if adapt_logg and item_bounds == "logg":
                             warnings.warn(
                                 f"The log(g) is {model_param[item_bounds]} but "
@@ -321,8 +342,8 @@ class ReadIsochrone:
 
         else:
             raise ValueError(
-                "The argument of filter_mag should be equal to one "
-                "of the two filter values of filters_color."
+                "The argument of filter_mag should be equal to "
+                "one of the two filter values of filters_color."
             )
 
         return box.create_box(
@@ -337,6 +358,7 @@ class ReadIsochrone:
             sptype=masses,
             mass=masses,
             radius=radius,
+            iso_tag=self.tag,
         )
 
     @typechecked
@@ -356,7 +378,8 @@ class ReadIsochrone:
         age : float
             Age (Myr) at which the isochrone data is interpolated.
         masses : np.ndarray
-            Masses (Mjup) at which the isochrone data is interpolated.
+            Masses (:math:`M_\\mathrm{J}`) at which the isochrone
+            data is interpolated.
         model : str
             Atmospheric model used to compute the synthetic photometry.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
@@ -379,13 +402,23 @@ class ReadIsochrone:
         model3 = read_model.ReadModel(model=model, filter_name=filters_colors[1][0])
         model4 = read_model.ReadModel(model=model, filter_name=filters_colors[1][1])
 
-        if model1.get_parameters() != ["teff", "logg"]:
+        if model1.get_parameters() == ["teff", "logg", "feh"]:
+            if model == "sonora-bobcat":
+                iso_feh = float(self.tag[-4:])
+            else:
+                iso_feh = 0.0
+
+        elif model1.get_parameters() != ["teff", "logg"]:
             raise ValueError(
-                "Creating synthetic colors and magnitudes from isochrones is "
-                "currently only implemented for models with only Teff and log(g) "
-                "as free parameters. Please contact Tomas Stolker if additional "
+                "Creating synthetic colors and magnitudes from "
+                "isochrones is currently only implemented for "
+                "models with only Teff and log(g) as free parameters. "
+                "Please contact Tomas Stolker if additional "
                 "functionalities are required."
             )
+
+        else:
+            iso_feh = None
 
         mag1 = np.zeros(isochrone.masses.shape[0])
         mag2 = np.zeros(isochrone.masses.shape[0])
@@ -400,6 +433,9 @@ class ReadIsochrone:
                 "mass": mass_item,
                 "distance": 10.0,
             }
+
+            if iso_feh is not None:
+                model_param['feh'] = iso_feh
 
             radius[i] = read_util.get_radius(
                 model_param["logg"], model_param["mass"]
@@ -418,7 +454,7 @@ class ReadIsochrone:
 
             else:
                 for item_bounds in model1.get_bounds():
-                    if model_param[item_bounds] <= model1.get_bounds()[item_bounds][0]:
+                    if model_param[item_bounds] < model1.get_bounds()[item_bounds][0]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
                         mag3[i] = np.nan
@@ -434,7 +470,7 @@ class ReadIsochrone:
                         )
 
                     elif (
-                        model_param[item_bounds] >= model1.get_bounds()[item_bounds][1]
+                        model_param[item_bounds] > model1.get_bounds()[item_bounds][1]
                     ):
                         mag1[i] = np.nan
                         mag2[i] = np.nan
@@ -472,4 +508,5 @@ class ReadIsochrone:
             sptype=masses,
             mass=masses,
             radius=radius,
+            iso_tag=self.tag,
         )

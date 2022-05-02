@@ -95,7 +95,7 @@
     },
     "koester-wd": {
         "parameters": ["teff", "logg"],
-        "name": "Koester WD spectra",
+        "name": "Koester WD",
         "file size": "291 MB",
         "wavelength range": [0.09, 3],
         "resolution": 2000,

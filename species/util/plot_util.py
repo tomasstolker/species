@@ -402,7 +402,6 @@ def update_labels(param: List[str]) -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$\mathregular{{b}}_\mathregular{{{item_name}}}$"
 
-
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
@@ -667,6 +666,15 @@ def model_name(key: str) -> str:
 
     elif key == "zhu2015":
         name = "Zhu (2015)"
+
+    elif key == "sonora-cholla":
+        name = "Sonora Cholla"
+
+    elif key == "sonora-bobcat":
+        name = "Sonora Bobcat"
+
+    elif key == "sonora-bobcat-co":
+        name = "Sonora Bobcat C/O"
 
     return name
 

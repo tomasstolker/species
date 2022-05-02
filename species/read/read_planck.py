@@ -36,9 +36,9 @@ class ReadPlanck:
         Parameters
         ----------
         wavel_range : tuple(float, float), None
-            Wavelength range (um). A wavelength range of 0.1-1000 um is
-            used if set to None. Not used if ``filter_name`` is not
-            ``None``.
+            Wavelength range (um). A wavelength range of 0.1-1000 um
+            is used if set to ``None``. Not used if ``filter_name``
+            is not set to ``None``.
         filter_name : str, None
             Filter name that is used for the wavelength range. The
             ``wavel_range`` is used if set to ``None``.

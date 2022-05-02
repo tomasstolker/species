@@ -14,16 +14,9 @@ class TestIsochrone:
         self.limit = 1e-8
         self.test_path = os.path.dirname(__file__) + "/"
 
-        filename = "model.AMES-Cond-2000.M-0.0.NaCo.Vega"
-
-        url = "https://home.strw.leidenuniv.nl/~stolker/species/model.AMES-Cond-2000.M-0.0.NaCo.Vega"
-
-        urllib.request.urlretrieve(url, filename)
-
     def teardown_class(self):
         os.remove("species_database.hdf5")
         os.remove("species_config.ini")
-        os.remove("model.AMES-Cond-2000.M-0.0.NaCo.Vega")
         shutil.rmtree("data/")
 
     def test_species_init(self):
@@ -32,9 +25,7 @@ class TestIsochrone:
 
     def test_read_isochrone(self):
         database = species.Database()
-        database.add_isochrones(
-            "model.AMES-Cond-2000.M-0.0.NaCo.Vega", "ames-cond_isochrone"
-        )
+        database.add_isochrones("ames")
 
         database.add_model(
             "ames-cond",
@@ -43,11 +34,11 @@ class TestIsochrone:
             teff_range=(2000.0, 2500.0),
         )
 
-        read_isochrone = species.ReadIsochrone("ames-cond_isochrone")
-        assert read_isochrone.tag == "ames-cond_isochrone"
+        read_isochrone = species.ReadIsochrone("ames-cond")
+        assert read_isochrone.tag == "ames-cond"
 
     def test_get_isochrone(self):
-        read_isochrone = species.ReadIsochrone("ames-cond_isochrone")
+        read_isochrone = species.ReadIsochrone("ames-cond")
 
         isochrone_box = read_isochrone.get_isochrone(
             100.0, np.linspace(10.0, 100.0, 10), ("J", "H"), "J"
@@ -57,11 +48,11 @@ class TestIsochrone:
         assert isochrone_box.magnitude.shape == (10,)
 
         assert np.sum(isochrone_box.color) == pytest.approx(
-            3.866406445125932, rel=self.limit, abs=0.0
+            2.6245438037303277, rel=self.limit, abs=0.0
         )
 
         assert np.sum(isochrone_box.magnitude) == pytest.approx(
-            110.53956764868532, rel=self.limit, abs=0.0
+            108.79542627318888, rel=self.limit, abs=0.0
         )
 
         assert np.sum(isochrone_box.teff) == pytest.approx(
@@ -73,7 +64,7 @@ class TestIsochrone:
         )
 
     def test_get_color_magnitude(self):
-        read_isochrone = species.ReadIsochrone("ames-cond_isochrone")
+        read_isochrone = species.ReadIsochrone("ames-cond")
 
         colormag_box = read_isochrone.get_color_magnitude(
             100.0,
@@ -100,7 +91,7 @@ class TestIsochrone:
         )
 
     def test_get_color_color(self):
-        read_isochrone = species.ReadIsochrone("ames-cond_isochrone")
+        read_isochrone = species.ReadIsochrone("ames-cond")
 
         colorcolor_box = read_isochrone.get_color_color(
             100.0,

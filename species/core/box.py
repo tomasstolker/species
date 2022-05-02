@@ -1,5 +1,5 @@
 """
-Module with classes for storing data in `Box` objects.
+Module with classes for storing data in ``Box`` objects.
 """
 
 from typing import List, Union
@@ -38,6 +38,8 @@ def create_box(boxtype, **kwargs):
             box.mass = kwargs["mass"]
         if "radius" in kwargs:
             box.radius = kwargs["radius"]
+        if "iso_tag" in kwargs:
+            box.iso_tag = kwargs["iso_tag"]
 
     if boxtype == "colorcolor":
         box = ColorColorBox()
@@ -53,6 +55,8 @@ def create_box(boxtype, **kwargs):
             box.mass = kwargs["mass"]
         if "radius" in kwargs:
             box.radius = kwargs["radius"]
+        if "iso_tag" in kwargs:
+            box.iso_tag = kwargs["iso_tag"]
 
     elif boxtype == "isochrone":
         box = IsochroneBox()
@@ -189,6 +193,7 @@ class ColorMagBox(Box):
         """
 
         self.library = None
+        self.iso_tag = None
         self.object_type = None
         self.filters_color = None
         self.filter_mag = None
@@ -215,6 +220,7 @@ class ColorColorBox(Box):
         """
 
         self.library = None
+        self.iso_tag = None
         self.object_type = None
         self.filters = None
         self.color1 = None

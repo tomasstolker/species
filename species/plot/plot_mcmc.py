@@ -695,7 +695,7 @@ def plot_posterior(
         else:
             param_label = item[:unit_start]
             # Remove parenthesis from the units
-            unit_label = item[unit_start + 1 : -1]
+            unit_label = item[unit_start + 1: -1]
 
         q_16, q_50, q_84 = corner.quantile(samples[:, i], [0.16, 0.5, 0.84])
         q_minus, q_plus = q_50 - q_16, q_84 - q_50
