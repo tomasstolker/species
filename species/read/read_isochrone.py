@@ -49,8 +49,10 @@ class ReadIsochrone:
 
         with h5py.File(self.database, "r") as h5_file:
             if f"isochrones/{self.tag}" not in h5_file:
-                raise ValueError(f"There is no isochrone data stored "
-                                 f"with the selected tag \'{tag}\'.")
+                raise ValueError(
+                    f"There is no isochrone data stored "
+                    f"with the selected tag '{tag}'."
+                )
 
     @typechecked
     def get_isochrone(
@@ -262,7 +264,7 @@ class ReadIsochrone:
             }
 
             if iso_feh is not None:
-                model_param['feh'] = iso_feh
+                model_param["feh"] = iso_feh
 
             radius[i] = read_util.get_radius(
                 model_param["logg"], model_param["mass"]
@@ -435,7 +437,7 @@ class ReadIsochrone:
             }
 
             if iso_feh is not None:
-                model_param['feh'] = iso_feh
+                model_param["feh"] = iso_feh
 
             radius[i] = read_util.get_radius(
                 model_param["logg"], model_param["mass"]
@@ -469,9 +471,7 @@ class ReadIsochrone:
                             f"following isochrone sample: {model_param}."
                         )
 
-                    elif (
-                        model_param[item_bounds] > model1.get_bounds()[item_bounds][1]
-                    ):
+                    elif model_param[item_bounds] > model1.get_bounds()[item_bounds][1]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
                         mag3[i] = np.nan

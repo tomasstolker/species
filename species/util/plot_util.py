@@ -266,6 +266,10 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("distance")
         param[index] = "d (pc)"
 
+    if "parallax" in param:
+        index = param.index("parallax")
+        param[index] = r"$\pi$ (mas)"
+
     if "mass" in param:
         index = param.index("mass")
         param[index] = r"$\mathregular{M}$ ($\mathregular{M_J}$)"
@@ -556,9 +560,25 @@ def update_labels(param: List[str]) -> List[str]:
         index = param.index("log_kappa_0")
         param[index] = r"$\mathregular{{log}}\,\kappa_0$"
 
+    if "log_kappa_abs" in param:
+        index = param.index("log_kappa_abs")
+        param[index] = r"$\mathregular{{log}}\,\kappa_\mathregular{{abs}}$"
+
+    if "log_kappa_sca" in param:
+        index = param.index("log_kappa_sca")
+        param[index] = r"$\mathregular{{log}}\,\kappa_\mathregular{{sca}}$"
+
     if "opa_index" in param:
         index = param.index("opa_index")
         param[index] = r"$\xi$"
+
+    if "opa_abs_index" in param:
+        index = param.index("opa_abs_index")
+        param[index] = r"$\xi_\mathregular{{abs}}$"
+
+    if "opa_sca_index" in param:
+        index = param.index("opa_sca_index")
+        param[index] = r"$\xi_\mathregular{{sca}}$"
 
     if "log_p_base" in param:
         index = param.index("log_p_base")
@@ -570,7 +590,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "opa_knee" in param:
         index = param.index("opa_knee")
-        param[index] = r"$\lambda_\mathregular{R-J}$ (µm)"
+        param[index] = r"$\lambda_\mathregular{R}$ (µm)"
+
+    if "lambda_ray" in param:
+        index = param.index("lambda_ray")
+        param[index] = r"$\lambda_\mathregular{R}$ (µm)"
 
     if "mix_length" in param:
         index = param.index("mix_length")

@@ -354,53 +354,52 @@ def plot_color_magnitude(
                                 mass_val = mass_item
                                 mass_pos = "right"
 
-                            if j == 0 or (j > 0 and mass_val < 20.0):
-                                pos_color = interp_color(mass_val)
-                                pos_mag = interp_magnitude(mass_val)
+                            pos_color = interp_color(mass_val)
+                            pos_mag = interp_magnitude(mass_val)
 
-                                # if j == 1 and mass_val == 10.:
-                                #     mass_ha = "center"
-                                #     mass_xytext = (pos_color, pos_mag-0.2)
+                            # if j == 1 and mass_val == 10.:
+                            #     mass_ha = "center"
+                            #     mass_xytext = (pos_color, pos_mag-0.2)
 
-                                if mass_pos == "left":
-                                    mass_ha = "right"
-                                    mass_xytext = (pos_color - 0.05, pos_mag)
+                            if mass_pos == "left":
+                                mass_ha = "right"
+                                mass_xytext = (pos_color - 0.05, pos_mag)
 
-                                else:
-                                    mass_ha = "left"
-                                    mass_xytext = (pos_color + 0.05, pos_mag)
+                            else:
+                                mass_ha = "left"
+                                mass_xytext = (pos_color + 0.05, pos_mag)
 
-                                mass_label = (
-                                    str(int(mass_val)) + r" M$_\mathregular{J}$"
+                            mass_label = (
+                                str(int(mass_val)) + r" M$_\mathregular{J}$"
+                            )
+
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
+
+                            if (
+                                xlim[0] + 0.2 < pos_color < xlim[1] - 0.2
+                                and ylim[1] + 0.2 < pos_mag < ylim[0] - 0.2
+                            ):
+
+                                ax1.scatter(
+                                    pos_color,
+                                    pos_mag,
+                                    c=model_color[model_count[0]],
+                                    s=15,
+                                    edgecolor="none",
+                                    zorder=0,
                                 )
 
-                                xlim = ax1.get_xlim()
-                                ylim = ax1.get_ylim()
-
-                                if (
-                                    xlim[0] + 0.2 < pos_color < xlim[1] - 0.2
-                                    and ylim[1] + 0.2 < pos_mag < ylim[0] - 0.2
-                                ):
-
-                                    ax1.scatter(
-                                        pos_color,
-                                        pos_mag,
-                                        c=model_color[model_count[0]],
-                                        s=15,
-                                        edgecolor="none",
-                                        zorder=0,
-                                    )
-
-                                    ax1.annotate(
-                                        mass_label,
-                                        (pos_color, pos_mag),
-                                        color=model_color[model_count[0]],
-                                        fontsize=9,
-                                        xytext=mass_xytext,
-                                        zorder=3,
-                                        ha=mass_ha,
-                                        va="center",
-                                    )
+                                ax1.annotate(
+                                    mass_label,
+                                    (pos_color, pos_mag),
+                                    color=model_color[model_count[0]],
+                                    fontsize=9,
+                                    xytext=mass_xytext,
+                                    zorder=3,
+                                    ha=mass_ha,
+                                    va="center",
+                                )
 
             else:
                 ax1.plot(
@@ -749,8 +748,8 @@ def plot_color_magnitude(
 
             else:
                 kwargs = {
-                    "marker": ">",
-                    "ms": 6.0,
+                    "marker": "o",
+                    "ms": 5.0,
                     "color": "black",
                     "mfc": "white",
                     "mec": "black",
@@ -1490,8 +1489,8 @@ def plot_color_color(
 
             else:
                 kwargs = {
-                    "marker": ">",
-                    "ms": 6.0,
+                    "marker": "o",
+                    "ms": 5.0,
                     "color": "black",
                     "mfc": "white",
                     "mec": "black",

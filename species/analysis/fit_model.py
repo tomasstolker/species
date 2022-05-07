@@ -3,13 +3,10 @@ Module with functionalities for fitting atmospheric model spectra.
 """
 
 import os
-import math
 import warnings
 
 from typing import Optional, Union, List, Tuple, Dict
-from multiprocessing import Pool, cpu_count
 
-import emcee
 import numpy as np
 import spectres
 
@@ -45,407 +42,12 @@ from species.util import read_util, dust_util
 warnings.filterwarnings("always", category=DeprecationWarning)
 
 
-@typechecked
-def lnprior(
-    param: np.ndarray,
-    bounds: dict,
-    param_index: Dict[str, int],
-    prior: Optional[Dict[str, Tuple[float, float]]] = None,
-):
-    """
-    Internal function for calculating the log prior.
-
-    Parameters
-    ----------
-    param : np.ndarray
-        Parameter values.
-    bounds : dict
-        Dictionary with the parameter boundaries.
-    param_index : dict(str, int)
-        Dictionary with the parameter indices of ``param``.
-    prior : dict(str, tuple(float, float)), None
-        Dictionary with Gaussian priors for one or multiple parameters.
-        The prior can be set for any of the atmosphere or calibration
-        parameters, e.g. ``prior={'teff': (1200., 100.)}``.
-        Additionally, a prior can be set for the mass, e.g.
-        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup
-        with an uncertainty of 3 Mjup. The parameter is not used if set
-        to ``None``.
-
-    Returns
-    -------
-    floats
-        Log prior.
-    """
-
-    ln_prior = 0
-
-    for key, value in bounds.items():
-
-        if value[0] <= param[param_index[key]] <= value[1]:
-            ln_prior += 0.0
-
-        else:
-            ln_prior = -np.inf
-            break
-
-    if prior is not None:
-        for key, value in prior.items():
-            if key == "mass":
-                mass = read_util.get_mass(
-                    param[param_index["logg"]], param[param_index["radius"]]
-                )
-
-                ln_prior += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
-
-            else:
-                ln_prior += (
-                    -0.5 * (param[param_index[key]] - value[0]) ** 2 / value[1] ** 2
-                )
-
-    return ln_prior
-
-
-@typechecked
-def lnlike(
-    param: np.ndarray,
-    bounds: dict,
-    param_index: Dict[str, int],
-    model: str,
-    objphot: List[Optional[np.ndarray]],
-    distance: Tuple[float, float],
-    spectrum: Optional[dict],
-    modelphot: Optional[
-        Union[List[read_model.ReadModel], List[photometry.SyntheticPhotometry]]
-    ],
-    modelspec: Optional[List[read_model.ReadModel]],
-    n_planck: int,
-    fit_corr: List[str],
-):
-    """
-    Internal function for calculating the log likelihood.
-
-    Parameters
-    ----------
-    param : np.ndarray
-        Parameter values.
-    bounds : dict
-        Dictionary with the parameter boundaries.
-    param_index : dict(str, int)
-        Dictionary with the parameter indices of ``param``.
-    model : str
-        Atmosphere model (e.g. 'bt-settl', 'exo-rem', or 'planck).
-    objphot : list(np.ndarray)
-        List with the photometric fluxes and uncertainties of the
-        object. Not photometric data is fitted if an empty list is
-        provided.
-    distance : tuple(float, float)
-        Distance and uncertainty (pc).
-    spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
-        Dictionary with the spectra stored as wavelength (um), flux
-        (W m-2 um-1), and error (W m-2 um-1). Optionally the covariance
-        matrix, the inverse of the covariance matrix, and the spectral
-        resolution are included. Each of these three elements can be
-        set to ``None``. No spectroscopic data is fitted if
-        ``spectrum=None``.
-    modelphot : list(species.read.read_model.ReadModel),
-        list(species.analysis.photometry.SyntheticPhotometry), None
-        List with the interpolated synthetic fluxes or list with the
-        :class:`~species.analysis.photometry.SyntheticPhotometry`
-        objects for calculation of synthetic photometry for Planck
-        spectra. No photometry is fitted if set to ``None``.
-    modelspec : list(species.read.read_model.ReadModel), None
-        List with the interpolated synthetic spectra.
-    n_planck : int
-        Number of Planck components. The argument is set to zero
-        if ``model`` is not equal to ``'planck'``.
-    fit_corr : list(str)
-        List with spectrum names for which the covariances are modeled
-        with a Gaussian process (see Wang et al. 2020). This option can
-        be used if the actual covariances as determined from the data
-        are not available. The parameters that will be fitted are the
-        correlation length and fractional amplitude.
-
-    Returns
-    -------
-    float
-        Log likelihood.
-    """
-
-    param_dict = {}
-    spec_scaling = {}
-    err_scaling = {}
-    corr_len = {}
-    corr_amp = {}
-
-    for item in bounds:
-        if item[:8] == "scaling_" and item[8:] in spectrum:
-            spec_scaling[item[8:]] = param[param_index[item]]
-
-        elif item[:6] == "error_" and item[6:] in spectrum:
-            err_scaling[item[6:]] = param[param_index[item]]
-
-        elif item[:9] == "corr_len_" and item[9:] in spectrum:
-            corr_len[item[9:]] = 10.0 ** param[param_index[item]]  # (um)
-
-        elif item[:9] == "corr_amp_" and item[9:] in spectrum:
-            corr_amp[item[9:]] = param[param_index[item]]
-
-        else:
-            param_dict[item] = param[param_index[item]]
-
-    if model == "planck":
-        param_dict["distance"] = param[param_index["distance"]]
-
-    else:
-        flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-            param_dict["distance"] * constants.PARSEC
-        ) ** 2
-
-        # The scaling is applied manually because of the interpolation
-        del param_dict["radius"]
-
-    for item in spectrum:
-        if item not in spec_scaling:
-            spec_scaling[item] = 1.0
-
-        if item not in err_scaling:
-            err_scaling[item] = None
-
-    ln_like = 0.0
-
-    if model == "planck" and n_planck > 1:
-        for i in range(n_planck - 1):
-            if param_dict[f"teff_{i+1}"] > param_dict[f"teff_{i}"]:
-                return -np.inf
-
-            if param_dict[f"radius_{i}"] > param_dict[f"radius_{i+1}"]:
-                return -np.inf
-
-    for i, obj_item in enumerate(objphot):
-        if model == "planck":
-            readplanck = read_planck.ReadPlanck(filter_name=modelphot[i].filter_name)
-            phot_flux = readplanck.get_flux(param_dict, synphot=modelphot[i])[0]
-
-        else:
-            phot_flux = modelphot[i].spectrum_interp(list(param_dict.values()))
-            phot_flux *= flux_scaling
-
-        if obj_item.ndim == 1:
-            ln_like += -0.5 * (obj_item[0] - phot_flux) ** 2 / obj_item[1] ** 2
-
-        else:
-            for j in range(obj_item.shape[1]):
-                ln_like += (
-                    -0.5 * (obj_item[0, j] - phot_flux) ** 2 / obj_item[1, j] ** 2
-                )
-
-    for i, item in enumerate(spectrum.keys()):
-        # Calculate or interpolate the model spectrum
-        if model == "planck":
-            # Calculate a blackbody spectrum
-            readplanck = read_planck.ReadPlanck(
-                (0.9 * spectrum[item][0][0, 0], 1.1 * spectrum[item][0][-1, 0])
-            )
-
-            model_box = readplanck.get_spectrum(param_dict, 1000.0, smooth=True)
-
-            # Resample the spectrum to the observed wavelengths
-            model_flux = spectres.spectres(
-                spectrum[item][0][:, 0], model_box.wavelength, model_box.flux
-            )
-
-        else:
-            # Interpolate the model spectrum
-            model_flux = modelspec[i].spectrum_interp(list(param_dict.values()))[0, :]
-
-            # Scale the spectrum by the (radius/distance)^2
-            model_flux *= flux_scaling
-
-        # Scale the spectrum data
-        data_flux = spec_scaling[item] * spectrum[item][0][:, 1]
-
-        if err_scaling[item] is None:
-            # Variance without error inflation
-            data_var = spectrum[item][0][:, 2] ** 2
-
-        else:
-            # Variance with error inflation (see Piette & Madhusudhan 2020)
-            data_var = (
-                spectrum[item][0][:, 2] ** 2 + (err_scaling[item] * model_flux) ** 2
-            )
-
-        if spectrum[item][2] is not None:
-            # The inverted covariance matrix is available
-
-            if err_scaling[item] is None:
-                # Use the inverted covariance matrix directly
-                data_cov_inv = spectrum[item][2]
-
-            else:
-                # Ratio of the inflated and original uncertainties
-                sigma_ratio = np.sqrt(data_var) / spectrum[item][0][:, 2]
-                sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
-
-                # Calculate the inverted matrix of the inflated covariances
-                data_cov_inv = np.linalg.inv(spectrum[item][1] * sigma_i * sigma_j)
-
-        if spectrum[item][2] is not None:
-            # Calculate the log-likelihood with the covariance matrix
-            dot_tmp = np.dot(
-                data_flux - model_flux, np.dot(data_cov_inv, data_flux - model_flux)
-            )
-            ln_like += -0.5 * dot_tmp - 0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
-
-        else:
-            if item in fit_corr:
-                # Calculate the log-likelihood with the
-                # covariance model (see Wang et al. 2020)
-                wavel = spectrum[item][0][:, 0]  # (um)
-                wavel_j, wavel_i = np.meshgrid(wavel, wavel)
-
-                error = np.sqrt(data_var)  # (W m-2 um-1)
-                error_j, error_i = np.meshgrid(error, error)
-
-                cov_matrix = (
-                    corr_amp[item] ** 2
-                    * error_i
-                    * error_j
-                    * np.exp(-((wavel_i - wavel_j) ** 2) / (2.0 * corr_len[item] ** 2))
-                    + (1.0 - corr_amp[item] ** 2)
-                    * np.eye(wavel.shape[0])
-                    * error_i ** 2
-                )
-
-                dot_tmp = np.dot(
-                    data_flux - model_flux,
-                    np.dot(np.linalg.inv(cov_matrix), data_flux - model_flux),
-                )
-
-                ln_like += -0.5 * dot_tmp - 0.5 * np.nansum(
-                    np.log(2.0 * np.pi * data_var)
-                )
-
-            else:
-                # Calculate the log-likelihood without the covariance matrix but with the
-                # normalization term in case of the errors are inflated
-                ln_like += np.nansum(
-                    -0.5 * (data_flux - model_flux) ** 2 / data_var
-                    - 0.5 * np.log(2.0 * np.pi * data_var)
-                )
-
-    return ln_like
-
-
-@typechecked
-def lnprob(
-    param: np.ndarray,
-    bounds: dict,
-    model: str,
-    param_index: Dict[str, int],
-    objphot: List[Optional[np.ndarray]],
-    distance: Tuple[float, float],
-    prior: Optional[Dict[str, Tuple[float, float]]],
-    spectrum: Optional[dict],
-    modelphot: Optional[
-        Union[List[read_model.ReadModel], List[photometry.SyntheticPhotometry]]
-    ],
-    modelspec: Optional[List[read_model.ReadModel]],
-    n_planck: int,
-    fit_corr: List[str],
-) -> np.float64:
-    """
-    Internal function for calculating the log posterior.
-
-    Parameters
-    ----------
-    param : np.ndarray
-        Parameter values.
-    bounds : dict
-        Parameter boundaries.
-    model : str
-        Atmosphere model (e.g. 'bt-settl', 'exo-rem', or 'planck).
-    param_index : dict(str, int)
-        Dictionary with the parameter indices of ``param``.
-    objphot : list(np.ndarray), None
-        List with the photometric fluxes and uncertainties. No
-        photometric data is fitted if the parameter is set to ``None``.
-    distance : tuple(float, float)
-        Distance and uncertainty (pc).
-    prior : dict(str, tuple(float, float)), None
-        Dictionary with Gaussian priors for one or multiple parameters.
-        The prior can be set for any of the atmosphere or calibration
-        parameters, e.g. ``prior={'teff': (1200., 100.)}``.
-        Additionally, a prior can be set for the mass, e.g.
-        ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup
-        with an uncertainty of 3 Mjup. The parameter is not used if set
-        to ``None``.
-    spectrum : dict(str, tuple(np.ndarray, np.ndarray, np.ndarray, float)), None
-        Dictionary with the spectra stored as wavelength (um), flux
-        (W m-2 um-1), and error (W m-2 um-1). Optionally the covariance
-        matrix, the inverse of the covariance matrix, and the spectral
-        resolution are included. Each of these three elements can be
-        set to ``None``. No spectroscopic data is fitted if
-        ``spectrum=None``.
-    modelphot : list(species.read.read_model.ReadModel),
-        list(species.analysis.photometry.SyntheticPhotometry), None
-        List with the interpolated synthetic fluxes or list with the
-        :class:`~species.analysis.photometry.SyntheticPhotometry`
-        objects for calculation of synthetic photometry for Planck
-        spectra. No photometric data is fitted if set to ``None``.
-    modelspec : list(species.read.read_model.ReadModel), None
-        List with the interpolated synthetic spectra. The parameter is
-        set to ``None`` when no spectroscopic data is included or when
-        ``model='planck'``.
-    n_planck : int
-        Number of Planck components. The argument is set to zero
-        if ``model`` is not equal to ``'planck'``.
-    fit_corr : list(str)
-        List with spectrum names for which the covariances are modeled
-        with a Gaussian process (see Wang et al. 2020). This option can
-        be used if the actual covariances as determined from the data
-        are not available. The parameters that will be fitted are the
-        correlation length and fractional amplitude.
-
-    Returns
-    -------
-    float
-        Log posterior.
-    """
-
-    ln_prior = lnprior(param, bounds, param_index, prior)
-
-    if math.isinf(ln_prior):
-        ln_prob = -np.inf
-
-    else:
-        ln_prob = ln_prior + lnlike(
-            param,
-            bounds,
-            param_index,
-            model,
-            objphot,
-            distance,
-            spectrum,
-            modelphot,
-            modelspec,
-            n_planck,
-            fit_corr,
-        )
-
-    if np.isnan(ln_prob):
-        ln_prob = -np.inf
-
-    return ln_prob
-
-
 class FitModel:
     """
     Class for fitting atmospheric model spectra to spectra and/or
-    photometric fluxes, and using Bayesian inference (``MultiNest``,
-    ``UltraNest``, or ``emcee``) to estimate the posterior
-    distribution and marginalized likelihood (i.e. "evidence"). The
-    latter is only output from the two nested sampling algorithms.
+    photometric fluxes, and using Bayesian inference (with
+    ``MultiNest`` or ``UltraNest``) to estimate the posterior
+    distribution and marginalized likelihood (i.e. "evidence").
     A grid of model spectra is linearly interpolated for each
     spectrum and photometric flux, while taking into account the
     filter profile, spectral resolution, and wavelength sampling.
@@ -752,7 +354,7 @@ class FitModel:
             )
 
         self.object = read_object.ReadObject(object_name)
-        self.distance = self.object.get_distance()
+        self.parallax = self.object.get_parallax()
         self.binary = False
 
         if fit_corr is None:
@@ -793,7 +395,7 @@ class FitModel:
                 self.modelpar = ["teff", "radius"]
                 self.bounds = bounds
 
-            self.modelpar.append("distance")
+            self.modelpar.append("parallax")
 
         elif self.model == "powerlaw":
             self.n_planck = 0
@@ -868,7 +470,7 @@ class FitModel:
 
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append("radius")
-            self.modelpar.append("distance")
+            self.modelpar.append("parallax")
 
             if self.binary:
                 if "radius" in self.bounds:
@@ -1279,192 +881,6 @@ class FitModel:
             print(f"   - {item} = {self.weights[item]:.2e}")
 
     @typechecked
-    def run_mcmc(
-        self,
-        tag: str,
-        guess: Optional[
-            Dict[
-                str,
-                Union[
-                    Optional[float],
-                    List[Optional[float]],
-                    Tuple[Optional[float], Optional[float]],
-                ],
-            ]
-        ],
-        nwalkers: int = 200,
-        nsteps: int = 1000,
-        prior: Optional[Dict[str, Tuple[float, float]]] = None,
-    ) -> None:
-        """
-        Function to run the MCMC sampler of ``emcee``. The
-        functionalities of ``run_mcmc`` are more limited than
-        :func:`~species.analysis.fit_model.FitModel.run_ultranest` and
-        :func:`~species.analysis.fit_model.FitModel.run_multinest`.
-        Furthermore, ``run_ultranest`` ``run_multinest`` provide more
-        robust results when sampling multimodal posterior distributions
-        and have the additional advantage of returning the marginal
-        likelihood (i.e. "evidence"). Therefore, it is recommended to
-        use ``run_ultranest`` or ``run_multinest`` instead of
-        ``run_mcmc``.
-
-        Parameters
-        ----------
-        tag : str
-            Database tag where the samples will be stored.
-        guess : dict, None
-            Guess for each parameter to initialize the walkers. Random
-            values between the ``bounds`` are used is set to ``None``.
-        nwalkers : int
-            Number of walkers.
-        nsteps : int
-            Number of steps per walker.
-        prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple
-            parameters. The prior can be set for any of the
-            atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally,
-            a prior can be set for the mass, e.g.
-            ``prior={'mass': (13., 3.)}`` for an expected mass
-            of 13 Mjup with an uncertainty of 3 Mjup. The
-            parameter is not used if set to ``None``.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        print("Running MCMC...")
-
-        ndim = len(self.bounds)
-
-        if self.model == "planck":
-
-            if "teff" in self.bounds:
-                sigma = {"teff": 5.0, "radius": 0.01}
-
-            else:
-                sigma = {}
-
-                for i, item in enumerate(guess["teff"]):
-                    sigma[f"teff_{i}"] = 5.0
-                    guess[f"teff_{i}"] = guess["teff"][i]
-
-                for i, item in enumerate(guess["radius"]):
-                    sigma[f"radius_{i}"] = 0.01
-                    guess[f"radius_{i}"] = guess["radius"][i]
-
-                del guess["teff"]
-                del guess["radius"]
-
-        else:
-            sigma = {
-                "teff": 5.0,
-                "logg": 0.01,
-                "feh": 0.01,
-                "fsed": 0.01,
-                "c_o_ratio": 0.01,
-                "radius": 0.01,
-            }
-
-        for item in self.spectrum:
-            if item in self.fit_corr:
-                sigma[f"corr_len_{item}"] = 0.01  # log10(corr_len/um)
-                guess[f"corr_len_{item}"] = None  # log10(corr_len/um)
-
-                sigma[f"corr_amp_{item}"] = 0.1
-                guess[f"corr_amp_{item}"] = None
-
-        for item in self.spectrum:
-            if f"scaling_{item}" in self.bounds:
-                sigma[f"scaling_{item}"] = 0.01
-                guess[f"scaling_{item}"] = guess[item][0]
-
-            if f"error_{item}" in self.bounds:
-                sigma[f"error_{item}"] = 0.1
-                guess[f"error_{item}"] = guess[item][1]
-
-            if item in guess:
-                del guess[item]
-
-        initial = np.zeros((nwalkers, ndim))
-
-        for i, item in enumerate(self.modelpar):
-            if guess[item] is not None:
-                initial[:, i] = guess[item] + np.random.normal(0, sigma[item], nwalkers)
-
-            else:
-                initial[:, i] = np.random.uniform(
-                    low=self.bounds[item][0], high=self.bounds[item][1], size=nwalkers
-                )
-
-        # Create a dictionary with the indices of the parameters
-
-        param_index = {}
-        for i, item in enumerate(self.modelpar):
-            param_index[item] = i
-
-        with Pool(processes=cpu_count()):
-
-            ens_sampler = emcee.EnsembleSampler(
-                nwalkers,
-                ndim,
-                lnprob,
-                args=(
-                    [
-                        self.bounds,
-                        self.model,
-                        param_index,
-                        self.objphot,
-                        self.distance,
-                        prior,
-                        self.spectrum,
-                        self.modelphot,
-                        self.modelspec,
-                        self.n_planck,
-                        self.fit_corr,
-                    ]
-                ),
-            )
-
-            ens_sampler.run_mcmc(initial, nsteps, progress=True)
-
-        spec_labels = []
-        for item in self.spectrum:
-            if f"scaling_{item}" in self.bounds:
-                spec_labels.append(f"scaling_{item}")
-
-        # Get the MPI rank of the process
-
-        try:
-            from mpi4py import MPI
-
-            mpi_rank = MPI.COMM_WORLD.Get_rank()
-
-        except ModuleNotFoundError:
-            mpi_rank = 0
-
-        # Add samples to the database
-
-        if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single process
-            species_db = database.Database()
-
-            species_db.add_samples(
-                sampler="emcee",
-                samples=ens_sampler.chain,
-                ln_prob=ens_sampler.lnprobability,
-                ln_evidence=None,
-                mean_accept=np.mean(ens_sampler.acceptance_fraction),
-                spectrum=("model", self.model),
-                tag=tag,
-                modelpar=self.modelpar,
-                distance=self.distance[0],
-                spec_labels=spec_labels,
-            )
-
-    @typechecked
     def lnlike_func(
         self, params, prior: Optional[Dict[str, Tuple[float, float]]]
     ) -> np.float64:
@@ -1554,9 +970,9 @@ class FitModel:
             else:
                 param_dict[item] = params[self.cube_index[item]]
 
-        # Add the distance manually because it should
+        # Add the parallax manually because it should
         # not be provided in the bounds dictionary
-        distance = params[self.cube_index["distance"]]
+        parallax = params[self.cube_index["parallax"]]
 
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries
@@ -1611,22 +1027,19 @@ class FitModel:
 
         if self.model != "powerlaw":
             if "radius_0" in param_dict and "radius_1" in param_dict:
-                flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
-                    distance * constants.PARSEC
-                ) ** 2
+                flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 \
+                    / (1e3 * constants.PARSEC / parallax) ** 2
 
-                flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
-                    distance * constants.PARSEC
-                ) ** 2
+                flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 \
+                    / (1e3 * constants.PARSEC / parallax) ** 2
 
                 # The scaling is applied manually because of the interpolation
                 del param_dict["radius_0"]
                 del param_dict["radius_1"]
 
             else:
-                flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-                    distance * constants.PARSEC
-                ) ** 2
+                flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 \
+                    / (1e3 * constants.PARSEC / parallax) ** 2
 
                 # The scaling is applied manually because of the interpolation
                 del param_dict["radius"]
@@ -1760,7 +1173,7 @@ class FitModel:
                 phot_flux += (
                     phot_tmp
                     * (disk_param["radius"] * constants.R_JUP) ** 2
-                    / (distance * constants.PARSEC) ** 2
+                    / (1e3 * constants.PARSEC / parallax) ** 2
                 )
 
             if "lognorm_ext" in dust_param:
@@ -1950,9 +1363,8 @@ class FitModel:
             if disk_param:
                 model_tmp = self.diskspec[i].spectrum_interp([disk_param["teff"]])[0, :]
 
-                model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 / (
-                    distance * constants.PARSEC
-                ) ** 2
+                model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 \
+                    / (1e3 * constants.PARSEC / parallax) ** 2
 
                 model_flux += model_tmp
 
@@ -2102,12 +1514,10 @@ class FitModel:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        # Add distance to dictionary with Gaussian priors
+        # Add parallax to dictionary with Gaussian priors
 
         if prior is None:
             prior = {}
-
-        prior['distance'] = self.distance
 
         @typechecked
         def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
@@ -2132,12 +1542,12 @@ class FitModel:
             """
 
             for item in self.cube_index:
-                if item == "distance":
-                    # Gaussian prior for the distance
+                if item == "parallax":
+                    # Gaussian prior for the parallax
                     cube[self.cube_index[item]] = stats.norm.ppf(
                         cube[self.cube_index[item]],
-                        loc=self.distance[0],
-                        scale=self.distance[1]
+                        loc=self.parallax[0],
+                        scale=self.parallax[1]
                     )
 
                 else:
@@ -2257,7 +1667,6 @@ class FitModel:
                 spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
-                distance=self.distance[0],
                 spec_labels=spec_labels,
             )
 
@@ -2326,12 +1735,10 @@ class FitModel:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        # Add distance to dictionary with Gaussian priors
+        # Add parallax to dictionary with Gaussian priors
 
         if prior is None:
             prior = {}
-
-        prior['distance'] = self.distance
 
         @typechecked
         def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
@@ -2354,12 +1761,12 @@ class FitModel:
             params = cube.copy()
 
             for item in self.cube_index:
-                if item == "distance":
-                    # Gaussian prior for the distance
+                if item == "parallax":
+                    # Gaussian prior for the parallax
                     params[self.cube_index[item]] = stats.norm.ppf(
                         cube[self.cube_index[item]],
-                        loc=self.distance[0],
-                        scale=self.distance[1]
+                        loc=self.parallax[0],
+                        scale=self.parallax[1]
                     )
 
                 else:
@@ -2478,6 +1885,5 @@ class FitModel:
                 spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
-                distance=self.distance[0],
                 spec_labels=spec_labels,
             )

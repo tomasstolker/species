@@ -4,21 +4,18 @@ Text
 
 import os
 import sys
-
 # import time
 import warnings
 
-import h5py
+# import h5py
 import numpy as np
 
-from numpy import ma
-from astropy import units as u
-from astropy.coordinates import SkyCoord
-
+# from astropy import units as u
+# from astropy.coordinates import SkyCoord
 from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
 
-from species.data import database
+# from species.data import database
 
 
 class NoStdStreams:
@@ -51,68 +48,6 @@ class NoStdStreams:
 #     from astroquery.gaia import Gaia
 
 
-def get_parallax():
-    species_db = database.Database()
-    species_db.add_photometry("vlm-plx")
-
-    with h5py.File(species_db.database, "a") as hdf_file:
-        name = np.asarray(hdf_file["photometry/vlm-plx/name"])
-        ra_coord = np.asarray(hdf_file["photometry/vlm-plx/ra"])
-        dec_coord = np.asarray(hdf_file["photometry/vlm-plx/dec"])
-        distance = np.asarray(hdf_file["photometry/vlm-plx/distance"])
-        distance_error = np.asarray(hdf_file["photometry/vlm-plx/distance_error"])
-
-        simbad_id = []
-
-        print("Querying SIMBAD...", end="", flush=True)
-
-        for i, item in enumerate(name):
-            target_coord = SkyCoord(
-                ra_coord[i], dec_coord[i], unit=(u.deg, u.deg), frame="icrs"
-            )
-
-            result_table = Simbad.query_region(target_coord, radius="0d0m2s")
-
-            if result_table is None:
-                result_table = Simbad.query_region(target_coord, radius="0d0m5s")
-
-            if result_table is None:
-                result_table = Simbad.query_region(target_coord, radius="0d0m20s")
-
-            if result_table is None:
-                result_table = Simbad.query_region(target_coord, radius="0d1m0s")
-
-            if item == "HIP38939B":
-                sim_id = get_simbad("HIP38939")
-            else:
-                sim_id = result_table["MAIN_ID"][0]
-
-            # For backward compatibility
-            if not isinstance(sim_id, str):
-                sim_id = sim_id.decode("utf-8")
-
-            simbad_id.append(sim_id)
-
-        print(" [DONE]")
-
-        simbad_id = np.asarray(simbad_id)
-
-        dtype = h5py.special_dtype(vlen=str)
-
-        dset = hdf_file.create_dataset(
-            "photometry/vlm-plx/simbad", (np.size(simbad_id),), dtype=dtype
-        )
-
-        dset[...] = simbad_id
-
-        np.savetxt(
-            "parallax.dat",
-            np.column_stack([name, simbad_id, distance, distance_error]),
-            header="VLM-PLX name - SIMBAD name - Distance (pc) - Error (pc)",
-            fmt="%35s, %35s, %8.2f, %8.2f",
-        )
-
-
 def get_simbad(name):
     """
     Function for getting the SIMBAD identifier of an object.
@@ -138,8 +73,10 @@ def get_simbad(name):
     return simbad_id
 
 
-def get_distance(target):
+def get_parallax(target):
     """
+    Function for retrieving the parallax of an object.
+
     Parameters
     ----------
     target : str
@@ -150,7 +87,7 @@ def get_distance(target):
     str
         SIMBAD name.
     tuple(float, float)
-        Distance and uncertainty (pc).
+        Parallax and uncertainty (mas).
     """
 
     # Liu et al. (2016)
@@ -222,10 +159,10 @@ def get_distance(target):
         parallax = simbad_result["PLX_VALUE"][0]  # (mas)
         parallax_error = simbad_result["PLX_ERROR"][0]  # (mas)
 
-        if ma.is_masked(parallax):
+        if np.ma.is_masked(parallax):
             parallax = None
 
-        if ma.is_masked(parallax_error):
+        if np.ma.is_masked(parallax_error):
             parallax_error = None
 
     else:
@@ -233,10 +170,7 @@ def get_distance(target):
         parallax = None
         parallax_error = None
 
-    distance = None
-    distance_error = None
-
-    # query VizieR catalogs
+    # Query VizieR catalogs
     if parallax is None:
 
         for item in catalogs:
@@ -246,53 +180,35 @@ def get_distance(target):
 
                 if "plx" in result[0].keys():
                     parallax = result[0]["plx"][0]  # (mas)
-                    distance = None
-                    if ma.is_masked(parallax):
+                    if np.ma.is_masked(parallax):
                         parallax = None
 
                 elif "Plx" in result[0].keys():
                     parallax = result[0]["Plx"][0]  # (mas)
-                    distance = None
-                    if ma.is_masked(parallax):
+                    if np.ma.is_masked(parallax):
                         parallax = None
-
-                elif "Dist" in result[0].keys():
-                    distance = result[0]["Dist"][0]  # (pc)
-                    parallax = None
-                    if ma.is_masked(distance):
-                        distance = None
 
                 else:
                     parallax = None
-                    distance = None
 
                 if "e_plx" in result[0].keys():
                     parallax_error = result[0]["e_plx"][0]  # (mas)
-                    distance_error = None
-                    if ma.is_masked(parallax_error):
+                    if np.ma.is_masked(parallax_error):
                         parallax_error = None
 
                 elif "e_Plx" in result[0].keys():
                     parallax_error = result[0]["e_Plx"][0]  # (mas)
-                    distance_error = None
-                    if ma.is_masked(parallax_error):
+                    if np.ma.is_masked(parallax_error):
                         parallax_error = None
-
-                elif "e_Dist" in result[0].keys():
-                    distance_error = result[0]["e_Dist"][0]  # (pc)
-                    parallax_error = None
-                    if ma.is_masked(distance_error):
-                        distance_error = None
 
                 else:
                     parallax_error = None
-                    distance_error = None
 
-            if parallax is not None or distance is not None:
+            if parallax is not None:
                 break
 
     # query Gaia catalog
-    # if ma.is_masked(parallax):
+    # if np.ma.is_masked(parallax):
     #
     #     if simbad_result is not None:
     #         coord_ra = simbad_result["RA"][0]
@@ -309,27 +225,77 @@ def get_distance(target):
     #         if result:
     #             parallax = result["parallax"][0]  # (mas)
 
-    if parallax is not None:
-        distance = 1.0 / (parallax * 1e-3)  # (pc)
-
-    if parallax is not None and parallax_error is not None:
-        distance_minus = distance - 1.0 / ((parallax + parallax_error) * 1e-3)  # (pc)
-        distance_plus = 1.0 / ((parallax - parallax_error) * 1e-3) - distance  # (pc)
-        distance_error = (distance_plus + distance_minus) / 2.0  # (pc)
-
     if parallax is None:
         parallax = np.nan
 
     if parallax_error is None:
         parallax_error = np.nan
 
-    if distance is None:
-        distance = np.nan
+    if np.isnan(parallax):
+        warnings.warn(
+            f"No parallax was found for {target} " f"so storing a NaN value instead."
+        )
 
-    if distance_error is None:
-        distance_error = np.nan
+    return simbad_id, (parallax, parallax_error)
 
-    if np.isnan(parallax) and np.isnan(distance):
-        warnings.warn(f"No parallax was found for {target} so storing a NaN value.")
 
-    return simbad_id, (distance, distance_error)
+# def get_parallax():
+#     species_db = database.Database()
+#     species_db.add_photometry("vlm-plx")
+#
+#     with h5py.File(species_db.database, "a") as hdf_file:
+#         name = np.asarray(hdf_file["photometry/vlm-plx/name"])
+#         ra_coord = np.asarray(hdf_file["photometry/vlm-plx/ra"])
+#         dec_coord = np.asarray(hdf_file["photometry/vlm-plx/dec"])
+#         distance = np.asarray(hdf_file["photometry/vlm-plx/distance"])
+#         distance_error = np.asarray(hdf_file["photometry/vlm-plx/distance_error"])
+#
+#         simbad_id = []
+#
+#         print("Querying SIMBAD...", end="", flush=True)
+#
+#         for i, item in enumerate(name):
+#             target_coord = SkyCoord(
+#                 ra_coord[i], dec_coord[i], unit=(u.deg, u.deg), frame="icrs"
+#             )
+#
+#             result_table = Simbad.query_region(target_coord, radius="0d0m2s")
+#
+#             if result_table is None:
+#                 result_table = Simbad.query_region(target_coord, radius="0d0m5s")
+#
+#             if result_table is None:
+#                 result_table = Simbad.query_region(target_coord, radius="0d0m20s")
+#
+#             if result_table is None:
+#                 result_table = Simbad.query_region(target_coord, radius="0d1m0s")
+#
+#             if item == "HIP38939B":
+#                 sim_id = get_simbad("HIP38939")
+#             else:
+#                 sim_id = result_table["MAIN_ID"][0]
+#
+#             # For backward compatibility
+#             if not isinstance(sim_id, str):
+#                 sim_id = sim_id.decode("utf-8")
+#
+#             simbad_id.append(sim_id)
+#
+#         print(" [DONE]")
+#
+#         simbad_id = np.asarray(simbad_id)
+#
+#         dtype = h5py.special_dtype(vlen=str)
+#
+#         dset = hdf_file.create_dataset(
+#             "photometry/vlm-plx/simbad", (np.size(simbad_id),), dtype=dtype
+#         )
+#
+#         dset[...] = simbad_id
+#
+#         np.savetxt(
+#             "parallax.dat",
+#             np.column_stack([name, simbad_id, distance, distance_error]),
+#             header="VLM-PLX name - SIMBAD name - Distance (pc) - Error (pc)",
+#             fmt="%35s, %35s, %8.2f, %8.2f",
+#         )

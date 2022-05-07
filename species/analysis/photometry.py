@@ -21,9 +21,10 @@ from species.util import phot_util
 
 class SyntheticPhotometry:
     """
-    Class for calculating synthetic photometry from a spectrum and also for conversion between
-    magnitudes and fluxes. Note that depending on the detector type (energy- or photon-counting)
-    the integral for the filter-weighted flux contains an additional wavelength factor.
+    Class for calculating synthetic photometry from a spectrum and also
+    for conversion between magnitudes and fluxes. Note that depending
+    on the detector type (energy- or photon-counting) the integral for
+    the filter-weighted flux contains an additional wavelength factor.
     """
 
     @typechecked
@@ -32,8 +33,9 @@ class SyntheticPhotometry:
         Parameters
         ----------
         filter_name : str
-            Filter name as listed in the database. Filters from the SVO Filter Profile Service are
-            automatically downloaded and added to the database.
+            Filter name as listed in the database. Filters from the
+            SVO Filter Profile Service are automatically downloaded
+            and added to the database.
 
         Returns
         -------
@@ -60,7 +62,8 @@ class SyntheticPhotometry:
     @typechecked
     def zero_point(self) -> np.float64:
         """
-        Internal function for calculating the zero point of the provided ``filter_name``.
+        Internal function for calculating the zero point
+        of the provided ``filter_name``.
 
         Returns
         -------
@@ -112,8 +115,9 @@ class SyntheticPhotometry:
         Union[np.float32, np.float64], Union[Optional[np.float32], Optional[np.float64]]
     ]:
         """
-        Function for calculating the average flux from a spectrum and a filter profile. The error
-        is propagated by sampling 200 random values from the error distributions.
+        Function for calculating the average flux from a spectrum and
+        a filter profile. The uncertainty is propagated by sampling
+        200 random values from the error distributions.
 
         Parameters
         ----------
@@ -124,10 +128,11 @@ class SyntheticPhotometry:
         error : np.ndarray, None
             Uncertainty (W m-2 um-1). Not used if set to ``None``.
         threshold : float, None
-            Transmission threshold (value between 0 and 1). If the minimum transmission value is
-            larger than the threshold, a NaN is returned. This will happen if the input spectrum
-            does not cover the full wavelength range of the filter profile. Not used if set to
-            ``None``.
+            Transmission threshold (value between 0 and 1). If the
+            minimum transmission value is larger than the threshold,
+            a NaN is returned. This will happen if the input spectrum
+            does not cover the full wavelength range of the filter
+            profile. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -138,7 +143,8 @@ class SyntheticPhotometry:
         """
 
         if error is not None:
-            # The error calculation requires the original spectrum because spectrum_to_flux is used
+            # The error calculation requires the original
+            # spectrum because spectrum_to_flux is used
             wavel_error = wavelength.copy()
             flux_error = flux.copy()
 
@@ -151,8 +157,9 @@ class SyntheticPhotometry:
 
         if wavelength.size == 0:
             raise ValueError(
-                f"Calculation of the mean flux for {self.filter_name} is not "
-                f"possible because the wavelength array is empty."
+                f"Calculation of the mean flux for "
+                f"{self.filter_name} is not possible "
+                f"because the wavelength array is empty."
             )
 
         indices = np.where(
@@ -163,8 +170,8 @@ class SyntheticPhotometry:
             syn_flux = np.nan
 
             warnings.warn(
-                "Calculating a synthetic flux requires more than one wavelength "
-                "point. Photometry is set to NaN."
+                "Calculating a synthetic flux requires more than "
+                "one wavelength point. Photometry is set to NaN."
             )
 
         else:
@@ -262,14 +269,16 @@ class SyntheticPhotometry:
         wavelength: np.ndarray,
         flux: np.ndarray,
         error: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
+        parallax: Optional[Tuple[float, Optional[float]]] = None,
         distance: Optional[Tuple[float, Optional[float]]] = None,
         threshold: Optional[float] = 0.05,
     ) -> Tuple[
         Tuple[float, Optional[float]], Optional[Tuple[Optional[float], Optional[float]]]
     ]:
         """
-        Function for calculating the apparent and absolute magnitude from a spectrum and a
-        filter profile. The error is propagated by sampling 200 random values from the error
+        Function for calculating the apparent and absolute magnitude
+        from a spectrum and a filter profile. The uncertainty is
+        propagated by sampling 200 random values from the error
         distributions.
 
         Parameters
@@ -280,14 +289,23 @@ class SyntheticPhotometry:
             Flux (W m-2 um-1).
         error : np.ndarray, list(np.ndarray), None
             Uncertainty (W m-2 um-1).
+        parallax : tuple(float, float), None
+            Parallax and uncertainty (mas). No absolute magnitude is
+            calculated if set to ``None``. No error on the absolute
+            magnitude is calculated if the ``error`` parameter is
+            set to ``None``.
         distance : tuple(float, float), None
-            Distance and uncertainty (pc). No absolute magnitude is calculated if set to ``None``.
-            No error on the absolute magnitude is calculated if the uncertainty is set to ``None``.
+            Distance and uncertainty (pc). No absolute magnitude is
+            calculated if set to ``None``. No error on the absolute
+            magnitude is calculated if the ``error`` parameter is
+            set to ``None``. This parameter is ignored if the
+            ``parallax`` parameter is used.
         threshold : float, None
-            Transmission threshold (value between 0 and 1). If the minimum transmission value is
-            larger than the threshold, a NaN is returned. This will happen if the input spectrum
-            does not cover the full wavelength range of the filter profile. Not used if set to
-            ``None``.
+            Transmission threshold (value between 0 and 1). If the
+            minimum transmission value is larger than the threshold,
+            a NaN is returned. This will happen if the input spectrum
+            does not cover the full wavelength range of the filter
+            profile. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -296,6 +314,9 @@ class SyntheticPhotometry:
         tuple(float, float)
             Absolute magnitude and uncertainty.
         """
+
+        if parallax is not None:
+            distance = phot_util.parallax_to_distance(parallax)
 
         zp_flux = self.zero_point()
 
@@ -363,7 +384,8 @@ class SyntheticPhotometry:
         error : float, None
             Error on the magnitude. Not used if set to ``None``.
         zp_flux : float, None
-            Zero-point flux (W m-2 um-1). The value is calculated if set to ``None``.
+            Zero-point flux (W m-2 um-1). The value is
+            calculated if the argument is set to ``None``.
 
         Returns
         -------
@@ -393,6 +415,11 @@ class SyntheticPhotometry:
         self,
         flux: float,
         error: Optional[Union[float, np.ndarray]] = None,
+        parallax: Optional[
+            Union[
+                Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
+            ]
+        ] = None,
         distance: Optional[
             Union[
                 Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
@@ -411,11 +438,21 @@ class SyntheticPhotometry:
             Flux (W m-2 um-1).
         error : float, np.ndarray, None
             Uncertainty (W m-2 um-1). Not used if set to None.
-        distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-            Distance and uncertainty (pc). The returned absolute magnitude is set to None in case
-            ``distance`` is set to None. The error is not propagated into the error on the absolute
-            magnitude in case the distance uncertainty is set to None, for example
-            ``distance=(20., None)``
+        parallax : tuple(float, float), , tuple(np.ndarray, np.ndarray), None
+            Parallax and uncertainty (mas). The returned absolute
+            magnitude is set to ``None`` in case ``parallax`` and
+            ``distance`` are set to ``None``. The error is not
+            propagated into the error on the absolute magnitude
+            in case the parallax uncertainty is set to ``None``,
+            for example ``parallax=(10., None)``.
+        distance : tuple(float, float), tuple(np.ndarray, np.ndarray), None
+            Distance and uncertainty (pc). The returned absolute
+            magnitude is set to ``None`` in case ``distance`` and
+            ``parallax`` are set to ``None``. The error is not
+            propagated into the error on the absolute magnitude in
+            case the distance uncertainty is set to ``None``, for
+            example ``distance=(20., None)``. This parameter is
+            ignored if the ``parallax`` parameter is used.
 
         Returns
         -------
@@ -424,6 +461,9 @@ class SyntheticPhotometry:
         tuple(float, float), tuple(np.ndarray, np.ndarray)
             Absolute magnitude and uncertainty.
         """
+
+        if parallax is not None:
+            distance = phot_util.parallax_to_distance(parallax)
 
         zp_flux = self.zero_point()
 

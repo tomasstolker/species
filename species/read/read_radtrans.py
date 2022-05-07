@@ -417,12 +417,17 @@ class ReadRadtrans:
             len(self.cloud_species) > 0
             or "log_kappa_0" in model_param
             or "log_kappa_gray" in model_param
+            or "log_kappa_abs" in model_param
         ):
 
             tau_cloud = None
             log_x_base = None
 
-            if "log_kappa_0" in model_param or "log_kappa_gray" in model_param:
+            if (
+                "log_kappa_0" in model_param
+                or "log_kappa_gray" in model_param
+                or "log_kappa_abs" in model_param
+            ):
                 if "log_tau_cloud" in model_param:
                     tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
@@ -692,10 +697,16 @@ class ReadRadtrans:
                 model_param["logg"], model_param["radius"]
             )
 
-            if "distance" in model_param:
-                # Use the radius and distance to
-                # scale the fluxes to the observer
+            # Scale the flux to the observer
 
+            if "parallax" in model_param:
+                scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
+                    1e3 * constants.PARSEC / model_param["parallax"]
+                ) ** 2
+
+                flux *= scaling
+
+            elif "distance" in model_param:
                 scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
                     model_param["distance"] * constants.PARSEC
                 ) ** 2

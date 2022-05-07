@@ -121,10 +121,10 @@ def pt_ret_model(
     press_cgs = press * 1e6
 
     # Calculate the optical depth
-    tau = delta * press_cgs ** alpha
+    tau = delta * press_cgs**alpha
 
     # Calculate the Eddington temperature
-    tedd = (3.0 / 4.0 * tint ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
+    tedd = (3.0 / 4.0 * tint**4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
     # Import interpol_abundances here because it slows down importing
     # species otherwise. Importing interpol_abundances is only slow
@@ -134,7 +134,9 @@ def pt_ret_model(
     if "poor_mans_nonequ_chem" in sys.modules:
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
     else:
-        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+            interpol_abundances,
+        )
 
     ab = interpol_abundances(
         np.full(tedd.shape[0], c_o_ratio),
@@ -821,7 +823,9 @@ def calc_spectrum_clear(
     if "poor_mans_nonequ_chem" in sys.modules:
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
     else:
-        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+            interpol_abundances,
+        )
 
     if chemistry == "equilibrium":
         # Chemical equilibrium
@@ -869,7 +873,7 @@ def calc_spectrum_clear(
 
     # calculate the emission spectrum
     rt_object.calc_flux(
-        temperature, abundances, 10.0 ** log_g, mmw, contribution=contribution
+        temperature, abundances, 10.0**log_g, mmw, contribution=contribution
     )
 
     # convert frequency (Hz) to wavelength (cm)
@@ -885,7 +889,7 @@ def calc_spectrum_clear(
     # and emission contribution
     return (
         1e4 * wavel,
-        1e-7 * rt_object.flux * constants.LIGHT * 1e2 / wavel ** 2.0,
+        1e-7 * rt_object.flux * constants.LIGHT * 1e2 / wavel**2.0,
         contr_em,
     )
 
@@ -993,7 +997,9 @@ def calc_spectrum_clouds(
         if "poor_mans_nonequ_chem" in sys.modules:
             from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                interpol_abundances,
+            )
 
         # Interpolate the abundances, following chemical equilibrium
         abund_in = interpol_abundances(
@@ -1253,31 +1259,35 @@ def calc_spectrum_clouds(
 
             return kappa_abs
 
-        @typechecked
-        def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
-            p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
-            kappa_0 = 10.0 ** cloud_dict["log_kappa_sca"]  # (cm2 g-1)
+        if "log_kappa_sca" in cloud_dict:
+            @typechecked
+            def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
+                p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
+                kappa_0 = 10.0 ** cloud_dict["log_kappa_sca"]  # (cm2 g-1)
 
-            # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
-            kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
+                # Opacity at 1 um (cm2 g-1) as function of pressure (bar)
+                kappa_p = kappa_0 * (press_bar / p_base) ** cloud_dict["fsed"]
 
-            # Opacity (cm2 g-1) as function of wavelength (um)
-            kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
-            kappa_sca = kappa_grid * wavel_grid ** cloud_dict["opa_sca_index"]
-            kappa_sca[:, press_bar > p_base] = 0.0
+                # Opacity (cm2 g-1) as function of wavelength (um)
+                kappa_grid, wavel_grid = np.meshgrid(kappa_p, wavel_micron, sparse=True)
+                kappa_sca = kappa_grid * wavel_grid ** cloud_dict["opa_sca_index"]
+                kappa_sca[:, press_bar > p_base] = 0.0
 
-            if (
-                cloud_dict["lambda_ray"] > wavel_micron[0]
-                and cloud_dict["lambda_ray"] < wavel_micron[-1]
-            ):
-                indices = np.where(wavel_micron > cloud_dict["lambda_ray"])[0]
-                for i in range(press_bar.size):
-                    kappa_sca[indices, i] = (
-                        kappa_sca[indices[0], i]
-                        * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
-                    )
+                if (
+                    cloud_dict["lambda_ray"] > wavel_micron[0]
+                    and cloud_dict["lambda_ray"] < wavel_micron[-1]
+                ):
+                    indices = np.where(wavel_micron > cloud_dict["lambda_ray"])[0]
+                    for i in range(press_bar.size):
+                        kappa_sca[indices, i] = (
+                            kappa_sca[indices[0], i]
+                            * (wavel_micron[indices] / wavel_micron[indices[0]]) ** -4.0
+                        )
 
-            return kappa_sca
+                return kappa_sca
+
+        else:
+            kappa_scat = None
 
     elif "log_kappa_gray" in cloud_dict:
         # Gray clouds with cloud top
@@ -1295,13 +1305,16 @@ def calc_spectrum_clouds(
         # Add optional scattering opacity
 
         if "albedo" in cloud_dict:
+
             @typechecked
-            def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray) -> np.ndarray:
+            def kappa_scat(
+                wavel_micron: np.ndarray, press_bar: np.ndarray
+            ) -> np.ndarray:
                 # Absorption opacity (cm2 g-1)
                 opa_abs = kappa_abs(wavel_micron, press_bar)
 
                 # Scattering opacity (cm2 g-1)
-                opa_scat = cloud_dict["albedo"] * opa_abs / (1. - cloud_dict["albedo"])
+                opa_scat = cloud_dict["albedo"] * opa_abs / (1.0 - cloud_dict["albedo"])
 
                 return opa_scat
 
@@ -1317,7 +1330,7 @@ def calc_spectrum_clouds(
     rt_object.calc_flux(
         temperature,
         abundances,
-        10.0 ** log_g,
+        10.0**log_g,
         mmw,
         sigma_lnorm=sigma_lnorm,
         Kzz=Kzz_use,
@@ -1860,7 +1873,7 @@ def cloud_mass_fraction(
     # Scale the solar number densities by the [Fe/H], except H and He
     for item in nfracs:
         if item != "H" and item != "He":
-            nfracs_use[item] = nfracs[item] * 10.0 ** metallicity
+            nfracs_use[item] = nfracs[item] * 10.0**metallicity
 
     # Adjust the VMR of O with the C/O ratio
     nfracs_use["O"] = nfracs_use["C"] / c_o_ratio
@@ -2591,14 +2604,16 @@ def quench_pressure(
     if "poor_mans_nonequ_chem" in sys.modules:
         from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
     else:
-        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+            interpol_abundances,
+        )
 
     abund_eq = interpol_abundances(
         co_array, feh_array, temperature, pressure, Pquench_carbon=None
     )
 
     # Surface gravity (m s-2)
-    gravity = 1e-2 * 10.0 ** log_g
+    gravity = 1e-2 * 10.0**log_g
 
     # Mean molecular weight (kg)
     mmw = abund_eq["MMW"] * constants.ATOMIC_MASS
@@ -2607,14 +2622,14 @@ def quench_pressure(
     h_scale = constants.BOLTZMANN * temperature / (mmw * gravity)
 
     # Diffusion coefficient (m2 s-1)
-    kzz = 1e-4 * 10.0 ** log_kzz
+    kzz = 1e-4 * 10.0**log_kzz
 
     # Mixing timescale (s)
-    t_mix = h_scale ** 2 / kzz
+    t_mix = h_scale**2 / kzz
 
     # Chemical timescale (see Eq. 12 from Zahnle & Marley 2014)
-    metal = 10.0 ** metallicity
-    t_chem = 1.5e-6 * pressure ** -1.0 * metal ** -0.7 * np.exp(42000.0 / temperature)
+    metal = 10.0**metallicity
+    t_chem = 1.5e-6 * pressure**-1.0 * metal**-0.7 * np.exp(42000.0 / temperature)
 
     # Determine pressure at which t_mix = t_chem
 
@@ -2694,7 +2709,7 @@ def convective_flux(
 
     t_transp = (f_bol / constants.SIGMA_SB) ** 0.25  # (K)
     nabla_rad = (
-        3.0 * kappa_r * press * t_transp ** 4.0 / 16.0 / gravity / temp ** 4.0
+        3.0 * kappa_r * press * t_transp**4.0 / 16.0 / gravity / temp**4.0
     )  # (dimensionless)
     h_press = (
         constants.BOLTZMANN * temp / (mmw * constants.ATOMIC_MASS * gravity)
@@ -2702,8 +2717,8 @@ def convective_flux(
     l_mix = mix_length * h_press  # (m)
 
     U = (
-        (12.0 * constants.SIGMA_SB * temp ** 3.0)
-        / (c_p * density ** 2.0 * kappa_r * l_mix ** 2.0)
+        (12.0 * constants.SIGMA_SB * temp**3.0)
+        / (c_p * density**2.0 * kappa_r * l_mix**2.0)
         * np.sqrt(8.0 * h_press / gravity)
     )
 
@@ -2711,23 +2726,23 @@ def convective_flux(
 
     # FIXME thesis: 2336U^4W
     A = (
-        1168.0 * U ** 3.0
+        1168.0 * U**3.0
         + 2187 * U * W
         + 27.0
         * np.sqrt(
             3.0
-            * (2048.0 * U ** 6.0 + 2236.0 * U ** 4.0 * W + 2187.0 * U ** 2.0 * W ** 2.0)
+            * (2048.0 * U**6.0 + 2236.0 * U**4.0 * W + 2187.0 * U**2.0 * W**2.0)
         )
     ) ** (1.0 / 3.0)
 
     xi = (
         19.0 / 27.0 * U
-        - 184.0 / 27.0 * 2.0 ** (1.0 / 3.0) * U ** 2.0 / A
+        - 184.0 / 27.0 * 2.0 ** (1.0 / 3.0) * U**2.0 / A
         + 2.0 ** (2.0 / 3.0) / 27.0 * A
     )
 
-    nabla = xi ** 2.0 + nabla_ad - U ** 2.0
-    nabla_e = nabla_ad + 2.0 * U * xi - 2.0 * U ** 2.0
+    nabla = xi**2.0 + nabla_ad - U**2.0
+    nabla_e = nabla_ad + 2.0 * U * xi - 2.0 * U**2.0
 
     f_conv = (
         density
@@ -2736,7 +2751,7 @@ def convective_flux(
         * np.sqrt(gravity)
         * (mix_length * h_press) ** 2.0
         / (4.0 * np.sqrt(2.0))
-        * h_press ** -1.5
+        * h_press**-1.5
         * (nabla - nabla_e) ** 1.5
     )
 

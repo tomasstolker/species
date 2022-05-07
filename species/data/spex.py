@@ -34,18 +34,18 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
         None
     """
 
-    distance_url = "https://home.strw.leidenuniv.nl/~stolker/species/distance.dat"
-    distance_file = os.path.join(input_path, "distance.dat")
+    parallax_url = "https://home.strw.leidenuniv.nl/~stolker/species/parallax.dat"
+    parallax_file = os.path.join(input_path, "parallax.dat")
 
-    if not os.path.isfile(distance_file):
-        urllib.request.urlretrieve(distance_url, distance_file)
+    if not os.path.isfile(parallax_file):
+        urllib.request.urlretrieve(parallax_url, parallax_file)
 
-    distance_data = pd.pandas.read_csv(
-        distance_file,
-        usecols=[0, 3, 4],
-        names=["object", "distance", "distance_error"],
+    parallax_data = pd.pandas.read_csv(
+        parallax_file,
+        usecols=[0, 1, 2],
+        names=["object", "parallax", "parallax_error"],
         delimiter=",",
-        dtype={"object": str, "distance": float, "distance_error": float},
+        dtype={"object": str, "parallax": float, "parallax_error": float},
     )
 
     database.create_group("spectra/spex")
@@ -55,7 +55,8 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     if not os.path.exists(data_path):
         os.makedirs(data_path)
 
-    url_all = "http://svo2.cab.inta-csic.es/vocats/v2/spex/cs.php?RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2"
+    url_all = "http://svo2.cab.inta-csic.es/vocats/v2/spex/cs.php?" \
+              "RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2"
 
     xml_file_spex = os.path.join(data_path, "spex.xml")
 
@@ -209,26 +210,25 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
             spdata = np.column_stack([wavelength, flux, error])
 
-            # simbad_id, distance = query_util.get_distance(f'2MASS {twomass_id}')
             simbad_id = query_util.get_simbad(f"2MASS {twomass_id}")
 
             if simbad_id is not None:
                 if not isinstance(simbad_id, str):
                     simbad_id = simbad_id.decode("utf-8")
 
-                dist_select = distance_data[distance_data["object"] == simbad_id]
+                par_select = parallax_data[parallax_data["object"] == simbad_id]
 
-                if not dist_select.empty:
-                    distance = (
-                        dist_select["distance"].values[0],
-                        dist_select["distance_error"].values[0],
+                if not par_select.empty:
+                    parallax = (
+                        par_select["parallax"].values[0],
+                        par_select["parallax_error"].values[0],
                     )
 
                 else:
-                    distance = (np.nan, np.nan)
+                    parallax = (np.nan, np.nan)
 
             else:
-                distance = (np.nan, np.nan)
+                parallax = (np.nan, np.nan)
 
             print_message = f"Adding spectra... {name}"
             print(f"\r{print_message:<72}", end="")
@@ -248,8 +248,8 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
             dset.attrs["2MASS/2MASS.J"] = j_mag
             dset.attrs["2MASS/2MASS.H"] = h_mag
             dset.attrs["2MASS/2MASS.Ks"] = ks_mag
-            dset.attrs["distance"] = distance[0]  # (pc)
-            dset.attrs["distance_error"] = distance[1]  # (pc)
+            dset.attrs["parallax"] = parallax[0]  # (mas)
+            dset.attrs["parallax_error"] = parallax[1]  # (mas)
 
     print_message = "Adding spectra... [DONE]"
     print(f"\r{print_message:<72}")

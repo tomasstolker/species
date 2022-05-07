@@ -732,7 +732,7 @@ def add_missing(
     print(f"Number of missing grid points: {count_missing}")
 
     del database[f"models/{model}/flux"]
-    database.create_dataset(f"models/{model}/flux", data=10.0 ** flux)
+    database.create_dataset(f"models/{model}/flux", data=10.0**flux)
 
 
 def correlation_to_covariance(cor_matrix, spec_sigma):
@@ -894,6 +894,15 @@ def retrieval_spectrum(
 
         if "opa_knee" in indices:
             model_param["opa_knee"] = sample[indices["opa_knee"]]
+
+    elif "log_kappa_abs" in indices:
+        model_param["log_kappa_abs"] = sample[indices["log_kappa_abs"]]
+        model_param["log_kappa_sca"] = sample[indices["log_kappa_sca"]]
+        model_param["opa_abs_index"] = sample[indices["opa_abs_index"]]
+        model_param["opa_sca_index"] = sample[indices["opa_sca_index"]]
+        model_param["lambda_ray"] = sample[indices["lambda_ray"]]
+        model_param["log_p_base"] = sample[indices["log_p_base"]]
+        model_param["fsed"] = sample[indices["fsed"]]
 
     elif "log_kappa_gray" in indices:
         model_param["log_kappa_gray"] = sample[indices["log_kappa_gray"]]

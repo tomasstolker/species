@@ -240,8 +240,10 @@ def add_ames(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url_list = ["https://home.strw.leidenuniv.nl/~stolker/species/model.AMES-Cond-2000.M-0.0.MKO.Vega",
-                "https://home.strw.leidenuniv.nl/~stolker/species/model.AMES-dusty.M-0.0.MKO.Vega"]
+    url_list = ["https://home.strw.leidenuniv.nl/~stolker/species/"
+                "model.AMES-Cond-2000.M-0.0.MKO.Vega",
+                "https://home.strw.leidenuniv.nl/~stolker/species/"
+                "model.AMES-dusty.M-0.0.MKO.Vega"]
 
     iso_tags = ["AMES-Cond", "AMES-Dusty"]
     iso_size = ["235 kB", "182 kB"]
@@ -255,9 +257,6 @@ def add_ames(database, input_path):
                   f"({iso_size[i]})...", end="", flush=True)
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
-
-        iso_file = f"evolution_tables/{iso_tags[i].lower()}"
-        iso_path = os.path.join(input_path, iso_file)
 
         add_baraffe(database=database,
                     tag=iso_tags[i].lower(),

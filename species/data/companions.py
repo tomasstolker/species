@@ -18,9 +18,11 @@ def get_data() -> Dict[
     Dict[
         str,
         Union[
+            str,
             bool,
             Tuple[float, float],
-            Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]],
+            Dict[str, Union[Tuple[float, float],
+                            List[Tuple[float, float]]]],
         ],
     ],
 ]:
@@ -33,14 +35,15 @@ def get_data() -> Dict[
     Returns
     -------
     dict
-        Dictionary with the distances and apparent magnitudes of
-        directly imaged companions. Distances are from GAIA DR2 unless
-        indicated as comment.
+        Dictionary with the parallaxes and apparent magnitudes of
+        directly imaged companions. Distances are mainly from the
+        Gaia Early Data Release 3 DR2.
     """
 
     data = {
         "beta Pic b": {
-            "distance": (19.75, 0.13),
+            "simbad": "beta Pic",
+            "parallax": (50.9307, 0.1482),  # Gaia Early Data Release 3
             "app_mag": {
                 "Magellan/VisAO.Ys": (15.53, 0.34),  # Males et al. 2014
                 "Paranal/NACO.J": (14.11, 0.21),  # Currie et al. 2013
@@ -58,7 +61,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "beta Pic c": {
-            "distance": (19.75, 0.13),
+            "simbad": "beta Pic",
+            "parallax": (50.9307, 0.1482),  # Gaia Early Data Release 3
             "app_mag": {"MKO/NSFCam.K": (14.3, 0.1)},  # Nowak et al. 2020
             "semi_major": (2.75, 0.04),  # Mirek Brandt et al. 2021
             "mass_star": (1.83, 0.04),  # Mirek Brandt et al. 2021
@@ -66,7 +70,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HIP 65426 b": {
-            "distance": (109.21, 0.75),
+            "simbad": "HIP 65426",
+            "parallax": (9.3031, 0.0346),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_H23_2": (17.94, 0.05),  # Chauvin et al. 2017
                 "Paranal/SPHERE.IRDIS_D_H23_3": (17.58, 0.06),  # Chauvin et al. 2017
@@ -82,7 +87,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "51 Eri b": {
-            "distance": (29.78, 0.12),
+            "simbad": "51 Eri",
+            "parallax": (33.439, 0.0777),  # Gaia Early Data Release 3
             "app_mag": {
                 "MKO/NSFCam.J": (19.04, 0.40),  # Rajan et al. 2017
                 "MKO/NSFCam.H": (18.99, 0.21),  # Rajan et al. 2017
@@ -99,7 +105,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HR 8799 b": {
-            "distance": (41.29, 0.15),
+            "simbad": "HR 8799",
+            "parallax": (24.462, 0.0455),  # Gaia Early Data Release 3
             "app_mag": {
                 "Subaru/CIAO.z": (21.22, 0.29),  # Currie et al. 2011
                 "Paranal/SPHERE.IRDIS_B_J": (19.78, 0.09),  # Zurlo et al. 2016
@@ -119,7 +126,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HR 8799 c": {
-            "distance": (41.29, 0.15),
+            "simbad": "HR 8799",
+            "parallax": (24.462, 0.0455),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_J": (18.60, 0.13),  # Zurlo et al. 2016
                 "Keck/NIRC2.H": (17.06, 0.13),  # Currie et al. 2012
@@ -138,7 +146,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HR 8799 d": {
-            "distance": (41.29, 0.15),
+            "simbad": "HR 8799",
+            "parallax": (24.462, 0.0455),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_J": (18.59, 0.37),  # Zurlo et al. 2016
                 "Keck/NIRC2.H": (16.71, 0.24),  # Currie et al. 2012
@@ -157,7 +166,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HR 8799 e": {
-            "distance": (41.29, 0.15),
+            "simbad": "HR 8799",
+            "parallax": (24.462, 0.0455),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_J": (18.40, 0.21),  # Zurlo et al. 2016
                 "Paranal/SPHERE.IRDIS_D_H23_2": (16.91, 0.20),  # Zurlo et al. 2016
@@ -174,7 +184,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 95086 b": {
-            "distance": (86.44, 0.24),
+            "simbad": "HD 95086",
+            "parallax": (11.5659, 0.0187),  # Gaia Early Data Release 3
             "app_mag": {
                 "Gemini/GPI.H": (20.51, 0.25),  # De Rosa et al. 2016
                 "Gemini/GPI.K1": (18.99, 0.20),  # De Rosa et al. 2016
@@ -186,7 +197,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "PDS 70 b": {
-            "distance": (113.43, 0.52),
+            "simbad": "PDS 70",
+            "parallax": (8.8975, 0.0191),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_H23_2": (18.12, 0.21),  # Stolker et al. 2020.
                 "Paranal/SPHERE.IRDIS_D_H23_3": (17.97, 0.18),  # Stolker et al. 2020.
@@ -215,7 +227,8 @@ def get_data() -> Dict[
             },
         },  # Hashimoto et al. 2020
         "PDS 70 c": {
-            "distance": (113.43, 0.52),
+            "simbad": "PDS 70",
+            "parallax": (8.8975, 0.0191),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/NACO.NB405": (14.91, 0.35),  # Stolker et al. 2020
                 "Keck/NIRC2.Lp": (15.5, 0.46),
@@ -226,7 +239,8 @@ def get_data() -> Dict[
             "accretion": True,
         },  # Haffert et al. 2019
         "2M 1207 B": {
-            "distance": (64.42, 0.65),
+            "simbad": "2MASSWJ 1207334-393254",
+            "parallax": (15.4624, 0.1163),  # Gaia Early Data Release 3
             "app_mag": {
                 "HST/NICMOS1.F090M": (22.58, 0.35),  # Song et al. 2006
                 "HST/NICMOS1.F110M": (20.61, 0.15),  # Song et al. 2006
@@ -246,7 +260,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "AB Pic B": {
-            "distance": (50.12, 0.07),
+            "simbad": "AB Pic",
+            "parallax": (19.9452, 0.0124),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/NACO.J": (16.18, 0.10),  # Chauvin et al. 2005
                 "Paranal/NACO.H": (14.69, 0.10),  # Chauvin et al. 2005
@@ -258,7 +273,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 206893 B": {
-            "distance": (40.81, 0.11),
+            "simbad": "HD 206893",
+            "parallax": (24.5275, 0.0354),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_H": (16.79, 0.06),  # Milli et al. 2017
                 "Paranal/SPHERE.IRDIS_D_K12_1": (15.2, 0.10),  # Delorme et al. 2017
@@ -273,7 +289,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "RZ Psc B": {
-            "distance": (195.86, 4.03),
+            "simbad": "RZ Psc",
+            "parallax": (5.3661, 0.0274),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_H": [
                     (13.71, 0.14),  # Kennedy et al. 2020
@@ -290,8 +307,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "GQ Lup B": {
-            "distance": (154.10, 0.69),  # Gaia Data Release 3
-            "parallax": (6.49, 0.03),  # Gaia Data Release 3
+            "simbad": "GQ Lup",
+            "parallax": (6.4893, 0.0289),  # Gaia Data Release 3
             "app_mag": {
                 "HST/WFPC2-PC.F606W": (19.19, 0.07),  # Marois et al. 2007
                 "HST/WFPC2-PC.F814W": (17.67, 0.05),  # Marois et al. 2007
@@ -326,7 +343,8 @@ def get_data() -> Dict[
             },
         },  # Stolker et al. in prep.
         "PZ Tel B": {
-            "distance": (47.13, 0.13),
+            "simbad": "PZ Tel",
+            "parallax": (21.1621, 0.0223),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.ZIMPOL_R_PRIM": (17.84, 0.31),  # Maire et al. 2015
                 "Paranal/SPHERE.ZIMPOL_I_PRIM": (15.16, 0.12),  # Maire et al. 2015
@@ -350,7 +368,8 @@ def get_data() -> Dict[
             "line_flux": {"h-alpha": (2.2e-18, 0.9e-18)},
         },  # Musso Barcucci et al. 2019
         "kappa And b": {
-            "distance": (50.06, 0.87),
+            "simbad": "kappa And",
+            "parallax": (19.4064, 0.2104),  # Gaia Early Data Release 3
             "app_mag": {
                 "Subaru/CIAO.J": (15.86, 0.21),  # Bonnefoy et al. 2014
                 "Subaru/CIAO.H": (14.95, 0.13),  # Bonnefoy et al. 2014
@@ -365,7 +384,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 1160 B": {
-            "distance": (125.9, 1.2),
+            "simbad": "HD 1160",
+            "parallax": (8.2721, 0.0355),  # Gaia Early Data Release 3
             "app_mag": {
                 "MKO/NSFCam.J": (14.69, 0.05),  # Victor Garcia et al. 2017
                 "MKO/NSFCam.H": (14.21, 0.02),  # Victor Garcia et al. 2017
@@ -379,7 +399,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "ROXs 12 B": {
-            "distance": (144.16, 1.53),
+            "simbad": "ROXs 12 B",
+            "parallax": (7.217, 0.0172),  # Gaia Early Data Release 3
             "app_mag": {
                 "MKO/NSFCam.J": (15.82, 0.03),  # Bowler et al. 2017
                 "MKO/NSFCam.H": (14.83, 0.03),  # Bowler et al. 2017
@@ -391,7 +412,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "ROXs 42 Bb": {
-            "distance": (144.16, 1.53),
+            "simbad": "ROXs 42 B",
+            "parallax": (6.8284, 0.0309),  # Gaia Early Data Release 3
             "app_mag": {
                 "Keck/NIRC2.J": (16.91, 0.11),  # Currie et al. 2014b
                 "Keck/NIRC2.H": (15.88, 0.05),  # Currie et al. 2014a
@@ -406,7 +428,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "GJ 504 b": {
-            "distance": (17.54, 0.08),
+            "simbad": "GJ 504",
+            "parallax": (56.8577, 0.1224),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_Y23_2": (20.98, 0.20),  # Bonnefoy et al. 2018
                 "Paranal/SPHERE.IRDIS_D_Y23_3": (20.14, 0.09),  # Bonnefoy et al. 2018
@@ -426,7 +449,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "GU Psc b": {
-            "distance": (47.61, 0.16),
+            "simbad": "GU Psc",
+            "parallax": (21.0051, 0.026),  # Gaia Early Data Release 3
             "app_mag": {
                 "Gemini/GMOS-S.z": (21.75, 0.07),  # Naud et al. 2014
                 "CFHT/Wircam.Y": (19.4, 0.05),  # Naud et al. 2014
@@ -442,7 +466,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "2M0103 ABb": {
-            "distance": (47.2, 3.1),  # Delorme et al. 2013
+            "simbad": "2MASS J01033563-5515561",
+            "parallax": (21.18, 1.37),  # Riedel et al. 2014
             "app_mag": {
                 "Paranal/NACO.J": (15.47, 0.30),  # Delorme et al. 2013
                 "Paranal/NACO.H": (14.27, 0.20),  # Delorme et al. 2013
@@ -459,7 +484,8 @@ def get_data() -> Dict[
             },
         },  # Eriksson et al. 2020
         "1RXS 1609 B": {
-            "distance": (139.67, 1.33),
+            "simbad": "1RXS J160929.1-210524",
+            "parallax": (7.2444, 0.0176),  # Gaia Early Data Release 3
             "app_mag": {
                 "Gemini/NIRI.J-G0202w": (17.90, 0.12),  # Lafreniere et al. 2008
                 "Gemini/NIRI.H-G0203w": (16.87, 0.07),  # Lafreniere et al. 2008
@@ -472,7 +498,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "GSC 06214 B": {
-            "distance": (108.84, 0.51),
+            "simbad": "GSC 06214-00210",
+            "parallax": (9.1923, 0.0214),  # Gaia Early Data Release 3
             "app_mag": {
                 "MKO/NSFCam.J": (16.24, 0.04),  # Ireland et al. 2011
                 "MKO/NSFCam.H": (15.55, 0.04),  # Ireland et al. 2011
@@ -490,7 +517,8 @@ def get_data() -> Dict[
             },
         },  # Bowler et al. 2011
         "HD 72946 B": {
-            "distance": (25.87, 0.03),
+            "simbad": "HD 72946",
+            "parallax": (38.9809, 0.0412),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_H23_2": (14.56, 0.07),  # Maire et al. 2019
                 "Paranal/SPHERE.IRDIS_D_H23_3": (14.40, 0.07),
@@ -501,7 +529,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HIP 64892 B": {
-            "distance": (125.20, 1.42),
+            "simbad": "HIP 64892",
+            "parallax": (8.3595, 0.0483),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_H23_2": (14.21, 0.17),  # Cheetham et al. 2018
                 "Paranal/SPHERE.IRDIS_D_H23_3": (13.94, 0.17),  # Cheetham et al. 2018
@@ -515,7 +544,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 13724 B": {
-            "distance": (43.45, 0.03),
+            "simbad": "HD 13724",
+            "parallax": (23.0157, 0.0178),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_J23_2": (17.09, 0.16),  # Rickman et al. 2020
                 "Paranal/SPHERE.IRDIS_D_J23_3": (17.82, 0.32),  # Rickman et al. 2020
@@ -529,8 +559,9 @@ def get_data() -> Dict[
             "mass_companion": (50.5, 3.5),  # Rickman et al. 2020
             "accretion": False,
         },
-        "TYC 8988 B": {
-            "distance": (94.6, 0.3),
+        "TYC 8988 b": {
+            "simbad": "TYC 8998-760-1",
+            "parallax": (10.6124, 0.0116),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_Y23_2": (17.03, 0.21),  # Bohn et al. 2019
                 "Paranal/SPHERE.IRDIS_D_Y23_3": (16.67, 0.16),  # Bohn et al. 2019
@@ -551,8 +582,9 @@ def get_data() -> Dict[
             "mass_companion": (14.0, 3.0),  # Bohn et al. 2019
             "accretion": True,
         },  # Zhang et al. 2021
-        "TYC 8988 C": {
-            "distance": (94.6, 0.3),
+        "TYC 8988 c": {
+            "simbad": "TYC 8998-760-1",
+            "parallax": (10.6124, 0.0116),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_Y23_3": (22.37, 0.31),  # Bohn et al. 2020
                 "Paranal/SPHERE.IRDIS_D_J23_2": (21.81, 0.22),  # Bohn et al. 2020
@@ -570,7 +602,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 142527 B": {
-            "distance": (159.26, 0.72),
+            "simbad": "HD 142527",
+            "parallax": (6.2791, 0.0284),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/NACO.J": (10.86, 0.05),  # Lacour et al. 2016
                 "Paranal/NACO.H": [
@@ -598,7 +631,8 @@ def get_data() -> Dict[
             "line_flux": {"h-alpha": (7.6e-17, 3.5e-17)},
         },  # Cugno et al. 2019
         "CS Cha B": {
-            "distance": (168.77, 1.92),
+            "simbad": "CS Cha",
+            "parallax": (5.9251, 0.0675),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_B_J": (19.16, 0.21),  # Ginski et al. 2018
                 "Paranal/SPHERE.IRDIS_B_H": (17.65, 0.62),  # Ginski et al. 2018
@@ -614,7 +648,8 @@ def get_data() -> Dict[
             "line_flux": {"h-alpha": (17.3e-20, 2.1e-20)},
         },  # Haffert et al. 2020
         "CT Cha B": {
-            "distance": (189.95, 0.42),
+            "simbad": "CT Cha",
+            "parallax": (5.2645, 0.0116),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/NACO.J": (16.61, 0.30),  # Schmidt et al. 2008
                 "Paranal/NACO.Ks": [
@@ -628,7 +663,8 @@ def get_data() -> Dict[
             "accretion": True,
         },  # Wu et al. 2015
         "SR 12 C": {
-            "distance": (112.5, 5.8),
+            "simbad": "2MASS J16271951-2441403",
+            "parallax": (8.9034, 0.4288),  # Gaia Data Release 2
             "app_mag": {
                 "MKO/NSFCam.J": (15.93, 0.03),  # Kuzuhara et al. 2011
                 "MKO/NSFCam.H": (15.18, 0.03),  # Kuzuhara et al. 2011
@@ -648,7 +684,8 @@ def get_data() -> Dict[
             },
         },  # Santamaría-Miranda et al. 2017 (erratum)
         "DH Tau B": {
-            "distance": (133.45, 0.45),
+            "simbad": "DH Tau",
+            "parallax": (7.4936, 0.0255),  # Gaia Early Data Release 3
             "app_mag": {
                 "Subaru/CIAO.J": (15.71, 0.05),  # Itoh et al. 2005
                 "Subaru/CIAO.H": (14.96, 0.04),  # Itoh et al. 2005
@@ -660,7 +697,8 @@ def get_data() -> Dict[
             "accretion": True,  # Zhou et al. 2014
         },
         "HD 4747 B": {
-            "distance": (18.85, 0.01),
+            "simbad": "HD 4747",
+            "parallax": (53.0526, 0.0282),  # Gaia Early Data Release 3
             "app_mag": {
                 "Keck/NIRC2.Ks": (14.36, 0.14),  # Crepp et al. 2014
                 "Keck/NIRC2.Lp": (13.02, 0.44),  # Crepp et al. 2014
@@ -671,7 +709,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HR 3549 B": {
-            "distance": (94.78, 0.34),
+            "simbad": "HR 3549",
+            "parallax": (10.5509, 0.0383),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/NACO.Lp": [
                     (13.85, 0.25),  # Mawet et al. 2015
@@ -688,7 +727,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "CHXR 73 B": {
-            "distance": (191.37, 2.94),
+            "simbad": "CHXR 73",
+            "parallax": (5.2256, 0.0804),  # Gaia Early Data Release 3
             "app_mag": {
                 "HST/ACS_WFC.F775W": (24.57, 0.03),  # Luhman et al. 2006
                 "HST/ACS_WFC.F850LP": (22.58, 0.03),  # Luhman et al. 2006
@@ -699,7 +739,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "HD 19467 B": {
-            "distance": (32.03, 0.02),
+            "simbad": "HD 19467",
+            "parallax": (31.2191, 0.024),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_H23_2": (16.95, 0.05),  # Maire et al. 2020
                 "Paranal/SPHERE.IRDIS_D_H23_3": (17.88, 0.05),  # Maire et al. 2020
@@ -713,7 +754,8 @@ def get_data() -> Dict[
             "accretion": False,
         },
         "b Cen (AB)b": {
-            "distance": (99.66, 3.12),
+            "simbad": "b Cen",
+            "parallax": (10.0339, 0.3142),  # Gaia Early Data Release 3
             "app_mag": {
                 "Paranal/SPHERE.IRDIS_D_J23_2": (17.98, 0.25),  # Janson et al. 2021
                 "Paranal/SPHERE.IRDIS_D_J23_3": (17.64, 0.25),  # Janson et al. 2021

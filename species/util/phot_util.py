@@ -447,7 +447,7 @@ def get_residuals(
             n_dof += value.shape[0]
 
     for item in parameters:
-        if item not in ["mass", "luminosity", "distance"]:
+        if item not in ["mass", "luminosity", "distance", "parallax"]:
             n_dof -= 1
 
     chi2_red = chi2_stat / n_dof
@@ -462,3 +462,33 @@ def get_residuals(
         spectrum=res_spec,
         chi2_red=chi2_red,
     )
+
+
+@typechecked
+def parallax_to_distance(
+    parallax: Union[Tuple[float, float],
+                    Tuple[np.ndarray, np.ndarray]],
+) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+    """
+    Function for converting from parallax to distance.
+
+    Parameters
+    ----------
+    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
+        Parallax and uncertainty (mas).
+
+    Returns
+    -------
+    float, np.ndarray
+        Distance (pc).
+    float, np.ndarray
+        Uncertainty (pc).
+    """
+
+    # From parallax (mas) to distance (pc)
+    distance = 1e3 / parallax[0]
+    distance_minus = distance - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
+    distance_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - distance
+    distance_error = (distance_plus + distance_minus) / 2.0
+
+    return distance, distance_error

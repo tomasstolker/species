@@ -18,6 +18,8 @@ from typing import Dict, List, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy import stats
+
 try:
     import pymultinest
 except:
@@ -169,10 +171,10 @@ class AtmosphericRetrieval:
         # Get object data
 
         self.object = read_object.ReadObject(self.object_name)
-        self.distance = self.object.get_distance()[0]  # (pc)
+        self.parallax = self.object.get_parallax()  # (mas)
 
         print(f"Object: {self.object_name}")
-        print(f"Distance: {self.distance}")
+        print(f"Parallax (mas): {self.parallax[0]:.4f} +/- {self.parallax[1]:.4f}")
 
         # Line species
 
@@ -424,6 +426,7 @@ class AtmosphericRetrieval:
 
         self.parameters.append("logg")
         self.parameters.append("radius")
+        self.parameters.append("parallax")
 
         # P-T profile parameters
 
@@ -507,10 +510,12 @@ class AtmosphericRetrieval:
             self.parameters.append("log_p_base")
             self.parameters.append("fsed")
             self.parameters.append("log_kappa_abs")
-            self.parameters.append("log_kappa_sca")
             self.parameters.append("opa_abs_index")
-            self.parameters.append("opa_sca_index")
-            self.parameters.append("lambda_ray")
+
+            if "log_kappa_sca" in bounds:
+                self.parameters.append("log_kappa_sca")
+                self.parameters.append("opa_sca_index")
+                self.parameters.append("lambda_ray")
 
         elif "log_kappa_gray" in bounds:
             inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
@@ -1153,6 +1158,16 @@ class AtmosphericRetrieval:
 
             cube[cube_index["radius"]] = radius
 
+            # Parallax (mas), Gaussian prior
+
+            cube[cube_index["parallax"]] = stats.norm.ppf(
+                cube[cube_index["parallax"]],
+                loc=self.parallax[0],
+                scale=self.parallax[1]
+            )
+
+            # Pressure-temperature profile
+
             if pt_profile in ["molliere", "mod-molliere"]:
 
                 # Internal temperature (K) of the Eddington
@@ -1550,8 +1565,28 @@ class AtmosphericRetrieval:
 
                     cube[cube_index["log_tau_cloud"]] = log_tau_cloud
 
-            if "log_kappa_abs" in bounds:
+            elif "log_kappa_abs" in bounds:
                 # Parametrized absorption and scattering opacity
+
+                log_kappa_abs = (
+                    bounds["log_kappa_abs"][0]
+                    + (bounds["log_kappa_abs"][1] - bounds["log_kappa_abs"][0])
+                    * cube[cube_index["log_kappa_abs"]]
+                )
+
+                cube[cube_index["log_kappa_abs"]] = log_kappa_abs
+
+                if "opa_abs_index" in bounds:
+                    opa_abs_index = (
+                        bounds["opa_abs_index"][0]
+                        + (bounds["opa_abs_index"][1] - bounds["opa_abs_index"][0])
+                        * cube[cube_index["opa_abs_index"]]
+                    )
+                else:
+                    # Default: -6 - 1
+                    opa_abs_index = -6.0 + 7.0 * cube[cube_index["opa_abs_index"]]
+
+                cube[cube_index["opa_abs_index"]] = opa_abs_index
 
                 if "log_p_base" in bounds:
                     log_p_base = (
@@ -1577,65 +1612,38 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["fsed"]] = fsed
 
-                if "log_kappa_abs" in bounds:
-                    log_kappa_abs = (
-                        bounds["log_kappa_abs"][0]
-                        + (bounds["log_kappa_abs"][1] - bounds["log_kappa_abs"][0])
-                        * cube[cube_index["log_kappa_abs"]]
-                    )
-                else:
-                    # Default: -8 - 3
-                    log_kappa_abs = -8.0 + 11.0 * cube[cube_index["log_kappa_abs"]]
-
-                cube[cube_index["log_kappa_abs"]] = log_kappa_abs
-
                 if "log_kappa_sca" in bounds:
                     log_kappa_sca = (
                         bounds["log_kappa_sca"][0]
                         + (bounds["log_kappa_sca"][1] - bounds["log_kappa_sca"][0])
                         * cube[cube_index["log_kappa_sca"]]
                     )
-                else:
-                    # Default: -8 - 3
-                    log_kappa_sca = -8.0 + 11.0 * cube[cube_index["log_kappa_sca"]]
 
-                cube[cube_index["log_kappa_sca"]] = log_kappa_sca
+                    cube[cube_index["log_kappa_sca"]] = log_kappa_sca
 
-                if "opa_abs_index" in bounds:
-                    opa_abs_index = (
-                        bounds["opa_abs_index"][0]
-                        + (bounds["opa_abs_index"][1] - bounds["opa_abs_index"][0])
-                        * cube[cube_index["opa_abs_index"]]
-                    )
-                else:
-                    # Default: -6 - 1
-                    opa_abs_index = -6.0 + 7.0 * cube[cube_index["opa_abs_index"]]
+                    if "opa_sca_index" in bounds:
+                        opa_sca_index = (
+                            bounds["opa_sca_index"][0]
+                            + (bounds["opa_sca_index"][1] - bounds["opa_sca_index"][0])
+                            * cube[cube_index["opa_sca_index"]]
+                        )
+                    else:
+                        # Default: -6 - 1
+                        opa_sca_index = -6.0 + 7.0 * cube[cube_index["opa_sca_index"]]
 
-                cube[cube_index["opa_abs_index"]] = opa_abs_index
+                    cube[cube_index["opa_sca_index"]] = opa_sca_index
 
-                if "opa_sca_index" in bounds:
-                    opa_sca_index = (
-                        bounds["opa_sca_index"][0]
-                        + (bounds["opa_sca_index"][1] - bounds["opa_sca_index"][0])
-                        * cube[cube_index["opa_sca_index"]]
-                    )
-                else:
-                    # Default: -6 - 1
-                    opa_sca_index = -6.0 + 7.0 * cube[cube_index["opa_sca_index"]]
+                    if "lambda_ray" in bounds:
+                        lambda_ray = (
+                            bounds["lambda_ray"][0]
+                            + (bounds["lambda_ray"][1] - bounds["lambda_ray"][0])
+                            * cube[cube_index["lambda_ray"]]
+                        )
+                    else:
+                        # Default: 0.5 - 6.0
+                        lambda_ray = 0.5 + 5.5 * cube[cube_index["lambda_ray"]]
 
-                cube[cube_index["opa_sca_index"]] = opa_sca_index
-
-                if "lambda_ray" in bounds:
-                    lambda_ray = (
-                        bounds["lambda_ray"][0]
-                        + (bounds["lambda_ray"][1] - bounds["lambda_ray"][0])
-                        * cube[cube_index["lambda_ray"]]
-                    )
-                else:
-                    # Default: 0.5 - 5.0
-                    lambda_ray = 0.5 + 5.5 * cube[cube_index["lambda_ray"]]
-
-                cube[cube_index["lambda_ray"]] = lambda_ray
+                    cube[cube_index["lambda_ray"]] = lambda_ray
 
                 if "log_tau_cloud" in bounds:
                     log_tau_cloud = (
@@ -2904,21 +2912,21 @@ class AtmosphericRetrieval:
             flux_lambda *= (
                 cube[cube_index["radius"]]
                 * constants.R_JUP
-                / (self.distance * constants.PARSEC)
+                / (1e3 * constants.PARSEC / cube[cube_index["parallax"]])
             ) ** 2.0
 
             if check_flux is not None:
                 flux_lowres *= (
                     cube[cube_index["radius"]]
                     * constants.R_JUP
-                    / (self.distance * constants.PARSEC)
+                    / (1e3 * constants.PARSEC / cube[cube_index["parallax"]])
                 ) ** 2.0
 
             for item in cross_corr:
                 lbl_flux[item] *= (
                     cube[cube_index["radius"]]
                     * constants.R_JUP
-                    / (self.distance * constants.PARSEC)
+                    / (1e3 * constants.PARSEC / cube[cube_index["parallax"]])
                 ) ** 2.0
 
             # Evaluate the spectra
@@ -3203,7 +3211,7 @@ class AtmosphericRetrieval:
         radtrans_dict["line_species"] = self.line_species
         radtrans_dict["cloud_species"] = self.cloud_species_full
         radtrans_dict["lbl_species"] = self.lbl_species
-        radtrans_dict["distance"] = self.distance
+        radtrans_dict["parallax"] = self.parallax
         radtrans_dict["scattering"] = self.scattering
         radtrans_dict["chemistry"] = chemistry
         radtrans_dict["quenching"] = quenching

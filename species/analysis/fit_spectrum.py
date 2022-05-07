@@ -218,6 +218,5 @@ class FitSpectrum:
             spectrum=("calibration", self.spectrum),
             tag=tag,
             modelpar=self.modelpar,
-            distance=None,
             spec_labels=None,
         )

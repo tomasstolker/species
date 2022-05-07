@@ -1,5 +1,6 @@
 """
-Module for the photometric data and parallaxes from the Database of Ultracool Parallaxes.
+Module for the photometric data and parallaxes
+from the Database of Ultracool Parallaxes.
 """
 
 import os
@@ -15,7 +16,8 @@ from species.util import data_util
 
 def add_vlm_plx(input_path, database):
     """
-    Function for adding the Database of Ultracool Parallaxes to the database.
+    Function for adding the Database of Ultracool
+    Parallaxes to the database.
 
     Parameters
     ----------
@@ -55,11 +57,6 @@ def add_vlm_plx(input_path, database):
 
     parallax = phot_data["PLX"]  # (mas)
     parallax_error = phot_data["EPLX"]  # (mas)
-    distance = 1.0 / (parallax * 1e-3)  # (pc)
-
-    distance_minus = distance - 1.0 / ((parallax + parallax_error) * 1e-3)  # (pc)
-    distance_plus = 1.0 / ((parallax - parallax_error) * 1e-3) - distance  # (pc)
-    distance_error = (distance_plus + distance_minus) / 2.0  # (pc)
 
     name = phot_data["NAME"]
     name = np.core.defchararray.strip(name)
@@ -100,8 +97,6 @@ def add_vlm_plx(input_path, database):
     database.create_dataset("photometry/vlm-plx/dec", data=phot_data["DEC"])  # (deg)
     database.create_dataset("photometry/vlm-plx/parallax", data=parallax)
     database.create_dataset("photometry/vlm-plx/parallax_error", data=parallax_error)
-    database.create_dataset("photometry/vlm-plx/distance", data=distance)
-    database.create_dataset("photometry/vlm-plx/distance_error", data=distance_error)
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.Y", data=phot_data["YMAG"])
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.J", data=phot_data["JMAG"])
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.H", data=phot_data["HMAG"])

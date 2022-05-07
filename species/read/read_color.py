@@ -95,9 +95,9 @@ class ReadColorMagnitude:
         if self.lib_type == "phot_lib":
             with h5py.File(self.database, "r") as h5_file:
                 sptype = np.asarray(h5_file[f"photometry/{self.library}/sptype"])
-                dist = np.asarray(h5_file[f"photometry/{self.library}/distance"])
-                dist_error = np.asarray(
-                    h5_file[f"photometry/{self.library}/distance_error"]
+                parallax = np.asarray(h5_file[f"photometry/{self.library}/parallax"])
+                parallax_error = np.asarray(
+                    h5_file[f"photometry/{self.library}/parallax_error"]
                 )
                 flag = np.asarray(h5_file[f"photometry/{self.library}/flag"])
                 obj_names = np.asarray(h5_file[f"photometry/{self.library}/name"])
@@ -147,14 +147,16 @@ class ReadColorMagnitude:
 
             color = mag1 - mag2
 
+            distance = phot_util.parallax_to_distance((parallax, parallax_error))
+
             if self.filter_mag == self.filters_color[0]:
                 mag, _ = phot_util.apparent_to_absolute(
-                    (mag1, None), (dist, dist_error)
+                    (mag1, None), (distance[0], distance[1])
                 )
 
             elif self.filter_mag == self.filters_color[1]:
                 mag, _ = phot_util.apparent_to_absolute(
-                    (mag2, None), (dist, dist_error)
+                    (mag2, None), (distance[0], distance[1])
                 )
 
             color = color[indices]

@@ -69,7 +69,7 @@ class ReadObject:
 
         with h5py.File(self.database, "r") as h5_file:
             for tel_item in h5_file[f"objects/{self.object_name}"]:
-                if tel_item not in ["distance", "spectrum"]:
+                if tel_item not in ["parallax", "distance", "spectrum"]:
                     for filt_item in h5_file[f"objects/{self.object_name}/{tel_item}"]:
                         print(f"   - {tel_item}/{filt_item}")
                         filter_list.append(f"{tel_item}/{filt_item}")
@@ -161,9 +161,54 @@ class ReadObject:
         """
 
         with h5py.File(self.database, "r") as h5_file:
-            obj_distance = np.asarray(h5_file[f"objects/{self.object_name}/distance"])
+            if f"objects/{self.object_name}/parallax" in h5_file:
+                parallax = np.asarray(h5_file[f"objects/{self.object_name}/parallax"])
+                calc_dist = 1.0 / (parallax[0] * 1e-3)  # (pc)
+                dist_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - calc_dist
+                dist_minus = calc_dist - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
+                distance = (calc_dist, (dist_plus + dist_minus) / 2.0)
 
-        return obj_distance[0], obj_distance[1]
+            elif f"objects/{self.object_name}/distance" in h5_file:
+                distance = np.asarray(h5_file[f"objects/{self.object_name}/distance"])
+
+            else:
+                raise RuntimeError(
+                    f"Could not read the distance of "
+                    f"{self.object_name}. Please add "
+                    f"the parallax with the add_object "
+                    f"method of the Database class."
+                )
+
+        return distance[0], distance[1]
+
+    @typechecked
+    def get_parallax(self) -> Tuple[float, float]:
+        """
+        Function for reading the parallax of the object.
+
+        Returns
+        -------
+        float
+            Parallax (mas).
+        float
+            Uncertainty (mas).
+        """
+
+        with h5py.File(self.database, "r") as h5_file:
+            if f"objects/{self.object_name}/parallax" in h5_file:
+                obj_parallax = np.asarray(
+                    h5_file[f"objects/{self.object_name}/parallax"]
+                )
+
+            else:
+                raise RuntimeError(
+                    f"Could not read the parallax of "
+                    f"{self.object_name}. Please add "
+                    f"the parallax with the add_object "
+                    f"method of the Database class."
+                )
+
+        return obj_parallax[0], obj_parallax[1]
 
     @typechecked
     def get_absmag(
@@ -189,7 +234,7 @@ class ReadObject:
         """
 
         with h5py.File(self.database, "r") as h5_file:
-            obj_distance = np.asarray(h5_file[f"objects/{self.object_name}/distance"])
+            obj_distance = self.get_distance()
 
             if filter_name in h5_file[f"objects/{self.object_name}"]:
                 obj_phot = np.asarray(

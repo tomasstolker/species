@@ -16,7 +16,7 @@ class TestModel:
             "teff": 2200.0,
             "logg": 4.5,
             "radius": 1.0,
-            "distance": 10.0,
+            "parallax": 100.0,
         }
 
     def teardown_class(self):

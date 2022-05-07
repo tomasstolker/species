@@ -88,8 +88,11 @@ def create_box(boxtype, **kwargs):
         box.mean_wavel = kwargs["mean_wavel"]
         box.magnitude = kwargs["magnitude"]
         box.flux = kwargs["flux"]
-        box.distance = kwargs["distance"]
         box.spectrum = kwargs["spectrum"]
+        if "parallax" in kwargs:
+            box.parallax = kwargs["parallax"]
+        if "distance" in kwargs:
+            box.distance = kwargs["distance"]
 
     elif boxtype == "photometry":
         box = PhotometryBox()
@@ -427,8 +430,9 @@ class ObjectBox(Box):
         self.mean_wavel = None
         self.magnitude = None
         self.flux = None
-        self.distance = None
         self.spectrum = None
+        self.parallax = None
+        self.distance = None
 
 
 class ResidualsBox(Box):

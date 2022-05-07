@@ -151,7 +151,7 @@ def power_law_distribution(
     radii = (r_bins[1:] + r_bins[:-1]) / 2.0
 
     # Number of grains per radius bins size
-    dn_dr = radii ** exponent
+    dn_dr = radii**exponent
 
     # Normalize the size distribution to 1 grain
     dn_dr /= np.sum(r_width * dn_dr)
@@ -215,7 +215,7 @@ def dust_cross_section(
         )
 
         if "Qext" in mie:
-            c_ext += np.pi * item ** 2 * mie["Qext"] * dn_grains[i]  # (um2)
+            c_ext += np.pi * item**2 * mie["Qext"] * dn_grains[i]  # (um2)
 
         else:
             raise ValueError("Qext not found in the PyMieScatt dictionary.")

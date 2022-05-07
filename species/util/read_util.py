@@ -38,9 +38,9 @@ def get_mass(
         Mass (Mjup).
     """
 
-    surface_grav = 1e-2 * 10.0 ** logg  # (m s-2)
+    surface_grav = 1e-2 * 10.0**logg  # (m s-2)
     radius *= constants.R_JUP  # (m)
-    mass = surface_grav * radius ** 2 / constants.GRAVITY  # (kg)
+    mass = surface_grav * radius**2 / constants.GRAVITY  # (kg)
 
     return mass / constants.M_JUP
 
@@ -66,7 +66,7 @@ def get_radius(
         Radius (Rjup).
     """
 
-    surface_grav = 1e-2 * 10.0 ** logg  # (m s-2)
+    surface_grav = 1e-2 * 10.0**logg  # (m s-2)
     mass *= constants.M_JUP  # (kg)
     radius = np.sqrt(mass * constants.GRAVITY / surface_grav)  # (m)
 
@@ -472,7 +472,7 @@ def smooth_spectrum(
     def _gaussian(size, sigma):
         pos = range(-(size - 1) // 2, (size - 1) // 2 + 1)
         kernel = [
-            np.exp(-float(x) ** 2 / (2.0 * sigma ** 2)) / (sigma * np.sqrt(2.0 * np.pi))
+            np.exp(-float(x) ** 2 / (2.0 * sigma**2)) / (sigma * np.sqrt(2.0 * np.pi))
             for x in pos
         ]
 
@@ -565,7 +565,7 @@ def powerlaw_spectrum(
         boxtype="model",
         model="powerlaw",
         wavelength=wavel,
-        flux=10.0 ** log_flux,
+        flux=10.0**log_flux,
         parameters=model_param,
         quantity="flux",
     )

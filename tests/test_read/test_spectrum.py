@@ -17,7 +17,7 @@ class TestSpectrum:
         os.remove("species_database.hdf5")
         os.remove("species_config.ini")
         # os.remove("spectrum.pdf")
-        # shutil.rmtree("data/")
+        shutil.rmtree("data/")
 
     def test_species_init(self):
         test_util.create_config("./")

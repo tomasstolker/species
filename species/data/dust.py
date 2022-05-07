@@ -111,8 +111,9 @@ def add_optical_constants(input_path: str, database: h5py._hl.files.File) -> Non
 @typechecked
 def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the extinction cross section of crystalline MgSiO3 for a log-normal and
-    power-law size distribution to the database.
+    Function for adding the extinction cross section of
+    crystalline MgSiO3 for a log-normal and power-law size
+    distribution to the database.
 
     Parameters
     ----------

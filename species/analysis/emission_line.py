@@ -79,7 +79,6 @@ class EmissionLine:
 
         self.object = read_object.ReadObject(object_name)
         self.distance = self.object.get_distance()[0]
-
         self.spectrum = self.object.get_spectrum()[spec_name][0]
 
         if wavel_range is None:
@@ -1025,7 +1024,6 @@ class EmissionLine:
                 spectrum=("model", "gaussian"),
                 tag=tag,
                 modelpar=modelpar,
-                distance=self.distance,
                 spec_labels=None,
             )
 

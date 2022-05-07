@@ -34,7 +34,7 @@ class TestPlanck:
     def test_get_spectrum(self):
         read_planck = species.ReadPlanck(filter_name="MKO/NSFCam.J")
         modelbox = read_planck.get_spectrum(
-            {"teff": 2000.0, "radius": 1.0, "distance": 10.0}, 100.0
+            {"teff": 2000.0, "radius": 1.0, "parallax": 100.0}, 100.0
         )
 
         assert modelbox.model == "planck"

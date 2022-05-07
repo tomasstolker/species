@@ -56,11 +56,13 @@ class ReadModel:
         self.model = model
 
         if self.model == "bt-settl":
-            warnings.warn("It is recommended to use the CIFIST "
-                          "grid of the BT-Settl, because it is "
-                          "a newer version. In that case, set "
-                          "model='bt-settl-cifist' when using "
-                          "add_model of Database.")
+            warnings.warn(
+                "It is recommended to use the CIFIST "
+                "grid of the BT-Settl, because it is "
+                "a newer version. In that case, set "
+                "model='bt-settl-cifist' when using "
+                "add_model of Database."
+            )
 
         self.spectrum_interp = None
         self.wl_points = None
@@ -88,6 +90,7 @@ class ReadModel:
         self.extra_param = [
             "radius",
             "distance",
+            "parallax",
             "mass",
             "luminosity",
             "lognorm_radius",
@@ -473,9 +476,9 @@ class ReadModel:
             dust_sigma, dust_radius, cross_phot, kind="linear", bounds_error=True
         )
 
-        cross_v_band = cross_interp(sigma_interp, 10.0 ** radius_interp)[0]
+        cross_v_band = cross_interp(sigma_interp, 10.0**radius_interp)[0]
 
-        radius_full = np.full(wavelength.shape[0], 10.0 ** radius_interp)
+        radius_full = np.full(wavelength.shape[0], 10.0**radius_interp)
         sigma_full = np.full(wavelength.shape[0], sigma_interp)
 
         cross_new = dust_interp(np.column_stack((wavelength, radius_full, sigma_full)))
@@ -573,9 +576,9 @@ class ReadModel:
             dust_exp, dust_r_max, cross_phot, kind="linear", bounds_error=True
         )
 
-        cross_v_band = cross_interp(exp_interp, 10.0 ** r_max_interp)[0]
+        cross_v_band = cross_interp(exp_interp, 10.0**r_max_interp)[0]
 
-        r_max_full = np.full(wavelength.shape[0], 10.0 ** r_max_interp)
+        r_max_full = np.full(wavelength.shape[0], 10.0**r_max_interp)
         exp_full = np.full(wavelength.shape[0], exp_interp)
 
         cross_new = dust_interp(np.column_stack((wavelength, r_max_full, exp_full)))
@@ -744,7 +747,14 @@ class ReadModel:
 
         # Apply (radius/distance)^2 scaling
 
-        if "radius" in model_param and "distance" in model_param:
+        if "radius" in model_param and "parallax" in model_param:
+            scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
+                1e3 * constants.PARSEC / model_param["parallax"]
+            ) ** 2
+
+            flux *= scaling
+
+        elif "radius" in model_param and "distance" in model_param:
             scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
                 model_param["distance"] * constants.PARSEC
             ) ** 2
@@ -757,8 +767,13 @@ class ReadModel:
             disk_param = {
                 "teff": model_param["disk_teff"],
                 "radius": model_param["disk_radius"],
-                "distance": model_param["distance"],
             }
+
+            if "parallax" in model_param:
+                disk_param["parallax"] = model_param["parallax"]
+
+            elif "distance" in model_param:
+                disk_param["distance"] = model_param["distance"]
 
             readplanck = read_planck.ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
@@ -1106,7 +1121,14 @@ class ReadModel:
 
         # Apply (radius/distance)^2 scaling
 
-        if "radius" in model_param and "distance" in model_param:
+        if "radius" in model_param and "parallax" in model_param:
+            scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
+                1e3 * constants.PARSEC / model_param["parallax"]
+            ) ** 2
+
+            flux *= scaling
+
+        elif "radius" in model_param and "distance" in model_param:
             scaling = (model_param["radius"] * constants.R_JUP) ** 2 / (
                 model_param["distance"] * constants.PARSEC
             ) ** 2
@@ -1119,8 +1141,13 @@ class ReadModel:
             disk_param = {
                 "teff": model_param["disk_teff"],
                 "radius": model_param["disk_radius"],
-                "distance": model_param["distance"],
             }
+
+            if "parallax" in model_param:
+                disk_param["parallax"] = model_param["parallax"]
+
+            elif "distance" in model_param:
+                disk_param["distance"] = model_param["distance"]
 
             readplanck = read_planck.ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
@@ -1285,18 +1312,18 @@ class ReadModel:
         Parameters
         ----------
         model_param : dict
-            Dictionary with the model parameters. A ``radius`` (Rjup)
-            and ``distance`` (pc) are required for the apparent
-            magnitude (i.e. to scale the flux from the planet to the
-            observer). Only a ``radius`` is required for the absolute
-            magnitude.
+            Dictionary with the model parameters. A ``radius`` (Rjup),
+            and ``parallax`` (mas) or ``distance`` (pc) are required
+            for the apparent magnitude (i.e. to scale the flux from
+            the planet to the observer). Only a ``radius`` is
+            required for the absolute magnitude.
 
         Returns
         -------
         float
             Apparent magnitude. A ``None`` is returned if the
-            dictionary of ``model_param`` does not contain a ``radius``
-            and ``distance``.
+            dictionary of ``model_param`` does not contain a
+            ``radius``, and ``parallax`` or ``distance``.
         float, None
             Absolute magnitude. A ``None`` is returned if the
             dictionary of ``model_param`` does not contain a
@@ -1331,7 +1358,14 @@ class ReadModel:
         else:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-            if "radius" in model_param and "distance" in model_param:
+            if "radius" in model_param and "parallax" in model_param:
+                app_mag, abs_mag = synphot.spectrum_to_magnitude(
+                    spectrum.wavelength,
+                    spectrum.flux,
+                    distance=(1e3 / model_param["parallax"], None),
+                )
+
+            elif "radius" in model_param and "distance" in model_param:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
                     spectrum.wavelength,
                     spectrum.flux,

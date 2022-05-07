@@ -44,18 +44,18 @@ def add_irtf(
     if sptypes is None:
         sptypes = ["F", "G", "K", "M", "L", "T"]
 
-    distance_url = "https://home.strw.leidenuniv.nl/~stolker/species/distance.dat"
-    distance_file = os.path.join(input_path, "distance.dat")
+    parallax_url = "https://home.strw.leidenuniv.nl/~stolker/species/parallax.dat"
+    parallax_file = os.path.join(input_path, "parallax.dat")
 
-    if not os.path.isfile(distance_file):
-        urllib.request.urlretrieve(distance_url, distance_file)
+    if not os.path.isfile(parallax_file):
+        urllib.request.urlretrieve(parallax_url, parallax_file)
 
-    distance_data = pd.pandas.read_csv(
-        distance_file,
-        usecols=[0, 3, 4],
-        names=["object", "distance", "distance_error"],
+    parallax_data = pd.pandas.read_csv(
+        parallax_file,
+        usecols=[0, 1, 2],
+        names=["object", "parallax", "parallax_error"],
         delimiter=",",
-        dtype={"object": str, "distance": float, "distance_error": float},
+        dtype={"object": str, "parallax": float, "parallax_error": float},
     )
 
     datadir = os.path.join(input_path, "irtf")
@@ -158,20 +158,20 @@ def add_irtf(
                             if not isinstance(simbad_id, str):
                                 simbad_id = simbad_id.decode("utf-8")
 
-                            dist_select = distance_data[
-                                distance_data["object"] == simbad_id
+                            par_select = parallax_data[
+                                parallax_data["object"] == simbad_id
                             ]
 
-                            if not dist_select.empty:
-                                distance = (
-                                    dist_select["distance"],
-                                    dist_select["distance_error"],
+                            if not par_select.empty:
+                                parallax = (
+                                    par_select["parallax"],
+                                    par_select["parallax_error"],
                                 )
                             else:
-                                simbad_id, distance = query_util.get_distance(name)
+                                simbad_id, parallax = query_util.get_parallax(name)
 
                         else:
-                            distance = (np.nan, np.nan)
+                            parallax = (np.nan, np.nan)
 
                         sptype = data_util.update_sptype(np.array([sptype]))[0]
 
@@ -182,8 +182,8 @@ def add_irtf(
                         dset.attrs["name"] = str(name).encode()
                         dset.attrs["sptype"] = str(sptype).encode()
                         dset.attrs["simbad"] = str(simbad_id).encode()
-                        dset.attrs["distance"] = distance[0]
-                        dset.attrs["distance_error"] = distance[1]
+                        dset.attrs["parallax"] = parallax[0]
+                        dset.attrs["parallax_error"] = parallax[1]
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")

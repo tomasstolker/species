@@ -96,19 +96,12 @@ class ReadCalibration:
             Box with the resampled spectrum.
         """
 
-        calibbox = self.get_spectrum()
+        calibbox = self.get_spectrum(apply_mask=apply_mask)
 
         if spec_res is not None:
             calibbox.flux = read_util.smooth_spectrum(
                 wavelength=calibbox.wavelength, flux=calibbox.flux, spec_res=spec_res
             )
-
-        if apply_mask:
-            indices = np.where(calibbox.flux > 0.0)[0]
-
-            calibbox.wavelength = calibbox.wavelength[indices]
-            calibbox.flux = calibbox.flux[indices]
-            calibbox.error = calibbox.error[indices]
 
         flux_new, error_new = spectres.spectres(
             wavel_points,
@@ -130,9 +123,6 @@ class ReadCalibration:
             flux=flux_new,
             error=error_new,
             name=self.tag,
-            simbad=None,
-            sptype=None,
-            distance=None,
         )
 
     @typechecked
@@ -226,7 +216,7 @@ class ReadCalibration:
         if extrapolate:
 
             def _power_law(wavelength, offset, scaling, power_index):
-                return offset + scaling * wavelength ** power_index
+                return offset + scaling * wavelength**power_index
 
             if min_wavelength:
                 indices = np.where(wavelength > min_wavelength)[0]
@@ -280,9 +270,6 @@ class ReadCalibration:
             flux=flux,
             error=error,
             name=self.tag,
-            simbad=None,
-            sptype=None,
-            distance=None,
         )
 
     @typechecked
@@ -309,7 +296,7 @@ class ReadCalibration:
             Uncertainty (W m-2 um-1).
         """
 
-        specbox = self.get_spectrum(model_param=model_param)
+        specbox = self.get_spectrum(model_param=model_param, apply_mask=True)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
@@ -345,7 +332,7 @@ class ReadCalibration:
             Absolute magnitude and uncertainty.
         """
 
-        specbox = self.get_spectrum(model_param=model_param)
+        specbox = self.get_spectrum(model_param=model_param, apply_mask=True)
 
         if np.count_nonzero(specbox.error) == 0:
             error = None

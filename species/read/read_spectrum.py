@@ -101,7 +101,7 @@ class ReadSpectrum:
         list_name = []
         list_simbad = []
         list_sptype = []
-        list_distance = []
+        list_parallax = []
 
         for item in h5_file[f"spectra/{self.spec_library}"]:
             dset = h5_file[f"spectra/{self.spec_library}/{item}"]
@@ -170,12 +170,12 @@ class ReadSpectrum:
                 else:
                     list_sptype.append("None")
 
-                if "distance" in attrs:
-                    list_distance.append(
-                        (dset.attrs["distance"], dset.attrs["distance_error"])
+                if "parallax" in attrs:
+                    list_parallax.append(
+                        (dset.attrs["parallax"], dset.attrs["parallax_error"])
                     )
                 else:
-                    list_distance.append((np.nan, np.nan))
+                    list_parallax.append((np.nan, np.nan))
 
             else:
                 list_wavelength.append(np.array([]))
@@ -184,7 +184,7 @@ class ReadSpectrum:
                 list_name.append("")
                 list_simbad.append("")
                 list_sptype.append("None")
-                list_distance.append((np.nan, np.nan))
+                list_parallax.append((np.nan, np.nan))
 
         specbox = box.SpectrumBox()
         specbox.spec_library = self.spec_library
@@ -198,7 +198,7 @@ class ReadSpectrum:
             specbox.name = []
             specbox.simbad = []
             specbox.sptype = []
-            specbox.distance = []
+            specbox.parallax = []
 
             for item in sptypes:
 
@@ -210,7 +210,7 @@ class ReadSpectrum:
                         specbox.name.append(list_name[i])
                         specbox.simbad.append(list_simbad[i])
                         specbox.sptype.append(list_sptype[i])
-                        specbox.distance.append(list_distance[i])
+                        specbox.parallax.append(list_parallax[i])
 
         else:
             specbox.wavelength = list_wavelength
@@ -219,7 +219,7 @@ class ReadSpectrum:
             specbox.name = list_name
             specbox.simbad = list_simbad
             specbox.sptype = list_sptype
-            specbox.distance = list_distance
+            specbox.parallax = list_parallax
 
         return specbox
 
@@ -314,7 +314,7 @@ class ReadSpectrum:
 
         for i in range(n_spectra):
 
-            if np.isnan(specbox.distance[i][0]):
+            if np.isnan(specbox.parallax[i][0]):
                 app_tmp = (np.nan, np.nan)
                 abs_tmp = (np.nan, np.nan)
 
@@ -324,9 +324,9 @@ class ReadSpectrum:
                     specbox.wavelength[i],
                     specbox.flux[i],
                     error=specbox.error[i],
-                    distance=(
-                        float(specbox.distance[i][0]),
-                        float(specbox.distance[i][1]),
+                    parallax=(
+                        float(specbox.parallax[i][0]),
+                        float(specbox.parallax[i][1]),
                     ),
                 )
 

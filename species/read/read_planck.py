@@ -94,7 +94,7 @@ class ReadPlanck:
         """
 
         planck_1 = (
-            2.0 * constants.PLANCK * constants.LIGHT ** 2 / (1e-6 * wavel_points) ** 5
+            2.0 * constants.PLANCK * constants.LIGHT**2 / (1e-6 * wavel_points) ** 5
         )
 
         planck_2 = (
@@ -121,9 +121,10 @@ class ReadPlanck:
         ----------
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
-            'distance' (pc). The values of 'teff' and 'radius' can be a
-            single float, or a list with floats for a combination of
-            multiple Planck functions, e.g. {'teff': [1500., 1000.],
+            'parallax' (mas) or 'distance' (pc). The values of
+            'teff' and 'radius' can be a single float, or a list
+            with floats for a combination of multiple Planck
+            functions, e.g. {'teff': [1500., 1000.],
             'radius': [1., 2.], 'distance': 10.}.
 
         Returns
@@ -138,7 +139,10 @@ class ReadPlanck:
             updated_param[f"teff_{i}"] = model_param["teff"][i]
             updated_param[f"radius_{i}"] = model_param["radius"][i]
 
-        updated_param["distance"] = model_param["distance"]
+        if "parallax" in model_param:
+            updated_param["parallax"] = model_param["parallax"]
+        elif "distance" in model_param:
+            updated_param["distance"] = model_param["distance"]
 
         return updated_param
 
@@ -160,9 +164,10 @@ class ReadPlanck:
         ----------
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
-            'distance' (pc). The values of 'teff' and 'radius' can be a
-            single float, or a list with floats for a combination of
-            multiple Planck functions, e.g. {'teff': [1500., 1000.],
+            'parallax' (mas) or 'distance' (pc). The values of
+            'teff' and 'radius' can be a single float, or a list
+            with floats for a combination of multiple Planck
+            functions, e.g. {'teff': [1500., 1000.],
             'radius': [1., 2.], 'distance': 10.}.
         spec_res : float
             Spectral resolution that is used for smoothing the spectrum
@@ -193,7 +198,13 @@ class ReadPlanck:
                 n_planck += 1
 
         if n_planck == 1:
-            if "radius" in model_param and "distance" in model_param:
+            if "radius" in model_param and "parallax" in model_param:
+                scaling = (
+                    (model_param["radius"] * constants.R_JUP)
+                    / (1e3 * constants.PARSEC / model_param["parallax"])
+                ) ** 2
+
+            elif "radius" in model_param and "distance" in model_param:
                 scaling = (
                     (model_param["radius"] * constants.R_JUP)
                     / (model_param["distance"] * constants.PARSEC)
@@ -210,7 +221,13 @@ class ReadPlanck:
             flux = np.zeros(wavel_points.shape)
 
             for i in range(n_planck):
-                if f"radius_{i}" in model_param and "distance" in model_param:
+                if f"radius_{i}" in model_param and "parallax" in model_param:
+                    scaling = (
+                        (model_param[f"radius_{i}"] * constants.R_JUP)
+                        / (1e3 * constants.PARSEC / model_param["parallax"])
+                    ) ** 2
+
+                elif f"radius_{i}" in model_param and "distance" in model_param:
                     scaling = (
                         (model_param[f"radius_{i}"] * constants.R_JUP)
                         / (model_param["distance"] * constants.PARSEC)
@@ -287,17 +304,17 @@ class ReadPlanck:
         self, model_param: Dict[str, Union[float, List[float]]], synphot=None
     ) -> Tuple[float, None]:
         """
-        Function for calculating the average flux density for the
-        ``filter_name``.
+        Function for calculating the average flux
+        density for the ``filter_name``.
 
         Parameters
         ----------
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
-            'distance' (pc).
+            'parallax' (mas) or 'distance' (pc).
         synphot : species.analysis.photometry.SyntheticPhotometry, None
-            Synthetic photometry object. The object is created if set
-            to ``None``.
+            Synthetic photometry object. The object is created if the
+            argument is set to ``None``.
 
         Returns
         -------
@@ -328,10 +345,10 @@ class ReadPlanck:
         ----------
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
-            'distance' (pc).
+            'parallax' (mas) or 'distance' (pc).
         synphot : species.analysis.photometry.SyntheticPhotometry, None
-            Synthetic photometry object. The object is created if set
-            to ``None``.
+            Synthetic photometry object. The object is created if the
+            argument is set to ``None``.
 
         Returns
         -------
@@ -349,8 +366,13 @@ class ReadPlanck:
         if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
+        if "parallax" in model_param:
+            distance = 1e3 / model_param["parallax"]
+        else:
+            distance = model_param["distance"]
+
         return synphot.spectrum_to_magnitude(
-            spectrum.wavelength, spectrum.flux, distance=(model_param["distance"], None)
+            spectrum.wavelength, spectrum.flux, distance=(distance, None)
         )
 
     @staticmethod

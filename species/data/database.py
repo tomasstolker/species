@@ -6,6 +6,7 @@ import configparser
 import json
 import os
 import pathlib
+import urllib.error
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -16,6 +17,7 @@ import numpy as np
 import tqdm
 
 from astropy.io import fits
+from astroquery.simbad import Simbad
 from scipy.integrate import simps
 from typeguard import typechecked
 
@@ -143,11 +145,17 @@ class Database:
         for planet_name, planet_dict in companions.get_data().items():
             comp_names.append(planet_name)
 
-            distance = planet_dict["distance"]
-            app_mag = planet_dict["app_mag"]
-
             print(f"Object name = {planet_name}")
-            print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
+
+            if "parallax" in planet_dict:
+                parallax = planet_dict["parallax"]
+                print(f"Parallax (pc) = {parallax[0]} +/- {parallax[1]}")
+
+            if "distance" in planet_dict:
+                distance = planet_dict["distance"]
+                print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
+
+            app_mag = planet_dict["app_mag"]
 
             for mag_name, mag_dict in app_mag.items():
                 if isinstance(mag_dict, list):
@@ -229,7 +237,7 @@ class Database:
         data_set : str
             Group or dataset path in the HDF5 database. The content
             and structure of the database can be shown with
-            :meth:`~species.data.database.Database.list_content`. That
+            :func:`~species.data.database.Database.list_content`. That
             could help to determine which argument should be provided
             as argument of ``data_set``. For example,
             ``data_set="models/drift-phoenix"`` will remove the
@@ -267,13 +275,13 @@ class Database:
         Parameters
         ----------
         name : str, list(str), None
-            Name or list with names of the directly imaged planets and
-            brown dwarfs (e.g. ``'HR 8799 b'`` or ``['HR 8799 b',
+            Name or list with names of the directly imaged planets
+            and brown dwarfs (e.g. ``'HR 8799 b'`` or ``['HR 8799 b',
             '51 Eri b', 'PZ Tel B']``). All the available companion
-            data are added if set to ``None``.
+            data are added if the argument is set to ``None``.
         verbose : bool
-            Print details on the companion data that are added to the
-            database.
+            Print details on the companion data that are
+            added to the database.
 
         Returns
         -------
@@ -291,12 +299,33 @@ class Database:
 
         for item in name:
             spec_dict = companions.companion_spectra(
-                self.input_path, item, verbose=verbose
-            )
+                self.input_path, item, verbose=verbose)
+
+            parallax = None
+
+            try:
+                # Query SIMBAD to get the parallax
+                simbad = Simbad()
+                simbad.add_votable_fields("parallax")
+                simbad_result = simbad.query_object(data[item]['simbad'])
+
+                if simbad_result is not None:
+                    par_sim = (simbad_result["PLX_VALUE"][0],  # (mas)
+                               simbad_result["PLX_ERROR"][0])  # (mas)
+
+                    if not np.ma.is_masked(par_sim[0]) and \
+                            not np.ma.is_masked(par_sim[1]):
+                        parallax = (float(par_sim[0]), float(par_sim[1]))
+
+            except urllib.error.URLError:
+                parallax = data[item]["parallax"]
+
+            if parallax is None:
+                parallax = data[item]["parallax"]
 
             self.add_object(
                 object_name=item,
-                distance=data[item]["distance"],
+                parallax=parallax,
                 app_mag=data[item]["app_mag"],
                 spectrum=spec_dict,
                 verbose=verbose,
@@ -516,7 +545,7 @@ class Database:
         Function for adding a grid of model spectra to the database.
         All spectra have been resampled to logarithmically-spaced
         wavelengths. The spectral resolution is returned with the
-        :meth:`~species.read.read_model.ReadModel.get_spec_res`
+        :func:`~species.read.read_model.ReadModel.get_spec_res`
         method of :class:`~species.read.read_model.ReadModel`, but
         is typically of the order of several thousand.
         It should be noted that the original spectra were often
@@ -567,6 +596,7 @@ class Database:
     def add_object(
         self,
         object_name: str,
+        parallax: Optional[Tuple[float, float]] = None,
         distance: Optional[Tuple[float, float]] = None,
         app_mag: Optional[
             Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]]
@@ -579,46 +609,67 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding the photometric and/or spectroscopic data of an object to the database.
+        Function for adding the photometry and/or spectra
+        of an object to the database.
 
         Parameters
         ----------
         object_name: str
             Object name that will be used as label in the database.
+        parallax : tuple(float, float), None
+            Parallax and uncertainty (mas). Not stored if the argument
+            is set to ``None``.
         distance : tuple(float, float), None
-            Distance and uncertainty (pc). Not stored if set to None.
+            Distance and uncertainty (pc). Not stored if the argument
+            is set to ``None``. This parameter is deprecated and will
+            be removed in a future release. Please use the ``parallax``
+            parameter instead.
         app_mag : dict, None
-            Dictionary with the filter names, apparent magnitudes, and uncertainties. For example,
-            ``{'Paranal/NACO.Lp': (15., 0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. For the use of
-            duplicate filter names, the magnitudes have to be provided in a list, for example
-            ``{'Paranal/NACO.Lp': [(15., 0.2), (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``.
-            No photometric data is stored if set to ``None``.
+            Dictionary with the filter names, apparent magnitudes, and
+            uncertainties. For example, ``{'Paranal/NACO.Lp': (15.,
+            0.2), 'Paranal/NACO.Mp': (13., 0.3)}``. For the use of
+            duplicate filter names, the magnitudes have to be provided
+            in a list, for example ``{'Paranal/NACO.Lp': [(15., 0.2),
+            (14.5, 0.5)], 'Paranal/NACO.Mp': (13., 0.3)}``. No
+            photometry is stored if the argument is set to ``None``.
         flux_density : dict, None
-            Dictionary with filter names, flux densities (W m-2 um-1), and uncertainties
-            (W m-1 um-1). For example, ``{'Paranal/NACO.Lp': (1e-15, 1e-16)}``. Currently,
-            the use of duplicate filters is not implemented. The use of ``app_mag`` is preferred
-            over ``flux_density`` because with ``flux_density`` only fluxes are stored while with
-            ``app_mag`` both magnitudes and fluxes. However, ``flux_density`` can be used in case
-            the magnitudes and/or filter profiles are not available. In that case, the fluxes can
-            still be selected with ``inc_phot`` in :class:`~species.analysis.fit_model.FitModel`.
-            The argument of ``flux_density`` is ignored if set to ``None``.
+            Dictionary with filter names, flux densities (W m-2 um-1),
+            and uncertainties (W m-1 um-1). For example,
+            ``{'Paranal/NACO.Lp': (1e-15, 1e-16)}``. Currently, the use
+            of duplicate filters is not implemented. The use of
+            ``app_mag`` is preferred over ``flux_density`` because with
+            ``flux_density`` only fluxes are stored while with
+            ``app_mag`` both magnitudes and fluxes. However,
+            ``flux_density`` can be used in case the magnitudes and/or
+            filter profiles are not available. In that case, the fluxes
+            can still be selected with ``inc_phot`` in
+            :class:`~species.analysis.fit_model.FitModel`. The argument
+            of ``flux_density`` is ignored if set to ``None``.
         spectrum : dict, None
-            Dictionary with the spectrum, optional covariance matrix, and spectral resolution for
-            each instrument. The input data can either have a FITS or ASCII format. The spectra
-            should have 3 columns with wavelength (um), flux (W m-2 um-1), and uncertainty
-            (W m-2 um-1). The covariance matrix should be 2D with the same number of wavelength
-            points as the spectrum. For example, ``{'SPHERE': ('spectrum.dat', 'covariance.fits',
-            50.)}``. No covariance data is stored if set to None, for example, ``{'SPHERE':
-            ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter is ignored if set to None.
-            For GRAVITY data, the same FITS file can be provided as spectrum and covariance matrix.
+            Dictionary with the spectrum, optional covariance matrix,
+            and spectral resolution for each instrument. The input data
+            can either have a FITS or ASCII format. The spectra should
+            have 3 columns with wavelength (um), flux (W m-2 um-1), and
+            uncertainty (W m-2 um-1). The covariance matrix should be
+            2D with the same number of wavelength points as the
+            spectrum. For example, ``{'SPHERE': ('spectrum.dat',
+            'covariance.fits', 50.)}``. No covariance data is stored
+            if set to ``None``, for example, ``{'SPHERE':
+            ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter
+            is ignored if set to ``None``. For GRAVITY data, the same
+            FITS file can be provided as spectrum and covariance
+            matrix.
         deredden : dict, float, None
-            Dictionary with ``spectrum`` and ``app_mag`` names that will de dereddened with the
-            provided A_V. For example, ``deredden={'SPHERE': 1.5, 'Keck/NIRC2.J': 1.5}`` will
-            deredden the provided spectrum named 'SPHERE' and the Keck/NIRC2 J-band photometry with
-            a visual extinction of 1.5. For photometric fluxes, the filter-averaged extinction is
-            used for the dereddening.
+            Dictionary with ``spectrum`` and ``app_mag`` names that
+            will be dereddened with the provided :math:`A_V`. For
+            example, ``deredden={'SPHERE': 1.5, 'Keck/NIRC2.J': 1.5}``
+            will deredden the provided spectrum named 'SPHERE' and
+            the Keck/NIRC2 J-band photometry with a visual extinction
+            of 1.5. For photometric fluxes, the filter-averaged
+            extinction is used for the dereddening.
         verbose : bool
-            Print details on the object data that are added to the database.
+            Print details on the object data that are added to
+            the database.
 
         Returns
         -------
@@ -658,7 +709,23 @@ class Database:
         if f"objects/{object_name}" not in h5_file:
             h5_file.create_group(f"objects/{object_name}")
 
+        if parallax is not None:
+            if verbose:
+                print(f"   - Parallax (mas) = {parallax[0]:.2f} +/- {parallax[1]:.2f}")
+
+            if f"objects/{object_name}/parallax" in h5_file:
+                del h5_file[f"objects/{object_name}/parallax"]
+
+            h5_file.create_dataset(
+                f"objects/{object_name}/parallax", data=parallax
+            )  # (mas)
+
         if distance is not None:
+            warnings.warn("The \'distance\' parameter is deprecated "
+                          "and will be removed in a future release. "
+                          "Please use the \'parallax\' parameter "
+                          "instead", DeprecationWarning)
+
             if verbose:
                 print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
 
@@ -1230,9 +1297,8 @@ class Database:
         """
 
         if filename is None and data is None:
-            raise ValueError(
-                "Either the 'filename' or 'data' argument should be provided."
-            )
+            raise ValueError("Either the 'filename' or 'data' "
+                             "argument should be provided.")
 
         if scaling is None:
             scaling = (1.0, 1.0)
@@ -1281,6 +1347,19 @@ class Database:
         else:
             error = np.repeat(0.0, wavelength.size)
 
+        # nan_index = np.isnan(flux)
+        #
+        # if sum(nan_index) != 0:
+        #     wavelength = wavelength[~nan_index]
+        #     flux = flux[~nan_index]
+        #     error = error[~nan_index]
+        #
+        #     warnings.warn(
+        #         f"Found {sum(nan_index)} fluxes with NaN in "
+        #         f"the calibration spectrum. Removing the "
+        #         f"spectral fluxes that contain a NaN."
+        #     )
+
         print(f"Adding calibration spectrum: {tag}...", end="", flush=True)
 
         h5_file.create_dataset(
@@ -1297,7 +1376,7 @@ class Database:
     ) -> None:
         """
         DEPRECATION: This method is deprecated and will be removed in a future release. Please use
-        the :meth:`~species.data.database.Database.add_spectra` method instead.
+        the :func:`~species.data.database.Database.add_spectra` method instead.
 
         Parameters
         ----------
@@ -1402,7 +1481,6 @@ class Database:
         spectrum: Tuple[str, str],
         tag: str,
         modelpar: List[str],
-        distance: Optional[float],
         spec_labels: Optional[List[str]],
     ):
         """
@@ -1431,8 +1509,6 @@ class Database:
             Database tag.
         modelpar : list(str)
             List with the model parameter names.
-        distance : float, None
-            Distance to the object (pc). Not used if set to ``None``.
         spec_labels : list(str), None
             List with the spectrum labels that are used for fitting an
             additional scaling parameter. Not used if set to ``None``.
@@ -1469,9 +1545,6 @@ class Database:
             dset.attrs["mean_accept"] = float(mean_accept)
             print(f"Mean acceptance fraction: {mean_accept:.3f}")
 
-        if distance is not None:
-            dset.attrs["distance"] = float(distance)
-
         if ln_evidence is not None:
             dset.attrs["ln_evidence"] = ln_evidence
 
@@ -1491,7 +1564,7 @@ class Database:
         else:
             dset.attrs["binary"] = False
 
-        print(f"Integrated autocorrelation time:")
+        print("Integrated autocorrelation time:")
 
         for i, item in enumerate(modelpar):
             auto_corr = emcee.autocorr.integrated_time(
@@ -1566,7 +1639,9 @@ class Database:
 
             prob_sample[par_key] = par_value
 
-        if "distance" not in prob_sample and "distance" in dset.attrs:
+        if "parallax" not in prob_sample and "parallax" in dset.attrs:
+            prob_sample["parallax"] = dset.attrs["parallax"]
+        elif "distance" not in prob_sample and "distance" in dset.attrs:
             prob_sample["distance"] = dset.attrs["distance"]
 
         if "pt_smooth" in dset.attrs:
@@ -1630,7 +1705,9 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if "distance" not in median_sample and "distance" in dset.attrs:
+            if "parallax" not in median_sample and "parallax" in dset.attrs:
+                median_sample["parallax"] = dset.attrs["parallax"]
+            elif "distance" not in median_sample and "distance" in dset.attrs:
                 median_sample["distance"] = dset.attrs["distance"]
 
             if "pt_smooth" in dset.attrs:
@@ -1641,13 +1718,15 @@ class Database:
     @typechecked
     def get_compare_sample(self, tag: str) -> Dict[str, float]:
         """
-        Function for extracting the sample parameters with the highest posterior probability.
+        Function for extracting the sample parameters
+        with the highest posterior probability.
 
         Parameters
         ----------
         tag : str
             Database tag where the results from
-            :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model` are stored.
+            :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+            are stored.
 
         Returns
         -------
@@ -1666,7 +1745,11 @@ class Database:
             for i in range(n_param):
                 model_param[dset.attrs[f"parameter{i}"]] = dset.attrs[f"best_param{i}"]
 
-            model_param["distance"] = dset.attrs["distance"]
+            if "parallax" in dset.attrs:
+                model_param["parallax"] = dset.attrs["parallax"]
+            elif "distance" in dset.attrs:
+                model_param["distance"] = dset.attrs["distance"]
+
             model_param["radius"] = dset.attrs["radius"]
 
             for i in range(n_scale_spec):
@@ -1766,6 +1849,11 @@ class Database:
                 "spectra."
             )
 
+        if "parallax" in dset.attrs:
+            parallax = dset.attrs["parallax"]
+        else:
+            parallax = None
+
         if "distance" in dset.attrs:
             distance = dset.attrs["distance"]
         else:
@@ -1821,7 +1909,9 @@ class Database:
                 if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
-            if "distance" not in model_param and distance is not None:
+            if "parallax" not in model_param and parallax is not None:
+                model_param["parallax"] = parallax
+            elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -1947,6 +2037,11 @@ class Database:
         else:
             binary = False
 
+        if "parallax" in dset.attrs:
+            parallax = dset.attrs["parallax"]
+        else:
+            parallax = None
+
         if "distance" in dset.attrs:
             distance = dset.attrs["distance"]
         else:
@@ -1991,7 +2086,9 @@ class Database:
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
-            if "distance" not in model_param and distance is not None:
+            if "parallax" not in model_param and parallax is not None:
+                model_param["parallax"] = parallax
+            elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
             if spectrum_type == "model":
@@ -2046,9 +2143,7 @@ class Database:
 
             elif spectrum_type == "calibration":
                 if phot_type == "magnitude":
-                    app_mag, _ = readcalib.get_magnitude(
-                        model_param=model_param, distance=None
-                    )
+                    app_mag, _ = readcalib.get_magnitude(model_param=model_param)
                     mcmc_phot[i] = app_mag[0]
 
                 elif phot_type == "flux":
@@ -2091,7 +2186,15 @@ class Database:
         h5_file = h5py.File(self.database, "r")
         dset = h5_file[f"objects/{object_name}"]
 
-        distance = np.asarray(dset["distance"])
+        if "parallax" in dset:
+            parallax = np.asarray(dset["parallax"])
+        else:
+            parallax = None
+
+        if "distance" in dset:
+            distance = np.asarray(dset["distance"])
+        else:
+            distance = None
 
         if inc_phot:
 
@@ -2100,7 +2203,7 @@ class Database:
             mean_wavel = {}
 
             for observatory in dset.keys():
-                if observatory not in ["distance", "spectrum"]:
+                if observatory not in ["parallax", "distance", "spectrum"]:
                     for filter_name in dset[observatory]:
                         name = f"{observatory}/{filter_name}"
 
@@ -2158,8 +2261,9 @@ class Database:
             mean_wavel=mean_wavel,
             magnitude=magnitude,
             flux=flux,
-            distance=distance,
             spectrum=spectrum,
+            parallax=parallax,
+            distance=distance,
         )
 
     @typechecked
@@ -2589,7 +2693,7 @@ class Database:
         """
 
         read_obj = read_object.ReadObject(object_name)
-        distance = read_obj.get_distance()[0]  # (pc)
+        parallax = read_obj.get_parallax()[0]  # (mas)
 
         with h5py.File(self.database, "a") as h5_file:
 
@@ -2611,7 +2715,7 @@ class Database:
             dset.attrs["n_param"] = len(model_param)
             dset.attrs["n_spec_name"] = len(spec_name)
             dset.attrs["n_scale_spec"] = len(scale_spec)
-            dset.attrs["distance"] = distance
+            dset.attrs["parallax"] = parallax
 
             for i, item in enumerate(model_param):
                 dset.attrs[f"parameter{i}"] = item
@@ -2652,7 +2756,7 @@ class Database:
 
             scaling = flux_scaling[best_index[0], best_index[1], best_index[2]]
 
-            radius = np.sqrt(scaling * (distance * constants.PARSEC) ** 2)  # (m)
+            radius = np.sqrt(scaling * (1e3 * constants.PARSEC / parallax) ** 2)  # (m)
             radius /= constants.R_JUP  # (Rjup)
 
             dset.attrs["radius"] = radius
@@ -2763,7 +2867,11 @@ class Database:
             dset.attrs["type"] = "model"
             dset.attrs["spectrum"] = "petitradtrans"
             dset.attrs["n_param"] = len(parameters)
-            dset.attrs["distance"] = radtrans["distance"]
+
+            if "parallax" in radtrans:
+                dset.attrs["parallax"] = radtrans["parallax"]
+            else:
+                dset.attrs["distance"] = radtrans["distance"]
 
             count_scale = 0
             count_error = 0
@@ -3058,7 +3166,11 @@ class Database:
             teff = np.zeros(len(boxes))
 
             for i, box_item in enumerate(boxes):
-                sample_distance = box_item.parameters["distance"] * constants.PARSEC
+                if "parallax" in box_item.parameters:
+                    sample_distance = 1e3 * constants.PARSEC / box_item.parameters["parallax"]
+                else:
+                    sample_distance = box_item.parameters["distance"] * constants.PARSEC
+
                 sample_radius = box_item.parameters["radius"] * constants.R_JUP
 
                 # Scaling for the flux back to the planet surface
@@ -3206,12 +3318,14 @@ class Database:
 
         # Get distance
 
-        if "distance" in dset.attrs:
+        if "parallax" in dset.attrs:
+            distance = 1e3 / dset.attrs["parallax"]
+        elif "distance" in dset.attrs:
             distance = dset.attrs["distance"]
         else:
             distance = None
 
-        # Get distance
+        # Get maximum pressure
 
         if "max_press" in dset.attrs:
             max_press = dset.attrs["max_press"]
@@ -3290,8 +3404,8 @@ class Database:
 
             elif "pt_smooth_0" in parameters:
                 pt_smooth = {}
-                for i in range(temp_nodes-1):
-                    pt_smooth[f"pt_smooth_{i}"] = item[-temp_nodes+i]
+                for j in range(temp_nodes-1):
+                    pt_smooth[f"pt_smooth_{j}"] = item[-1*temp_nodes+j]
 
             else:
                 pt_smooth = item[indices["pt_smooth"]]
@@ -3379,7 +3493,11 @@ class Database:
         l_bol = np.zeros(len(boxes))
 
         for i, box_item in enumerate(boxes):
-            sample_distance = box_item.parameters["distance"] * constants.PARSEC
+            if "parallax" in box_item.parameters:
+                sample_distance = 1e3 * constants.PARSEC / box_item.parameters["parallax"]
+            else:
+                sample_distance = box_item.parameters["distance"] * constants.PARSEC
+
             sample_radius = box_item.parameters["radius"] * constants.R_JUP
 
             # Scaling for the flux back to the planet surface
@@ -3397,18 +3515,18 @@ class Database:
             #            np.column_stack([box_item.wavelength, sample_scale*box_item.flux]),
             #            header='Wavelength (um) - Flux (W m-2 um-1)')
 
-        q_16_teff, q_50_teff, q_84_teff = np.percentile(t_eff, [16.0, 50.0, 84.0])
+        q_16_teff, q_50_teff, q_84_teff = np.nanpercentile(t_eff, [16.0, 50.0, 84.0])
         print(f"Teff (K) = {q_50_teff:.2f} "
               f"(-{q_50_teff-q_16_teff:.2f} "
               f"+{q_84_teff-q_50_teff:.2f})")
 
-        q_16_lbol, q_50_lbol, q_84_lbol = np.percentile(l_bol, [16.0, 50.0, 84.0])
+        q_16_lbol, q_50_lbol, q_84_lbol = np.nanpercentile(l_bol, [16.0, 50.0, 84.0])
         print(f"log(L/Lsun) = {q_50_lbol:.2f} "
               f"(-{q_50_lbol-q_16_lbol:.2f} "
               f"+{q_84_lbol-q_50_lbol:.2f})")
 
         with h5py.File(self.database, "a") as h5_file:
-            print(f"Storing T_eff (K) as attribute of "
+            print(f"Storing Teff (K) as attribute of "
                   f"results/fit/{tag}/samples...", end="")
 
             dset = h5_file[f"results/fit/{tag}/samples"]
@@ -3551,7 +3669,7 @@ class Database:
         cloud_fractions = {}
 
         if "log_tau_cloud" in model_param:
-            tau_cloud = 10.0 ** model_param["log_tau_cloud"]
+            # tau_cloud = 10.0 ** model_param["log_tau_cloud"]
 
             for i, item in enumerate(cloud_species):
                 if i == 0:
@@ -3566,7 +3684,7 @@ class Database:
                     ]
 
         else:
-            tau_cloud = None
+            # tau_cloud = None
 
             for i, item in enumerate(cloud_species):
                 cloud_fractions[item[:-3]] = model_param[f"{item[:-6].lower()}_fraction"]
@@ -3631,11 +3749,17 @@ class Database:
             model_param=model_param, quenching=quenching, spec_res=500.0
         )
 
-        # Scale the flux back to the planet surface
-        distance = model_param["distance"] * constants.PARSEC
+        # Distance (pc)
+        if "parallax" in model_param:
+            distance = model_param["distance"] * constants.PARSEC
+        else:
+            distance = model_param["distance"] * constants.PARSEC
+
+        # Radius (Rjup)
         radius = model_param["radius"] * constants.R_JUP
 
         # Blackbody flux: sigma * Teff^4
+        # Scale the flux back to the planet surface
         flux_int = simps(
             model_box.flux * (distance / radius) ** 2, model_box.wavelength
         )

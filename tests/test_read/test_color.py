@@ -15,7 +15,7 @@ class TestColor:
     def teardown_class(self):
         os.remove("species_database.hdf5")
         os.remove("species_config.ini")
-        # shutil.rmtree("data/")
+        shutil.rmtree("data/")
 
     def test_species_init(self):
         test_util.create_config("./")
