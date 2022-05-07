@@ -105,7 +105,15 @@ def add_luminosity(modelbox):
 
     flux = simps(fullspec.flux, fullspec.wavelength)
 
-    if "distance" in modelbox.parameters:
+    if "parallax" in modelbox.parameters:
+        luminosity = (
+            4.0
+            * np.pi
+            * (1e3 * constants.PARSEC / fullspec.parameters["parallax"]) ** 2
+            * flux
+        )  # (W)
+
+    elif "distance" in modelbox.parameters:
         luminosity = (
             4.0
             * np.pi
@@ -672,7 +680,8 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
         elif star_index == 1 and key[-1] == "1":
             new_dict[key[:-2]] = value
 
-        elif key in ["teff", "logg", "feh", "c_o_ratio", "fsed", "radius", "distance"]:
+        elif key in ["teff", "logg", "feh", "c_o_ratio", "fsed",
+                     "radius", "distance", "parallax"]:
             new_dict[key] = value
 
     return new_dict

@@ -1667,6 +1667,7 @@ class FitModel:
                 spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
+                parallax=self.parallax[0],
                 spec_labels=spec_labels,
             )
 
@@ -1885,5 +1886,6 @@ class FitModel:
                 spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
+                parallax=self.parallax[0],
                 spec_labels=spec_labels,
             )

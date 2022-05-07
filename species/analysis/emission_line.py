@@ -78,7 +78,7 @@ class EmissionLine:
         self.lambda_rest = lambda_rest
 
         self.object = read_object.ReadObject(object_name)
-        self.distance = self.object.get_distance()[0]
+        self.parallax = self.object.get_parallax()[0]
         self.spectrum = self.object.get_spectrum()[spec_name][0]
 
         if wavel_range is None:
@@ -537,7 +537,7 @@ class EmissionLine:
 
             # Line luminosity (Lsun)
             lum_sample[i] = (
-                4.0 * np.pi * (self.distance * constants.PARSEC) ** 2 * flux_sample[i]
+                4.0 * np.pi * (1e3 * constants.PARSEC / self.parallax) ** 2 * flux_sample[i]
             )
             lum_sample[i] /= constants.L_SUN  # (Lsun)
 
@@ -578,7 +578,7 @@ class EmissionLine:
                     lw=0.5,
                     color="gray",
                     alpha=0.4,
-                    label="Random sample",
+                    label="Random samples",
                 )
 
             elif i < 30:
@@ -939,7 +939,7 @@ class EmissionLine:
             line_flux[i] = np.trapz(model_box.flux, model_box.wavelength)  # (W m-2)
 
             line_lum[i] = (
-                4.0 * np.pi * (self.distance * constants.PARSEC) ** 2 * line_flux[i]
+                4.0 * np.pi * (1e3 * constants.PARSEC / self.parallax) ** 2 * line_flux[i]
             )  # (W)
             line_lum[i] /= constants.L_SUN  # (Lsun)
 
@@ -1024,6 +1024,7 @@ class EmissionLine:
                 spectrum=("model", "gaussian"),
                 tag=tag,
                 modelpar=modelpar,
+                parallax=self.parallax,
                 spec_labels=None,
             )
 

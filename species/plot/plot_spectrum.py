@@ -632,8 +632,8 @@ def plot_spectrum(
                         del plot_kwargs[j]["label"]
 
                     if boxitem.flux[i][1] is None:
-                        if "zorder" not in plot_kwargs:
-                            plot_kwargs["zorder"] = 3.
+                        if "zorder" not in plot_kwargs[j]:
+                            plot_kwargs[j]["zorder"] = 3.
 
                         ax1.errorbar(
                             item,
@@ -644,8 +644,8 @@ def plot_spectrum(
                         )
 
                     else:
-                        if "zorder" not in plot_kwargs:
-                            plot_kwargs["zorder"] = 3.
+                        if "zorder" not in plot_kwargs[j]:
+                            plot_kwargs[j]["zorder"] = 3.
 
                         ax1.errorbar(
                             item,

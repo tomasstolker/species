@@ -1362,7 +1362,7 @@ class ReadModel:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
                     spectrum.wavelength,
                     spectrum.flux,
-                    distance=(1e3 / model_param["parallax"], None),
+                    parallax=(model_param["parallax"], None),
                 )
 
             elif "radius" in model_param and "distance" in model_param:

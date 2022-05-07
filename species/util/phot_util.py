@@ -175,7 +175,7 @@ def apparent_to_absolute(
 
     if app_mag[1] is not None and distance[1] is not None:
         dist_err = distance[1] * (5.0 / (distance[0] * math.log(10.0)))
-        abs_err = np.sqrt(app_mag[1] ** 2 + dist_err ** 2)
+        abs_err = np.sqrt(app_mag[1] ** 2 + dist_err**2)
 
     elif app_mag[1] is not None and distance[1] is None:
         abs_err = app_mag[1]
@@ -447,7 +447,7 @@ def get_residuals(
             n_dof += value.shape[0]
 
     for item in parameters:
-        if item not in ["mass", "luminosity", "distance", "parallax"]:
+        if item not in ["mass", "luminosity", "distance"]:
             n_dof -= 1
 
     chi2_red = chi2_stat / n_dof
@@ -466,29 +466,36 @@ def get_residuals(
 
 @typechecked
 def parallax_to_distance(
-    parallax: Union[Tuple[float, float],
-                    Tuple[np.ndarray, np.ndarray]],
-) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+    parallax: Union[Tuple[float, Optional[float]],
+                    Tuple[np.ndarray, Optional[np.ndarray]]],
+) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
     Function for converting from parallax to distance.
 
     Parameters
     ----------
-    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Parallax and uncertainty (mas).
+    parallax : tuple(float, float), tuple(np.ndarray, np.ndarray)
+        Parallax and optional uncertainty (mas). The
+        uncertainty is not used if set to ``None``,
+        for example, ``parallax=(2., None)``.
 
     Returns
     -------
     float, np.ndarray
         Distance (pc).
-    float, np.ndarray
+    float, np.ndarray, None
         Uncertainty (pc).
     """
 
     # From parallax (mas) to distance (pc)
     distance = 1e3 / parallax[0]
-    distance_minus = distance - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
-    distance_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - distance
-    distance_error = (distance_plus + distance_minus) / 2.0
+
+    if parallax[1] is None:
+        distance_error = None
+
+    else:
+        distance_minus = distance - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
+        distance_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - distance
+        distance_error = (distance_plus + distance_minus) / 2.0
 
     return distance, distance_error

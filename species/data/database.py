@@ -1481,6 +1481,7 @@ class Database:
         spectrum: Tuple[str, str],
         tag: str,
         modelpar: List[str],
+        parallax: Optional[float],
         spec_labels: Optional[List[str]],
     ):
         """
@@ -1509,6 +1510,9 @@ class Database:
             Database tag.
         modelpar : list(str)
             List with the model parameter names.
+        parallax : float, None
+            Parallax (mas) of the object. Not used if the
+            argument is set to ``None``.
         spec_labels : list(str), None
             List with the spectrum labels that are used for fitting an
             additional scaling parameter. Not used if set to ``None``.
@@ -1540,6 +1544,9 @@ class Database:
         dset.attrs["spectrum"] = str(spectrum[1])
         dset.attrs["n_param"] = int(len(modelpar))
         dset.attrs["sampler"] = str(sampler)
+
+        if parallax is not None:
+            dset.attrs["parallax"] = float(parallax)
 
         if mean_accept is not None:
             dset.attrs["mean_accept"] = float(mean_accept)
@@ -1584,19 +1591,24 @@ class Database:
         self, tag: str, burnin: Optional[int] = None
     ) -> Dict[str, float]:
         """
-        Function for extracting the sample parameters with the highest posterior probability.
+        Function for extracting the sample parameters
+        with the highest posterior probability.
 
         Parameters
         ----------
         tag : str
             Database tag with the posterior results.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``.
+            Number of burnin steps to remove. No burnin is
+            removed if the argument is set to ``None``. Is
+            only applied on posterior distributions that
+            have been sampled with ``emcee``.
 
         Returns
         -------
         dict
-            Parameters and values for the sample with the maximum posterior probability.
+            Parameters and values for the sample with the
+            maximum posterior probability.
         """
 
         if burnin is None:
@@ -1641,6 +1653,7 @@ class Database:
 
         if "parallax" not in prob_sample and "parallax" in dset.attrs:
             prob_sample["parallax"] = dset.attrs["parallax"]
+
         elif "distance" not in prob_sample and "distance" in dset.attrs:
             prob_sample["distance"] = dset.attrs["distance"]
 
@@ -1656,19 +1669,23 @@ class Database:
         self, tag: str, burnin: Optional[int] = None
     ) -> Dict[str, float]:
         """
-        Function for extracting the median parameter values from the posterior samples.
+        Function for extracting the median parameter values
+        from the posterior samples.
 
         Parameters
         ----------
         tag : str
             Database tag with the posterior results.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``.
+            Number of burnin steps to remove. No burnin is
+            removed if the argument is set to ``None``. Is
+            only applied on posterior distributions that
+            have been sampled with ``emcee``.
 
         Returns
         -------
         dict
-            Parameters and values for the sample with the maximum posterior probability.
+            Median parameter values of the posterior distribution.
         """
 
         if burnin is None:
@@ -1707,6 +1724,7 @@ class Database:
 
             if "parallax" not in median_sample and "parallax" in dset.attrs:
                 median_sample["parallax"] = dset.attrs["parallax"]
+
             elif "distance" not in median_sample and "distance" in dset.attrs:
                 median_sample["distance"] = dset.attrs["distance"]
 
@@ -1747,6 +1765,7 @@ class Database:
 
             if "parallax" in dset.attrs:
                 model_param["parallax"] = dset.attrs["parallax"]
+
             elif "distance" in dset.attrs:
                 model_param["distance"] = dset.attrs["distance"]
 
@@ -1771,7 +1790,8 @@ class Database:
         wavel_resample: Optional[np.ndarray] = None,
     ) -> Union[List[box.ModelBox], List[box.SpectrumBox]]:
         """
-        Function for drawing random spectra from the sampled posterior distributions.
+        Function for drawing random spectra from the
+        sampled posterior distributions.
 
         Parameters
         ----------
@@ -1780,16 +1800,21 @@ class Database:
         random : int
             Number of random samples.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``. Not required when
-            using nested sampling.
+            Number of burnin steps to remove. No burnin is
+            removed if the argument is set to ``None``. Is
+            only applied on posterior distributions that
+            have been sampled with ``emcee``.
         wavel_range : tuple(float, float), str, None
-            Wavelength range (um) or filter name. Full spectrum is used if set to ``None``.
+            Wavelength range (um) or filter name. Full spectrum is
+            used if set to ``None``.
         spec_res : float, None
-            Spectral resolution that is used for the smoothing with a Gaussian kernel. No smoothing
-            is applied if the argument set to ``None``.
+            Spectral resolution that is used for the smoothing with
+            a Gaussian kernel. No smoothing is applied if the
+            argument set to ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the model spectrum will be resampled. The resampling is
-            applied after the optional smoothing to the resolution of ``spec_res``.
+            Wavelength points (um) to which the model spectrum will
+            be resampled. The resampling is applied after the optional
+            smoothing to the resolution of ``spec_res``.
 
         Returns
         -------
@@ -1911,6 +1936,7 @@ class Database:
 
             if "parallax" not in model_param and parallax is not None:
                 model_param["parallax"] = parallax
+
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
@@ -1992,17 +2018,21 @@ class Database:
         phot_type: str = "magnitude",
     ) -> np.ndarray:
         """
-        Function for calculating synthetic magnitudes or fluxes from the posterior samples.
+        Function for calculating synthetic magnitudes or fluxes
+        from the posterior samples.
 
         Parameters
         ----------
         tag : str
             Database tag with the posterior samples.
         filter_name : str
-            Filter name for which the synthetic photometry will be computed.
+            Filter name for which the synthetic photometry
+            will be computed.
         burnin : int, None
-            Number of burnin steps. No burnin is removed if set to ``None``. Not required when
-            using nested sampling.
+            Number of burnin steps to remove. No burnin is
+            removed if the argument is set to ``None``. Is
+            only applied on posterior distributions that
+            have been sampled with ``emcee``.
         phot_type : str
             Photometry type ('magnitude' or 'flux').
 
@@ -2014,8 +2044,8 @@ class Database:
 
         if phot_type not in ["magnitude", "flux"]:
             raise ValueError(
-                "The argument of 'phot_type' is not recognized and should be "
-                "set to 'magnitude' or 'flux'."
+                "The argument of 'phot_type' is not recognized "
+                "and should be set to 'magnitude' or 'flux'."
             )
 
         if burnin is None:
@@ -2088,6 +2118,7 @@ class Database:
 
             if "parallax" not in model_param and parallax is not None:
                 model_param["parallax"] = parallax
+
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
@@ -2280,11 +2311,10 @@ class Database:
         tag: str
             Database tag with the samples.
         burnin : int, None
-            Number of burnin samples to exclude. All samples are
-            selected if set to ``None``. The parameter is only
-            required for samples obtained with ``emcee`` and is
-            therefore not used for samples obtained with
-            ``MultiNest`` or ``UltraNest``.
+            Number of burnin steps to remove. No burnin is
+            removed if the argument is set to ``None``. Is
+            only applied on posterior distributions that
+            have been sampled with ``emcee``.
         random : int, None
             Number of random samples to select. All samples (with
             the burnin excluded) are selected if set to ``None``.
@@ -3751,7 +3781,7 @@ class Database:
 
         # Distance (pc)
         if "parallax" in model_param:
-            distance = model_param["distance"] * constants.PARSEC
+            distance = 1e3 * constants.PARSEC / model_param["parallax"]
         else:
             distance = model_param["distance"] * constants.PARSEC
 

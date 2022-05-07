@@ -1260,6 +1260,7 @@ def calc_spectrum_clouds(
             return kappa_abs
 
         if "log_kappa_sca" in cloud_dict:
+
             @typechecked
             def kappa_scat(wavel_micron: np.ndarray, press_bar: np.ndarray):
                 p_base = 10.0 ** cloud_dict["log_p_base"]  # (bar)
