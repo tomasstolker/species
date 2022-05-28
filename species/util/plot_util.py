@@ -200,59 +200,59 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "teff" in param:
         index = param.index("teff")
-        param[index] = r"$\mathregular{T}_\mathregular{eff}$ (K)"
+        param[index] = r"$T_\mathrm{eff}$ (K)"
 
     if "teff_0" in param:
         index = param.index("teff_0")
-        param[index] = r"$\mathregular{T}_\mathregular{eff,1}$ (K)"
+        param[index] = r"$T_\mathrm{eff,1}$ (K)"
 
     if "teff_1" in param:
         index = param.index("teff_1")
-        param[index] = r"$\mathregular{T}_\mathregular{eff,2}$ (K)"
+        param[index] = r"$T_\mathrm{eff,2}$ (K)"
 
     if "logg" in param:
         index = param.index("logg")
-        param[index] = r"$\mathregular{log}\,\mathregular{g}$"
+        param[index] = r"$\log\,g$"
 
     if "logg_0" in param:
         index = param.index("logg_0")
-        param[index] = r"$\mathregular{log}\,\mathregular{g}_\mathregular{1}$"
+        param[index] = r"$\log\,g_\mathrm{1}$"
 
     if "logg_1" in param:
         index = param.index("logg_1")
-        param[index] = r"$\mathregular{log}\,\mathregular{g}_\mathregular{2}$"
+        param[index] = r"$\log\,g_\mathrm{2}$"
 
     if "metallicity" in param:
         index = param.index("metallicity")
-        param[index] = r"[Fe/H]"
+        param[index] = "[Fe/H]"
 
     if "feh" in param:
         index = param.index("feh")
-        param[index] = r"[Fe/H]"
+        param[index] = "[Fe/H]"
 
     if "feh_0" in param:
         index = param.index("feh_0")
-        param[index] = r"[Fe/H]$_\mathregular{1}$"
+        param[index] = r"[Fe/H]$_\mathrm{1}$"
 
     if "feh_1" in param:
         index = param.index("feh_1")
-        param[index] = r"[Fe/H]$_\mathregular{2}$"
+        param[index] = r"[Fe/H]$_\mathrm{2}$"
 
     if "fsed" in param:
         index = param.index("fsed")
-        param[index] = r"$\mathregular{f}_\mathregular{sed}$"
+        param[index] = r"$f_\mathrm{sed}$"
 
     if "fsed_1" in param:
         index = param.index("fsed_1")
-        param[index] = r"$\mathregular{f}_\mathregular{sed,1}$"
+        param[index] = r"$f_\mathrm{sed,1}$"
 
     if "fsed_2" in param:
         index = param.index("fsed_2")
-        param[index] = r"$\mathregular{f}_\mathregular{sed,2}$"
+        param[index] = r"$f_\mathrm{sed,2}$"
 
     if "f_clouds" in param:
         index = param.index("f_clouds")
-        param[index] = r"$\mathregular{w}_\mathregular{clouds}$"
+        param[index] = r"$w_\mathrm{clouds}$"
 
     if "c_o_ratio" in param:
         index = param.index("c_o_ratio")
@@ -260,11 +260,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "radius" in param:
         index = param.index("radius")
-        param[index] = r"$\mathregular{R}$ ($\mathregular{R_J}$)"
+        param[index] = r"$R$ ($R_\mathrm{J}$)"
 
     if "distance" in param:
         index = param.index("distance")
-        param[index] = "d (pc)"
+        param[index] = "$d$ (pc)"
 
     if "parallax" in param:
         index = param.index("parallax")
@@ -272,45 +272,91 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "mass" in param:
         index = param.index("mass")
-        param[index] = r"$\mathregular{M}$ ($\mathregular{M_J}$)"
+        param[index] = r"$M$ ($M_\mathrm{J}$)"
+
+    if "age" in param:
+        index = param.index("age")
+        param[index] = "Age (Myr)"
+
+    if "mass_1" in param:
+        index = param.index("mass_1")
+        param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
+
+    if "mass_2" in param:
+        index = param.index("mass_2")
+        param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
+
+    if "entropy" in param:
+        index = param.index("entropy")
+        param[index] = r"$S_\mathrm{i}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+
+    if "entropy_1" in param:
+        index = param.index("entropy_1")
+        param[index] = r"$S_\mathrm{i,b}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+
+    if "entropy_2" in param:
+        index = param.index("entropy_2")
+        param[index] = r"$S_\mathrm{i,c}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+
+    if "dfrac_1" in param:
+        index = param.index("dfrac_1")
+        param[index] = r"$\log\,D_\mathrm{i,b}$"
+
+    if "dfrac_2" in param:
+        index = param.index("dfrac_2")
+        param[index] = r"$\log\,D_\mathrm{i,c}$"
+
+    if "y_frac" in param:
+        index = param.index("y_frac")
+        param[index] = r"$Y$"
+
+    if "yfrac_1" in param:
+        index = param.index("yfrac_1")
+        param[index] = r"$Y_\mathrm{b}$"
+
+    if "yfrac_2" in param:
+        index = param.index("yfrac_2")
+        param[index] = r"$Y_\mathrm{c}$"
+
+    if "mcore_1" in param:
+        index = param.index("mcore_1")
+        param[index] = r"$M_\mathrm{core, b}$"
+
+    if "mcore_2" in param:
+        index = param.index("mcore_2")
+        param[index] = r"$M_\mathrm{core, c}$"
 
     if "luminosity" in param:
         index = param.index("luminosity")
-        param[
-            index
-        ] = r"$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$"
+        param[index] = r"$\log\,L/L_\mathrm{\odot}$"
 
     if "luminosity_ratio" in param:
         index = param.index("luminosity_ratio")
-        param[index] = r"$\mathregular{log}\,\mathregular{L_1}/\mathregular{L_2}$"
+        param[index] = r"$\log\,L_\mathrm{1}/L_\mathrm{2}$"
 
     if "luminosity_disk_planet" in param:
         index = param.index("luminosity_disk_planet")
-        param[index] = r"$\mathregular{L_{disk}}/\mathregular{L_{atm}}$"
+        param[index] = r"$L_\mathrm{disk}/L_\mathrm{atm}$"
 
     if "lognorm_radius" in param:
         index = param.index("lognorm_radius")
-        param[index] = r"$\mathregular{log}\,\mathregular{r_g}$"
+        param[index] = r"$\log\,r_\mathrm{g}$"
 
     if "lognorm_sigma" in param:
         index = param.index("lognorm_sigma")
-        param[index] = r"$\mathregular{\sigma_g}$"
+        param[index] = r"$\sigma_\mathrm{g}$"
 
     if "lognorm_ext" in param:
         index = param.index("lognorm_ext")
-        param[index] = r"$\mathregular{A_V}$"
+        param[index] = r"$A_V$"
 
     if "powerlaw_min" in param:
         index = param.index("powerlaw_min")
-        param[
-            index
-        ] = r"$\mathregular{{log}}\,\mathregular{a}_\mathregular{min}/\mathregular{µm}$"
+        param[index] = r"$\log\,a_\mathrm{min}/\mathrm{µm}$"
 
     if "powerlaw_max" in param:
         index = param.index("powerlaw_max")
-        param[
-            index
-        ] = r"$\mathregular{{log}}\,\mathregular{a}_\mathregular{max}/\mathregular{µm}$"
+        param[index] = r"$\log\,a_\mathrm{max}/\mathrm{µm}$"
 
     if "powerlaw_exp" in param:
         index = param.index("powerlaw_exp")
@@ -318,24 +364,24 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "powerlaw_ext" in param:
         index = param.index("powerlaw_ext")
-        param[index] = r"$\mathregular{A_V}$"
+        param[index] = r"$A_V$"
 
     if "ism_ext" in param:
         index = param.index("ism_ext")
-        param[index] = r"$\mathregular{A_V}$"
+        param[index] = r"$A_V$"
 
     if "ism_red" in param:
         index = param.index("ism_red")
-        param[index] = r"$\mathregular{R_V}$"
+        param[index] = r"$R_V$"
 
     if "tint" in param:
         index = param.index("tint")
-        param[index] = r"$\mathregular{T_{int}}$ (K)"
+        param[index] = r"$T_\mathrm{int}$ (K)"
 
     for i in range(15):
         if f"t{i}" in param:
             index = param.index(f"t{i}")
-            param[index] = rf"$\mathregular{{T}}_\mathregular{{{i}}}$ (K)"
+            param[index] = rf"$T_\mathrm{{{i}}}$ (K)"
 
     if "alpha" in param:
         index = param.index("alpha")
@@ -343,92 +389,92 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_sigma_alpha" in param:
         index = param.index("log_sigma_alpha")
-        param[index] = r"$\mathregular{{log}}\,\sigma_\alpha$"
+        param[index] = r"$\log\,\sigma_\alpha$"
 
     if "log_delta" in param:
         index = param.index("log_delta")
-        param[index] = r"$\mathregular{log}\,\mathregular{\delta}$"
+        param[index] = r"$\log\,\delta$"
 
     if "log_p_quench" in param:
         index = param.index("log_p_quench")
-        param[index] = r"$\mathregular{log}\,\mathregular{P}_\mathregular{quench}$"
+        param[index] = r"$\log\,P_\mathrm{quench}$"
 
     if "sigma_lnorm" in param:
         index = param.index("sigma_lnorm")
-        param[index] = r"$\sigma_\mathregular{g}$"
+        param[index] = r"$\sigma_\mathrm{g}$"
 
     if "log_kzz" in param:
         index = param.index("log_kzz")
-        param[index] = r"$\mathregular{log}\,\mathregular{K}_\mathregular{zz}$"
+        param[index] = r"$\log\,K_\mathrm{zz}$"
 
     if "kzz" in param:
         # Backward compatibility
         index = param.index("kzz")
-        param[index] = r"$\mathregular{log}\,\mathregular{K}_\mathregular{zz}$"
+        param[index] = r"$\log\,K_\mathrm{zz}$"
 
     for i, item in enumerate(cloud_species):
         if f"{item}_fraction" in param:
             index = param.index(f"{item}_fraction")
             param[index] = (
-                rf"$\mathregular{{log}}\,\tilde{{\mathregular{{X}}}}"
-                rf"_\mathregular{{{cloud_labels[i]}}}$"
+                rf"$\log\,\tilde{{\mathrm{{X}}}}"
+                rf"_\mathrm{{{cloud_labels[i]}}}$"
             )
 
         if f"{item}_tau" in param:
             index = param.index(f"{item}_tau")
-            param[index] = rf"$\bar{{\tau}}_\mathregular{{{cloud_labels[i]}}}$"
+            param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_labels[i]}}}$"
 
     for i, item_i in enumerate(cloud_species):
         for j, item_j in enumerate(cloud_species):
             if f"{item_i}_{item_j}_ratio" in param:
                 index = param.index(f"{item_i}_{item_j}_ratio")
                 param[index] = (
-                    rf"$\mathregular{{log}}\,\tilde{{\mathregular{{X}}}}"
-                    rf"_\mathregular{{{cloud_labels[i]}}}/"
-                    rf"\mathregular{{\tilde{{X}}}}_\mathregular{{{cloud_labels[j]}}}$"
+                    rf"$\log\,\tilde{{\mathrm{{X}}}}"
+                    rf"_\mathrm{{{cloud_labels[i]}}}/"
+                    rf"\mathrm{{\tilde{{X}}}}_\mathrm{{{cloud_labels[j]}}}$"
                 )
 
     for i, item in enumerate(abund_species):
         if item in param:
             index = param.index(item)
-            param[index] = rf"$\mathregular{{log}}\,\mathregular{{{abund_labels[i]}}}$"
+            param[index] = rf"$\log\,\mathrm{{{abund_labels[i]}}}$"
 
     for i, item in enumerate(param):
         if item[0:8] == "scaling_":
             item_name = item[8:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{a}}_\mathregular{{{item_name}}}$"
+            param[i] = rf"$a_\mathrm{{{item_name}}}$"
 
         elif item[0:6] == "error_":
             item_name = item[6:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{b}}_\mathregular{{{item_name}}}$"
+            param[i] = rf"$b_\mathrm{{{item_name}}}$"
 
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{c}}_\mathregular{{{item_name}}}$ (nm)"
+            param[i] = rf"$c_\mathrm{{{item_name}}}$ (nm)"
 
         elif item[-6:] == "_error":
             item_name = item[:-6]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item_name}}}$"
+            param[i] = rf"$f_\mathrm{{{item_name}}}$"
 
         elif item[0:9] == "corr_len_":
             item_name = item[9:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{log}}\,\ell_\mathregular{{{item_name}}}$"
+            param[i] = rf"$\log\,\ell_\mathrm{{{item_name}}}$"
 
         elif item[0:9] == "corr_amp_":
             item_name = item[9:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$\mathregular{{f}}_\mathregular{{{item_name}}}$"
+            param[i] = rf"$f_\mathrm{{{item_name}}}$"
 
     if "c_h_ratio" in param:
         index = param.index("c_h_ratio")
@@ -441,7 +487,7 @@ def update_labels(param: List[str]) -> List[str]:
     for i in range(100):
         if f"teff_{i}" in param:
             index = param.index(f"teff_{i}")
-            param[index] = rf"$\mathregular{{T}}_\mathregular{{{i+1}}}$ (K)"
+            param[index] = rf"$T_\mathrm{{{i+1}}}$ (K)"
 
         else:
             break
@@ -449,10 +495,7 @@ def update_labels(param: List[str]) -> List[str]:
     for i in range(100):
         if f"radius_{i}" in param:
             index = param.index(f"radius_{i}")
-            param[index] = (
-                rf"$\mathregular{{R}}_\mathregular{{{i+1}}}$ "
-                + r"($\mathregular{R_J}$)"
-            )
+            param[index] = rf"$R_\mathrm{{{i+1}}}$ ($R_\mathrm{{J}}$)"
 
         else:
             break
@@ -460,61 +503,58 @@ def update_labels(param: List[str]) -> List[str]:
     for i in range(100):
         if f"luminosity_{i}" in param:
             index = param.index(f"luminosity_{i}")
-            param[index] = (
-                rf"$\mathregular{{log}}\,\mathregular{{L}}_\mathregular{{{i+1}}}"
-                rf"/\mathregular{{L}}_\mathregular{{\odot}}$"
-            )
+            param[index] = rf"$\log\,L_\mathregular{{{i+1}}}/L_\mathregular{{\odot}}$"
 
         else:
             break
 
     if "disk_teff" in param:
         index = param.index("disk_teff")
-        param[index] = r"$\mathregular{T}_\mathregular{disk}$ (K)"
+        param[index] = r"$T_\mathrm{disk}$ (K)"
 
     if "disk_radius" in param:
         index = param.index("disk_radius")
-        param[index] = r"$\mathregular{R}_\mathregular{disk}$ ($\mathregular{R_J}$)"
+        param[index] = r"$R_\mathrm{disk}$ ($R_\mathrm{J}$)"
 
     if "log_powerlaw_a" in param:
         index = param.index("log_powerlaw_a")
-        param[index] = r"a$_\mathregular{powerlaw}$"
+        param[index] = r"$a_\mathrm{powerlaw}$"
 
     if "log_powerlaw_b" in param:
         index = param.index("log_powerlaw_b")
-        param[index] = r"b$_\mathregular{powerlaw}$"
+        param[index] = r"$b_\mathrm{powerlaw}$"
 
     if "log_powerlaw_c" in param:
         index = param.index("log_powerlaw_c")
-        param[index] = r"c$_\mathregular{powerlaw}$"
+        param[index] = r"$c_\mathrm{powerlaw}$"
 
     if "pt_smooth" in param:
         index = param.index("pt_smooth")
-        param[index] = r"$\sigma_\mathregular{P-T}$"
+        param[index] = r"$\sigma_\mathrm{P-T}$"
 
     if "log_prob" in param:
         index = param.index("log_prob")
-        param[index] = r"$\mathregular{log}\,L$"
+        param[index] = r"$\log\,L$"
 
     if "log_tau_cloud" in param:
         index = param.index("log_tau_cloud")
-        param[index] = r"$\mathregular{{log}}\,\tau_\mathregular{{cloud}}$"
+        param[index] = r"$\log\,\tau_\mathrm{cloud}$"
 
     if "veil_a" in param:
         index = param.index("veil_a")
-        param[index] = r"a$_\mathregular{veil}$"
+        param[index] = r"$a_\mathrm{veil}$"
 
     if "veil_b" in param:
         index = param.index("veil_b")
-        param[index] = r"b$_\mathregular{veil}$"
+        param[index] = r"$b_\mathrm{veil}$"
 
     if "veil_ref" in param:
         index = param.index("veil_ref")
-        param[index] = r"F$_\mathregular{ref, veil}$"
+        param[index] = r"$F_\mathrm{ref, veil}$"
 
     if "gauss_amplitude" in param:
         index = param.index("gauss_amplitude")
-        param[index] = r"a (W m$^{-2}$ µm$^{-1}$)"
+        param[index] = r"$a$ (W m$^{-2}$ µm$^{-1}$)"
 
     if "gauss_mean" in param:
         index = param.index("gauss_mean")
@@ -526,7 +566,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "gauss_amplitude_2" in param:
         index = param.index("gauss_amplitude_2")
-        param[index] = r"a$_2$ (W m$^{-2}$ µm$^{-1}$)"
+        param[index] = r"$a_2$ (W m$^{-2}$ µm$^{-1}$)"
 
     if "gauss_mean_2" in param:
         index = param.index("gauss_mean_2")
@@ -542,11 +582,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "line_flux" in param:
         index = param.index("line_flux")
-        param[index] = r"F$_\mathregular{line}$ (W m$^{-2}$)"
+        param[index] = r"$F_\mathrm{line}$ (W m$^{-2}$)"
 
     if "line_luminosity" in param:
         index = param.index("line_luminosity")
-        param[index] = r"L$_\mathregular{line}$ (L$_\mathregular{\odot}$)"
+        param[index] = r"$L_\mathrm{line}$ ($L_\mathrm{\odot}$)"
 
     if "line_eq_width" in param:
         index = param.index("line_eq_width")
@@ -558,15 +598,15 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_kappa_0" in param:
         index = param.index("log_kappa_0")
-        param[index] = r"$\mathregular{{log}}\,\kappa_0$"
+        param[index] = r"$\log\,\kappa_0$"
 
     if "log_kappa_abs" in param:
         index = param.index("log_kappa_abs")
-        param[index] = r"$\mathregular{{log}}\,\kappa_\mathregular{{abs}}$"
+        param[index] = r"$\log\,\kappa_\mathrm{abs}$"
 
     if "log_kappa_sca" in param:
         index = param.index("log_kappa_sca")
-        param[index] = r"$\mathregular{{log}}\,\kappa_\mathregular{{sca}}$"
+        param[index] = r"$\log\,\kappa_\mathrm{sca}$"
 
     if "opa_index" in param:
         index = param.index("opa_index")
@@ -574,15 +614,15 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "opa_abs_index" in param:
         index = param.index("opa_abs_index")
-        param[index] = r"$\xi_\mathregular{{abs}}$"
+        param[index] = r"$\xi_\mathrm{abs}$"
 
     if "opa_sca_index" in param:
         index = param.index("opa_sca_index")
-        param[index] = r"$\xi_\mathregular{{sca}}$"
+        param[index] = r"$\xi_\mathrm{sca}$"
 
     if "log_p_base" in param:
         index = param.index("log_p_base")
-        param[index] = r"$\mathregular{{log}}\,\mathregular{{P}}_\mathregular{{cloud}}$"
+        param[index] = r"$\log\,P_\mathrm{cloud}$"
 
     if "albedo" in param:
         index = param.index("albedo")
@@ -590,39 +630,39 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "opa_knee" in param:
         index = param.index("opa_knee")
-        param[index] = r"$\lambda_\mathregular{R}$ (µm)"
+        param[index] = r"$\lambda_\mathrm{R}$ (µm)"
 
     if "lambda_ray" in param:
         index = param.index("lambda_ray")
-        param[index] = r"$\lambda_\mathregular{R}$ (µm)"
+        param[index] = r"$\lambda_\mathrm{R}$ (µm)"
 
     if "mix_length" in param:
         index = param.index("mix_length")
-        param[index] = r"$\ell_\mathregular{m}$ (H$_\mathregular{p}$)"
+        param[index] = r"$\ell_\mathrm{m}$ ($H_\mathrm{p}$)"
 
     if "spec_weight" in param:
         index = param.index("spec_weight")
-        param[index] = r"w$_\mathregular{spec}$"
+        param[index] = r"w$_\mathrm{spec}$"
 
     if "log_beta_r" in param:
         index = param.index("log_beta_r")
-        param[index] = r"$\mathregular{log}\,\beta_\mathregular{r}$"
+        param[index] = r"$\log\,\beta_\mathrm{r}$"
 
     if "log_gamma_r" in param:
         index = param.index("log_gamma_r")
-        param[index] = r"$\mathregular{log}\,\gamma_\mathregular{r}$"
+        param[index] = r"$\log\,\gamma_\mathrm{r}$"
 
     if "gamma_r" in param:
         index = param.index("gamma_r")
-        param[index] = r"$\gamma_\mathregular{r}$"
+        param[index] = r"$\gamma_\mathrm{r}$"
 
     if "log_kappa_gray" in param:
         index = param.index("log_kappa_gray")
-        param[index] = r"$\mathregular{log}\,\kappa_\mathregular{gray}$"
+        param[index] = r"$\log\,\kappa_\mathrm{gray}$"
 
     if "log_cloud_top" in param:
         index = param.index("log_cloud_top")
-        param[index] = r"$\mathregular{log}\,\mathregular{P}_\mathregular{top}$"
+        param[index] = r"$\log\,P_\mathrm{top}$"
 
     return param
 
@@ -735,17 +775,17 @@ def quantity_unit(
     if "teff" in param:
         quantity.append("teff")
         unit.append("K")
-        label.append(r"$\mathregular{T}_\mathregular{eff}$")
+        label.append(r"$T_\mathrm{eff}$")
 
     if "logg" in param:
         quantity.append("logg")
         unit.append(None)
-        label.append(r"$\mathregular{log}\,\mathregular{g}$")
+        label.append(r"$\log g$")
 
     if "metallicity" in param:
         quantity.append("metallicity")
         unit.append(None)
-        label.append(r"[Fe/H]")
+        label.append("[Fe/H]")
 
     if "feh" in param:
         quantity.append("feh")
@@ -755,7 +795,7 @@ def quantity_unit(
     if "fsed" in param:
         quantity.append("fsed")
         unit.append(None)
-        label.append(r"$\mathregular{f}_\mathregular{sed}$")
+        label.append(r"$f_\mathrm{sed}$")
 
     if "c_o_ratio" in param:
         quantity.append("c_o_ratio")
@@ -766,18 +806,18 @@ def quantity_unit(
         quantity.append("radius")
 
         if object_type == "planet":
-            unit.append(r"$\mathregular{R}_\mathregular{J}$")
+            unit.append(r"$R_\mathrm{J}$")
 
         elif object_type == "star":
-            unit.append(r"$\mathregular{R}_\mathregular{\odot}$")
+            unit.append(r"$R_\mathrm{\odot}$$")
 
-        label.append(r"$\mathregular{R}$")
+        label.append(r"$R$")
 
     for i in range(100):
         if f"teff_{i}" in param:
             quantity.append(f"teff_{i}")
             unit.append("K")
-            label.append(rf"$\mathregular{{T}}_\mathregular{{{i+1}}}$")
+            label.append(rf"$T_\mathrm{{{i+1}}}$")
 
         else:
             break
@@ -787,12 +827,12 @@ def quantity_unit(
             quantity.append(f"radius_{i}")
 
             if object_type == "planet":
-                unit.append(r"$\mathregular{R}_\mathregular{J}$")
+                unit.append(r"$R_\mathrm{J}$")
 
             elif object_type == "star":
-                unit.append(r"$\mathregular{R}_\mathregular{\odot}$")
+                unit.append(r"$R_\mathrm{\odot}$$")
 
-            label.append(rf"$\mathregular{{R}}_\mathregular{{{i+1}}}$")
+            label.append(rf"$R_\mathrm{{{i+1}}}$")
 
         else:
             break
@@ -800,45 +840,43 @@ def quantity_unit(
     if "distance" in param:
         quantity.append("distance")
         unit.append("pc")
-        label.append(r"$\mathregular{d}$")
+        label.append(r"$d$")
 
     if "mass" in param:
         quantity.append("mass")
 
         if object_type == "planet":
-            unit.append(r"$\mathregular{M}_\mathregular{J}$")
+            unit.append(r"$M_\mathrm{J}$")
 
         elif object_type == "star":
-            unit.append(r"$\mathregular{M}_\mathregular{\odot}$")
+            unit.append(r"$M_\mathrm{\odot}$$")
 
         label.append("M")
 
     if "luminosity" in param:
         quantity.append("luminosity")
         unit.append(None)
-        label.append(
-            r"$\mathregular{log}\,\mathregular{L}/\mathregular{L}_\mathregular{\odot}$"
-        )
+        label.append(r"$\log\,L/L_\mathrm{\odot}$$")
 
     if "ism_ext" in param:
         quantity.append("ism_ext")
         unit.append(None)
-        label.append(r"$\mathregular{A}_\mathregular{V}$")
+        label.append(r"$A_V$")
 
     if "lognorm_ext" in param:
         quantity.append("lognorm_ext")
         unit.append(None)
-        label.append(r"$\mathregular{A}_\mathregular{V}$")
+        label.append(r"$A_V$")
 
     if "powerlaw_ext" in param:
         quantity.append("powerlaw_ext")
         unit.append(None)
-        label.append(r"$\mathregular{A}_\mathregular{V}$")
+        label.append(r"$A_V$")
 
     if "pt_smooth" in param:
         quantity.append("pt_smooth")
         unit.append(None)
-        label.append(r"$\sigma_\mathregular{P-T}$")
+        label.append(r"$\sigma_\mathrm{P-T}$")
 
     return quantity, unit, label
 

@@ -801,7 +801,7 @@ class ReadRadtrans:
                 right=True,
             )
 
-            ax.set_xlabel(r"Wavelength ($\mu$m)", fontsize=13)
+            ax.set_xlabel(r"Wavelength (µm)", fontsize=13)
             ax.set_ylabel("Pressure (bar)", fontsize=13)
 
             ax.get_xaxis().set_label_coords(0.5, -0.09)

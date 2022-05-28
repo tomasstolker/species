@@ -3349,7 +3349,7 @@ class Database:
         # Get distance
 
         if "parallax" in dset.attrs:
-            distance = 1e3 / dset.attrs["parallax"]
+            distance = 1e3 / dset.attrs["parallax"][0]
         elif "distance" in dset.attrs:
             distance = dset.attrs["distance"]
         else:

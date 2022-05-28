@@ -175,8 +175,8 @@ def sort_data(
 
     for i in range(n_spectra):
         # The parameter order is: Teff, log(g), [Fe/H], C/O,
-        # f_sed, log(Kzz). Not all parameters have to be included
-        # but the order matters
+        # f_sed, log(Kzz). Not all parameters have
+        # to be included but the order matters
 
         index_teff = np.argwhere(teff_unique == param_teff[i])[0][0]
         spec_select = [index_teff]
@@ -897,12 +897,14 @@ def retrieval_spectrum(
 
     elif "log_kappa_abs" in indices:
         model_param["log_kappa_abs"] = sample[indices["log_kappa_abs"]]
-        model_param["log_kappa_sca"] = sample[indices["log_kappa_sca"]]
         model_param["opa_abs_index"] = sample[indices["opa_abs_index"]]
-        model_param["opa_sca_index"] = sample[indices["opa_sca_index"]]
-        model_param["lambda_ray"] = sample[indices["lambda_ray"]]
         model_param["log_p_base"] = sample[indices["log_p_base"]]
         model_param["fsed"] = sample[indices["fsed"]]
+
+        if "log_kappa_sca" in indices:
+            model_param["log_kappa_sca"] = sample[indices["log_kappa_sca"]]
+            model_param["opa_sca_index"] = sample[indices["opa_sca_index"]]
+            model_param["lambda_ray"] = sample[indices["lambda_ray"]]
 
     elif "log_kappa_gray" in indices:
         model_param["log_kappa_gray"] = sample[indices["log_kappa_gray"]]

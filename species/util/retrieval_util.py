@@ -2545,8 +2545,8 @@ def convolve(
         Convolved spectrum.
     """
 
-    # From talking to Ignas: delta lambda of resolution element
-    # is FWHM of the LSF's standard deviation, hence:
+    # delta lambda of resolution element is FWHM
+    # of the LSF's standard deviation, hence:
     sigma_lsf = 1.0 / spec_res / (2.0 * np.sqrt(2.0 * np.log(2.0)))
 
     # The input spacing of petitRADTRANS is 1e3, but just compute

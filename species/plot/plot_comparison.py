@@ -79,8 +79,9 @@ def plot_statistic(
     sptypes = np.array(h5_file[f"results/empirical/{tag}/sptypes"])
     g_fit = np.array(h5_file[f"results/empirical/{tag}/goodness_of_fit"])
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
     plt.rcParams["axes.axisbelow"] = False
@@ -273,8 +274,9 @@ def plot_empirical_spectra(
     rad_vel = np.array(h5_file[f"results/empirical/{tag}/rad_vel"])
     rad_vel *= 1e3  # (m s-1)
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
     plt.rcParams["axes.axisbelow"] = False
@@ -529,8 +531,9 @@ def plot_grid_statistic(
     else:
         coord_y = None
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
     plt.rcParams["axes.axisbelow"] = False

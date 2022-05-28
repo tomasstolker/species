@@ -55,8 +55,9 @@ def plot_walkers(
     else:
         print(f"Plotting walkers: {output}...", end="", flush=True)
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
@@ -241,8 +242,9 @@ def plot_posterior(
         None
     """
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
@@ -847,8 +849,9 @@ def plot_mag_posterior(
         Array with the posterior samples of the magnitude.
     """
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
@@ -963,8 +966,9 @@ def plot_size_distributions(
     if burnin is None:
         burnin = 0
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
@@ -1147,8 +1151,9 @@ def plot_extinction(
     if wavel_range is None:
         wavel_range = (0.4, 10.0)
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 

@@ -124,8 +124,9 @@ def plot_spectrum(
         None
     """
 
-    mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
     plt.rcParams["axes.axisbelow"] = False
@@ -322,14 +323,14 @@ def plot_spectrum(
         ax1.set_xlabel("Wavelength (µm)", fontsize=13)
 
     if filters is not None:
-        ax2.set_ylabel(r"T$_\lambda$", fontsize=13)
+        ax2.set_ylabel(r"$T_\lambda$", fontsize=13)
 
     if residuals is not None:
         if quantity == "flux density":
-            ax3.set_ylabel(r"$\Delta$$\mathregular{F}_\lambda$ ($\sigma$)", fontsize=11)
+            ax3.set_ylabel(r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=11)
 
         elif quantity == "flux":
-            ax3.set_ylabel(r"$\Delta$$\mathregular{F}_\lambda$ ($\sigma$)", fontsize=11)
+            ax3.set_ylabel(r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=11)
 
     if xlim is None:
         ax1.set_xlim(0.6, 6.0)
@@ -338,7 +339,7 @@ def plot_spectrum(
 
     if quantity == "magnitude":
         scaling = 1.0
-        ax1.set_ylabel("Flux contrast (mag)", fontsize=13)
+        ax1.set_ylabel("Contrast (mag)", fontsize=13)
 
         if ylim:
             ax1.set_ylim(ylim[0], ylim[1])
@@ -354,14 +355,14 @@ def plot_spectrum(
 
             if quantity == "flux density":
                 ylabel = (
-                    r"$\mathregular{F}_\lambda$ (10$^{"
+                    r"$F_\lambda$ (10$^{"
                     + str(exponent)
                     + r"}$ W m$^{-2}$ µm$^{-1}$)"
                 )
 
             elif quantity == "flux":
                 ylabel = (
-                    r"$\lambda$$\mathregular{F}_\lambda$ (10$^{"
+                    r"$\lambda$$F_\lambda$ (10$^{"
                     + str(exponent)
                     + r"}$ W m$^{-2}$)"
                 )
@@ -377,12 +378,12 @@ def plot_spectrum(
         else:
             if quantity == "flux density":
                 ax1.set_ylabel(
-                    r"$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11
+                    r"$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11
                 )
 
             elif quantity == "flux":
                 ax1.set_ylabel(
-                    r"$\lambda$$\mathregular{F}_\lambda$ (W m$^{-2}$)", fontsize=11
+                    r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=11
                 )
 
             scaling = 1.0
