@@ -86,6 +86,7 @@ class ReadModel:
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.interp_method = config["species"]["interp_method"]
 
         self.extra_param = [
             "radius",
@@ -209,7 +210,11 @@ class ReadModel:
         flux = flux[..., self.wl_index]
 
         self.spectrum_interp = RegularGridInterpolator(
-            points, flux, method="linear", bounds_error=False, fill_value=np.nan
+            points,
+            flux,
+            method=self.interp_method,
+            bounds_error=False,
+            fill_value=np.nan,
         )
 
     @typechecked
@@ -382,7 +387,11 @@ class ReadModel:
             self.wl_points = wavel_resample
 
         self.spectrum_interp = RegularGridInterpolator(
-            points, flux_new, method="linear", bounds_error=False, fill_value=np.nan
+            points,
+            flux_new,
+            method=self.interp_method,
+            bounds_error=False,
+            fill_value=np.nan,
         )
 
     @staticmethod

@@ -25,7 +25,7 @@ def create_config(test_path):
     data_folder = os.path.join(test_path, "data/")
 
     with open(config_file, "w", encoding="utf-8") as config:
-        print(dir(config))
         config.write("[species]\n")
-        config.write("database = " + database_file + "\n")
-        config.write("data_folder = " + data_folder)
+        config.write(f"database = {database_file}\n")
+        config.write(f"data_folder = {data_folder}\n")
+        config.write("interp_method = linear")

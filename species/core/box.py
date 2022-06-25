@@ -135,8 +135,10 @@ def create_box(boxtype, **kwargs):
         box.spectrum = kwargs["spectrum"]
         box.wavelength = kwargs["wavelength"]
         box.flux = kwargs["flux"]
-        box.error = kwargs["error"]
-        box.name = kwargs["name"]
+        if "error" in kwargs:
+            box.error = kwargs["error"]
+        if "name" in kwargs:
+            box.name = kwargs["name"]
         if "simbad" in kwargs:
             box.simbad = kwargs["simbad"]
         if "sptype" in kwargs:

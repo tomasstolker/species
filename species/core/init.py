@@ -57,9 +57,18 @@ class SpeciesInit:
             print("Creating species_config.ini...", end="", flush=True)
 
             with open(config_file, "w") as file_obj:
-                file_obj.write("[species]\n")
-                file_obj.write("database = species_database.hdf5\n")
-                file_obj.write("data_folder = ./data/\n")
+                file_obj.write("[species]\n\n")
+
+                file_obj.write("; File with the HDF5 database\n")
+                file_obj.write("database = species_database.hdf5\n\n")
+
+                file_obj.write("; Folder where data will be downloaded\n")
+                file_obj.write("data_folder = ./data/\n\n")
+
+                file_obj.write("; Method for the grid interpolation\n")
+                file_obj.write("; Options: linear, nearest, slinear, "
+                               "cubic, quintic, pchip\n")
+                file_obj.write("interp_method = linear\n")
 
             print(" [DONE]")
 

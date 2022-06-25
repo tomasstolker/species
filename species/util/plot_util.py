@@ -268,7 +268,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "parallax" in param:
         index = param.index("parallax")
-        param[index] = r"$\pi$ (mas)"
+        param[index] = r"$\varpi$ (mas)"
 
     if "mass" in param:
         index = param.index("mass")
@@ -320,11 +320,11 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "mcore_1" in param:
         index = param.index("mcore_1")
-        param[index] = r"$M_\mathrm{core, b}$"
+        param[index] = r"$M_\mathrm{core,b}$ ($M_\mathrm{E}$)"
 
     if "mcore_2" in param:
         index = param.index("mcore_2")
-        param[index] = r"$M_\mathrm{core, c}$"
+        param[index] = r"$M_\mathrm{core,c}$ ($M_\mathrm{E}$)"
 
     if "luminosity" in param:
         index = param.index("luminosity")
@@ -809,7 +809,7 @@ def quantity_unit(
             unit.append(r"$R_\mathrm{J}$")
 
         elif object_type == "star":
-            unit.append(r"$R_\mathrm{\odot}$$")
+            unit.append(r"$R_\mathrm{\odot}$")
 
         label.append(r"$R$")
 
@@ -830,7 +830,7 @@ def quantity_unit(
                 unit.append(r"$R_\mathrm{J}$")
 
             elif object_type == "star":
-                unit.append(r"$R_\mathrm{\odot}$$")
+                unit.append(r"$R_\mathrm{\odot}$")
 
             label.append(rf"$R_\mathrm{{{i+1}}}$")
 
@@ -849,14 +849,14 @@ def quantity_unit(
             unit.append(r"$M_\mathrm{J}$")
 
         elif object_type == "star":
-            unit.append(r"$M_\mathrm{\odot}$$")
+            unit.append(r"$M_\mathrm{\odot}$")
 
         label.append("M")
 
     if "luminosity" in param:
         quantity.append("luminosity")
         unit.append(None)
-        label.append(r"$\log\,L/L_\mathrm{\odot}$$")
+        label.append(r"$\log\,L/L_\mathrm{\odot}$")
 
     if "ism_ext" in param:
         quantity.append("ism_ext")

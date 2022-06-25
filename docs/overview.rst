@@ -32,6 +32,17 @@ The following data and models are currently supported:
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_
 
+The :func:`~species.data.database.Database.available_models()` method of the :class:`~species.data.database.Database` class can be used for getting a complete overview of all model grids, including details on the input parameters, wavelength range, :math:`T_\mathrm{eff}` range, and spectral resolution:
+
+.. code-block:: python
+
+   import species
+
+   species.SpeciesInit()
+
+   database = species.Database()
+   database.available_models()
+
 **Spectral libraries**
 
 - `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
