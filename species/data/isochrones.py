@@ -220,8 +220,7 @@ def add_sonora(database, input_path):
 
 def add_ames(database, input_path):
     """
-    Function for adding the
-    `Sonora Bobcat <https://zenodo.org/record/5063476>`_
+    Function for adding the AMES-Cond and AMES-Dusty
     isochrone data to the database.
 
     Parameters
@@ -261,3 +260,42 @@ def add_ames(database, input_path):
         add_baraffe(database=database,
                     tag=iso_tags[i].lower(),
                     file_name=data_file)
+
+def add_btsettl(database, input_path):
+    """
+    Function for adding the BT-Settl isochrone data to the database.
+
+    Parameters
+    ----------
+    database : h5py._hl.files.File
+        Database.
+    input_path : str
+        Folder where the data is located.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    if not os.path.exists(input_path):
+        os.makedirs(input_path)
+
+    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/" \
+              "model.BT-Settl.M-0.0.MKO.Vega"
+
+    iso_tag = "BT-Settl"
+    iso_size = "113 kB"
+
+    input_file = url_iso.split("/")[-1]
+    data_file = os.path.join(input_path, input_file)
+
+    if not os.path.isfile(data_file):
+        print(f"Downloading {iso_tag} isochrones "
+              f"({iso_size})...", end="", flush=True)
+        urllib.request.urlretrieve(url_iso, data_file)
+        print(" [DONE]")
+
+    add_baraffe(database=database,
+                tag=iso_tag.lower(),
+                file_name=data_file)

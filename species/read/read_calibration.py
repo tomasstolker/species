@@ -11,13 +11,16 @@ import h5py
 import numpy as np
 import spectres
 
-from scipy.optimize import curve_fit
+from scipy import interpolate, optimize
+
 from typeguard import typechecked
 
 from species.analysis import photometry
 from species.core import box
 from species.read import read_filter
 from species.util import read_util
+
+import matplotlib.pyplot as plt
 
 
 class ReadCalibration:
@@ -66,10 +69,11 @@ class ReadCalibration:
         model_param: Optional[Dict[str, float]] = None,
         spec_res: Optional[float] = None,
         apply_mask: bool = False,
+        interp_highres: bool = False,
     ) -> box.SpectrumBox:
         """
-        Function for resampling the spectrum and optional uncertainties
-        onto a new wavelength grid.
+        Function for resampling the spectrum and optional
+        uncertainties onto a new wavelength grid.
 
         Parameters
         ----------
@@ -83,12 +87,18 @@ class ReadCalibration:
             Spectral resolution that is used for smoothing the spectrum
             before resampling the wavelengths. No smoothing is applied
             if the argument is set to ``None``. The smoothing can only
-            be applied ti spectra with a constant spectral resolution
+            be applied to spectra with a constant spectral resolution
             (which is the case for all model spectra that are
-            compatible with ``species``) or a constant wavelength
+            supported by ``species``) or a constant wavelength
             spacing. The first smoothing approach is fastest.
         apply_mask : bool
             Exclude negative values and NaNs.
+        interp_highres : bool
+            Oversample the spectrum to $R = 10000$, such that the
+            ``spec_res`` parameter can be applied on a spectrum with
+            constant $\\lambda/\\Delta\\lambda$. The uncertainties
+            are crudely propagated with an interpolation as well
+            and should only be considered as estimate.
 
         Returns
         -------
@@ -96,21 +106,70 @@ class ReadCalibration:
             Box with the resampled spectrum.
         """
 
-        calibbox = self.get_spectrum(apply_mask=apply_mask)
+        calib_box = self.get_spectrum(apply_mask=apply_mask)
 
-        if spec_res is not None:
-            calibbox.flux = read_util.smooth_spectrum(
-                wavelength=calibbox.wavelength, flux=calibbox.flux, spec_res=spec_res
+        if interp_highres:
+            flux_interp = interpolate.interp1d(
+                calib_box.wavelength,
+                calib_box.flux,
+                bounds_error=False,
+                fill_value="extrapolate",
             )
 
-        flux_new, error_new = spectres.spectres(
-            wavel_points,
-            calibbox.wavelength,
-            calibbox.flux,
-            spec_errs=calibbox.error,
-            fill=0.0,
-            verbose=False,
-        )
+            sigma_interp = interpolate.interp1d(
+                calib_box.wavelength,
+                calib_box.error,
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
+
+            wavel_range = (calib_box.wavelength[0], calib_box.wavelength[-1])
+            wavel_highres = read_util.create_wavelengths(wavel_range, 10000.0)
+
+            calib_box.wavelength = wavel_highres
+            calib_box.flux = flux_interp(wavel_highres)
+            calib_box.error = sigma_interp(wavel_highres)
+
+            if spec_res is not None:
+                calib_box.flux = read_util.smooth_spectrum(
+                    wavelength=calib_box.wavelength,
+                    flux=calib_box.flux,
+                    spec_res=spec_res,
+                )
+
+            flux_interp = interpolate.interp1d(
+                calib_box.wavelength,
+                calib_box.flux,
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
+
+            sigma_interp = interpolate.interp1d(
+                calib_box.wavelength,
+                calib_box.error,
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
+
+            flux_new = flux_interp(wavel_points)
+            error_new = sigma_interp(wavel_points)
+
+        else:
+            if spec_res is not None:
+                calib_box.flux = read_util.smooth_spectrum(
+                    wavelength=calib_box.wavelength,
+                    flux=calib_box.flux,
+                    spec_res=spec_res,
+                )
+
+            flux_new, error_new = spectres.spectres(
+                wavel_points,
+                calib_box.wavelength,
+                calib_box.flux,
+                spec_errs=calib_box.error,
+                fill=0.0,
+                verbose=False,
+            )
 
         if model_param is not None:
             flux_new = model_param["scaling"] * flux_new
@@ -223,7 +282,7 @@ class ReadCalibration:
             else:
                 indices = np.arange(0, wavelength.size, 1)
 
-            popt, pcov = curve_fit(
+            popt, pcov = optimize.curve_fit(
                 f=_power_law,
                 xdata=wavelength[indices],
                 ydata=flux[indices],

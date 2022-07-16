@@ -85,11 +85,12 @@ class FitModel:
             Name of the atmospheric model (e.g. 'bt-settl', 'exo-rem',
             'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
-            The boundaries that are used for the uniform priors.
-            Fixing a parameter is possible by providing the same
-            value as lower and upper boundary of the parameter
-            (e.g. ``bounds={'logg': (4., 4.)``. An explanation of
-            the various parameters can be found below.
+            The boundaries that are used for the uniform or
+            log-uniform priors. Fixing a parameter is possible by
+            providing the same value as lower and upper boundary
+            of the parameter (e.g. ``bounds={'logg': (4., 4.)``.
+            An explanation of the various parameters can be found
+            below.
 
             Atmospheric model parameters (e.g. with
             ``model='bt-settl-cifist'``; see docstring of
@@ -125,9 +126,7 @@ class FitModel:
                  and fixes :math:`\\log{g}` to 4.0 and 4.5,
                  respectively. The ``spec_weight`` parameter is
                  automatically included in the fit, as it sets the
-                 weight of the two components. Modeling blended data
-                 is only supported by ``run_ultranest`` and
-                 ``run_multinest``.
+                 weight of the two components.
 
             Blackbody parameters (with ``model='planck'``):
 
@@ -176,40 +175,49 @@ class FitModel:
                  photometry and error bars from the posterior
                  distributions.
 
-               - Only supported by ``run_ultranest`` and
-                 ``run_multinest``.
-
             Calibration parameters:
 
-                 - For each spectrum/instrument, two optional parameters can be fitted to account
-                   for biases in the calibration: a scaling of the flux and a constant inflation of
-                   the uncertainties.
+                 - For each spectrum/instrument, two optional
+                   parameters can be fitted to account for biases in
+                   the calibration: a scaling of the flux and a
+                   relative inflation of the uncertainties.
 
-                 - For example, ``bounds={'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the scaling is
-                   fitted between 0.8 and 1.2, and the error is inflated (relative to the sampled
-                   model fluxes) with a value between 0 and 1.
+                 - For example, ``bounds={'SPHERE': ((0.8, 1.2),
+                   (0., 1.))}`` if the scaling is
+                   fitted between 0.8 and 1.2, and the error is
+                   inflated (relative to the sampled model fluxes)
+                   with a value between 0 and 1.
 
-                 - The dictionary key should be equal to the database tag of the spectrum. For
-                   example, ``{'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the spectrum is stored as
-                   ``'SPHERE'`` with :func:`~species.data.database.Database.add_object`.
+                 - The dictionary key should be the same as the
+                   database tag of the spectrum. For example,
+                   ``{'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the
+                   spectrum is stored as ``'SPHERE'`` with
+                   :func:`~species.data.database.Database.add_object`.
 
-                 - Each of the two calibration parameters can be set to ``None`` in which case the
-                   parameter is not used. For example, ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
+                 - Each of the two calibration parameters can be set to
+                   ``None`` in which case the parameter is not used. For
+                   example, ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
 
-                 - The errors of the photometric fluxes can be inflated to account for
-                   underestimated error bars. The error inflation is relative to the actual flux
-                   and is either fitted separately for a filter, or a single error inflation
-                   is applied to all filters from an instrument. For the first case, the keyword
-                   in the ``bounds`` dictionary should be provided in the following format:
-                   ``'Paranal/NACO.Mp_error': (0., 1.)``. Here, the error of the NACO Mp
-                   flux is inflated up to 100 percent of the actual flux. For the second case,
-                   only the telescope/instrument part of the the filter name should be provided
-                   in the ``bounds`` dictionary, so in the following format:
-                   ``'Paranal/NACO_error': (0., 1.)``. This will increase the errors of all
-                   NACO filters by the same (relative) amount.
+                 - The errors of the photometric fluxes can be inflated
+                   to account for underestimated error bars. The error
+                   inflation is relative to the actual flux and is
+                   either fitted separately for a filter, or a single
+                   error inflation is applied to all filters from an
+                   instrument. For the first case, the keyword in the
+                   ``bounds`` dictionary should be provided in the
+                   following format:
+                   ``'Paranal/NACO.Mp_error': (0., 1.)``. Here, the
+                   error of the NACO :math:`M'` flux is inflated up to
+                   100 percent of the actual flux. For the second case,
+                   only the telescope/instrument part of the the filter
+                   name should be provided in the ``bounds``
+                   dictionary, so in the following format:
+                   ``'Paranal/NACO_error': (0., 1.)``. This will
+                   increase the errors of all NACO filters by the same
+                   (relative) amount.
 
-                 - No calibration parameters are fitted if the spectrum name is not included in
-                   ``bounds``.
+                 - No calibration parameters are fitted if the
+                   spectrum name is not included in ``bounds``.
 
             ISM extinction parameters:
 
@@ -226,9 +234,6 @@ class FitModel:
                    should be provided in the ``bounds`` dictionary, for
                    example ``bounds={'ism_ext': (0., 10.),
                    'ism_red': (0., 20.)}``.
-
-                 - Only supported by ``run_ultranest`` and
-                   ``run_multinest``.
 
             Log-normal size distribution:
 
@@ -261,9 +266,6 @@ class FitModel:
                    ``lognorm_ext``, and a log-uniform prior for
                    ``lognorm_radius``.
 
-                 - Only supported by ``run_ultranest`` and
-                   ``run_multinest``.
-
             Power-law size distribution:
 
                  - The third approach is fitting the extinction of a
@@ -294,8 +296,6 @@ class FitModel:
                    ``powerlaw_ext``, and a log-uniform prior for
                    ``powerlaw_max``.
 
-                 - Only supported by ``run_ultranest`` and ``run_multinest``.
-
             Blackbody disk emission:
 
                  - Additional blackbody emission can be added to the
@@ -307,9 +307,6 @@ class FitModel:
                    ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
                    'logg': (3.5, 4.5), 'disk_teff': (100., 2000.),
                    'disk_radius': (1., 100.)}``.
-
-                 - Only supported by ``run_ultranest`` and
-                   ``run_multinest``.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either
@@ -336,8 +333,7 @@ class FitModel:
             provided with ``inc_spec`` and ``inc_phot``. This parameter
             can for example be used to bias the weighting of the
             photometric data points. An equal weighting is applied if
-            the argument is set to ``None``. Only supported by
-            ``run_ultranest`` and ``run_multinest``.
+            the argument is set to ``None``.
 
         Returns
         -------
@@ -1038,8 +1034,18 @@ class FitModel:
                 del param_dict["radius_1"]
 
             else:
-                flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 \
-                    / (1e3 * constants.PARSEC / parallax) ** 2
+                try:
+                    flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 \
+                        / (1e3 * constants.PARSEC / parallax) ** 2
+
+                except ZeroDivisionError:
+                    warnings.warn(f"Encountered a ZeroDivisionError when"
+                                  f"calculating the flux scaling with "
+                                  f"parallax = {parallax}. This error "
+                                  f"should not have happened. Setting "
+                                  f"the scaling to 1e100.")
+
+                    flux_scaling = 1e100
 
                 # The scaling is applied manually because of the interpolation
                 del param_dict["radius"]

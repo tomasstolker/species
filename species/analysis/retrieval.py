@@ -754,8 +754,45 @@ class AtmosphericRetrieval:
         Parameters
         ----------
         bounds : dict
-            Dictionary with the boundaries that are used as uniform
-            priors for the parameters.
+            The boundaries that are used for the uniform or
+            log-uniform priors. Fixing a parameter is possible by
+            providing the same value as lower and upper boundary
+            of the parameter (e.g. ``bounds={'logg': (4., 4.)``.
+            An explanation of the various parameters can be found
+            below (TODO).
+
+            Calibration parameters:
+
+                 - For each spectrum/instrument, three optional
+                   parameters can be fitted to account for biases in
+                   the calibration: a scaling of the flux, a
+                   constant inflation of the uncertainties, and a
+                   constant offset in the wavelength solution.
+
+                 - For example, ``bounds={'SPHERE': ((0.8, 1.2),
+                   (-16., -14.), (-0.01, 0.01))}`` if the scaling is
+                   fitted between 0.8 and 1.2, each uncertainty is
+                   inflated with a constant value between
+                   :math:`10^{-16}` and :math:`10^{-14}` W
+                   :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`,
+                   and a constant wavelength offset between
+                   -0.01 and 0.01 :math:`\\mu\\mathrm{m}`
+
+                 - The dictionary key should be the same as to the
+                   database tag of the spectrum. For example,
+                   ``{'SPHERE': ((0.8, 1.2), (-16., -14.),
+                   (-0.01, 0.01))}`` if the spectrum is stored as
+                   ``'SPHERE'`` with
+                   :func:`~species.data.database.Database.add_object`.
+
+                 - Each of the three calibration parameters can be set
+                   to ``None`` in which case the parameter is not used.
+                   For example, ``bounds={'SPHERE': ((0.8, 1.2), None,
+                   None)}``.
+
+                 - No calibration parameters are fitted if the
+                   spectrum name is not included in ``bounds``.
+
         chemistry : str
             The chemistry type: 'equilibrium' for equilibrium
             chemistry or 'free' for retrieval of free abundances

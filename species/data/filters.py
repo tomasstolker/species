@@ -48,7 +48,6 @@ def download_filter(
             "VisAO_rp_filter_curve.dat", unpack=True
         )
 
-        # Not sure if energy- or photon-counting detector
         det_type = "photon"
 
         os.remove("VisAO_rp_filter_curve.dat")
@@ -61,7 +60,6 @@ def download_filter(
             "VisAO_ip_filter_curve.dat", unpack=True
         )
 
-        # Not sure if energy- or photon-counting detector
         det_type = "photon"
 
         os.remove("VisAO_ip_filter_curve.dat")
@@ -74,7 +72,6 @@ def download_filter(
             "VisAO_zp_filter_curve.dat", unpack=True
         )
 
-        # Not sure if energy- or photon-counting detector
         det_type = "photon"
 
         os.remove("VisAO_zp_filter_curve.dat")
@@ -88,7 +85,6 @@ def download_filter(
 
         wavelength, transmission = np.loadtxt("Keck_NIRC2.NB_4.05.dat", unpack=True)
 
-        # Not sure if energy- or photon-counting detector
         det_type = "photon"
 
         os.remove("Keck_NIRC2.NB_4.05.dat")
@@ -105,7 +101,6 @@ def download_filter(
         wavelength = wavelength[:-7]
         transmission = transmission[:-7]
 
-        # Not sure if energy- or photon-counting detector
         det_type = "photon"
 
         os.remove("VisAO_Ys_filter_curve.dat")

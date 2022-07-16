@@ -37,9 +37,11 @@ def plot_walkers(
     tag : str
         Database tag with the samples.
     nsteps : int, None
-        Number of steps that are plotted. All steps are plotted if set to ``None``.
+        Number of steps that are plotted. All steps are
+        plotted if the argument is set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values
+        are used if the arguments is set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -69,10 +71,11 @@ def plot_walkers(
 
     if samples.ndim == 2:
         raise ValueError(
-            f"The samples of '{tag}' have only 2 dimensions whereas 3 are required "
-            f"for plotting the walkers. The plot_walkers function can only be "
-            f"used after running the MCMC with run_mcmc and not after running "
-            f"run_ultranest or run_multinest."
+            f"The samples of '{tag}' have only 2 dimensions "
+            f"whereas 3 are required for plotting the walkers. "
+            f"The plot_walkers function can only be used after "
+            "running the MCMC with run_mcmc and not after "
+            f"running run_ultranest or run_multinest."
         )
 
     ndim = samples.shape[-1]
@@ -197,44 +200,60 @@ def plot_posterior(
     inc_pt_param: bool = False,
     inc_loglike: bool = False,
     output: Optional[str] = "posterior.pdf",
+    object_type: str = "planet",
 ) -> None:
     """
-    Function to plot the posterior distribution of the fitted parameters.
+    Function to plot the posterior distribution
+    of the fitted parameters.
 
     Parameters
     ----------
     tag : str
         Database tag with the samples.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to ``None``.
+        Number of burnin steps to exclude. All samples
+        are used if the argument is set to ``None``.
     title : str, None
-        Plot title. No title is shown if set to ``None``.
+        Plot title. No title is shown if the arguments
+        is set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values
+        are used if the arguments is set to ``None``.
     title_fmt : str, list(str)
-        Format of the titles above the 1D distributions. Either a single string, which will be used
-        for all parameters, or a list with the title format for each parameter separately (in the
-        order as shown in the corner plot).
+        Format of the titles above the 1D distributions. Either a
+        single string, which will be used for all parameters, or a
+        list with the title format for each parameter separately
+        (in the order as shown in the corner plot).
     limits : list(tuple(float, float), ), None
-        Axis limits of all parameters. Automatically set if set to ``None``.
+        Axis limits of all parameters. Automatically set if the
+        argument is set to ``None``.
     max_prob : bool
-        Plot the position of the sample with the maximum posterior probability.
+        Plot the position of the sample with the
+        maximum posterior probability.
     vmr : bool
-        Plot the volume mixing ratios (i.e. number fractions) instead of the mass fractions of the
-        retrieved species with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        Plot the volume mixing ratios (i.e. number fractions)
+        instead of the mass fractions of the retrieved species with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
     inc_luminosity : bool
-        Include the log10 of the luminosity in the posterior plot as calculated from the
-        effective temperature and radius.
+        Include the log10 of the luminosity in the posterior plot
+        as calculated from the effective temperature and radius.
     inc_mass : bool
-        Include the mass in the posterior plot as calculated from the surface gravity and radius.
+        Include the mass in the posterior plot as calculated
+        from the surface gravity and radius.
     inc_pt_param : bool
-        Include the parameters of the pressure-temperature profile. Only used if the ``tag``
-        contains samples obtained with :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        Include the parameters of the pressure-temperature profile.
+        Only used if the ``tag`` contains samples obtained with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
     inc_loglike : bool
-        Include the log10 of the likelihood as additional parameter in the corner plot.
+        Include the log10 of the likelihood as additional
+        parameter in the corner plot.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
+    object_type : str
+        Object type ('planet' or 'star'). With 'planet', the radius
+        and mass are expressed in Jupiter units. With 'star', the
+        radius and mass are expressed in solar units.
 
     Returns
     -------
@@ -637,6 +656,19 @@ def plot_posterior(
                 "Samples with the log(g) and radius are required for 'inc_mass=True'."
             )
 
+    # Change from Jupiter to solar units if star
+
+    if "radius" in box.parameters:
+        radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
+        if object_type == "star":
+            samples[:, radius_index] *= constants.R_JUP/constants.R_SUN
+
+    if "mass" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
+        if object_type == "star":
+            samples[:, mass_index] *= constants.M_JUP/constants.M_SUN
+            samples[:, mass_index] = np.log10(samples[:, mass_index])
+
     if inc_loglike:
         # Get ln(L) of the samples
         ln_prob = box.ln_prob[..., np.newaxis]
@@ -657,7 +689,8 @@ def plot_posterior(
         box.parameters.append("log_prob")
         ndim += 1
 
-    labels = plot_util.update_labels(box.parameters)
+    labels = plot_util.update_labels(
+        box.parameters, object_type=object_type)
 
     # Check if parameter values were fixed
 
@@ -836,9 +869,11 @@ def plot_mag_posterior(
     filter_name : str
         Filter name.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to ``None``.
+        Number of burnin steps to exclude. All samples are
+        used if the argument is set to ``None``.
     xlim : tuple(float, float), None
-        Axis limits. Automatically set if set to ``None``.
+        Axis limits. Automatically set if the argument is
+        set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -935,19 +970,23 @@ def plot_size_distributions(
     output: Optional[str] = "size_distributions.pdf",
 ) -> None:
     """
-    Function to plot random samples of the log-normal or power-law size distributions.
+    Function to plot random samples of the log-normal
+    or power-law size distributions.
 
     Parameters
     ----------
     tag : str
         Database tag with the samples.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
-        after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+        Number of burnin steps to exclude. All samples are used if the
+        argument is set to ``None``. Only required after running MCMC
+        with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
     random : int, None
-        Number of randomly selected samples. All samples are used if set to ``None``.
+        Number of randomly selected samples. All samples are used
+        if the argument set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values are used
+        if the argument set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -1113,28 +1152,35 @@ def plot_extinction(
     output: Optional[str] = "extinction.pdf",
 ) -> None:
     """
-    Function to plot random samples of the extinction, either from fitting a size distribution
-    of enstatite grains (``dust_radius``, ``dust_sigma``, and ``dust_ext``), or from fitting
-    ISM extinction (``ism_ext`` and optionally ``ism_red``).
+    Function to plot random samples of the extinction, either from
+    fitting a size distribution of enstatite grains (``dust_radius``,
+    ``dust_sigma``, and ``dust_ext``), or from fitting ISM extinction
+    (``ism_ext`` and optionally ``ism_red``).
 
     Parameters
     ----------
     tag : str
         Database tag with the samples.
     burnin : int, None
-        Number of burnin steps to exclude. All samples are used if set to ``None``. Only required
-        after running MCMC with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+        Number of burnin steps to exclude. All samples are used if the
+        argument is set to ``None``. Only required after running MCMC
+        with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
     random : int, None
-        Number of randomly selected samples. All samples are used if set to ``None``.
+        Number of randomly selected samples. All samples are used if
+        the argument is set to ``None``.
     wavel_range : tuple(float, float), None
-        Wavelength range (um) for the extinction. The default wavelength range (0.4, 10.) is used
-        if set to ``None``.
+        Wavelength range (um) for the extinction. The default
+        wavelength range (0.4, 10.) is used if the argument is
+        set to ``None``.
     xlim : tuple(float, float), None
-        Limits of the wavelength axis. The range is set automatically if set to ``None``.
+        Limits of the wavelength axis. The range is set automatically
+        if the argument is set to ``None``.
     ylim : tuple(float, float)
-        Limits of the extinction axis. The range is set automatically if set to ``None``.
+        Limits of the extinction axis. The range is set automatically
+        if the argument is set to ``None``.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
+        Offset of the x- and y-axis label. Default values are used
+        if the argument is set to ``None``.
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.

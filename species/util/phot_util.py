@@ -438,7 +438,13 @@ def get_residuals(
 
     if res_phot is not None:
         for key, value in res_phot.items():
-            chi2_stat += value[1] ** 2
+            if value.ndim == 1:
+                chi2_stat += value[1] ** 2
+
+            elif value.ndim == 2:
+                for i in range(value.shape[1]):
+                    chi2_stat += value[1][i] ** 2
+
             n_dof += 1
 
     if res_spec is not None:

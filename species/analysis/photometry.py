@@ -427,7 +427,7 @@ class SyntheticPhotometry:
         ] = None,
     ) -> Tuple[
         Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]],
-        Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]],
+        Union[Tuple[Optional[float], Optional[float]], Tuple[Optional[np.ndarray], Optional[np.ndarray]]],
     ]:
         """
         Function for converting a flux into a magnitude.

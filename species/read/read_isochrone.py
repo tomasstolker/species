@@ -30,7 +30,8 @@ class ReadIsochrone:
         Parameters
         ----------
         tag : str
-            Database tag of the isochrone data.
+            Database tag of the isochrone data (e.g. 'ames-cond', 'ames-dusty',
+            'sonora+0.0', 'sonora-0.5', 'sonora+0.5').
 
         Returns
         -------
@@ -166,6 +167,24 @@ class ReadIsochrone:
             fill_value="nan",
             rescale=False,
         )
+
+        if mag_abs is None and filter_mag is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filter_mag} filter so "
+                f"setting the argument of 'filter_mag' to None."
+            )
+
+            filter_mag = None
+
+        if mag_abs is None and filters_color is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filters_color} filters so "
+                f"setting the argument of 'filter_color' to None."
+            )
+
+            filters_color = None
 
         return box.create_box(
             boxtype="isochrone",

@@ -201,11 +201,12 @@ class ReadFilter:
 
             else:
                 warnings.warn(
-                    f"Detector type not found for {self.filter_name}. The database "
-                    f"was probably created before the detector type was introduced "
-                    f"in species (v0.3.1). Assuming an energy-counting detector."
+                    f"Detector type not found for {self.filter_name}. "
+                    "The database was probably created before the "
+                    "detector type was introduced in species v0.3.1. "
+                    "Assuming an photon-counting detector."
                 )
 
-                det_type = "energy"
+                det_type = "photon"
 
         return det_type

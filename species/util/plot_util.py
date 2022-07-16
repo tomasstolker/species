@@ -118,7 +118,7 @@ def sptype_stellar(sptype: np.ndarray, shape: Tuple[int]) -> np.ndarray:
 
 
 @typechecked
-def update_labels(param: List[str]) -> List[str]:
+def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     """
     Function for formatting the model parameters to use them as labels
     in the posterior plot.
@@ -127,6 +127,10 @@ def update_labels(param: List[str]) -> List[str]:
     ----------
     param : list
         List with names of the model parameters.
+    object_type : str
+        Object type ('planet' or 'star'). With 'planet', the radius
+        and mass are expressed in Jupiter units. With 'star', the
+        radius and mass are expressed in solar units.
 
     Returns
     -------
@@ -260,7 +264,10 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "radius" in param:
         index = param.index("radius")
-        param[index] = r"$R$ ($R_\mathrm{J}$)"
+        if object_type == "planet":
+            param[index] = r"$R$ ($R_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$R$ ($R_\mathrm{\odot}$)"
 
     if "distance" in param:
         index = param.index("distance")
@@ -272,7 +279,10 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "mass" in param:
         index = param.index("mass")
-        param[index] = r"$M$ ($M_\mathrm{J}$)"
+        if object_type == "planet":
+            param[index] = r"$\log\,M/M_\mathrm{J}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,M/M_\mathrm{\odot}$"
 
     if "age" in param:
         index = param.index("age")
@@ -534,7 +544,7 @@ def update_labels(param: List[str]) -> List[str]:
 
     if "log_prob" in param:
         index = param.index("log_prob")
-        param[index] = r"$\log\,L$"
+        param[index] = r"$\log\,\mathcal{L}$"
 
     if "log_tau_cloud" in param:
         index = param.index("log_tau_cloud")

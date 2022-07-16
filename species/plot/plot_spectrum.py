@@ -48,20 +48,23 @@ def plot_spectrum(
     leg_param: Optional[List[str]] = None,
 ):
     """
-    Function for plotting a spectral energy distribution and combining various data such as spectra,
-    photometric fluxes, model spectra, synthetic photometry, fit residuals, and filter profiles.
+    Function for plotting a spectral energy distribution and combining
+    various data such as spectra, photometric fluxes, model spectra,
+    synthetic photometry, fit residuals, and filter profiles.
 
     Parameters
     ----------
     boxes : list(species.core.box)
         Boxes with data.
     filters : list(str), None
-        Filter IDs for which the transmission profile is plotted. Not plotted if set to None.
+        Filter IDs for which the transmission profile is plotted.
+        Not plotted if set to ``None``.
     residuals : species.core.box.ResidualsBox, None
-        Box with residuals of a fit. Not plotted if set to None.
+        Box with residuals of a fit. Not plotted if set to ``None``.
     plot_kwargs : list(dict), None
-        List with dictionaries of keyword arguments for each box. For example, if the ``boxes``
-        are a ``ModelBox`` and ``ObjectBox``:
+        List with dictionaries of keyword arguments for each box.
+        For example, if the ``boxes`` are a ``ModelBox`` and
+        ``ObjectBox``:
 
         .. code-block:: python
 
@@ -74,49 +77,61 @@ def plot_spectrum(
                           'Paranal/NACO.Lp': {'marker': 's', 'ms': 4., 'color': 'tab:green', 'ls': 'none'},
                           'Paranal/NACO.Mp': {'marker': 's', 'ms': 4., 'color': 'tab:green', 'ls': 'none'}}]
 
-        For an ``ObjectBox``, the dictionary contains items for the different spectrum and filter
-        names stored with :func:`~species.data.database.Database.add_object`. In case both
-        and ``ObjectBox`` and a ``SynphotBox`` are provided, then the latter can be set to ``None``
-        in order to use the same (but open) symbols as the data from the ``ObjectBox``. Note that
-        if a filter name is duplicated in an ``ObjectBox`` (Paranal/SPHERE.IRDIS_D_K12_1 in the
-        example) then a list with two dictionaries should be provided. Colors are automatically
-        chosen if ``plot_kwargs`` is set to ``None``.
+        For an ``ObjectBox``, the dictionary contains items for the
+        different spectrum and filter names stored with
+        :func:`~species.data.database.Database.add_object`. In case
+        both and ``ObjectBox`` and a ``SynphotBox`` are provided,
+        then the latter can be set to ``None`` in order to use the
+        same (but open) symbols as the data from the ``ObjectBox``.
+        Note that if a filter name is duplicated in an ``ObjectBox``
+        (Paranal/SPHERE.IRDIS_D_K12_1 in the example) then a list
+        with two dictionaries should be provided. Colors are
+        automatically chosen if ``plot_kwargs`` is set to ``None``.
     xlim : tuple(float, float)
         Limits of the wavelength axis.
     ylim : tuple(float, float)
         Limits of the flux axis.
     ylim_res : tuple(float, float), None
-        Limits of the residuals axis. Automatically chosen (based on the minimum and maximum
-        residual value) if set to None.
-    scale : tuple(str, str), None
-        Scale of the x and y axes ('linear' or 'log'). The scale is set to ``('linear', 'linear')``
+        Limits of the residuals axis. Automatically chosen
+        (based on the minimum and maximum residual value)
         if set to ``None``.
+    scale : tuple(str, str), None
+        Scale of the x and y axes ('linear' or 'log').
+        The scale is set to ``('linear', 'linear')`` if
+        set to ``None``.
     title : str
         Title.
     offset : tuple(float, float)
         Offset for the label of the x- and y-axis.
     legend : str, tuple, dict, list(dict, dict), None
-        Location of the legend (str or tuple(float, float)) or a dictionary with the ``**kwargs``
-        of ``matplotlib.pyplot.legend``, for example ``{'loc': 'upper left', 'fontsize: 12.}``.
-        Alternatively, a list with two values can be provided to separate the model and data
-        handles in two legends. Each of these two elements can be set to ``None``. For example,
-        ``[None, {'loc': 'upper left', 'fontsize: 12.}]``, if only the data points should be
-        included in a legend.
+        Location of the legend (str or tuple(float, float))
+        or a dictionary with the ``**kwargs`` of
+        ``matplotlib.pyplot.legend``, for example
+        ``{'loc': 'upper left', 'fontsize: 12.}``. Alternatively,
+        a list with two values can be provided to separate the
+        model and data handles in two legends. Each of these two
+        elements can be set to ``None``. For example,
+        ``[None, {'loc': 'upper left', 'fontsize: 12.}]``, if
+        only the data points should be included in a legend.
     figsize : tuple(float, float)
         Figure size.
     object_type : str
-        Object type ('planet' or 'star'). With 'planet', the radius and mass are expressed in
-        Jupiter units. With 'star', the radius and mass are expressed in solar units.
+        Object type ('planet' or 'star'). With 'planet', the radius
+        and mass are expressed in Jupiter units. With 'star', the
+        radius and mass are expressed in solar units.
     quantity: str
-        The quantity of the y-axis ('flux density', 'flux', or 'magnitude').
+        The quantity of the y-axis ('flux density', 'flux',
+        or 'magnitude').
     output : str
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     leg_param : list(str), None
-        List with the parameters to include in the legend of the model spectra. Apart from
-        atmospheric parameters (e.g. 'teff', 'logg', 'radius') also parameters such as 'mass'
-        and 'luminosity' can be included. The default atmospheric parameters are included in the
-        legend if the argument is set to ``None``.
+        List with the parameters to include in the legend of the
+        model spectra. Apart from atmospheric parameters (e.g.
+        'teff', 'logg', 'radius') also parameters such as 'mass'
+        and 'luminosity' can be included. The default atmospheric
+        parameters are included in the legend if the argument is
+        set to ``None``.
 
     Returns
     -------

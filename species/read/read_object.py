@@ -79,12 +79,16 @@ class ReadObject:
     @typechecked
     def get_photometry(self, filter_name: str) -> np.ndarray:
         """
-        Function for reading the photometry of the object.
+        Function for reading photometric data of the object
+        for a specified filter name.
 
         Parameters
         ----------
         filter_name : str
-            Filter name as stored in the database.
+            Filter name as stored in the database. The
+            :func:`~species.read.read_object.ReadObject.list_filters`
+            method can be used for listing the filter names for
+            which photometric data of the object is available.
 
         Returns
         -------

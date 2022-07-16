@@ -475,13 +475,13 @@ class Database:
         Parameters
         ----------
         model : str
-            Evolutionary model ('ames', 'sonora', or 'baraffe').
-            For 'ames' and 'sonora', the isochrones will be
-            automatically downloaded and added to the database.
-            For 'baraffe', the isochrone data can be downloaded
-            from https://phoenix.ens-lyon.fr/Grids/ and manually
-            added by setting the ``filename`` and ``tag``
-            arguments.
+            Evolutionary model ('ames', 'bt-settl', 'sonora',
+            or 'baraffe'). For 'ames', 'bt-settl', and 'sonora',
+            the isochrones will be automatically downloaded and
+            added to the database. For 'baraffe', the isochrone
+            data can be downloaded from
+            https://phoenix.ens-lyon.fr/Grids/ and manually added
+            by setting the ``filename`` and ``tag`` arguments.
         filename : str, None
             Filename with the isochrone data. Only required with
             ``model='baraffe'`` and can be set to ``None`` otherwise.
@@ -507,6 +507,10 @@ class Database:
             if "isochrones/ames-dusty" in h5_file:
                 del h5_file["isochrones/ames-dusty"]
 
+        elif model == "bt-settl":
+            if "isochrones/bt-settl" in h5_file:
+                del h5_file["isochrones/bt-settl"]
+
         elif model == "sonora":
             if "isochrones/sonora+0.0" in h5_file:
                 del h5_file["isochrones/sonora+0.0"]
@@ -521,6 +525,9 @@ class Database:
 
         if model == "ames":
             isochrones.add_ames(h5_file, self.input_path)
+
+        elif model == "bt-settl":
+            isochrones.add_btsettl(h5_file, self.input_path)
 
         elif model == "sonora":
             isochrones.add_sonora(h5_file, self.input_path)
@@ -1269,11 +1276,14 @@ class Database:
         tag : str
             Tag name in the database.
         filename : str, None
-            Filename with the calibration spectrum. The first column
-            should contain the wavelength (um), the second column the
-            flux density (W m-2 um-1), and the third column the error
-            (W m-2 um-1). The ``data`` argument is used if set to
-            ``None``.
+            Name of the file that contains the calibration spectrum.
+            The file could be either a plain text file, in which the
+            first column contains the wavelength (um), the second
+            column the flux density (W m-2 um-1), and the third
+            column the uncertainty (W m-2 um-1). Or, a FITS file
+            can be provided in which the data is stored as a 2D
+            array in the primary HDU. The ``data`` argument is
+            not used if set to ``None``.
         data : np.ndarray, None
             Spectrum stored as 3D array with shape
             ``(n_wavelength, 3)``. The first column should contain the
@@ -1312,7 +1322,36 @@ class Database:
             del h5_file["spectra/calibration/" + tag]
 
         if filename is not None:
-            data = np.loadtxt(filename)
+            if filename[-5:] == ".fits":
+                data = fits.getdata(filename)
+
+                if data.ndim != 2:
+                    raise RuntimeError("The FITS file that is provided "
+                                       "as argument of \'filename\' does "
+                                       "not contain a 2D dataset.")
+
+                if data.shape[1] != 3 and data.shape[0]:
+                    warnings.warn(f"Transposing the data that is read "
+                                  f"from {filename} because the shape "
+                                  f"is {data.shape} instead of "
+                                  f"{data.shape[1], data.shape[0]}.")
+
+                    data = np.transpose(data)
+
+            else:
+                data = np.loadtxt(filename)
+
+
+        nan_index = np.isnan(data[:, 1])
+
+        if sum(nan_index) != 0:
+            data = data[~nan_index, :]
+
+            warnings.warn(
+                f"Found {sum(nan_index)} fluxes with NaN in "
+                f"the data of {filename}. Removing the "
+                f"spectral fluxes that contain a NaN."
+            )
 
         if units is None:
             wavelength = scaling[0] * data[:, 0]  # (um)
@@ -2938,18 +2977,18 @@ class Database:
             dset.attrs["wavel_min"] = radtrans["wavel_range"][0]
             dset.attrs["wavel_max"] = radtrans["wavel_range"][1]
 
-            if radtrans["quenching"] is None:
+            if "quenching" not in radtrans or radtrans["quenching"] is None:
                 dset.attrs["quenching"] = "None"
             else:
                 dset.attrs["quenching"] = radtrans["quenching"]
 
-            if "pt_smooth" in radtrans:
-                dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
-
-            if radtrans["temp_nodes"] is None:
+            if "temp_nodes" not in radtrans or radtrans["temp_nodes"] is None:
                 dset.attrs["temp_nodes"] = "None"
             else:
                 dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
+
+            if "pt_smooth" in radtrans:
+                dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
 
             if "max_press" in radtrans:
                 dset.attrs["max_press"] = radtrans["max_press"]

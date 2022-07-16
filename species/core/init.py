@@ -75,12 +75,36 @@ class SpeciesInit:
         config = configparser.ConfigParser()
         config.read(config_file)
 
-        database_file = os.path.abspath(config["species"]["database"])
-        data_folder = os.path.abspath(config["species"]["data_folder"])
+        if "database" in config["species"]:
+            database_file = os.path.abspath(config["species"]["database"])
+        else:
+            database_file = "species_database.hdf5"
+            with open(config_file, "a") as file_obj:
+                file_obj.write("\n; File with the HDF5 database\n")
+                file_obj.write("database = species_database.hdf5\n")
+
+        if "data_folder" in config["species"]:
+            data_folder = os.path.abspath(config["species"]["data_folder"])
+        else:
+            data_folder = "./data/"
+            with open(config_file, "a") as file_obj:
+                file_obj.write("\n; Folder where data will be downloaded\n")
+                file_obj.write("data_folder = ./data/\n")
+
+        if "interp_method" in config["species"]:
+            interp_method = config["species"]["interp_method"]
+        else:
+            interp_method = "linear"
+            with open(config_file, "a") as file_obj:
+                file_obj.write("\n; Method for the grid interpolation\n")
+                file_obj.write("; Options: linear, nearest, slinear, "
+                               "cubic, quintic, pchip\n")
+                file_obj.write("interp_method = linear\n")
 
         print(f"Database: {database_file}")
         print(f"Data folder: {data_folder}")
         print(f"Working folder: {working_folder}")
+        print(f"Grid interpolation method: {interp_method}")
 
         if not os.path.isfile(database_file):
             print("Creating species_database.hdf5...", end="", flush=True)
