@@ -207,17 +207,22 @@ class FitSpectrum:
 
             ens_sampler.run_mcmc(initial, nsteps, progress=True)
 
+        # Dictionary with attributes that will be stored
+
+        attr_dict = {
+            "spec_type": "calibration",
+            "spec_name": self.spectrum,
+            "mean_accept": np.mean(ens_sampler.acceptance_fraction),
+        }
+
+        # Add samples to the database
+
         species_db = database.Database()
 
         species_db.add_samples(
             sampler="emcee",
             samples=ens_sampler.get_chain(),
             ln_prob=ens_sampler.get_log_prob(),
-            ln_evidence=None,
-            mean_accept=np.mean(ens_sampler.acceptance_fraction),
-            spectrum=("calibration", self.spectrum),
             tag=tag,
             modelpar=self.modelpar,
-            parallax=None,
-            spec_labels=None,
         )

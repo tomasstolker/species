@@ -7,6 +7,7 @@ docs/tutorials/retrieval.tgz
 docs/tutorials/*.png
 docs/tutorials/*.fits
 docs/tutorials/*.dat
+docs/tutorials/*.json
 docs/tutorials/data/*
 docs/tutorials/ultranest/*
 docs/tutorials/multinest/*

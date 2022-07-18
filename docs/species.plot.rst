@@ -20,6 +20,14 @@ species.plot.plot\_comparison module
    :undoc-members:
    :show-inheritance:
 
+species.plot.plot\_evolution module
+-----------------------------------
+
+.. automodule:: species.plot.plot_evolution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.plot.plot\_mcmc module
 ------------------------------
 

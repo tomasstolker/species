@@ -1,5 +1,7 @@
 from species.analysis.emission_line import EmissionLine
 
+from species.analysis.evolution import PlanetEvolution
+
 from species.analysis.compare_spectra import CompareSpectra
 
 from species.analysis.fit_model import FitModel
@@ -45,6 +47,8 @@ from species.plot.plot_comparison import (
 )
 
 from species.plot.plot_color import plot_color_magnitude, plot_color_color
+
+from species.plot.plot_evolution import plot_cooling
 
 from species.plot.plot_mcmc import (
     plot_posterior,

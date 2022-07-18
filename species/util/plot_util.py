@@ -2,6 +2,7 @@
 Utility functions for plotting data.
 """
 
+from string import ascii_lowercase
 from typing import Optional, Tuple, List
 
 import numpy as np
@@ -218,14 +219,6 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("logg")
         param[index] = r"$\log\,g$"
 
-    if "logg_0" in param:
-        index = param.index("logg_0")
-        param[index] = r"$\log\,g_\mathrm{1}$"
-
-    if "logg_1" in param:
-        index = param.index("logg_1")
-        param[index] = r"$\log\,g_\mathrm{2}$"
-
     if "metallicity" in param:
         index = param.index("metallicity")
         param[index] = "[Fe/H]"
@@ -288,53 +281,79 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("age")
         param[index] = "Age (Myr)"
 
-    if "mass_1" in param:
-        index = param.index("mass_1")
-        param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
+    if "mass" in param:
+        index = param.index("mass")
+        param[index] = r"$M$ ($M_\mathrm{J}$)"
 
-    if "mass_2" in param:
-        index = param.index("mass_2")
-        param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"mass_{i}" in param:
+            index = param.index(f"mass_{i}")
+            param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
+        else:
+            break
 
-    if "entropy" in param:
-        index = param.index("entropy")
+    if "s_i" in param:
+        index = param.index("s_i")
         param[index] = r"$S_\mathrm{i}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
 
-    if "entropy_1" in param:
-        index = param.index("entropy_1")
-        param[index] = r"$S_\mathrm{i,b}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"s_i_{i}" in param:
+            index = param.index(f"s_i_{i}")
+            param[index] = rf"$S_\mathrm{{i,{item}}}$ ($k_\mathrm{{B}}/\mathrm{{baryon}}$)"
 
-    if "entropy_2" in param:
-        index = param.index("entropy_2")
-        param[index] = r"$S_\mathrm{i,c}$ ($k_\mathrm{B}/\mathrm{baryon}$)"
+    if "d_frac" in param:
+        index = param.index("d_frac")
+        param[index] = r"$\log\,D_\mathrm{i}$"
 
-    if "dfrac_1" in param:
-        index = param.index("dfrac_1")
-        param[index] = r"$\log\,D_\mathrm{i,b}$"
-
-    if "dfrac_2" in param:
-        index = param.index("dfrac_2")
-        param[index] = r"$\log\,D_\mathrm{i,c}$"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"d_frac_{i}" in param:
+            index = param.index(f"d_frac_{i}")
+            param[index] = rf"$\log\,D_\mathrm{{i,{item}}}$"
+        else:
+            break
 
     if "y_frac" in param:
         index = param.index("y_frac")
         param[index] = r"$Y$"
 
-    if "yfrac_1" in param:
-        index = param.index("yfrac_1")
-        param[index] = r"$Y_\mathrm{b}$"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"y_frac_{i}" in param:
+            index = param.index(f"y_frac_{i}")
+            param[index] = rf"$Y_\mathrm{{{item}}}$"
+        else:
+            break
 
-    if "yfrac_2" in param:
-        index = param.index("yfrac_2")
-        param[index] = r"$Y_\mathrm{c}$"
+    if "m_core" in param:
+        index = param.index("m_core")
+        param[index] = r"$M_\mathrm{core}$ ($M_\mathrm{E}$)"
 
-    if "mcore_1" in param:
-        index = param.index("mcore_1")
-        param[index] = r"$M_\mathrm{core,b}$ ($M_\mathrm{E}$)"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"m_core_{i}" in param:
+            index = param.index(f"m_core_{i}")
+            param[index] = rf"$M_\mathrm{{core,{item}}}$ ($M_\mathrm{{E}}$)"
+        else:
+            break
 
-    if "mcore_2" in param:
-        index = param.index("mcore_2")
-        param[index] = r"$M_\mathrm{core,c}$ ($M_\mathrm{E}$)"
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"teff_evol_{i}" in param:
+            index = param.index(f"teff_evol_{i}")
+            param[index] = rf"$T_\mathrm{{eff, {item}}}$ (K)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"radius_evol_{i}" in param:
+            index = param.index(f"radius_evol_{i}")
+            param[index] = rf"$R_\mathrm{{{item}}}$ ($R_\mathrm{{J}}$)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"logg_evol_{i}" in param:
+            index = param.index(f"logg_evol_{i}")
+            param[index] = rf"$\log\,g_\mathrm{{{item}}}$"
+        else:
+            break
 
     if "luminosity" in param:
         index = param.index("luminosity")

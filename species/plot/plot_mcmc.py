@@ -13,10 +13,12 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from typeguard import typechecked
 from matplotlib.ticker import ScalarFormatter
 from scipy.interpolate import RegularGridInterpolator
+from tqdm.autonotebook import tqdm
+from typeguard import typechecked
 
+from species.analysis import evolution
 from species.core import constants
 from species.data import database
 from species.util import plot_util, dust_util, read_util, retrieval_util
@@ -174,12 +176,12 @@ def plot_walkers(
         for j in range(samples.shape[0]):
             ax.plot(samples[j, :, i], ls="-", lw=0.5, color="black", alpha=0.5)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
 
     plt.clf()
     plt.close()
@@ -274,6 +276,7 @@ def plot_posterior(
 
     box = species_db.get_samples(tag, burnin=burnin)
     samples = box.samples
+    attr = box.attributes
 
     # index_sel = [0, 1, 8, 9, 14]
     # samples = samples[:, index_sel]
@@ -319,7 +322,7 @@ def plot_posterior(
         for item in item_del:
             box.parameters.remove(item)
 
-    if box.spectrum == "petitradtrans" and box.attributes["chemistry"] == "free":
+    if box.spectrum == "petitradtrans" and attr["chemistry"] == "free":
         box.parameters.append("c_h_ratio")
         box.parameters.append("o_h_ratio")
         box.parameters.append("c_o_ratio")
@@ -444,7 +447,7 @@ def plot_posterior(
     if (
         vmr
         and box.spectrum == "petitradtrans"
-        and box.attributes["chemistry"] == "free"
+        and attr["chemistry"] == "free"
     ):
         print("Changing mass fractions to number fractions...", end="", flush=True)
 
@@ -520,11 +523,6 @@ def plot_posterior(
 
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3
-
-    if output is None:
-        print("Plotting the posterior...", end="", flush=True)
-    else:
-        print(f"Plotting the posterior: {output}...", end="", flush=True)
 
     if "H2O" in box.parameters or "H2O_HITEMP" in box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
@@ -669,6 +667,8 @@ def plot_posterior(
             samples[:, mass_index] *= constants.M_JUP/constants.M_SUN
             samples[:, mass_index] = np.log10(samples[:, mass_index])
 
+    # Include the log-likelihood value in the posterior
+
     if inc_loglike:
         # Get ln(L) of the samples
         ln_prob = box.ln_prob[..., np.newaxis]
@@ -688,6 +688,54 @@ def plot_posterior(
         samples = np.append(samples, np.log10(prob), axis=-1)
         box.parameters.append("log_prob")
         ndim += 1
+
+    # Add atmospheric parameters (R, Teff, and log(g))
+    # if the posterior is sampled by PlanetEvolution
+
+    if attr["spec_type"] == "model" and attr["spec_name"] == "evolution":
+        print("Calculating the posteriors of Teff, R, and log(g)...")
+        planet_evol = evolution.PlanetEvolution(object_lbol=None)
+        interp_lbol, interp_radius, _ = planet_evol._interpolate_grid()
+
+        radius = np.zeros((samples.shape[0], attr["n_planets"]))
+        log_g = np.zeros((samples.shape[0], attr["n_planets"]))
+        t_eff = np.zeros((samples.shape[0], attr["n_planets"]))
+
+        for j in tqdm(range(attr["n_planets"])):
+            for i in tqdm(range(samples.shape[0]), leave=False):
+                age = samples[i, (j*5)+0]
+                mass = samples[i, (j*5)+1]
+                s_i = samples[i, (j*5)+2]
+                d_frac = samples[i, (j*5)+3]
+                y_frac = samples[i, (j*5)+4]
+                m_core = samples[i, (j*5)+5]
+
+                radius[i, j] = interp_radius([age, mass, s_i, d_frac, y_frac, m_core])
+                log_g[i, j] = np.log10(1e2*mass*constants.M_JUP*constants.GRAVITY/(radius[i, j]*constants.R_JUP)**2)
+
+                l_bol = 10.**interp_lbol([age, mass, s_i, d_frac, y_frac, m_core])[0]*constants.L_SUN
+                t_eff[i, j] = (l_bol/(4.*np.pi*(radius[i, j]*constants.R_JUP)**2*constants.SIGMA_SB))**0.25
+
+        for i in range(attr["n_planets"]):
+            box.parameters.append(f"teff_evol_{i}")
+            ndim += 1
+
+        for i in range(attr["n_planets"]):
+            box.parameters.append(f"radius_evol_{i}")
+            ndim += 1
+
+        for i in range(attr["n_planets"]):
+            box.parameters.append(f"logg_evol_{i}")
+            ndim += 1
+
+        samples = np.hstack((samples, t_eff, radius, log_g))
+
+    if output is None:
+        print("Plotting the posterior...", end="", flush=True)
+    else:
+        print(f"Plotting the posterior: {output}...", end="", flush=True)
+
+    # Create the labels for the plot
 
     labels = plot_util.update_labels(
         box.parameters, object_type=object_type)
@@ -839,12 +887,12 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
 
     plt.clf()
     plt.close()
@@ -948,12 +996,12 @@ def plot_mag_posterior(
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
 
     plt.clf()
     plt.close()
@@ -1129,12 +1177,12 @@ def plot_size_distributions(
 
         ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="black", alpha=0.5)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
 
     plt.clf()
     plt.close()
@@ -1402,12 +1450,12 @@ def plot_extinction(
     else:
         print(f"Plotting extinction: {output}...", end="", flush=True)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
 
     plt.clf()
     plt.close()

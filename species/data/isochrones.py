@@ -261,6 +261,7 @@ def add_ames(database, input_path):
                     tag=iso_tags[i].lower(),
                     file_name=data_file)
 
+
 def add_btsettl(database, input_path):
     """
     Function for adding the BT-Settl isochrone data to the database.

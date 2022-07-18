@@ -52,6 +52,7 @@ clean:
 	rm -f docs/tutorials/*.png
 	rm -f docs/tutorials/*.fits
 	rm -f docs/tutorials/*.dat
+	rm -f docs/tutorials/*.json
 	rm -rf build/
 	rm -rf dist/
 	rm -rf species.egg-info/

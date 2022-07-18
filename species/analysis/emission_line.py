@@ -537,7 +537,10 @@ class EmissionLine:
 
             # Line luminosity (Lsun)
             lum_sample[i] = (
-                4.0 * np.pi * (1e3 * constants.PARSEC / self.parallax) ** 2 * flux_sample[i]
+                4.0
+                * np.pi
+                * (1e3 * constants.PARSEC / self.parallax) ** 2
+                * flux_sample[i]
             )
             lum_sample[i] /= constants.L_SUN  # (Lsun)
 
@@ -690,7 +693,7 @@ class EmissionLine:
             amplitude: float, mean: float, sigma: float, wavel: np.ndarray
         ):
 
-            return amplitude * np.exp(-0.5 * (wavel - mean) ** 2 / sigma ** 2)
+            return amplitude * np.exp(-0.5 * (wavel - mean) ** 2 / sigma**2)
 
         # Model parameters
 
@@ -939,7 +942,10 @@ class EmissionLine:
             line_flux[i] = np.trapz(model_box.flux, model_box.wavelength)  # (W m-2)
 
             line_lum[i] = (
-                4.0 * np.pi * (1e3 * constants.PARSEC / self.parallax) ** 2 * line_flux[i]
+                4.0
+                * np.pi
+                * (1e3 * constants.PARSEC / self.parallax) ** 2
+                * line_flux[i]
             )  # (W)
             line_lum[i] /= constants.L_SUN  # (Lsun)
 
@@ -1007,6 +1013,15 @@ class EmissionLine:
         except ModuleNotFoundError:
             mpi_rank = 0
 
+        # Dictionary with attributes that will be stored
+
+        attr_dict = {
+            "spec_type": "model",
+            "spec_name": "gaussian",
+            "ln_evidence": (ln_z, ln_z_error),
+            "parallax": self.parallax,
+        }
+
         # Add samples to the database
 
         if mpi_rank == 0:
@@ -1019,13 +1034,8 @@ class EmissionLine:
                 sampler="ultranest",
                 samples=samples,
                 ln_prob=ln_prob,
-                ln_evidence=(ln_z, ln_z_error),
-                mean_accept=None,
-                spectrum=("model", "gaussian"),
                 tag=tag,
                 modelpar=modelpar,
-                parallax=self.parallax,
-                spec_labels=None,
             )
 
         # Create plot
@@ -1033,7 +1043,11 @@ class EmissionLine:
         if plot_filename is None:
             print("Plotting best-fit line profile...", end="", flush=True)
         else:
-            print(f"Plotting best-fit line profile: {plot_filename}...", end="", flush=True)
+            print(
+                f"Plotting best-fit line profile: {plot_filename}...",
+                end="",
+                flush=True,
+            )
 
         mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
         mpl.rcParams["font.family"] = "serif"
