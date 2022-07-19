@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import ScalarFormatter
 from scipy.interpolate import RegularGridInterpolator
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.analysis import evolution
@@ -695,7 +695,7 @@ def plot_posterior(
     if attr["spec_type"] == "model" and attr["spec_name"] == "evolution":
         print("Calculating the posteriors of Teff, R, and log(g)...")
         planet_evol = evolution.PlanetEvolution(object_lbol=None)
-        interp_lbol, interp_radius, _ = planet_evol._interpolate_grid()
+        interp_lbol, interp_radius, _ = planet_evol.interpolate_grid()
 
         radius = np.zeros((samples.shape[0], attr["n_planets"]))
         log_g = np.zeros((samples.shape[0], attr["n_planets"]))

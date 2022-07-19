@@ -1,5 +1,6 @@
 """
-Module with functionalities for retrieving evolutionary parameters.
+Module with functionalities for retrieving the age and bulk parameters
+of one or multiple planets and/or brown dwarfs in a system.
 """
 
 import configparser
@@ -149,11 +150,11 @@ class PlanetEvolution:
             self.model_par.append(f"m_core_{i}")
 
     @typechecked
-    def _interpolate_grid(
+    def interpolate_grid(
         self,
     ) -> Tuple[
-        interpolate._interpolate.RegularGridInterpolator,
-        interpolate._interpolate.RegularGridInterpolator,
+        interpolate.interpolate.RegularGridInterpolator,
+        interpolate.interpolate.RegularGridInterpolator,
         Dict[str, np.ndarray],
     ]:
         """
@@ -263,7 +264,7 @@ class PlanetEvolution:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        grid_interp_lbol, grid_interp_radius, grid_points = self._interpolate_grid()
+        grid_interp_lbol, grid_interp_radius, grid_points = self.interpolate_grid()
 
         # Prior boundaries
 
@@ -540,7 +541,7 @@ class PlanetEvolution:
         samples = analyzer.get_equal_weighted_posterior()
 
         analyzer = pymultinest.analyse.Analyzer(
-            len(self.model_par), outputfiles_basename="multinest/"
+            len(self.model_par), outputfiles_basename=output
         )
 
         sampling_stats = analyzer.get_stats()

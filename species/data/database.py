@@ -18,7 +18,7 @@ import numpy as np
 from astropy.io import fits
 from astroquery.simbad import Simbad
 from scipy.integrate import simps
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.analysis import photometry

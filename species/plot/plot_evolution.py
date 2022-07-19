@@ -26,13 +26,13 @@ def plot_cooling(
     xscale: Optional[str] = "linear",
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
-    figsize: Optional[Tuple[float, float]] = (6.0, 6.0),
+    figsize: Optional[Tuple[float, float]] = (5.0, 5.0),
     output: Optional[str] = "cooling.pdf",
 ):
     """
-    Function for plotting samples of cooling curves that are randomly
-    drawn from the posterior distribution with evolutionary parameters
-    that has been estimated with
+    Function for plotting samples of cooling curves that are
+    randomly drawn from the posterior distribution of age and
+    bulk parameters that has been estimated with
     :class:`~species.analysis.evolution.PlanetEvolution`.
 
     Parameters
@@ -41,6 +41,8 @@ def plot_cooling(
         Database tag where the samples are stored
     n_samples : int
         Number of randomly drawn cooling curves that will be plotted.
+    age_min float, None
+
     xlim : tuple(float, float)
         Limits of the wavelength axis.
     ylim : tuple(float, float)
@@ -54,6 +56,8 @@ def plot_cooling(
         Offset for the label of the x- and y-axis.
     figsize : tuple(float, float)
         Figure size.
+    output : str
+        Name of the output file.
 
     Returns
     -------
@@ -69,7 +73,7 @@ def plot_cooling(
     n_planets = attr["n_planets"]
 
     planet_evol = evolution.PlanetEvolution(object_lbol=None)
-    interp_lbol, interp_radius, grid_points = planet_evol._interpolate_grid()
+    interp_lbol, interp_radius, grid_points = planet_evol.interpolate_grid()
 
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -79,13 +83,13 @@ def plot_cooling(
 
     for cool_item in ["Lbol", "radius"]:
         if output is None:
-            print(f"Plotting {cool_item} cooling curves...", end="", flush=True)
+            print("Plotting cooling curves...", end="", flush=True)
         else:
             output_split = output.split(".")
             output_update = output_split[0] + f"_{cool_item.lower()}." + output_split[1]
 
             print(
-                f"Plotting {cool_item} cooling curves: {output_update}...",
+                f"Plotting cooling curves: {output_update}...",
                 end="",
                 flush=True,
             )
@@ -163,10 +167,6 @@ def plot_cooling(
             if offset is not None:
                 ax[i].get_xaxis().set_label_coords(0.5, offset[0])
                 ax[i].get_yaxis().set_label_coords(offset[1], 0.5)
-
-        points = []
-        for value in grid_points.values():
-            points.append(value)
 
         indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
 
@@ -271,3 +271,204 @@ def plot_cooling(
 
         plt.clf()
         plt.close()
+
+
+@typechecked
+def plot_isochrones(
+    tag: str,
+    n_samples: int = 50,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = None,
+    offset: Optional[Tuple[float, float]] = None,
+    figsize: Optional[Tuple[float, float]] = (5.0, 5.0),
+    output: Optional[str] = "isochrones.pdf",
+):
+    """
+    Function for plotting samples of isochrones that are
+    randomly drawn from the posterior distribution of age
+    and bulk parameters that has been estimated with
+    :class:`~species.analysis.evolution.PlanetEvolution`.
+    For each isochrone, the parameters from a single
+    posterior sample are used.
+
+
+    Parameters
+    ----------
+    tag : str
+        Database tag where the samples are stored
+    n_samples : int
+        Number of randomly drawn cooling curves that will be plotted.
+    xlim : tuple(float, float)
+        Limits of the wavelength axis.
+    ylim : tuple(float, float)
+        Limits of the flux axis.
+    title : str
+        Title to show at the top of the plot.
+    offset : tuple(float, float)
+        Offset for the label of the x- and y-axis.
+    figsize : tuple(float, float)
+        Figure size.
+    output : str
+        Name of the output file.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    species_db = database.Database()
+    samples_box = species_db.get_samples(tag)
+
+    samples = samples_box.samples
+    attr = samples_box.attributes
+    n_planets = attr["n_planets"]
+
+    planet_evol = evolution.PlanetEvolution(object_lbol=None)
+    interp_lbol, _, grid_points = planet_evol.interpolate_grid()
+
+    mpl.rcParams["font.family"] = "serif"
+    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
+
+    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["axes.axisbelow"] = False
+
+    if output is None:
+        print("Plotting isochrones...", end="", flush=True)
+    else:
+        print(
+            f"Plotting isochrones: {output}...",
+            end="",
+            flush=True,
+        )
+
+    plt.figure(1, figsize=figsize)
+    gridsp = mpl.gridspec.GridSpec(n_planets, 1)
+    gridsp.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
+
+    ax = []
+    for i in range(n_planets):
+        ax.append(plt.subplot(gridsp[i, 0]))
+
+    for i in range(n_planets):
+        labelbottom = bool(i == n_planets - 1)
+
+        ax[i].tick_params(
+            axis="both",
+            which="major",
+            colors="black",
+            labelcolor="black",
+            direction="in",
+            width=1,
+            length=5,
+            labelsize=12,
+            top=True,
+            bottom=True,
+            left=True,
+            right=True,
+            labelbottom=labelbottom,
+        )
+
+        ax[i].tick_params(
+            axis="both",
+            which="minor",
+            colors="black",
+            labelcolor="black",
+            direction="in",
+            width=1,
+            length=3,
+            labelsize=12,
+            top=True,
+            bottom=True,
+            left=True,
+            right=True,
+            labelbottom=labelbottom,
+        )
+
+        ax[i].xaxis.set_minor_locator(AutoMinorLocator(5))
+
+        if i == n_planets - 1:
+            ax[i].set_xlabel("Mass ($M_\\mathrm{J}$)", fontsize=13)
+
+        ax[i].set_ylabel("$\\log(L/L_\\odot)$", fontsize=13)
+
+        ax[i].set_xscale("linear")
+        ax[i].set_yscale("log")
+
+        if xlim is not None:
+            ax[i].set_xlim(xlim[0], xlim[1])
+
+        if ylim is not None:
+            ax[i].set_ylim(ylim[0], ylim[1])
+
+        if offset is not None:
+            ax[i].get_xaxis().set_label_coords(0.5, offset[0])
+            ax[i].get_yaxis().set_label_coords(offset[1], 0.5)
+
+    indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
+
+    masses = np.array(grid_points["mass"])  # (Myr)
+
+    for idx in indices:
+        log_lum = np.zeros((n_planets, masses.size))
+
+        for j, item in enumerate(masses):
+            for i in range(n_planets):
+                age = samples[idx, 0]
+                s_i = samples[idx, (i * 5) + 2]
+                d_frac = samples[idx, (i * 5) + 3]
+                y_frac = samples[idx, (i * 5) + 4]
+                m_core = samples[idx, (i * 5) + 5]
+
+                log_lum[i, j] = 10.0 ** interp_lbol(
+                    [age, item, s_i, d_frac, y_frac, m_core]
+                )
+
+                if np.isnan(log_lum[i, j]):
+                    raise ValueError(
+                        f"The interpolated luminosity is "
+                        f"NaN for the following "
+                        f"parameters: {age}, {item},"
+                        f"{s_i}, {d_frac}, {y_frac}"
+                    )
+
+        for i in range(n_planets):
+            ax[i].plot(
+                masses,
+                log_lum[
+                    i,
+                ],
+                lw=0.5,
+                color="gray",
+                alpha=0.5,
+            )
+
+    object_mass = attr["object_mass"]
+    object_lbol = attr["object_lbol"]
+
+    for i in range(n_planets):
+        lbol_err = (
+            10.0 ** (object_lbol[i][0] + object_lbol[i][1]) - 10.0 ** object_lbol[i][0]
+        )
+
+        ax[i].errorbar(
+            object_mass[i][0],
+            10.0 ** object_lbol[i][0],
+            xerr=object_mass[i][1],
+            yerr=lbol_err,
+            color="tab:orange",
+        )
+
+    if title is not None:
+        ax[0].set_title(title, fontsize=18.0)
+
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
+
+    plt.clf()
+    plt.close()

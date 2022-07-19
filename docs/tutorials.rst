@@ -8,13 +8,14 @@ This page contains a list of tutorials which highlight some of the functionaliti
 .. tip::
    Details on the various classes, functions, and parameters can be found in the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_.
 
-**Spectral retrievals**
+**Retrievals**
 
 .. toctree::
    :maxdepth: 1
 
    tutorials/fitting_model_spectra.ipynb
    tutorials/atmospheric_retrieval.ipynb
+   tutorials/planet_evolution.ipynb
 
 **Atmospheric models**
 
