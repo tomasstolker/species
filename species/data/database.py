@@ -1055,8 +1055,9 @@ class Database:
 
                     if data.ndim != 2 or 3 not in data.shape:
                         raise ValueError(
-                            f"The spectrum data from {value[0]} can not be read. The "
-                            f"data format should be 2D with 3 columns."
+                            f"The spectrum data from {value[0]} "
+                            f"can not be read. The data format "
+                            f"should be 2D with 3 columns."
                         )
 
                     if verbose:
@@ -1184,14 +1185,16 @@ class Database:
                         data = np.loadtxt(value[1])
                     except UnicodeDecodeError:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} can not be read. "
-                            f"Please provide a FITS or ASCII file."
+                            f"The covariance matrix from {value[1]} "
+                            f"can not be read. Please provide a "
+                            f"FITS or ASCII file."
                         )
 
-                    if data.ndim != 2 or 3 not in data.shape:
+                    if data.ndim != 2 or data.shape[0] != data.shape[1]:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} can not be read. "
-                            f"The data format should be 2D with the same number of "
+                            f"The covariance matrix from {value[1]} "
+                            f"can not be read. The data format "
+                            f"should be 2D with the same number of "
                             f"wavelength points as the spectrum."
                         )
 
@@ -1200,9 +1203,10 @@ class Database:
 
                     if np.all(np.diag(data) == 1.0):
                         warnings.warn(
-                            f"The matrix from {value[1]} contains ones on "
-                            f"the diagonal. Converting this correlation matrix into a "
-                            f"covariance matrix."
+                            f"The matrix from {value[1]} contains "
+                            f"ones on the diagonal. Converting this "
+                            f" correlation matrix into a covariance "
+                            f"matrix."
                         )
 
                         read_cov[key] = data_util.correlation_to_covariance(
@@ -1339,7 +1343,7 @@ class Database:
 
         if filename is None and data is None:
             raise ValueError(
-                "Either the 'filename' or 'data' " "argument should be provided."
+                "Either the 'filename' or 'data' argument should be provided."
             )
 
         if scaling is None:
@@ -2951,7 +2955,7 @@ class Database:
             samples = np.loadtxt(post_old)
 
         else:
-            raise RuntimeError("Can not find the " "post_equal_weights.dat file.")
+            raise RuntimeError("Can not find the post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
