@@ -181,8 +181,6 @@ def plot_walkers(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    print(" [DONE]")
-
     plt.clf()
     plt.close()
 
@@ -692,7 +690,7 @@ def plot_posterior(
     # Add atmospheric parameters (R, Teff, and log(g))
     # if the posterior is sampled by PlanetEvolution
 
-    if attr["spec_type"] == "model" and attr["spec_name"] == "evolution":
+    if "spec_type" in attr and attr["spec_type"] == "model" and attr["spec_name"] == "evolution":
         print("Calculating the posteriors of Teff, R, and log(g)...")
         planet_evol = evolution.PlanetEvolution(object_lbol=None)
         interp_lbol, interp_radius, _ = planet_evol.interpolate_grid()
@@ -892,8 +890,6 @@ def plot_posterior(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    print(" [DONE]")
-
     plt.clf()
     plt.close()
 
@@ -1003,14 +999,12 @@ def plot_mag_posterior(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    print(" [DONE]")
-
     plt.clf()
     plt.close()
 
-    return samples
-
     print(" [DONE]")
+
+    return samples
 
 
 @typechecked
@@ -1185,8 +1179,6 @@ def plot_size_distributions(
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     plt.clf()
     plt.close()
@@ -1460,8 +1452,6 @@ def plot_extinction(
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     plt.clf()
     plt.close()

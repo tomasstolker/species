@@ -8,7 +8,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
 .. tip::
    Details on the various classes, functions, and parameters can be found in the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_.
 
-**Retrievals**
+**Atmospheric and evolutionary retrievals**
 
 .. toctree::
    :maxdepth: 1
