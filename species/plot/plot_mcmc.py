@@ -174,8 +174,6 @@ def plot_walkers(
         for j in range(samples.shape[0]):
             ax.plot(samples[j, :, i], ls="-", lw=0.5, color="black", alpha=0.5)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -183,6 +181,8 @@ def plot_walkers(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -492,8 +492,6 @@ def plot_posterior(
 
         # Overwrite the samples in the SamplesBox
         box.samples = updated_samples
-
-        print(" [DONE]")
 
     print("Median sample:")
     for key, value in box.median_sample.items():
@@ -839,8 +837,6 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -848,6 +844,8 @@ def plot_posterior(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -948,8 +946,6 @@ def plot_mag_posterior(
 
     ax.get_xaxis().set_label_coords(0.5, -0.26)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -959,6 +955,8 @@ def plot_mag_posterior(
     plt.close()
 
     return samples
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1129,8 +1127,6 @@ def plot_size_distributions(
 
         ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="black", alpha=0.5)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -1138,6 +1134,8 @@ def plot_size_distributions(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1402,8 +1400,6 @@ def plot_extinction(
     else:
         print(f"Plotting extinction: {output}...", end="", flush=True)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -1411,3 +1407,5 @@ def plot_extinction(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")

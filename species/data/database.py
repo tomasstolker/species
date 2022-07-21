@@ -14,11 +14,11 @@ from typing import Dict, List, Optional, Tuple, Union
 import emcee
 import h5py
 import numpy as np
-import tqdm
 
 from astropy.io import fits
 from astroquery.simbad import Simbad
 from scipy.integrate import simps
+from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.analysis import photometry
@@ -299,7 +299,8 @@ class Database:
 
         for item in name:
             spec_dict = companions.companion_spectra(
-                self.input_path, item, verbose=verbose)
+                self.input_path, item, verbose=verbose
+            )
 
             parallax = None
 
@@ -307,14 +308,17 @@ class Database:
                 # Query SIMBAD to get the parallax
                 simbad = Simbad()
                 simbad.add_votable_fields("parallax")
-                simbad_result = simbad.query_object(data[item]['simbad'])
+                simbad_result = simbad.query_object(data[item]["simbad"])
 
                 if simbad_result is not None:
-                    par_sim = (simbad_result["PLX_VALUE"][0],  # (mas)
-                               simbad_result["PLX_ERROR"][0])  # (mas)
+                    par_sim = (
+                        simbad_result["PLX_VALUE"][0],  # (mas)
+                        simbad_result["PLX_ERROR"][0],
+                    )  # (mas)
 
-                    if not np.ma.is_masked(par_sim[0]) and \
-                            not np.ma.is_masked(par_sim[1]):
+                    if not np.ma.is_masked(par_sim[0]) and not np.ma.is_masked(
+                        par_sim[1]
+                    ):
                         parallax = (float(par_sim[0]), float(par_sim[1]))
 
             except urllib.error.URLError:
@@ -728,10 +732,13 @@ class Database:
             )  # (mas)
 
         if distance is not None:
-            warnings.warn("The \'distance\' parameter is deprecated "
-                          "and will be removed in a future release. "
-                          "Please use the \'parallax\' parameter "
-                          "instead", DeprecationWarning)
+            warnings.warn(
+                "The 'distance' parameter is deprecated "
+                "and will be removed in a future release. "
+                "Please use the 'parallax' parameter "
+                "instead",
+                DeprecationWarning,
+            )
 
             if verbose:
                 print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
@@ -1024,8 +1031,9 @@ class Database:
 
                     if data.ndim != 2 or 3 not in data.shape:
                         raise ValueError(
-                            f"The spectrum data from {value[0]} can not be read. The "
-                            f"data format should be 2D with 3 columns."
+                            f"The spectrum data from {value[0]} "
+                            f"can not be read. The data format "
+                            f"should be 2D with 3 columns."
                         )
 
                     if verbose:
@@ -1153,14 +1161,16 @@ class Database:
                         data = np.loadtxt(value[1])
                     except UnicodeDecodeError:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} can not be read. "
-                            f"Please provide a FITS or ASCII file."
+                            f"The covariance matrix from {value[1]} "
+                            f"can not be read. Please provide a "
+                            f"FITS or ASCII file."
                         )
 
-                    if data.ndim != 2 or 3 not in data.shape:
+                    if data.ndim != 2 or data.shape[0] != data.shape[1]:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} can not be read. "
-                            f"The data format should be 2D with the same number of "
+                            f"The covariance matrix from {value[1]} "
+                            f"can not be read. The data format "
+                            f"should be 2D with the same number of "
                             f"wavelength points as the spectrum."
                         )
 
@@ -1169,9 +1179,10 @@ class Database:
 
                     if np.all(np.diag(data) == 1.0):
                         warnings.warn(
-                            f"The matrix from {value[1]} contains ones on "
-                            f"the diagonal. Converting this correlation matrix into a "
-                            f"covariance matrix."
+                            f"The matrix from {value[1]} contains "
+                            f"ones on the diagonal. Converting this "
+                            f" correlation matrix into a covariance "
+                            f"matrix."
                         )
 
                         read_cov[key] = data_util.correlation_to_covariance(
@@ -1307,8 +1318,9 @@ class Database:
         """
 
         if filename is None and data is None:
-            raise ValueError("Either the 'filename' or 'data' "
-                             "argument should be provided.")
+            raise ValueError(
+                "Either the 'filename' or 'data' argument should be provided."
+            )
 
         if scaling is None:
             scaling = (1.0, 1.0)
@@ -1326,21 +1338,24 @@ class Database:
                 data = fits.getdata(filename)
 
                 if data.ndim != 2:
-                    raise RuntimeError("The FITS file that is provided "
-                                       "as argument of \'filename\' does "
-                                       "not contain a 2D dataset.")
+                    raise RuntimeError(
+                        "The FITS file that is provided "
+                        "as argument of 'filename' does "
+                        "not contain a 2D dataset."
+                    )
 
                 if data.shape[1] != 3 and data.shape[0]:
-                    warnings.warn(f"Transposing the data that is read "
-                                  f"from {filename} because the shape "
-                                  f"is {data.shape} instead of "
-                                  f"{data.shape[1], data.shape[0]}.")
+                    warnings.warn(
+                        f"Transposing the data that is read "
+                        f"from {filename} because the shape "
+                        f"is {data.shape} instead of "
+                        f"{data.shape[1], data.shape[0]}."
+                    )
 
                     data = np.transpose(data)
 
             else:
                 data = np.loadtxt(filename)
-
 
         nan_index = np.isnan(data[:, 1])
 
@@ -1515,18 +1530,19 @@ class Database:
         sampler: str,
         samples: np.ndarray,
         ln_prob: np.ndarray,
-        ln_evidence: Optional[Tuple[float, float]],
-        mean_accept: Optional[float],
-        spectrum: Tuple[str, str],
         tag: str,
         modelpar: List[str],
-        parallax: Optional[float],
-        spec_labels: Optional[List[str]],
+        ln_evidence: Optional[Tuple[float, float]] = None,
+        mean_accept: Optional[float] = None,
+        spectrum: Tuple[str, str] = None,
+        parallax: Optional[float] = None,
+        spec_labels: Optional[List[str]] = None,
+        attr_dict: Optional[Dict] = None,
     ):
         """
-        This function stores the posterior samples from
-        :class:`~species.analysis.fit_model.FitModel` in the
-        database, including some additional attributes.
+        This function stores the posterior samples from classes
+        such as :class:`~species.analysis.fit_model.FitModel`
+        in the database, including some additional attributes.
 
         Parameters
         ----------
@@ -1536,6 +1552,10 @@ class Database:
             Samples of the posterior.
         ln_prob : np.ndarray
             Log posterior for each sample.
+        tag : str
+            Database tag.
+        modelpar : list(str)
+            List with the model parameter names.
         ln_evidence : tuple(float, float)
             Log evidence and uncertainty. Set to ``None`` when
             ``sampler`` is 'emcee'.
@@ -1544,17 +1564,16 @@ class Database:
             ``sampler`` is 'multinest' or 'ultranest'.
         spectrum : tuple(str, str)
             Tuple with the spectrum type ('model' or 'calibration')
-            and spectrum name (e.g. 'drift-phoenix').
-        tag : str
-            Database tag.
-        modelpar : list(str)
-            List with the model parameter names.
+            and spectrum name (e.g. 'drift-phoenix' or 'evolution').
         parallax : float, None
             Parallax (mas) of the object. Not used if the
             argument is set to ``None``.
         spec_labels : list(str), None
             List with the spectrum labels that are used for fitting an
             additional scaling parameter. Not used if set to ``None``.
+        attr_dict : dict, None
+            Dictionary with data that will be stored as attributes
+            of the dataset with samples.
 
         Returns
         -------
@@ -1579,15 +1598,28 @@ class Database:
         dset = h5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
         h5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=ln_prob)
 
-        dset.attrs["type"] = str(spectrum[0])
-        dset.attrs["spectrum"] = str(spectrum[1])
+        if attr_dict is not None and "spec_type" in attr_dict:
+            dset.attrs["type"] = attr_dict["spec_type"]
+        else:
+            dset.attrs["type"] = str(spectrum[0])
+
+        if attr_dict is not None and "spec_name" in attr_dict:
+            dset.attrs["spectrum"] = attr_dict["spec_name"]
+        else:
+            dset.attrs["spectrum"] = str(spectrum[1])
+
         dset.attrs["n_param"] = int(len(modelpar))
         dset.attrs["sampler"] = str(sampler)
 
         if parallax is not None:
             dset.attrs["parallax"] = float(parallax)
 
-        if mean_accept is not None:
+        if attr_dict is not None and "mean_accept" in attr_dict:
+            mean_accept = float(attr_dict["mean_accept"])
+            dset.attrs["mean_accept"] = mean_accept
+            print(f"Mean acceptance fraction: {mean_accept:.3f}")
+
+        elif mean_accept is not None:
             dset.attrs["mean_accept"] = float(mean_accept)
             print(f"Mean acceptance fraction: {mean_accept:.3f}")
 
@@ -1613,8 +1645,7 @@ class Database:
         print("Integrated autocorrelation time:")
 
         for i, item in enumerate(modelpar):
-            auto_corr = emcee.autocorr.integrated_time(
-                samples[:, i], quiet=True)[0]
+            auto_corr = emcee.autocorr.integrated_time(samples[:, i], quiet=True)[0]
 
             if np.allclose(samples[:, i], np.mean(samples[:, i])):
                 print(f"   - {item}: fixed")
@@ -1622,6 +1653,9 @@ class Database:
                 print(f"   - {item}: {auto_corr:.2f}")
 
             dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
+
+        for key, value in attr_dict.items():
+            dset.attrs[key] = value
 
         h5_file.close()
 
@@ -1967,7 +2001,7 @@ class Database:
 
         boxes = []
 
-        for i in tqdm.tqdm(range(samples.shape[0]), desc="Getting MCMC spectra"):
+        for i in tqdm(range(samples.shape[0]), desc="Getting MCMC spectra"):
             model_param = {}
             for j in range(samples.shape[1]):
                 if param[j] not in ignore_param:
@@ -2149,7 +2183,7 @@ class Database:
 
         mcmc_phot = np.zeros((samples.shape[0]))
 
-        for i in tqdm.tqdm(range(samples.shape[0]), desc="Getting MCMC photometry"):
+        for i in tqdm(range(samples.shape[0]), desc="Getting MCMC photometry"):
             model_param = {}
 
             for j in range(n_param):
@@ -2558,7 +2592,7 @@ class Database:
 
         desc = f"Extracting the P-T profiles of {tag}"
 
-        for i in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+        for i in tqdm(range(samples.shape[0]), desc=desc):
             item = samples[i, :]
 
             if pt_profile == "molliere":
@@ -2595,7 +2629,9 @@ class Database:
                 # Eddington approximation
                 # delta = kappa_ir/gravity
                 tau = press * 1e6 * 10.0 ** item[param_index["log_delta"]]
-                temp[:, i] = (0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
+                temp[:, i] = (
+                    0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)
+                ) ** 0.25
 
             elif pt_profile in ["free", "monotonic"]:
                 if "pt_smooth" in param_index:
@@ -2895,8 +2931,7 @@ class Database:
             samples = np.loadtxt(post_old)
 
         else:
-            raise RuntimeError("Can not find the "
-                               "post_equal_weights.dat file.")
+            raise RuntimeError("Can not find the post_equal_weights.dat file.")
 
         if samples.ndim == 1:
             warnings.warn(
@@ -3045,7 +3080,7 @@ class Database:
 
                 desc = f"Calculating mass fractions of {cloud_item[:-6]}"
 
-                for j in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+                for j in tqdm(range(samples.shape[0]), desc=desc):
                     sample_dict = retrieval_util.list_to_dict(
                         parameters,
                         samples[
@@ -3068,8 +3103,10 @@ class Database:
                             sample_dict["c_o_ratio"],
                         )
 
-                    elif (radtrans["pt_profile"] == "free" or
-                          radtrans["pt_profile"] == "monotonic"):
+                    elif (
+                        radtrans["pt_profile"] == "free"
+                        or radtrans["pt_profile"] == "monotonic"
+                    ):
                         knot_press = np.logspace(
                             np.log10(pressure[0]), np.log10(pressure[-1]), 15
                         )
@@ -3142,7 +3179,7 @@ class Database:
 
             desc = "Calculating quenching pressures"
 
-            for i in tqdm.tqdm(range(samples.shape[0]), desc=desc):
+            for i in tqdm(range(samples.shape[0]), desc=desc):
                 # Convert list of parameters and samples into dictionary
                 sample_dict = retrieval_util.list_to_dict(
                     parameters,
@@ -3236,7 +3273,9 @@ class Database:
 
             for i, box_item in enumerate(boxes):
                 if "parallax" in box_item.parameters:
-                    sample_distance = 1e3 * constants.PARSEC / box_item.parameters["parallax"]
+                    sample_distance = (
+                        1e3 * constants.PARSEC / box_item.parameters["parallax"]
+                    )
                 else:
                     sample_distance = box_item.parameters["distance"] * constants.PARSEC
 
@@ -3473,8 +3512,8 @@ class Database:
 
             elif "pt_smooth_0" in parameters:
                 pt_smooth = {}
-                for j in range(temp_nodes-1):
-                    pt_smooth[f"pt_smooth_{j}"] = item[-1*temp_nodes+j]
+                for j in range(temp_nodes - 1):
+                    pt_smooth[f"pt_smooth_{j}"] = item[-1 * temp_nodes + j]
 
             else:
                 pt_smooth = item[indices["pt_smooth"]]
@@ -3528,7 +3567,9 @@ class Database:
         return boxes, read_rad
 
     @typechecked
-    def get_retrieval_teff(self, tag: str, random: int = 100) -> Tuple[np.ndarray, np.ndarray]:
+    def get_retrieval_teff(
+        self, tag: str, random: int = 100
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Function for calculating :math:`T_\\mathrm{eff}`
         and :math:`L_\\mathrm{bol}` from randomly drawn samples of
@@ -3563,7 +3604,9 @@ class Database:
 
         for i, box_item in enumerate(boxes):
             if "parallax" in box_item.parameters:
-                sample_distance = 1e3 * constants.PARSEC / box_item.parameters["parallax"]
+                sample_distance = (
+                    1e3 * constants.PARSEC / box_item.parameters["parallax"]
+                )
             else:
                 sample_distance = box_item.parameters["distance"] * constants.PARSEC
 
@@ -3577,7 +3620,7 @@ class Database:
             t_eff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
 
             # Bolometric luminosity: 4 * pi * R^2 * sigma * Teff^4
-            l_bol[i] = 4. * np.pi * sample_radius**2 * flux_int
+            l_bol[i] = 4.0 * np.pi * sample_radius**2 * flux_int
             l_bol[i] = np.log10(l_bol[i] / constants.L_SUN)
 
             # np.savetxt(f'output/spectrum/spectrum{i:04d}.dat',
@@ -3585,33 +3628,45 @@ class Database:
             #            header='Wavelength (um) - Flux (W m-2 um-1)')
 
         q_16_teff, q_50_teff, q_84_teff = np.nanpercentile(t_eff, [16.0, 50.0, 84.0])
-        print(f"Teff (K) = {q_50_teff:.2f} "
-              f"(-{q_50_teff-q_16_teff:.2f} "
-              f"+{q_84_teff-q_50_teff:.2f})")
+        print(
+            f"Teff (K) = {q_50_teff:.2f} "
+            f"(-{q_50_teff-q_16_teff:.2f} "
+            f"+{q_84_teff-q_50_teff:.2f})"
+        )
 
         q_16_lbol, q_50_lbol, q_84_lbol = np.nanpercentile(l_bol, [16.0, 50.0, 84.0])
-        print(f"log(L/Lsun) = {q_50_lbol:.2f} "
-              f"(-{q_50_lbol-q_16_lbol:.2f} "
-              f"+{q_84_lbol-q_50_lbol:.2f})")
+        print(
+            f"log(L/Lsun) = {q_50_lbol:.2f} "
+            f"(-{q_50_lbol-q_16_lbol:.2f} "
+            f"+{q_84_lbol-q_50_lbol:.2f})"
+        )
 
         with h5py.File(self.database, "a") as h5_file:
-            print(f"Storing Teff (K) as attribute of "
-                  f"results/fit/{tag}/samples...", end="")
+            print(
+                f"Storing Teff (K) as attribute of " f"results/fit/{tag}/samples...",
+                end="",
+            )
 
             dset = h5_file[f"results/fit/{tag}/samples"]
 
-            dset.attrs["teff"] = (q_50_teff - q_16_teff,
-                                  q_50_teff,
-                                  q_84_teff - q_50_teff)
+            dset.attrs["teff"] = (
+                q_50_teff - q_16_teff,
+                q_50_teff,
+                q_84_teff - q_50_teff,
+            )
 
             print(" [DONE]")
 
-            print(f"Storing log(L/Lsun) as attribute of "
-                  f"results/fit/{tag}/samples...", end="")
+            print(
+                f"Storing log(L/Lsun) as attribute of " f"results/fit/{tag}/samples...",
+                end="",
+            )
 
-            dset.attrs["log_l_bol"] = (q_50_lbol - q_16_lbol,
-                                       q_50_lbol,
-                                       q_84_lbol - q_50_lbol)
+            dset.attrs["log_l_bol"] = (
+                q_50_lbol - q_16_lbol,
+                q_50_lbol,
+                q_84_lbol - q_50_lbol,
+            )
 
             print(" [DONE]")
 
@@ -3756,7 +3811,9 @@ class Database:
             # tau_cloud = None
 
             for i, item in enumerate(cloud_species):
-                cloud_fractions[item[:-3]] = model_param[f"{item[:-6].lower()}_fraction"]
+                cloud_fractions[item[:-3]] = model_param[
+                    f"{item[:-6].lower()}_fraction"
+                ]
 
         log_x_base = retrieval_util.log_x_cloud_base(
             model_param["c_o_ratio"], model_param["metallicity"], cloud_fractions
@@ -3840,7 +3897,9 @@ class Database:
             for item in cloud_species_full:
                 cloud_abund = abund_in[item[:-3]]
                 indices = np.where(cloud_abund > 0.0)[0]
-                pcode_param[f"{item}_abund"] = cloud_scaling * cloud_abund[np.amax(indices)]
+                pcode_param[f"{item}_abund"] = (
+                    cloud_scaling * cloud_abund[np.amax(indices)]
+                )
 
         else:
             for item in cloud_species_full:

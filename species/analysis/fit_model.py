@@ -61,14 +61,16 @@ class FitModel:
         self,
         object_name: str,
         model: str,
-        bounds: Optional[Dict[
-            str,
-            Union[
-                Tuple[float, float],
-                Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
-                List[Tuple[float, float]],
-            ],
-        ]] = None,
+        bounds: Optional[
+            Dict[
+                str,
+                Union[
+                    Tuple[float, float],
+                    Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
+                    List[Tuple[float, float]],
+                ],
+            ]
+        ] = None,
         inc_phot: Union[bool, List[str]] = True,
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
@@ -362,11 +364,13 @@ class FitModel:
         self.bounds = bounds
 
         if self.model == "bt-settl":
-            warnings.warn("It is recommended to use the CIFIST "
-                          "grid of the BT-Settl, because it is "
-                          "a newer version. In that case, set "
-                          "model='bt-settl-cifist' when using "
-                          "add_model of Database.")
+            warnings.warn(
+                "It is recommended to use the CIFIST "
+                "grid of the BT-Settl, because it is "
+                "a newer version. In that case, set "
+                "model='bt-settl-cifist' when using "
+                "add_model of Database."
+            )
 
         if self.model == "planck":
             # Fitting blackbody radiation
@@ -1023,11 +1027,13 @@ class FitModel:
 
         if self.model != "powerlaw":
             if "radius_0" in param_dict and "radius_1" in param_dict:
-                flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 \
-                    / (1e3 * constants.PARSEC / parallax) ** 2
+                flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
+                    1e3 * constants.PARSEC / parallax
+                ) ** 2
 
-                flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 \
-                    / (1e3 * constants.PARSEC / parallax) ** 2
+                flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
+                    1e3 * constants.PARSEC / parallax
+                ) ** 2
 
                 # The scaling is applied manually because of the interpolation
                 del param_dict["radius_0"]
@@ -1035,15 +1041,18 @@ class FitModel:
 
             else:
                 try:
-                    flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 \
-                        / (1e3 * constants.PARSEC / parallax) ** 2
+                    flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
+                        1e3 * constants.PARSEC / parallax
+                    ) ** 2
 
                 except ZeroDivisionError:
-                    warnings.warn(f"Encountered a ZeroDivisionError when"
-                                  f"calculating the flux scaling with "
-                                  f"parallax = {parallax}. This error "
-                                  f"should not have happened. Setting "
-                                  f"the scaling to 1e100.")
+                    warnings.warn(
+                        f"Encountered a ZeroDivisionError when"
+                        f"calculating the flux scaling with "
+                        f"parallax = {parallax}. This error "
+                        f"should not have happened. Setting "
+                        f"the scaling to 1e100."
+                    )
 
                     flux_scaling = 1e100
 
@@ -1369,8 +1378,9 @@ class FitModel:
             if disk_param:
                 model_tmp = self.diskspec[i].spectrum_interp([disk_param["teff"]])[0, :]
 
-                model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 \
-                    / (1e3 * constants.PARSEC / parallax) ** 2
+                model_tmp *= (disk_param["radius"] * constants.R_JUP) ** 2 / (
+                    1e3 * constants.PARSEC / parallax
+                ) ** 2
 
                 model_flux += model_tmp
 
@@ -1432,7 +1442,7 @@ class FitModel:
                         )
                         + (1.0 - corr_amp[item] ** 2)
                         * np.eye(wavel.shape[0])
-                        * error_i ** 2
+                        * error_i**2
                     )
 
                     dot_tmp = np.dot(
@@ -1528,9 +1538,9 @@ class FitModel:
         @typechecked
         def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
-            Function to transform the unit cube into the parameter cube. It is not clear how to
-            pass additional arguments to the function, therefore it is placed here and not merged
-            with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+            Function to transform the unit cube into the parameter
+            cube. It is not clear how to pass additional arguments
+            to the function, therefore it is placed here.
 
             Parameters
             ----------
@@ -1553,7 +1563,7 @@ class FitModel:
                     cube[self.cube_index[item]] = stats.norm.ppf(
                         cube[self.cube_index[item]],
                         loc=self.parallax[0],
-                        scale=self.parallax[1]
+                        scale=self.parallax[1],
                     )
 
                 else:
@@ -1612,7 +1622,9 @@ class FitModel:
 
         # Nested sampling global log-evidence
         ln_z = sampling_stats["nested importance sampling global log-evidence"]
-        ln_z_error = sampling_stats["nested importance sampling global log-evidence error"]
+        ln_z_error = sampling_stats[
+            "nested importance sampling global log-evidence error"
+        ]
         print(
             f"Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}"
         )
@@ -1658,6 +1670,15 @@ class FitModel:
         except ModuleNotFoundError:
             mpi_rank = 0
 
+        # Dictionary with attributes that will be stored
+
+        attr_dict = {
+            "spec_type": "model",
+            "spec_name": self.model,
+            "ln_evidence": (ln_z, ln_z_error),
+            "parallax": self.parallax[0],
+        }
+
         # Add samples to the database
 
         if mpi_rank == 0:
@@ -1668,13 +1689,10 @@ class FitModel:
                 sampler="multinest",
                 samples=samples,
                 ln_prob=ln_prob,
-                ln_evidence=(ln_z, ln_z_error),
-                mean_accept=None,
-                spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
-                parallax=self.parallax[0],
                 spec_labels=spec_labels,
+                attr_dict=attr_dict,
             )
 
     @typechecked
@@ -1750,9 +1768,9 @@ class FitModel:
         @typechecked
         def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
-            Function to transform the unit cube into the parameter cube. It is not clear how to
-            pass additional arguments to the function, therefore it is placed here and not merged
-            with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+            Function to transform the unit cube into the parameter
+            cube. It is not clear how to pass additional arguments
+            to the function, therefore it is placed here.
 
             Parameters
             ----------
@@ -1773,7 +1791,7 @@ class FitModel:
                     params[self.cube_index[item]] = stats.norm.ppf(
                         cube[self.cube_index[item]],
                         loc=self.parallax[0],
-                        scale=self.parallax[1]
+                        scale=self.parallax[1],
                     )
 
                 else:
@@ -1877,21 +1895,28 @@ class FitModel:
         except ModuleNotFoundError:
             mpi_rank = 0
 
+        # Dictionary with attributes that will be stored
+
+        attr_dict = {
+            "spec_type": "model",
+            "spec_name": self.model,
+            "ln_evidence": (ln_z, ln_z_error),
+            "parallax": self.parallax[0],
+        }
+
         # Add samples to the database
 
         if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single process
+            # Writing the samples to the database is only
+            # possible when using a single process
             species_db = database.Database()
 
             species_db.add_samples(
                 sampler="ultranest",
                 samples=samples,
                 ln_prob=ln_prob,
-                ln_evidence=(ln_z, ln_z_error),
-                mean_accept=None,
-                spectrum=("model", self.model),
                 tag=tag,
                 modelpar=self.modelpar,
-                parallax=self.parallax[0],
                 spec_labels=spec_labels,
+                attr_dict=attr_dict,
             )
