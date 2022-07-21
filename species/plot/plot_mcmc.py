@@ -186,6 +186,8 @@ def plot_walkers(
     plt.clf()
     plt.close()
 
+    print(" [DONE]")
+
 
 @typechecked
 def plot_posterior(
@@ -495,8 +497,6 @@ def plot_posterior(
 
         # Overwrite the samples in the SamplesBox
         box.samples = updated_samples
-
-        print(" [DONE]")
 
     print("Median sample:")
     for key, value in box.median_sample.items():
@@ -897,6 +897,8 @@ def plot_posterior(
     plt.clf()
     plt.close()
 
+    print(" [DONE]")
+
 
 @typechecked
 def plot_mag_posterior(
@@ -1007,6 +1009,8 @@ def plot_mag_posterior(
     plt.close()
 
     return samples
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1186,6 +1190,8 @@ def plot_size_distributions(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1459,3 +1465,5 @@ def plot_extinction(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")

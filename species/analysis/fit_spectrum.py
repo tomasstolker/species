@@ -225,4 +225,5 @@ class FitSpectrum:
             ln_prob=ens_sampler.get_log_prob(),
             tag=tag,
             modelpar=self.modelpar,
+            attr_dict=attr_dict,
         )

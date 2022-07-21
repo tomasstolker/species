@@ -1036,6 +1036,7 @@ class EmissionLine:
                 ln_prob=ln_prob,
                 tag=tag,
                 modelpar=modelpar,
+                attr_dict=attr_dict,
             )
 
         # Create plot

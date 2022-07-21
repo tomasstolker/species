@@ -753,8 +753,6 @@ def plot_pt_profile(
                 "contain a ReadRadtrans object."
             )
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -762,6 +760,8 @@ def plot_pt_profile(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1245,8 +1245,6 @@ def plot_opacities(
     ax7.set_yscale("log")
     ax8.set_yscale("log")
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -1254,6 +1252,8 @@ def plot_opacities(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -1451,8 +1451,6 @@ def plot_clouds(
     ax1.set_yscale("log")
     ax2.set_yscale("log")
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -1460,3 +1458,5 @@ def plot_clouds(
 
     plt.clf()
     plt.close()
+
+    print(" [DONE]")

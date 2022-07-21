@@ -176,8 +176,6 @@ def plot_statistic(
         markeredgecolor="darkgray",
     )
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -187,6 +185,8 @@ def plot_statistic(
     plt.close()
 
     h5_file.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -426,8 +426,6 @@ def plot_empirical_spectra(
                 ha="left",
             )
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -437,6 +435,8 @@ def plot_empirical_spectra(
     plt.close()
 
     h5_file.close()
+
+    print(" [DONE]")
 
 
 @typechecked
@@ -754,8 +754,6 @@ def plot_grid_statistic(
         # ax.annotate(par_text, (best_param[0]+50., best_param[1]), ha='left', va='center',
         #             color='white', fontsize=12.)
 
-    print(" [DONE]")
-
     if output is None:
         plt.show()
     else:
@@ -765,3 +763,5 @@ def plot_grid_statistic(
     plt.close()
 
     h5_file.close()
+
+    print(" [DONE]")
