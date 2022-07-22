@@ -20,6 +20,14 @@ species.read.read\_color module
    :undoc-members:
    :show-inheritance:
 
+species.read.read\_evolution module
+-----------------------------------
+
+.. automodule:: species.read.read_evolution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.read.read\_filter module
 --------------------------------
 

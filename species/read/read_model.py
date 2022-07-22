@@ -1449,8 +1449,6 @@ class ReadModel:
             Parameter points of the model grid.
         """
 
-        points = {}
-
         h5_file = self.open_database()
 
         parameters = self.get_parameters()

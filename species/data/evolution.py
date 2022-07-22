@@ -91,7 +91,8 @@ def add_evolution(input_path: str, database: h5py._hl.files.File) -> None:
         grid_points = json.load(json_file)
 
     for key, value in grid_points.items():
-        database.create_dataset(f"evolution/{key}", data=value)
+        database.create_dataset(f"evolution/points/{key}", data=value)
+
         if key == "age":
             print(
                 f"   - Number of {key} points = {len(value)}, from {value[0]} to {value[-1]:.1f}"
@@ -100,3 +101,9 @@ def add_evolution(input_path: str, database: h5py._hl.files.File) -> None:
             print(
                 f"   - Number of {key} points = {len(value)}, from {value[0]} to {value[-1]}"
             )
+
+    # Add parameter names as attributes
+    dset = database["evolution"]
+    dset.attrs["n_param"] = len(grid_points.keys())
+    for i, item in enumerate(grid_points.keys()):
+        dset.attrs[f"parameter{i}"] = item

@@ -129,10 +129,7 @@ class PlanetEvolution:
         # Add grid with evolution data
 
         with h5py.File(self.database_path, "r") as h5_file:
-            if "evolution" not in h5_file:
-                add_grid = True
-            else:
-                add_grid = False
+            add_grid = bool("evolution" not in h5_file)
 
         if add_grid:
             species_db = database.Database()
