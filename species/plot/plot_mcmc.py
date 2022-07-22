@@ -203,6 +203,7 @@ def plot_posterior(
     inc_loglike: bool = False,
     output: Optional[str] = "posterior.pdf",
     object_type: str = "planet",
+    param_inc: Optional[List[str]] = None,
 ) -> None:
     """
     Function to plot the posterior distribution
@@ -256,6 +257,10 @@ def plot_posterior(
         Object type ('planet' or 'star'). With 'planet', the radius
         and mass are expressed in Jupiter units. With 'star', the
         radius and mass are expressed in solar units.
+    param_inc : list(str), None
+        List with subset of parameters that will be included in the
+        posterior plot. All parameters will be included if the
+        argument is set to ``None``.
 
     Returns
     -------
@@ -522,8 +527,29 @@ def plot_posterior(
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3
 
+    if output is None:
+        print("Plotting the posterior...", end="", flush=True)
+    else:
+        print(f"Plotting the posterior: {output}...", end="", flush=True)
+
+    # Include a subset of parameters
+
+    if param_inc is not None:
+        param_new = np.zeros((samples.shape[0], len(param_inc)))
+        for i, item in enumerate(param_inc):
+            param_index = box.parameters.index(item)
+            param_new[:, i] = samples[:, param_index]
+
+        box.parameters = param_inc
+        ndim = len(param_inc)
+        samples = param_new
+
+    # Add [C/H], [O/H], and C/O if free abundances were retrieved
+
     if "H2O" in box.parameters or "H2O_HITEMP" in box.parameters:
         samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
+
+    # Include the derived bolometric luminosity
 
     if inc_luminosity:
         if "teff" in box.parameters and "radius" in box.parameters:
@@ -633,6 +659,8 @@ def plot_posterior(
             # samples = np.append(samples, m_mdot, axis=-1)
             # box.parameters.append('m_mdot')
             # ndim += 1
+
+    # Include the derived mass
 
     if inc_mass:
         if "logg" in box.parameters and "radius" in box.parameters:
