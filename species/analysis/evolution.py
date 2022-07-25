@@ -286,8 +286,21 @@ class PlanetEvolution:
                     del self.bounds[key]
 
             for i in range(self.n_planets):
-                if f"inflate_{i}" in self.bounds:
-                    self.model_par.append(f"inflate_{i}")
+                if f"inflate_lbol{i}" in self.bounds:
+                    self.model_par.append(f"inflate_lbol{i}")
+
+            for i in range(self.n_planets):
+                if f"inflate_mass{i}" in self.bounds:
+                    if self.object_mass[i] is None:
+                        warnings.warn(f"The object_mass with index "
+                                      f"{i} is set to None so the "
+                                      f"inflate_mass{i} parameter "
+                                      f"will be excluded.")
+
+                        del self.bounds[f"inflate_mass{i}"]
+
+                    else:
+                        self.model_par.append(f"inflate_mass{i}")
 
         else:
             # Set all parameter boundaries to the grid boundaries
@@ -364,10 +377,15 @@ class PlanetEvolution:
 
                     if self.object_mass[obj_idx] is not None:
                         # Gaussian mass prior
+                        sigma = self.object_mass[obj_idx][1]
+
+                        if f"inflate_mass{obj_idx}" in self.bounds:
+                            sigma += self.bounds[f"inflate_mass{obj_idx}"][0] + (self.bounds[f"inflate_mass{obj_idx}"][1] - self.bounds[f"inflate_mass{obj_idx}"][0]) * cube[cube_index[f"inflate_mass{obj_idx}"]]
+
                         cube[cube_index[f"mass_{obj_idx}"]] = stats.norm.ppf(
                             cube[cube_index[f"mass_{obj_idx}"]],
                             loc=self.object_mass[obj_idx][0],
-                            scale=self.object_mass[obj_idx][1],
+                            scale=sigma,
                         )
 
                 else:
@@ -420,17 +438,28 @@ class PlanetEvolution:
                     else:
                         param_val.append(params[cube_index[item]])
 
-                lbol_var = self.object_lbol[i][1] ** 2
-
-                if f"inflate_{i}" in self.bounds:
-                    lbol_var += params[cube_index[f"inflate_{i}"]] ** 2.0
+                if f"inflate_lbol{i}" in self.bounds:
+                    lbol_var = (self.object_lbol[i][1]+params[cube_index[f"inflate_lbol{i}"]]) ** 2.0
+                else:
+                    lbol_var = self.object_lbol[i][1] ** 2
 
                 chi_square += (
                     self.object_lbol[i][0] - read_evol.interp_lbol(param_val)[0]
                 ) ** 2 / lbol_var
 
-                # Only required when fitting the uncertainty inflation
+                # Only required when fitting the
+                # inflation on the Lbol variance
                 chi_square += np.log(2.0 * np.pi * lbol_var)
+
+                if self.object_mass[i] is not None:
+                    # Only required when fitting the
+                    # inflation on the mass variance
+                    if f"inflate_mass{i}" in self.bounds:
+                        mass_var = (self.object_mass[i][1]+params[cube_index[f"inflate_mass{i}"]]) ** 2.0
+                    else:
+                        mass_var = self.object_mass[i][1] ** 2
+
+                    chi_square += np.log(2.0 * np.pi * mass_var)
 
                 # Radius prior
                 if self.object_radius[i] is not None:
@@ -540,8 +569,12 @@ class PlanetEvolution:
                 self.model_par.append(f"m_core_{i}")
 
             for i in range(self.n_planets):
-                if f"inflate_{i}" in self.bounds:
-                    self.model_par.append(f"inflate_{i}")
+                if f"inflate_lbol{i}" in self.bounds:
+                    self.model_par.append(f"inflate_lbol{i}")
+
+            for i in range(self.n_planets):
+                if f"inflate_mass{i}" in self.bounds:
+                    self.model_par.append(f"inflate_mass{i}")
 
             samples = np.zeros((samples_tmp.shape[0], len(self.model_par)))
 
@@ -646,14 +679,25 @@ class PlanetEvolution:
         # Apply uncertainty inflation
 
         for i in range(self.n_planets):
-            if f"inflate_{i}" in self.bounds:
-                # sigma_add = np.median(samples[:, cube_index[f"inflate_{i}"]])
+            if f"inflate_lbol{i}" in self.bounds:
+                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{i}"]])
                 index_prob = np.argmax(ln_prob)
-                sigma_add = samples[index_prob, cube_index[f"inflate_{i}"]]
+                sigma_add = samples[index_prob, cube_index[f"inflate_lbol{i}"]]
 
                 self.object_lbol[i] = (
                     self.object_lbol[i][0],
                     self.object_lbol[i][1] + sigma_add,
+                )
+
+        for i in range(self.n_planets):
+            if f"inflate_mass{i}" in self.bounds:
+                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{i}"]])
+                index_prob = np.argmax(ln_prob)
+                sigma_add = samples[index_prob, cube_index[f"inflate_mass{i}"]]
+
+                self.object_mass[i] = (
+                    self.object_mass[i][0],
+                    self.object_mass[i][1] + sigma_add,
                 )
 
         # Adjust object_mass to posterior value

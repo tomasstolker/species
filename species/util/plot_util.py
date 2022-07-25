@@ -356,9 +356,16 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
             break
 
     for i, item in enumerate(ascii_lowercase[1:]):
-        if f"inflate_{i}" in param:
-            index = param.index(f"inflate_{i}")
-            param[index] = rf"$\sigma_\mathrm{{{item}}}$ (dex)"
+        if f"inflate_lbol{i}" in param:
+            index = param.index(f"inflate_lbol{i}")
+            param[index] = rf"$\sigma_{{L,{{{item}}}}}$ (dex)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"inflate_mass{i}" in param:
+            index = param.index(f"inflate_mass{i}")
+            param[index] = rf"$\sigma_{{M,{{{item}}}}}$ ($M_\mathrm{{J}}$)"
         else:
             break
 
