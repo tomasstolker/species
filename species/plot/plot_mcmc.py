@@ -15,12 +15,14 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import ScalarFormatter
 from scipy.interpolate import RegularGridInterpolator
-from tqdm.auto import tqdm
+
+# from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.analysis import evolution
 from species.core import constants
 from species.data import database
+from species.read import read_evolution
 from species.util import plot_util, dust_util, read_util, retrieval_util
 
 
@@ -449,11 +451,7 @@ def plot_posterior(
                 abund
             )
 
-    if (
-        vmr
-        and box.spectrum == "petitradtrans"
-        and attr["chemistry"] == "free"
-    ):
+    if vmr and box.spectrum == "petitradtrans" and attr["chemistry"] == "free":
         print("Changing mass fractions to number fractions...", end="", flush=True)
 
         # Get all available line species
@@ -685,12 +683,12 @@ def plot_posterior(
     if "radius" in box.parameters:
         radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
         if object_type == "star":
-            samples[:, radius_index] *= constants.R_JUP/constants.R_SUN
+            samples[:, radius_index] *= constants.R_JUP / constants.R_SUN
 
     if "mass" in box.parameters:
         mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
         if object_type == "star":
-            samples[:, mass_index] *= constants.M_JUP/constants.M_SUN
+            samples[:, mass_index] *= constants.M_JUP / constants.M_SUN
             samples[:, mass_index] = np.log10(samples[:, mass_index])
 
     # Include the log-likelihood value in the posterior
@@ -706,7 +704,7 @@ def plot_posterior(
         log_prob = ln_prob * np.exp(1.0)
 
         # Convert log10(L) to L
-        prob = 10.0 ** log_prob
+        prob = 10.0**log_prob
 
         # Normalize to an integrated probability of 1
         prob /= np.sum(prob)
@@ -715,56 +713,9 @@ def plot_posterior(
         box.parameters.append("log_prob")
         ndim += 1
 
-    # Add atmospheric parameters (R, Teff, and log(g))
-    # if the posterior is sampled by PlanetEvolution
-
-    if "spec_type" in attr and attr["spec_type"] == "model" and attr["spec_name"] == "evolution":
-        print("Calculating the posteriors of Teff, R, and log(g)...")
-        planet_evol = evolution.PlanetEvolution(object_lbol=None)
-        interp_lbol, interp_radius, _ = planet_evol.interpolate_grid()
-
-        radius = np.zeros((samples.shape[0], attr["n_planets"]))
-        log_g = np.zeros((samples.shape[0], attr["n_planets"]))
-        t_eff = np.zeros((samples.shape[0], attr["n_planets"]))
-
-        for j in tqdm(range(attr["n_planets"])):
-            for i in tqdm(range(samples.shape[0]), leave=False):
-                age = samples[i, (j*5)+0]
-                mass = samples[i, (j*5)+1]
-                s_i = samples[i, (j*5)+2]
-                d_frac = samples[i, (j*5)+3]
-                y_frac = samples[i, (j*5)+4]
-                m_core = samples[i, (j*5)+5]
-
-                radius[i, j] = interp_radius([age, mass, s_i, d_frac, y_frac, m_core])
-                log_g[i, j] = np.log10(1e2*mass*constants.M_JUP*constants.GRAVITY/(radius[i, j]*constants.R_JUP)**2)
-
-                l_bol = 10.**interp_lbol([age, mass, s_i, d_frac, y_frac, m_core])[0]*constants.L_SUN
-                t_eff[i, j] = (l_bol/(4.*np.pi*(radius[i, j]*constants.R_JUP)**2*constants.SIGMA_SB))**0.25
-
-        for i in range(attr["n_planets"]):
-            box.parameters.append(f"teff_evol_{i}")
-            ndim += 1
-
-        for i in range(attr["n_planets"]):
-            box.parameters.append(f"radius_evol_{i}")
-            ndim += 1
-
-        for i in range(attr["n_planets"]):
-            box.parameters.append(f"logg_evol_{i}")
-            ndim += 1
-
-        samples = np.hstack((samples, t_eff, radius, log_g))
-
-    if output is None:
-        print("Plotting the posterior...", end="", flush=True)
-    else:
-        print(f"Plotting the posterior: {output}...", end="", flush=True)
-
     # Create the labels for the plot
 
-    labels = plot_util.update_labels(
-        box.parameters, object_type=object_type)
+    labels = plot_util.update_labels(box.parameters, object_type=object_type)
 
     # Check if parameter values were fixed
 
@@ -804,7 +755,7 @@ def plot_posterior(
         else:
             param_label = item[:unit_start]
             # Remove parenthesis from the units
-            unit_label = item[unit_start + 1: -1]
+            unit_label = item[unit_start + 1 : -1]
 
         q_16, q_50, q_84 = corner.quantile(samples[:, i], [0.16, 0.5, 0.84])
         q_minus, q_plus = q_50 - q_16, q_84 - q_50

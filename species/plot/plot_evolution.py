@@ -13,7 +13,7 @@ from typeguard import typechecked
 from matplotlib.ticker import AutoMinorLocator
 
 from species.data import database
-from species.analysis import evolution
+from species.read import read_evolution
 
 
 @typechecked
@@ -28,7 +28,7 @@ def plot_cooling(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (5.0, 5.0),
     output: Optional[str] = "cooling.pdf",
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Function for plotting samples of cooling curves that are
     randomly drawn from the posterior distribution of age and
@@ -61,8 +61,17 @@ def plot_cooling(
 
     Returns
     -------
-    NoneType
-        None
+    np.ndarray
+        Array with the cooling curves. The array contains
+        :math:`L/L_\\odot` as function of time for each companions
+        and sample, so the shape is (n_companions, n_samples, n_ages).
+    np.ndarray
+        Array with the cooling curves. The array contains
+        the radius as function of time for each companions
+        and sample, so the shape is (n_companions, n_samples, n_ages).
+    np.ndarray
+        Array with the random indices that have been
+        sampled from the posterior distribution.
     """
 
     species_db = database.Database()
@@ -72,8 +81,8 @@ def plot_cooling(
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
 
-    planet_evol = evolution.PlanetEvolution(object_lbol=None)
-    interp_lbol, interp_radius, grid_points = planet_evol.interpolate_grid()
+    read_evol = read_evolution.ReadEvolution()
+    read_evol.interpolate_grid()
 
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -173,18 +182,14 @@ def plot_cooling(
         # np.savetxt('random_indices.dat', indices, header='Index', fmt='%d')
         # param = np.zeros((50, len(points)-1))
 
-        ages = np.array(grid_points["age"])  # (Myr)
+        ages = np.array(read_evol.grid_points["age"])  # (Myr)
 
         if age_min is not None:
             ages = ages[ages >= age_min]
 
-        cooling = []
-        for i in range(n_planets):
-            cooling.append(np.zeros((n_samples, ages.shape[0])))
+        cool_curves = np.zeros((n_planets, n_samples, ages.size))
 
-        for idx in indices:
-            log_lum = np.zeros((n_planets, ages.size))
-
+        for k, idx in enumerate(indices):
             for j, item in enumerate(ages):
                 for i in range(n_planets):
                     mass = samples[idx, (i * 5) + 1]
@@ -194,17 +199,17 @@ def plot_cooling(
                     m_core = samples[idx, (i * 5) + 5]
 
                     if cool_item == "Lbol":
-                        log_lum[i, j] = 10.0 ** interp_lbol(
+                        cool_curves[i, k, j] = 10.0 ** read_evol.interp_lbol(
                             [item, mass, s_i, d_frac, y_frac, m_core]
                         )
                     elif cool_item == "radius":
-                        log_lum[i, j] = interp_radius(
+                        cool_curves[i, k, j] = read_evol.interp_radius(
                             [item, mass, s_i, d_frac, y_frac, m_core]
                         )
 
                     # param[k, :] = np.array([mass, s_i, d_frac, y_frac, m_core])
 
-                    if np.isnan(log_lum[i, j]):
+                    if np.isnan(cool_curves[i, k, j]):
                         raise ValueError(
                             f"The interpolated luminosity is "
                             f"NaN for the following "
@@ -215,22 +220,16 @@ def plot_cooling(
             for i in range(n_planets):
                 ax[i].plot(
                     ages,
-                    log_lum[
-                        i,
-                    ],
+                    cool_curves[i, k, :],
                     lw=0.5,
                     color="gray",
                     alpha=0.5,
                 )
 
-            # cool_1[j, :] = log_lum_1
-            # cool_2[j, :] = log_lum_2
-
-        # np.savetxt('param_b.dat', param_1, header='Mass - S_i - D_i - Y - M_core')
-        # np.savetxt('param_c.dat', param_2, header='Mass - S_i - D_i - Y - M_core')
-        #
-        # np.savetxt('cool_lbol_b.dat', cool_1)
-        # np.savetxt('cool_lbol_c.dat', cool_2)
+            if cool_item == "Lbol":
+                cool_lbol = np.copy(cool_curves)
+            elif cool_item == "radius":
+                cool_radius = np.copy(cool_curves)
 
         object_age = (np.mean(samples[:, 0]), np.std(samples[:, 0]))
         object_lbol = attr["object_lbol"]
@@ -272,6 +271,8 @@ def plot_cooling(
         plt.clf()
         plt.close()
 
+    return cool_lbol, cool_radius, indices
+
 
 @typechecked
 def plot_isochrones(
@@ -283,7 +284,7 @@ def plot_isochrones(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (5.0, 5.0),
     output: Optional[str] = "isochrones.pdf",
-):
+) -> Tuple[np.array, np.array]:
     """
     Function for plotting samples of isochrones that are
     randomly drawn from the posterior distribution of age
@@ -314,8 +315,13 @@ def plot_isochrones(
 
     Returns
     -------
-    NoneType
-        None
+    np.ndarray
+        Array with the isochrones. The array contains
+        :math:`L/L_\\odot` as function of time for each companions
+        and sample, so the shape is (n_companions, n_samples, n_masses).
+    np.ndarray
+        Array with the random indices that have been
+        sampled from the posterior distribution.
     """
 
     species_db = database.Database()
@@ -325,8 +331,8 @@ def plot_isochrones(
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
 
-    planet_evol = evolution.PlanetEvolution(object_lbol=None)
-    interp_lbol, _, grid_points = planet_evol.interpolate_grid()
+    read_evol = read_evolution.ReadEvolution()
+    read_evol.interpolate_grid()
 
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -408,11 +414,11 @@ def plot_isochrones(
 
     indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
 
-    masses = np.array(grid_points["mass"])  # (Myr)
+    masses = np.array(read_evol.grid_points["mass"])  # (Myr)
 
-    for idx in indices:
-        log_lum = np.zeros((n_planets, masses.size))
+    isochrones = np.zeros((n_planets, n_samples, masses.size))
 
+    for k, idx in enumerate(indices):
         for j, item in enumerate(masses):
             for i in range(n_planets):
                 age = samples[idx, 0]
@@ -421,11 +427,11 @@ def plot_isochrones(
                 y_frac = samples[idx, (i * 5) + 4]
                 m_core = samples[idx, (i * 5) + 5]
 
-                log_lum[i, j] = 10.0 ** interp_lbol(
+                isochrones[i, k, j] = 10.0 ** read_evol.interp_lbol(
                     [age, item, s_i, d_frac, y_frac, m_core]
                 )
 
-                if np.isnan(log_lum[i, j]):
+                if np.isnan(isochrones[i, k, j]):
                     raise ValueError(
                         f"The interpolated luminosity is "
                         f"NaN for the following "
@@ -436,16 +442,15 @@ def plot_isochrones(
         for i in range(n_planets):
             ax[i].plot(
                 masses,
-                log_lum[
-                    i,
-                ],
+                isochrones[i, k, :],
                 lw=0.5,
                 color="gray",
                 alpha=0.5,
             )
 
-    object_mass = attr["object_mass"]
+    
     object_lbol = attr["object_lbol"]
+    object_mass = attr["object_mass"]
 
     for i in range(n_planets):
         lbol_err = (
@@ -472,3 +477,5 @@ def plot_isochrones(
 
     plt.clf()
     plt.close()
+
+    return isochrones, indices

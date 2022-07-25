@@ -355,6 +355,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         else:
             break
 
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"inflate_{i}" in param:
+            index = param.index(f"inflate_{i}")
+            param[index] = rf"$\sigma_\mathrm{{{item}}}$ (dex)"
+        else:
+            break
+
     if "luminosity" in param:
         index = param.index("luminosity")
         param[index] = r"$\log\,L/L_\mathrm{\odot}$"

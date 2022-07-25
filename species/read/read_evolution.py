@@ -55,6 +55,7 @@ class ReadEvolution:
 
         self.interp_lbol = None
         self.interp_radius = None
+        self.grid_points = None
 
         self.default_values = {"d_frac": 2e-05, "y_frac": (0.25), "m_core": 0.0}
 
@@ -70,24 +71,30 @@ class ReadEvolution:
             None
         """
 
-        grid_points = {}
+        self.grid_points = {}
 
         with h5py.File(self.database_path, "r") as h5_file:
             grid_lbol = np.asarray(h5_file[f"{self.tag}/grid_lbol"])
             grid_radius = np.asarray(h5_file[f"{self.tag}/grid_radius"])
 
-            grid_points["age"] = np.asarray(h5_file[f"{self.tag}/points/age"])
-            grid_points["mass"] = np.asarray(h5_file[f"{self.tag}/points/mass"])
-            grid_points["s_i"] = np.asarray(h5_file[f"{self.tag}/points/s_i"])
-            grid_points["d_frac"] = np.asarray(h5_file[f"{self.tag}/points/d_frac"])
-            grid_points["y_frac"] = np.asarray(h5_file[f"{self.tag}/points/y_frac"])
-            grid_points["m_core"] = np.asarray(h5_file[f"{self.tag}/points/m_core"])
+            self.grid_points["age"] = np.asarray(h5_file[f"{self.tag}/points/age"])
+            self.grid_points["mass"] = np.asarray(h5_file[f"{self.tag}/points/mass"])
+            self.grid_points["s_i"] = np.asarray(h5_file[f"{self.tag}/points/s_i"])
+            self.grid_points["d_frac"] = np.asarray(
+                h5_file[f"{self.tag}/points/d_frac"]
+            )
+            self.grid_points["y_frac"] = np.asarray(
+                h5_file[f"{self.tag}/points/y_frac"]
+            )
+            self.grid_points["m_core"] = np.asarray(
+                h5_file[f"{self.tag}/points/m_core"]
+            )
 
         # Change D_frac from linear to log10
-        grid_points["d_frac"] = np.log10(grid_points["d_frac"])
+        self.grid_points["d_frac"] = np.log10(self.grid_points["d_frac"])
 
         points = []
-        for item in grid_points.values():
+        for item in self.grid_points.values():
             points.append(item)
 
         self.interp_lbol = interpolate.RegularGridInterpolator(

@@ -22,11 +22,13 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
-from scipy import interpolate, stats
+from scipy import stats
+from tqdm.auto import tqdm
 from typeguard import typechecked
 
-from species.data import database
 from species.core import constants
+from species.data import database
+from species.read import read_evolution
 
 
 class PlanetEvolution:
@@ -147,67 +149,6 @@ class PlanetEvolution:
             self.model_par.append(f"m_core_{i}")
 
     @typechecked
-    def interpolate_grid(
-        self,
-    ) -> Tuple[
-        interpolate.interpolate.RegularGridInterpolator,
-        interpolate.interpolate.RegularGridInterpolator,
-        Dict[str, np.ndarray],
-    ]:
-        """
-        Internal function for interpolating the grid of bolometric
-        luminosities and radii.
-
-        Returns
-        -------
-        RegularGridInterpolator
-            Interpolated grid of luminosities.
-        RegularGridInterpolator
-            Interpolated grid of radii.
-        dict
-            Dictionary with the parameter names and arrays with
-            the regular grid points.
-        """
-
-        grid_points = {}
-
-        with h5py.File(self.database_path, "r") as h5_file:
-            grid_lbol = np.asarray(h5_file["evolution/grid_lbol"])
-            grid_radius = np.asarray(h5_file["evolution/grid_radius"])
-
-            grid_points["age"] = np.asarray(h5_file["evolution/age"])
-            grid_points["mass"] = np.asarray(h5_file["evolution/mass"])
-            grid_points["s_i"] = np.asarray(h5_file["evolution/s_i"])
-            grid_points["d_frac"] = np.asarray(h5_file["evolution/d_frac"])
-            grid_points["y_frac"] = np.asarray(h5_file["evolution/y_frac"])
-            grid_points["m_core"] = np.asarray(h5_file["evolution/m_core"])
-
-        # Change D_frac from linear to log10
-        grid_points["d_frac"] = np.log10(grid_points["d_frac"])
-
-        points = []
-        for key, value in grid_points.items():
-            points.append(value)
-
-        grid_interp_lbol = interpolate.RegularGridInterpolator(
-            points,
-            grid_lbol,
-            method=self.interp_method,
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-
-        grid_interp_radius = interpolate.RegularGridInterpolator(
-            points,
-            grid_radius,
-            method=self.interp_method,
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-
-        return grid_interp_lbol, grid_interp_radius, grid_points
-
-    @typechecked
     def run_multinest(
         self,
         tag: str,
@@ -261,13 +202,14 @@ class PlanetEvolution:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        grid_interp_lbol, grid_interp_radius, grid_points = self.interpolate_grid()
+        read_evol = read_evolution.ReadEvolution()
+        read_evol.interpolate_grid()
 
         # Prior boundaries
 
         if self.bounds is not None:
             bounds_grid = {}
-            for key, value in grid_points.items():
+            for key, value in read_evol.grid_points.items():
                 bounds_grid[key] = (value[0], value[-1])
 
             for key, value in bounds_grid.items():
@@ -279,7 +221,8 @@ class PlanetEvolution:
 
                     else:
                         for i in range(self.n_planets):
-                            self.bounds[f"{key}_{i}"] = bounds_grid[key]
+                            if f"{key}_{i}" not in self.bounds:
+                                self.bounds[f"{key}_{i}"] = bounds_grid[key]
 
                 else:
                     if self.bounds[key][0] < bounds_grid[key][0]:
@@ -342,10 +285,14 @@ class PlanetEvolution:
 
                     del self.bounds[key]
 
+            for i in range(self.n_planets):
+                if f"inflate_{i}" in self.bounds:
+                    self.model_par.append(f"inflate_{i}")
+
         else:
             # Set all parameter boundaries to the grid boundaries
             self.bounds = {}
-            for key, value in grid_points.items():
+            for key, value in read_evol.grid_points.items():
                 if key == "age":
                     self.bounds[key] = (value[0], value[-1])
 
@@ -355,22 +302,22 @@ class PlanetEvolution:
 
         # Check if parameters are fixed
 
-        fix_param = {}
+        self.fix_param = {}
         del_param = []
 
         for key, value in self.bounds.items():
             if value[0] == value[1] and value[0] is not None and value[1] is not None:
-                fix_param[key] = value[0]
+                self.fix_param[key] = value[0]
                 del_param.append(key)
 
         for item in del_param:
             del self.bounds[item]
             self.model_par.remove(item)
 
-        if fix_param:
-            print(f"Fixing {len(fix_param)} parameters:")
+        if self.fix_param:
+            print(f"Fixing {len(self.fix_param)} parameters:")
 
-            for key, value in fix_param.items():
+            for key, value in self.fix_param.items():
                 print(f"   - {key} = {value}")
 
         print(f"Fitting {len(self.model_par)} parameters:")
@@ -467,21 +414,32 @@ class PlanetEvolution:
                 param_val = []
 
                 for item in param_names:
-                    if item in fix_param:
-                        param_val.append(fix_param[item])
+                    if item in self.fix_param:
+                        param_val.append(self.fix_param[item])
 
                     else:
                         param_val.append(params[cube_index[item]])
 
+                lbol_var = self.object_lbol[i][1] ** 2
+
+                if f"inflate_{i}" in self.bounds:
+                    lbol_var += params[cube_index[f"inflate_{i}"]] ** 2.0
+
                 chi_square += (
-                    self.object_lbol[i][0] - grid_interp_lbol(param_val)[0]
-                ) ** 2 / self.object_lbol[i][1] ** 2
+                    self.object_lbol[i][0] - read_evol.interp_lbol(param_val)[0]
+                ) ** 2 / lbol_var
+
+                # Only required when fitting the uncertainty inflation
+                chi_square += np.log(2.0 * np.pi * lbol_var)
 
                 # Radius prior
                 if self.object_radius[i] is not None:
                     chi_square += (
-                        self.object_radius[i][0] - grid_interp_radius(param_val)[0]
+                        self.object_radius[i][0] - read_evol.interp_radius(param_val)[0]
                     ) ** 2 / self.object_radius[i][1] ** 2
+
+                # ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
+                # ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
 
             if np.isnan(chi_square):
                 chi_square = 1e100
@@ -570,7 +528,7 @@ class PlanetEvolution:
 
         # Adding the fixed parameters to the samples
 
-        if fix_param:
+        if self.fix_param:
             samples_tmp = samples[:, :-1]
             self.model_par = ["age"]
 
@@ -581,16 +539,91 @@ class PlanetEvolution:
                 self.model_par.append(f"y_frac_{i}")
                 self.model_par.append(f"m_core_{i}")
 
+            for i in range(self.n_planets):
+                if f"inflate_{i}" in self.bounds:
+                    self.model_par.append(f"inflate_{i}")
+
             samples = np.zeros((samples_tmp.shape[0], len(self.model_par)))
 
             for i, key in enumerate(self.model_par):
-                if key in fix_param:
-                    samples[:, i] = np.full(samples_tmp.shape[0], fix_param[key])
+                if key in self.fix_param:
+                    samples[:, i] = np.full(samples_tmp.shape[0], self.fix_param[key])
                 else:
                     samples[:, i] = samples_tmp[:, cube_index[key]]
 
         else:
             samples = samples[:, :-1]
+
+        # Recreate cube_index dictionary because of included fix_param
+
+        cube_index = {}
+        for i, item in enumerate(self.model_par):
+            cube_index[item] = i
+
+        # Add atmospheric parameters (R, Teff, and log(g))
+
+        print("Calculating the posteriors of Teff, R, and log(g)...")
+
+        radius = np.zeros((samples.shape[0], self.n_planets))
+        log_g = np.zeros((samples.shape[0], self.n_planets))
+        t_eff = np.zeros((samples.shape[0], self.n_planets))
+
+        for j in tqdm(range(self.n_planets)):
+            for i in tqdm(range(samples.shape[0]), leave=False):
+                age = samples[i, cube_index["age"]]
+                mass = samples[i, cube_index[f"mass_{j}"]]
+                s_i = samples[i, cube_index[f"s_i_{j}"]]
+                d_frac = samples[i, cube_index[f"d_frac_{j}"]]
+                y_frac = samples[i, cube_index[f"y_frac_{j}"]]
+                m_core = samples[i, cube_index[f"m_core_{j}"]]
+
+                radius[i, j] = read_evol.interp_radius(
+                    [age, mass, s_i, d_frac, y_frac, m_core]
+                )
+                log_g[i, j] = np.log10(
+                    1e2
+                    * mass
+                    * constants.M_JUP
+                    * constants.GRAVITY
+                    / (radius[i, j] * constants.R_JUP) ** 2
+                )
+
+                l_bol = (
+                    10.0
+                    ** read_evol.interp_lbol([age, mass, s_i, d_frac, y_frac, m_core])[
+                        0
+                    ]
+                    * constants.L_SUN
+                )
+                t_eff[i, j] = (
+                    l_bol
+                    / (
+                        4.0
+                        * np.pi
+                        * (radius[i, j] * constants.R_JUP) ** 2
+                        * constants.SIGMA_SB
+                    )
+                ) ** 0.25
+
+        for i in range(self.n_planets):
+            self.model_par.append(f"teff_evol_{i}")
+
+        for i in range(self.n_planets):
+            self.model_par.append(f"radius_evol_{i}")
+
+        for i in range(self.n_planets):
+            self.model_par.append(f"logg_evol_{i}")
+
+        samples = np.hstack((samples, t_eff, radius, log_g))
+
+        # Recreate cube_index dictionary because of
+        # derived parameters that were included
+
+        cube_index = {}
+        for i, item in enumerate(self.model_par):
+            cube_index[item] = i
+
+        # Remove outliers
 
         # percent = np.percentile(samples, (1.0, 99.0), axis=0)
         #
@@ -610,15 +643,44 @@ class PlanetEvolution:
         #
         # samples = samples[~indices, :]
 
-        # Dictionary with attributes that will be stored
+        # Apply uncertainty inflation
+
+        for i in range(self.n_planets):
+            if f"inflate_{i}" in self.bounds:
+                # sigma_add = np.median(samples[:, cube_index[f"inflate_{i}"]])
+                index_prob = np.argmax(ln_prob)
+                sigma_add = samples[index_prob, cube_index[f"inflate_{i}"]]
+
+                self.object_lbol[i] = (
+                    self.object_lbol[i][0],
+                    self.object_lbol[i][1] + sigma_add,
+                )
+
+        # Adjust object_mass to posterior value
+
+        # for i, item in enumerate(self.object_mass):
+        #     mass_samples = samples[:, cube_index[f"mass_{i}"]]
+        #     self.object_mass[i] = (np.mean(mass_samples), np.std(mass_samples))
+
+        # Adjust object_radius to posterior value
+
+        # for i, item in enumerate(self.object_radius):
+        #     radius_samples = samples[:, cube_index[f"radius_evol_{i}"]]
+        #     self.object_radius[i] = (np.mean(radius_samples), np.std(radius_samples))
+
+        # Set object_mass and object_radius to NaN if no prior was provided
 
         for i, item in enumerate(self.object_mass):
-            if item is None:
+            if f"mass_{i}" in self.fix_param:
+                self.object_mass[i] = (self.fix_param[f"mass_{i}"], 0.)
+            elif item is None:
                 self.object_mass[i] = np.nan
 
         for i, item in enumerate(self.object_radius):
             if item is None:
                 self.object_radius[i] = np.nan
+
+        # Dictionary with attributes that will be stored
 
         attr_dict = {
             "spec_type": "model",
