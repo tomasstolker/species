@@ -43,7 +43,7 @@ def add_evolution(input_path: str, database: h5py._hl.files.File) -> None:
 
     if not os.path.isfile(data_file):
         print(
-            "Downloading evolution grid with luminosities (557 MB)...",
+            "Downloading evolution grid with luminosities (577 MB)...",
             end="",
             flush=True,
         )
@@ -57,7 +57,7 @@ def add_evolution(input_path: str, database: h5py._hl.files.File) -> None:
     data_file = os.path.join(input_path, "evolution_radius.fits")
 
     if not os.path.isfile(data_file):
-        print("Downloading evolution grid with radii (557 MB)...", end="", flush=True)
+        print("Downloading evolution grid with radii (577 MB)...", end="", flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(" [DONE]")
 
