@@ -62,6 +62,7 @@ The following data and models are currently supported:
 **Evolutionary tracks**
 
 - All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
+- Evolutionary models from `Marleau & Cumming (2014) <https://ui.adsabs.harvard.edu/abs/2014MNRAS.437.1378M/abstract>`_
 
 **Calibration**
 

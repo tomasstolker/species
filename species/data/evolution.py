@@ -72,6 +72,22 @@ def add_evolution(input_path: str, database: h5py._hl.files.File) -> None:
         urllib.request.urlretrieve(url, data_file)
         print(" [DONE]")
 
+    # References
+
+    print(f"Please cite the following references when using "
+          f"these evolutionary models in a publication:")
+
+    print("   -  Marleau & Cumming (2014)")
+    print("      Reference URL: https://ui.adsabs.harvard.edu/"
+          "abs/2014MNRAS.437.1378M/abstract")
+
+    print("   -  Chabrier & Baraffe (1997)")
+    print("      Reference URL: https://ui.adsabs.harvard.edu/"
+          "abs/1997A%26A...327.1039C/abstract")
+
+    print("Please also cite Marleau, Stolker & Cumming (2022) "
+          "when using the PlanetEvolution tool")
+
     # Add data to the database
 
     print("Adding grid with evolution data:")
