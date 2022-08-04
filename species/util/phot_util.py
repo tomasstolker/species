@@ -191,11 +191,11 @@ def absolute_to_apparent(
     abs_mag: Union[
         Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
     ],
-    distance: Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
+    distance: Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]],
 ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
-    Function for converting an absolute magnitude into an apparent
-    magnitude.
+    Function for converting an absolute magnitude
+    into an apparent magnitude.
 
     Parameters
     ----------
@@ -203,7 +203,9 @@ def absolute_to_apparent(
         Absolute magnitude and uncertainty (mag). The same uncertainty
         is used for the apparent magnitude.
     distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Distance and uncertainty (pc).
+        Distance and uncertainty (pc). The uncertainty is optional
+        and actually not used by this function but included for
+        redundancy.
 
     Returns
     -------

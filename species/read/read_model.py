@@ -14,6 +14,7 @@ import spectres
 import numpy as np
 
 from typeguard import typechecked
+from scipy.integrate import simps
 from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
 
 from species.analysis import photometry
@@ -873,8 +874,8 @@ class ReadModel:
 
         elif smooth and spec_res is None:
             warnings.warn(
-                "Smoothing of a spectrum (smooth=True) is only possible when setting "
-                "the argument of 'spec_res'."
+                "Smoothing of a spectrum (smooth=True) is only "
+                "possible when setting the argument of 'spec_res'."
             )
 
         # Resample the spectrum
@@ -1047,8 +1048,9 @@ class ReadModel:
         for key in model_param.keys():
             if key not in self.get_parameters() and key not in self.extra_param:
                 warnings.warn(
-                    f"The '{key}' parameter is not required by '{self.model}' so "
-                    f"the parameter will be ignored. The mandatory parameters are "
+                    f"The '{key}' parameter is not required by "
+                    f"'{self.model}' so the parameter will be "
+                    f"ignored. The mandatory parameters are "
                     f"{self.get_parameters()}."
                 )
 
@@ -1099,14 +1101,17 @@ class ReadModel:
 
         indices = []
 
-        for item in param_key:
+        for i, item in enumerate(param_key):
             data = np.asarray(h5_file[f"models/{self.model}/{item}"])
             data_index = np.argwhere(
                 np.round(data, 4) == np.round(model_param[item], 4)
-            )[0]
+            )
 
             if len(data_index) == 0:
-                raise ValueError("The parameter {item}={model_val[i]} is not found.")
+                raise ValueError(f"The parameter {item}="
+                                 f"{param_val[i]} is not found.")
+            else:
+                data_index = data_index[0]
 
             indices.append(data_index[0])
 
@@ -1603,3 +1608,70 @@ class ReadModel:
         )
 
         return model_box
+
+    @typechecked
+    def integrate_spectrum(self, model_param: Dict[str, float]) -> float:
+        """
+        Function for calculating the bolometric flux by integrating
+        a model spectrum at the requested parameters. In principle,
+        the calculated luminosity should be approximately the same
+        as the value that can be calculated directly  from the
+        :math:`T_\\mathrm{eff}` and radius parameters, unless the
+        atmospheric model had not properly converged.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The grid
+            boundaries of the spectra in the database can be obtained
+            with
+            :func:`~species.read.read_model.ReadModel.get_bounds()`.
+
+        Returns
+        -------
+        float
+            Bolometric luminosity (Lsun).
+        """
+
+        if "radius" not in model_param:
+            raise ValueError(
+                "Please include the 'radius' parameter "
+                "in the 'model_param' dictionary, "
+                "which is require for calculating the "
+                "bolometric luminosity."
+            )
+
+        wavel_points = self.get_wavelengths()
+
+        if self.wavel_range is None:
+            self.wavel_range = (wavel_points[0], wavel_points[-1])
+
+        if (
+            self.wavel_range[0] != wavel_points[0]
+            or self.wavel_range[1] != wavel_points[-1]
+        ):
+            warnings.warn(
+                "The 'wavel_range' is not set to the "
+                "maximum available range. To maximize the "
+                "accuracy when calculating the bolometric "
+                "luminosity, it is recommended to set "
+                "'wavel_range=None'."
+            )
+
+        if "parallax" in model_param:
+            del model_param["parallax"]
+
+        if "distance" in model_param:
+            del model_param["distance"]
+
+        model_box = self.get_model(model_param)
+
+        bol_lum = (
+            4.0
+            * np.pi
+            * (model_param["radius"] * constants.R_JUP) ** 2
+            * simps(model_box.flux, model_box.wavelength)
+        )
+
+        return bol_lum / constants.L_SUN
