@@ -41,6 +41,14 @@
         "resolution": 10000,
         "teff range": [800, 4000]
     },
+    "bt-dusty": {
+        "parameters": ["teff", "logg"],
+        "name": "BT-Dusty",
+        "file size": "205 MB",
+        "wavelength range": [0.1, 100],
+        "resolution": 10000,
+        "teff range": [1000, 4000]
+    },
     "bt-cond-feh": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-Cond [Fe/H]",
