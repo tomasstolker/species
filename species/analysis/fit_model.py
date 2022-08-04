@@ -1080,12 +1080,18 @@ class FitModel:
 
         for key, value in prior.items():
             if key == "mass":
-                mass = read_util.get_mass(
-                    params[self.cube_index["logg"]],
-                    params[self.cube_index["radius"]],
-                )
+                if "logg" in self.modelpar:
+                    mass = read_util.get_mass(
+                        params[self.cube_index["logg"]],
+                        params[self.cube_index["radius"]],
+                    )
 
-                ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
+                    ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
+
+                else:
+                    warnings.warn(f"The log(g) parameter is not used "
+                                  f"by the {self.model} model so the "
+                                  f"mass prior can not be applied.")
 
             else:
                 ln_like += (

@@ -21,6 +21,7 @@ The following data and models are currently supported:
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_
 - `ATMO <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq>`_
 - `BT-Cond <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-cond>`_
+- `BT-Dusty <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-dusty>`_
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_
 - `BT-Settl <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl>`_
 - `BT-Settl-CIFIST <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl-cifist>`_
