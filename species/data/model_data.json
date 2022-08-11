@@ -76,7 +76,7 @@
     "bt-settl-cifist": {
         "parameters": ["teff", "logg"],
         "name": "BT-Settl CIFIST",
-        "file size": "1.8 GB",
+        "file size": "1.4 GB",
         "wavelength range": [0.1, 5000],
         "resolution": 20000,
         "teff range": [1200, 7000]
