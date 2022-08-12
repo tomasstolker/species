@@ -956,7 +956,7 @@ def plot_spectrum(
             transmission = read_filter.ReadFilter(item)
             data = transmission.get_filter()
 
-            ax2.plot(data[:, 0], data[:, 1], "-", lw=0.7, color="black", zorder=1)
+            ax2.plot(data[:, 0], data[:, 1], "-", lw=0.7, color="tab:gray", zorder=1)
 
     if residuals is not None:
         for i, find_item in enumerate(boxes):

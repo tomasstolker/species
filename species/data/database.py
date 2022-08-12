@@ -481,10 +481,10 @@ class Database:
         ----------
         model : str
             Evolutionary model ('ames', 'bt-settl', 'sonora',
-            or 'baraffe'). For 'ames', 'bt-settl', and 'sonora',
-            the isochrones will be automatically downloaded and
-            added to the database. For 'baraffe', the isochrone
-            data can be downloaded from
+            'baraffe', or 'saumon2008'). For 'ames', 'bt-settl',
+            'sonora', and 'saumon2008', the isochrones will be
+            automatically downloaded and added to the database.
+            For 'baraffe', the isochrone data can be downloaded from
             https://phoenix.ens-lyon.fr/Grids/ and manually added
             by setting the ``filename`` and ``tag`` arguments.
         filename : str, None
@@ -524,6 +524,10 @@ class Database:
             if "isochrones/sonora-0.5" in h5_file:
                 del h5_file["isochrones/sonora-0.5"]
 
+        elif model == "saumon2008":
+            if "isochrones/saumon2008" in h5_file:
+                del h5_file["isochrones/saumon2008"]
+
         elif model in ["baraffe", "marleau"]:
             if f"isochrones/{tag}" in h5_file:
                 del h5_file[f"isochrones/{tag}"]
@@ -542,6 +546,9 @@ class Database:
 
         elif model == "marleau":
             isochrones.add_marleau(h5_file, tag, filename)
+
+        elif model == "saumon2008":
+            isochrones.add_saumon(h5_file, self.input_path)
 
         h5_file.close()
 

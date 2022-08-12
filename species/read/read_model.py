@@ -701,13 +701,18 @@ class ReadModel:
 
         # Print a warning if redundant parameters are included in the dictionary
 
+        ignore_param = []
+
         for key in model_param.keys():
             if key not in self.get_parameters() and key not in self.extra_param:
                 warnings.warn(
-                    f"The '{key}' parameter is not required by '{self.model}' so "
-                    f"the parameter will be ignored. The mandatory parameters are "
+                    f"The '{key}' parameter is not required by "
+                    f"'{self.model}' so the parameter will be "
+                    f"ignored. The mandatory parameters are "
                     f"{self.get_parameters()}."
                 )
+
+                ignore_param.append(key)
 
         # Interpolate the model grid
 
@@ -722,25 +727,12 @@ class ReadModel:
 
         # Create a list with the parameter values
 
+        check_param = ["teff", "logg", "feh", "c_o_ratio", "fsed", "log_kzz"]
+
         parameters = []
-
-        if "teff" in model_param:
-            parameters.append(model_param["teff"])
-
-        if "logg" in model_param:
-            parameters.append(model_param["logg"])
-
-        if "feh" in model_param:
-            parameters.append(model_param["feh"])
-
-        if "c_o_ratio" in model_param:
-            parameters.append(model_param["c_o_ratio"])
-
-        if "fsed" in model_param:
-            parameters.append(model_param["fsed"])
-
-        if "log_kzz" in model_param:
-            parameters.append(model_param["log_kzz"])
+        for item in check_param:
+            if item in model_param and item not in ignore_param:
+                parameters.append(model_param[item])
 
         # Interpolate the spectrum from the grid
 
@@ -1045,6 +1037,8 @@ class ReadModel:
 
         # Print a warning if redundant parameters are included in the dictionary
 
+        ignore_param = []
+
         for key in model_param.keys():
             if key not in self.get_parameters() and key not in self.extra_param:
                 warnings.warn(
@@ -1053,6 +1047,8 @@ class ReadModel:
                     f"ignored. The mandatory parameters are "
                     f"{self.get_parameters()}."
                 )
+
+                ignore_param.append(key)
 
         # Open de HDF5 database
 
@@ -1066,32 +1062,15 @@ class ReadModel:
 
         # Create lists with the parameter names and values
 
+        check_param = ["teff", "logg", "feh", "c_o_ratio", "fsed", "log_kzz"]
+
         param_key = []
         param_val = []
 
-        if "teff" in model_param:
-            param_key.append("teff")
-            param_val.append(model_param["teff"])
-
-        if "logg" in model_param:
-            param_key.append("logg")
-            param_val.append(model_param["logg"])
-
-        if "feh" in model_param:
-            param_key.append("feh")
-            param_val.append(model_param["feh"])
-
-        if "c_o_ratio" in model_param:
-            param_key.append("c_o_ratio")
-            param_val.append(model_param["c_o_ratio"])
-
-        if "fsed" in model_param:
-            param_key.append("fsed")
-            param_val.append(model_param["fsed"])
-
-        if "log_kzz" in model_param:
-            param_key.append("log_kzz")
-            param_val.append(model_param["log_kzz"])
+        for item in check_param:
+            if item in model_param and item not in ignore_param:
+                param_key.append(item)
+                param_val.append(model_param[item])
 
         # Read the grid of fluxes from the database
 
@@ -1108,10 +1087,11 @@ class ReadModel:
             )
 
             if len(data_index) == 0:
-                raise ValueError(f"The parameter {item}="
-                                 f"{param_val[i]} is not found.")
-            else:
-                data_index = data_index[0]
+                raise ValueError(
+                    f"The parameter {item}={param_val[i]} is not found."
+                )
+
+            data_index = data_index[0]
 
             indices.append(data_index[0])
 
