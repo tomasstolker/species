@@ -94,6 +94,7 @@ class ReadIsochrone:
         mag_abs = None
 
         index_teff = 2
+        index_log_lum = 3
         index_logg = 4
 
         # Read isochrone data
@@ -159,6 +160,15 @@ class ReadIsochrone:
             rescale=False,
         )
 
+        log_lum = griddata(
+            points=evolution[:, 0:2],
+            values=evolution[:, index_log_lum],
+            xi=np.stack((age_points, masses), axis=1),
+            method="linear",
+            fill_value="nan",
+            rescale=False,
+        )
+
         logg = griddata(
             points=evolution[:, 0:2],
             values=evolution[:, index_logg],
@@ -193,6 +203,7 @@ class ReadIsochrone:
             filter_mag=filter_mag,
             color=color,
             magnitude=mag_abs,
+            log_lum=log_lum,
             teff=teff,
             logg=logg,
             masses=masses,

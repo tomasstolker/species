@@ -63,6 +63,8 @@ The following data and models are currently supported:
 **Evolutionary tracks**
 
 - All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
+- Evolutionary data of `Sonora Bobcat <https://zenodo.org/record/5063476>`_
+- Isochrones from `Saumon & Marley <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 
 **Calibration**
 

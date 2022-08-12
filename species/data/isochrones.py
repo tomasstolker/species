@@ -38,8 +38,8 @@ def add_baraffe(database, tag, file_name):
 
     data = []
 
-    with open(file_name, encoding="utf-8") as data_file:
-        for line in data_file:
+    with open(file_name, encoding="utf-8") as open_file:
+        for line in open_file:
             if "---" in line or line == "\n":
                 continue
 
@@ -122,7 +122,7 @@ def add_marleau(database, tag, file_name):
     mass_cgs = 1e3 * mass * constants.M_JUP  # (g)
     radius_cgs = 1e2 * radius * constants.R_JUP  # (cm)
 
-    logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs ** 2)
+    logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
 
     print(f"Adding isochrones: {tag}...", end="", flush=True)
 
@@ -161,8 +161,7 @@ def add_sonora(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url = "https://zenodo.org/record/5063476/files/" \
-          "evolution_and_photometery.tar.gz"
+    url = "https://zenodo.org/record/5063476/files/evolution_and_photometery.tar.gz"
 
     input_file = "evolution_and_photometery.tar.gz"
     data_file = os.path.join(input_path, input_file)
@@ -182,9 +181,11 @@ def add_sonora(database, input_path):
         tar.extractall(data_folder)
     print(" [DONE]")
 
-    iso_files = ["evo_tables+0.0/nc+0.0_co1.0_mass_age",
-                 "evo_tables+0.5/nc+0.5_co1.0_mass_age",
-                 "evo_tables-0.5/nc-0.5_co1.0_mass_age"]
+    iso_files = [
+        "evo_tables+0.0/nc+0.0_co1.0_mass_age",
+        "evo_tables+0.5/nc+0.5_co1.0_mass_age",
+        "evo_tables-0.5/nc-0.5_co1.0_mass_age",
+    ]
 
     labels = ["[M/H] = +0.0", "[M/H] = +0.5", "[M/H] = -0.5"]
 
@@ -194,9 +195,11 @@ def add_sonora(database, input_path):
 
         # Teff      log g          Mass     Radius     log L    log age
         # (K)      (cm/s2)        (Msun)    (Rsun)    (Lsun)      (yr)
-        teff, logg, mass, _, luminosity, age = np.loadtxt(iso_path, unpack=True, skiprows=2)
+        teff, logg, mass, _, luminosity, age = np.loadtxt(
+            iso_path, unpack=True, skiprows=2
+        )
 
-        age = 1e-6*10.**age  # (Myr)
+        age = 1e-6 * 10.0**age  # (Myr)
         mass *= constants.M_SUN / constants.M_JUP  # (Mjup)
 
         print(f"Adding isochrones: Sonora {labels[i]}...", end="", flush=True)
@@ -210,7 +213,8 @@ def add_sonora(database, input_path):
         metal = labels[i].split(" ")[2]
 
         dset = database.create_dataset(
-            f"isochrones/sonora{metal}/evolution", data=isochrones)
+            f"isochrones/sonora{metal}/evolution", data=isochrones
+        )
 
         dset.attrs["model"] = "sonora"
 
@@ -239,10 +243,12 @@ def add_ames(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url_list = ["https://home.strw.leidenuniv.nl/~stolker/species/"
-                "model.AMES-Cond-2000.M-0.0.MKO.Vega",
-                "https://home.strw.leidenuniv.nl/~stolker/species/"
-                "model.AMES-dusty.M-0.0.MKO.Vega"]
+    url_list = [
+        "https://home.strw.leidenuniv.nl/~stolker/species/"
+        "model.AMES-Cond-2000.M-0.0.MKO.Vega",
+        "https://home.strw.leidenuniv.nl/~stolker/species/"
+        "model.AMES-dusty.M-0.0.MKO.Vega",
+    ]
 
     iso_tags = ["AMES-Cond", "AMES-Dusty"]
     iso_size = ["235 kB", "182 kB"]
@@ -252,14 +258,16 @@ def add_ames(database, input_path):
         data_file = os.path.join(input_path, input_file)
 
         if not os.path.isfile(data_file):
-            print(f"Downloading {iso_tags[i]} isochrones "
-                  f"({iso_size[i]})...", end="", flush=True)
+            print(
+                f"Downloading {iso_tags[i]} isochrones ({iso_size[i]})...",
+                end="",
+                flush=True,
+            )
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
 
-        add_baraffe(database=database,
-                    tag=iso_tags[i].lower(),
-                    file_name=data_file)
+        add_baraffe(database=database, tag=iso_tags[i].lower(), file_name=data_file)
+
 
 def add_btsettl(database, input_path):
     """
@@ -281,21 +289,84 @@ def add_btsettl(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/" \
-              "model.BT-Settl.M-0.0.MKO.Vega"
+    url_iso = (
+        "https://home.strw.leidenuniv.nl/~stolker/species/"
+        "model.BT-Settl.M-0.0.MKO.Vega"
+    )
 
     iso_tag = "BT-Settl"
     iso_size = "113 kB"
 
-    input_file = url_iso.split("/")[-1]
+    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print(f"Downloading {iso_tag} isochrones "
-              f"({iso_size})...", end="", flush=True)
+        print(
+            f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True
+        )
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_baraffe(database=database,
-                tag=iso_tag.lower(),
-                file_name=data_file)
+    add_baraffe(database=database, tag=iso_tag.lower(), file_name=data_file)
+
+
+def add_saumon(database, input_path):
+    """
+    Function for adding the Saumon & Marley (2008)
+    isochrone data to the database.
+
+    Parameters
+    ----------
+    database : h5py._hl.files.File
+        Database.
+    input_path : str
+        Folder where the data is located.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    if not os.path.exists(input_path):
+        os.makedirs(input_path)
+
+    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/hybrid_solar_age"
+
+    iso_tag = "Saumon & Marley (2008)"
+    iso_size = "49 kB"
+    db_tag = "saumon2008"
+
+    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
+    data_file = os.path.join(input_path, input_file)
+
+    if not os.path.isfile(data_file):
+        print(
+            f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True
+        )
+        urllib.request.urlretrieve(url_iso, data_file)
+        print(" [DONE]")
+
+    isochrones = []
+
+    with open(data_file, encoding="utf-8") as open_file:
+        for i, line in enumerate(open_file):
+            if i == 0 or " " not in line.strip():
+                continue
+
+            # age(Gyr)  M/Msun  log L/Lsun  Teff(K)  log g  R/Rsun
+            param = list(filter(None, line.strip().split(" ")))
+            param = list(map(float, param))
+
+            param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
+            param[1] = param[1] * constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+
+            isochrones.append([param[0], param[1], param[3], param[2], param[4]])
+
+    print(f"Adding isochrones: {iso_tag}...", end="", flush=True)
+
+    dset = database.create_dataset(f"isochrones/{db_tag}/evolution", data=isochrones)
+
+    dset.attrs["model"] = "saumon2008"
+
+    print(" [DONE]")

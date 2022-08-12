@@ -65,6 +65,7 @@ def create_box(boxtype, **kwargs):
         box.filter_mag = kwargs["filter_mag"]
         box.color = kwargs["color"]
         box.magnitude = kwargs["magnitude"]
+        box.log_lum = kwargs["log_lum"]
         box.teff = kwargs["teff"]
         box.logg = kwargs["logg"]
         box.masses = kwargs["masses"]
@@ -255,6 +256,7 @@ class IsochroneBox(Box):
         self.filter_mag = None
         self.color = None
         self.magnitude = None
+        self.log_lum = None
         self.teff = None
         self.logg = None
         self.masses = None
