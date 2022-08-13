@@ -182,9 +182,9 @@ def add_sonora(database, input_path):
     print(" [DONE]")
 
     iso_files = [
-        "evo_tables+0.0/nc+0.0_co1.0_mass_age",
-        "evo_tables+0.5/nc+0.5_co1.0_mass_age",
-        "evo_tables-0.5/nc-0.5_co1.0_mass_age",
+        "evo_tables+0.0/nc+0.0_co1.0_age",
+        "evo_tables+0.5/nc+0.5_co1.0_age",
+        "evo_tables-0.5/nc-0.5_co1.0_age",
     ]
 
     labels = ["[M/H] = +0.0", "[M/H] = +0.5", "[M/H] = -0.5"]
@@ -193,33 +193,34 @@ def add_sonora(database, input_path):
         iso_file = f"evolution_tables/{item}"
         iso_path = os.path.join(data_folder, iso_file)
 
-        # Teff      log g          Mass     Radius     log L    log age
-        # (K)      (cm/s2)        (Msun)    (Rsun)    (Lsun)      (yr)
-        teff, logg, mass, _, luminosity, age = np.loadtxt(
-            iso_path, unpack=True, skiprows=2
-        )
+        isochrones = []
 
-        age = 1e-6 * 10.0**age  # (Myr)
-        mass *= constants.M_SUN / constants.M_JUP  # (Mjup)
+        with open(iso_path, encoding="utf-8") as open_file:
+            for j, line in enumerate(open_file):
+                if j == 0 or " " not in line.strip():
+                    continue
 
-        print(f"Adding isochrones: Sonora {labels[i]}...", end="", flush=True)
+                # age(Gyr)  M/Msun  log L/Lsun  Teff(K)  log g  R/Rsun
+                param = list(filter(None, line.strip().split(" ")))
+                param = list(map(float, param))
 
-        isochrones = np.vstack((age, mass, teff, luminosity, logg))
-        isochrones = np.transpose(isochrones)
+                param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
+                param[1] = param[1] * constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
 
-        index_sort = np.argsort(isochrones[:, 0])
-        isochrones = isochrones[index_sort, :]
+                isochrones.append([param[0], param[1], param[3], param[2], param[4]])
 
-        metal = labels[i].split(" ")[2]
+            print(f"Adding isochrones: Sonora {labels[i]}...", end="", flush=True)
 
-        dset = database.create_dataset(
-            f"isochrones/sonora{metal}/evolution", data=isochrones
-        )
+            metal = labels[i].split(" ")[2]
 
-        dset.attrs["model"] = "sonora"
+            dset = database.create_dataset(
+                f"isochrones/sonora{metal}/evolution", data=isochrones
+            )
 
-        print(" [DONE]")
-        print(f"Database tag: sonora{metal}")
+            dset.attrs["model"] = "sonora"
+
+            print(" [DONE]")
+            print(f"Database tag: sonora{metal}")
 
 
 def add_ames(database, input_path):
