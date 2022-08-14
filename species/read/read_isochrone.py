@@ -31,7 +31,7 @@ class ReadIsochrone:
         ----------
         tag : str
             Database tag of the isochrone data (e.g. 'ames-cond', 'ames-dusty',
-            'sonora+0.0', 'sonora-0.5', 'sonora+0.5').
+            'bt-settl', 'sonora+0.0', 'sonora-0.5', 'sonora+0.5').
 
         Returns
         -------
@@ -72,10 +72,10 @@ class ReadIsochrone:
         age : float
             Age (Myr) at which the isochrone data is interpolated.
         masses : np.ndarray, None
-            Masses (:math:`M_\\mathrm{J}`) at which the isochrone
-            data is interpolated. The masses are not interpolated
-            if the argument is set to ``None``, in which case the
-            mass sampling from the isochrone data is used.
+            Masses (:math:`M_\\mathrm{J}`) at which the
+            isochrone data is interpolated. The mass sampling
+            from the isochrone data is used if the argument of
+            ``masses`` is set to ``None``.
         filters_color : tuple(str, str), None
             Filter names for the color as listed in the file with the
             isochrone data. Not selected if set to ``None`` or if only
@@ -108,8 +108,8 @@ class ReadIsochrone:
 
             if masses is None:
                 idx_min = (np.abs(evolution[:, index_age] - age)).argmin()
-                age_select = evolution[:, index_age] == evolution[idx_min, index_age]
-                masses = np.unique(evolution[age_select, index_mass])  # (Mjup)
+                idx_age = evolution[:, index_age] == evolution[idx_min, index_age]
+                masses = np.unique(evolution[idx_age, index_mass])  # (Mjup)
 
             age_points = np.full(masses.shape[0], age)  # (Myr)
 

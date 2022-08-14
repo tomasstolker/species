@@ -6,7 +6,7 @@ import configparser
 import os
 import warnings
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -14,7 +14,9 @@ import numpy as np
 from scipy import interpolate
 from typeguard import typechecked
 
+from species.core import box
 from species.data import database
+from species.util import read_util
 
 
 class ReadEvolution:
@@ -137,7 +139,7 @@ class ReadEvolution:
         Returns
         -------
         np.float64
-            Bolometric luminosity (:math:`L_\\odot`).
+            Bolometric luminosity (:math:`\\log{(L/L_\\odot)}`).
         """
 
         parameters = self.get_parameters()
@@ -176,7 +178,7 @@ class ReadEvolution:
             ]
         )[0]
 
-        return 10.0**log_lbol
+        return log_lbol
 
     @typechecked
     def get_radius(
@@ -241,6 +243,81 @@ class ReadEvolution:
         )[0]
 
         return radius
+
+    @typechecked
+    def get_isochrone(
+        self,
+        age: float,
+        masses: Optional[np.ndarray] = None,
+        model_param: Optional[Dict[str, float]] = None,
+    ) -> box.IsochroneBox:
+        """
+        Function for selecting an isochrone.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the isochrone data is interpolated.
+        masses : np.ndarray, None
+            Masses (:math:`M_\\mathrm{J}`) at which the
+            isochrone data is interpolated. The mass sampling
+            from the isochrone data is used if the argument of
+            ``masses`` is set to ``None``. The mass sampling
+            from the isochrone data is used if the argument of
+            ``masses`` is set to ``None``.
+        model_param : dict, None
+            Optional dictionary with the model parameters.
+            The values should be within the boundaries of the
+            grid. The grid boundaries can be inspected with
+            :func:`~species.read.read_evolution.ReadEvolution.get_bounds()`.
+            Default values are used if the argument is set to ``None``.
+
+        Returns
+        -------
+        species.core.box.IsochroneBox
+            Box with the isochrone.
+        """
+
+        if masses is None:
+            grid_points = self.get_points()
+            masses = grid_points["mass"]
+
+        log_lum = np.zeros(masses.shape[0])
+        radius = np.zeros(masses.shape[0])
+        logg = np.zeros(masses.shape[0])
+        teff = np.zeros(masses.shape[0])
+
+        for i, item in enumerate(masses):
+            model_tmp = {
+                "age": age,
+                "mass": item,
+                "s_i": 12.0,
+                "d_frac": 2e-5,
+                "y_frac": 0.25,
+                "m_core": 0.0,
+            }
+
+            if model_param is not None:
+                for key, value in model_param.items():
+                    model_tmp[key] = value
+
+            log_lum[i] = self.get_luminosity(model_tmp)
+            radius[i] = self.get_radius(model_tmp)
+            logg[i] = read_util.get_logg(item, radius[i])
+            teff[i] = read_util.luminosity_to_teff(10.0 ** log_lum[i], radius[i])
+
+        return box.create_box(
+            boxtype="isochrone",
+            model=self.tag,
+            filters_color=None,
+            filter_mag=None,
+            color=None,
+            magnitude=None,
+            log_lum=log_lum,
+            teff=teff,
+            logg=logg,
+            masses=masses,
+        )
 
     @typechecked
     def get_parameters(self) -> List[str]:

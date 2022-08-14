@@ -73,6 +73,59 @@ def get_radius(
     return radius / constants.R_JUP
 
 
+@typechecked
+def get_logg(
+    mass: Union[float, np.ndarray], radius: Union[float, np.ndarray]
+) -> Union[float, np.ndarray]:
+    """
+    Function for converting a mass and radius into :math:`\\log(g)`.
+
+    Parameters
+    ----------
+    mass : float, np.ndarray
+        Mass ($M_\\mathrm{J}$).
+    radius : float, np.ndarray
+        Radius ($R_\\mathrm{J}$).
+
+    Returns
+    -------
+    float, np.ndarray
+        Surface gravity :math:`\\log(g)`.
+    """
+
+    mass *= constants.M_JUP  # (kg)
+    radius *= constants.R_JUP  # (m)
+    gravity = 1e2 * mass * constants.GRAVITY / radius**2  # (cm s-2)
+
+    return np.log10(gravity)
+
+
+@typechecked
+def luminosity_to_teff(
+    luminosity: Union[float, np.ndarray], radius: Union[float, np.ndarray]
+) -> Union[float, np.ndarray]:
+    """
+    Function for converting a luminosity and radius into :math:`T_\\mathrm{eff}`.
+
+    Parameters
+    ----------
+    luminosity : float, np.ndarray
+        Bolometric luminosity ($L_\\odot$).
+    radius : float, np.ndarray
+        Radius ($R_\\mathrm{J}$).
+
+    Returns
+    -------
+    float, np.ndarray
+        Effective temperature (K).
+    """
+
+    radius *= constants.R_JUP  # (Rjup)
+    teff = (luminosity / (4.*np.pi*radius**2*constants.SIGMA_SB))**0.25
+
+    return teff
+
+
 def add_luminosity(modelbox):
     """
     Function to add the luminosity of a model spectrum to the parameter
