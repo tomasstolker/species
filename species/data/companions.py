@@ -559,7 +559,7 @@ def get_data() -> Dict[
             "mass_companion": (50.5, 3.5),  # Rickman et al. 2020
             "accretion": False,
         },
-        "TYC 8988 b": {
+        "YSES 1 b": {
             "simbad": "TYC 8998-760-1",
             "parallax": (10.6124, 0.0116),  # Gaia Early Data Release 3
             "app_mag": {
@@ -582,7 +582,7 @@ def get_data() -> Dict[
             "mass_companion": (14.0, 3.0),  # Bohn et al. 2019
             "accretion": True,
         },  # Zhang et al. 2021
-        "TYC 8988 c": {
+        "YSES 1 c": {
             "simbad": "TYC 8998-760-1",
             "parallax": (10.6124, 0.0116),  # Gaia Early Data Release 3
             "app_mag": {
@@ -599,6 +599,18 @@ def get_data() -> Dict[
             "semi_major": (320.0, 320.0),  # Bohn et al. 2020
             "mass_star": (1.00, 0.02),  # Bohn et al. 2019
             "mass_companion": (6.0, 1.0),  # Bohn et al. 2020
+            "accretion": False,
+        },
+        "YSES 2 b": {
+            "simbad": "TYC 8984-2245-1",
+            "parallax": (9.1115, 0.0310),  # Gaia Early Data Release 3
+            "app_mag": {
+                "Paranal/SPHERE.IRDIS_B_H": (18.76, 0.11),  # Bohn et al. 2021
+                "Paranal/SPHERE.IRDIS_B_Ks": (17.90, 0.11),  # Bohn et al. 2021
+            },
+            "semi_major": (115.0, 115.0),  # Bohn et al. 2021
+            "mass_star": (1.10, 0.03),  # Bohn et al. 2021
+            "mass_companion": (7.0, 1.0),  # Bohn et al. 2021
             "accretion": False,
         },
         "HD 142527 B": {
