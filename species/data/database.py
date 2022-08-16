@@ -480,10 +480,11 @@ class Database:
         ----------
         model : str
             Evolutionary model ('ames', 'bt-settl', 'sonora',
-            'baraffe', or 'saumon2008'). For 'ames', 'bt-settl',
-            'sonora', and 'saumon2008', the isochrones will be
-            automatically downloaded and added to the database.
-            For 'baraffe', the isochrone data can be downloaded from
+            'baraffe', 'saumon2008', or 'nextgen'). For 'ames',
+            'bt-settl', 'sonora', 'saumon2008', and 'nextgen',
+            the isochrones will be automatically downloaded and
+            added to the database. For 'baraffe', the isochrone
+            data can be downloaded from
             https://phoenix.ens-lyon.fr/Grids/ and manually added
             by setting the ``filename`` and ``tag`` arguments.
         filename : str, None
@@ -531,6 +532,10 @@ class Database:
             if f"isochrones/{tag}" in h5_file:
                 del h5_file[f"isochrones/{tag}"]
 
+        elif model == "nextgen":
+            if "isochrones/nextgen" in h5_file:
+                del h5_file["isochrones/nextgen"]
+
         if model == "ames":
             isochrones.add_ames(h5_file, self.input_path)
 
@@ -548,6 +553,9 @@ class Database:
 
         elif model == "saumon2008":
             isochrones.add_saumon(h5_file, self.input_path)
+
+        elif model == "nextgen":
+            isochrones.add_nextgen(h5_file, self.input_path)
 
         h5_file.close()
 

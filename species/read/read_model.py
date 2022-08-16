@@ -601,7 +601,7 @@ class ReadModel:
     @typechecked
     def apply_ext_ism(
         wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Internal function for applying ISM extinction to a spectrum.
 
@@ -618,11 +618,13 @@ class ReadModel:
         -------
         np.ndarray
             Fluxes (W m-2 um-1) with the extinction applied.
+        np.ndarray
+            Extinction (mag) as function of wavelength.
         """
 
         ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
 
-        return flux * 10.0 ** (-0.4 * ext_mag)
+        return flux * 10.0 ** (-0.4 * ext_mag), ext_mag
 
     @typechecked
     def get_model(
@@ -850,12 +852,16 @@ class ReadModel:
         if "ism_ext" in model_param:
             ism_reddening = model_param.get("ism_red", 3.1)
 
-            model_box.flux = self.apply_ext_ism(
+            model_box.flux, ext_mag = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["ism_ext"],
                 ism_reddening,
             )
+
+            idx_select = ext_mag >= 0.
+            model_box.wavelength = model_box.wavelength[idx_select]
+            model_box.flux = model_box.flux[idx_select]
 
         # Smooth the spectrum
 
@@ -1199,12 +1205,16 @@ class ReadModel:
         if "ism_ext" in model_param:
             ism_reddening = model_param.get("ism_red", 3.1)
 
-            model_box.flux = self.apply_ext_ism(
+            model_box.flux, ext_mag = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["ism_ext"],
                 ism_reddening,
             )
+
+            idx_select = ext_mag >= 0.
+            model_box.wavelength = model_box.wavelength[idx_select]
+            model_box.flux = model_box.flux[idx_select]
 
         # Smooth the spectrum
 
@@ -1611,7 +1621,7 @@ class ReadModel:
         Returns
         -------
         float
-            Bolometric luminosity (Lsun).
+            Bolometric luminosity (:math:`\\log{(L/L_\\odot)}`).
         """
 
         if "radius" not in model_param:
@@ -1654,4 +1664,4 @@ class ReadModel:
             * simps(model_box.flux, model_box.wavelength)
         )
 
-        return bol_lum / constants.L_SUN
+        return np.log10(bol_lum / constants.L_SUN)
