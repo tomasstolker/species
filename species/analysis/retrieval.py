@@ -276,11 +276,8 @@ class AtmosphericRetrieval:
             for item in spec_remove:
                 del self.spectrum[item]
 
-        if not inc_spec or self.spectrum is None:
-            raise ValueError(
-                "At least one spectrum is required for AtmosphericRetrieval. Please "
-                "add a spectrum with the add_object method of Database. "
-            )
+        else:
+            self.spectrum = {}
 
         # Set wavelength bins and add to spectrum dictionary
 
@@ -3222,7 +3219,7 @@ class AtmosphericRetrieval:
                             / obj_item[1, j] ** 2
                         )
 
-            if plotting:
+            if plotting and len(self.spectrum) > 0:
                 plt.plot(wlen_micron, flux_smooth, color="black", zorder=-20)
                 plt.xlabel(r"Wavelength ($\mu$m)")
                 plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
