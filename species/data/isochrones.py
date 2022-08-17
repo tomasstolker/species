@@ -12,12 +12,10 @@ import numpy as np
 from species.core import constants
 
 
-def add_baraffe(database, tag, file_name):
+def add_phoenix(database, tag, file_name):
     """
-    Function for adding the `Baraffe et al. (2003)
-    <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B/>`_
-    isochrone data to the database. Any of the isochrones from
-    https://phoenix.ens-lyon.fr/Grids/ can be used as input.
+    Function for adding any of the isochrones from
+    https://phoenix.ens-lyon.fr/Grids/ to the database.
 
     Parameters
     ----------
@@ -83,7 +81,7 @@ def add_baraffe(database, tag, file_name):
         f"isochrones/{tag}/evolution", data=isochrones[:, 0:8]
     )
 
-    dset.attrs["model"] = "baraffe"
+    dset.attrs["model"] = "phoenix"
 
     print(" [DONE]")
     print(f"Database tag: {tag}")
@@ -200,12 +198,14 @@ def add_sonora(database, input_path):
                 if j == 0 or " " not in line.strip():
                     continue
 
-                # age(Gyr)  M/Msun  log L/Lsun  Teff(K)  log g  R/Rsun
+                # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
                 param = list(filter(None, line.strip().split(" ")))
                 param = list(map(float, param))
 
                 param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
-                param[1] = param[1] * constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+                param[1] = (
+                    param[1] * constants.M_SUN / constants.M_JUP
+                )  # (Msun) -> (Mjup)
 
                 isochrones.append([param[0], param[1], param[3], param[2], param[4]])
 
@@ -267,7 +267,7 @@ def add_ames(database, input_path):
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
 
-        add_baraffe(database=database, tag=iso_tags[i].lower(), file_name=data_file)
+        add_phoenix(database=database, tag=iso_tags[i].lower(), file_name=data_file)
 
 
 def add_btsettl(database, input_path):
@@ -302,13 +302,11 @@ def add_btsettl(database, input_path):
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print(
-            f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True
-        )
+        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_baraffe(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_nextgen(database, input_path):
@@ -343,13 +341,11 @@ def add_nextgen(database, input_path):
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print(
-            f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True
-        )
+        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_baraffe(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_saumon(database, input_path):
@@ -383,9 +379,7 @@ def add_saumon(database, input_path):
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.isfile(data_file):
-        print(
-            f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True
-        )
+        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
@@ -396,7 +390,7 @@ def add_saumon(database, input_path):
             if i == 0 or " " not in line.strip():
                 continue
 
-            # age(Gyr)  M/Msun  log L/Lsun  Teff(K)  log g  R/Rsun
+            # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
             param = list(filter(None, line.strip().split(" ")))
             param = list(map(float, param))
 
@@ -410,5 +404,62 @@ def add_saumon(database, input_path):
     dset = database.create_dataset(f"isochrones/{db_tag}/evolution", data=isochrones)
 
     dset.attrs["model"] = "saumon2008"
+
+    print(" [DONE]")
+
+
+def add_baraffe2015(database, input_path):
+    """
+    Function for adding the Baraffe et al. (2015)
+    isochrone data to the database.
+
+    Parameters
+    ----------
+    database : h5py._hl.files.File
+        Database.
+    input_path : str
+        Folder where the data is located.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    if not os.path.exists(input_path):
+        os.makedirs(input_path)
+
+    url_iso = (
+        "http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/BHAC15_tracks+structure"
+    )
+
+    iso_tag = "Baraffe et al. (2015)"
+    iso_size = "1.4 MB"
+    db_tag = "baraffe2015"
+
+    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
+    data_file = os.path.join(input_path, input_file)
+
+    if not os.path.isfile(data_file):
+        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
+        urllib.request.urlretrieve(url_iso, data_file)
+        print(" [DONE]")
+
+    # M/Ms, log t(yr), Teff, log(L/Ls), log(g), R/Rs,
+    # Log(Li/Li0), log(Tc), log(ROc), Mrad, Rrad, k2conv, k2rad
+    mass, log_age, teff, log_lum, log_g, _, _, _, _, _, _, _, _ = np.loadtxt(
+        data_file, unpack=True, skiprows=45, comments="!"
+    )
+
+    age = 1e-6 * 10.0**log_age  # (Myr)
+    mass *= constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+
+    isochrones = np.column_stack([age, mass, teff, log_lum, log_g])
+
+    print(f"Adding isochrones: {iso_tag}...", end="", flush=True)
+
+    dset = database.create_dataset(f"isochrones/{db_tag}/evolution", data=isochrones)
+
+    dset.attrs["model"] = "baraffe2015"
 
     print(" [DONE]")

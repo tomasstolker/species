@@ -114,7 +114,7 @@ class ReadIsochrone:
 
             age_points = np.full(masses.shape[0], age)  # (Myr)
 
-            if model == "baraffe":
+            if model in ["baraffe", "phoenix"]:
                 filters = list(h5_file[f"isochrones/{self.tag}/filters"])
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
@@ -123,7 +123,7 @@ class ReadIsochrone:
                     if isinstance(item, bytes):
                         filters[i] = item.decode("utf-8")
 
-        if model == "baraffe":
+        if model in ["baraffe", "phoenix"]:
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])
