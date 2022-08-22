@@ -64,8 +64,9 @@ The following data and models are currently supported:
 
 - All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
 - Evolutionary models from `Marleau & Cumming (2014) <https://ui.adsabs.harvard.edu/abs/2014MNRAS.437.1378M/abstract>`_
-- Evolutionary data of `Sonora Bobcat <https://zenodo.org/record/5063476>`_
-- Isochrones from `Saumon & Marley <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- Evolutionary data from `Sonora Bobcat <https://zenodo.org/record/5063476>`_
+- Isochrones from `Baraffe et al. (2015) <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
+- Isochrones from `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 
 **Calibration**
 

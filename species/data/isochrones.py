@@ -12,10 +12,12 @@ import numpy as np
 from species.core import constants
 
 
-def add_phoenix(database, tag, file_name):
+def add_manual(database, tag, file_name):
     """
     Function for adding any of the isochrones from
-    https://phoenix.ens-lyon.fr/Grids/ to the database.
+    https://phoenix.ens-lyon.fr/Grids/ or
+    https://perso.ens-lyon.fr/isabelle.baraffe/ to
+    the database.
 
     Parameters
     ----------
@@ -36,8 +38,27 @@ def add_phoenix(database, tag, file_name):
 
     data = []
 
+    check_baraffe = False
+    baraffe_continue = False
+
     with open(file_name, encoding="utf-8") as open_file:
-        for line in open_file:
+        for i, line in enumerate(open_file):
+            if "BHAC15" in line:
+                check_baraffe = True
+                continue
+
+            if not baraffe_continue:
+                if "(Gyr)" in line:
+                    baraffe_continue = True
+                else:
+                    continue
+
+            if line[0] == "!":
+                line = line[1:]
+
+            elif line[:2] == " !":
+                line = line[2:]
+
             if "---" in line or line == "\n":
                 continue
 
@@ -50,7 +71,12 @@ def add_phoenix(database, tag, file_name):
             age = line[-1]
 
         elif "lg(g)" in line:
+            # Isochrones from Phoenix website
             header = ["M/Ms", "Teff(K)"] + line[1:]
+
+        elif "M/Ms" in line:
+            # Isochrones from Baraffe et al. (2015)
+            header = line.copy()
 
         else:
             line.insert(0, age)
@@ -67,13 +93,18 @@ def add_phoenix(database, tag, file_name):
 
     print(f"Adding isochrones: {tag}...", end="", flush=True)
 
-    dtype = h5py.special_dtype(vlen=str)
+    if check_baraffe:
+        filters = header[6:]
+    else:
+        filters = header[7:]
+
+    dtype = h5py.string_dtype(encoding='utf-8', length=None)
 
     dset = database.create_dataset(
-        f"isochrones/{tag}/filters", (np.size(header[7:]),), dtype=dtype
+        f"isochrones/{tag}/filters", (np.size(filters),), dtype=dtype
     )
 
-    dset[...] = header[7:]
+    dset[...] = filters
 
     database.create_dataset(f"isochrones/{tag}/magnitudes", data=isochrones[:, 8:])
 
@@ -81,7 +112,7 @@ def add_phoenix(database, tag, file_name):
         f"isochrones/{tag}/evolution", data=isochrones[:, 0:8]
     )
 
-    dset.attrs["model"] = "phoenix"
+    dset.attrs["model"] = "manual"
 
     print(" [DONE]")
     print(f"Database tag: {tag}")
@@ -267,7 +298,7 @@ def add_ames(database, input_path):
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
 
-        add_phoenix(database=database, tag=iso_tags[i].lower(), file_name=data_file)
+        add_manual(database=database, tag=iso_tags[i].lower(), file_name=data_file)
 
 
 
@@ -307,7 +338,7 @@ def add_btsettl(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_nextgen(database, input_path):
@@ -346,7 +377,7 @@ def add_nextgen(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_saumon(database, input_path):
@@ -370,11 +401,15 @@ def add_saumon(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/hybrid_solar_age"
+    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/BD_evolution.tgz"
 
     iso_tag = "Saumon & Marley (2008)"
-    iso_size = "49 kB"
-    db_tag = "saumon2008"
+    iso_size = "800 kB"
+
+    data_folder = os.path.join(input_path, "saumon_marley_2008")
+
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
 
     input_file = url_iso.rsplit("/", maxsplit=1)[-1]
     data_file = os.path.join(input_path, input_file)
@@ -384,29 +419,66 @@ def add_saumon(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    isochrones = []
-
-    with open(data_file, encoding="utf-8") as open_file:
-        for i, line in enumerate(open_file):
-            if i == 0 or " " not in line.strip():
-                continue
-
-            # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
-            param = list(filter(None, line.strip().split(" ")))
-            param = list(map(float, param))
-
-            param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
-            param[1] = param[1] * constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
-
-            isochrones.append([param[0], param[1], param[3], param[2], param[4]])
-
-    print(f"Adding isochrones: {iso_tag}...", end="", flush=True)
-
-    dset = database.create_dataset(f"isochrones/{db_tag}/evolution", data=isochrones)
-
-    dset.attrs["model"] = "saumon2008"
-
+    print(f"Unpacking {iso_tag} isochrones ({iso_size})", end="", flush=True)
+    with tarfile.open(data_file) as tar:
+        tar.extractall(data_folder)
     print(" [DONE]")
+
+    iso_files = [
+        "nc_solar_age",
+        "nc-0.3_age",
+        "nc+0.3_age",
+        "f2_solar_age",
+        "hybrid_solar_age",
+    ]
+
+    labels = [
+        "Cloudless [M/H] = 0.0",
+        "Cloudless [M/H] = -0.3",
+        "Cloudless [M/H] = +0.3",
+        "Cloudy f_sed = 2",
+        "Hybrid (cloudless / f_sed = 2)",
+    ]
+
+    db_tags = [
+        "saumon2008-nc_solar",
+        "saumon2008-nc_-0.3",
+        "saumon2008-nc_+0.3",
+        "saumon2008-f2_solar",
+        "saumon2008-hybrid_solar",
+    ]
+
+    for j, item in enumerate(iso_files):
+        iso_path = os.path.join(data_folder, item)
+
+        isochrones = []
+
+        with open(iso_path, encoding="utf-8") as open_file:
+            for i, line in enumerate(open_file):
+                if i == 0 or " " not in line.strip():
+                    continue
+
+                # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
+                param = list(filter(None, line.strip().split(" ")))
+                param = list(map(float, param))
+
+                param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
+                param[1] = (
+                    param[1] * constants.M_SUN / constants.M_JUP
+                )  # (Msun) -> (Mjup)
+
+                isochrones.append([param[0], param[1], param[3], param[2], param[4]])
+
+        print(f"Adding isochrones: {iso_tag} {labels[j]}...", end="", flush=True)
+
+        dset = database.create_dataset(
+            f"isochrones/{db_tags[j]}/evolution", data=isochrones
+        )
+
+        dset.attrs["model"] = "saumon2008"
+
+        print(" [DONE]")
+        print(f"Database tag: {db_tags[j]}")
 
 
 def add_baraffe2015(database, input_path):

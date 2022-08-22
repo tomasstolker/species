@@ -6,7 +6,7 @@ import configparser
 import os
 import warnings
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -21,7 +21,14 @@ from species.util import read_util
 
 class ReadIsochrone:
     """
-    Class for reading isochrone data from the database.
+    Class for reading isochrone data from the database. This class
+    interpolates the evolutionary track or isochrone data.
+    Please carefully check for interpolation effects. Setting
+    ``masses=None`` in
+    :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
+    extracts the isochrones at the masses of the original grid,
+    so using that option helps with comparing results for which
+    the masses have been interpolated.
     """
 
     @typechecked
@@ -114,16 +121,11 @@ class ReadIsochrone:
 
             age_points = np.full(masses.shape[0], age)  # (Myr)
 
-            if model in ["baraffe", "phoenix"]:
-                filters = list(h5_file[f"isochrones/{self.tag}/filters"])
+            if model in ["baraffe", "phoenix", "manual"]:
+                filters = self.get_filters()
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
-                # Convert the h5py list of filters from bytes to strings
-                for i, item in enumerate(filters):
-                    if isinstance(item, bytes):
-                        filters[i] = item.decode("utf-8")
-
-        if model in ["baraffe", "phoenix"]:
+        if model in ["baraffe", "phoenix", "manual"]:
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])
@@ -605,3 +607,31 @@ class ReadIsochrone:
         )
 
         return mass
+
+    @typechecked
+    def get_filters(self) -> Optional[List[str]]:
+        """
+        Function for get a list with filter names for which there
+        are are magnitudes stored with the isochrone data.
+
+        Returns
+        -------
+        list(str), None
+            List with filter names. A ``None`` is returned if
+            there are no filters and magnitudes stored with
+            the isochrone data.
+        """
+
+        with h5py.File(self.database, "r") as h5_file:
+            if "filters" in h5_file[f"isochrones/{self.tag}"]:
+                filters = list(h5_file[f"isochrones/{self.tag}/filters/"])
+
+                # Convert from bytes to strings
+                for i, item in enumerate(filters):
+                    if isinstance(item, bytes):
+                        filters[i] = item.decode("utf-8")
+
+            else:
+                filters = None
+
+        return filters
