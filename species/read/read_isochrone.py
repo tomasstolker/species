@@ -30,8 +30,9 @@ class ReadIsochrone:
         Parameters
         ----------
         tag : str
-            Database tag of the isochrone data (e.g. 'ames-cond', 'ames-dusty',
-            'bt-settl', 'sonora+0.0', 'sonora-0.5', 'sonora+0.5').
+            Database tag of the isochrone data (e.g. 'ames-cond',
+            'ames-dusty', 'sonora+0.0', 'sonora-0.5', 'sonora+0.5',
+            'saumon-2008', 'nextgen').
 
         Returns
         -------
@@ -113,7 +114,7 @@ class ReadIsochrone:
 
             age_points = np.full(masses.shape[0], age)  # (Myr)
 
-            if model == "baraffe":
+            if model in ["baraffe", "phoenix"]:
                 filters = list(h5_file[f"isochrones/{self.tag}/filters"])
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
@@ -122,7 +123,7 @@ class ReadIsochrone:
                     if isinstance(item, bytes):
                         filters[i] = item.decode("utf-8")
 
-        if model == "baraffe":
+        if model in ["baraffe", "phoenix"]:
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])
@@ -550,3 +551,57 @@ class ReadIsochrone:
             radius=radius,
             iso_tag=self.tag,
         )
+
+    @typechecked
+    def get_mass(
+        self,
+        age: float,
+        log_lum: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Function for interpolating a mass for a given
+        age and array with bolometric luminosities.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the masses will be interpolated.
+        log_lum : np.ndarray
+            Array with the bolometric luminosities,
+            :math:`\\log{(L/L_\\odot)}`, for which the
+            masses will be interpolated.
+
+        Returns
+        -------
+        np.ndarray
+            Array with masses (:math:`M_\\mathrm{J}`).
+        """
+
+        index_age = 0
+        index_mass = 1
+        index_log_lum = 3
+
+        # Read isochrone data
+
+        with h5py.File(self.database, "r") as h5_file:
+            model = h5_file[f"isochrones/{self.tag}/evolution"].attrs["model"]
+            evolution = np.asarray(h5_file[f"isochrones/{self.tag}/evolution"])
+
+        # Interpolate masses
+
+        points = np.stack(
+            (evolution[:, index_age], evolution[:, index_log_lum]), axis=1
+        )
+
+        age_points = np.full(log_lum.shape[0], age)  # (Myr)
+
+        mass = griddata(
+            points=points,
+            values=evolution[:, index_mass],
+            xi=np.stack((age_points, log_lum), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        return mass

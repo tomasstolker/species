@@ -648,6 +648,9 @@ def create_abund_dict(
         if "MgSiO3(c)" in abund_in:
             abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"][indices]
 
+        if "Mg2SiO4(c)" in abund_in:
+            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"][indices]
+
         if "Al2O3(c)" in abund_in:
             abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"][indices]
 
@@ -688,6 +691,9 @@ def create_abund_dict(
         if "MgSiO3(c)" in abund_in:
             abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"][::3]
 
+        if "Mg2SiO4(c)" in abund_in:
+            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"][::3]
+
         if "Al2O3(c)" in abund_in:
             abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"][::3]
 
@@ -727,6 +733,9 @@ def create_abund_dict(
 
         if "MgSiO3(c)" in abund_in:
             abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"]
+
+        if "Mg2SiO4(c)" in abund_in:
+            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"]
 
         if "Al2O3(c)" in abund_in:
             abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"]
@@ -1850,7 +1859,8 @@ def cloud_mass_fraction(
     Parameters
     ----------
     composition : str
-        Cloud composition ('Fe', 'MgSiO3', 'Al2O3', 'Na2S', or 'KCL').
+        Cloud composition ('Fe', 'MgSiO3', 'Mg2SiO4', 'Al2O3',
+        'Na2S', or 'KCL').
     metallicity : float
         Metallicity [Fe/H].
     c_o_ratio : float
@@ -1888,6 +1898,12 @@ def cloud_mass_fraction(
             [nfracs_use["Mg"], nfracs_use["Si"], nfracs_use["O"] / 3.0]
         )
         mass_cloud = masses["Mg"] + masses["Si"] + 3.0 * masses["O"]
+
+    elif composition == "Mg2SiO4":
+        nfrac_cloud = np.min(
+            [nfracs_use["Mg"] / 2.0, nfracs_use["Si"], nfracs_use["O"] / 4.0]
+        )
+        mass_cloud = 2.0 * masses["Mg"] + masses["Si"] + 4.0 * masses["O"]
 
     elif composition == "Al2O3":
         nfrac_cloud = np.min([nfracs_use["Al"] / 2.0, nfracs_use["O"] / 3.0])
@@ -1930,7 +1946,8 @@ def find_cloud_deck(
     Parameters
     ----------
     composition : str
-        Cloud composition ('Fe', 'MgSiO3', 'Al2O3', 'Na2S', or 'KCL').
+        Cloud composition ('Fe', 'MgSiO3', 'Mg2SiO4', 'Al2O3',
+        'Na2S', or 'KCL').
     press : np.ndarray
         Pressures (bar).
     temp : np.ndarray
@@ -1956,8 +1973,11 @@ def find_cloud_deck(
     elif composition == "MgSiO3":
         Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
 
+    elif composition == "Mg2SiO4":
+        Pc, Tc = return_T_cond_Mg2SiO4(metallicity)
+
     elif composition == "Al2O3":
-        Pc, Tc = return_T_cond_Al2O3(metallicity, c_o_ratio, mmw)
+        Pc, Tc = return_T_cond_Al2O3(metallicity)
 
     elif composition == "Na2S":
         Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
@@ -2037,8 +2057,8 @@ def scale_cloud_abund(
         Dictionary with arrays that contain the pressure-dependent,
         equilibrium mass fractions of the line species.
     composition : sr
-        Cloud composition ('Fe(c)', 'MgSiO3(c)', 'Al2O3(c)',
-        'Na2S(c)', 'KCl(c)').
+        Cloud composition ('Fe(c)', 'MgSiO3(c)', 'Mg2SiO4(c)',
+        'Al2O3(c)', 'Na2S(c)', 'KCl(c)').
     tau_cloud : float
         Optical depth of the clouds. The returned mass fraction is
         scaled such that the optical depth at the shortest wavelength
@@ -2277,9 +2297,9 @@ def return_T_cond_Fe(
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(15.71 - 47664.0 / x)
 
-    XFe = cloud_mass_fraction("Fe", FeH, CO)
+    x_cloud = cloud_mass_fraction("Fe", FeH, CO)
 
-    return P_vap(T) / (XFe * MMW / masses["Fe"]), T
+    return P_vap(T) / (x_cloud * MMW / masses["Fe"]), T
 
 
 @typechecked
@@ -2314,9 +2334,9 @@ def return_T_cond_Fe_l(
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(9.86 - 37120.0 / x)
 
-    XFe = cloud_mass_fraction("Fe", FeH, CO)
+    x_cloud = cloud_mass_fraction("Fe", FeH, CO)
 
-    return P_vap(T) / (XFe * MMW / masses["Fe"]), T
+    return P_vap(T) / (x_cloud * MMW / masses["Fe"]), T
 
 
 @typechecked
@@ -2386,17 +2406,42 @@ def return_T_cond_MgSiO3(
     # including erratum (P_vap is in bar, not cgs!)
     P_vap = lambda x: np.exp(25.37 - 58663.0 / x)
 
-    Xmgsio3 = cloud_mass_fraction("MgSiO3", FeH, CO)
+    x_cloud = cloud_mass_fraction("MgSiO3", FeH, CO)
 
     m_mgsio3 = masses["Mg"] + masses["Si"] + 3.0 * masses["O"]
 
-    return P_vap(T) / (Xmgsio3 * MMW / m_mgsio3), T
+    return P_vap(T) / (x_cloud * MMW / m_mgsio3), T
 
 
 @typechecked
-def return_T_cond_Al2O3(
-    FeH: float, CO: float, MMW: float = 2.33
-) -> Tuple[np.ndarray, np.ndarray]:
+def return_T_cond_Mg2SiO4(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Function for calculating the saturation pressure for Mg2SiO4.
+
+    Parameters
+    ----------
+    FeH : float
+        Metallicity.
+
+    Returns
+    -------
+    np.ndarray
+        Saturation pressure (bar).
+    np.ndarray
+        Temperature (K).
+    """
+
+    # Condensation temperature of Mg2SiO4
+    # See Eq. 18 in Visscher et al. 2010
+
+    temp = np.linspace(100.0, 10000.0, 1000)
+    P_vap = lambda x: 10.0 ** ((5.89 - 1e4 / temp - 0.73 * FeH) / 0.37)
+
+    return P_vap(temp), temp
+
+
+@typechecked
+def return_T_cond_Al2O3(FeH: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Function for calculating the condensation temperature for Al2O3.
 
@@ -2424,13 +2469,13 @@ def return_T_cond_Al2O3(
     pressure = np.logspace(-6, 3, 1000)
 
     # Equilibrium mass fraction of Al2O3
-    # Xal2o3 = cloud_mass_fraction('Al2O3', FeH, CO)
+    # x_cloud = cloud_mass_fraction('Al2O3', FeH, CO)
 
     # Molecular mass of Al2O3
     # m_al2o3 = 3. * masses['Al'] + 2. * masses['O']
 
     # Partial pressure of Al2O3
-    # part_press = pressure/(Xal2o3*MMW/m_al2o3)
+    # part_press = pressure/(x_cloud*MMW/m_al2o3)
 
     # Condensation temperature of Al2O3
     # (see Eq. 4 in Wakeford et al. 2017)
@@ -2478,11 +2523,11 @@ def return_T_cond_Na2S(
     # is OK: there are more S than Na atoms at solar abundance ratios.
     P_vap = lambda x: 1e1 ** (8.55 - 13889.0 / x - 0.5 * FeH) / 2.0
 
-    Xna2s = cloud_mass_fraction("Na2S", FeH, CO)
+    x_cloud = cloud_mass_fraction("Na2S", FeH, CO)
 
     m_na2s = 2.0 * masses["Na"] + masses["S"]
 
-    return P_vap(T) / (Xna2s * MMW / m_na2s), T
+    return P_vap(T) / (x_cloud * MMW / m_na2s), T
 
 
 @typechecked
@@ -2516,11 +2561,11 @@ def return_T_cond_KCl(
     # Taken from Charnay+2018
     P_vap = lambda x: 1e1 ** (7.611 - 11382.0 / T)
 
-    Xkcl = cloud_mass_fraction("KCL", FeH, CO)
+    x_cloud = cloud_mass_fraction("KCL", FeH, CO)
 
     m_kcl = masses["K"] + masses["Cl"]
 
-    return P_vap(T) / (Xkcl * MMW / m_kcl), T
+    return P_vap(T) / (x_cloud * MMW / m_kcl), T
 
 
 @typechecked
