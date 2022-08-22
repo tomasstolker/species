@@ -257,8 +257,9 @@ def plot_posterior(
         radius and mass are expressed in solar units.
     param_inc : list(str), None
         List with subset of parameters that will be included in the
-        posterior plot. All parameters will be included if the
-        argument is set to ``None``.
+        posterior plot. This parameter can also be used to change the
+        order of the parameters in the posterior plot. All parameters
+        will be included if the argument is set to ``None``.
 
     Returns
     -------

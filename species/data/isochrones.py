@@ -12,10 +12,12 @@ import numpy as np
 from species.core import constants
 
 
-def add_phoenix(database, tag, file_name):
+def add_manual(database, tag, file_name):
     """
     Function for adding any of the isochrones from
-    https://phoenix.ens-lyon.fr/Grids/ to the database.
+    https://phoenix.ens-lyon.fr/Grids/ or
+    https://perso.ens-lyon.fr/isabelle.baraffe/ to
+    the database.
 
     Parameters
     ----------
@@ -36,8 +38,27 @@ def add_phoenix(database, tag, file_name):
 
     data = []
 
+    check_baraffe = False
+    baraffe_continue = False
+
     with open(file_name, encoding="utf-8") as open_file:
-        for line in open_file:
+        for i, line in enumerate(open_file):
+            if "BHAC15" in line:
+                check_baraffe = True
+                continue
+
+            if not baraffe_continue:
+                if "(Gyr)" in line:
+                    baraffe_continue = True
+                else:
+                    continue
+
+            if line[0] == "!":
+                line = line[1:]
+
+            elif line[:2] == " !":
+                line = line[2:]
+
             if "---" in line or line == "\n":
                 continue
 
@@ -50,7 +71,12 @@ def add_phoenix(database, tag, file_name):
             age = line[-1]
 
         elif "lg(g)" in line:
+            # Isochrones from Phoenix website
             header = ["M/Ms", "Teff(K)"] + line[1:]
+
+        elif "M/Ms" in line:
+            # Isochrones from Baraffe et al. (2015)
+            header = line.copy()
 
         else:
             line.insert(0, age)
@@ -67,13 +93,18 @@ def add_phoenix(database, tag, file_name):
 
     print(f"Adding isochrones: {tag}...", end="", flush=True)
 
-    dtype = h5py.special_dtype(vlen=str)
+    if check_baraffe:
+        filters = header[6:]
+    else:
+        filters = header[7:]
+
+    dtype = h5py.string_dtype(encoding='utf-8', length=None)
 
     dset = database.create_dataset(
-        f"isochrones/{tag}/filters", (np.size(header[7:]),), dtype=dtype
+        f"isochrones/{tag}/filters", (np.size(filters),), dtype=dtype
     )
 
-    dset[...] = header[7:]
+    dset[...] = filters
 
     database.create_dataset(f"isochrones/{tag}/magnitudes", data=isochrones[:, 8:])
 
@@ -81,7 +112,7 @@ def add_phoenix(database, tag, file_name):
         f"isochrones/{tag}/evolution", data=isochrones[:, 0:8]
     )
 
-    dset.attrs["model"] = "phoenix"
+    dset.attrs["model"] = "manual"
 
     print(" [DONE]")
     print(f"Database tag: {tag}")
@@ -267,7 +298,7 @@ def add_ames(database, input_path):
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
 
-        add_phoenix(database=database, tag=iso_tags[i].lower(), file_name=data_file)
+        add_manual(database=database, tag=iso_tags[i].lower(), file_name=data_file)
 
 
 def add_btsettl(database, input_path):
@@ -306,7 +337,7 @@ def add_btsettl(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_nextgen(database, input_path):
@@ -345,7 +376,7 @@ def add_nextgen(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_phoenix(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
 
 
 def add_saumon(database, input_path):

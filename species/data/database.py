@@ -480,18 +480,19 @@ class Database:
         ----------
         model : str
             Evolutionary model ('ames', 'bt-settl', 'sonora',
-            'saumon2008', 'nextgen', 'baraffe2015', or 'phoenix').
+            'saumon2008', 'nextgen', 'baraffe2015', or 'manual').
             Isochrones will be automatically downloaded.
             Alternatively, isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/ and manually added
-            by setting the ``filename`` and ``tag`` arguments, and
-            setting ``model='phoenix'``.
+            https://phoenix.ens-lyon.fr/Grids/ or
+            https://perso.ens-lyon.fr/isabelle.baraffe/, and can be
+            manually added by setting the ``filename`` and ``tag``
+            arguments, and setting ``model='manual'``.
         filename : str, None
             Filename with the isochrone data. Only required with
-            ``model='phoenix'`` and can be set to ``None`` otherwise.
+            ``model='manual'`` and can be set to ``None`` otherwise.
         tag : str
             Database tag name where the isochrone that will be stored.
-            Only required with ``model='phoenix'`` and can be set to
+            Only required with ``model='manual'`` and can be set to
             ``None`` otherwise.
 
         Returns
@@ -500,12 +501,22 @@ class Database:
             None
         """
 
+        if model == "phoenix":
+            warnings.warn("Please set model='manual' instead of "
+                          "model='phoenix' when using the filename "
+                          "parameter for adding isochrone data.",
+                          DeprecationWarning)
+
         h5_file = h5py.File(self.database, "a")
 
         if "isochrones" not in h5_file:
             h5_file.create_group("isochrones")
 
-        if model == "ames":
+        if model in ["phoenix", "marleau", "manual"]:
+            if f"isochrones/{tag}" in h5_file:
+                del h5_file[f"isochrones/{tag}"]
+
+        elif model == "ames":
             if "isochrones/ames-cond" in h5_file:
                 del h5_file["isochrones/ames-cond"]
             if "isochrones/ames-dusty" in h5_file:
@@ -543,11 +554,13 @@ class Database:
             if "isochrones/baraffe2015" in h5_file:
                 del h5_file["isochrones/baraffe2015"]
 
-        elif model in ["phoenix", "marleau"]:
-            if f"isochrones/{tag}" in h5_file:
-                del h5_file[f"isochrones/{tag}"]
+        if model == "manual":
+            isochrones.add_manual(h5_file, tag, filename)
 
-        if model == "ames":
+        elif model == "marleau":
+            isochrones.add_marleau(h5_file, tag, filename)
+
+        elif model == "ames":
             isochrones.add_ames(h5_file, self.input_path)
 
         elif model == "bt-settl":
@@ -564,12 +577,6 @@ class Database:
 
         elif model == "baraffe2015":
             isochrones.add_baraffe2015(h5_file, self.input_path)
-
-        elif model == "phoenix":
-            isochrones.add_phoenix(h5_file, tag, filename)
-
-        elif model == "marleau":
-            isochrones.add_marleau(h5_file, tag, filename)
 
         h5_file.close()
 
