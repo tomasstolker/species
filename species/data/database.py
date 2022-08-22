@@ -524,8 +524,16 @@ class Database:
                 del h5_file["isochrones/sonora-0.5"]
 
         elif model == "saumon2008":
-            if "isochrones/saumon2008" in h5_file:
-                del h5_file["isochrones/saumon2008"]
+            if "isochrones/saumon2008-nc_solar" in h5_file:
+                del h5_file["isochrones/saumon2008-nc_solar"]
+            if "isochrones/saumon2008-nc_-0.3" in h5_file:
+                del h5_file["isochrones/saumon2008-nc_-0.3"]
+            if "isochrones/saumon2008-nc_+0.3" in h5_file:
+                del h5_file["isochrones/saumon2008-nc_+0.3"]
+            if "isochrones/saumon2008-f2_solar" in h5_file:
+                del h5_file["isochrones/saumon2008-f2_solar"]
+            if "isochrones/saumon2008-hybrid_solar" in h5_file:
+                del h5_file["isochrones/saumon2008-hybrid_solar"]
 
         elif model == "nextgen":
             if "isochrones/nextgen" in h5_file:
