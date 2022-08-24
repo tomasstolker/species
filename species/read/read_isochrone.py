@@ -1,5 +1,5 @@
 """
-Module with reading functionalities for isochrones.
+Module with reading functionalities for isochrones and cooling curves.
 """
 
 import configparser
@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 import h5py
 import numpy as np
 
-from scipy.interpolate import griddata
+from scipy import interpolate
 from typeguard import typechecked
 
 from species.core import box
@@ -28,11 +28,14 @@ class ReadIsochrone:
     :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
     extracts the isochrones at the masses of the original grid,
     so using that option helps with comparing results for which
-    the masses have been interpolated.
+    the masses have been interpolated. Similar, by setting
+    ``ages=None`` with the
+    :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
+    method will fix the ages to those of the original grid.
     """
 
     @typechecked
-    def __init__(self, tag: str) -> None:
+    def __init__(self, tag: str, extrapolate: bool = False) -> None:
         """
         Parameters
         ----------
@@ -40,6 +43,16 @@ class ReadIsochrone:
             Database tag of the isochrone data (e.g. 'ames-cond',
             'ames-dusty', 'sonora+0.0', 'sonora-0.5', 'sonora+0.5',
             'saumon-2008', 'nextgen').
+        extrapolate : str
+            Extrapolate :math:`T_\\mathrm{eff}` (K),
+            :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`
+            to a regular grid of masses. Please check any results
+            obtained with ``extrapolate=True`` carefully,
+            in particular any cooling curve extracted with
+            :func:`~species.read_isochrone.ReadIsochrone.get_cooling_curve`,
+            since these may have a lower accuracy in the
+            extrapolated parts of the parameter space.
+
 
         Returns
         -------
@@ -48,6 +61,7 @@ class ReadIsochrone:
         """
 
         self.tag = tag
+        self.extrapolate = extrapolate
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -65,15 +79,68 @@ class ReadIsochrone:
                 )
 
     @typechecked
+    def _read_data(self) -> Tuple[str, np.ndarray]:
+        """
+        Internal function for reading the evolutionary
+        data from the database.
+
+        Returns
+        -------
+        str
+            Model name.
+        np.ndarray
+            Evolutionary data. The array has 2 dimensions with the
+            shape (n_data_points, 5). The columns are age (Myr),
+            mass (:math:`M_\\mathrm{J}`), :math:`T_\\mathrm{eff}` (K),
+            :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`.
+        """
+
+        with h5py.File(self.database, "r") as h5_file:
+            model = h5_file[f"isochrones/{self.tag}/evolution"].attrs["model"]
+            evolution = np.asarray(h5_file[f"isochrones/{self.tag}/evolution"])
+
+        age_unique = np.unique(evolution[:, 0])
+        mass_unique = np.unique(evolution[:, 1])
+
+        n_ages = age_unique.shape[0]
+        n_masses = mass_unique.shape[0]
+
+        if self.extrapolate:
+            evol_new = np.zeros((n_ages * n_masses, 5))
+
+            for j, age_item in enumerate(age_unique):
+                indices = evolution[:, 0] == age_item
+
+                evol_new[j * n_masses : (j + 1) * n_masses, 0] = np.full(
+                    n_masses, age_item
+                )
+                evol_new[j * n_masses : (j + 1) * n_masses, 1] = mass_unique
+
+                for i in range(evolution.shape[1] - 2):
+                    interp_param = interpolate.interp1d(
+                        evolution[indices, 1],
+                        evolution[indices, 2 + i],
+                        fill_value="extrapolate",
+                    )
+
+                    evol_new[j * n_masses : (j + 1) * n_masses, 2 + i] = interp_param(
+                        mass_unique
+                    )
+
+            evolution = evol_new.copy()
+
+        return model, evolution
+
+    @typechecked
     def get_isochrone(
         self,
         age: float,
-        masses: Optional[np.ndarray],
+        masses: Optional[np.ndarray] = None,
         filters_color: Optional[Tuple[str, str]] = None,
         filter_mag: Optional[str] = None,
     ) -> box.IsochroneBox:
         """
-        Function for selecting an isochrone.
+        Function for interpolating an isochrone.
 
         Parameters
         ----------
@@ -83,7 +150,7 @@ class ReadIsochrone:
             Masses (:math:`M_\\mathrm{J}`) at which the isochrone
             data is interpolated. The masses are not interpolated
             if the argument is set to ``None``, in which case the
-            mass sampling from the isochrone data is used.
+            mass sampling from the evolutionary data is used.
         filters_color : tuple(str, str), None
             Filter names for the color as listed in the file with the
             isochrone data. Not selected if set to ``None`` or if only
@@ -110,19 +177,19 @@ class ReadIsochrone:
 
         # Read isochrone data
 
-        with h5py.File(self.database, "r") as h5_file:
-            model = h5_file[f"isochrones/{self.tag}/evolution"].attrs["model"]
-            evolution = np.asarray(h5_file[f"isochrones/{self.tag}/evolution"])
+        model, evolution = self._read_data()
 
-            if masses is None:
-                idx_min = (np.abs(evolution[:, index_age] - age)).argmin()
-                age_select = evolution[:, index_age] == evolution[idx_min, index_age]
-                masses = np.unique(evolution[age_select, index_mass])  # (Mjup)
+        if masses is None:
+            idx_min = (np.abs(evolution[:, index_age] - age)).argmin()
+            age_select = evolution[:, index_age] == evolution[idx_min, index_age]
+            masses = np.unique(evolution[age_select, index_mass])  # (Mjup)
 
-            age_points = np.full(masses.shape[0], age)  # (Myr)
+        age_points = np.full(masses.shape[0], age)  # (Myr)
 
-            if model in ["baraffe", "phoenix", "manual"]:
-                filters = self.get_filters()
+        if model in ["baraffe", "phoenix", "manual"]:
+            filters = self.get_filters()
+
+            with h5py.File(self.database, "r") as h5_file:
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
         if model in ["baraffe", "phoenix", "manual"]:
@@ -134,8 +201,8 @@ class ReadIsochrone:
                 index_mag = filters.index(filter_mag)
 
             if filters_color is not None:
-                mag_color_1 = griddata(
-                    points=evolution[:, 0:2],
+                mag_color_1 = interpolate.griddata(
+                    points=evolution[:, :2],
                     values=magnitudes[:, index_color_1],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -143,8 +210,8 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-                mag_color_2 = griddata(
-                    points=evolution[:, 0:2],
+                mag_color_2 = interpolate.griddata(
+                    points=evolution[:, :2],
                     values=magnitudes[:, index_color_2],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -155,8 +222,8 @@ class ReadIsochrone:
                 color = mag_color_1 - mag_color_2
 
             if filter_mag is not None:
-                mag_abs = griddata(
-                    points=evolution[:, 0:2],
+                mag_abs = interpolate.griddata(
+                    points=evolution[:, :2],
                     values=magnitudes[:, index_mag],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -164,8 +231,8 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = griddata(
-            points=evolution[:, 0:2],
+        teff = interpolate.griddata(
+            points=evolution[:, :2],
             values=evolution[:, index_teff],
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
@@ -173,8 +240,8 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        log_lum = griddata(
-            points=evolution[:, 0:2],
+        log_lum = interpolate.griddata(
+            points=evolution[:, :2],
             values=evolution[:, index_log_lum],
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
@@ -182,8 +249,8 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        logg = griddata(
-            points=evolution[:, 0:2],
+        logg = interpolate.griddata(
+            points=evolution[:, :2],
             values=evolution[:, index_logg],
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
@@ -212,6 +279,7 @@ class ReadIsochrone:
         return box.create_box(
             boxtype="isochrone",
             model=self.tag,
+            age=age,
             filters_color=filters_color,
             filter_mag=filter_mag,
             color=color,
@@ -220,6 +288,166 @@ class ReadIsochrone:
             teff=teff,
             logg=logg,
             masses=masses,
+        )
+
+    @typechecked
+    def get_cooling_curve(
+        self,
+        mass: float,
+        ages: Optional[np.ndarray] = None,
+        filters_color: Optional[Tuple[str, str]] = None,
+        filter_mag: Optional[str] = None,
+    ) -> box.CoolingBox:
+        """
+        Function for interpolating a cooling curve.
+
+        Parameters
+        ----------
+        mass : float
+            Mass (:math:`M_\\mathrm{J}`) for which the cooling
+            curve will be interpolated.
+        ages : np.ndarray, None
+            Ages (Myr) at which the cooling curve will be
+            interpolated. The ages are not interpolated
+            if the argument is set to ``None``, in which case the
+            age sampling from the evolutionary data is used.
+        filters_color : tuple(str, str), None
+            Filter names for the color as listed in the file with the
+            isochrone data. Not selected if set to ``None`` or if only
+            evolutionary tracks are available.
+        filter_mag : str, None
+            Filter name for the absolute magnitude as listed in the
+            file with the isochrone data. Not selected if set to
+            ``None`` or if only evolutionary tracks are available.
+
+        Returns
+        -------
+        species.core.box.CoolingBox
+            Box with the cooling curve.
+        """
+
+        color = None
+        mag_abs = None
+
+        index_age = 0
+        index_mass = 1
+        index_teff = 2
+        index_log_lum = 3
+        index_logg = 4
+
+        # Read isochrone data
+
+        model, evolution = self._read_data()
+
+        if ages is None:
+            idx_min = (np.abs(evolution[:, index_mass] - mass)).argmin()
+            mass_select = evolution[:, index_mass] == evolution[idx_min, index_mass]
+            ages = np.unique(evolution[mass_select, index_age])  # (Myr)
+
+        mass_points = np.full(ages.shape[0], mass)  # (Mjup)
+
+        if model in ["baraffe", "phoenix", "manual"]:
+            filters = self.get_filters()
+
+            with h5py.File(self.database, "r") as h5_file:
+                magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
+
+        if model in ["baraffe", "phoenix", "manual"]:
+            if filters_color is not None:
+                index_color_1 = filters.index(filters_color[0])
+                index_color_2 = filters.index(filters_color[1])
+
+            if filter_mag is not None:
+                index_mag = filters.index(filter_mag)
+
+            if filters_color is not None:
+                mag_color_1 = interpolate.griddata(
+                    points=evolution[:, :2],
+                    values=magnitudes[:, index_color_1],
+                    xi=np.stack((ages, mass_points), axis=1),
+                    method=self.interp_method,
+                    fill_value="nan",
+                    rescale=False,
+                )
+
+                mag_color_2 = interpolate.griddata(
+                    points=evolution[:, :2],
+                    values=magnitudes[:, index_color_2],
+                    xi=np.stack((ages, mass_points), axis=1),
+                    method=self.interp_method,
+                    fill_value="nan",
+                    rescale=False,
+                )
+
+                color = mag_color_1 - mag_color_2
+
+            if filter_mag is not None:
+                mag_abs = interpolate.griddata(
+                    points=evolution[:, :2],
+                    values=magnitudes[:, index_mag],
+                    xi=np.stack((ages, mass_points), axis=1),
+                    method=self.interp_method,
+                    fill_value="nan",
+                    rescale=False,
+                )
+
+        teff = interpolate.griddata(
+            points=evolution[:, :2],
+            values=evolution[:, index_teff],
+            xi=np.stack((ages, mass_points), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        log_lum = interpolate.griddata(
+            points=evolution[:, :2],
+            values=evolution[:, index_log_lum],
+            xi=np.stack((ages, mass_points), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        logg = interpolate.griddata(
+            points=evolution[:, :2],
+            values=evolution[:, index_logg],
+            xi=np.stack((ages, mass_points), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        if mag_abs is None and filter_mag is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filter_mag} filter so "
+                f"setting the argument of 'filter_mag' to None."
+            )
+
+            filter_mag = None
+
+        if mag_abs is None and filters_color is not None:
+            warnings.warn(
+                f"The isochrones of {self.tag} do not have "
+                f"magnitudes for the {filters_color} filters so "
+                f"setting the argument of 'filter_color' to None."
+            )
+
+            filters_color = None
+
+        return box.create_box(
+            boxtype="cooling",
+            model=self.tag,
+            mass=mass,
+            filters_color=filters_color,
+            filter_mag=filter_mag,
+            color=color,
+            magnitude=mag_abs,
+            ages=ages,
+            log_lum=log_lum,
+            teff=teff,
+            logg=logg,
         )
 
     @typechecked
@@ -585,9 +813,7 @@ class ReadIsochrone:
 
         # Read isochrone data
 
-        with h5py.File(self.database, "r") as h5_file:
-            model = h5_file[f"isochrones/{self.tag}/evolution"].attrs["model"]
-            evolution = np.asarray(h5_file[f"isochrones/{self.tag}/evolution"])
+        _, evolution = self._read_data()
 
         # Interpolate masses
 
@@ -597,7 +823,7 @@ class ReadIsochrone:
 
         age_points = np.full(log_lum.shape[0], age)  # (Myr)
 
-        mass = griddata(
+        mass = interpolate.griddata(
             points=points,
             values=evolution[:, index_mass],
             xi=np.stack((age_points, log_lum), axis=1),

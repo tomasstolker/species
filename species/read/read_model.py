@@ -859,7 +859,7 @@ class ReadModel:
                 ism_reddening,
             )
 
-            idx_select = ext_mag >= 0.
+            idx_select = ext_mag >= 0.0
             model_box.wavelength = model_box.wavelength[idx_select]
             model_box.flux = model_box.flux[idx_select]
 
@@ -1093,9 +1093,7 @@ class ReadModel:
             )
 
             if len(data_index) == 0:
-                raise ValueError(
-                    f"The parameter {item}={param_val[i]} is not found."
-                )
+                raise ValueError(f"The parameter {item}={param_val[i]} is not found.")
 
             data_index = data_index[0]
 
@@ -1212,7 +1210,7 @@ class ReadModel:
                 ism_reddening,
             )
 
-            idx_select = ext_mag >= 0.
+            idx_select = ext_mag >= 0.0
             model_box.wavelength = model_box.wavelength[idx_select]
             model_box.flux = model_box.flux[idx_select]
 

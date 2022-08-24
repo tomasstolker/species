@@ -58,9 +58,23 @@ def create_box(boxtype, **kwargs):
         if "iso_tag" in kwargs:
             box.iso_tag = kwargs["iso_tag"]
 
+    elif boxtype == "cooling":
+        box = CoolingBox()
+        box.model = kwargs["model"]
+        box.mass = kwargs["mass"]
+        box.filters_color = kwargs["filters_color"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.color = kwargs["color"]
+        box.magnitude = kwargs["magnitude"]
+        box.ages = kwargs["ages"]
+        box.log_lum = kwargs["log_lum"]
+        box.teff = kwargs["teff"]
+        box.logg = kwargs["logg"]
+
     elif boxtype == "isochrone":
         box = IsochroneBox()
         box.model = kwargs["model"]
+        box.age = kwargs["age"]
         box.filters_color = kwargs["filters_color"]
         box.filter_mag = kwargs["filter_mag"]
         box.color = kwargs["color"]
@@ -237,6 +251,32 @@ class ColorColorBox(Box):
         self.radius = None
 
 
+class CoolingBox(Box):
+    """
+    Class for storing cooling curve data in
+    a :class:`~species.core.box.Box`.
+    """
+
+    def __init__(self):
+        """
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.model = None
+        self.mass = None
+        self.filters_color = None
+        self.filter_mag = None
+        self.color = None
+        self.magnitude = None
+        self.ages = None
+        self.log_lum = None
+        self.teff = None
+        self.logg = None
+
+
 class IsochroneBox(Box):
     """
     Class for storing isochrone data in a
@@ -252,6 +292,7 @@ class IsochroneBox(Box):
         """
 
         self.model = None
+        self.age = None
         self.filters_color = None
         self.filter_mag = None
         self.color = None
