@@ -835,6 +835,62 @@ class ReadIsochrone:
         return mass
 
     @typechecked
+    def get_radius(
+        self,
+        age: float,
+        log_lum: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Function for interpolating a radius for a given
+        age and array with bolometric luminosities.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the masses will be interpolated.
+        log_lum : np.ndarray
+            Array with the bolometric luminosities,
+            :math:`\\log{(L/L_\\odot)}`, for which the
+            masses will be interpolated.
+
+        Returns
+        -------
+        np.ndarray
+            Array with radii (:math:`R_\\mathrm{J}`).
+        """
+
+        index_age = 0
+        index_log_lum = 3
+        index_logg = 4
+
+        # Read isochrone data
+
+        _, evolution = self._read_data()
+
+        # Interpolate masses
+
+        mass = self.get_mass(age, log_lum)
+
+        # Interpolate log(g)
+
+        points = np.stack(
+            (evolution[:, index_age], evolution[:, index_log_lum]), axis=1
+        )
+
+        age_points = np.full(log_lum.shape[0], age)  # (Myr)
+
+        log_g = interpolate.griddata(
+            points=points,
+            values=evolution[:, index_logg],
+            xi=np.stack((age_points, log_lum), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        return read_util.get_radius(log_g, mass)
+
+    @typechecked
     def get_filters(self) -> Optional[List[str]]:
         """
         Function for get a list with filter names for which there
