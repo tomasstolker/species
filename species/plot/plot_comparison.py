@@ -79,7 +79,6 @@ def plot_statistic(
     sptypes = np.array(h5_file[f"results/empirical/{tag}/sptypes"])
     g_fit = np.array(h5_file[f"results/empirical/{tag}/goodness_of_fit"])
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -283,7 +282,6 @@ def plot_empirical_spectra(
     if n_spectra is None:
         n_spectra = names.size
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -540,7 +538,6 @@ def plot_grid_statistic(
     else:
         coord_y = None
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 

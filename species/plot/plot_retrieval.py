@@ -108,7 +108,6 @@ def plot_pt_profile(
     for item in parameters:
         param_index[item] = np.argwhere(parameters == item)[0][0]
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -804,7 +803,6 @@ def plot_opacities(
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -1309,7 +1307,6 @@ def plot_clouds(
     else:
         print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 

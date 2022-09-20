@@ -257,7 +257,7 @@ class Database:
 
             else:
                 warnings.warn(
-                    f"The dataset {data_set} is not " f"found in {self.database}."
+                    f"The dataset {data_set} is not found in {self.database}."
                 )
 
     @typechecked
@@ -723,6 +723,13 @@ class Database:
         NoneType
             None
         """
+
+        # First add filters here because ReadFilter
+        # will also open the HDF5 database
+
+        if app_mag is not None:
+            for mag_item in app_mag:
+                read_filt = read_filter.ReadFilter(mag_item)
 
         h5_file = h5py.File(self.database, "a")
 
@@ -2537,16 +2544,14 @@ class Database:
             Uncertainty on the log-evidence.
         """
 
-        h5_file = h5py.File(self.database, "r")
-        dset = h5_file[f"results/fit/{tag}/samples"]
+        with h5py.File(self.database, "r") as h5_file:
+            dset = h5_file[f"results/fit/{tag}/samples"]
 
-        if "ln_evidence" in dset.attrs:
-            ln_evidence = dset.attrs["ln_evidence"]
-        else:
-            # For backward compatibility
-            ln_evidence = (None, None)
-
-        h5_file.close()
+            if "ln_evidence" in dset.attrs:
+                ln_evidence = dset.attrs["ln_evidence"]
+            else:
+                # For backward compatibility
+                ln_evidence = (None, None)
 
         return ln_evidence[0], ln_evidence[1]
 
@@ -3679,7 +3684,7 @@ class Database:
 
         with h5py.File(self.database, "a") as h5_file:
             print(
-                f"Storing Teff (K) as attribute of " f"results/fit/{tag}/samples...",
+                f"Storing Teff (K) as attribute of results/fit/{tag}/samples...",
                 end="",
             )
 
@@ -3694,7 +3699,7 @@ class Database:
             print(" [DONE]")
 
             print(
-                f"Storing log(L/Lsun) as attribute of " f"results/fit/{tag}/samples...",
+                f"Storing log(L/Lsun) as attribute of results/fit/{tag}/samples...",
                 end="",
             )
 

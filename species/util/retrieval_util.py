@@ -357,7 +357,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: float = 0.3,
+    pt_smooth: Optional[float] = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -374,7 +374,7 @@ def pt_spline_interp(
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
-    pt_smooth : float, dict
+    pt_smooth : float, dict, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.
@@ -398,9 +398,10 @@ def pt_spline_interp(
     if np.std(np.diff(log_press)) / log_diff > 1e-6:
         raise ValueError("Expecting equally spaced pressures in log space.")
 
-    temp_interp = gaussian_filter(
-        temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
-    )
+    if pt_smooth is not None:
+        temp_interp = gaussian_filter(
+            temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
+        )
 
     return temp_interp
 
@@ -414,7 +415,7 @@ def create_pt_profile(
     knot_press: Optional[np.ndarray],
     metallicity: float,
     c_o_ratio: float,
-    pt_smooth: Union[float, Dict[str, float]] = 0.3,
+    pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
 ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating the P-T profile.
@@ -438,7 +439,7 @@ def create_pt_profile(
         Metallicity [Fe/H].
     c_o_ratio : float
         Carbon-to-oxgen ratio.
-    pt_smooth : float, dict
+    pt_smooth : float, dict, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.

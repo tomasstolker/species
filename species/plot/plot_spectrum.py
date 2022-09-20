@@ -46,6 +46,7 @@ def plot_spectrum(
     quantity: str = "flux density",
     output: Optional[str] = "spectrum.pdf",
     leg_param: Optional[List[str]] = None,
+    grid_hspace: float = 0.1,
 ):
     """
     Function for plotting a spectral energy distribution and combining
@@ -132,6 +133,10 @@ def plot_spectrum(
         and 'luminosity' can be included. The default atmospheric
         parameters are included in the legend if the argument is
         set to ``None``.
+    grid_hspace : float
+        The relative height spacing between subplots, expressed
+        as a fraction of the average axis height. The default
+        value is set to 0.1.
 
     Returns
     -------
@@ -139,7 +144,6 @@ def plot_spectrum(
         None
     """
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -157,37 +161,37 @@ def plot_spectrum(
 
     if residuals is not None and filters is not None:
         plt.figure(1, figsize=figsize)
-        gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
-        gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+        grid_sp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
+        grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(gridsp[1, 0])
-        ax2 = plt.subplot(gridsp[0, 0])
-        ax3 = plt.subplot(gridsp[2, 0])
+        ax1 = plt.subplot(grid_sp[1, 0])
+        ax2 = plt.subplot(grid_sp[0, 0])
+        ax3 = plt.subplot(grid_sp[2, 0])
 
     elif residuals is not None:
         plt.figure(1, figsize=figsize)
-        gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-        gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+        grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+        grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(gridsp[0, 0])
+        ax1 = plt.subplot(grid_sp[0, 0])
         ax2 = None
-        ax3 = plt.subplot(gridsp[1, 0])
+        ax3 = plt.subplot(grid_sp[1, 0])
 
     elif filters is not None:
         plt.figure(1, figsize=figsize)
-        gridsp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
-        gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+        grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
+        grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(gridsp[1, 0])
-        ax2 = plt.subplot(gridsp[0, 0])
+        ax1 = plt.subplot(grid_sp[1, 0])
+        ax2 = plt.subplot(grid_sp[0, 0])
         ax3 = None
 
     else:
         plt.figure(1, figsize=figsize)
-        gridsp = mpl.gridspec.GridSpec(1, 1)
-        gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+        grid_sp = mpl.gridspec.GridSpec(1, 1)
+        grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
-        ax1 = plt.subplot(gridsp[0, 0])
+        ax1 = plt.subplot(grid_sp[0, 0])
         ax2 = None
         ax3 = None
 
@@ -454,7 +458,7 @@ def plot_spectrum(
                 masked = np.ma.array(data, mask=np.isnan(data))
 
                 if isinstance(boxitem, box.ModelBox):
-                    param = boxitem.parameters
+                    param = boxitem.parameters.copy()
 
                     if leg_param is not None:
                         for item in list(param.keys()):

@@ -69,15 +69,12 @@ class ReadFilter:
             Array with the wavelengths and filter transmission.
         """
 
-        h5_file = h5py.File(self.database, "r")
+        with h5py.File(self.database, "r") as h5_file:
+            data = np.asarray(h5_file[f"filters/{self.filter_name}"])
 
-        data = np.asarray(h5_file[f"filters/{self.filter_name}"])
-
-        if data.shape[0] == 2 and data.shape[1] > data.shape[0]:
-            # Required for backward compatibility
-            data = np.transpose(data)
-
-        h5_file.close()
+            if data.shape[0] == 2 and data.shape[1] > data.shape[0]:
+                # Required for backward compatibility
+                data = np.transpose(data)
 
         return data
 

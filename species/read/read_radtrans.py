@@ -230,12 +230,80 @@ class ReadRadtrans:
     ) -> box.ModelBox:
         """
         Function for calculating a model spectrum with
-        ``petitRADTRANS``.
+        radiative transfer code of ``petitRADTRANS``.
 
         Parameters
         ----------
         model_param : dict
-            Dictionary with the model parameters and values.
+            Dictionary with the model parameters. Various
+            parameterizations can be used for the
+            pressure-temperature (P-T) profile, abundances
+            (chemical equilibrium or free abundances), and
+            the cloud properties. The type of parameterizations
+            that will be used depend on the parameters provided
+            in the dictionary of ``model_param``. Below is an
+            (incomplete) list of the supported parameters.
+
+            Chemical abundances:
+
+               - Chemical equilibrium requires ``metallicity``,
+                 ``c_o_ratio`` and optionally ``log_p_quench``.
+                 If the last parameter is used then ``quenching``
+                 should be set to ``'pressure'``.
+
+               - Free abundances requires the parameters that have the
+                 names from ``line_species`` and ``cloud_species``.
+                 These will be used as :math:`\\log_{10}` mass fraction
+                 of the line and cloud species. For example, if
+                 ``line_species`` includes ``H2O_HITEMP``
+                 then ``model_param`` should contain the ``H2O_HITEMP``
+                 parameter. For a mass fraction of :math:`10^{-3}` the
+                 dictionary value can be set to -3. Or, if
+                 ``cloud_species`` contains ``MgSiO3(c)_cd`` then
+                 ``model_param`` should contain the ``MgSiO3(c)``
+                 parameters (so without ``_cd``).
+
+            Pressure-temperature profiles:
+
+                - Parametrization used in Mollière et al (2020) for
+                  HR 8799 e requires ``tint``, ``alpa``, ``log_delta``,
+                  ``t1``, ``t2``, ``t3``. Optionally, the
+                  ``log_sigma_alpha`` parameter can be used for a
+                  prior that penalizes samples if the parametrized,
+                  pressure-dependent opacity is not consistent with the
+                  atmosphere's non-gray opacity structure (see GRAVITY
+                  Collaboration et al. 2020).
+
+                - Eddington approximation requires ``tint`` and
+                  ``log_delta``.
+
+                - Arbitrary number of free temperature nodes requires
+                  parameters ``t0``, ``t1``, ``t2``, etc. So counting
+                  from zero up to the number of nodes that are
+                  required. The nodes will be interpolated to a higher
+                  resolution in log-pressure space with a cubic spline
+                  interpolation. Optionally, the ``pt_smooth``
+                  parameter can be added for smoothing the interpolated
+                  P-T profile with a Gaussian kernel in
+                  :math:`\\log{P/\mathrm{bar}}`. A recommended value
+                  is 0.3 dex, so ``pt_smooth=0.3``.
+
+            Cloud models:
+
+                - Physical clouds as in Mollière et al (2020) require
+                  ``fsed``, ``log_kzz``, ``sigma_lnorm``. Abundances
+                  are either specified relative to the equilibrium
+                  abundances (when using chemical equilibrium
+                  abundances for the line species) or as free
+                  abundances (when using free abundances for the line
+                  species). For the first case, the relative mass
+                  fractions are specified for example with the
+                  ``mgsio3_fraction`` parameter if the list with
+                  ``cloud_species`` contains ``MgSiO3(c)_cd``.
+
+                 - Several other cloud models that require
+                   documentation. TODO
+
         quenching : str, None
             Quenching type for CO/CH4/H2O abundances. Either the
             quenching pressure (bar) is a free parameter

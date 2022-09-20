@@ -756,7 +756,10 @@ class AtmosphericRetrieval:
             providing the same value as lower and upper boundary
             of the parameter (e.g. ``bounds={'logg': (4., 4.)``.
             An explanation of the various parameters can be found
-            below (TODO).
+            in the description of the ``model_param`` parameter in
+            :func:`species.read.read_radtrans.ReadRadtrans.get_model`.
+            Additional parameters specific to optionally be used
+            for the retrieval are listed below.
 
             Calibration parameters:
 
@@ -2716,6 +2719,7 @@ class AtmosphericRetrieval:
 
                 if wlen_micron is None and flux_lambda is None:
                     # This is perhaps no longer needed?
+                    # Actually, I think it is still needed
                     return -np.inf
 
                 if (
