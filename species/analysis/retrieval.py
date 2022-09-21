@@ -384,7 +384,8 @@ class AtmosphericRetrieval:
         rt_object,
     ) -> None:
         """
-        Function to set the list with parameters.
+        Function to add the model parameters to the list of the
+        ``parameters`` attribute.
 
         Parameters
         ----------
@@ -730,7 +731,7 @@ class AtmosphericRetrieval:
         model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
         with ``pip`` from the PyPI repository, ``MultiNest`` has to to
-        be build manually. See the ``PyMultiNest`` documentation for
+        be compiled manually. See the ``PyMultiNest`` documentation for
         details: http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set to
         the environment variable ``LD_LIBRARY_PATH`` on a Linux
@@ -752,46 +753,84 @@ class AtmosphericRetrieval:
         ----------
         bounds : dict
             The boundaries that are used for the uniform or
-            log-uniform priors. Fixing a parameter is possible by
-            providing the same value as lower and upper boundary
-            of the parameter (e.g. ``bounds={'logg': (4., 4.)``.
-            An explanation of the various parameters can be found
-            in the description of the ``model_param`` parameter in
+            log-uniform priors. The dictionary contains the
+            parameters as key and the boundaries as value. The
+            boundaries are provided as a tuple with two values
+            (lower and upper boundary). Fixing a parameter is
+            possible by providing the same value as lower and
+            upper boundary of the parameter (e.g.
+            ``bounds={'logg': (4., 4.)``. An explanation of the
+            mandatory and optional parameters can be found in
+            the description of the ``model_param`` parameter of
             :func:`species.read.read_radtrans.ReadRadtrans.get_model`.
-            Additional parameters specific to optionally be used
-            for the retrieval are listed below.
+            Additional parameters that can specifically be used
+            for a retrieval are listed below.
 
-            Calibration parameters:
+            Scaling parameters (mandatory):
 
-                 - For each spectrum/instrument, three optional
-                   parameters can be fitted to account for biases in
-                   the calibration: a scaling of the flux, a
-                   constant inflation of the uncertainties, and a
-                   constant offset in the wavelength solution.
+                - The radius (:math:`R_\\mathrm{J}`), ``radius``,
+                  is a mandatory parameter to include. It is used
+                  for scaling the flux from the planet surface to
+                  the observer.
 
-                 - For example, ``bounds={'SPHERE': ((0.8, 1.2),
-                   (-16., -14.), (-0.01, 0.01))}`` if the scaling is
-                   fitted between 0.8 and 1.2, each uncertainty is
-                   inflated with a constant value between
-                   :math:`10^{-16}` and :math:`10^{-14}` W
-                   :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`,
-                   and a constant wavelength offset between
-                   -0.01 and 0.01 :math:`\\mu\\mathrm{m}`
+                - The parallax (mas), ``parallax``, is also used
+                  for scaling the flux. However, this parameter
+                  is automatically included in the retrieval with
+                  a Gaussian prior (based on the object data of
+                  ``object_name``). So this parameter does not
+                  need to be included in ``bounds``).
 
-                 - The dictionary key should be the same as to the
-                   database tag of the spectrum. For example,
-                   ``{'SPHERE': ((0.8, 1.2), (-16., -14.),
-                   (-0.01, 0.01))}`` if the spectrum is stored as
-                   ``'SPHERE'`` with
-                   :func:`~species.data.database.Database.add_object`.
+            Calibration parameters (optional):
 
-                 - Each of the three calibration parameters can be set
-                   to ``None`` in which case the parameter is not used.
-                   For example, ``bounds={'SPHERE': ((0.8, 1.2), None,
-                   None)}``.
+                - For each spectrum/instrument, three optional
+                  parameters can be fitted to account for biases in
+                  the calibration: a scaling of the flux, a
+                  constant inflation of the uncertainties, and a
+                  constant offset in the wavelength solution.
 
-                 - No calibration parameters are fitted if the
-                   spectrum name is not included in ``bounds``.
+                - For example, ``bounds={'SPHERE': ((0.8, 1.2),
+                  (-16., -14.), (-0.01, 0.01))}`` if the scaling is
+                  fitted between 0.8 and 1.2, each uncertainty is
+                  inflated with a constant value between
+                  :math:`10^{-16}` and :math:`10^{-14}` W
+                  :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`,
+                  and a constant wavelength offset between
+                  -0.01 and 0.01 :math:`\\mu\\mathrm{m}`
+
+                - The dictionary key should be the same as to the
+                  database tag of the spectrum. For example,
+                  ``{'SPHERE': ((0.8, 1.2), (-16., -14.),
+                  (-0.01, 0.01))}`` if the spectrum is stored as
+                  ``'SPHERE'`` with
+                  :func:`~species.data.database.Database.add_object`.
+
+                - Each of the three calibration parameters can be set
+                  to ``None`` in which case the parameter is not used.
+                  For example, ``bounds={'SPHERE': ((0.8, 1.2), None,
+                  None)}``.
+
+                - No calibration parameters are fitted if the
+                  spectrum name is not included in ``bounds``.
+
+            Prior parameters (optional):
+
+                - The ``log_sigma_alpha`` parameter can be used when
+                  ``pt_profile='molliere'``. This prior penalizes
+                  samples if the parametrized, pressure-dependent
+                  opacity is not consistent with the atmosphere's
+                  non-gray opacity structure (see
+                  `GRAVITY Collaboration et al. 2020
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...633A.110G/abstract>`_
+                  for details).
+
+                - The ``log_gamma_r`` and ``log_beta_r`` parameters
+                  can be included when ``pt_profile='monotonic'`` or
+                  ``pt_profile='free'``. A prior will be applied
+                  that penalizes wiggles in the P-T profile through
+                  the second derivative of the temperature structure 
+                  (see `Line et al. (2015)
+                  <https://ui.adsabs.harvard.edu/abs/2015ApJ...807..183L/abstract>`_
+                  for details).
 
         chemistry : str
             The chemistry type: 'equilibrium' for equilibrium
@@ -1938,8 +1977,8 @@ class AtmosphericRetrieval:
         @typechecked
         def loglike_func(cube, n_dim: int, n_param: int) -> float:
             """
-            Function for calculating the log-likelihood function
-            from the sampled parameter cube.
+            Function for calculating the log-likelihood from the
+            sampled parameter cube.
 
             Parameters
             ----------

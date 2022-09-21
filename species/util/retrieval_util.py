@@ -380,7 +380,8 @@ def pt_spline_interp(
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex.
+        set to 0.3 dex. No smoothing is applied if the argument
+        is set to ``None``.
 
     Returns
     -------
@@ -445,7 +446,8 @@ def create_pt_profile(
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex.
+        set to 0.3 dex. No smoothing is applied if the argument
+        is set to ``None``.
 
     Returns
     -------

@@ -1,6 +1,8 @@
 """
 Module for generating atmospheric model spectra with ``petitRADTRANS``.
-Details on the  transfer code can be found in Mollière et al. (2019).
+Details on the radiative transfer, atmospheric setup, and opacities
+can be found in `Mollière et al. (2019)
+<https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_.
 """
 
 import warnings
@@ -58,7 +60,7 @@ class ReadRadtrans:
             is not ``None``.
         filter_name : str, None
             Filter name that is used for the wavelength range. The
-            ``wavel_range`` is used if ''filter_name`` is set to
+            ``wavel_range`` is used if ``filter_name`` is set to
             ``None``.
         pressure_grid : str
             The type of pressure grid that is used for the radiative
@@ -244,65 +246,163 @@ class ReadRadtrans:
             in the dictionary of ``model_param``. Below is an
             (incomplete) list of the supported parameters.
 
-            Chemical abundances:
+            Mandatory parameters:
 
-               - Chemical equilibrium requires ``metallicity``,
-                 ``c_o_ratio`` and optionally ``log_p_quench``.
-                 If the last parameter is used then ``quenching``
-                 should be set to ``'pressure'``.
+                - The surface gravity, ``logg``, should always
+                  be included. It is provided in cgs units as
+                  :math:`\\log_{10}{g}`.
 
-               - Free abundances requires the parameters that have the
-                 names from ``line_species`` and ``cloud_species``.
-                 These will be used as :math:`\\log_{10}` mass fraction
-                 of the line and cloud species. For example, if
-                 ``line_species`` includes ``H2O_HITEMP``
-                 then ``model_param`` should contain the ``H2O_HITEMP``
-                 parameter. For a mass fraction of :math:`10^{-3}` the
-                 dictionary value can be set to -3. Or, if
-                 ``cloud_species`` contains ``MgSiO3(c)_cd`` then
-                 ``model_param`` should contain the ``MgSiO3(c)``
-                 parameters (so without ``_cd``).
+            Scaling parameters (optional):
 
-            Pressure-temperature profiles:
+                - The radius (:math:`R_\\mathrm{J}`), ``radius``,
+                  and parallax (mas), ``parallax``, are optional
+                  parameters that can be included for scaling the
+                  flux from the planet surface to the observer.
 
-                - Parametrization used in Mollière et al (2020) for
-                  HR 8799 e requires ``tint``, ``alpa``, ``log_delta``,
-                  ``t1``, ``t2``, ``t3``. Optionally, the
-                  ``log_sigma_alpha`` parameter can be used for a
-                  prior that penalizes samples if the parametrized,
-                  pressure-dependent opacity is not consistent with the
-                  atmosphere's non-gray opacity structure (see GRAVITY
-                  Collaboration et al. 2020).
+                - Instead of ``parallax``, it is also possible to
+                  provided the distance (pc) with the ``distance``
+                  parameter.
 
-                - Eddington approximation requires ``tint`` and
-                  ``log_delta``.
+            Chemical abundances (mandatory -- one of the options
+            should be used):
+
+                - Chemical equilibrium requires the ``metallicity``,
+                  ``c_o_ratio`` parameters. Optionally, the
+                  ``log_p_quench`` (as :math:`\\log_{10}P/\\mathrm{bar}`)
+                  can be included for setting a quench pressure for
+                  CO/CH$_4$/H$_2$O. If this last parameter is used,
+                  then the argument of ``quenching`` should be set
+                  to ``'pressure'``.
+
+                - Free abundances requires the parameters that have the
+                  names from ``line_species`` and ``cloud_species``.
+                  These will be used as :math:`\\log_{10}` mass fraction
+                  of the line and cloud species. For example, if
+                  ``line_species`` includes ``H2O_HITEMP``
+                  then ``model_param`` should contain the ``H2O_HITEMP``
+                  parameter. For a mass fraction of :math:`10^{-3}` the
+                  dictionary value can be set to -3. Or, if
+                  ``cloud_species`` contains ``MgSiO3(c)_cd`` then
+                  ``model_param`` should contain the ``MgSiO3(c)``
+                  parameters. So it is provided without the suffix,
+                  ``_cd``, for the particle shape and structure.
+
+            Pressure-temperature (P-T) profiles (mandatory -- one of
+            the options should be used):
+
+                - Eddington approximation requires the ``tint``
+                  and ``log_delta`` parameters.
+
+                - Parametrization from `Mollière et al (2020)
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
+                  that was used for HR 8799 e. It requires ``tint``,
+                  ``alpa``, ``log_delta``, ``t1``, ``t2``, and ``t3``
+                  as parameters.
 
                 - Arbitrary number of free temperature nodes requires
                   parameters ``t0``, ``t1``, ``t2``, etc. So counting
                   from zero up to the number of nodes that are
-                  required. The nodes will be interpolated to a higher
-                  resolution in log-pressure space with a cubic spline
-                  interpolation. Optionally, the ``pt_smooth``
-                  parameter can be added for smoothing the interpolated
-                  P-T profile with a Gaussian kernel in
-                  :math:`\\log{P/\mathrm{bar}}`. A recommended value
-                  is 0.3 dex, so ``pt_smooth=0.3``.
+                  required. The nodes will be interpolated to a larger
+                  number of points in log-pressure space (set with the
+                  ``pressure_grid`` parameter) by using a cubic spline.
+                  Optionally, the ``pt_smooth`` parameter can also be
+                  included in ``model_param``, which is used for
+                  smoothing the interpolated P-T profile with a
+                  Gaussian kernel in :math:`\\log{P/\\mathrm{bar}}`.
+                  A recommended value for the kernel is 0.3 dex,
+                  so ``pt_smooth=0.3``.
 
-            Cloud models:
+                - Instead of a parametrization, it is also possible
+                  to provide a manual P-T profile as ``numpy`` array
+                  with the argument of ``pt_manual``.
 
-                - Physical clouds as in Mollière et al (2020) require
-                  ``fsed``, ``log_kzz``, ``sigma_lnorm``. Abundances
-                  are either specified relative to the equilibrium
-                  abundances (when using chemical equilibrium
-                  abundances for the line species) or as free
-                  abundances (when using free abundances for the line
-                  species). For the first case, the relative mass
-                  fractions are specified for example with the
-                  ``mgsio3_fraction`` parameter if the list with
-                  ``cloud_species`` contains ``MgSiO3(c)_cd``.
+            Cloud models (optional -- one of the options can be used):
 
-                 - Several other cloud models that require
-                   documentation. TODO
+                - Physical clouds as in `Mollière et al (2020)
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
+                  require the parameters ``fsed``, ``log_kzz``,
+                  and ``sigma_lnorm``. Cloud abundances are either
+                  specified relative to the equilibrium abundances
+                  (when using chemical equilibrium abundances for the
+                  line species) or as free abundances (when using free
+                  abundances for the line species). For the first case,
+                  the relative mass fractions are specified for example
+                  with the ``mgsio3_fraction`` parameter if the list
+                  with ``cloud_species`` contains ``MgSiO3(c)_cd``.
+
+                - With the physical clouds, instead of including the
+                  mass fraction with the ``_fraction`` parameters,
+                  it is also possible to enforce the clouds (to ensure
+                  an effect on the spectrum) by scaling the opacities
+                  with the ``log_tau_cloud`` parameter. This is the
+                  wavelength-averaged optical depth of the clouds down
+                  to the gas-only photosphere. The abundances are
+                  now specified relative to the first cloud species
+                  that is listed in ``cloud_species``. The ratio
+                  parameters should be provided with the ``_ratio``
+                  suffix. For example, if
+                  ``cloud_species=['MgSiO3(c)_cd', 'Fe(c)_cd',
+                  'Al2O3(c)_cd']`` then the ``fe_mgsio3_ratio`` and
+                  ``al2o3_mgsio3_ratio`` parameters are required.
+
+                - Instead of a single sedimentation parameter,
+                  ``fsed``, it is also possible to include two values,
+                  ``fsed_1`` and ``fsed_2``. This will calculate a
+                  weighted combination of two cloudy spectra, to mimic
+                  horizontal cloud variations. The weight should be
+                  provided with the ``f_clouds`` parameter (between
+                  0 and 1) in the ``model_param`` dictionary.
+
+                - Parametrized cloud opacities with a cloud absorption
+                  opacity, ``log_kappa_abs``, and powerlaw index,
+                  ``opa_abs_index``. Furthermore, ``log_p_base`` and
+                  ``fsed`` are required parameters. In addition to
+                  absorption, parametrized scattering opacities are
+                  added with the optional ``log_kappa_sca`` and
+                  ``opa_sca_index`` parameters. Optionally, the
+                  ``lambda_ray`` can be included, which is the
+                  wavelength at which the opacity changes to a
+                  :math:`\\lambda^{-4}` dependence in the Rayleigh
+                  regime. It is also possible to include
+                  ``log_tau_cloud``, which can be used for
+                  enforcing clouds in the photospheric region by
+                  scaling the cloud opacities.
+
+                - Parametrized cloud opacities with a total cloud
+                  opacity, ``log_kappa_0``, and a single scattering
+                  albedo, ``albedo``. Furthermore, ``opa_index``,
+                  ``log_p_base``, and ``fsed``, are required
+                  parameters. This is `cloud model 2` from
+                  `Mollière et al (2020)
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
+                  Optionally, ``log_tau_cloud`` can be used for
+                  enforcing clouds in the photospheric region by
+                  scaling the cloud opacities.
+
+                - Gray clouds are simply parametrized with the
+                  ``log_kappa_gray`` and ``log_cloud_top``
+                  parameters. These clouds extend from the bottom
+                  of the atmosphere up to the cloud top pressure and
+                  have a constant opacity. Optionally, a single
+                  scattering albedo, ``albedo``, can be specified.
+                  Also ``log_tau_cloud`` can be used for enforcing
+                  clouds in the photospheric region by scaling the
+                  cloud opacities.
+
+            Extinction (optional):
+
+                 - Extinction can optionally be applied to the spectrum
+                   by including the ``ism_ext`` parameter, which is the
+                   the visual extinction, $A_V$. The empirical relation
+                   from `Cardelli et al. (1989)
+                   <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
+                   is used for calculating the extinction at other
+                   wavelengths.
+
+                 - When using ``ism_ext``, the reddening, $R_V$, can
+                   also be optionaly set with the ``ism_red``
+                   parameter. Otherwise it is set to the standard
+                   value for the diffuse ISM, $R_V = 3.1$.
 
         quenching : str, None
             Quenching type for CO/CH4/H2O abundances. Either the
@@ -828,8 +928,8 @@ class ReadRadtrans:
                 # Sum over all species
                 optical_depth = np.sum(optical_depth, axis=1)
 
-            mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
             mpl.rcParams["font.family"] = "serif"
+            mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
             plt.rc("axes", edgecolor="black", linewidth=2.5)
 
@@ -869,7 +969,7 @@ class ReadRadtrans:
                 right=True,
             )
 
-            ax.set_xlabel(r"Wavelength (µm)", fontsize=13)
+            ax.set_xlabel("Wavelength (µm)", fontsize=13)
             ax.set_ylabel("Pressure (bar)", fontsize=13)
 
             ax.get_xaxis().set_label_coords(0.5, -0.09)
@@ -953,8 +1053,8 @@ class ReadRadtrans:
     @typechecked
     def get_flux(self, model_param: Dict[str, float]) -> Tuple[float, None]:
         """
-        Function for calculating the average flux density for the
-        ``filter_name``.
+        Function for calculating the average flux density
+        for the ``filter_name``.
 
         Parameters
         ----------
@@ -966,11 +1066,46 @@ class ReadRadtrans:
         float
             Flux (W m-2 um-1).
         NoneType
-            Error (W m-2 um-1). Always set to ``None``.
+            Uncertainty (W m-2 um-1). Always set to ``None``.
         """
 
-        spectrum = self.get_model(model_param)
+        if "log_p_quench" in model_param:
+            quenching = "pressure"
+        else:
+            quenching = None
+
+        spectrum = self.get_model(model_param, quenching=quenching)
 
         synphot = photometry.SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+
+    @typechecked
+    def get_magnitude(self, model_param: Dict[str, float]) -> Tuple[float, None]:
+        """
+        Function for calculating the magnitude for the ``filter_name``.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values.
+
+        Returns
+        -------
+        float
+            Magnitude.
+        NoneType
+            Uncertainty. Always set to ``None``.
+        """
+
+        if "log_p_quench" in model_param:
+            quenching = "pressure"
+        else:
+            quenching = None
+
+        spectrum = self.get_model(model_param, quenching=quenching)
+
+        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        app_mag, _ = synphot.spectrum_to_magnitude(spectrum.wavelength, spectrum.flux)
+
+        return app_mag

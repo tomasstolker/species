@@ -225,7 +225,9 @@ class FitModel:
 
                  - There are three approaches for fitting extinction.
                    The first is with the empirical relation from
-                   Cardelli et al. (1989) for ISM extinction.
+                   `Cardelli et al. (1989)
+                   <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
+                   for ISM extinction.
 
                  - The extinction is parametrized by the $V$ band
                    extinction, $A_V$ (``ism_ext``), and optionally the
