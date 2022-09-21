@@ -1,8 +1,8 @@
 """
 Module for generating atmospheric model spectra with ``petitRADTRANS``.
 Details on the radiative transfer, atmospheric setup, and opacities
-can be found in `Mollière et al. (2019)
-<https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_.
+can be found in `Mollière et al. (2019) <https://ui.adsabs.harvard.edu
+/abs/2019A%26A...627A..67M/abstract>`_.
 """
 
 import warnings
@@ -15,6 +15,7 @@ import numpy as np
 import spectres
 
 from matplotlib.ticker import MultipleLocator
+from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
@@ -93,8 +94,8 @@ class ReadRadtrans:
             ``wavel_range``) is used if the argument is set to
             ``None``.
         max_pressure : float, None
-            Maximum pressure (bar) for the free temperature nodes. The
-            default is set to 1000 bar.
+            Maximum pressure (bar) for the free temperature nodes.
+            The default value is set to 1000 bar.
         pt_manual : np.ndarray, None
             A 2D array that contains the P-T profile that is used
             when ``pressure_grid="manual"``. The shape of array should
@@ -294,10 +295,10 @@ class ReadRadtrans:
                   and ``log_delta`` parameters.
 
                 - Parametrization from `Mollière et al (2020)
-                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
-                  that was used for HR 8799 e. It requires ``tint``,
-                  ``alpa``, ``log_delta``, ``t1``, ``t2``, and ``t3``
-                  as parameters.
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.
+                  131M/abstract>`_ that was used for HR 8799 e. It
+                  requires ``tint``, ``alpa``, ``log_delta``, ``t1``,
+                  ``t2``, and ``t3`` as parameters.
 
                 - Arbitrary number of free temperature nodes requires
                   parameters ``t0``, ``t1``, ``t2``, etc. So counting
@@ -319,16 +320,17 @@ class ReadRadtrans:
             Cloud models (optional -- one of the options can be used):
 
                 - Physical clouds as in `Mollière et al (2020)
-                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
-                  require the parameters ``fsed``, ``log_kzz``,
-                  and ``sigma_lnorm``. Cloud abundances are either
-                  specified relative to the equilibrium abundances
-                  (when using chemical equilibrium abundances for the
-                  line species) or as free abundances (when using free
-                  abundances for the line species). For the first case,
-                  the relative mass fractions are specified for example
-                  with the ``mgsio3_fraction`` parameter if the list
-                  with ``cloud_species`` contains ``MgSiO3(c)_cd``.
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.
+                  131M/abstract>`_ require the parameters ``fsed``,
+                  ``log_kzz``, and ``sigma_lnorm``. Cloud abundances
+                  are either specified relative to the equilibrium
+                  abundances (when using chemical equilibrium
+                  abundances for the line species) or as free
+                  abundances (when using free abundances for the line
+                  species). For the first case, the relative mass
+                  fractions are specified for example with the
+                  ``mgsio3_fraction`` parameter if the list with
+                  ``cloud_species`` contains ``MgSiO3(c)_cd``.
 
                 - With the physical clouds, instead of including the
                   mass fraction with the ``_fraction`` parameters,
@@ -373,8 +375,8 @@ class ReadRadtrans:
                   albedo, ``albedo``. Furthermore, ``opa_index``,
                   ``log_p_base``, and ``fsed``, are required
                   parameters. This is `cloud model 2` from
-                  `Mollière et al (2020)
-                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A.131M/abstract>`_
+                  `Mollière et al (2020) <https://ui.adsabs.harvard.
+                  edu/abs/2020A%26A...640A.131M/abstract>`_
                   Optionally, ``log_tau_cloud`` can be used for
                   enforcing clouds in the photospheric region by
                   scaling the cloud opacities.
@@ -394,8 +396,8 @@ class ReadRadtrans:
                  - Extinction can optionally be applied to the spectrum
                    by including the ``ism_ext`` parameter, which is the
                    the visual extinction, $A_V$. The empirical relation
-                   from `Cardelli et al. (1989)
-                   <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
+                   from `Cardelli et al. (1989) <https://ui.adsabs.
+                   harvard.edu/abs/1989ApJ...345..245C/abstract>`_
                    is used for calculating the extinction at other
                    wavelengths.
 
@@ -403,6 +405,21 @@ class ReadRadtrans:
                    also be optionaly set with the ``ism_red``
                    parameter. Otherwise it is set to the standard
                    value for the diffuse ISM, $R_V = 3.1$.
+
+            Radial velocity and broadening:
+
+                 - Radial velocity shift can be applied by adding the
+                   ``rad_vel`` parameter. This shifts the spectrum
+                   by a constant velocity (km/s).
+
+                 - Rotational broadening can be applied by adding the
+                   ``vsini`` parameter, which is the projected spin
+                   velocity (km/s), :math:`v\\sin{i}`. The broadening
+                   is applied with the ``fastRotBroad`` function from
+                   ``PyAstronomy`` (see for details the `documentation
+                   <https://pyastronomy.readthedocs.io/en/latest/
+                   pyaslDoc/aslDoc/ rotBroad.html#fastrotbroad-a-
+                   faster-algorithm>`_).
 
         quenching : str, None
             Quenching type for CO/CH4/H2O abundances. Either the
@@ -413,8 +430,8 @@ class ReadRadtrans:
             if the argument is set to ``None``.
         spec_res : float, None
             Spectral resolution, achieved by smoothing with a Gaussian
-            kernel. No smoothing is applied when the argument is set to
-            ``None``.
+            kernel. No smoothing is applied when the argument is set
+            to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum will be
             resampled. The original wavelengths points will be used if
@@ -1011,10 +1028,53 @@ class ReadRadtrans:
             plt.clf()
             plt.close()
 
+        # Convolve with a broadening kernel for vsin(i)
+
+        if "vsini" in model_param:
+            # fastRotBroad requires a regular
+            # wavelength sampling while pRT uses
+            # a logarithmic wavelength sampling
+            wavel_even = np.linspace(
+                np.amin(wavelength), np.amax(wavelength), wavelength.size * 10
+            )
+
+            # So change temporarily to a linear sampling
+            # with a factor 10 larger number of wavelengths
+            spec_interp = interp1d(wavelength, flux)
+            flux_even = spec_interp(wavel_even)
+
+            # Apply the rotational broadening
+            spec_broad = fastRotBroad(
+                wvl=wavel_even,
+                flux=flux_even,
+                epsilon=1.0,
+                vsini=model_param["vsini"],
+                effWvl=None,
+            )
+
+            # The rotBroad function is much slower than
+            # fastRotBroad when tested on a large array
+            # spec_broad = rotBroad(wvl=wavel_even,
+            #                       flux=flux_even,
+            #                       epsilon=1.,
+            #                       vsini=model_param['vsini'],
+            #                       edgeHandling='firstlast')
+
+            # And change back to the original (logarithmic)
+            # wavelength sampling, with constant R
+            spec_interp = interp1d(wavel_even, spec_broad)
+            flux = spec_interp(wavelength)
+
         # Convolve the spectrum with a Gaussian LSF
 
         if spec_res is not None:
             flux = retrieval_util.convolve(wavelength, flux, spec_res)
+
+        # Apply a radial velocity shift to the wavelengths
+
+        if "rad_vel" in model_param:
+            # Change speed of light from (m/s) to (km/s)
+            wavelength *= 1.0 - model_param["rad_vel"] / (constants.LIGHT * 1e-3)
 
         # Resample the spectrum
 

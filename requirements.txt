@@ -9,6 +9,7 @@ molmass ~= 2021.6.0
 numba ~= 0.56.0
 numpy ~= 1.22.0
 pandas ~= 1.4.0
+PyAstronomy ~= 0.18.0
 PyMieScatt ~= 1.8.0
 pymultinest ~= 2.11.0
 scipy ~= 1.9.0

@@ -88,6 +88,7 @@ After adding the relevant data to the database, the user can take advantage of t
 - Converting between fluxes and magnitudes (see :class:`~species.analysis.photometry.SyntheticPhotometry`).
 - Calculating synthetic photometry spectra (see :class:`~species.analysis.photometry.SyntheticPhotometry`).
 - Interpolating and plotting model spectra (see :class:`~species.read.read_model.ReadModel` and :func:`~species.plot.plot_spectrum.plot_spectrum`).
+- Wrapper for generating spectra with `petitRADTRANS <https://petitradtrans.readthedocs.io>`_ using various parameterizations for P-T structures, abundances, and clouds (see :class:`~species.read.read_radtrans.ReadRadtrans`).
 - Grid retrievals with Bayesian inference (see :class:`~species.analysis.fit_model.FitModel` and :mod:`~species.plot.plot_mcmc`).
 - Comparing a spectrum with a full grid of model spectra (see :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model`).
 - Free retrievals with a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see :class:`~species.analysis.retrieval.AtmosphericRetrieval`).
