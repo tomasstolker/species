@@ -73,9 +73,14 @@ class ReadIsochrone:
 
         with h5py.File(self.database, "r") as h5_file:
             if f"isochrones/{self.tag}" not in h5_file:
+                tag_list = []
+                for item in h5_file["isochrones"]:
+                    tag_list.append(item)
+
                 raise ValueError(
-                    f"There is no isochrone data stored "
-                    f"with the selected tag '{tag}'."
+                    f"There is no isochrone data stored with the "
+                    f"selected tag '{tag}'. The following isochrone "
+                    f"tags are found in the database: {tag_list}"
                 )
 
     @typechecked
@@ -194,11 +199,38 @@ class ReadIsochrone:
 
         if model in ["baraffe", "phoenix", "manual"]:
             if filters_color is not None:
-                index_color_1 = filters.index(filters_color[0])
-                index_color_2 = filters.index(filters_color[1])
+                if filters_color[0] in filters:
+                    index_color_1 = filters.index(filters_color[0])
+
+                else:
+                    raise ValueError(f"Magnitudes for the selected "
+                                     f"\'{filters_color[0]}\' filter "
+                                     f"are not found in the "
+                                     f"\'{self.tag}\' data. Please "
+                                     f"select one of the following "
+                                     f"filters: {filters}")
+
+                if filters_color[1] in filters:
+                    index_color_2 = filters.index(filters_color[1])
+
+                else:
+                    raise ValueError(f"Magnitudes for the selected "
+                                     f"\'{filters_color[1]}\' filter "
+                                     f"are not found in the "
+                                     f"\'{self.tag}\' data. Please "
+                                     f"select one of the following "
+                                     f"filters: {filters}")
 
             if filter_mag is not None:
-                index_mag = filters.index(filter_mag)
+                if filter_mag in filters:
+                    index_mag = filters.index(filter_mag)
+
+                else:
+                    raise ValueError(f"Magnitudes for the selected "
+                                     f"\'{filter_mag}\' filter are not "
+                                     f"found in the \'{self.tag}\' data. "
+                                     f"Please select one of the "
+                                     f"following filters: {filters}")
 
             if filters_color is not None:
                 mag_color_1 = interpolate.griddata(
@@ -267,7 +299,7 @@ class ReadIsochrone:
 
             filter_mag = None
 
-        if mag_abs is None and filters_color is not None:
+        if color is None and filters_color is not None:
             warnings.warn(
                 f"The isochrones of {self.tag} do not have "
                 f"magnitudes for the {filters_color} filters so "

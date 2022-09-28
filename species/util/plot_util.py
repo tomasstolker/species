@@ -280,6 +280,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "mass" in param:
         index = param.index("mass")
         if object_type == "planet":
+            param[index] = r"$M$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M$ ($M_\mathrm{\odot}$)"
+
+    if "log_mass" in param:
+        index = param.index("log_mass")
+        if object_type == "planet":
             param[index] = r"$\log\,M/M_\mathrm{J}$"
         elif object_type == "star":
             param[index] = r"$\log\,M/M_\mathrm{\odot}$"

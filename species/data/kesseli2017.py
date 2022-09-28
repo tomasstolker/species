@@ -1,5 +1,6 @@
 """
-Module for adding O5 through L3 SDSS stellar spectra from Kesseli et al. (2017) to the database.
+Module for adding O5 through L3 SDSS stellar spectra from
+Kesseli et al. (2017) to the database.
 """
 
 import os
@@ -17,7 +18,8 @@ from typeguard import typechecked
 @typechecked
 def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the SDSS stellar spectra from Kesseli et al. (2017) to the database.
+    Function for adding the SDSS stellar spectra from
+    Kesseli et al. (2017) to the database.
 
     Parameters
     ----------

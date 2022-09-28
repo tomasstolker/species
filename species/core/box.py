@@ -160,6 +160,8 @@ def create_box(boxtype, **kwargs):
             box.sptype = kwargs["sptype"]
         if "distance" in kwargs:
             box.distance = kwargs["distance"]
+        if "spec_res" in kwargs:
+            box.spec_res = kwargs["spec_res"]
 
     elif boxtype == "synphot":
         box = SynphotBox()
@@ -546,6 +548,7 @@ class SpectrumBox(Box):
         self.simbad = None
         self.sptype = None
         self.distance = None
+        self.spec_res = None
 
 
 class SynphotBox(Box):

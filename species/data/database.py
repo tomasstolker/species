@@ -1472,15 +1472,19 @@ class Database:
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
         """
-        DEPRECATION: This method is deprecated and will be removed in a future release. Please use
-        the :func:`~species.data.database.Database.add_spectra` method instead.
+        DEPRECATION: This method is deprecated and will be
+        removed in a future release. Please use the
+        :func:`~species.data.database.Database.add_spectra`
+        method instead.
 
         Parameters
         ----------
         spec_library : str
-            Spectral library ('irtf', 'spex', 'kesseli+2017', 'bonnefoy+2014', 'allers+2013').
+            Spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013').
         sptypes : list(str)
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T').
+            Currently only implemented for 'irtf'.
 
         Returns
         -------
@@ -1526,12 +1530,20 @@ class Database:
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
         """
+        Function for adding an empirical spectral library to the
+        database. The spectra are stored together with several
+        attributes such as spectral type, parallax, and Simbad ID.
+        The spectra can be read with the functionalities of
+        :class:`~species.read.read_spectrum.ReadSpectrum`.
+
         Parameters
         ----------
         spec_library : str
-            Spectral library ('irtf', 'spex', 'kesseli+2017', 'bonnefoy+2014', 'allers+2013').
+            Spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013').
         sptypes : list(str)
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently
+            only implemented for ``spec_library='irtf'``.
 
         Returns
         -------

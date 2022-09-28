@@ -196,6 +196,7 @@ def plot_posterior(
     vmr: bool = False,
     inc_luminosity: bool = False,
     inc_mass: bool = False,
+    inc_log_mass: bool = False,
     inc_pt_param: bool = False,
     inc_loglike: bool = False,
     output: Optional[str] = "posterior.pdf",
@@ -240,6 +241,10 @@ def plot_posterior(
     inc_mass : bool
         Include the mass in the posterior plot as calculated
         from the surface gravity and radius.
+    inc_log_mass : bool
+        Include the logarithm of the mass, :math:`\\log10{M}`, in
+        the posterior plot, as calculated from the surface gravity
+        and radius.
     inc_pt_param : bool
         Include the parameters of the pressure-temperature profile.
         Only used if the ``tag`` contains samples obtained with
@@ -668,12 +673,33 @@ def plot_posterior(
             )
 
             samples = np.append(samples, mass_samples, axis=-1)
+
             box.parameters.append("mass")
             ndim += 1
 
         else:
             warnings.warn(
                 "Samples with the log(g) and radius are required for 'inc_mass=True'."
+            )
+
+    if inc_log_mass:
+        if "logg" in box.parameters and "radius" in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == "logg")[0]
+            radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
+
+            mass_samples = read_util.get_mass(
+                samples[..., logg_index], samples[..., radius_index]
+            )
+
+            mass_samples = np.log10(mass_samples)
+            samples = np.append(samples, mass_samples, axis=-1)
+
+            box.parameters.append("log_mass")
+            ndim += 1
+
+        else:
+            warnings.warn(
+                "Samples with the log(g) and radius are required for 'inc_log_mass=True'."
             )
 
     # Change from Jupiter to solar units if star
@@ -687,7 +713,11 @@ def plot_posterior(
         mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
         if object_type == "star":
             samples[:, mass_index] *= constants.M_JUP/constants.M_SUN
-            samples[:, mass_index] = np.log10(samples[:, mass_index])
+
+    if "log_mass" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "log_mass")[0]
+        if object_type == "star":
+            samples[:, mass_index] = np.log10(10.**samples[:, mass_index]*constants.M_JUP/constants.M_SUN)
 
     if inc_loglike:
         # Get ln(L) of the samples

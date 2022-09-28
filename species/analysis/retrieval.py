@@ -409,8 +409,9 @@ class AtmosphericRetrieval:
         fit_corr : list(str), None
             List with spectrum names for which the correlation lengths
             and fractional amplitudes are fitted (see `Wang et al. 2020
-            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/abstract>`_)
-            to model the covariances in case these are not available.
+            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/
+            abstract>`_) to model the covariances in case these are
+            not available.
         rt_object : petitRADTRANS.radtrans.Radtrans
             Instance of ``Radtrans`` from ``petitRADTRANS``.
 
@@ -731,8 +732,8 @@ class AtmosphericRetrieval:
         model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
         with ``pip`` from the PyPI repository, ``MultiNest`` has to to
-        be compiled manually. See the ``PyMultiNest`` documentation for
-        details: http://johannesbuchner.github.io/PyMultiNest/install.html.
+        be compiled manually. See the ``PyMultiNest`` documentation:
+        http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set to
         the environment variable ``LD_LIBRARY_PATH`` on a Linux
         machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the
@@ -820,8 +821,8 @@ class AtmosphericRetrieval:
                   opacity is not consistent with the atmosphere's
                   non-gray opacity structure (see
                   `GRAVITY Collaboration et al. 2020
-                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...633A.110G/abstract>`_
-                  for details).
+                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...633A
+                  .110G/abstract>`_ for details).
 
                 - The ``log_gamma_r`` and ``log_beta_r`` parameters
                   can be included when ``pt_profile='monotonic'`` or
@@ -829,8 +830,8 @@ class AtmosphericRetrieval:
                   that penalizes wiggles in the P-T profile through
                   the second derivative of the temperature structure 
                   (see `Line et al. (2015)
-                  <https://ui.adsabs.harvard.edu/abs/2015ApJ...807..183L/abstract>`_
-                  for details).
+                  <https://ui.adsabs.harvard.edu/abs/2015ApJ...807
+                  ..183L/abstract>`_ for details).
 
         chemistry : str
             The chemistry type: 'equilibrium' for equilibrium
@@ -849,17 +850,18 @@ class AtmosphericRetrieval:
         fit_corr : list(str), None
             List with spectrum names for which the correlation lengths
             and fractional amplitudes are fitted (see `Wang et al. 2020
-            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/abstract>`_)
-            to model the covariances in case these are not available.
+            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/
+            abstract>`_) to model the covariances in case these are
+            not available.
         cross_corr : list(str), None
             List with spectrum names for which a cross-correlation to
             log-likelihood mapping is used (see `Brogi & Line 2019
-            <https://ui.adsabs.harvard.edu/abs/2019AJ....157..114B/abstract>`_)
-            instead of a direct comparison of model an data with
-            a least-squares approach. This parameter should only be
-            used for high-resolution spectra. Currently, it only
-            supports spectra that have been shifted to the planet's
-            rest frame.
+            <https://ui.adsabs.harvard.edu/abs/2019AJ....157..114B/
+            abstract>`_) instead of a direct comparison of model an
+            data with a least-squares approach. This parameter should
+            only be used for high-resolution spectra. Currently, it
+            only supports spectra that have been shifted to the
+            planet's rest frame.
         n_live_points : int
             Number of live points used for the nested sampling.
         resume : bool

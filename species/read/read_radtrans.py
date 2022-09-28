@@ -56,9 +56,9 @@ class ReadRadtrans:
         scattering : bool
             Include scattering in the radiative transfer.
         wavel_range : tuple(float, float), None
-            Wavelength range (um). The wavelength range is set to
-            0.8-10 um if set to ``None`` or not used if ``filter_name``
-            is not ``None``.
+            Wavelength range (:math:`\\mu`m). The wavelength range is
+            set to 0.8-10.0 :math:`\\mu`m if set to ``None`` or not
+            used if ``filter_name`` is not ``None``.
         filter_name : str, None
             Filter name that is used for the wavelength range. The
             ``wavel_range`` is used if ``filter_name`` is set to
@@ -85,14 +85,14 @@ class ReadRadtrans:
             line-by-line treatment at
             :math:`\\lambda/\\Delta \\lambda = 10^6`.
         cloud_wavel : tuple(float, float), None
-            Tuple with the wavelength range (um) that is used for
-            calculating the median optical depth of the clouds at the
-            gas-only photosphere and then scaling the cloud optical
-            depth to the value of ``log_tau_cloud``. The range of
-            ``cloud_wavel`` should be encompassed by the range of
-            ``wavel_range``.  The full wavelength range (i.e.
-            ``wavel_range``) is used if the argument is set to
-            ``None``.
+            Tuple with the wavelength range (:math:`\\mu`m) that is
+            used for calculating the median optical depth of the
+            clouds at the gas-only photosphere and then scaling the
+            cloud optical depth to the value of ``log_tau_cloud``.
+            The range of ``cloud_wavel`` should be encompassed by
+            the range of ``wavel_range``.  The full wavelength
+            range (i.e. ``wavel_range``) is used if the argument is
+            set to ``None``.
         max_pressure : float, None
             Maximum pressure (bar) for the free temperature nodes.
             The default value is set to 1000 bar.
@@ -285,7 +285,7 @@ class ReadRadtrans:
                   dictionary value can be set to -3. Or, if
                   ``cloud_species`` contains ``MgSiO3(c)_cd`` then
                   ``model_param`` should contain the ``MgSiO3(c)``
-                  parameters. So it is provided without the suffix,
+                  parameter. So it is provided without the suffix,
                   ``_cd``, for the particle shape and structure.
 
             Pressure-temperature (P-T) profiles (mandatory -- one of
@@ -406,7 +406,7 @@ class ReadRadtrans:
                    parameter. Otherwise it is set to the standard
                    value for the diffuse ISM, $R_V = 3.1$.
 
-            Radial velocity and broadening:
+            Radial velocity and broadening (optional):
 
                  - Radial velocity shift can be applied by adding the
                    ``rad_vel`` parameter. This shifts the spectrum
@@ -422,8 +422,8 @@ class ReadRadtrans:
                    faster-algorithm>`_).
 
         quenching : str, None
-            Quenching type for CO/CH4/H2O abundances. Either the
-            quenching pressure (bar) is a free parameter
+            Quenching type for CO/CH$_4$/H$_2$O abundances. Either
+            the quenching pressure (bar) is a free parameter
             (``quenching='pressure'``) or the quenching pressure is
             calculated from the mixing and chemical timescales
             (``quenching='diffusion'``). The quenching is not applied
@@ -433,9 +433,9 @@ class ReadRadtrans:
             kernel. No smoothing is applied when the argument is set
             to ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum will be
-            resampled. The original wavelengths points will be used if
-            the argument is set to ``None``.
+            Wavelength points (:math:`\\mu`m) to which the spectrum
+            will be resampled. The original wavelengths points will
+            be used if the argument is set to ``None``.
         plot_contribution : bool, str, None
             Filename for the plot with the emission contribution. The
             plot is not created if the argument is set to ``False`` or
@@ -1113,7 +1113,7 @@ class ReadRadtrans:
     @typechecked
     def get_flux(self, model_param: Dict[str, float]) -> Tuple[float, None]:
         """
-        Function for calculating the average flux density
+        Function for calculating the filter-weighted flux density
         for the ``filter_name``.
 
         Parameters

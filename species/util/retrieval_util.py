@@ -2620,9 +2620,9 @@ def quench_pressure(
     log_kzz: float,
 ) -> Optional[float]:
     """
-    Function to determine the CO/CH4 quenching pressure by intersecting
-    the pressure-dependent timescales of the vertical mixing and the
-    CO/CH4 reaction rates.
+    Function to determine the CO/CH$_4$ quenching pressure by
+    intersecting the pressure-dependent timescales of the
+    vertical mixing and the CO/CH$_4$ reaction rates.
 
     Parameters
     ----------

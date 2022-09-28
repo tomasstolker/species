@@ -1,8 +1,9 @@
 """
 Module for adding young, M- and L-type dwarf spectra from
-`Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_ to the
-database. All  spectra are also available in the
-`SpeX Prism Library Analysis Toolkit <https://github.com/aburgasser/splat>`_.
+`Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/
+2013ApJ...772...79A/abstract>`_ to the . These spectra are
+also available in the `SpeX Prism Library Analysis Toolkit
+<https://github.com/aburgasser/splat>`_.
 """
 
 import os
@@ -12,17 +13,21 @@ import urllib.request
 
 import h5py
 import numpy as np
+import pandas as pd
 
 from astropy.io import fits
+from astroquery.simbad import Simbad
 from typeguard import typechecked
+
+from species.util import query_util
 
 
 @typechecked
 def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the spectra of young, M- and L-type dwarfs from
-    `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_  to
-    the database.
+    Function for adding the spectra of young, M- and L-type dwarfs
+    from `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/
+    2013ApJ...772...79A/abstract>`_  to the database.
 
     Parameters
     ----------
@@ -36,6 +41,22 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
     NoneType
         None
     """
+
+    Simbad.add_votable_fields("plx", "plx_error")
+
+    parallax_url = "https://home.strw.leidenuniv.nl/~stolker/species/parallax.dat"
+    parallax_file = os.path.join(input_path, "parallax.dat")
+
+    if not os.path.isfile(parallax_file):
+        urllib.request.urlretrieve(parallax_url, parallax_file)
+
+    parallax_data = pd.pandas.read_csv(
+        parallax_file,
+        usecols=[0, 1, 2],
+        names=["object", "parallax", "parallax_error"],
+        delimiter=",",
+        dtype={"object": str, "parallax": float, "parallax_error": float},
+    )
 
     print_text = "spectra of young M/L type objects from Allers & Liu 2013"
 
@@ -52,9 +73,8 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
         shutil.rmtree(data_folder)
 
     print(f"Unpacking {print_text} (173 kB)...", end="", flush=True)
-    tar = tarfile.open(data_file)
-    tar.extractall(data_folder)
-    tar.close()
+    with tarfile.open(data_file) as open_tar:
+        open_tar.extractall(data_folder)
     print(" [DONE]")
 
     sources = np.genfromtxt(
@@ -88,6 +108,39 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
 
             name = header["OBJECT"]
 
+            if "RES" in header:
+                spec_res = header["RES"]
+            elif "RP" in header:
+                spec_res = header["RP"]
+
+            simbad_id = query_util.get_simbad(name)
+
+            if simbad_id is not None:
+                if not isinstance(simbad_id, str):
+                    simbad_id = simbad_id.decode("utf-8")
+
+                par_select = parallax_data[parallax_data["object"] == simbad_id]
+
+                if not par_select.empty:
+                    parallax = (
+                        par_select["parallax"].values[0],
+                        par_select["parallax_error"].values[0],
+                    )
+
+                else:
+                    parallax = (np.nan, np.nan)
+
+            else:
+                parallax = (np.nan, np.nan)
+
+            if np.isnan(parallax[0]):
+                simbad = Simbad.query_object(simbad_id)
+                if simbad is not None and not simbad["PLX_VALUE"].mask[0]:
+                    parallax = (
+                        simbad["PLX_VALUE"].value[0],
+                        simbad["PLX_ERROR"].value[0],
+                    )
+
             index = np.argwhere(source_names == name)
 
             if len(index) == 0:
@@ -105,6 +158,10 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
 
             dset.attrs["name"] = str(name).encode()
             dset.attrs["sptype"] = str(sptype).encode()
+            dset.attrs["simbad"] = str(simbad_id).encode()
+            dset.attrs["parallax"] = float(parallax[0])  # (mas)
+            dset.attrs["parallax_error"] = float(parallax[1])  # (mas)
+            dset.attrs["spec_res"] = float(spec_res)
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")

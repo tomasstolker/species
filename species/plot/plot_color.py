@@ -540,6 +540,7 @@ def plot_color_magnitude(
 
                 cb.set_ticks(ticks)
                 cb.set_ticklabels(ticklabels)
+                cb.ax.minorticks_off()
 
             elif item.object_type == "young":
                 if objects is not None:
@@ -802,14 +803,18 @@ def plot_color_magnitude(
         by_label = dict(zip(labels, handles))
 
         if handles:
-            ax1.legend(
-                by_label.values(),
-                by_label.keys(),
-                loc=legend,
-                fontsize=8.5,
-                frameon=False,
-                numpoints=1,
-            )
+            if isinstance(legend, (str, tuple)):
+                ax1.legend(
+                    by_label.values(),
+                    by_label.keys(),
+                    loc=legend,
+                    fontsize=8.5,
+                    frameon=False,
+                    numpoints=1,
+                )
+
+            else:
+                ax1.legend(by_label.values(), by_label.keys(), **legend)
 
     if output is None:
         plt.show()
@@ -1331,6 +1336,7 @@ def plot_color_color(
 
                 cb.set_ticks(ticks)
                 cb.set_ticklabels(ticklabels)
+                cb.ax.minorticks_off()
 
             elif item.object_type == "young":
                 if objects is not None:
@@ -1534,14 +1540,18 @@ def plot_color_color(
         by_label = dict(zip(labels, handles))
 
         if handles:
-            ax1.legend(
-                by_label.values(),
-                by_label.keys(),
-                loc=legend,
-                fontsize=8.5,
-                frameon=False,
-                numpoints=1,
-            )
+            if isinstance(legend, (str, tuple)):
+                ax1.legend(
+                    by_label.values(),
+                    by_label.keys(),
+                    loc=legend,
+                    fontsize=8.5,
+                    frameon=False,
+                    numpoints=1,
+                )
+
+            else:
+                ax1.legend(by_label.values(), by_label.keys(), **legend)
 
     if output is None:
         plt.show()

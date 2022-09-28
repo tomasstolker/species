@@ -29,11 +29,11 @@ class ReadSpectrum:
         Parameters
         ----------
         spec_library : str
-            Name of the spectral library ('irtf', 'spex') or other type
-            of spectrum ('vega').
+            Name of the spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013', or 'vega').
         filter_name : str, None
-            Filter name for the wavelength range. Full spectra are read
-            if set to ``None``.
+            Filter name for the wavelength range. Full spectra
+            are read if the argument is set to ``None``.
 
         Returns
         -------
@@ -102,6 +102,7 @@ class ReadSpectrum:
         list_simbad = []
         list_sptype = []
         list_parallax = []
+        list_spec_res = []
 
         for item in h5_file[f"spectra/{self.spec_library}"]:
             dset = h5_file[f"spectra/{self.spec_library}/{item}"]
@@ -177,6 +178,11 @@ class ReadSpectrum:
                 else:
                     list_parallax.append((np.nan, np.nan))
 
+                if "spec_res" in attrs:
+                    list_spec_res.append(dset.attrs["spec_res"])
+                else:
+                    list_parallax.append(np.nan)
+
             else:
                 list_wavelength.append(np.array([]))
                 list_flux.append(np.array([]))
@@ -185,6 +191,7 @@ class ReadSpectrum:
                 list_simbad.append("")
                 list_sptype.append("None")
                 list_parallax.append((np.nan, np.nan))
+                list_spec_res.append(np.nan)
 
         specbox = box.SpectrumBox()
         specbox.spec_library = self.spec_library
@@ -199,6 +206,7 @@ class ReadSpectrum:
             specbox.simbad = []
             specbox.sptype = []
             specbox.parallax = []
+            specbox.spec_res = []
 
             for item in sptypes:
 
@@ -211,6 +219,7 @@ class ReadSpectrum:
                         specbox.simbad.append(list_simbad[i])
                         specbox.sptype.append(list_sptype[i])
                         specbox.parallax.append(list_parallax[i])
+                        specbox.spec_res.append(list_spec_res[i])
 
         else:
             specbox.wavelength = list_wavelength
@@ -220,6 +229,7 @@ class ReadSpectrum:
             specbox.simbad = list_simbad
             specbox.sptype = list_sptype
             specbox.parallax = list_parallax
+            specbox.spec_res = list_spec_res
 
         return specbox
 
