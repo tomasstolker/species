@@ -162,6 +162,22 @@
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
     },
+    "saumon2008-clear": {
+        "parameters": ["teff", "logg"],
+        "name": "Saumon & Marley (2008) clear",
+        "file size": "197 Mb",
+        "wavelength range": [0.4, 50],
+        "resolution": 5000,
+        "teff range": [500, 2400]
+    },
+    "saumon2008-cloudy": {
+        "parameters": ["teff", "logg"],
+        "name": "Saumon & Marley (2008) cloudy",
+        "file size": "122 Mb",
+        "wavelength range": [0.4, 50],
+        "resolution": 5000,
+        "teff range": [500, 2400]
+    },
     "sonora-cholla": {
         "parameters": ["teff", "logg", "log_kzz"],
         "name": "Sonora Cholla",

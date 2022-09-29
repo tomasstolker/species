@@ -79,7 +79,8 @@ def add_model_grid(
             f"'petitcode-cool-cloudy', 'petitcode-hot-clear', "
             f"'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
             f"'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
-            f"'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd'"
+            f"'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd', "
+            f"'saumon2008-clear', 'saumon2008-cloudy'"
         )
 
     if model_name == "bt-settl":
