@@ -24,6 +24,13 @@ This page contains a list of tutorials which highlight some of the functionaliti
    tutorials/model_spectra.ipynb
    tutorials/data_model.ipynb
 
+**Evolutionary models**
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorials/read_isochrone.ipynb
+
 **Photometry**
 
 .. toctree::

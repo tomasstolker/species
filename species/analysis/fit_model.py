@@ -436,37 +436,6 @@ class FitModel:
                         del self.bounds[key]
 
                     else:
-                        for i in range(2):
-                            if self.bounds[f"{key}_{i}"][0] < bounds_grid[key][0]:
-                                warnings.warn(
-                                    f"The lower bound on {key}_{i} "
-                                    f"({self.bounds[f'{key}_{i}'][0]}) is smaller than "
-                                    f"the lower bound from the available "
-                                    f"{self.model} model grid "
-                                    f"({bounds_grid[key][0]}). The lower bound "
-                                    f"of the {key}_{i} prior will be adjusted to "
-                                    f"{bounds_grid[key][0]}."
-                                )
-                                self.bounds[key] = (
-                                    bounds_grid[key][0],
-                                    self.bounds[key][1],
-                                )
-
-                            # if self.bounds[key][1] > bounds_grid[key][1]:
-                            #     warnings.warn(
-                            #         f"The upper bound on {key} "
-                            #         f"({self.bounds[key][1]}) is larger than the "
-                            #         f"upper bound from the available {self.model} "
-                            #         f"model grid ({bounds_grid[key][1]}). The "
-                            #         f"bound of the {key} prior will be adjusted "
-                            #         f"to {bounds_grid[key][1]}."
-                            #     )
-                            #     self.bounds[key] = (
-                            #         self.bounds[key][0],
-                            #         bounds_grid[key][1],
-                            #     )
-
-                    if self.binary:
                         if self.bounds[key][0] < bounds_grid[key][0]:
                             warnings.warn(
                                 f"The lower bound on {key} "
@@ -495,6 +464,40 @@ class FitModel:
                                 self.bounds[key][0],
                                 bounds_grid[key][1],
                             )
+
+                    if self.binary:
+                        for i in range(2):
+                            if self.bounds[f"{key}_{i}"][0] < bounds_grid[key][0]:
+                                warnings.warn(
+                                    f"The lower bound on {key}_{i} "
+                                    f"({self.bounds[f'{key}_{i}'][0]}) "
+                                    f"is smaller than the lower bound "
+                                    f"from the available {self.model} "
+                                    f"model grid ({bounds_grid[key][0]}). "
+                                    f"The lower bound of the {key}_{i} "
+                                    f"prior will be adjusted to "
+                                    f"{bounds_grid[key][0]}."
+                                )
+                                self.bounds[f"{key}_{i}"] = (
+                                    bounds_grid[key][0],
+                                    self.bounds[f"{key}_{i}"][1],
+                                )
+
+                            if self.bounds[f"{key}_{i}"][1] > bounds_grid[key][1]:
+                                warnings.warn(
+                                    f"The upper bound on {key}_{i} "
+                                    f"({self.bounds[f'{key}_{i}'][0]}) "
+                                    f"is larger than the lower bound "
+                                    f"from the available {self.model} "
+                                    f"model grid ({bounds_grid[key][1]}). "
+                                    f"The upper bound of the {key}_{i} "
+                                    f"prior will be adjusted to "
+                                    f"{bounds_grid[key][1]}."
+                                )
+                                self.bounds[f"{key}_{i}"] = (
+                                    self.bounds[f"{key}_{i}"][0],
+                                    bounds_grid[key][1],
+                                )
 
             else:
                 # Set all parameter boundaries to the grid boundaries
