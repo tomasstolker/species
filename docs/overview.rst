@@ -32,6 +32,7 @@ The following data and models are currently supported:
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_
+- `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 
 .. tip::
   The :func:`~species.data.database.Database.available_models()` method of the :class:`~species.data.database.Database` class can be used for getting a complete overview of all model grids, including details on the input parameters, wavelength range, :math:`T_\mathrm{eff}` range, and spectral resolution:

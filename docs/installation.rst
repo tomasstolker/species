@@ -9,15 +9,14 @@ Installation from PyPI
 ----------------------
 
 .. important::
-   Before installing ``species``, it is required to separately install ``cython``, ``ultranest``, and ``petitRADTRANS``:
+   Before installing ``species``, it is required to separately install ``cython`` and ``petitRADTRANS``:
 
    .. code-block:: console
 
        $ pip install cython
-       $ pip install ultranest
        $ pip install petitRADTRANS
 
-   The installation of ``ultranest`` and ``petitRADTRANS`` has been problematic on some machines. It is possible to skip the installation of these package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `UltraNest <https://johannesbuchner.github.io/UltraNest/index.html>`_ and `petitRADTRANS <https://petitradtrans.readthedocs.io>`_.
+   The installation ``petitRADTRANS`` can be somewhat challenging on some machines. It is possible to skip the installation of this package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `petitRADTRANS <https://petitradtrans.readthedocs.io>`_.
 
 The ``species`` toolkit can now be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
 
@@ -31,8 +30,6 @@ Or, to update to the most recent version:
 
    $ pip install --upgrade species
 
-Please check for any errors and warnings during the installation to make sure that all dependencies are correctly installed.
-
 .. important::
    The ``PyMultiNest`` package requires the manual installation of ``MultiNest``. Please follow the `instructions <https://johannesbuchner.github.io/PyMultiNest/install.html>`_ for the building the library and make sure that the ``LD_LIBRARY_PATH`` (on Linux) or ``DYLD_LIBRARY_PATH`` (on macOS) environment variable is set. It is also possible to use ``species`` without installing ``MultiNest`` (but a warning will appear), apart from the functionalities that rely on ``PyMultiNest``.   
 
@@ -42,18 +39,11 @@ Installation from Github
 Using pip
 ^^^^^^^^^
 
-The version on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip`:
+The version on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with (a recent version of) `pip`:
 
 .. code-block:: console
 
-    $ pip install git+git://github.com:tomasstolker/species.git
-
-.. important::
-   In case an error occurs during installation then possibly ``pip`` needs to be updated to the latest version:
-
-   .. code-block:: console
-
-       $ pip install --upgrade pip
+    $ pip install git+https://github.com/tomasstolker/species.git
 
 Cloning the repository
 ^^^^^^^^^^^^^^^^^^^^^^
