@@ -24,6 +24,7 @@ from typeguard import typechecked
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import (
+    accretion,
     allers2013,
     bonnefoy2014,
     companions,
@@ -372,6 +373,34 @@ class Database:
 
         dust.add_optical_constants(self.input_path, h5_file)
         dust.add_cross_sections(self.input_path, h5_file)
+
+        h5_file.close()
+
+    @typechecked
+    def add_accretion(self) -> None:
+        """
+        Function for adding the coefficients for converting line
+        luminosities of hydrogen emission lines into accretion
+        luminosities (see `Aoyama et al. (2021) <https://ui.
+        adsabs.harvard.edu/abs/ 2021ApJ...917L..30A/abstract>`_
+        for details). The relation is used by :class:`~species.
+        analysis.emission_line.EmissionLine` for converting
+        the fitted line luminosity.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        h5_file = h5py.File(self.database, "a")
+
+        if "accretion" in h5_file:
+            del h5_file["accretion"]
+
+        h5_file.create_group("accretion")
+
+        accretion.add_accretion_relation(self.input_path, h5_file)
 
         h5_file.close()
 

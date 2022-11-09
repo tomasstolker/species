@@ -605,6 +605,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("line_luminosity")
         param[index] = r"$L_\mathrm{line}$ ($L_\mathrm{\odot}$)"
 
+    if "log_line_lum" in param:
+        index = param.index("log_line_lum")
+        param[index] = r"$\log\,L_\mathrm{line}/L_\mathrm{\odot}$"
+
+    if "log_acc_lum" in param:
+        index = param.index("log_acc_lum")
+        param[index] = r"$\log\,L_\mathrm{acc}/L_\mathrm{\odot}$"
+
     if "line_eq_width" in param:
         index = param.index("line_eq_width")
         param[index] = r"EW ($\AA$)"

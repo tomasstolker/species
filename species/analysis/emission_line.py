@@ -6,8 +6,9 @@ import configparser
 import os
 import warnings
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
+import h5py
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,7 +46,8 @@ class EmissionLine:
         self,
         object_name: str,
         spec_name: str,
-        lambda_rest: float,
+        hydrogen_line: Optional[str] = None,
+        lambda_rest: Optional[float] = None,
         wavel_range: Optional[Tuple[float, float]] = None,
     ) -> None:
         """
@@ -58,10 +60,18 @@ class EmissionLine:
         spec_name : str
             Name of the spectrum that is stored at the object data
             of ``object_name``.
+        hydrogen_line : str, None
+            Name of the hydrogen line that will be analyzed. The
+            names available lines can be checked with the
+            :func:`~species.analysis.emission_line.EmissionLine.
+            list_hydrogen_lines` method. If the argument is set
+            to ``None`` then provide the rest wavelength as
+            argument of ``lambda_rest``.
         lambda_rest : float, None
             Rest wavelength (um) of the emission line. The parameter
             if used for calculating the radial velocity and its
-            uncertainty.
+            uncertainty. The argument can be set to ``None`` and will
+            be ignored if the argument of ``hydrogen_line`` is used.
         wavel_range : tuple(float, float), None
             Wavelength range (um) that is cropped from the
             spectrum. The full spectrum is used if the argument
@@ -75,7 +85,7 @@ class EmissionLine:
 
         self.object_name = object_name
         self.spec_name = spec_name
-        self.lambda_rest = lambda_rest
+        self.hydrogen_line = hydrogen_line
 
         self.object = read_object.ReadObject(object_name)
         self.parallax = self.object.get_parallax()[0]
@@ -96,6 +106,58 @@ class EmissionLine:
                 indices,
             ]
 
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
+
+        config = configparser.ConfigParser()
+        config.read(config_file)
+
+        self.database = config["species"]["database"]
+
+        h5_database = h5py.File(self.database, "r")
+
+        if "accretion" not in h5_database:
+            h5_database.close()
+            species_db = database.Database()
+            species_db.add_accretion()
+
+        if self.hydrogen_line is None and lambda_rest is not None:
+            self.lambda_rest = lambda_rest
+
+        else:
+            if self.hydrogen_line is None:
+                self.list_hydrogen_lines()
+
+                warnings.warn(
+                    "Provide an argument for either "
+                    "the 'hydrogen_line' or 'lambda_rest' "
+                    "parameter. Only one of the two "
+                    "arguments should be set to None."
+                )
+
+                self.hydrogen_line = input("Please provide the name "
+                                           "of the hydrogen line: ")
+
+            h5_database = h5py.File(self.database, "r")
+
+            line_names = np.array(h5_database["accretion/hydrogen_lines"], dtype=str)
+            line_wavel = np.array(h5_database["accretion/wavelengths"])
+
+            if self.hydrogen_line not in line_names:
+                raise ValueError(
+                    "The hydrogen line with the name "
+                    f"'{self.hydrogen_line}' is not found. Please "
+                    "use the 'list_hydrogen_lines' method to check "
+                    "which hydrogen lines are available."
+                )
+
+            line_idx = np.argwhere(line_names == self.hydrogen_line)[0][0]
+
+            # Vacuum rest wavelength (um)
+            self.lambda_rest = line_wavel[line_idx]
+            print(f"Hydrogen line = {self.hydrogen_line}")
+
+        print(f"Rest wavelength (um) = {self.lambda_rest:.4f} um")
+
         self.spec_vrad = (
             1e-3
             * constants.LIGHT
@@ -106,12 +168,36 @@ class EmissionLine:
         self.continuum_flux = np.full(self.spectrum.shape[0], 0.0)
         self.continuum_check = False
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+    @typechecked
+    def list_hydrogen_lines(self) -> List[str]:
+        """
+        Function to list the available hydrogen lines for which
+        the accretion luminosity relation is available. These names
+        can be set as argument ``hydrogen_line``. In that case, the
+        measured line luminosity from :func:`~species.analysis.
+        emission_line.EmissionLine.fit_gaussian` will be
+        automatically converted to an accretion luminosity with
+        the relation from `Aoyama et al. (2021) <https://ui.adsabs.
+        harvard.edu/abs/2021ApJ...917L..30A/abstract>`_.
 
-        config = configparser.ConfigParser()
-        config.read(config_file)
+        Returns
+        -------
+        list(str)
+            List with the names of the hydrogen lines for which there
+            are coefficients available for the accretion relation.
+        """
 
-        self.database = config["species"]["database"]
+        with h5py.File(self.database, "r") as h5_file:
+            line_names = list(h5_file["accretion/hydrogen_lines/"])
+
+            # Convert from bytes to strings
+            for i, item in enumerate(line_names):
+                if isinstance(item, bytes):
+                    line_names[i] = item.decode("utf-8")
+
+        print(f"Available hydrogen lines:\n{line_names}")
+
+        return line_names
 
     @typechecked
     def subtract_continuum(
@@ -392,6 +478,10 @@ class EmissionLine:
         integrated across the specified wavelength range with the
         composite trapezoidal rule of ``np.trapz``. The error is
         estimated with a Monte Carlo approach from 1000 samples.
+        The accretion luminosity is also calculated with the relation
+        from `Aoyama et al. (2021) <https://ui.adsabs.harvard.edu/
+        abs/2021ApJ...917L..30A/abstract>`_ if the argument of
+        ``hydrogen_line`` was set.
 
         Parameters
         ----------
@@ -619,19 +709,57 @@ class EmissionLine:
         plt.close()
 
         wavel_mean, wavel_std = np.mean(mean_sample), np.std(mean_sample)
-        print(f"Mean wavelength (nm): {1e3*wavel_mean:.2f} +/- {1e3*wavel_std:.2f}")
+        print(f"Mean wavelength (nm) = {1e3*wavel_mean:.2f} +/- {1e3*wavel_std:.2f}")
 
         fwhm_mean, fwhm_std = np.mean(fwhm_sample), np.std(fwhm_sample)
-        print(f"FWHM (km s-1): {fwhm_mean:.2f} +/- {fwhm_std:.2f}")
+        print(f"FWHM (km s-1) = {fwhm_mean:.2f} +/- {fwhm_std:.2f}")
 
         vrad_mean, vrad_std = np.mean(vrad_sample), np.std(vrad_sample)
-        print(f"Radial velocity (km s-1): {vrad_mean:.1f} +/- {vrad_std:.1f}")
+        print(f"Radial velocity (km s-1) = {vrad_mean:.1f} +/- {vrad_std:.1f}")
 
         line_error = np.std(flux_sample)
-        print(f"Line flux (W m-2): {line_flux:.2e} +/- {line_error:.2e}")
+        print(f"Line flux (W m-2) = {line_flux:.2e} +/- {line_error:.2e}")
 
-        lum_mean, lum_std = np.mean(lum_sample), np.std(lum_sample)
-        print(f"Line luminosity (Lsun): {lum_mean:.2e} +/- {lum_std:.2e}")
+        line_lum_mean = np.mean(lum_sample)
+        line_lum_std = np.std(lum_sample)
+        print(f"Line luminosity (Lsun) = {line_lum_mean:.2e} +/- {line_lum_std:.2e}")
+
+        line_lum_mean = np.mean(np.log10(lum_sample))
+        line_lum_std = np.std(np.log10(lum_sample))
+        print(
+            f"Line luminosity log10(L/Lsun) = {line_lum_mean:.2f} +/- {line_lum_std:.2f}"
+        )
+
+        if self.hydrogen_line is not None:
+            log_acc_sample = self.accretion_luminosity(lum_sample)
+
+            log_acc_mean = np.mean(log_acc_sample)
+            log_acc_std = np.std(log_acc_sample)
+
+            print(
+                "Inflating the uncertainty on the "
+                "accretion luminosity by 0.3 dex\n to "
+                "account for the the model uncertainty "
+                "(see Aoyama et al. 2021)..."
+            )
+
+            log_acc_std = np.sqrt(log_acc_std**2 + 0.3**2)
+
+            print(
+                "Accretion luminosity log10(L/Lsun) = "
+                f"{log_acc_mean:.2f} +/- {log_acc_std:.2f}"
+            )
+
+            # acc_lum_new = np.log10(acc_lum_sample) + np.random.normal(
+            #     0.0, acc_lum_std, size=acc_lum_sample.size
+            # )
+            #
+            # acc_lum_mean = np.mean(10.0**acc_lum_new)
+            # acc_lum_std = np.std(10.0**acc_lum_new)
+            #
+            # print(
+            #     f"Accretion luminosity (Lsun): {acc_lum_mean:.2e} +/- {acc_lum_std:.2e}"
+            # )
 
         return line_flux, line_error
 
@@ -911,7 +1039,10 @@ class EmissionLine:
         print("Calculating line fluxes...", end="", flush=True)
 
         modelpar.append("line_flux")
-        modelpar.append("line_luminosity")
+        modelpar.append("log_line_lum")
+
+        if self.hydrogen_line is not None:
+            modelpar.append("log_acc_lum")
 
         line_flux = np.zeros(samples.shape[0])
         line_lum = np.zeros(samples.shape[0])
@@ -965,7 +1096,21 @@ class EmissionLine:
         samples = np.append(samples, line_flux, axis=1)
 
         line_lum = line_lum[..., np.newaxis]
-        samples = np.append(samples, line_lum, axis=1)
+        samples = np.append(samples, np.log10(line_lum), axis=1)
+
+        if self.hydrogen_line is not None:
+            log_acc_lum = self.accretion_luminosity(line_lum[:, 0])
+
+            print(
+                "Inflating the uncertainty on the "
+                "accretion luminosity by 0.3 dex\n to "
+                "account for the the model uncertainty "
+                "(see Aoyama et al. 2021)..."
+            )
+
+            log_acc_lum += np.random.normal(0.0, 0.3, size=log_acc_lum.size)
+            log_acc_lum = log_acc_lum[..., np.newaxis]
+            samples = np.append(samples, log_acc_lum, axis=1)
 
         if self.continuum_check:
             eq_width = eq_width[..., np.newaxis]
@@ -1244,3 +1389,40 @@ class EmissionLine:
 
         plt.clf()
         plt.close()
+
+    @typechecked
+    def accretion_luminosity(
+        self,
+        line_lum: Union[float, np.ndarray],
+    ) -> Union[float, np.ndarray]:
+        """
+        Method for calculating the accretion luminosity from the
+        (hydrogen) line luminosity with the relation from `Aoyama
+        et al. (2021) <https://ui.adsabs.harvard.edu/abs/
+        2021ApJ...917L..30A/abstract>`_.
+
+        Parameters
+        ----------
+        line_lum : float, np.array
+            Line luminosity (Lsun) or array with line luminosities.
+
+        Returns
+        -------
+        float, np.ndarray
+            Accretion luminosity, :math:`\\log10(L/L_\\odot)`, or
+            array with the accretion luminosities.
+        """
+
+        with h5py.File(self.database, "r") as h5_file:
+            line_names = np.array(h5_file["accretion/hydrogen_lines"], dtype=str)
+            coefficients = np.array(h5_file["accretion/coefficients"])
+
+            line_idx = np.argwhere(line_names == self.hydrogen_line)[0][0]
+            a_coeff, b_coeff = coefficients[
+                line_idx,
+            ]
+
+            # Equation C1 in Aoymama et al. (2021)
+            log_acc_lum = a_coeff * np.log10(line_lum) + b_coeff
+
+        return log_acc_lum
