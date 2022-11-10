@@ -4,6 +4,14 @@ species.data package
 Submodules
 ----------
 
+species.data.accretion module
+-----------------------------
+
+.. automodule:: species.data.accretion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.allers2013 module
 ------------------------------
 

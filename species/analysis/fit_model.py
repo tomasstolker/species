@@ -1008,7 +1008,9 @@ class FitModel:
 
         # Add the parallax manually because it should
         # not be provided in the bounds dictionary
-        parallax = params[self.cube_index["parallax"]]
+
+        if self.model != "powerlaw":
+            parallax = params[self.cube_index["parallax"]]
 
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries

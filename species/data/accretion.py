@@ -46,14 +46,14 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
 
     if not os.path.isfile(data_file):
         print(
-            "Downloading coefficients for accretion relation (1.1 kB)...",
+            "Downloading coefficients for accretion relation (2.1 kB)...",
             end="",
             flush=True,
         )
         urllib.request.urlretrieve(url, data_file)
         print(" [DONE]")
 
-    print("Adding coefficients for accretion relation (1.1 kB)...", end="", flush=True)
+    print("Adding coefficients for accretion relation (2.1 kB)...", end="", flush=True)
 
     data = np.genfromtxt(
         data_file,

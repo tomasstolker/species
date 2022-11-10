@@ -156,7 +156,7 @@ class EmissionLine:
             self.lambda_rest = line_wavel[line_idx]
             print(f"Hydrogen line = {self.hydrogen_line}")
 
-        print(f"Rest wavelength (um) = {self.lambda_rest:.4f} um")
+        print(f"Rest wavelength (um) = {self.lambda_rest:.4f}")
 
         self.spec_vrad = (
             1e-3
@@ -731,7 +731,7 @@ class EmissionLine:
         )
 
         if self.hydrogen_line is not None:
-            log_acc_sample = self.accretion_luminosity(lum_sample)
+            log_acc_sample = np.log10(self.accretion_luminosity(lum_sample))
 
             log_acc_mean = np.mean(log_acc_sample)
             log_acc_std = np.std(log_acc_sample)
@@ -1092,6 +1092,8 @@ class EmissionLine:
                 )  # (um)
                 eq_width[i] *= 1e4  # (A)
 
+        print(" [DONE]")
+
         line_flux = line_flux[..., np.newaxis]
         samples = np.append(samples, line_flux, axis=1)
 
@@ -1099,7 +1101,7 @@ class EmissionLine:
         samples = np.append(samples, np.log10(line_lum), axis=1)
 
         if self.hydrogen_line is not None:
-            log_acc_lum = self.accretion_luminosity(line_lum[:, 0])
+            log_acc_lum = np.log10(self.accretion_luminosity(line_lum[:, 0]))
 
             print(
                 "Inflating the uncertainty on the "
@@ -1135,8 +1137,6 @@ class EmissionLine:
 
             modelpar.append("line_vrad")
             samples = np.append(samples, v_rad, axis=1)
-
-        print(" [DONE]")
 
         # Log-likelihood
 
@@ -1404,13 +1404,13 @@ class EmissionLine:
         Parameters
         ----------
         line_lum : float, np.array
-            Line luminosity (Lsun) or array with line luminosities.
+            Line luminosity ($L_\\odot$) or array with line luminosities.
 
         Returns
         -------
         float, np.ndarray
-            Accretion luminosity, :math:`\\log10(L/L_\\odot)`, or
-            array with the accretion luminosities.
+            Accretion luminosity ($L_\\odot$) or array with
+            accretion luminosities.
         """
 
         with h5py.File(self.database, "r") as h5_file:
@@ -1425,4 +1425,4 @@ class EmissionLine:
             # Equation C1 in Aoymama et al. (2021)
             log_acc_lum = a_coeff * np.log10(line_lum) + b_coeff
 
-        return log_acc_lum
+        return 10.**log_acc_lum

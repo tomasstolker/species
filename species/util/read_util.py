@@ -563,6 +563,8 @@ def powerlaw_spectrum(
 
     wavel = create_wavelengths((wavel_range[0], wavel_range[1]), spec_res)
 
+    wavel *= 1e3  # (um) -> (nm)
+
     log_flux = (
         model_param["log_powerlaw_a"]
         + model_param["log_powerlaw_b"]
@@ -572,8 +574,8 @@ def powerlaw_spectrum(
     model_box = box.create_box(
         boxtype="model",
         model="powerlaw",
-        wavelength=wavel,
-        flux=10.0**log_flux,
+        wavelength=1e-3*wavel,  # (um)
+        flux=10.0**log_flux,  # (W m-2 um-1)
         parameters=model_param,
         quantity="flux",
     )

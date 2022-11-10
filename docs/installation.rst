@@ -39,7 +39,7 @@ Installation from Github
 Using pip
 ^^^^^^^^^
 
-The version on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with (a recent version of) `pip`:
+The repository on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip <https://packaging.python.org/tutorials/installing-packages/>`_ (please update ``pip`` to a recent version if needed):
 
 .. code-block:: console
 
