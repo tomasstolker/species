@@ -2,6 +2,9 @@
 Utility functions for data processing.
 """
 
+import os
+import tarfile
+
 from typing import Dict, List, Optional
 
 import h5py
@@ -12,6 +15,54 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_radtrans
+
+
+@typechecked
+def extract_tarfile(data_file: str, data_folder: str) -> None:
+    """
+    Function for safely unpacking a TAR file (`see details
+    <https://github.com/advisories/GHSA-gw9q-c7gh-j9vm>`_.
+
+    Parameters
+    ----------
+    data_file : str
+        Path of the TAR file.
+    data_folder : str
+        Path of the data folder where the TAR file will be extracted.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    with tarfile.open(data_file) as tar:
+
+        @typechecked
+        def is_within_directory(directory: str, target: str):
+
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+
+            return prefix == abs_directory
+
+        @typechecked
+        def safe_extract(tar: tarfile.TarFile,
+                         path: str = ".",
+                         members: Optional[List] = None,
+                         numeric_owner: bool = False):
+
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+
+            tar.extractall(path, members, numeric_owner=numeric_owner)
+
+        safe_extract(tar, data_folder)
 
 
 @typechecked

@@ -5,7 +5,6 @@ Module for adding a grid of model spectra to the database.
 import json
 import os
 import pathlib
-import tarfile
 import urllib.request
 import warnings
 
@@ -119,9 +118,7 @@ def add_model_grid(
         end="",
         flush=True,
     )
-    tar = tarfile.open(data_file)
-    tar.extractall(data_folder)
-    tar.close()
+    data_util.extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     if "information" in model_info:

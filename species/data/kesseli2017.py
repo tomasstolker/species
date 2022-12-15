@@ -5,7 +5,6 @@ Kesseli et al. (2017) to the database.
 
 import os
 import shutil
-import tarfile
 import urllib.request
 
 import h5py
@@ -13,6 +12,8 @@ import numpy as np
 
 from astropy.io import fits
 from typeguard import typechecked
+
+from species.util import data_util
 
 
 @typechecked
@@ -55,9 +56,7 @@ def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
         end="",
         flush=True,
     )
-    tar = tarfile.open(data_file)
-    tar.extractall(data_folder)
-    tar.close()
+    data_util.extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     database.create_group("spectra/kesseli+2017")

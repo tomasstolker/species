@@ -8,7 +8,6 @@ also available in the `SpeX Prism Library Analysis Toolkit
 
 import os
 import shutil
-import tarfile
 import urllib.request
 
 import h5py
@@ -19,7 +18,7 @@ from astropy.io import fits
 from astroquery.simbad import Simbad
 from typeguard import typechecked
 
-from species.util import query_util
+from species.util import data_util, query_util
 
 
 @typechecked
@@ -73,8 +72,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
         shutil.rmtree(data_folder)
 
     print(f"Unpacking {print_text} (173 kB)...", end="", flush=True)
-    with tarfile.open(data_file) as open_tar:
-        open_tar.extractall(data_folder)
+    data_util.extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     sources = np.genfromtxt(

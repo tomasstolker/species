@@ -3,7 +3,6 @@ Module for adding the IRTF Spectral Library to the database.
 """
 
 import os
-import tarfile
 import urllib.request
 
 from typing import Optional, List
@@ -58,10 +57,10 @@ def add_irtf(
         dtype={"object": str, "parallax": float, "parallax_error": float},
     )
 
-    datadir = os.path.join(input_path, "irtf")
+    data_folder = os.path.join(input_path, "irtf")
 
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
 
     data_file = {
         "F": os.path.join(input_path, "irtf/F_fits_091201.tar"),
@@ -114,9 +113,7 @@ def add_irtf(
     print("Unpacking IRTF Spectral Library...", end="", flush=True)
 
     for item in sptypes:
-        tar = tarfile.open(data_file[item])
-        tar.extractall(path=datadir)
-        tar.close()
+        data_util.extract_tarfile(data_file[item], data_folder)
 
     print(" [DONE]")
 

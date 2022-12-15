@@ -87,8 +87,8 @@ def add_leggett(input_path, database):
     print(" [DONE]")
     print("Adding Leggett T6+ and Y Dwarf Data...", end="", flush=True)
 
-    file_io = open(data_file2, "r")
-    lines = file_io.readlines()[69:]
+    file_open = open(data_file2, "r", encoding="utf-8")
+    lines = file_open.readlines()[69:]
 
     for item in lines:
         name = np.append(name, item[0:16])
@@ -143,7 +143,7 @@ def add_leggett(input_path, database):
         mag_w3 = np.append(mag_w3, mag[12])
         mag_w4 = np.append(mag_w4, mag[13])
 
-    file_io.close()
+    file_open.close()
 
     dtype = h5py.special_dtype(vlen=str)
 
