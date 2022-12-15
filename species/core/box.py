@@ -31,7 +31,8 @@ def create_box(boxtype, **kwargs):
         box.filter_mag = kwargs["filter_mag"]
         box.color = kwargs["color"]
         box.magnitude = kwargs["magnitude"]
-        box.names = kwargs["names"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
         if "sptype" in kwargs:
             box.sptype = kwargs["sptype"]
         if "mass" in kwargs:
@@ -48,7 +49,8 @@ def create_box(boxtype, **kwargs):
         box.filters = kwargs["filters"]
         box.color1 = kwargs["color1"]
         box.color2 = kwargs["color2"]
-        box.names = kwargs["names"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
         if "sptype" in kwargs:
             box.sptype = kwargs["sptype"]
         if "mass" in kwargs:

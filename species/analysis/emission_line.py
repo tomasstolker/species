@@ -1404,12 +1404,12 @@ class EmissionLine:
         Parameters
         ----------
         line_lum : float, np.array
-            Line luminosity ($L_\\odot$) or array with line luminosities.
+            Line luminosity (:math:`L_\\odot`) or array with line luminosities.
 
         Returns
         -------
         float, np.ndarray
-            Accretion luminosity ($L_\\odot$) or array with
+            Accretion luminosity (:math:`L_\\odot`) or array with
             accretion luminosities.
         """
 

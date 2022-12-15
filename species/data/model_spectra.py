@@ -294,3 +294,5 @@ def add_model_grid(
     )
 
     data_util.write_data(model_name, model_info["parameters"], database, data_sorted)
+
+    data_util.add_missing(model_name, model_info["parameters"], database)

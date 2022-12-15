@@ -1001,6 +1001,8 @@ class ReadRadtrans:
 
             xx_grid, yy_grid = np.meshgrid(wavelength, press_bar)
 
+            emission_contr = np.nan_to_num(emission_contr)
+
             ax.pcolormesh(
                 xx_grid,
                 yy_grid,

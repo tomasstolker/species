@@ -3408,7 +3408,11 @@ class Database:
             Database tag with the posterior samples.
         random : int, None
             Number of randomly selected samples. All samples
-            are used if set to ``None``.
+            are selected if set to ``None``. When setting ``random=0``,
+            no random spectra are sampled (so the returned list
+            with ``ModelBox`` objects is empty), but the
+            :class:`~species.read.read_radtrans.ReadRadtrans`
+            instance is still returned.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. The
             wavelength range from the retrieval is adopted
@@ -3426,7 +3430,7 @@ class Database:
         -------
         list(box.ModelBox)
             Boxes with the randomly sampled spectra.
-        read_radtrans.Radtrans
+        read_radtrans.ReadRadtrans
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
 

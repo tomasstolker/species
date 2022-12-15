@@ -554,6 +554,18 @@ class AtmosphericRetrieval:
                     elif chemistry == "free":
                         self.parameters.append(item)
 
+        # Add cloud optical depth parameter
+
+        if "log_tau_cloud" in bounds:
+            self.parameters.append("log_tau_cloud")
+
+            if len(self.cloud_species) > 1:
+                for item in self.cloud_species[1:]:
+                    cloud_1 = item[:-3].lower()
+                    cloud_2 = self.cloud_species[0][:-3].lower()
+
+                    self.parameters.append(f"{cloud_1}_{cloud_2}_ratio")
+
         # Add the flux scaling parameters
 
         for item in self.spectrum:
@@ -606,18 +618,6 @@ class AtmosphericRetrieval:
 
         if "mix_length" in bounds:
             self.parameters.append("mix_length")
-
-        # Add cloud optical depth parameter
-
-        if "log_tau_cloud" in bounds:
-            self.parameters.append("log_tau_cloud")
-
-            if len(self.cloud_species) > 1:
-                for item in self.cloud_species[1:]:
-                    cloud_1 = item[:-3].lower()
-                    cloud_2 = self.cloud_species[0][:-3].lower()
-
-                    self.parameters.append(f"{cloud_1}_{cloud_2}_ratio")
 
         # List all parameters
 

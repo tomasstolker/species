@@ -1663,3 +1663,172 @@ class ReadModel:
         )
 
         return np.log10(bol_lum / constants.L_SUN)
+
+    @typechecked
+    def create_color_magnitude(
+        self,
+        model_param: Dict[str, float],
+        filters_color: Tuple[str, str],
+        filter_mag: str,
+    ) -> box.ColorMagBox:
+        """
+        Function for creating a :class:`~species.core.box.
+        ColorMagBox` for a given set of filter names and model
+        parameters. The effective temperature, :math:`T_\\mathrm{eff}`,
+        is varied such that the returned :class:`~species.core.box.
+        ColorMagBox` contains the colors as function of
+        :math:`T_\\mathrm{eff}` and can be provide as input to the
+        :func:`~species.plot.plot_color.plot_color_magnitude` function.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The boundaries
+            of the model grid can be inspected by using the
+            :func:`~species.read.read_model.ReadModel.get_bounds()`
+            method. The effective temperature, :math:`T_\\mathrm{eff}`,
+            does not need to be included in the dictionary since it
+            is varied. The values of :math:`T_\\mathrm{eff}` are set to
+            the grid points. The grid points can be inspected with the
+            :func:`~species.read.read_model.ReadModel.get_points()`
+            method.
+        filters_color : tuple(str, str)
+            Filter names that are used for the color. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+        filter_mag : str
+            Filter name that is used for the magnitude. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+
+        Returns
+        -------
+        species.core.box.ColorMagBox
+            Box with the colors and magnitudes.
+        """
+
+        if "distance" not in model_param:
+            model_param["distance"] = 10.0
+
+        if "radius" not in model_param:
+            model_param["radius"] = 1.0
+
+        if "parallax" in model_param:
+            del model_param["parallax"]
+
+        read_model_1 = ReadModel(self.model, filter_name=filters_color[0])
+        read_model_2 = ReadModel(self.model, filter_name=filters_color[0])
+        read_model_3 = ReadModel(self.model, filter_name=filter_mag)
+
+        model_points = self.get_points()
+
+        param_list = []
+        color_list = []
+        mag_list = []
+
+        for param_item in model_points["teff"]:
+            model_param["teff"] = param_item
+
+            mag_1 = read_model_1.get_magnitude(model_param)
+            mag_2 = read_model_2.get_magnitude(model_param)
+            mag_3 = read_model_3.get_magnitude(model_param)
+
+            param_list.append(param_item)
+            color_list.append(mag_1[0] - mag_2[0])
+            mag_list.append(mag_3[0])
+
+        return box.create_box(
+            "colormag",
+            library=self.model,
+            object_type="spectra",
+            filters_color=filters_color,
+            filter_mag=filter_mag,
+            color=color_list,
+            magnitude=mag_list,
+            sptype=param_list,
+        )
+
+    @typechecked
+    def create_color_color(
+        self,
+        model_param: Dict[str, float],
+        filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
+    ) -> box.ColorColorBox:
+        """
+        Function for creating a :class:`~species.core.box.
+        ColorColorBox` for a given set of filter names and model
+        parameters. The effective temperature, :math:`T_\\mathrm{eff}`,
+        is varied such that the returned :class:`~species.core.box.
+        ColorColorBox` contains the colors as function of
+        :math:`T_\\mathrm{eff}` and can be provide as input to the
+        :func:`~species.plot.plot_color.plot_color_color` function.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The boundaries
+            of the model grid can be inspected by using the
+            :func:`~species.read.read_model.ReadModel.get_bounds()`
+            method. The effective temperature, :math:`T_\\mathrm{eff}`,
+            does not need to be included in the dictionary since it
+            is varied. The values of :math:`T_\\mathrm{eff}` are set to
+            the grid points. The grid points can be inspected with the
+            :func:`~species.read.read_model.ReadModel.get_points()`
+            method.
+        filters_colors : tuple(tuple(str, str), tuple(str, str))
+            Filter names that are used for the two colors. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+
+        Returns
+        -------
+        species.core.box.ColorColorBox
+            Box with the colors.
+        """
+
+        if "distance" not in model_param:
+            model_param["distance"] = 10.0
+
+        if "radius" not in model_param:
+            model_param["radius"] = 1.0
+
+        if "parallax" in model_param:
+            del model_param["parallax"]
+
+        read_model_1 = ReadModel(self.model, filter_name=filters_colors[0][0])
+        read_model_2 = ReadModel(self.model, filter_name=filters_colors[0][1])
+        read_model_3 = ReadModel(self.model, filter_name=filters_colors[1][0])
+        read_model_4 = ReadModel(self.model, filter_name=filters_colors[1][1])
+
+        model_points = self.get_points()
+
+        param_list = []
+        color_1_list = []
+        color_2_list = []
+
+        for param_item in model_points["teff"]:
+            model_param["teff"] = param_item
+
+            mag_1 = read_model_1.get_magnitude(model_param)
+            mag_2 = read_model_2.get_magnitude(model_param)
+            mag_3 = read_model_3.get_magnitude(model_param)
+            mag_4 = read_model_4.get_magnitude(model_param)
+
+            param_list.append(param_item)
+            color_1_list.append(mag_1[0] - mag_2[0])
+            color_2_list.append(mag_3[0] - mag_4[0])
+
+        return box.create_box(
+            "colorcolor",
+            library=self.model,
+            object_type="spectra",
+            filters=filters_colors,
+            color1=color_1_list,
+            color2=color_2_list,
+            sptype=param_list,
+        )

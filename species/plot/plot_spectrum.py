@@ -27,6 +27,7 @@ def plot_spectrum(
     filters: Optional[List[str]] = None,
     residuals: Optional[box.ResidualsBox] = None,
     plot_kwargs: Optional[List[Optional[dict]]] = None,
+    envelope: bool = False,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     ylim_res: Optional[Tuple[float, float]] = None,
@@ -88,6 +89,15 @@ def plot_spectrum(
         (Paranal/SPHERE.IRDIS_D_K12_1 in the example) then a list
         with two dictionaries should be provided. Colors are
         automatically chosen if ``plot_kwargs`` is set to ``None``.
+    envelope : bool
+        Plot an envelope instead of the individual samples in case
+        the list of ``boxes`` contains a list with
+        :class:`~species.core.box.ModelBox` objects from
+        :func:`~species.data.database.Database.get_mcmc_spectra`
+        or :func:`~species.data.database.Database.get_retrieval_spectra`.
+        The envelopes show the 68 and 99.7 percent confidence intervals,
+        so :math:`1\\sigma` and :math:`3\\sigma` in case of Gaussian
+        distributions.
     xlim : tuple(float, float)
         Limits of the wavelength axis.
     ylim : tuple(float, float)
@@ -370,20 +380,16 @@ def plot_spectrum(
             ylim = ax1.get_ylim()
 
             exponent = math.floor(math.log10(ylim[1]))
-            scaling = 10.0 ** exponent
+            scaling = 10.0**exponent
 
             if quantity == "flux density":
                 ylabel = (
-                    r"$F_\lambda$ (10$^{"
-                    + str(exponent)
-                    + r"}$ W m$^{-2}$ µm$^{-1}$)"
+                    r"$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$ µm$^{-1}$)"
                 )
 
             elif quantity == "flux":
                 ylabel = (
-                    r"$\lambda$$F_\lambda$ (10$^{"
-                    + str(exponent)
-                    + r"}$ W m$^{-2}$)"
+                    r"$\lambda$$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$)"
                 )
 
             ax1.set_ylabel(ylabel, fontsize=11)
@@ -396,14 +402,10 @@ def plot_spectrum(
 
         else:
             if quantity == "flux density":
-                ax1.set_ylabel(
-                    r"$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11
-                )
+                ax1.set_ylabel(r"$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11)
 
             elif quantity == "flux":
-                ax1.set_ylabel(
-                    r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=11
-                )
+                ax1.set_ylabel(r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=11)
 
             scaling = 1.0
 
@@ -443,22 +445,22 @@ def plot_spectrum(
         ax1.get_xaxis().set_label_coords(0.5, -0.12)
         ax1.get_yaxis().set_label_coords(-0.1, 0.5)
 
-    for j, boxitem in enumerate(boxes):
+    for j, box_item in enumerate(boxes):
         flux_scaling = 1.0
 
         if j < len(boxes):
             plot_kwargs.append(None)
 
-        if isinstance(boxitem, (box.SpectrumBox, box.ModelBox)):
-            wavelength = boxitem.wavelength
-            flux = boxitem.flux
+        if isinstance(box_item, (box.SpectrumBox, box.ModelBox)):
+            wavelength = box_item.wavelength
+            flux = box_item.flux
 
             if isinstance(wavelength[0], (np.float32, np.float64)):
                 data = np.array(flux, dtype=np.float64)
                 masked = np.ma.array(data, mask=np.isnan(data))
 
-                if isinstance(boxitem, box.ModelBox):
-                    param = boxitem.parameters.copy()
+                if isinstance(box_item, box.ModelBox):
+                    param = box_item.parameters.copy()
 
                     if leg_param is not None:
                         for item in list(param.keys()):
@@ -562,7 +564,7 @@ def plot_spectrum(
                         flux_scaling = wavelength
 
                     if "zorder" not in kwargs_copy:
-                        kwargs_copy["zorder"] = 2.
+                        kwargs_copy["zorder"] = 2.0
 
                     ax1.plot(
                         wavelength,
@@ -588,51 +590,108 @@ def plot_spectrum(
                     data = np.array(flux[i], dtype=np.float64)
                     masked = np.ma.array(data, mask=np.isnan(data))
 
-                    if isinstance(boxitem.name[i], bytes):
-                        label = boxitem.name[i].decode("utf-8")
+                    if isinstance(box_item.name[i], bytes):
+                        label = box_item.name[i].decode("utf-8")
                     else:
-                        label = boxitem.name[i]
+                        label = box_item.name[i]
 
                     if quantity == "flux":
                         flux_scaling = item
 
                     ax1.plot(item, flux_scaling * masked / scaling, lw=0.5, label=label)
 
-        elif isinstance(boxitem, list):
-            for i, item in enumerate(boxitem):
+        elif isinstance(box_item, list):
+            if envelope:
+                spec_list = np.zeros((len(box_item), box_item[0].flux.size))
+            else:
+                spec_list = None
+
+            for i, item in enumerate(box_item):
                 wavelength = item.wavelength
                 flux = item.flux
 
-                data = np.array(flux, dtype=np.float64)
+                # data = np.array(flux, dtype=np.float64)
+                data = flux.astype(np.float64)
                 masked = np.ma.array(data, mask=np.isnan(data))
 
                 if quantity == "flux":
                     flux_scaling = wavelength
 
+                if envelope:
+                    spec_list[i] = flux
+
+                else:
+                    if plot_kwargs[j]:
+                        if "zorder" not in plot_kwargs[j]:
+                            plot_kwargs[j]["zorder"] = 1.0
+
+                        ax1.plot(
+                            wavelength,
+                            flux_scaling * masked / scaling,
+                            **plot_kwargs[j],
+                        )
+                    else:
+                        ax1.plot(
+                            wavelength,
+                            flux_scaling * masked / scaling,
+                            color="gray",
+                            lw=0.2,
+                            alpha=0.5,
+                            zorder=1,
+                        )
+
+            if envelope:
+                spec_percent = np.percentile(spec_list, [0.3, 16.0, 84.0, 99.7], axis=0)
+
                 if plot_kwargs[j]:
                     if "zorder" not in plot_kwargs[j]:
-                        plot_kwargs[j]["zorder"] = 1.
+                        plot_kwargs[j]["zorder"] = 1.0
 
-                    ax1.plot(
-                        wavelength,
-                        flux_scaling * masked / scaling,
+                    if "alpha" in plot_kwargs[j]:
+                        del plot_kwargs[j]["alpha"]
+
+                    ax1.fill_between(
+                        x=wavelength,
+                        y1=flux_scaling * spec_percent[0] / scaling,
+                        y2=flux_scaling * spec_percent[3] / scaling,
+                        alpha=0.4,
                         **plot_kwargs[j],
                     )
-                else:
-                    ax1.plot(
-                        wavelength,
-                        flux_scaling * masked / scaling,
-                        color="gray",
-                        lw=0.2,
-                        alpha=0.5,
-                        zorder=1,
+
+                    ax1.fill_between(
+                        x=wavelength,
+                        y1=flux_scaling * spec_percent[1] / scaling,
+                        y2=flux_scaling * spec_percent[2] / scaling,
+                        alpha=1.0,
+                        **plot_kwargs[j],
                     )
 
-        elif isinstance(boxitem, box.PhotometryBox):
+                else:
+                    ax1.fill_between(
+                        x=wavelength,
+                        y1=flux_scaling * spec_percent[0] / scaling,
+                        y2=flux_scaling * spec_percent[3] / scaling,
+                        color="peachpuff",
+                        alpha=0.4,
+                        zorder=1,
+                        linewidth=0.0,
+                    )
+
+                    ax1.fill_between(
+                        x=wavelength,
+                        y1=flux_scaling * spec_percent[1] / scaling,
+                        y2=flux_scaling * spec_percent[2] / scaling,
+                        color="peachpuff",
+                        alpha=1.0,
+                        zorder=1,
+                        linewidth=0.0,
+                    )
+
+        elif isinstance(box_item, box.PhotometryBox):
             label_check = []
 
-            for i, item in enumerate(boxitem.wavelength):
-                transmission = read_filter.ReadFilter(boxitem.filter_name[i])
+            for i, item in enumerate(box_item.wavelength):
+                transmission = read_filter.ReadFilter(box_item.filter_name[i])
                 fwhm = transmission.filter_fwhm()
 
                 if quantity == "flux":
@@ -651,13 +710,13 @@ def plot_spectrum(
                     ):
                         del plot_kwargs[j]["label"]
 
-                    if boxitem.flux[i][1] is None:
+                    if box_item.flux[i][1] is None:
                         if "zorder" not in plot_kwargs[j]:
-                            plot_kwargs[j]["zorder"] = 3.
+                            plot_kwargs[j]["zorder"] = 3.0
 
                         ax1.errorbar(
                             item,
-                            flux_scaling * boxitem.flux[i][0] / scaling,
+                            flux_scaling * box_item.flux[i][0] / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             **plot_kwargs[j],
@@ -665,21 +724,21 @@ def plot_spectrum(
 
                     else:
                         if "zorder" not in plot_kwargs[j]:
-                            plot_kwargs[j]["zorder"] = 3.
+                            plot_kwargs[j]["zorder"] = 3.0
 
                         ax1.errorbar(
                             item,
-                            flux_scaling * boxitem.flux[i][0] / scaling,
+                            flux_scaling * box_item.flux[i][0] / scaling,
                             xerr=fwhm / 2.0,
-                            yerr=flux_scaling * boxitem.flux[i][1] / scaling,
+                            yerr=flux_scaling * box_item.flux[i][1] / scaling,
                             **plot_kwargs[j],
                         )
 
                 else:
-                    if boxitem.flux[i][1] is None:
+                    if box_item.flux[i][1] is None:
                         ax1.errorbar(
                             item,
-                            flux_scaling * boxitem.flux[i][0] / scaling,
+                            flux_scaling * box_item.flux[i][0] / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             marker="s",
@@ -691,23 +750,23 @@ def plot_spectrum(
                     else:
                         ax1.errorbar(
                             item,
-                            flux_scaling * boxitem.flux[i][0] / scaling,
+                            flux_scaling * box_item.flux[i][0] / scaling,
                             xerr=fwhm / 2.0,
-                            yerr=flux_scaling * boxitem.flux[i][1] / scaling,
+                            yerr=flux_scaling * box_item.flux[i][1] / scaling,
                             marker="s",
                             ms=6,
                             color="black",
                             zorder=3,
                         )
 
-        elif isinstance(boxitem, box.ObjectBox):
-            if boxitem.spectrum is not None:
+        elif isinstance(box_item, box.ObjectBox):
+            if box_item.spectrum is not None:
                 spec_list = []
                 wavel_list = []
 
-                for item in boxitem.spectrum:
+                for item in box_item.spectrum:
                     spec_list.append(item)
-                    wavel_list.append(boxitem.spectrum[item][0][0, 0])
+                    wavel_list.append(box_item.spectrum[item][0][0, 0])
 
                 sort_index = np.argsort(wavel_list)
                 spec_sort = []
@@ -717,8 +776,8 @@ def plot_spectrum(
 
                 for key in spec_sort:
                     masked = np.ma.array(
-                        boxitem.spectrum[key][0],
-                        mask=np.isnan(boxitem.spectrum[key][0]),
+                        box_item.spectrum[key][0],
+                        mask=np.isnan(box_item.spectrum[key][0]),
                     )
 
                     if quantity == "flux":
@@ -765,11 +824,11 @@ def plot_spectrum(
                             **plot_kwargs[j][key],
                         )
 
-            if boxitem.flux is not None:
+            if box_item.flux is not None:
                 filter_list = []
                 wavel_list = []
 
-                for item in boxitem.flux:
+                for item in box_item.flux:
                     read_filt = read_filter.ReadFilter(item)
                     filter_list.append(item)
                     wavel_list.append(read_filt.mean_wavelength())
@@ -794,14 +853,14 @@ def plot_spectrum(
 
                         scale_tmp = flux_scaling / scaling
 
-                        if isinstance(boxitem.flux[item][0], np.ndarray):
-                            for i in range(boxitem.flux[item].shape[1]):
+                        if isinstance(box_item.flux[item][0], np.ndarray):
+                            for i in range(box_item.flux[item].shape[1]):
 
                                 plot_obj = ax1.errorbar(
                                     wavelength,
-                                    scale_tmp * boxitem.flux[item][0, i],
+                                    scale_tmp * box_item.flux[item][0, i],
                                     xerr=fwhm / 2.0,
-                                    yerr=scale_tmp * boxitem.flux[item][1, i],
+                                    yerr=scale_tmp * box_item.flux[item][1, i],
                                     marker="s",
                                     ms=5,
                                     zorder=3,
@@ -812,9 +871,9 @@ def plot_spectrum(
 
                             plot_obj = ax1.errorbar(
                                 wavelength,
-                                scale_tmp * boxitem.flux[item][0],
+                                scale_tmp * box_item.flux[item][0],
                                 xerr=fwhm / 2.0,
-                                yerr=scale_tmp * boxitem.flux[item][1],
+                                yerr=scale_tmp * box_item.flux[item][1],
                                 marker="s",
                                 ms=5,
                                 zorder=3,
@@ -831,41 +890,41 @@ def plot_spectrum(
                         if quantity == "flux":
                             flux_scaling = wavelength
 
-                        if isinstance(boxitem.flux[item][0], np.ndarray):
+                        if isinstance(box_item.flux[item][0], np.ndarray):
                             if not isinstance(plot_kwargs[j][item], list):
                                 raise ValueError(
-                                    f"A list with {boxitem.flux[item].shape[1]} "
+                                    f"A list with {box_item.flux[item].shape[1]} "
                                     f"dictionaries are required because the filter "
-                                    f"{item} has {boxitem.flux[item].shape[1]} "
+                                    f"{item} has {box_item.flux[item].shape[1]} "
                                     f"values."
                                 )
 
-                            for i in range(boxitem.flux[item].shape[1]):
+                            for i in range(box_item.flux[item].shape[1]):
                                 if "zorder" not in plot_kwargs[j][item][i]:
-                                    plot_kwargs[j][item][i]["zorder"] = 3.
+                                    plot_kwargs[j][item][i]["zorder"] = 3.0
 
                                 ax1.errorbar(
                                     wavelength,
-                                    flux_scaling * boxitem.flux[item][0, i] / scaling,
+                                    flux_scaling * box_item.flux[item][0, i] / scaling,
                                     xerr=fwhm / 2.0,
                                     yerr=flux_scaling
-                                    * boxitem.flux[item][1, i]
+                                    * box_item.flux[item][1, i]
                                     / scaling,
                                     **plot_kwargs[j][item][i],
                                 )
 
                         else:
-                            if boxitem.flux[item][1] == 0.0:
+                            if box_item.flux[item][1] == 0.0:
                                 if "zorder" not in plot_kwargs[j][item]:
-                                    plot_kwargs[j][item]["zorder"] = 3.
+                                    plot_kwargs[j][item]["zorder"] = 3.0
 
                                 ax1.errorbar(
                                     wavelength,
-                                    flux_scaling * boxitem.flux[item][0] / scaling,
+                                    flux_scaling * box_item.flux[item][0] / scaling,
                                     xerr=fwhm / 2.0,
                                     yerr=0.5
                                     * flux_scaling
-                                    * boxitem.flux[item][0]
+                                    * box_item.flux[item][0]
                                     / scaling,
                                     uplims=True,
                                     capsize=2.0,
@@ -875,23 +934,25 @@ def plot_spectrum(
 
                             else:
                                 if "zorder" not in plot_kwargs[j][item]:
-                                    plot_kwargs[j][item]["zorder"] = 3.
+                                    plot_kwargs[j][item]["zorder"] = 3.0
 
                                 ax1.errorbar(
                                     wavelength,
-                                    flux_scaling * boxitem.flux[item][0] / scaling,
+                                    flux_scaling * box_item.flux[item][0] / scaling,
                                     xerr=fwhm / 2.0,
-                                    yerr=flux_scaling * boxitem.flux[item][1] / scaling,
+                                    yerr=flux_scaling
+                                    * box_item.flux[item][1]
+                                    / scaling,
                                     **plot_kwargs[j][item],
                                 )
 
-        elif isinstance(boxitem, box.SynphotBox):
+        elif isinstance(box_item, box.SynphotBox):
             for i, find_item in enumerate(boxes):
                 if isinstance(find_item, box.ObjectBox):
                     obj_index = i
                     break
 
-            for item in boxitem.flux:
+            for item in box_item.flux:
                 transmission = read_filter.ReadFilter(item)
                 wavelength = transmission.mean_wavelength()
                 fwhm = transmission.filter_fwhm()
@@ -902,7 +963,7 @@ def plot_spectrum(
                 if not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
                     ax1.errorbar(
                         wavelength,
-                        flux_scaling * boxitem.flux[item] / scaling,
+                        flux_scaling * box_item.flux[item] / scaling,
                         xerr=fwhm / 2.0,
                         yerr=None,
                         alpha=0.7,
@@ -923,11 +984,11 @@ def plot_spectrum(
                             del kwargs_copy["label"]
 
                         if "zorder" not in kwargs_copy:
-                            kwargs_copy["zorder"] = 4.
+                            kwargs_copy["zorder"] = 4.0
 
                         ax1.errorbar(
                             wavelength,
-                            flux_scaling * boxitem.flux[item] / scaling,
+                            flux_scaling * box_item.flux[item] / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
@@ -944,11 +1005,11 @@ def plot_spectrum(
                             del kwargs_copy["mfc"]
 
                         if "zorder" not in kwargs_copy:
-                            kwargs_copy["zorder"] = 4.
+                            kwargs_copy["zorder"] = 4.0
 
                         ax1.errorbar(
                             wavelength,
-                            flux_scaling * boxitem.flux[item] / scaling,
+                            flux_scaling * box_item.flux[item] / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
@@ -963,10 +1024,19 @@ def plot_spectrum(
             ax2.plot(data[:, 0], data[:, 1], "-", lw=0.7, color="tab:gray", zorder=1)
 
     if residuals is not None:
+        obj_index = None
+
         for i, find_item in enumerate(boxes):
             if isinstance(find_item, box.ObjectBox):
                 obj_index = i
                 break
+
+        if obj_index is None:
+            raise ValueError(
+                "ObjectBox not found so can not create "
+                "residuals. Please add an ObjectBox to "
+                "the list of boxes."
+            )
 
         res_max = 0.0
 
@@ -985,7 +1055,7 @@ def plot_spectrum(
                 else:
                     if residuals.photometry[item].ndim == 1:
                         if "zorder" not in plot_kwargs[obj_index][item]:
-                            plot_kwargs[obj_index][item]["zorder"] = 2.
+                            plot_kwargs[obj_index][item]["zorder"] = 2.0
 
                         ax3.errorbar(
                             residuals.photometry[item][0],
@@ -997,7 +1067,7 @@ def plot_spectrum(
                         for i in range(residuals.photometry[item].shape[1]):
                             if isinstance(plot_kwargs[obj_index][item], list):
                                 if "zorder" not in plot_kwargs[obj_index][item][i]:
-                                    plot_kwargs[obj_index][item][i]["zorder"] = 2.
+                                    plot_kwargs[obj_index][item][i]["zorder"] = 2.0
 
                                 ax3.errorbar(
                                     residuals.photometry[item][0, i],
@@ -1007,7 +1077,7 @@ def plot_spectrum(
 
                             else:
                                 if "zorder" not in plot_kwargs[obj_index][item]:
-                                    plot_kwargs[obj_index][item]["zorder"] = 2.
+                                    plot_kwargs[obj_index][item]["zorder"] = 2.0
 
                                 ax3.errorbar(
                                     residuals.photometry[item][0, i],
@@ -1027,7 +1097,7 @@ def plot_spectrum(
 
                 else:
                     if "zorder" not in plot_kwargs[obj_index][key]:
-                        plot_kwargs[obj_index][key]["zorder"] = 1.
+                        plot_kwargs[obj_index][key]["zorder"] = 1.0
 
                     ax3.errorbar(
                         value[:, 0],
