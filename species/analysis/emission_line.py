@@ -178,7 +178,9 @@ class EmissionLine:
         emission_line.EmissionLine.fit_gaussian` will be
         automatically converted to an accretion luminosity with
         the relation from `Aoyama et al. (2021) <https://ui.adsabs.
-        harvard.edu/abs/2021ApJ...917L..30A/abstract>`_.
+        harvard.edu/abs/2021ApJ...917L..30A/abstract>`_ and
+        `Marleau & Aoyama (2022) <https://iopscience.iop.org/
+        article/10.3847/2515-5172/acaa34>`_.
 
         Returns
         -------
@@ -480,8 +482,10 @@ class EmissionLine:
         estimated with a Monte Carlo approach from 1000 samples.
         The accretion luminosity is also calculated with the relation
         from `Aoyama et al. (2021) <https://ui.adsabs.harvard.edu/
-        abs/2021ApJ...917L..30A/abstract>`_ if the argument of
-        ``hydrogen_line`` was set.
+        abs/2021ApJ...917L..30A/abstract>`_ and `Marleau & Aoyama
+        (2022) <https://iopscience.iop.org/article/10.3847/
+        2515-5172/acaa34>`_ if the argument of ``hydrogen_line``
+        was set when creating an instance of the class.
 
         Parameters
         ----------
@@ -1399,7 +1403,9 @@ class EmissionLine:
         Method for calculating the accretion luminosity from the
         (hydrogen) line luminosity with the relation from `Aoyama
         et al. (2021) <https://ui.adsabs.harvard.edu/abs/
-        2021ApJ...917L..30A/abstract>`_.
+        2021ApJ...917L..30A/abstract>`_ and extrapolated values
+        from `Marleau & Aoyama (2022) <https://iopscience.
+        iop.org/article/10.3847/2515-5172/acaa34>`_.
 
         Parameters
         ----------
