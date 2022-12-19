@@ -113,7 +113,7 @@ def add_irtf(
     print("Unpacking IRTF Spectral Library...", end="", flush=True)
 
     for item in sptypes:
-        data_util.extract_tarfile(data_file[item], data_folder)
+        data_util.extract_tarfile(data_file[item], data_folder[item])
 
     print(" [DONE]")
 

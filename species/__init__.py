@@ -34,8 +34,6 @@ from species.core.constants import *
 
 from species.core.init import SpeciesInit
 
-from species.data.companions import get_data
-
 from species.data.database import Database
 
 from species.plot.plot_comparison import (

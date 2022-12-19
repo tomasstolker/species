@@ -1312,7 +1312,7 @@ def plot_extinction(
         labelbottom=True,
     )
 
-    ax.set_xlabel("Wavelength (µm)", fontsize=12)
+    ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=12)
     ax.set_ylabel("Extinction (mag)", fontsize=12)
 
     if xlim is not None:

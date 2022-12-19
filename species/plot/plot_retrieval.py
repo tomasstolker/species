@@ -636,7 +636,7 @@ def plot_pt_profile(
 
             ax2.set_yscale("log")
 
-            ax2.set_xlabel("Wavelength (µm)", fontsize=13, va="bottom")
+            ax2.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13, va="bottom")
 
             if offset is not None:
                 ax2.get_xaxis().set_label_coords(0.5, 1.0 + abs(offset[0]))
@@ -1180,12 +1180,12 @@ def plot_opacities(
 
     ax1.set_ylabel("Pressure (bar)", fontsize=13)
 
-    ax2.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax2.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
     ax2.set_ylabel("Pressure (bar)", fontsize=13)
 
     ax5.set_ylabel("Pressure (bar)", fontsize=13)
 
-    ax6.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax6.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
     ax6.set_ylabel("Pressure (bar)", fontsize=13)
 
     ax1.set_xlim(wavelength[0], wavelength[-1])

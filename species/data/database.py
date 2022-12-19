@@ -27,7 +27,7 @@ from species.data import (
     accretion,
     allers2013,
     bonnefoy2014,
-    companions,
+    companion_spectra,
     dust,
     filters,
     irtf,
@@ -139,11 +139,16 @@ class Database:
             List with the object names that are stored in the database.
         """
 
-        spec_data = companions.get_spec_data()
+        data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            comp_data = json.load(json_file)
+
+        spec_data = companion_spectra.get_spec_data()
 
         comp_names = []
 
-        for planet_name, planet_dict in companions.get_data().items():
+        for planet_name, planet_dict in comp_data.items():
             comp_names.append(planet_name)
 
             print(f"Object name = {planet_name}")
@@ -158,12 +163,16 @@ class Database:
 
             app_mag = planet_dict["app_mag"]
 
-            for mag_name, mag_dict in app_mag.items():
-                if isinstance(mag_dict, list):
-                    for item in mag_dict:
-                        print(f"{mag_name} (mag) = {item[0]} +/- {item[1]}")
+            for mag_key, mag_value in app_mag.items():
+                if isinstance(mag_value[0], list) or isinstance(mag_value[0], tuple):
+                    for item in mag_value:
+                        print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
                 else:
-                    print(f"{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}")
+                    print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
+
+            print(f"References:")
+            for ref_item in planet_dict["references"]:
+                print(f"   - {ref_item}")
 
             if planet_name in spec_data:
                 for key, value in spec_data[planet_name].items():
@@ -268,10 +277,10 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding the magnitudes and spectra of directly
-        imaged planets and brown dwarfs from
-        :class:`~species.data.companions.get_data` and
-        :func:`~species.data.companions.get_comp_spec` to the database.
+        Function for adding the magnitudes and spectra of
+        directly imaged planets and brown dwarfs from
+        `data/companion_data.json` and
+        :func:`~species.data.companion_spectra` to the database.
 
         Parameters
         ----------
@@ -293,45 +302,61 @@ class Database:
         if isinstance(name, str):
             name = list((name,))
 
-        data = companions.get_data()
+        data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            comp_data = json.load(json_file)
 
         if name is None:
-            name = data.keys()
+            name = comp_data.keys()
 
         for item in name:
-            spec_dict = companions.companion_spectra(
+            spec_dict = companion_spectra.companion_spectra(
                 self.input_path, item, verbose=verbose
             )
 
             parallax = None
 
-            try:
-                # Query SIMBAD to get the parallax
-                simbad = Simbad()
-                simbad.add_votable_fields("parallax")
-                simbad_result = simbad.query_object(data[item]["simbad"])
-
-                if simbad_result is not None:
-                    par_sim = (
-                        simbad_result["PLX_VALUE"][0],  # (mas)
-                        simbad_result["PLX_ERROR"][0],
-                    )  # (mas)
-
-                    if not np.ma.is_masked(par_sim[0]) and not np.ma.is_masked(
-                        par_sim[1]
-                    ):
-                        parallax = (float(par_sim[0]), float(par_sim[1]))
-
-            except urllib.error.URLError:
-                parallax = data[item]["parallax"]
+            # try:
+            #     # Query SIMBAD to get the parallax
+            #     simbad = Simbad()
+            #     simbad.add_votable_fields("parallax")
+            #     simbad_result = simbad.query_object(comp_data[item]["simbad"])
+            #
+            #     if simbad_result is not None:
+            #         par_sim = (
+            #             simbad_result["PLX_VALUE"][0],  # (mas)
+            #             simbad_result["PLX_ERROR"][0],
+            #         )  # (mas)
+            #
+            #         if not np.ma.is_masked(par_sim[0]) and not np.ma.is_masked(
+            #             par_sim[1]
+            #         ):
+            #             parallax = (float(par_sim[0]), float(par_sim[1]))
+            #
+            # except urllib.error.URLError:
+            #     parallax = tuple(comp_data[item]["parallax"])
 
             if parallax is None:
-                parallax = data[item]["parallax"]
+                parallax = tuple(comp_data[item]["parallax"])
+
+            app_mag = comp_data[item]["app_mag"]
+
+            for key, value in app_mag.items():
+                if isinstance(value[0], list):
+                    mag_list = []
+                    for mag_item in value:
+                        mag_list.append(tuple(mag_item))
+
+                    app_mag[key] = mag_list
+
+                else:
+                    app_mag[key] = tuple(value)
 
             self.add_object(
                 object_name=item,
                 parallax=parallax,
-                app_mag=data[item]["app_mag"],
+                app_mag=app_mag,
                 spectrum=spec_dict,
                 verbose=verbose,
             )

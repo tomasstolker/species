@@ -28,10 +28,10 @@ species.data.bonnefoy2014 module
    :undoc-members:
    :show-inheritance:
 
-species.data.companions module
-------------------------------
+species.data.companion\_spectra module
+--------------------------------------
 
-.. automodule:: species.data.companions
+.. automodule:: species.data.companion_spectra
    :members:
    :undoc-members:
    :show-inheritance:

@@ -338,18 +338,18 @@ def plot_spectrum(
     if residuals is not None and filters is not None:
         ax1.set_xlabel("")
         ax2.set_xlabel("")
-        ax3.set_xlabel("Wavelength (µm)", fontsize=13)
+        ax3.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
 
     elif residuals is not None:
         ax1.set_xlabel("")
-        ax3.set_xlabel("Wavelength (µm)", fontsize=11)
+        ax3.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=11)
 
     elif filters is not None:
-        ax1.set_xlabel("Wavelength (µm)", fontsize=13)
+        ax1.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
         ax2.set_xlabel("")
 
     else:
-        ax1.set_xlabel("Wavelength (µm)", fontsize=13)
+        ax1.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
 
     if filters is not None:
         ax2.set_ylabel(r"$T_\lambda$", fontsize=13)
@@ -384,7 +384,7 @@ def plot_spectrum(
 
             if quantity == "flux density":
                 ylabel = (
-                    r"$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$ µm$^{-1}$)"
+                    r"$F_\lambda$ (10$^{" + str(exponent) + r"}$" +" W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)"
                 )
 
             elif quantity == "flux":
@@ -402,7 +402,7 @@ def plot_spectrum(
 
         else:
             if quantity == "flux density":
-                ax1.set_ylabel(r"$F_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11)
+                ax1.set_ylabel(r"$F_\lambda$"+ " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)", fontsize=11)
 
             elif quantity == "flux":
                 ax1.set_ylabel(r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=11)

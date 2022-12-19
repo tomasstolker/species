@@ -327,13 +327,13 @@ def plot_empirical_spectra(
     ax.xaxis.set_minor_locator(AutoMinorLocator(5))
     ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-    ax.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
 
     if flux_offset == 0.0:
-        ax.set_ylabel(r"$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11)
+        ax.set_ylabel(r"$\mathregular{F}_\lambda$" + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)", fontsize=11)
     else:
         ax.set_ylabel(
-            r"$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$) + offset", fontsize=11
+            r"$\mathregular{F}_\lambda$ (W m$^{-2}$" + " \N{GREEK SMALL LETTER MU}m$^{-1}$) + offset", fontsize=11
         )
 
     if xlim is not None:
