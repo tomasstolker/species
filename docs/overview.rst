@@ -53,13 +53,13 @@ The following data and models are currently supported:
 - `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K/abstract>`_
 - NIR spectra of young M/L dwarfs by `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_
 - NIR spectra of young M/L dwarfs by `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
-- `Spectra of directly imaged planets and brown dwarfs <https://species.readthedocs.io/en/latest/species.data.html#species.data.companion_spectra>`_
+- `Spectra of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_spectra.json>`_
 
 **Photometric libraries**
 
 - `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `S. Leggett <http://www.gemini.edu/staff/sleggett>`_
-- `Magnitudes of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data.json>`_
+- `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data.json>`_
 
 **Evolutionary tracks**
 

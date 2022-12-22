@@ -6,7 +6,7 @@ import configparser
 import json
 import os
 import pathlib
-import urllib.error
+# import urllib.error
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -16,7 +16,7 @@ import h5py
 import numpy as np
 
 from astropy.io import fits
-from astroquery.simbad import Simbad
+# from astroquery.simbad import Simbad
 from scipy.integrate import simps
 from tqdm.auto import tqdm
 from typeguard import typechecked
@@ -144,7 +144,10 @@ class Database:
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
 
-        spec_data = companion_spectra.get_spec_data()
+        spec_file = pathlib.Path(__file__).parent.resolve() / "companion_spectra.json"
+
+        with open(spec_file, "r", encoding="utf-8") as json_file:
+            comp_spec = json.load(json_file)
 
         comp_names = []
 
@@ -170,12 +173,12 @@ class Database:
                 else:
                     print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
 
-            print(f"References:")
+            print("References:")
             for ref_item in planet_dict["references"]:
                 print(f"   - {ref_item}")
 
-            if planet_name in spec_data:
-                for key, value in spec_data[planet_name].items():
+            if planet_name in comp_spec:
+                for key, value in comp_spec[planet_name].items():
                     print(f"{key} spectrum from {value[3]}")
 
             print()
@@ -3020,12 +3023,12 @@ class Database:
 
         json_filename = os.path.join(output_folder, "params.json")
 
-        with open(json_filename) as json_file:
+        with open(json_filename, encoding="utf-8") as json_file:
             parameters = json.load(json_file)
 
         radtrans_filename = os.path.join(output_folder, "radtrans.json")
 
-        with open(radtrans_filename) as json_file:
+        with open(radtrans_filename, encoding="utf-8") as json_file:
             radtrans = json.load(json_file)
 
         post_new = os.path.join(output_folder, "retrieval_post_equal_weights.dat")

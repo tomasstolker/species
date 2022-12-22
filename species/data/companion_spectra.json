@@ -1,0 +1,82 @@
+{
+    "beta Pic b": {
+        "GPI_YJHK": [
+            "betapicb_gpi_yjhk.dat",
+            null,
+            40.0,
+            "Chilcote et al. 2017, AJ, 153, 182"
+        ],
+        "GRAVITY": [
+            "BetaPictorisb_2018-09-22.fits",
+            "BetaPictorisb_2018-09-22.fits",
+            500.0,
+            "Gravity Collaboration et al. 2020, A&A, 633, 110"
+        ]
+    },
+    "51 Eri b": {
+        "SPHERE_YJH": [
+            "51erib_sphere_yjh.dat",
+            null,
+            25.0,
+            "Samland et al. 2017, A&A, 603, 57"
+        ]
+    },
+    "HD 206893 B": {
+        "SPHERE_YJH": [
+            "hd206893b_sphere_yjh.dat",
+            null,
+            25.0,
+            "Delorme et al. 2017, A&A, 608, 79"
+        ]
+    },
+    "HIP 65426 B": {
+        "SPHERE_YJH": [
+            "hip65426b_sphere_yjh.dat",
+            null,
+            25.0,
+            "Cheetham et al. 2019, A&A, 622, 80"
+        ]
+    },
+    "HR 8799 e": {
+        "SPHERE_YJH": [
+            "hr8799e_sphere_yjh.dat",
+            null,
+            25.0,
+            "Zurlo et al. 2016, A&A, 587, 57"
+        ]
+    },
+    "PDS 70 b": {
+        "SPHERE_YJH": [
+            "pds70b_sphere_yjh.dat",
+            null,
+            25.0,
+            "M\u00fcller et al. 2018, A&A, 617, 2"
+        ]
+    },
+    "GQ Lup B": {
+        "MUSE": [
+            "gqlupb_muse.dat",
+            null,
+            3000.0,
+            "Stolker et al. 2021, AJ, 162, 286"
+        ],
+        "SINFONI_J": [
+            "gqlupb_sinfoni_j.dat",
+            null,
+            2500.0,
+            "Seifahrt et al. 2007, A&A, 463, 309"
+        ],
+        "SINFONI_H": [
+            "gqlupb_sinfoni_h.dat",
+            null,
+            4000.0,
+            "Seifahrt et al. 2007, A&A, 463, 309"
+        ],
+        "SINFONI_K": [
+            "gqlupb_sinfoni_k.dat",
+            null,
+            4000.0,
+            "Seifahrt et al. 2007, A&A, 463, 309"
+        ]
+    }
+}
