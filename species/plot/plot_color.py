@@ -3,6 +3,8 @@ Module with functions for creating plots with color-magnitude
 diagrams and color-color diagrams.
 """
 
+import json
+import pathlib
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -17,7 +19,6 @@ from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.core import box
-from species.data import companions
 from species.read import read_filter, read_object
 from species.util import dust_util, plot_util
 
@@ -96,8 +97,8 @@ def plot_color_magnitude(
         Plot accreting, directly imaged objects with a different symbol
         than the regular, directly imaged objects. The object names
         from ``objects`` will be compared with the data from
-        :func:`~species.data.companions.get_data` to check if a
-        companion is accreting or not.
+        `data/companion_data.json` to check if a companion is
+        accreting or not.
     reddening : list(tuple(tuple(str, str), tuple(str, float),
             str, float, tuple(float, float))), None
         Include reddening arrows by providing a list with tuples. Each
@@ -751,7 +752,10 @@ def plot_color_magnitude(
             colorerr = np.sqrt(objcolor1[1] ** 2 + objcolor2[1] ** 2)
             x_color = objcolor1[0] - objcolor2[0]
 
-            companion_data = companions.get_data()
+            data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+
+            with open(data_file, "r", encoding="utf-8") as json_file:
+                comp_data = json.load(json_file)
 
             if len(item) > 4 and item[4] is not None:
                 kwargs = item[4]
@@ -768,8 +772,8 @@ def plot_color_magnitude(
 
                 if (
                     accretion
-                    and item[0] in companion_data
-                    and companion_data[item[0]]["accretion"]
+                    and item[0] in comp_data
+                    and comp_data[item[0]]["accretion"]
                 ):
                     kwargs["marker"] = "X"
                     kwargs["ms"] = 7.0
