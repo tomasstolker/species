@@ -171,16 +171,17 @@ class EmissionLine:
     @typechecked
     def list_hydrogen_lines(self) -> List[str]:
         """
-        Function to list the available hydrogen lines for which
-        the accretion luminosity relation is available. These names
-        can be set as argument ``hydrogen_line``. In that case, the
-        measured line luminosity from :func:`~species.analysis.
-        emission_line.EmissionLine.fit_gaussian` will be
-        automatically converted to an accretion luminosity with
-        the relation from `Aoyama et al. (2021) <https://ui.adsabs.
-        harvard.edu/abs/2021ApJ...917L..30A/abstract>`_ and
-        `Marleau & Aoyama (2022) <https://iopscience.iop.org/
-        article/10.3847/2515-5172/acaa34>`_.
+        Function to list the hydrogen lines for which an accretion
+        luminosity relation :math:`L_\\mathrm{acc}(L_\\mathrm{line}`)
+        was fit explicitly provided in `Aoyama et al. (2021)
+        <https://ui.adsabs.harvard.edu/abs/2021ApJ...917L..30A/
+        abstract>`_ [Ao21] or `Marleau & Aoyama (2022)
+        <https://ui.adsabs.harvard.edu/abs/2022RNAAS...6..262M/
+        abstract>`_ [MA22]. These names can be set as argument
+        ``hydrogen_line``. In that case, the measured line luminosity
+        from :func:`~species.analysis.emission_line.EmissionLine.
+        fit_gaussian` will be automatically converted to an accretion
+        luminosity with the relation from [Ao21] and [MA22].
 
         Returns
         -------
@@ -483,9 +484,10 @@ class EmissionLine:
         The accretion luminosity is also calculated with the relation
         from `Aoyama et al. (2021) <https://ui.adsabs.harvard.edu/
         abs/2021ApJ...917L..30A/abstract>`_ and `Marleau & Aoyama
-        (2022) <https://iopscience.iop.org/article/10.3847/
-        2515-5172/acaa34>`_ if the argument of ``hydrogen_line``
-        was set when creating an instance of the class.
+        (2022) <https://ui.adsabs.harvard.edu/abs/
+        2022RNAAS...6..262M/abstract>`_ if the argument of
+        ``hydrogen_line`` was set when creating an instance of the
+        class.
 
         Parameters
         ----------
@@ -1404,8 +1406,8 @@ class EmissionLine:
         (hydrogen) line luminosity with the relation from `Aoyama
         et al. (2021) <https://ui.adsabs.harvard.edu/abs/
         2021ApJ...917L..30A/abstract>`_ and extrapolated values
-        from `Marleau & Aoyama (2022) <https://iopscience.
-        iop.org/article/10.3847/2515-5172/acaa34>`_.
+        from `Marleau & Aoyama (2022) <https://ui.adsabs.harvard.
+        edu/abs/2022RNAAS...6..262M/abstract>`_.
 
         Parameters
         ----------

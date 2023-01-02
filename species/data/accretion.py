@@ -3,10 +3,10 @@ Module for the accretion luminosity relation.
 """
 
 import os
-import urllib.request
 
 import h5py
 import numpy as np
+import pooch
 
 from typeguard import typechecked
 
@@ -19,8 +19,8 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
     Function for adding the accretion relation from `Aoyama et al.
     (2021) <https://ui. adsabs.harvard.edu/abs/
     2021ApJ...917L..30A/abstract>`_ and extrapolation from
-    `Marleau & Aoyama (2022) <https://iopscience.iop.org/
-    article/10.3847/2515-5172/acaa34>`_ to the database. It provides
+    `Marleau & Aoyama (2022) <https://ui.adsabs.harvard.edu/abs/
+    2022RNAAS...6..262M/abstract>`_ to the database. It provides
     coefficients to convert line to accretion luminosities.
 
     Parameters
@@ -47,13 +47,13 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
     data_file = os.path.join(input_path, "ab-Koeffienzenten_mehrStellen.dat")
 
     if not os.path.isfile(data_file):
-        print(
-            "Downloading coefficients for accretion relation (2.1 kB)...",
-            end="",
-            flush=True,
+        pooch.retrieve(
+            url=url,
+            known_hash="941b416e678128648c9ce485016af908f16bfe16ab72e0f8cb57a6bad963429a",
+            fname="ab-Koeffienzenten_mehrStellen.dat",
+            path=input_path,
+            progressbar=True,
         )
-        urllib.request.urlretrieve(url, data_file)
-        print(" [DONE]")
 
     print("Adding coefficients for accretion relation (2.1 kB)...", end="", flush=True)
 
@@ -72,17 +72,16 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
     n_init = data["ni"]
     n_final = data["nf"]
 
-    delta_n_min = {"H": 11, "Pa": 11, "Br": 10}
-    delta_n_max = {"H": 16, "Pa": 13, "Br": 12}
+    delta_n_min = {"H": 9, "Pa": 8, "Br": 6}
+    delta_n_max = {"H": 14, "Pa": 13, "Br": 12}
 
     for i, item in enumerate(["H", "Pa", "Br"]):
         for j in range(delta_n_min[item], delta_n_max[item] + 1):
-            idx_insert = np.argwhere(line_names == f"{item}{j-1}")[0][0] + 1
-
-            line_names = np.insert(line_names, idx_insert, f"{item}{j}")
-
             # n_f: Ly=1, H=Ba=2, Pa=3, Br=4
             n_f_tmp = i + 2
+
+            idx_insert = np.argwhere(line_names == f"{item}{j+n_f_tmp-1}")[0][0] + 1
+            line_names = np.insert(line_names, idx_insert, f"{item}{j+n_f_tmp}")
             n_final = np.insert(n_final, idx_insert, n_f_tmp)
 
             # delta_n = n_i - n_f
@@ -105,7 +104,12 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
                 coefficients, idx_insert, [[a_coeff, b_coeff]], axis=0
             )
 
-    # Rest wavelength (um) from Rydberg formula
+    # Rest vacuum wavelength (um) from Rydberg formula,
+    # which is valid usually to three or four decimal places.
+    # Exact values, if needed, can be obtained from e.g.
+    # Wiese & Fuhr (2009):
+    # http://adsabs.harvard.edu/abs/2009JPCRD..38..565W
+    # https://www.nist.gov/system/files/documents/srd/jpcrd382009565p.pdf
     wavelengths = 1e6 / (constants.RYDBERG * (1.0 / n_final**2 - 1.0 / n_init**2))
 
     # data = np.column_stack([line_names, wavelengths, n_init, n_final, coefficients[:, 0], coefficients[:, 1]])

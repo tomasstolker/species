@@ -569,20 +569,20 @@ def ism_extinction(
     av_mag: float, rv_red: float, wavelengths: Union[np.ndarray, List[float], float]
 ) -> np.ndarray:
     """
-    Function for calculating the optical and IR extinction with the
-    empirical relation from `Cardelli et al. (1989)
+    Function for calculating the optical and IR extinction
+    with the empirical relation from `Cardelli et al. (1989)
     <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
 
     Parameters
     ----------
     av_mag : float
-        Extinction (mag) in the V band.
+        Extinction (mag) in the $V$ band.
     rv_red : float
-        Reddening in the V band, ``R_V = A_V / E(B-V)``.
+        Reddening in the $V$ band, ``R_V = A_V / E(B-V)``.
     wavelengths : np.ndarray, list(float), float
-        Array or list with the wavelengths (um) for which the
-        extinction is calculated. It is also possible to provide a
-        single value as float.
+        Array or list with the wavelengths (um) for which
+        the extinction is calculated. It is also possible
+        to provide a single value as float.
 
     Returns
     -------
@@ -647,9 +647,9 @@ def apply_ism_ext(
     flux : np.ndarray
         Fluxes (W m-2 um-1) of the spectrum.
     v_band_ext : float
-        Extinction (mag) in the V band.
+        Extinction (mag) in the $V$ band.
     v_band_red : float
-        Reddening in the V band.
+        Reddening in the $V$ band.
 
     Returns
     -------

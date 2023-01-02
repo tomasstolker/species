@@ -411,8 +411,8 @@ class Database:
         luminosities of hydrogen emission lines into accretion
         luminosities (see `Aoyama et al. (2021) <https://ui.
         adsabs.harvard.edu/abs/ 2021ApJ...917L..30A/abstract>`_
-        and `Marleau & Aoyama (2022) <https://iopscience.
-        iop.org/article/10.3847/2515-5172/acaa34>`_ for details).
+        and `Marleau & Aoyama (2022) <https://ui.adsabs.harvard.
+        edu/abs/2022RNAAS...6..262M/abstract>`_ for details).
         The relation is used by
         :class:`~species.analysis.emission_line.EmissionLine`
         for converting the fitted line luminosity.

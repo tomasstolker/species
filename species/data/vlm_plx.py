@@ -8,6 +8,7 @@ import urllib.request
 
 import h5py
 import numpy as np
+import pooch
 
 from astropy.io import fits
 
@@ -40,13 +41,11 @@ def add_vlm_plx(input_path, database):
     )
 
     if not os.path.isfile(data_file):
-        print(
-            "Downloading Database of Ultracool Parallaxes (307 kB)...",
-            end="",
-            flush=True,
-        )
-        urllib.request.urlretrieve(url, data_file)
-        print(" [DONE]")
+        pooch.retrieve(url=url,
+                       known_hash="d31bb3162d7de890c09ebf9f0497d51159889b5f5e7c4da1ddf01f24d0c2b36f",
+                       fname="vlm-plx-all.fits",
+                       path=input_path,
+                       progressbar=True)
 
     print("Adding Database of Ultracool Parallaxes...", end="", flush=True)
 
