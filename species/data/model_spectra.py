@@ -79,7 +79,7 @@ def add_model_grid(
             f"'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
             f"'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
             f"'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd', "
-            f"'saumon2008-clear', 'saumon2008-cloudy'"
+            f"'saumon2008-clear', 'saumon2008-cloudy', 'petrus2023' "
         )
 
     if model_name == "bt-settl":
@@ -158,6 +158,11 @@ def add_model_grid(
     else:
         log_kzz = None
 
+    if "ad_index" in model_info["parameters"]:
+        ad_index = []
+    else:
+        ad_index = None
+
     flux = []
 
     if wavel_range is not None and spec_res is not None:
@@ -213,6 +218,10 @@ def add_model_grid(
                 if log_kzz is not None:
                     param_index = file_split.index("logkzz") + 1
                     log_kzz.append(float(file_split[param_index]))
+
+                if ad_index is not None:
+                    param_index = file_split.index("adindex") + 1
+                    ad_index.append(float(file_split[param_index]))
 
                 empty_message = len(print_message) * " "
                 print(f"\r{empty_message}", end="")
@@ -279,6 +288,9 @@ def add_model_grid(
     if log_kzz is not None:
         log_kzz = np.asarray(log_kzz)
 
+    if ad_index is not None:
+        ad_index = np.asarray(ad_index)
+
     data_sorted = data_util.sort_data(
         np.asarray(teff),
         logg,
@@ -286,6 +298,7 @@ def add_model_grid(
         c_o_ratio,
         fsed,
         log_kzz,
+        ad_index,
         wavelength,
         np.asarray(flux),
     )

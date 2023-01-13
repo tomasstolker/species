@@ -47,11 +47,9 @@ class ReadIsochrone:
             Extrapolate :math:`T_\\mathrm{eff}` (K),
             :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`
             to a regular grid of masses. Please check any results
-            obtained with ``extrapolate=True`` carefully,
-            in particular any cooling curve extracted with
-            :func:`~species.read_isochrone.ReadIsochrone.get_cooling_curve`,
-            since these may have a lower accuracy in the
-            extrapolated parts of the parameter space.
+            obtained with ``extrapolate=True`` carefully there
+            might be inaccuracies in the extrapolated parts of
+            the parameter space.
 
 
         Returns

@@ -668,7 +668,8 @@ class Database:
             'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem',
             'blackbody', bt-cond', 'bt-cond-feh, 'morley-2012',
             'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co',
-            'koester-wd', 'saumon2008-clear', 'saumon2008-cloudy').
+            'koester-wd', 'saumon2008-clear', 'saumon2008-cloudy',
+            'petrus2023').
         wavel_range : tuple(float, float), None
             Wavelength range (um) for adding a subset of the spectra.
             The full wavelength range is used if the argument is set

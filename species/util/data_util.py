@@ -149,6 +149,7 @@ def sort_data(
     param_co: Optional[np.ndarray],
     param_fsed: Optional[np.ndarray],
     param_logkzz: Optional[np.ndarray],
+    param_adindex: Optional[np.ndarray],
     wavelength: np.ndarray,
     flux: np.ndarray,
 ) -> List[np.ndarray]:
@@ -172,6 +173,9 @@ def sort_data(
     param_logkzz : np.ndarray, None
         Array with the log10 of the eddy diffusion coefficient
         (cm2 s-1) of each spectrum. Not used if set to ``None``.
+    param_adindex : np.ndarray, None
+        Array with the effective adiabatic index. Not used if
+        set to ``None``.
     wavelength : np.ndarray
         Array with the wavelengths (um).
     flux : np.ndarray
@@ -220,13 +224,18 @@ def sort_data(
         spec_shape.append(logkzz_unique.shape[0])
         print(f"   - log(Kzz) = {logkzz_unique}")
 
+    if param_adindex is not None:
+        adindex_unique = np.unique(param_adindex)
+        spec_shape.append(adindex_unique.shape[0])
+        print(f"   - gamma_ad = {adindex_unique}")
+
     spec_shape.append(wavelength.shape[0])
 
     spectrum = np.zeros(spec_shape)
 
     for i in range(n_spectra):
         # The parameter order is: Teff, log(g), [Fe/H], C/O,
-        # f_sed, log(Kzz). Not all parameters have
+        # f_sed, log(Kzz), ad_index. Not all parameters have
         # to be included but the order matters
 
         index_teff = np.argwhere(teff_unique == param_teff[i])[0][0]
@@ -252,6 +261,10 @@ def sort_data(
             index_logkzz = np.argwhere(logkzz_unique == param_logkzz[i])[0][0]
             spec_select.append(index_logkzz)
 
+        if param_adindex is not None:
+            index_adindex = np.argwhere(adindex_unique == param_adindex[i])[0][0]
+            spec_select.append(index_adindex)
+
         spec_select.append(...)
 
         spectrum[tuple(spec_select)] = flux[i]
@@ -272,6 +285,9 @@ def sort_data(
 
     if param_logkzz is not None:
         sorted_data.append(logkzz_unique)
+
+    if param_adindex is not None:
+        sorted_data.append(adindex_unique)
 
     sorted_data.append(wavelength)
     sorted_data.append(spectrum)
@@ -759,7 +775,7 @@ def add_missing(
 
             if count_missing > 0:
                 print(
-                    f"Could not interpolate {count_missing} grid points so storing"
+                    f"Could not interpolate {count_missing} grid points so storing "
                     f"zeros instead. [WARNING]\nThe grid points that are missing:"
                 )
 

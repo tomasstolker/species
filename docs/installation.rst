@@ -52,7 +52,7 @@ Alternatively, in case you want to look into the code, it is best to clone the r
 
 .. code-block:: console
 
-    $ git clone git@github.com:tomasstolker/species.git
+    $ git clone https://github.com/tomasstolker/species.git
 
 Then, the package is installed by running ``pip`` in the local repository folder:
 
@@ -71,9 +71,9 @@ Do you want to make changes to the code? Please fork the `species` repository on
 Testing `species`
 -----------------
 
-The installation can now be tested, for example by starting Python in interactive mode and printing the version number of the installed package:
+The installation can now be tested, for example by starting Python in interactive mode and initializing a workflow in the current working folder:
 
 .. code-block:: python
 
     >>> import species
-    >>> species.__version__
+    >>> species.SpeciesInit()

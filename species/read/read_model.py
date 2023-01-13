@@ -729,7 +729,15 @@ class ReadModel:
 
         # Create a list with the parameter values
 
-        check_param = ["teff", "logg", "feh", "c_o_ratio", "fsed", "log_kzz"]
+        check_param = [
+            "teff",
+            "logg",
+            "feh",
+            "c_o_ratio",
+            "fsed",
+            "log_kzz",
+            "ad_index",
+        ]
 
         parameters = []
         for item in check_param:

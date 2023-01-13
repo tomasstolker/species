@@ -25,6 +25,16 @@
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
     },
+    "petrus2023": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
+        "name": "ATMO (Petrus et al. 2023)",
+        "file size": "2.1 GB",
+        "wavelength range": [0.2, 30],
+        "resolution": 3000,
+        "teff range": [800, 3000],
+        "reference": "Petrus et al. (2023)",
+        "url": "https://arxiv.org/abs/2207.06622"
+    },
     "blackbody": {
         "parameters": ["teff"],
         "name": "blackbody",
