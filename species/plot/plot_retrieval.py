@@ -496,9 +496,7 @@ def plot_pt_profile(
         if "poor_mans_nonequ_chem" in sys.modules:
             from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         abund_in = interpol_abundances(
             np.full(pressure.shape[0], median["c_o_ratio"]),
@@ -526,17 +524,19 @@ def plot_pt_profile(
                     pressure_grid=radtrans.pressure_grid,
                 )
 
-        for item in cloud_species:
-            if item in radtrans.cloud_species:
-                sat_press, sat_temp = retrieval_util.return_T_cond_Fe_comb(
-                    median["metallicity"],
-                    median["c_o_ratio"],
-                    MMW=np.mean(abund_in["MMW"]),
-                )
+        for cloud_item in cloud_species:
+
+            if cloud_item in radtrans.cloud_species:
+                cond_temp = retrieval_util.get_condensation_curve(
+                    composition=cloud_item[:-3],
+                    press=pressure,
+                    metallicity=median["metallicity"],
+                    c_o_ratio=median["c_o_ratio"],
+                    mmw=np.mean(abund_in["MMW"]))
 
                 ax.plot(
-                    sat_temp,
-                    sat_press,
+                    cond_temp,
+                    pressure,
                     "--",
                     lw=0.8,
                     color=next(color_iter, "black"),
@@ -721,12 +721,12 @@ def plot_pt_profile(
 
             color_iter = iter(cloud_colors)
 
-            for item in cloud_species:
-                if item in radtrans.cloud_species:
-                    cloud_index = radtrans.rt_object.cloud_species.index(item)
+            for cloud_item in cloud_species:
+                if cloud_item in radtrans.cloud_species:
+                    cloud_index = radtrans.rt_object.cloud_species.index(cloud_item)
 
                     label = ""
-                    for char in item[:-3]:
+                    for char in cloud_item[:-3]:
                         if char.isnumeric():
                             label += f"$_{char}$"
                         else:

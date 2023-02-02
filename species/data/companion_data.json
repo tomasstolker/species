@@ -63,7 +63,7 @@
             "Males et al. 2014",
             "Mirek Brandt et al. 2021",
             "Stolker et al. 2019",
-            "Stolker et al. 2020"
+            "Stolker et al. 2020a"
         ]
     },
     "beta Pic c": {
@@ -151,7 +151,7 @@
             "Cheetham et al. 2019",
             "Gaia Early Data Release 3",
             "Marleau et al. 2019",
-            "Stolker et al. 2020"
+            "Stolker et al. 2020a"
         ]
     },
     "51 Eri b": {
@@ -613,8 +613,7 @@
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
             "Hashimoto et al. 2020",
-            "Stolker et al. 2020",
-            "Stolker et al. 2020.",
+            "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"
         ]
@@ -651,7 +650,7 @@
         "references": [
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
-            "Stolker et al. 2020",
+            "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"
         ]
@@ -807,7 +806,7 @@
             "Gaia Early Data Release 3",
             "Grandjean et al. 2019",
             "Milli et al. 2017",
-            "Stolker et al. 2020",
+            "Stolker et al. 2020a",
             "Ward-Duong et al. 2020"
         ]
     },
@@ -1065,7 +1064,7 @@
             "Maire et al. 2015",
             "Maire et al. 2016",
             "Musso Barcucci et al. 2019",
-            "Stolker et al. 2020"
+            "Stolker et al. 2020a"
         ]
     },
     "kappa And b": {
@@ -2008,7 +2007,7 @@
             0.0
         ],
         "mass_companion": [
-            19.0,
+            17.0,
             5.0
         ],
         "accretion": true,
@@ -2016,7 +2015,8 @@
             "Gaia Early Data Release 3",
             "Hartmann et al. 1998",
             "Schmidt et al. 2008",
-            "Wu et al. 2015"
+            "Wu et al. 2015",
+            "Wu et al. 2020"
         ]
     },
     "SR 12 C": {

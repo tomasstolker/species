@@ -6,6 +6,7 @@ import configparser
 import json
 import os
 import pathlib
+import sys
 # import urllib.error
 import warnings
 
@@ -2632,10 +2633,10 @@ class Database:
         self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Function for returning the pressure-temperature profiles from
-        the posterior of the atmospheric retrieval with
-        ``petitRADTRANS``. The data can also optionally be written to
-        an output file.
+        Function for returning the pressure-temperature profiles
+        from the posterior of the atmospheric retrieval with
+        ``petitRADTRANS``. The data can also optionally be
+        written to an output file.
 
         Parameters
         ----------
@@ -2681,6 +2682,11 @@ class Database:
             n_param = dset.attrs["n_param"]
         elif "nparam" in dset.attrs:
             n_param = dset.attrs["nparam"]
+
+        if "temp_nodes" in dset.attrs:
+            temp_nodes = dset.attrs["temp_nodes"]
+        else:
+            temp_nodes = 15
 
         samples = np.asarray(dset)
 
@@ -2752,15 +2758,15 @@ class Database:
                 else:
                     pt_smooth = 0.0
 
-                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), 15)
+                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), temp_nodes)
 
                 knot_temp = []
-                for j in range(15):
-                    knot_temp.append(item[param_index[f"t{i}"]])
+                for k in range(temp_nodes):
+                    knot_temp.append(item[param_index[f"t{k}"]])
 
                 knot_temp = np.asarray(knot_temp)
 
-                temp[:, j] = retrieval_util.pt_spline_interp(
+                temp[:, i] = retrieval_util.pt_spline_interp(
                     knot_press, knot_temp, press, pt_smooth
                 )
 
@@ -3132,8 +3138,10 @@ class Database:
 
             if "temp_nodes" not in radtrans or radtrans["temp_nodes"] is None:
                 dset.attrs["temp_nodes"] = "None"
+                temp_nodes = 15
             else:
                 dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
+                temp_nodes = radtrans["temp_nodes"]
 
             if "pt_smooth" in radtrans:
                 dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
@@ -3165,10 +3173,10 @@ class Database:
                     print(" [DONE]")
 
                     print("Importing chemistry module...", end="", flush=True)
-                    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                        interpol_abundances,
-                    )
-
+                    if "poor_mans_nonequ_chem" in sys.modules:
+                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+                    else:
+                        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
                     print(" [DONE]")
 
                     rt_object = Radtrans(
@@ -3221,11 +3229,11 @@ class Database:
                         or radtrans["pt_profile"] == "monotonic"
                     ):
                         knot_press = np.logspace(
-                            np.log10(pressure[0]), np.log10(pressure[-1]), 15
+                            np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
                         )
 
                         knot_temp = []
-                        for k in range(15):
+                        for k in range(temp_nodes):
                             knot_temp.append(sample_dict[f"t{k}"])
 
                         knot_temp = np.asarray(knot_temp)
@@ -3325,11 +3333,11 @@ class Database:
                     or radtrans["pt_profile"] == "monotonic"
                 ):
                     knot_press = np.logspace(
-                        np.log10(pressure[0]), np.log10(pressure[-1]), 15
+                        np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
                     )
 
                     knot_temp = []
-                    for k in range(15):
+                    for k in range(temp_nodes):
                         knot_temp.append(sample_dict[f"t{k}"])
 
                     knot_temp = np.asarray(knot_temp)
@@ -3862,6 +3870,16 @@ class Database:
         else:
             p_quench = None
 
+        if "temp_nodes" in sample_box.attributes:
+            temp_nodes = sample_box.attributes["temp_nodes"]
+        else:
+            temp_nodes = 15
+
+        if "pressure_grid" in sample_box.attributes:
+            pressure_grid = sample_box.attributes["pressure_grid"]
+        else:
+            pressure_grid = "smaller"
+
         pressure = np.logspace(-6.0, 3.0, 180)
 
         if sample_box.attributes["pt_profile"] == "molliere":
@@ -3876,10 +3894,10 @@ class Database:
             )
 
         else:
-            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
 
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(model_param[f"t{i}"])
 
             knot_temp = np.asarray(knot_temp)
@@ -3893,7 +3911,10 @@ class Database:
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
 
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        if "poor_mans_nonequ_chem" in sys.modules:
+            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        else:
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         # Interpolate the abundances, following chemical equilibrium
         abund_in = interpol_abundances(
@@ -3976,7 +3997,7 @@ class Database:
             cloud_species=cloud_species,
             scattering=True,
             wavel_range=(0.5, 50.0),
-            pressure_grid=sample_box.attributes["pressure_grid"],
+            pressure_grid=pressure_grid,
             res_mode="c-k",
             cloud_wavel=cloud_wavel,
         )

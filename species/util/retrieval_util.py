@@ -1933,6 +1933,70 @@ def cloud_mass_fraction(
 
 
 @typechecked
+def get_condensation_curve(
+    composition: str,
+    press: np.ndarray,
+    metallicity: float,
+    c_o_ratio: float,
+    mmw: float = 2.33,
+) -> np.ndarray:
+    """
+    Function to find the base of the cloud deck by intersecting the
+    P-T profile with the saturation vapor pressure.
+
+    Parameters
+    ----------
+    composition : str
+        Cloud composition ('Fe', 'MgSiO3', 'Mg2SiO4', 'Al2O3',
+        'Na2S', or 'KCL').
+    press : np.ndarray
+        Pressures (bar).
+    metallicity : float
+        Metallicity [Fe/H].
+    c_o_ratio : float
+        Carbon-to-oxygen ratio.
+    mmw : float
+        Mean molecular weight.
+
+    Returns
+    -------
+    np.array
+        Condensation temperatures (K) for the provided input pressures.
+    """
+
+    if composition == "Fe":
+        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
+
+    elif composition == "MgSiO3":
+        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
+
+    elif composition == "Mg2SiO4":
+        Pc, Tc = return_T_cond_Mg2SiO4(metallicity)
+
+    elif composition == "Al2O3":
+        Pc, Tc = return_T_cond_Al2O3(metallicity)
+
+    elif composition == "Na2S":
+        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
+
+    elif composition == "KCL":
+        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
+
+    else:
+        raise ValueError(
+            f"The '{composition}' composition is not "
+            "supported by get_condensation_curve."
+        )
+
+    index = (Pc > 1e-8) & (Pc < 1e5)
+    Pc, Tc = Pc[index], Tc[index]
+
+    tcond_p = interp1d(Pc, Tc)
+
+    return tcond_p(press)
+
+
+@typechecked
 def find_cloud_deck(
     composition: str,
     press: np.ndarray,
@@ -1970,34 +2034,12 @@ def find_cloud_deck(
         Pressure (bar) at the base of the cloud deck.
     """
 
-    if composition == "Fe":
-        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
-
-    elif composition == "MgSiO3":
-        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
-
-    elif composition == "Mg2SiO4":
-        Pc, Tc = return_T_cond_Mg2SiO4(metallicity)
-
-    elif composition == "Al2O3":
-        Pc, Tc = return_T_cond_Al2O3(metallicity)
-
-    elif composition == "Na2S":
-        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
-
-    elif composition == "KCL":
-        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
-
-    else:
-        raise ValueError(
-            f"The '{composition}' composition is not supported by find_cloud_deck."
-        )
-
-    index = (Pc > 1e-8) & (Pc < 1e5)
-    Pc, Tc = Pc[index], Tc[index]
-
-    tcond_p = interp1d(Pc, Tc)
-    Tcond_on_input_grid = tcond_p(press)
+    Tcond_on_input_grid = get_condensation_curve(
+        composition=composition,
+        press=press,
+        metallicity=metallicity,
+        c_o_ratio=c_o_ratio,
+        mmw=mmw)
 
     Tdiff = Tcond_on_input_grid - temp
     diff_vec = Tdiff[1:] * Tdiff[:-1]

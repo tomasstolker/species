@@ -48,6 +48,7 @@ def plot_spectrum(
     output: Optional[str] = "spectrum.pdf",
     leg_param: Optional[List[str]] = None,
     grid_hspace: float = 0.1,
+    inc_model_name: bool = False,
 ):
     """
     Function for plotting a spectral energy distribution and combining
@@ -147,6 +148,9 @@ def plot_spectrum(
         The relative height spacing between subplots, expressed
         as a fraction of the average axis height. The default
         value is set to 0.1.
+    inc_model_name : bool
+        Include the model name in the legend of any
+        :class:`~species.core.box.ModelBox`.
 
     Returns
     -------
@@ -467,6 +471,10 @@ def plot_spectrum(
                             if item not in leg_param:
                                 del param[item]
 
+                    if leg_param is not None:
+                        param_new = {k: param[k] for k in leg_param}
+                        param = param_new.copy()
+
                     par_key, par_unit, par_label = plot_util.quantity_unit(
                         param=list(param.keys()), object_type=object_type
                     )
@@ -475,6 +483,7 @@ def plot_spectrum(
                     # newline = False
 
                     for i, item in enumerate(par_key):
+
                         if item[:4] == "teff":
                             value = f"{param[item]:.0f}"
 
@@ -534,15 +543,21 @@ def plot_spectrum(
                         #     label += '\n'
                         #     newline = True
 
+                        model_name = plot_util.model_name(box_item.model)
+
                         if par_unit[i] is None:
                             if len(label) > 0:
                                 label += ", "
+                            elif inc_model_name:
+                                label += f"{model_name}: "
 
                             label += f"{par_label[i]} = {value}"
 
                         else:
                             if len(label) > 0:
                                 label += ", "
+                            elif inc_model_name:
+                                label += f"{model_name}: "
 
                             label += f"{par_label[i]} = {value} {par_unit[i]}"
 
