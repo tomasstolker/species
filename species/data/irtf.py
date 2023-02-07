@@ -80,6 +80,8 @@ def add_irtf(
         "T": os.path.join(input_path, "irtf/T_fits_091201"),
     }
 
+    main_folder = os.path.join(input_path, "irtf/")
+
     data_type = {
         "F": "F stars (4.4 MB)",
         "G": "G stars (5.6 MB)",
@@ -113,7 +115,7 @@ def add_irtf(
     print("Unpacking IRTF Spectral Library...", end="", flush=True)
 
     for item in sptypes:
-        data_util.extract_tarfile(data_file[item], data_folder[item])
+        data_util.extract_tarfile(data_file[item], main_folder)
 
     print(" [DONE]")
 

@@ -47,9 +47,9 @@ class ReadIsochrone:
             Extrapolate :math:`T_\\mathrm{eff}` (K),
             :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`
             to a regular grid of masses. Please check any results
-            obtained with ``extrapolate=True`` carefully there
-            might be inaccuracies in the extrapolated parts of
-            the parameter space.
+            obtained with ``extrapolate=True`` carefully since
+            there might be inaccuracies in the extrapolated
+            parts of the parameter space.
 
 
         Returns

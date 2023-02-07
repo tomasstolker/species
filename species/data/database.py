@@ -1591,7 +1591,7 @@ class Database:
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
         """
-        Function for adding an empirical spectral library to the
+        Function for adding empirical spectral libraries to the
         database. The spectra are stored together with several
         attributes such as spectral type, parallax, and Simbad ID.
         The spectra can be read with the functionalities of
@@ -1617,7 +1617,7 @@ class Database:
         if "spectra" not in h5_file:
             h5_file.create_group("spectra")
 
-        if "spectra/" + spec_library in h5_file:
+        if f"spectra/{spec_library}" in h5_file:
             del h5_file["spectra/" + spec_library]
 
         if spec_library[0:5] == "vega":

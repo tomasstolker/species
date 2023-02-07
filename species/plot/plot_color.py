@@ -4,6 +4,7 @@ diagrams and color-color diagrams.
 """
 
 import json
+import os
 import pathlib
 import warnings
 
@@ -752,7 +753,8 @@ def plot_color_magnitude(
             colorerr = np.sqrt(objcolor1[1] ** 2 + objcolor2[1] ** 2)
             x_color = objcolor1[0] - objcolor2[0]
 
-            data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+            species_folder = str(pathlib.Path(__file__).parent.resolve())[:-4]
+            data_file = os.path.join(species_folder, "data/companion_data.json")
 
             with open(data_file, "r", encoding="utf-8") as json_file:
                 comp_data = json.load(json_file)

@@ -745,7 +745,7 @@ class EmissionLine:
             print(
                 "Inflating the uncertainty on the "
                 "accretion luminosity by 0.3 dex\n to "
-                "account for the the model uncertainty "
+                "account for the model uncertainty "
                 "(see Aoyama et al. 2021)..."
             )
 
@@ -1112,7 +1112,7 @@ class EmissionLine:
             print(
                 "Inflating the uncertainty on the "
                 "accretion luminosity by 0.3 dex\n to "
-                "account for the the model uncertainty "
+                "account for the model uncertainty "
                 "(see Aoyama et al. 2021)..."
             )
 
