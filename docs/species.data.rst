@@ -36,6 +36,14 @@ species.data.companion\_spectra module
    :undoc-members:
    :show-inheritance:
 
+species.data.custom\_model module
+---------------------------------
+
+.. automodule:: species.data.custom_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.database module
 ----------------------------
 

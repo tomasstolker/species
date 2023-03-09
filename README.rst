@@ -27,7 +27,7 @@
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/tomasstolker/species/HEAD
 
-*species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for both grid retrievals and free retrievals with Bayesian inference, color-magnitude and color-color diagrams, a variety of model grids, empirical spectral analysis, spectral and photometric calibration, analysis of emission lines, and synthetic photometry. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+*species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources. There are tools available for both grid retrievals and free retrievals with Bayesian inference, color-magnitude and color-color diagrams, a variety of model grids (including the possibility to add a custom grid), empirical spectral analysis, spectral and photometric calibration, analysis of emission lines, and synthetic photometry. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
 Documentation
 -------------
@@ -52,6 +52,6 @@ Contributions are welcome so please consider `forking <https://help.github.com/e
 License
 -------
 
-Copyright 2018-2022 Tomas Stolker
+Copyright 2018-2023 Tomas Stolker
 
 *species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/pycrires/blob/main/LICENSE>`_ for the terms and conditions.

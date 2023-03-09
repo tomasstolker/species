@@ -83,11 +83,13 @@ def add_model_grid(
         )
 
     if model_name == "bt-settl":
-        warnings.warn("It is recommended to use the CIFIST "
-                      "grid of the BT-Settl, because it is "
-                      "a newer version. In that case, set "
-                      "model='bt-settl-cifist' when using "
-                      "add_model of Database.")
+        warnings.warn(
+            "It is recommended to use the CIFIST "
+            "grid of the BT-Settl, because it is "
+            "a newer version. In that case, set "
+            "model='bt-settl-cifist' when using "
+            "add_model of Database."
+        )
 
     if not os.path.exists(input_path):
         os.makedirs(input_path)
@@ -125,8 +127,10 @@ def add_model_grid(
         print(f"Model information: {model_info['information']}")
 
     if "reference" in model_info:
-        print(f"Please cite {model_info['reference']} when "
-              f"using {model_info['name']} in a publication")
+        print(
+            f"Please cite {model_info['reference']} when "
+            f"using {model_info['name']} in a publication"
+        )
 
     if "url" in model_info:
         print(f"Reference URL: {model_info['url']}")
@@ -172,13 +176,17 @@ def add_model_grid(
 
     else:
         wavelength = None
-        print(f"Wavelength range (um) = "
-              f"{model_info['wavelength range'][0]} - "
-              f"{model_info['wavelength range'][1]}")
+        print(
+            f"Wavelength range (um) = "
+            f"{model_info['wavelength range'][0]} - "
+            f"{model_info['wavelength range'][1]}"
+        )
         print(f"Spectral resolution = {model_info['resolution']}")
 
     if teff_range is None:
-        print(f"Teff range (K) = {model_info['teff range'][0]} - {model_info['teff range'][1]}")
+        print(
+            f"Teff range (K) = {model_info['teff range'][0]} - {model_info['teff range'][1]}"
+        )
     else:
         print(f"Teff range (K) = {teff_range[0]} - {teff_range[1]}")
 
@@ -186,7 +194,6 @@ def add_model_grid(
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
-
             if filename[: len(model_name)] == model_name:
                 file_split = filename.split("_")
 
@@ -239,10 +246,10 @@ def add_model_grid(
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
-                    if np.all(np.diff(wavelength) < 0):
-                        raise ValueError(
-                            "The wavelengths are not all sorted by increasing value."
-                        )
+                        if np.all(np.diff(wavelength) < 0):
+                            raise ValueError(
+                                "The wavelengths are not all sorted by increasing value."
+                            )
 
                     flux.append(data_flux)  # (W m-2 um-1)
 

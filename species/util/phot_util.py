@@ -246,7 +246,7 @@ def get_residuals(
     objectbox : species.core.box.ObjectBox
         Box with the photometry and/or spectra of an object. A scaling
         and/or error inflation of the spectra should be applied with
-        :func:`~species.util.read_util.update_spectra` beforehand.
+        :func:`~species.util.read_util.update_objectbox` beforehand.
     inc_phot : bool, list(str)
         Include photometric data in the fit. If a boolean, either all
         (``True``) or none (``False``) of the data are selected. If a

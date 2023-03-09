@@ -277,6 +277,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("parallax")
         param[index] = r"$\varpi$ (mas)"
 
+    if "vsini" in param:
+        index = param.index("vsini")
+        param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
+
     if "mass" in param:
         index = param.index("mass")
         if object_type == "planet":
@@ -468,6 +472,12 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$b_\mathrm{{{item_name}}}$"
+
+        elif item[0:7] == "radvel_":
+            item_name = item[7:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
 
         elif item[0:11] == "wavelength_":
             item_name = item[11:]

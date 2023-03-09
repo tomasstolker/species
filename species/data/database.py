@@ -29,6 +29,7 @@ from species.data import (
     allers2013,
     bonnefoy2014,
     companion_spectra,
+    custom_model,
     dust,
     filters,
     irtf,
@@ -698,6 +699,82 @@ class Database:
 
             model_spectra.add_model_grid(
                 model, self.input_path, h5_file, wavel_range, teff_range, spec_res
+            )
+
+    @typechecked
+    def add_custom_model(
+        self,
+        model: str,
+        data_path: str,
+        parameters: List[str],
+        wavel_range: Optional[Tuple[float, float]] = None,
+        spec_res: Optional[float] = None,
+        teff_range: Optional[Tuple[float, float]] = None,
+    ) -> None:
+        """
+        Function for adding a custom grid of model spectra to the
+        database. The spectra are read from the ``data_path`` and
+        should contain the ``model_name`` and ``parameters`` in
+        the filenames in the following format example:
+        `model-name_teff_1000_logg_4.0_feh_0.0_spec.dat`. The
+        list with ``parameters`` should contain the same parameters
+        as are included in the filename. Each datafile should contain
+        two columns with the wavelengths in :math:`\\mu\\text{m}`
+        and the fluxes in
+        :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`. Each file
+        should contain the same number and values of wavelengths. The
+        wavelengths should be logarithmically sampled, so at a constant
+        resolution, :math:`\\lambda/\\Delta\\lambda`. If not, then the
+        ``wavel_range`` and ``spec_res`` parameters should be used
+        such that the wavelengths are resampled when reading the data
+        into the ``species`` database.
+
+        Parameters
+        ----------
+        model : str
+            Name of the model grid. Should be identical to the model
+            name that is used in the filenames.
+        data_path : str
+            Path where the files with the model spectra are located.
+            It is best to provide an absolute path to the folder.
+        parameters : list(str)
+            List with the model parameters. The following parameters
+            are supported: ``teff`` (for :math:`T_\\mathrm{eff}`),
+            ``logg`` (for :math:`\\log\\,g`), ``feh`` (for [Fe/H]),
+            ``c_o_ratio`` (for C/O), ``fsed`` (for
+            :math:`f_\\mathrm{sed}`), ``log_kzz`` (for
+            :math:`\\log\\,K_\\mathrm{zz}`), and ``ad_index`` (for
+            :math:`\\gamma_\\mathrm{ad}`). Please contact the code
+            maintainer if support for other parameters should be added.
+        wavel_range : tuple(float, float), None
+            Wavelength range (:math:`\\mu\\text{m}`) for adding a
+            subset of the spectra. The full wavelength range is
+            used if the argument is set to ``None``.
+        spec_res : float, None
+            Spectral resolution to which the spectra will be resampled.
+            This parameter should be used in combination with
+            ``wavel_range`` if the input spectra at ``data_path``
+            are not sampled at a constant
+            :math:`\\lambda/\\Delta\\lambda`. The argument is
+            only used if ``wavel_range`` is not ``None`` and it is
+            not used if set to ``None``.
+        teff_range : tuple(float, float), None
+            Effective temperature range (K) for adding a subset of the
+            model grid. The full parameter grid will be added if the
+            argument is set to ``None``.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, "a") as h5_file:
+            if "models" not in h5_file:
+                h5_file.create_group("models")
+
+            custom_model.add_custom_model_grid(
+                model, data_path, parameters, h5_file, wavel_range, teff_range, spec_res,
             )
 
     @typechecked

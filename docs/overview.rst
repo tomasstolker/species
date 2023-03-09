@@ -35,6 +35,9 @@ The following data and models are currently supported:
 - `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 
 .. tip::
+  It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`. Have a look at the documentation for details on the required file format.
+
+.. tip::
   The :func:`~species.data.database.Database.available_models()` method of the :class:`~species.data.database.Database` class can be used for getting a complete overview of all model grids, including details on the input parameters, wavelength range, :math:`T_\mathrm{eff}` range, and spectral resolution:
 
   .. code-block:: python

@@ -13,6 +13,7 @@ import h5py
 import spectres
 import numpy as np
 
+from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
@@ -108,6 +109,7 @@ class ReadModel:
             "veil_a",
             "veil_b",
             "veil_ref",
+            "vsini",
         ]
 
         # Test if the spectra are present in the database
@@ -634,6 +636,7 @@ class ReadModel:
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
         smooth: bool = False,
+        fast_rot_broad: bool = False,
     ) -> box.ModelBox:
         """
         Function for extracting a model spectrum by linearly
@@ -667,6 +670,14 @@ class ReadModel:
             requires either a uniform spectral resolution of the input
             spectra (fast) or a uniform wavelength spacing of the input
             spectra (slow).
+        fast_rot_broad : bool
+            Apply fast algorithm for the rotational broadening if set
+            to ``True``, otherwise a slow but more accurate broadening
+            is applied if set to ``False``. The fast algorithm will
+            only provide an accurate broadening if the wavelength range
+            of the spectrum is somewhat narrow (e.g. only the $K$ band).
+            The argument is only used if the ``vsini`` parameter is
+            included in the ``model_param`` dictionary.
 
         Returns
         -------
@@ -812,6 +823,39 @@ class ReadModel:
             quantity="flux",
         )
 
+        # Apply rotational broadening vsin(i) in km/s
+
+        if "vsini" in model_param:
+            spec_interp = interp1d(model_box.wavelength, model_box.flux)
+
+            wavel_new = np.linspace(
+                model_box.wavelength[0],
+                model_box.wavelength[-1],
+                2 * model_box.wavelength.size,
+            )
+
+            if fast_rot_broad:
+                flux_broad = fastRotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=model_param["vsini"],
+                    effWvl=None,
+                )
+
+            else:
+                flux_broad = rotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=model_param["vsini"],
+                    edgeHandling="firstlast",
+                )
+
+            spec_interp = interp1d(wavel_new, flux_broad)
+
+            model_box.flux = spec_interp(model_box.wavelength)
+
         # Apply veiling
 
         if (
@@ -834,7 +878,6 @@ class ReadModel:
             and "lognorm_sigma" in model_param
             and "lognorm_ext" in model_param
         ):
-
             model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -848,7 +891,6 @@ class ReadModel:
             and "powerlaw_exp" in model_param
             and "powerlaw_ext" in model_param
         ):
-
             model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -1185,7 +1227,6 @@ class ReadModel:
             and "lognorm_sigma" in model_param
             and "lognorm_ext" in model_param
         ):
-
             model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -1199,7 +1240,6 @@ class ReadModel:
             and "powerlaw_exp" in model_param
             and "powerlaw_ext" in model_param
         ):
-
             model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,

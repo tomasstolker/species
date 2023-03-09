@@ -10,7 +10,8 @@ from typing import Optional, Union, List, Tuple, Dict
 import numpy as np
 import spectres
 
-from scipy import stats
+from PyAstronomy.pyasl import fastRotBroad
+from scipy import interpolate, stats
 
 try:
     import ultranest
@@ -66,7 +67,13 @@ class FitModel:
                 str,
                 Union[
                     Tuple[float, float],
+                    Tuple[Optional[Tuple[float, float]]],
                     Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
+                    Tuple[
+                        Optional[Tuple[float, float]],
+                        Optional[Tuple[float, float]],
+                        Optional[Tuple[float, float]],
+                    ],
                     List[Tuple[float, float]],
                 ],
             ]
@@ -96,7 +103,7 @@ class FitModel:
 
             Atmospheric model parameters (e.g. with
             ``model='bt-settl-cifist'``; see docstring of
-            :meth:`~species.data.database.Database.add_model`
+            :func:`~species.data.database.Database.add_model`
             for the available model grids):
 
                - Boundaries are provided as tuple of two floats. For example,
@@ -111,6 +118,15 @@ class FitModel:
                  :math:`0.5-5.0~R_\\mathrm{J}`. With ``bounds=None``,
                  automatic priors will be set for all mandatory
                  parameters.
+
+               - Rotational broadening can be fitted by including the
+                 ``vsini`` parameter (km/s). This parameter will only
+                 be relevant if the rotational broadening is stronger
+                 than or comparable to the instrumental broadening,
+                 so typically when the data has a high spectral
+                 resolution. The resolution is set when adding a
+                 spectrum to the database with
+                 :func:`~species.data.database.Database.add_object`.
 
                - It is possible to fit a weighted combination of two
                  atmospheric parameters from the same model. This
@@ -179,26 +195,31 @@ class FitModel:
 
             Calibration parameters:
 
-                 - For each spectrum/instrument, two optional
+                 - For each spectrum/instrument, three optional
                    parameters can be fitted to account for biases in
-                   the calibration: a scaling of the flux and a
-                   relative inflation of the uncertainties.
+                   the calibration: a scaling of the flux, a
+                   relative inflation of the uncertainties, and a
+                   radial velocity (RV) shift. The last parameter can
+                   account for an actual RV shift by the source or
+                   an inaccuracy in the wavelength solution.
 
                  - For example, ``bounds={'SPHERE': ((0.8, 1.2),
-                   (0., 1.))}`` if the scaling is
-                   fitted between 0.8 and 1.2, and the error is
+                   (0., 1.), (-50., 50.))}`` if the scaling is
+                   fitted between 0.8 and 1.2, the error is
                    inflated (relative to the sampled model fluxes)
-                   with a value between 0 and 1.
+                   with a value between 0 and 1, and the RV is
+                   fitted between -50 and 50 km/s.
 
                  - The dictionary key should be the same as the
                    database tag of the spectrum. For example,
-                   ``{'SPHERE': ((0.8, 1.2), (0., 1.))}`` if the
-                   spectrum is stored as ``'SPHERE'`` with
+                   ``{'SPHERE': ((0.8, 1.2), (0., 1.), (-50., 50.))}``
+                   if the spectrum is stored as ``'SPHERE'`` with
                    :func:`~species.data.database.Database.add_object`.
 
-                 - Each of the two calibration parameters can be set to
+                 - Each of the three calibration parameters can be set to
                    ``None`` in which case the parameter is not used. For
-                   example, ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
+                   example,
+                   ``bounds={'SPHERE': ((0.8, 1.2), None, None)}``.
 
                  - The errors of the photometric fluxes can be inflated
                    to account for underestimated error bars. The error
@@ -411,7 +432,6 @@ class FitModel:
                 bounds_grid = readmodel.get_bounds()
 
                 for key, value in bounds_grid.items():
-
                     if key not in self.bounds:
                         # Set the parameter boundaries to the grid
                         # boundaries if set to None or not found
@@ -507,6 +527,13 @@ class FitModel:
             self.modelpar = readmodel.get_parameters()
             self.modelpar.append("radius")
             self.modelpar.append("parallax")
+
+            # Optional rotational broading
+
+            if "vsini" in bounds:
+                # Add vsin(i) parameter (km s-1)
+                self.modelpar.append("vsini")
+                self.bounds["vsini"] = (bounds["vsini"][0], bounds["vsini"][1])
 
             if self.binary:
                 if "radius" in self.bounds:
@@ -678,7 +705,6 @@ class FitModel:
             self.modelspec = []
 
             if self.model != "planck":
-
                 for key, value in self.spectrum.items():
                     print(f"\rInterpolating {key}...", end="", flush=True)
 
@@ -758,7 +784,6 @@ class FitModel:
 
         for item in self.spectrum:
             if bounds is not None and item in bounds:
-
                 if bounds[item][0] is not None:
                     # Add the flux scaling parameter
                     self.modelpar.append(f"scaling_{item}")
@@ -767,7 +792,7 @@ class FitModel:
                         bounds[item][0][1],
                     )
 
-                if bounds[item][1] is not None:
+                if len(bounds[item]) > 1 and bounds[item][1] is not None:
                     # Add the error inflation parameters
                     self.modelpar.append(f"error_{item}")
                     self.bounds[f"error_{item}"] = (
@@ -803,6 +828,14 @@ class FitModel:
                             f"fluxes so the boundaries are typically between 0 and 1."
                         )
 
+                if len(bounds[item]) > 2 and bounds[item][2] is not None:
+                    # Add radial velocity parameter (km s-1)
+                    self.modelpar.append(f"radvel_{item}")
+                    self.bounds[f"radvel_{item}"] = (
+                        bounds[item][2][0],
+                        bounds[item][2][1],
+                    )
+
                 if item in self.bounds:
                     del self.bounds[item]
 
@@ -811,7 +844,6 @@ class FitModel:
             and "lognorm_sigma" in self.bounds
             and "lognorm_ext" in self.bounds
         ):
-
             self.cross_sections, _, _ = dust_util.interp_lognorm(
                 inc_phot, inc_spec, self.spectrum
             )
@@ -830,7 +862,6 @@ class FitModel:
             and "powerlaw_exp" in self.bounds
             and "powerlaw_ext" in self.bounds
         ):
-
             self.cross_sections, _, _ = dust_util.interp_powerlaw(
                 inc_phot, inc_spec, self.spectrum
             )
@@ -954,6 +985,7 @@ class FitModel:
         disk_param = {}
         veil_param = {}
         param_dict = {}
+        rad_vel = {}
 
         for item in self.bounds:
             # Add the parameters from the params to their dictionaries
@@ -963,6 +995,9 @@ class FitModel:
 
             elif item[:6] == "error_" and item[6:] in self.spectrum:
                 err_scaling[item[6:]] = params[self.cube_index[item]]
+
+            elif item[:7] == "radvel_":
+                rad_vel[item[7:]] = params[self.cube_index[item]]
 
             elif item[:9] == "corr_len_" and item[9:] in self.spectrum:
                 corr_len[item[9:]] = 10.0 ** params[self.cube_index[item]]  # (um)
@@ -1020,6 +1055,9 @@ class FitModel:
 
             elif item[:6] == "error_" and item[6:] in self.spectrum:
                 err_scaling[item[6:]] = self.fix_param[item]
+
+            elif item[:7] == "radvel_" and item[7:] in self.spectrum:
+                rad_vel[item[7:]] = self.fix_param[item]
 
             elif item[:9] == "corr_len_" and item[9:] in self.spectrum:
                 corr_len[item[9:]] = self.fix_param[item]  # (um)
@@ -1127,9 +1165,11 @@ class FitModel:
                     ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
 
                 else:
-                    warnings.warn(f"The log(g) parameter is not used "
-                                  f"by the {self.model} model so the "
-                                  f"mass prior can not be applied.")
+                    warnings.warn(
+                        f"The log(g) parameter is not used "
+                        f"by the {self.model} model so the "
+                        f"mass prior can not be applied."
+                    )
 
             else:
                 ln_like += (
@@ -1390,6 +1430,44 @@ class FitModel:
 
             # Scale the spectrum data
             data_flux = spec_scaling[item] * self.spectrum[item][0][:, 1]
+
+            # Apply radial velocity shift
+
+            if item in rad_vel:
+                wavel_shift = (
+                    rad_vel[item] * 1e3 * self.spectrum[item][0][:, 0] / constants.LIGHT
+                )
+                spec_interp = interpolate.interp1d(
+                    self.spectrum[item][0][:, 0] + wavel_shift,
+                    model_flux,
+                    fill_value="extrapolate",
+                )
+                model_flux = spec_interp(self.spectrum[item][0][:, 0])
+
+            # Apply rotational broadening
+
+            if "vsini" in self.modelpar:
+                spec_interp = interpolate.interp1d(
+                    self.spectrum[item][0][:, 0], model_flux
+                )
+
+                wavel_new = np.linspace(
+                    self.spectrum[item][0][0, 0],
+                    self.spectrum[item][0][-1, 0],
+                    2 * self.spectrum[item][0].shape[0],
+                )
+
+                flux_broad = fastRotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=params[self.cube_index["vsini"]],
+                    effWvl=None,
+                )
+
+                spec_interp = interpolate.interp1d(wavel_new, flux_broad)
+
+                model_flux = spec_interp(self.spectrum[item][0][:, 0])
 
             if err_scaling[item] is None:
                 # Variance without error inflation

@@ -181,7 +181,6 @@ def update_spectra(
     )
 
     if objectbox.flux is not None:
-
         for key, value in objectbox.flux.items():
             if f"{key}_error" in model_param:
                 var_add = model_param[f"{key}_error"] ** 2 * value[0] ** 2
@@ -298,7 +297,6 @@ def update_objectbox(
     """
 
     if objectbox.flux is not None:
-
         for key, value in objectbox.flux.items():
             instr_name = key.split(".")[0]
 
@@ -385,6 +383,24 @@ def update_objectbox(
                         spec_tmp[:, 2] ** 2 + (err_scaling * model_box.flux) ** 2
                     )
                     print(" [DONE]")
+
+            if f"radvel_{key}" in model_param:
+                # Shift the wavelengths of the data by
+                # the radial velocity in opposite direction
+                wavel_shift = (
+                    -1.
+                    * model_param[f"radvel_{key}"]
+                    * 1e3
+                    * spec_tmp[:, 0]
+                    / constants.LIGHT
+                )
+                print(
+                    f"Mean wavelength shift (nm) for {key}: {np.mean(wavel_shift)*1e3:.2f}...",
+                    end="",
+                    flush=True,
+                )
+                spec_tmp[:, 0] += wavel_shift
+                print(" [DONE]")
 
             # Store the spectra with the scaled fluxes and/or errors
             # The other three elements (i.e. the covariance matrix,
@@ -574,7 +590,7 @@ def powerlaw_spectrum(
     model_box = box.create_box(
         boxtype="model",
         model="powerlaw",
-        wavelength=1e-3*wavel,  # (um)
+        wavelength=1e-3 * wavel,  # (um)
         flux=10.0**log_flux,  # (W m-2 um-1)
         parameters=model_param,
         quantity="flux",
@@ -682,8 +698,16 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
         elif star_index == 1 and key[-1] == "1":
             new_dict[key[:-2]] = value
 
-        elif key in ["teff", "logg", "feh", "c_o_ratio", "fsed",
-                     "radius", "distance", "parallax"]:
+        elif key in [
+            "teff",
+            "logg",
+            "feh",
+            "c_o_ratio",
+            "fsed",
+            "radius",
+            "distance",
+            "parallax",
+        ]:
             new_dict[key] = value
 
     return new_dict
