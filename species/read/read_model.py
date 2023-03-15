@@ -7,7 +7,7 @@ import math
 import warnings
 import configparser
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
 import spectres
@@ -636,7 +636,7 @@ class ReadModel:
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
         smooth: bool = False,
-        fast_rot_broad: bool = False,
+        fast_rot_broad: bool = True,
     ) -> box.ModelBox:
         """
         Function for extracting a model spectrum by linearly
@@ -675,9 +675,9 @@ class ReadModel:
             to ``True``, otherwise a slow but more accurate broadening
             is applied if set to ``False``. The fast algorithm will
             only provide an accurate broadening if the wavelength range
-            of the spectrum is somewhat narrow (e.g. only the $K$ band).
-            The argument is only used if the ``vsini`` parameter is
-            included in the ``model_param`` dictionary.
+            of the spectrum is somewhat narrow (e.g. only the :math:`K`
+            band). The argument is only used if the ``vsini`` parameter
+            is included in the ``model_param`` dictionary.
 
         Returns
         -------
@@ -1313,7 +1313,9 @@ class ReadModel:
         return model_box
 
     @typechecked
-    def get_flux(self, model_param: Dict[str, float], synphot=None):
+    def get_flux(
+        self, model_param: Dict[str, float], synphot=None, return_box: bool = False
+    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -1325,6 +1327,15 @@ class ReadModel:
         synphot : species.analysis.photometry.SyntheticPhotometry, None
             Synthetic photometry object. The object is created if set
             to ``None``.
+        return_box : bool
+            Return a :class:`~species.core.box.PhotometryBox`
+            if set to ``True`` or return the two values that are
+            specified below if set to ``False``. By default, the
+            argument is set to ``False``. The advantage of
+            returning the output in a
+            :class:`~species.core.box.PhotometryBox` is that it can
+            directly be provided as input to
+            :func:`~species.plot.plot_spectrum.plot_spectrum`.
 
         Returns
         -------
@@ -1349,12 +1360,31 @@ class ReadModel:
         if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+        model_flux = synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+
+        if return_box:
+            model_mag = self.get_magnitude(model_param)
+
+            phot_box = box.create_box(
+                boxtype="photometry",
+                name=self.model,
+                wavelength=[self.mean_wavelength],
+                flux=[model_flux],
+                app_mag=[(model_mag[0], 0.0)],
+                abs_mag=[(model_mag[1], 0.0)],
+                filter_name=[self.filter_name],
+            )
+
+            return phot_box
+
+        return model_flux
 
     @typechecked
     def get_magnitude(
-        self, model_param: Dict[str, float]
-    ) -> Tuple[Optional[float], Optional[float]]:
+        self,
+        model_param: Dict[str, float],
+        return_box: bool = False,
+    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
         """
         Function for calculating the apparent and absolute magnitudes
         for the ``filter_name``.
@@ -1367,6 +1397,15 @@ class ReadModel:
             for the apparent magnitude (i.e. to scale the flux from
             the planet to the observer). Only a ``radius`` is
             required for the absolute magnitude.
+        return_box : bool
+            Return a :class:`~species.core.box.PhotometryBox`
+            if set to ``True`` or return the two values that are
+            specified below if set to ``False``. By default, the
+            argument is set to ``False``. The advantage of
+            returning the output in a
+            :class:`~species.core.box.PhotometryBox` is that it can
+            directly be provided as input to
+            :func:`~species.plot.plot_spectrum.plot_spectrum`.
 
         Returns
         -------
@@ -1435,6 +1474,21 @@ class ReadModel:
                     _, abs_mag = synphot.spectrum_to_magnitude(
                         spectrum.wavelength, spectrum.flux, distance=(distance, None)
                     )
+
+        if return_box:
+            model_flux = self.get_flux(model_param)
+
+            phot_box = box.create_box(
+                boxtype="photometry",
+                name=self.model,
+                wavelength=[self.mean_wavelength],
+                flux=[model_flux],
+                app_mag=[(app_mag[0], 0.0)],
+                abs_mag=[(abs_mag[0], 0.0)],
+                filter_name=[self.filter_name],
+            )
+
+            return phot_box
 
         return app_mag[0], abs_mag[0]
 

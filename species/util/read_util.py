@@ -67,8 +67,8 @@ def get_radius(
     """
 
     surface_grav = 1e-2 * 10.0**logg  # (m s-2)
-    mass *= constants.M_JUP  # (kg)
-    radius = np.sqrt(mass * constants.GRAVITY / surface_grav)  # (m)
+    mass_kg = mass * constants.M_JUP  # (kg)
+    radius = np.sqrt(mass_kg * constants.GRAVITY / surface_grav)  # (m)
 
     return radius / constants.R_JUP
 

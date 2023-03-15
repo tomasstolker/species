@@ -72,6 +72,7 @@ def create_box(boxtype, **kwargs):
         box.log_lum = kwargs["log_lum"]
         box.teff = kwargs["teff"]
         box.logg = kwargs["logg"]
+        box.radius = kwargs["radius"]
 
     elif boxtype == "isochrone":
         box = IsochroneBox()
@@ -84,6 +85,7 @@ def create_box(boxtype, **kwargs):
         box.log_lum = kwargs["log_lum"]
         box.teff = kwargs["teff"]
         box.logg = kwargs["logg"]
+        box.radius = kwargs["radius"]
         box.masses = kwargs["masses"]
 
     elif boxtype == "model":
@@ -279,6 +281,7 @@ class CoolingBox(Box):
         self.log_lum = None
         self.teff = None
         self.logg = None
+        self.radius = None
 
 
 class IsochroneBox(Box):
@@ -304,6 +307,7 @@ class IsochroneBox(Box):
         self.log_lum = None
         self.teff = None
         self.logg = None
+        self.radius = None
         self.masses = None
 
 

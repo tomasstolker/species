@@ -540,14 +540,14 @@ class Database:
         Parameters
         ----------
         model : str
-            Evolutionary model ('ames', 'bt-settl', 'sonora',
-            'saumon2008', 'nextgen', 'baraffe2015', or 'manual').
-            Isochrones will be automatically downloaded.
-            Alternatively, isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/ or
-            https://perso.ens-lyon.fr/isabelle.baraffe/, and can be
-            manually added by setting the ``filename`` and ``tag``
-            arguments, and setting ``model='manual'``.
+            Evolutionary model ('ames', 'atmo', 'baraffe2015',
+            'bt-settl', 'nextgen', 'saumon2008', 'sonora',
+            or 'manual'). Isochrones will be automatically
+            downloaded. Alternatively, isochrone data can be
+            downloaded from https://phoenix.ens-lyon.fr/Grids/ or
+            https://perso.ens-lyon.fr/isabelle.baraffe/, and can
+            be manually added by setting the ``filename`` and
+            ``tag`` arguments, and setting ``model='manual'``.
         filename : str, None
             Filename with the isochrone data. Only required with
             ``model='manual'`` and can be set to ``None`` otherwise.
@@ -573,7 +573,7 @@ class Database:
         if "isochrones" not in h5_file:
             h5_file.create_group("isochrones")
 
-        if model in ["phoenix", "marleau", "manual"]:
+        if model in ["manual", "marleau", "phoenix"]:
             if f"isochrones/{tag}" in h5_file:
                 del h5_file[f"isochrones/{tag}"]
 
@@ -583,17 +583,25 @@ class Database:
             if "isochrones/ames-dusty" in h5_file:
                 del h5_file["isochrones/ames-dusty"]
 
+        elif model == "atmo":
+            if "isochrones/atmo-ceq" in h5_file:
+                del h5_file["isochrones/atmo-ceq"]
+            if "isochrones/atmo-neq-weak" in h5_file:
+                del h5_file["isochrones/atmo-neq-weak"]
+            if "isochrones/atmo-neq-strong" in h5_file:
+                del h5_file["isochrones/atmo-neq-strong"]
+
+        elif model == "baraffe2015":
+            if "isochrones/baraffe2015" in h5_file:
+                del h5_file["isochrones/baraffe2015"]
+
         elif model == "bt-settl":
             if "isochrones/bt-settl" in h5_file:
                 del h5_file["isochrones/bt-settl"]
 
-        elif model == "sonora":
-            if "isochrones/sonora+0.0" in h5_file:
-                del h5_file["isochrones/sonora+0.0"]
-            if "isochrones/sonora+0.5" in h5_file:
-                del h5_file["isochrones/sonora+0.5"]
-            if "isochrones/sonora-0.5" in h5_file:
-                del h5_file["isochrones/sonora-0.5"]
+        elif model == "nextgen":
+            if "isochrones/nextgen" in h5_file:
+                del h5_file["isochrones/nextgen"]
 
         elif model == "saumon2008":
             if "isochrones/saumon2008-nc_solar" in h5_file:
@@ -607,37 +615,47 @@ class Database:
             if "isochrones/saumon2008-hybrid_solar" in h5_file:
                 del h5_file["isochrones/saumon2008-hybrid_solar"]
 
-        elif model == "nextgen":
-            if "isochrones/nextgen" in h5_file:
-                del h5_file["isochrones/nextgen"]
+        elif model == "sonora":
+            if "isochrones/sonora+0.0" in h5_file:
+                del h5_file["isochrones/sonora+0.0"]
+            if "isochrones/sonora+0.5" in h5_file:
+                del h5_file["isochrones/sonora+0.5"]
+            if "isochrones/sonora-0.5" in h5_file:
+                del h5_file["isochrones/sonora-0.5"]
+
+        if model == "ames":
+            isochrones.add_ames(h5_file, self.input_path)
+
+        elif model == "atmo":
+            isochrones.add_atmo(h5_file, self.input_path)
 
         elif model == "baraffe2015":
-            if "isochrones/baraffe2015" in h5_file:
-                del h5_file["isochrones/baraffe2015"]
+            isochrones.add_baraffe2015(h5_file, self.input_path)
 
-        if model == "manual":
+        elif model == "bt-settl":
+            isochrones.add_btsettl(h5_file, self.input_path)
+
+        elif model == "manual":
             isochrones.add_manual(h5_file, tag, filename)
 
         elif model == "marleau":
             isochrones.add_marleau(h5_file, tag, filename)
 
-        elif model == "ames":
-            isochrones.add_ames(h5_file, self.input_path)
-
-        elif model == "bt-settl":
-            isochrones.add_btsettl(h5_file, self.input_path)
-
-        elif model == "sonora":
-            isochrones.add_sonora(h5_file, self.input_path)
+        elif model == "nextgen":
+            isochrones.add_nextgen(h5_file, self.input_path)
 
         elif model == "saumon2008":
             isochrones.add_saumon(h5_file, self.input_path)
 
-        elif model == "nextgen":
-            isochrones.add_nextgen(h5_file, self.input_path)
+        elif model == "sonora":
+            isochrones.add_sonora(h5_file, self.input_path)
 
-        elif model == "baraffe2015":
-            isochrones.add_baraffe2015(h5_file, self.input_path)
+        else:
+            raise ValueError(f"The evolutionary model \'{model}\' is "
+                             "not supported. Please choose another "
+                             "argument for \'model\'. Have a look "
+                             "at the documentation of add_isochrones "
+                             "for details on the supported models.")
 
         h5_file.close()
 

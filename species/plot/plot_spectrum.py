@@ -14,7 +14,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
-from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
+from matplotlib.ticker import AutoMinorLocator, ScalarFormatter, MaxNLocator
 
 from species.core import box, constants
 from species.read import read_filter
@@ -49,7 +49,14 @@ def plot_spectrum(
     leg_param: Optional[List[str]] = None,
     grid_hspace: float = 0.1,
     inc_model_name: bool = False,
-):
+) -> Tuple[
+    mpl.figure.Figure,
+    Tuple[
+        mpl.axes._axes.Axes,
+        Optional[mpl.axes._axes.Axes],
+        Optional[mpl.axes._axes.Axes],
+    ],
+]:
     """
     Function for plotting a spectral energy distribution and combining
     various data such as spectra, photometric fluxes, model spectra,
@@ -174,7 +181,7 @@ def plot_spectrum(
         )
 
     if residuals is not None and filters is not None:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -183,7 +190,7 @@ def plot_spectrum(
         ax3 = plt.subplot(grid_sp[2, 0])
 
     elif residuals is not None:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -192,7 +199,7 @@ def plot_spectrum(
         ax3 = plt.subplot(grid_sp[1, 0])
 
     elif filters is not None:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -201,7 +208,7 @@ def plot_spectrum(
         ax3 = None
 
     else:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(1, 1)
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -383,18 +390,39 @@ def plot_spectrum(
 
             ylim = ax1.get_ylim()
 
-            exponent = math.floor(math.log10(ylim[1]))
-            scaling = 10.0**exponent
+            if scale[1] == "linear":
+                exponent = math.floor(math.log10(ylim[1]))
+                scaling = 10.0**exponent
+
+            else:
+                exponent = None
+                scaling = 1.0
 
             if quantity == "flux density":
-                ylabel = (
-                    r"$F_\lambda$ (10$^{" + str(exponent) + r"}$" +" W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)"
-                )
+                if exponent is None:
+                    ylabel = (
+                        r"$F_\lambda$ (W m$^{-2}$ "
+                        + "\N{GREEK SMALL LETTER MU}m$^{-1}$)"
+                    )
+                
+                else:
+                    ylabel = (
+                        r"$F_\lambda$ (10$^{"
+                        + str(exponent)
+                        + r"}$"
+                        + " W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)"
+                    )
 
             elif quantity == "flux":
-                ylabel = (
-                    r"$\lambda$$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$)"
-                )
+                if exponent is None:
+                    ylabel = (
+                        r"$\lambda$$F_\lambda$ (W m$^{-2}$)"
+                    )
+
+                else:
+                    ylabel = (
+                        r"$\lambda$$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$)"
+                    )
 
             ax1.set_ylabel(ylabel, fontsize=11)
             ax1.set_ylim(ylim[0] / scaling, ylim[1] / scaling)
@@ -406,7 +434,10 @@ def plot_spectrum(
 
         else:
             if quantity == "flux density":
-                ax1.set_ylabel(r"$F_\lambda$"+ " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)", fontsize=11)
+                ax1.set_ylabel(
+                    r"$F_\lambda$" + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)",
+                    fontsize=11,
+                )
 
             elif quantity == "flux":
                 ax1.set_ylabel(r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=11)
@@ -483,7 +514,6 @@ def plot_spectrum(
                     # newline = False
 
                     for i, item in enumerate(par_key):
-
                         if item[:4] == "teff":
                             value = f"{param[item]:.0f}"
 
@@ -495,11 +525,9 @@ def plot_spectrum(
                             "powerlaw_ext",
                             "ism_ext",
                         ]:
-
                             value = f"{param[item]:.1f}"
 
                         elif item in ["co", "c_o_ratio"]:
-
                             value = f"{param[item]:.2f}"
 
                         elif item[:6] == "radius":
@@ -870,7 +898,6 @@ def plot_spectrum(
 
                         if isinstance(box_item.flux[item][0], np.ndarray):
                             for i in range(box_item.flux[item].shape[1]):
-
                                 plot_obj = ax1.errorbar(
                                     wavelength,
                                     scale_tmp * box_item.flux[item][0, i],
@@ -883,7 +910,6 @@ def plot_spectrum(
                                 )
 
                         else:
-
                             plot_obj = ax1.errorbar(
                                 wavelength,
                                 scale_tmp * box_item.flux[item][0],
@@ -1227,6 +1253,9 @@ def plot_spectrum(
         if ax3 is not None:
             ax3.xaxis.set_major_formatter(ScalarFormatter())
 
+    # if scale[1] == "log":
+    #     ax1.yaxis.set_major_locator()
+
     # filters = ['Paranal/SPHERE.ZIMPOL_N_Ha',
     #            'MUSE/Hbeta',
     #            'ALMA/855']
@@ -1285,7 +1314,6 @@ def plot_spectrum(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig, (ax1, ax2, ax3)

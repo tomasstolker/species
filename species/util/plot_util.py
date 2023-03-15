@@ -2,6 +2,8 @@
 Utility functions for plotting data.
 """
 
+import warnings
+
 from typing import Optional, Tuple, List
 
 import numpy as np
@@ -730,6 +732,15 @@ def model_name(in_name: str) -> str:
     elif in_name == "atmo":
         out_name = "ATMO"
 
+    elif in_name == "atmo-ceq":
+        out_name = "ATMO CEQ"
+
+    elif in_name == "atmo-neq-weak":
+        out_name = "ATMO NEQ weak"
+
+    elif in_name == "atmo-neq-strong":
+        out_name = "ATMO NEQ strong"
+
     elif in_name == "bt-cond":
         out_name = "BT-Cond"
 
@@ -779,7 +790,11 @@ def model_name(in_name: str) -> str:
         out_name = "petitRADTRANS"
 
     else:
-        raise ValueError(f"The model name '{in_name}' is not known.")
+        out_name = in_name
+
+        warnings.warn(f"The model name '{in_name}' is not known "
+                      "so the output name will not get adjusted "
+                      "for plot purposes")
 
     return out_name
 

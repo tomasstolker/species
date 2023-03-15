@@ -127,6 +127,17 @@ class FitModel:
                  resolution. The resolution is set when adding a
                  spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
+                 Note that the broadening is applied with the
+                 `fastRotBroad <https://pyastronomy.readthedocs.io/
+                 en/latest/pyaslDoc/aslDoc/rotBroad.html#PyAstronomy.
+                 pyasl.fastRotBroad>`_ function from ``PyAstronomy``.
+                 The rotational broadening is only accurate if the
+                 wavelength range of the data is somewhat narrow.
+                 For example, when fitting a medium- or
+                 high-resolution spectrum across multiple bands
+                 (e.g. $JHK$ bands) then it is best to split up the
+                 data into the separate bands when adding them with
+                 :func:`~species.data.database.Database.add_object`.
 
                - It is possible to fit a weighted combination of two
                  atmospheric parameters from the same model. This

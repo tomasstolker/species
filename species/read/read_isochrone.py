@@ -21,15 +21,15 @@ from species.util import read_util
 
 class ReadIsochrone:
     """
-    Class for reading isochrone data from the database. This class
-    interpolates the evolutionary track or isochrone data.
-    Please carefully check for interpolation effects. Setting
-    ``masses=None`` in
+    Class for reading isochrone data from the database.
+    This class interpolates the evolutionary track or
+    isochrone data. Please carefully check for interpolation
+    effects. Setting ``masses=None`` in
     :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
-    extracts the isochrones at the masses of the original grid,
-    so using that option helps with comparing results for which
-    the masses have been interpolated. Similar, by setting
-    ``ages=None`` with the
+    extracts the isochrones at the masses of the original
+    grid, so using that option helps with comparing results
+    for which the masses have been interpolated. Similar, by
+    setting ``ages=None`` with the
     :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
     method will fix the ages to those of the original grid.
     """
@@ -46,11 +46,12 @@ class ReadIsochrone:
         extrapolate : str
             Extrapolate :math:`T_\\mathrm{eff}` (K),
             :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`
-            to a regular grid of masses. Please check any results
-            obtained with ``extrapolate=True`` carefully since
-            there might be inaccuracies in the extrapolated
+            to a regular grid of masses. This can be helpful if
+            the input grid is irregular and some values are
+            missing at the edge of the grid. Please check any
+            results obtained with ``extrapolate=True`` carefully
+            since there might be inaccuracies in the extrapolated
             parts of the parameter space.
-
 
         Returns
         -------
@@ -81,6 +82,8 @@ class ReadIsochrone:
                     f"tags are found in the database: {tag_list}"
                 )
 
+        self.mag_models = ["atmo", "baraffe", "manual", "phoenix"]
+
     @typechecked
     def _read_data(self) -> Tuple[str, np.ndarray]:
         """
@@ -109,7 +112,7 @@ class ReadIsochrone:
         n_masses = mass_unique.shape[0]
 
         if self.extrapolate:
-            evol_new = np.zeros((n_ages * n_masses, 5))
+            evol_new = np.zeros((n_ages * n_masses, evolution.shape[1]))
 
             for j, age_item in enumerate(age_unique):
                 indices = evolution[:, 0] == age_item
@@ -189,13 +192,13 @@ class ReadIsochrone:
 
         age_points = np.full(masses.shape[0], age)  # (Myr)
 
-        if model in ["baraffe", "phoenix", "manual"]:
+        if model in self.mag_models:
             filters = self.get_filters()
 
             with h5py.File(self.database, "r") as h5_file:
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
-        if model in ["baraffe", "phoenix", "manual"]:
+        if model in self.mag_models:
             if filters_color is not None:
                 if filters_color[0] in filters:
                     index_color_1 = filters.index(filters_color[0])
@@ -317,6 +320,7 @@ class ReadIsochrone:
             log_lum=log_lum,
             teff=teff,
             logg=logg,
+            radius=read_util.get_radius(logg, masses),
             masses=masses,
         )
 
@@ -376,13 +380,13 @@ class ReadIsochrone:
 
         mass_points = np.full(ages.shape[0], mass)  # (Mjup)
 
-        if model in ["baraffe", "phoenix", "manual"]:
+        if model in self.mag_models:
             filters = self.get_filters()
 
             with h5py.File(self.database, "r") as h5_file:
                 magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
 
-        if model in ["baraffe", "phoenix", "manual"]:
+        if model in self.mag_models:
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])
@@ -478,6 +482,7 @@ class ReadIsochrone:
             log_lum=log_lum,
             teff=teff,
             logg=logg,
+            radius=read_util.get_radius(logg, mass),
         )
 
     @typechecked

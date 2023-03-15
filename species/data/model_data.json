@@ -25,6 +25,36 @@
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
     },
+    "atmo-ceq": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO CEQ",
+        "file size": "455 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 3000],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "atmo-neq-weak": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO NEQ weak",
+        "file size": "276 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 1800],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "atmo-neq-strong": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO NEQ strong",
+        "file size": "274 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 1800],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
     "petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
         "name": "ATMO (Petrus et al. 2023)",

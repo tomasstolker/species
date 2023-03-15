@@ -249,6 +249,13 @@ def add_custom_model_grid(
     if ad_index is not None:
         ad_index = np.asarray(ad_index)
 
+    if wavelength is None:
+        raise ValueError("No files have been found. Please check "
+                         "the arguments of \'model\', \'data_path\', "
+                         "and \'parameters\' of the add_custom_model "
+                         "method to make sure that the correct folder "
+                         "and files names are selected.")
+
     data_sorted = data_util.sort_data(
         np.asarray(teff),
         logg,
