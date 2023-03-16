@@ -13,7 +13,7 @@ from species.core import constants
 from species.util import data_util
 
 
-def add_manual(database, tag, file_name):
+def add_manual(database, tag, file_name, model_name="manual"):
     """
     Function for adding any of the isochrones from
     https://phoenix.ens-lyon.fr/Grids/ or
@@ -28,6 +28,9 @@ def add_manual(database, tag, file_name):
         Tag name in the database.
     file_name : str
         Filename with the isochrones data.
+    model_name : str
+        Model name that is stored as attribute of the
+        isochrone dataset in the HDF5 database.
 
     Returns
     -------
@@ -65,7 +68,7 @@ def add_manual(database, tag, file_name):
 
             data.append(list(filter(None, line.rstrip().split(" "))))
 
-    isochrones = []
+    iso_data = []
 
     for line in data:
         if "(Gyr)" in line:
@@ -81,16 +84,18 @@ def add_manual(database, tag, file_name):
 
         else:
             line.insert(0, age)
-            isochrones.append(line)
+            iso_data.append(line)
 
     header = np.asarray(header, dtype=str)
-    isochrones = np.asarray(isochrones, dtype=float)
+    iso_data = np.asarray(iso_data, dtype=float)
 
-    isochrones[:, 0] *= 1e3  # (Myr)
-    isochrones[:, 1] *= constants.M_SUN / constants.M_JUP  # (Mjup)
+    iso_data[:, 0] *= 1e3  # (Myr)
+    iso_data[:, 1] *= constants.M_SUN / constants.M_JUP  # (Mjup)
+    iso_data[:, 5] *= 1e9  # (cm)
+    iso_data[:, 5] *= 1e-2 / constants.R_JUP  # (cm) -> (Rjup)
 
-    index_sort = np.argsort(isochrones[:, 0])
-    isochrones = isochrones[index_sort, :]
+    index_sort = np.argsort(iso_data[:, 0])
+    iso_data = iso_data[index_sort, :]
 
     print(f"Adding isochrones: {tag}...", end="", flush=True)
 
@@ -107,13 +112,17 @@ def add_manual(database, tag, file_name):
 
     dset[...] = filters
 
-    database.create_dataset(f"isochrones/{tag}/magnitudes", data=isochrones[:, 8:])
+    dset = database.create_dataset(f"isochrones/{tag}/age", data=iso_data[:, 0])  # (Myr)
+    database.create_dataset(f"isochrones/{tag}/mass", data=iso_data[:, 1])  # (Mjup)
+    database.create_dataset(f"isochrones/{tag}/teff", data=iso_data[:, 2])  # (K)
+    database.create_dataset(f"isochrones/{tag}/log_lum", data=iso_data[:, 3])  # log(L/Lsun)
+    database.create_dataset(f"isochrones/{tag}/log_g", data=iso_data[:, 4])  # log(g)
+    database.create_dataset(f"isochrones/{tag}/radius", data=iso_data[:, 5])  # (Rjup)
+    database.create_dataset(f"isochrones/{tag}/deuterium", data=iso_data[:, 6])
+    database.create_dataset(f"isochrones/{tag}/lithium", data=iso_data[:, 7])
+    database.create_dataset(f"isochrones/{tag}/magnitudes", data=iso_data[:, 8:])
 
-    dset = database.create_dataset(
-        f"isochrones/{tag}/evolution", data=isochrones[:, 0:8]
-    )
-
-    dset.attrs["model"] = "manual"
+    dset.attrs["model"] = model_name
 
     print(" [DONE]")
     print(f"Database tag: {tag}")
@@ -163,7 +172,12 @@ def add_ames(database, input_path):
             urllib.request.urlretrieve(url_item, data_file)
             print(" [DONE]")
 
-        add_manual(database=database, tag=iso_tags[i].lower(), file_name=data_file)
+        add_manual(
+            database=database,
+            tag=iso_tags[i].lower(),
+            file_name=data_file,
+            model_name="ames",
+        )
 
 
 def add_atmo(database, input_path):
@@ -222,9 +236,9 @@ def add_atmo(database, input_path):
     ]
 
     labels = [
-        "Equilibrium chemistry",
-        "Non-Equilibrium chemistry (weak)",
-        "Non-Equilibrium chemistry (strong)",
+        "ATMO equilibrium chemistry",
+        "ATMO non-equilibrium chemistry (weak)",
+        "ATMO non-equilibrium chemistry (strong)",
     ]
 
     db_tags = [
@@ -240,23 +254,23 @@ def add_atmo(database, input_path):
         file_list = sorted(glob.glob(iso_path + "/*.txt"))
 
         for i, file_item in enumerate(file_list):
-            column_select = (1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)
-
-            iso_data = np.loadtxt(file_item)
-
+            # Mass (Msun) - Age (Gyr) - Teff (K) - log(L/Lsun) - Radius (Rsun) - log(g)
             if i == 0:
-                isochrones = iso_data[:, column_select]
+                iso_data = np.loadtxt(file_item)
+
             else:
-                isochrones = np.vstack((isochrones, iso_data[:, column_select]))
+                iso_load = np.loadtxt(file_item)
+                iso_data = np.vstack((iso_data, iso_load))
 
             with open(file_item, encoding="utf-8") as open_file:
                 parameters = open_file.readline()
                 filter_names = parameters.split()[7:]
 
-        isochrones[:, 0] *= 1e3  # (Gyr) -> (Myr)
-        isochrones[:, 1] *= constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+        iso_data[:, 0] *= constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+        iso_data[:, 1] *= 1e3  # (Gyr) -> (Myr)
+        iso_data[:, 4] *= constants.R_SUN / constants.R_JUP  # (Rsun) -> (Rjup)
 
-        print(f"Adding isochrones: {db_tags[j]} {labels[j]}...", end="", flush=True)
+        print(f"Adding isochrones: {labels[j]}...", end="", flush=True)
 
         dtype = h5py.string_dtype(encoding="utf-8", length=None)
 
@@ -266,12 +280,15 @@ def add_atmo(database, input_path):
 
         dset[...] = filter_names
 
-        database.create_dataset(
-            f"isochrones/{db_tags[j]}/magnitudes", data=isochrones[:, 5:]
-        )
+        database.create_dataset(f"isochrones/{db_tags[j]}/mass", data=iso_data[:, 0])  # (Mjup)
+        dset = database.create_dataset(f"isochrones/{db_tags[j]}/age", data=iso_data[:, 1])  # (Myr)
+        database.create_dataset(f"isochrones/{db_tags[j]}/teff", data=iso_data[:, 2])  # (K)
+        database.create_dataset(f"isochrones/{db_tags[j]}/log_lum", data=iso_data[:, 3])  # log(L/Lsun)
+        database.create_dataset(f"isochrones/{db_tags[j]}/radius", data=iso_data[:, 4])  # (Rjup)
+        database.create_dataset(f"isochrones/{db_tags[j]}/log_g", data=iso_data[:, 5])  # log(g)
 
-        dset = database.create_dataset(
-            f"isochrones/{db_tags[j]}/evolution", data=isochrones
+        database.create_dataset(
+            f"isochrones/{db_tags[j]}/magnitudes", data=iso_data[:, 6:]
         )
 
         dset.attrs["model"] = "atmo"
@@ -319,18 +336,24 @@ def add_baraffe2015(database, input_path):
 
     # M/Ms, log t(yr), Teff, log(L/Ls), log(g), R/Rs,
     # Log(Li/Li0), log(Tc), log(ROc), Mrad, Rrad, k2conv, k2rad
-    mass, log_age, teff, log_lum, log_g, _, _, _, _, _, _, _, _ = np.loadtxt(
+    mass, log_age, teff, log_lum, log_g, radius, _, _, _, _, _, _, _ = np.loadtxt(
         data_file, unpack=True, skiprows=45, comments="!"
     )
 
     age = 1e-6 * 10.0**log_age  # (Myr)
     mass *= constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
+    radius *= constants.R_SUN / constants.R_JUP  # (Msun) -> (Mjup)
 
-    isochrones = np.column_stack([age, mass, teff, log_lum, log_g])
+    iso_data = np.column_stack([age, mass, teff, log_lum, log_g, radius])
 
     print(f"Adding isochrones: {iso_tag}...", end="", flush=True)
 
-    dset = database.create_dataset(f"isochrones/{db_tag}/evolution", data=isochrones)
+    dset = database.create_dataset(f"isochrones/{db_tag}/age", data=iso_data[:, 0])  # (Myr)
+    database.create_dataset(f"isochrones/{db_tag}/mass", data=iso_data[:, 1])  # (Mjup)
+    database.create_dataset(f"isochrones/{db_tag}/teff", data=iso_data[:, 2])  # (K)
+    database.create_dataset(f"isochrones/{db_tag}/log_lum", data=iso_data[:, 3])  # log(L/Lsun)
+    database.create_dataset(f"isochrones/{db_tag}/log_g", data=iso_data[:, 4])  # log(g)
+    database.create_dataset(f"isochrones/{db_tag}/radius", data=iso_data[:, 5])  # (Rjup)
 
     dset.attrs["model"] = "baraffe2015"
 
@@ -373,7 +396,9 @@ def add_btsettl(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(
+        database=database, tag=iso_tag.lower(), file_name=data_file, model_name="bt-settl"
+    )
 
 
 def add_marleau(database, tag, file_name):
@@ -462,7 +487,9 @@ def add_nextgen(database, input_path):
         urllib.request.urlretrieve(url_iso, data_file)
         print(" [DONE]")
 
-    add_manual(database=database, tag=iso_tag.lower(), file_name=data_file)
+    add_manual(
+        database=database, tag=iso_tag.lower(), file_name=data_file, model_name="nextgen"
+    )
 
 
 def add_saumon(database, input_path):
@@ -535,7 +562,7 @@ def add_saumon(database, input_path):
     for j, item in enumerate(iso_files):
         iso_path = os.path.join(data_folder, item)
 
-        isochrones = []
+        iso_data = []
 
         with open(iso_path, encoding="utf-8") as open_file:
             for i, line in enumerate(open_file):
@@ -550,14 +577,22 @@ def add_saumon(database, input_path):
                 param[1] = (
                     param[1] * constants.M_SUN / constants.M_JUP
                 )  # (Msun) -> (Mjup)
+                param[5] = (
+                    param[5] * constants.R_SUN / constants.R_JUP
+                )  # (Rsun) -> (Rjup)
 
-                isochrones.append([param[0], param[1], param[3], param[2], param[4]])
+                iso_data.append([param[0], param[1], param[2], param[3], param[4], param[5]])
 
         print(f"Adding isochrones: {iso_tag} {labels[j]}...", end="", flush=True)
 
-        dset = database.create_dataset(
-            f"isochrones/{db_tags[j]}/evolution", data=isochrones
-        )
+        iso_data = np.array(iso_data)
+
+        dset = database.create_dataset(f"isochrones/{db_tags[j]}/age", data=iso_data[:, 0])  # (Myr)
+        database.create_dataset(f"isochrones/{db_tags[j]}/mass", data=iso_data[:, 1])  # (Mjup)
+        database.create_dataset(f"isochrones/{db_tags[j]}/log_lum", data=iso_data[:, 2])  # log(L/Lsun)
+        database.create_dataset(f"isochrones/{db_tags[j]}/teff", data=iso_data[:, 3])  # (K)
+        database.create_dataset(f"isochrones/{db_tags[j]}/log_g", data=iso_data[:, 4])  # log(g)
+        database.create_dataset(f"isochrones/{db_tags[j]}/radius", data=iso_data[:, 5])  # (Rjup)
 
         dset.attrs["model"] = "saumon2008"
 
@@ -587,7 +622,8 @@ def add_sonora(database, input_path):
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    url = "https://zenodo.org/record/5063476/files/evolution_and_photometery.tar.gz"
+    url = "https://zenodo.org/record/5063476/files/" \
+          "evolution_and_photometery.tar.gz"
 
     input_file = "evolution_and_photometery.tar.gz"
     data_file = os.path.join(input_path, input_file)
@@ -618,7 +654,7 @@ def add_sonora(database, input_path):
         iso_file = f"evolution_tables/{item}"
         iso_path = os.path.join(data_folder, iso_file)
 
-        isochrones = []
+        iso_data = []
 
         with open(iso_path, encoding="utf-8") as open_file:
             for j, line in enumerate(open_file):
@@ -633,18 +669,26 @@ def add_sonora(database, input_path):
                 param[1] = (
                     param[1] * constants.M_SUN / constants.M_JUP
                 )  # (Msun) -> (Mjup)
+                param[5] = (
+                    param[5] * constants.R_SUN / constants.R_JUP
+                )  # (Rsun) -> (Rjup)
 
-                isochrones.append([param[0], param[1], param[3], param[2], param[4]])
+                iso_data.append([param[0], param[1], param[2], param[3], param[4], param[5]])
 
             print(f"Adding isochrones: Sonora {labels[i]}...", end="", flush=True)
 
-            metal = labels[i].split(" ")[2]
+            iso_data = np.array(iso_data)
 
-            dset = database.create_dataset(
-                f"isochrones/sonora{metal}/evolution", data=isochrones
-            )
+            metallicity = labels[i].split(" ")[2]
+
+            dset = database.create_dataset(f"isochrones/sonora{metallicity}/age", data=iso_data[:, 0])  # (Myr)
+            database.create_dataset(f"isochrones/sonora{metallicity}/mass", data=iso_data[:, 1])  # (Mjup)
+            database.create_dataset(f"isochrones/sonora{metallicity}/log_lum", data=iso_data[:, 2])  # log(L/Lsun)
+            database.create_dataset(f"isochrones/sonora{metallicity}/teff", data=iso_data[:, 3])  # (K)
+            database.create_dataset(f"isochrones/sonora{metallicity}/log_g", data=iso_data[:, 4])  # log(g)
+            database.create_dataset(f"isochrones/sonora{metallicity}/radius", data=iso_data[:, 5])  # (Rjup)
 
             dset.attrs["model"] = "sonora"
 
             print(" [DONE]")
-            print(f"Database tag: sonora{metal}")
+            print(f"Database tag: sonora{metallicity}")

@@ -16,7 +16,6 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_model
-from species.util import read_util
 
 
 class ReadIsochrone:
@@ -35,23 +34,39 @@ class ReadIsochrone:
     """
 
     @typechecked
-    def __init__(self, tag: str, extrapolate: bool = False) -> None:
+    def __init__(
+        self, tag: str, create_regular_grid: bool = False, extrapolate: bool = False
+    ) -> None:
         """
         Parameters
         ----------
         tag : str
             Database tag of the isochrone data (e.g. 'ames-cond',
-            'ames-dusty', 'sonora+0.0', 'sonora-0.5', 'sonora+0.5',
-            'saumon-2008', 'nextgen').
-        extrapolate : str
-            Extrapolate :math:`T_\\mathrm{eff}` (K),
-            :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`
-            to a regular grid of masses. This can be helpful if
-            the input grid is irregular and some values are
-            missing at the edge of the grid. Please check any
-            results obtained with ``extrapolate=True`` carefully
+            'sonora+0.0', 'atmo-ceq'). When using an incorrect
+            argument, and error message is printed that includes
+            a list with the isochrone models that are available
+            in the current ``species`` database.
+        create_regular_grid : bool
+            Evolutionary grids can be irregular in the (age, mass)
+            space. By setting ``create_regular_grid=True``, the
+            grid will be interpolated and extrapolate onto
+            a regular grid that is based on all the unique age
+            and mass values of the original grid. The
+            resampling of the evolutionary parameters
+            (i.e. :math:`T_\\mathrm{eff}` (K),
+            :math:`\\log{(L/L_\\odot)}`, :math:`\\log{(g)}`, and
+            :math:`R`) is done as function of mass, separately
+            for each age. Setting ``create_regular_grid=True``
+            can be helpful if some values are missing at the edge
+            of the grid. However, please carefully check results
             since there might be inaccuracies in the extrapolated
-            parts of the parameter space.
+            parts of the parameter space, in particular for the
+            cooling curves extracted with
+            :func:`~species.read.read_isochrone.ReadIsochrone.get_cooling_curve`.
+        extrapolate : str
+            This parameter has been renamed to ``create_regular_grid``
+            and will be deprecated in a future release. Please use
+            the ``create_regular_grid`` parameter instead.
 
         Returns
         -------
@@ -61,6 +76,18 @@ class ReadIsochrone:
 
         self.tag = tag
         self.extrapolate = extrapolate
+        self.create_regular_grid = create_regular_grid
+
+        if self.extrapolate:
+            warnings.warn("The \'extrapolate\' parameter has been "
+                          "renamed to \'create_regular_grid\' and "
+                          "will be removed in a future release.",
+                          DeprecationWarning)
+
+            if not self.create_regular_grid:
+                warnings.warn("Setting \'create_regular_grid=True\' "
+                              "since \'extrapolate=True\'.")
+
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -82,10 +109,14 @@ class ReadIsochrone:
                     f"tags are found in the database: {tag_list}"
                 )
 
-        self.mag_models = ["atmo", "baraffe", "manual", "phoenix"]
+        self.mag_models = ["ames", "atmo", "baraffe", "bt-settl", "manual", "nextgen"]
 
     @typechecked
-    def _read_data(self) -> Tuple[str, np.ndarray]:
+    def _read_data(
+        self,
+    ) -> Tuple[
+        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+    ]:
         """
         Internal function for reading the evolutionary
         data from the database.
@@ -95,47 +126,90 @@ class ReadIsochrone:
         str
             Model name.
         np.ndarray
-            Evolutionary data. The array has 2 dimensions with the
-            shape (n_data_points, 5). The columns are age (Myr),
-            mass (:math:`M_\\mathrm{J}`), :math:`T_\\mathrm{eff}` (K),
-            :math:`\\log{(L/L_\\odot)}`, and :math:`\\log{(g)}`.
+            Array with the age (Myr).
+        np.ndarray
+            Array with the mass (:math:`M_\\mathrm{J}`).
+        np.ndarray
+            Array with the :math:`T_\\mathrm{eff}` (K).
+        np.ndarray
+            Array with the :math:`\\log{(L/L_\\odot)}`.
+        np.ndarray
+            Array with the :math:`\\log{(g)}`.
+        np.ndarray
+            Array with the radius (:math:`R_\\mathrm{J}`).
         """
 
         with h5py.File(self.database, "r") as h5_file:
-            model = h5_file[f"isochrones/{self.tag}/evolution"].attrs["model"]
-            evolution = np.asarray(h5_file[f"isochrones/{self.tag}/evolution"])
+            model_name = h5_file[f"isochrones/{self.tag}/age"].attrs["model"]
 
-        age_unique = np.unique(evolution[:, 0])
-        mass_unique = np.unique(evolution[:, 1])
+            iso_age = np.asarray(h5_file[f"isochrones/{self.tag}/age"])
+            iso_mass = np.asarray(h5_file[f"isochrones/{self.tag}/mass"])
+            iso_teff = np.asarray(h5_file[f"isochrones/{self.tag}/teff"])
+            iso_loglum = np.asarray(h5_file[f"isochrones/{self.tag}/log_lum"])
+            iso_logg = np.asarray(h5_file[f"isochrones/{self.tag}/log_g"])
+            iso_radius = np.asarray(h5_file[f"isochrones/{self.tag}/radius"])
 
-        n_ages = age_unique.shape[0]
-        n_masses = mass_unique.shape[0]
+        if self.create_regular_grid:
+            age_unique = np.unique(iso_age)
+            mass_unique = np.unique(iso_mass)
 
-        if self.extrapolate:
-            evol_new = np.zeros((n_ages * n_masses, evolution.shape[1]))
+            n_ages = age_unique.shape[0]
+            n_masses = mass_unique.shape[0]
+
+            new_age = np.zeros((n_ages * n_masses))
+            new_mass = np.zeros((n_ages * n_masses))
+            new_teff = np.zeros((n_ages * n_masses))
+            new_loglum = np.zeros((n_ages * n_masses))
+            new_logg = np.zeros((n_ages * n_masses))
+            new_radius = np.zeros((n_ages * n_masses))
 
             for j, age_item in enumerate(age_unique):
-                indices = evolution[:, 0] == age_item
+                age_select = iso_age == age_item
+                ages_tmp = np.full(n_masses, age_item)
 
-                evol_new[j * n_masses : (j + 1) * n_masses, 0] = np.full(
-                    n_masses, age_item
+                new_age[j * n_masses : (j + 1) * n_masses] = ages_tmp
+                new_mass[j * n_masses : (j + 1) * n_masses] = mass_unique
+
+                interp_teff = interpolate.interp1d(
+                    iso_mass[age_select],
+                    iso_teff[age_select],
+                    fill_value="extrapolate",
                 )
-                evol_new[j * n_masses : (j + 1) * n_masses, 1] = mass_unique
 
-                for i in range(evolution.shape[1] - 2):
-                    interp_param = interpolate.interp1d(
-                        evolution[indices, 1],
-                        evolution[indices, 2 + i],
-                        fill_value="extrapolate",
-                    )
+                new_teff[j * n_masses : (j + 1) * n_masses] = interp_teff(mass_unique)
 
-                    evol_new[j * n_masses : (j + 1) * n_masses, 2 + i] = interp_param(
-                        mass_unique
-                    )
+                interp_loglum = interpolate.interp1d(
+                    iso_mass[age_select],
+                    iso_loglum[age_select],
+                    fill_value="extrapolate",
+                )
 
-            evolution = evol_new.copy()
+                new_loglum[j * n_masses : (j + 1) * n_masses] = interp_loglum(mass_unique)
 
-        return model, evolution
+                interp_logg = interpolate.interp1d(
+                    iso_mass[age_select],
+                    iso_logg[age_select],
+                    fill_value="extrapolate",
+                )
+
+                new_logg[j * n_masses : (j + 1) * n_masses] = interp_logg(mass_unique)
+
+                interp_radius = interpolate.interp1d(
+                    iso_mass[age_select],
+                    iso_radius[age_select],
+                    fill_value="extrapolate",
+                )
+
+                new_radius[j * n_masses : (j + 1) * n_masses] = interp_radius(mass_unique)
+
+            iso_age = new_age.copy()
+            iso_mass = new_mass.copy()
+            iso_teff = new_teff.copy()
+            iso_loglum = new_loglum.copy()
+            iso_logg = new_logg.copy()
+            iso_radius = new_radius.copy()
+
+        return model_name, iso_age, iso_mass, iso_teff, iso_loglum, iso_logg, iso_radius
 
     @typechecked
     def get_isochrone(
@@ -175,22 +249,25 @@ class ReadIsochrone:
         color = None
         mag_abs = None
 
-        index_age = 0
-        index_mass = 1
-        index_teff = 2
-        index_log_lum = 3
-        index_logg = 4
-
         # Read isochrone data
 
-        model, evolution = self._read_data()
+        (
+            model,
+            iso_age,
+            iso_mass,
+            iso_teff,
+            iso_loglum,
+            iso_logg,
+            iso_radius,
+        ) = self._read_data()
 
         if masses is None:
-            idx_min = (np.abs(evolution[:, index_age] - age)).argmin()
-            age_select = evolution[:, index_age] == evolution[idx_min, index_age]
-            masses = np.unique(evolution[age_select, index_mass])  # (Mjup)
+            idx_min = (np.abs(iso_age - age)).argmin()
+            age_select = iso_age == iso_age[idx_min]
+            masses = np.unique(iso_mass[age_select])  # (Mjup)
 
         age_points = np.full(masses.shape[0], age)  # (Myr)
+        grid_points = np.column_stack([iso_age, iso_mass])
 
         if model in self.mag_models:
             filters = self.get_filters()
@@ -204,38 +281,44 @@ class ReadIsochrone:
                     index_color_1 = filters.index(filters_color[0])
 
                 else:
-                    raise ValueError(f"Magnitudes for the selected "
-                                     f"\'{filters_color[0]}\' filter "
-                                     f"are not found in the "
-                                     f"\'{self.tag}\' data. Please "
-                                     f"select one of the following "
-                                     f"filters: {filters}")
+                    raise ValueError(
+                        f"Magnitudes for the selected "
+                        f"'{filters_color[0]}' filter "
+                        f"are not found in the "
+                        f"'{self.tag}' data. Please "
+                        f"select one of the following "
+                        f"filters: {filters}"
+                    )
 
                 if filters_color[1] in filters:
                     index_color_2 = filters.index(filters_color[1])
 
                 else:
-                    raise ValueError(f"Magnitudes for the selected "
-                                     f"\'{filters_color[1]}\' filter "
-                                     f"are not found in the "
-                                     f"\'{self.tag}\' data. Please "
-                                     f"select one of the following "
-                                     f"filters: {filters}")
+                    raise ValueError(
+                        f"Magnitudes for the selected "
+                        f"'{filters_color[1]}' filter "
+                        f"are not found in the "
+                        f"'{self.tag}' data. Please "
+                        f"select one of the following "
+                        f"filters: {filters}"
+                    )
 
             if filter_mag is not None:
                 if filter_mag in filters:
                     index_mag = filters.index(filter_mag)
 
                 else:
-                    raise ValueError(f"Magnitudes for the selected "
-                                     f"\'{filter_mag}\' filter are not "
-                                     f"found in the \'{self.tag}\' data. "
-                                     f"Please select one of the "
-                                     f"following filters: {filters}")
+                    raise ValueError(
+                        f"Magnitudes for the selected "
+                        f"'{filter_mag}' filter are not "
+                        f"found in the '{self.tag}' data. "
+                        f"Please select one of the "
+                        f"following filters: {filters}"
+                    )
 
             if filters_color is not None:
                 mag_color_1 = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_color_1],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -244,7 +327,7 @@ class ReadIsochrone:
                 )
 
                 mag_color_2 = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_color_2],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -256,7 +339,7 @@ class ReadIsochrone:
 
             if filter_mag is not None:
                 mag_abs = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_mag],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
@@ -265,8 +348,8 @@ class ReadIsochrone:
                 )
 
         teff = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_teff],
+            points=grid_points,
+            values=iso_teff,
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -274,8 +357,8 @@ class ReadIsochrone:
         )
 
         log_lum = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_log_lum],
+            points=grid_points,
+            values=iso_loglum,
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -283,8 +366,17 @@ class ReadIsochrone:
         )
 
         logg = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_logg],
+            points=grid_points,
+            values=iso_logg,
+            xi=np.stack((age_points, masses), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        radius = interpolate.griddata(
+            points=grid_points,
+            values=iso_radius,
             xi=np.stack((age_points, masses), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -320,7 +412,7 @@ class ReadIsochrone:
             log_lum=log_lum,
             teff=teff,
             logg=logg,
-            radius=read_util.get_radius(logg, masses),
+            radius=radius,
             masses=masses,
         )
 
@@ -363,22 +455,25 @@ class ReadIsochrone:
         color = None
         mag_abs = None
 
-        index_age = 0
-        index_mass = 1
-        index_teff = 2
-        index_log_lum = 3
-        index_logg = 4
-
         # Read isochrone data
 
-        model, evolution = self._read_data()
+        (
+            model,
+            iso_age,
+            iso_mass,
+            iso_teff,
+            iso_loglum,
+            iso_logg,
+            iso_radius,
+        ) = self._read_data()
 
         if ages is None:
-            idx_min = (np.abs(evolution[:, index_mass] - mass)).argmin()
-            mass_select = evolution[:, index_mass] == evolution[idx_min, index_mass]
-            ages = np.unique(evolution[mass_select, index_age])  # (Myr)
+            idx_min = (np.abs(iso_mass - mass)).argmin()
+            mass_select = iso_mass == iso_mass[idx_min]
+            ages = np.unique(iso_age[mass_select])  # (Myr)
 
         mass_points = np.full(ages.shape[0], mass)  # (Mjup)
+        grid_points = np.column_stack([iso_age, iso_mass])
 
         if model in self.mag_models:
             filters = self.get_filters()
@@ -396,7 +491,7 @@ class ReadIsochrone:
 
             if filters_color is not None:
                 mag_color_1 = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_color_1],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
@@ -405,7 +500,7 @@ class ReadIsochrone:
                 )
 
                 mag_color_2 = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_color_2],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
@@ -417,7 +512,7 @@ class ReadIsochrone:
 
             if filter_mag is not None:
                 mag_abs = interpolate.griddata(
-                    points=evolution[:, :2],
+                    points=grid_points,
                     values=magnitudes[:, index_mag],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
@@ -426,8 +521,8 @@ class ReadIsochrone:
                 )
 
         teff = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_teff],
+            points=grid_points,
+            values=iso_teff,
             xi=np.stack((ages, mass_points), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -435,8 +530,8 @@ class ReadIsochrone:
         )
 
         log_lum = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_log_lum],
+            points=grid_points,
+            values=iso_loglum,
             xi=np.stack((ages, mass_points), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -444,8 +539,17 @@ class ReadIsochrone:
         )
 
         logg = interpolate.griddata(
-            points=evolution[:, :2],
-            values=evolution[:, index_logg],
+            points=grid_points,
+            values=iso_logg,
+            xi=np.stack((ages, mass_points), axis=1),
+            method=self.interp_method,
+            fill_value="nan",
+            rescale=False,
+        )
+
+        radius = interpolate.griddata(
+            points=grid_points,
+            values=iso_radius,
             xi=np.stack((ages, mass_points), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -482,7 +586,7 @@ class ReadIsochrone:
             log_lum=log_lum,
             teff=teff,
             logg=logg,
-            radius=read_util.get_radius(logg, mass),
+            radius=radius,
         )
 
     @typechecked
@@ -557,24 +661,19 @@ class ReadIsochrone:
         else:
             iso_feh = None
 
-        mag1 = np.zeros(isochrone.masses.shape[0])
-        mag2 = np.zeros(isochrone.masses.shape[0])
-        radius = np.zeros(isochrone.masses.shape[0])
+        mag1 = np.zeros(isochrone.mass.shape[0])
+        mag2 = np.zeros(isochrone.mass.shape[0])
 
-        for i, mass_item in enumerate(isochrone.masses):
+        for i in range(isochrone.mass.size):
             model_param = {
                 "teff": isochrone.teff[i],
                 "logg": isochrone.logg[i],
-                "mass": mass_item,
+                "radius": isochrone.radius[i],
                 "distance": 10.0,
             }
 
             if iso_feh is not None:
                 model_param["feh"] = iso_feh
-
-            radius[i] = read_util.get_radius(
-                model_param["logg"], model_param["mass"]
-            )  # (Rjup)
 
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
@@ -662,10 +761,8 @@ class ReadIsochrone:
             filter_mag=filter_mag,
             color=mag1 - mag2,
             magnitude=abs_mag,
-            names=None,
-            sptype=masses,
             mass=masses,
-            radius=radius,
+            radius=isochrone.radius,
             iso_tag=self.tag,
         )
 
@@ -728,26 +825,23 @@ class ReadIsochrone:
         else:
             iso_feh = None
 
-        mag1 = np.zeros(isochrone.masses.shape[0])
-        mag2 = np.zeros(isochrone.masses.shape[0])
-        mag3 = np.zeros(isochrone.masses.shape[0])
-        mag4 = np.zeros(isochrone.masses.shape[0])
-        radius = np.zeros(isochrone.masses.shape[0])
+        mag1 = np.zeros(isochrone.mass.shape[0])
+        mag2 = np.zeros(isochrone.mass.shape[0])
+        mag3 = np.zeros(isochrone.mass.shape[0])
+        mag4 = np.zeros(isochrone.mass.shape[0])
 
-        for i, mass_item in enumerate(isochrone.masses):
+        print(isochrone.mass.size)
+
+        for i in range(isochrone.mass.size):
             model_param = {
                 "teff": isochrone.teff[i],
                 "logg": isochrone.logg[i],
-                "mass": mass_item,
+                "radius": isochrone.radius[i],
                 "distance": 10.0,
             }
 
             if iso_feh is not None:
                 model_param["feh"] = iso_feh
-
-            radius[i] = read_util.get_radius(
-                model_param["logg"], model_param["mass"]
-            )  # (Rjup)
 
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
@@ -810,10 +904,8 @@ class ReadIsochrone:
             filters=filters_colors,
             color1=mag1 - mag2,
             color2=mag3 - mag4,
-            names=None,
-            sptype=masses,
             mass=masses,
-            radius=radius,
+            radius=isochrone.radius,
             iso_tag=self.tag,
         )
 
@@ -842,25 +934,27 @@ class ReadIsochrone:
             Array with masses (:math:`M_\\mathrm{J}`).
         """
 
-        index_age = 0
-        index_mass = 1
-        index_log_lum = 3
-
         # Read isochrone data
 
-        _, evolution = self._read_data()
+        (
+            _,
+            iso_age,
+            iso_mass,
+            _,
+            iso_loglum,
+            _,
+            _,
+        ) = self._read_data()
 
         # Interpolate masses
 
-        points = np.stack(
-            (evolution[:, index_age], evolution[:, index_log_lum]), axis=1
-        )
+        grid_points = np.stack((iso_age, iso_loglum), axis=1)
 
-        age_points = np.full(log_lum.shape[0], age)  # (Myr)
+        age_points = np.full(log_lum.size, age)  # (Myr)
 
         mass = interpolate.griddata(
-            points=points,
-            values=evolution[:, index_mass],
+            points=grid_points,
+            values=iso_mass,
             xi=np.stack((age_points, log_lum), axis=1),
             method=self.interp_method,
             fill_value="nan",
@@ -894,36 +988,34 @@ class ReadIsochrone:
             Array with radii (:math:`R_\\mathrm{J}`).
         """
 
-        index_age = 0
-        index_log_lum = 3
-        index_logg = 4
-
         # Read isochrone data
 
-        _, evolution = self._read_data()
+        (
+            _,
+            iso_age,
+            _,
+            _,
+            iso_loglum,
+            _,
+            iso_radius,
+        ) = self._read_data()
 
-        # Interpolate masses
+        # Interpolate radius
 
-        mass = self.get_mass(age, log_lum)
+        grid_points = np.stack((iso_age, iso_loglum), axis=1)
 
-        # Interpolate log(g)
+        age_points = np.full(log_lum.size, age)  # (Myr)
 
-        points = np.stack(
-            (evolution[:, index_age], evolution[:, index_log_lum]), axis=1
-        )
-
-        age_points = np.full(log_lum.shape[0], age)  # (Myr)
-
-        log_g = interpolate.griddata(
-            points=points,
-            values=evolution[:, index_logg],
+        radius = interpolate.griddata(
+            points=grid_points,
+            values=iso_radius,
             xi=np.stack((age_points, log_lum), axis=1),
             method=self.interp_method,
             fill_value="nan",
             rescale=False,
         )
 
-        return read_util.get_radius(log_g, mass)
+        return radius
 
     @typechecked
     def get_filters(self) -> Optional[List[str]]:

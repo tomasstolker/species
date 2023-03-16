@@ -682,7 +682,8 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl',
+            Model name ('ames-cond', 'ames-dusty', 'atmo-ceq',
+            'atmo-neq-weak', 'atmo-neq-strong', 'bt-settl',
             'bt-settl-cifist', 'bt-nextgen', 'drift-phoenix',
             'petitcode-cool-clear', 'petitcode-cool-cloudy',
             'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem',

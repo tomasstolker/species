@@ -64,29 +64,36 @@ def create_box(boxtype, **kwargs):
         box = CoolingBox()
         box.model = kwargs["model"]
         box.mass = kwargs["mass"]
-        box.filters_color = kwargs["filters_color"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.color = kwargs["color"]
-        box.magnitude = kwargs["magnitude"]
-        box.ages = kwargs["ages"]
-        box.log_lum = kwargs["log_lum"]
+        if "age" in kwargs:
+            box.age = kwargs["age"]
+        else:
+            box.age = kwargs["ages"]
         box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
         box.logg = kwargs["logg"]
         box.radius = kwargs["radius"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
+
 
     elif boxtype == "isochrone":
         box = IsochroneBox()
         box.model = kwargs["model"]
         box.age = kwargs["age"]
-        box.filters_color = kwargs["filters_color"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.color = kwargs["color"]
-        box.magnitude = kwargs["magnitude"]
-        box.log_lum = kwargs["log_lum"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        else:
+            box.mass = kwargs["masses"]
         box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
         box.logg = kwargs["logg"]
         box.radius = kwargs["radius"]
-        box.masses = kwargs["masses"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
 
     elif boxtype == "model":
         box = ModelBox()
@@ -273,15 +280,15 @@ class CoolingBox(Box):
 
         self.model = None
         self.mass = None
-        self.filters_color = None
-        self.filter_mag = None
-        self.color = None
-        self.magnitude = None
-        self.ages = None
-        self.log_lum = None
+        self.age = None
         self.teff = None
+        self.log_lum = None
         self.logg = None
         self.radius = None
+        self.filter_mag = None
+        self.magnitude = None
+        self.filters_color = None
+        self.color = None
 
 
 class IsochroneBox(Box):
@@ -300,15 +307,15 @@ class IsochroneBox(Box):
 
         self.model = None
         self.age = None
-        self.filters_color = None
-        self.filter_mag = None
-        self.color = None
-        self.magnitude = None
-        self.log_lum = None
+        self.mass = None
         self.teff = None
+        self.log_lum = None
         self.logg = None
         self.radius = None
-        self.masses = None
+        self.filter_mag = None
+        self.magnitude = None
+        self.filters_color = None
+        self.color = None
 
 
 class PhotometryBox(Box):

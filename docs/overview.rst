@@ -19,7 +19,7 @@ The following data and models are currently supported:
 
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_
-- `ATMO <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq>`_
+- `ATMO (CEQ, NEQ weak, NEQ strong) <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_
 - `BT-Cond <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-cond>`_
 - `BT-Dusty <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-dusty>`_
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_
@@ -70,6 +70,7 @@ The following data and models are currently supported:
 - Evolutionary data from `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - Isochrones from `Baraffe et al. (2015) <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
 - Isochrones from `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- `ATMO <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ isochrones (CEQ, NEQ weak, NEQ strong)
 
 **Calibration**
 
