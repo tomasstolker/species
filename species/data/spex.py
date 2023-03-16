@@ -19,7 +19,8 @@ from species.util import data_util, query_util
 @typechecked
 def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the SpeX Prism Spectral Library to the database.
+    Function for adding the SpeX Prism Spectral Library
+    to the database.
 
     Parameters
     ----------
@@ -133,6 +134,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
             wavelength = table.array["wavelength"]  # (Angstrom)
             flux = table.array["flux"]  # Normalized units
+            spec_res = table.get_field_by_id("res").value
 
             wavelength = np.array(wavelength * 1e-4)  # (um)
             flux = np.array(flux)  # (a.u.)
@@ -230,8 +232,11 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
             else:
                 parallax = (np.nan, np.nan)
 
+            empty_message = len(print_message) * " "
+            print(f"\r{empty_message}", end="")
+
             print_message = f"Adding spectra... {name}"
-            print(f"\r{print_message:<72}", end="")
+            print(f"\r{print_message}", end="")
 
             dset = database.create_dataset(f"spectra/spex/{name}", data=spdata)
 
@@ -245,13 +250,17 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
                 dset.attrs["sptype"] = str("None").encode()
 
             dset.attrs["simbad"] = str(simbad_id).encode()
-            dset.attrs["2MASS/2MASS.J"] = j_mag
-            dset.attrs["2MASS/2MASS.H"] = h_mag
-            dset.attrs["2MASS/2MASS.Ks"] = ks_mag
-            dset.attrs["parallax"] = parallax[0]  # (mas)
-            dset.attrs["parallax_error"] = parallax[1]  # (mas)
+            dset.attrs["2MASS/2MASS.J"] = float(j_mag)
+            dset.attrs["2MASS/2MASS.H"] = float(h_mag)
+            dset.attrs["2MASS/2MASS.Ks"] = float(ks_mag)
+            dset.attrs["parallax"] = float(parallax[0])  # (mas)
+            dset.attrs["parallax_error"] = float(parallax[1])  # (mas)
+            dset.attrs["spec_res"] = float(spec_res)
+
+    empty_message = len(print_message) * " "
+    print(f"\r{empty_message}", end="")
 
     print_message = "Adding spectra... [DONE]"
-    print(f"\r{print_message:<72}")
+    print(f"\r{print_message}")
 
     database.close()

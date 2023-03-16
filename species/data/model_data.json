@@ -25,6 +25,46 @@
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
     },
+    "atmo-ceq": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO CEQ",
+        "file size": "455 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 3000],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "atmo-neq-weak": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO NEQ weak",
+        "file size": "276 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 1800],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "atmo-neq-strong": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO NEQ strong",
+        "file size": "274 MB",
+        "wavelength range": [0.2, 6000],
+        "resolution": 10000,
+        "teff range": [200, 1800],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+    },
+    "petrus2023": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
+        "name": "ATMO (Petrus et al. 2023)",
+        "file size": "2.1 GB",
+        "wavelength range": [0.2, 30],
+        "resolution": 3000,
+        "teff range": [800, 3000],
+        "reference": "Petrus et al. (2023)",
+        "url": "https://arxiv.org/abs/2207.06622"
+    },
     "blackbody": {
         "parameters": ["teff"],
         "name": "blackbody",
@@ -161,6 +201,22 @@
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "saumon2008-clear": {
+        "parameters": ["teff", "logg"],
+        "name": "Saumon & Marley (2008) clear",
+        "file size": "197 Mb",
+        "wavelength range": [0.4, 50],
+        "resolution": 5000,
+        "teff range": [500, 2400]
+    },
+    "saumon2008-cloudy": {
+        "parameters": ["teff", "logg"],
+        "name": "Saumon & Marley (2008) cloudy",
+        "file size": "122 Mb",
+        "wavelength range": [0.4, 50],
+        "resolution": 5000,
+        "teff range": [500, 2400]
     },
     "sonora-cholla": {
         "parameters": ["teff", "logg", "log_kzz"],

@@ -1,5 +1,6 @@
 """
-Module with functionalities for comparing a spectrum with a library of empirical or model spectra.
+Module with functionalities for comparing a spectrum
+with a library of empirical or model spectra.
 """
 
 import configparser
@@ -23,7 +24,8 @@ from species.util import dust_util, read_util
 
 class CompareSpectra:
     """
-    Class for comparing a spectrum of an object with a library of empirical or model spectra.
+    Class for comparing a spectrum of an object with a
+    library of empirical or model spectra.
     """
 
     @typechecked
@@ -41,10 +43,12 @@ class CompareSpectra:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         spec_name : str, list(str)
-            Name of the spectrum or list with spectrum names that are stored at the object data
-            of ``object_name``. The argument can be either a string or a list of strings.
+            Name of the spectrum or list with spectrum names that
+            are stored at the object data of ``object_name``. The
+            argument can be either a string or a list of strings.
         spec_library : str, None
-            DEPRECATED: Name of the spectral library ('irtf', 'spex', or 'kesseli+2017).
+            DEPRECATED: Name of the spectral library
+            ('irtf', 'spex', or 'kesseli+2017).
 
         Returns
         -------
@@ -60,8 +64,9 @@ class CompareSpectra:
 
         if spec_library is not None:
             warnings.warn(
-                "The 'spec_library' parameter is no longer used by the constructor "
-                "of CompareSpectra and will be removed in a future release.",
+                "The 'spec_library' parameter is no longer used "
+                "by the constructor of CompareSpectra and will "
+                "be removed in a future release.",
                 DeprecationWarning,
             )
 
@@ -85,28 +90,36 @@ class CompareSpectra:
         rad_vel: Optional[Union[List[float], np.array]] = None,
     ) -> None:
         """
-        Method for finding the best fitting empirical spectra from a selected library by
-        evaluating the goodness-of-fit statistic from Cushing et al. (2008).
+        Method for finding the best fitting empirical spectra
+        from a selected library by evaluating the goodness-of-fit
+        statistic from Cushing et al. (2008).
 
         Parameters
         ----------
         tag : str
-            Database tag where for each spectrum from the spectral library the best-fit parameters
-            will be stored. So when testing a range of values for ``av_ext`` and ``rad_vel``, only
-            the parameters that minimize the goodness-of-fit statistic will be stored.
+            Database tag where for each spectrum from the spectral
+            library the best-fit parameters will be stored. So when
+            testing a range of values for ``av_ext`` and ``rad_vel``,
+            only the parameters that minimize the goodness-of-fit
+            statistic will be stored.
         spec_library : str
-            Name of the spectral library ('irtf', 'spex', 'kesseli+2017', 'bonnefoy+2014').
+            Name of the spectral library ('irtf', 'spex',
+            'kesseli+2017', 'bonnefoy+2014').
         wavel_range : tuple(float, float), None
-            Wavelength range (um) that is used for the empirical comparison.
+            Wavelength range (um) that is used for the empirical
+            comparison.
         sptypes : list(str), None
-            List with spectral types to compare with. The list should only contains types, for
-            example ``sptypes=['M', 'L']``. All available spectral types in the ``spec_library``
+            List with spectral types to compare with. The list should
+            only contains types, for example ``sptypes=['M', 'L']``.
+            All available spectral types in the ``spec_library``
             are compared with if set to ``None``.
         av_ext : list(float), np.array, None
-            List of A_V extinctions for which the goodness-of-fit statistic is tested. The
-            extinction is calculated with the empirical relation from Cardelli et al. (1989).
+            List of :math:`A_V` for which the goodness-of-fit
+            statistic is tested. The extinction is calculated with
+            the empirical relation from Cardelli et al. (1989).
         rad_vel : list(float), np.array, None
-            List of radial velocities (km s-1) for which the goodness-of-fit statistic is tested.
+            List of radial velocities (km s-1) for which the
+            goodness-of-fit statistic is tested.
 
         Returns
         -------
@@ -192,9 +205,10 @@ class CompareSpectra:
 
                     if len(indices) == 0:
                         raise ValueError(
-                            "The selected wavelength range does not cover any "
-                            "wavelength points of the input spectrum. Please "
-                            "use a broader range as argument of 'wavel_range'."
+                            "The selected wavelength range does not "
+                            "cover any wavelength points of the input "
+                            "spectrum. Please use a broader range as "
+                            "argument of 'wavel_range'."
                         )
 
                     spectrum = spectrum[
@@ -255,7 +269,7 @@ class CompareSpectra:
                             )
 
                             c_denom = (
-                                w_i * flux_resample ** 2 / spec_item[indices, 2] ** 2
+                                w_i * flux_resample**2 / spec_item[indices, 2] ** 2
                             )
 
                             if j == 0:
@@ -269,7 +283,7 @@ class CompareSpectra:
                                 spec_item[indices, 1] - c_k * flux_resample
                             ) / spec_item[indices, 2]
 
-                            g_k += np.sum(w_i * chi_sq ** 2)
+                            g_k += np.sum(w_i * chi_sq**2)
 
                             # obj_inv_cov_crop = obj_inv_cov[indices, :]
                             # obj_inv_cov_crop = obj_inv_cov_crop[:, indices]
@@ -371,36 +385,44 @@ class CompareSpectra:
         inc_phot: Optional[List[str]] = None,
     ) -> None:
         """
-        Method for finding the best fitting spectrum from a grid of atmospheric model spectra by
-        evaluating the goodness-of-fit statistic from Cushing et al. (2008). Currently, this method
-        only supports model grids with only :math:`T_\\mathrm{eff}` and :math:`\\log(g)` as free
-        parameters (e.g. BT-Settl). Please create an issue on Github if support for models with
+        Method for finding the best fitting spectrum from a grid of
+        atmospheric model spectra by evaluating the goodness-of-fit
+        statistic from Cushing et al. (2008). Currently, this method
+        only supports model grids with only :math:`T_\\mathrm{eff}`
+        and :math:`\\log(g)` as free parameters (e.g. BT-Settl).
+        Please create an issue on Github if support for models with
         more than two parameters is required.
 
         Parameters
         ----------
         tag : str
-            Database tag where for each spectrum from the spectral library the best-fit parameters
-            will be stored. So when testing a range of values for ``av_ext`` and ``rad_vel``, only
-            the parameters that minimize the goodness-of-fit statistic will be stored.
+            Database tag where for each spectrum from the spectral
+            library the best-fit parameters will be stored. So when
+            testing a range of values for ``av_ext`` and ``rad_vel``,
+            only the parameters that minimize the goodness-of-fit
+            statistic will be stored.
         model : str
             Name of the atmospheric model grid with synthetic spectra.
         av_points : list(float), np.array, None
-            List of :math:`A_V` extinction values for which the goodness-of-fit statistic will be
-            tested. The extinction is calculated with the relation from Cardelli et al. (1989).
+            List of :math:`A_V` extinction values for which the
+            goodness-of-fit statistic will be tested. The extinction is
+            calculated with the relation from Cardelli et al. (1989).
         fix_logg : float, None
-            Fix the value of :math:`\\log(g)`, for example if estimated from gravity-sensitive
-            spectral features. Typically, :math:`\\log(g)` can not be accurately determined when
+            Fix the value of :math:`\\log(g)`, for example if estimated
+            from gravity-sensitive spectral features. Typically,
+            :math:`\\log(g)` can not be accurately determined when
             comparing the spectra over a broad wavelength range.
         scale_spec : list(str), None
-            List with names of observed spectra to which a flux scaling is applied to best match
-            the spectral templates.
+            List with names of observed spectra to which a flux scaling
+            is applied to best match the spectral templates.
         weights : bool
-            Apply a weighting based on the widths of the wavelengths bins.
+            Apply a weighting based on the widths of the
+            wavelengths bins.
         inc_phot : list(str), None
-            Filter names of the photometry to include in the comparison. Photometry points are
-            weighted by the FWHM of the filter profile. No photometric fluxes will be used if the
-            argument is set to ``None``.
+            Filter names of the photometry to include in the
+            comparison. Photometry points are weighted by the FWHM of
+            the filter profile. No photometric fluxes will be used if
+            the argument is set to ``None``.
 
         Returns
         -------
@@ -454,9 +476,10 @@ class CompareSpectra:
 
                 else:
                     raise ValueError(
-                        f"The argument of 'fix_logg' ({fix_logg}) is not found "
-                        f"in the parameter grid of the model spectra. The following "
-                        f"values of log(g) are available: {value}"
+                        f"The argument of 'fix_logg' ({fix_logg}) is "
+                        f"not found in the parameter grid of the "
+                        f"model spectra. The following values of "
+                        f"log(g) are available: {value}"
                     )
 
             else:

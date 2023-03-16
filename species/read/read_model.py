@@ -7,12 +7,13 @@ import math
 import warnings
 import configparser
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
 import spectres
 import numpy as np
 
+from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
@@ -108,6 +109,7 @@ class ReadModel:
             "veil_a",
             "veil_b",
             "veil_ref",
+            "vsini",
         ]
 
         # Test if the spectra are present in the database
@@ -634,6 +636,7 @@ class ReadModel:
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
         smooth: bool = False,
+        fast_rot_broad: bool = True,
     ) -> box.ModelBox:
         """
         Function for extracting a model spectrum by linearly
@@ -667,6 +670,14 @@ class ReadModel:
             requires either a uniform spectral resolution of the input
             spectra (fast) or a uniform wavelength spacing of the input
             spectra (slow).
+        fast_rot_broad : bool
+            Apply fast algorithm for the rotational broadening if set
+            to ``True``, otherwise a slow but more accurate broadening
+            is applied if set to ``False``. The fast algorithm will
+            only provide an accurate broadening if the wavelength range
+            of the spectrum is somewhat narrow (e.g. only the :math:`K`
+            band). The argument is only used if the ``vsini`` parameter
+            is included in the ``model_param`` dictionary.
 
         Returns
         -------
@@ -729,7 +740,15 @@ class ReadModel:
 
         # Create a list with the parameter values
 
-        check_param = ["teff", "logg", "feh", "c_o_ratio", "fsed", "log_kzz"]
+        check_param = [
+            "teff",
+            "logg",
+            "feh",
+            "c_o_ratio",
+            "fsed",
+            "log_kzz",
+            "ad_index",
+        ]
 
         parameters = []
         for item in check_param:
@@ -804,6 +823,39 @@ class ReadModel:
             quantity="flux",
         )
 
+        # Apply rotational broadening vsin(i) in km/s
+
+        if "vsini" in model_param:
+            spec_interp = interp1d(model_box.wavelength, model_box.flux)
+
+            wavel_new = np.linspace(
+                model_box.wavelength[0],
+                model_box.wavelength[-1],
+                2 * model_box.wavelength.size,
+            )
+
+            if fast_rot_broad:
+                flux_broad = fastRotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=model_param["vsini"],
+                    effWvl=None,
+                )
+
+            else:
+                flux_broad = rotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=model_param["vsini"],
+                    edgeHandling="firstlast",
+                )
+
+            spec_interp = interp1d(wavel_new, flux_broad)
+
+            model_box.flux = spec_interp(model_box.wavelength)
+
         # Apply veiling
 
         if (
@@ -826,7 +878,6 @@ class ReadModel:
             and "lognorm_sigma" in model_param
             and "lognorm_ext" in model_param
         ):
-
             model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -840,7 +891,6 @@ class ReadModel:
             and "powerlaw_exp" in model_param
             and "powerlaw_ext" in model_param
         ):
-
             model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -859,7 +909,7 @@ class ReadModel:
                 ism_reddening,
             )
 
-            idx_select = ext_mag >= 0.
+            idx_select = ext_mag >= 0.0
             model_box.wavelength = model_box.wavelength[idx_select]
             model_box.flux = model_box.flux[idx_select]
 
@@ -1093,9 +1143,7 @@ class ReadModel:
             )
 
             if len(data_index) == 0:
-                raise ValueError(
-                    f"The parameter {item}={param_val[i]} is not found."
-                )
+                raise ValueError(f"The parameter {item}={param_val[i]} is not found.")
 
             data_index = data_index[0]
 
@@ -1179,7 +1227,6 @@ class ReadModel:
             and "lognorm_sigma" in model_param
             and "lognorm_ext" in model_param
         ):
-
             model_box.flux = self.apply_lognorm_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -1193,7 +1240,6 @@ class ReadModel:
             and "powerlaw_exp" in model_param
             and "powerlaw_ext" in model_param
         ):
-
             model_box.flux = self.apply_powerlaw_ext(
                 model_box.wavelength,
                 model_box.flux,
@@ -1212,7 +1258,7 @@ class ReadModel:
                 ism_reddening,
             )
 
-            idx_select = ext_mag >= 0.
+            idx_select = ext_mag >= 0.0
             model_box.wavelength = model_box.wavelength[idx_select]
             model_box.flux = model_box.flux[idx_select]
 
@@ -1267,7 +1313,9 @@ class ReadModel:
         return model_box
 
     @typechecked
-    def get_flux(self, model_param: Dict[str, float], synphot=None):
+    def get_flux(
+        self, model_param: Dict[str, float], synphot=None, return_box: bool = False
+    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -1279,6 +1327,15 @@ class ReadModel:
         synphot : species.analysis.photometry.SyntheticPhotometry, None
             Synthetic photometry object. The object is created if set
             to ``None``.
+        return_box : bool
+            Return a :class:`~species.core.box.PhotometryBox`
+            if set to ``True`` or return the two values that are
+            specified below if set to ``False``. By default, the
+            argument is set to ``False``. The advantage of
+            returning the output in a
+            :class:`~species.core.box.PhotometryBox` is that it can
+            directly be provided as input to
+            :func:`~species.plot.plot_spectrum.plot_spectrum`.
 
         Returns
         -------
@@ -1303,12 +1360,31 @@ class ReadModel:
         if synphot is None:
             synphot = photometry.SyntheticPhotometry(self.filter_name)
 
-        return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+        model_flux = synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+
+        if return_box:
+            model_mag = self.get_magnitude(model_param)
+
+            phot_box = box.create_box(
+                boxtype="photometry",
+                name=self.model,
+                wavelength=[self.mean_wavelength],
+                flux=[model_flux],
+                app_mag=[(model_mag[0], 0.0)],
+                abs_mag=[(model_mag[1], 0.0)],
+                filter_name=[self.filter_name],
+            )
+
+            return phot_box
+
+        return model_flux
 
     @typechecked
     def get_magnitude(
-        self, model_param: Dict[str, float]
-    ) -> Tuple[Optional[float], Optional[float]]:
+        self,
+        model_param: Dict[str, float],
+        return_box: bool = False,
+    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
         """
         Function for calculating the apparent and absolute magnitudes
         for the ``filter_name``.
@@ -1321,6 +1397,15 @@ class ReadModel:
             for the apparent magnitude (i.e. to scale the flux from
             the planet to the observer). Only a ``radius`` is
             required for the absolute magnitude.
+        return_box : bool
+            Return a :class:`~species.core.box.PhotometryBox`
+            if set to ``True`` or return the two values that are
+            specified below if set to ``False``. By default, the
+            argument is set to ``False``. The advantage of
+            returning the output in a
+            :class:`~species.core.box.PhotometryBox` is that it can
+            directly be provided as input to
+            :func:`~species.plot.plot_spectrum.plot_spectrum`.
 
         Returns
         -------
@@ -1389,6 +1474,21 @@ class ReadModel:
                     _, abs_mag = synphot.spectrum_to_magnitude(
                         spectrum.wavelength, spectrum.flux, distance=(distance, None)
                     )
+
+        if return_box:
+            model_flux = self.get_flux(model_param)
+
+            phot_box = box.create_box(
+                boxtype="photometry",
+                name=self.model,
+                wavelength=[self.mean_wavelength],
+                flux=[model_flux],
+                app_mag=[(app_mag[0], 0.0)],
+                abs_mag=[(abs_mag[0], 0.0)],
+                filter_name=[self.filter_name],
+            )
+
+            return phot_box
 
         return app_mag[0], abs_mag[0]
 
@@ -1663,3 +1763,172 @@ class ReadModel:
         )
 
         return np.log10(bol_lum / constants.L_SUN)
+
+    @typechecked
+    def create_color_magnitude(
+        self,
+        model_param: Dict[str, float],
+        filters_color: Tuple[str, str],
+        filter_mag: str,
+    ) -> box.ColorMagBox:
+        """
+        Function for creating a :class:`~species.core.box.
+        ColorMagBox` for a given set of filter names and model
+        parameters. The effective temperature, :math:`T_\\mathrm{eff}`,
+        is varied such that the returned :class:`~species.core.box.
+        ColorMagBox` contains the colors as function of
+        :math:`T_\\mathrm{eff}` and can be provide as input to the
+        :func:`~species.plot.plot_color.plot_color_magnitude` function.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The boundaries
+            of the model grid can be inspected by using the
+            :func:`~species.read.read_model.ReadModel.get_bounds()`
+            method. The effective temperature, :math:`T_\\mathrm{eff}`,
+            does not need to be included in the dictionary since it
+            is varied. The values of :math:`T_\\mathrm{eff}` are set to
+            the grid points. The grid points can be inspected with the
+            :func:`~species.read.read_model.ReadModel.get_points()`
+            method.
+        filters_color : tuple(str, str)
+            Filter names that are used for the color. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+        filter_mag : str
+            Filter name that is used for the magnitude. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+
+        Returns
+        -------
+        species.core.box.ColorMagBox
+            Box with the colors and magnitudes.
+        """
+
+        if "distance" not in model_param:
+            model_param["distance"] = 10.0
+
+        if "radius" not in model_param:
+            model_param["radius"] = 1.0
+
+        if "parallax" in model_param:
+            del model_param["parallax"]
+
+        read_model_1 = ReadModel(self.model, filter_name=filters_color[0])
+        read_model_2 = ReadModel(self.model, filter_name=filters_color[0])
+        read_model_3 = ReadModel(self.model, filter_name=filter_mag)
+
+        model_points = self.get_points()
+
+        param_list = []
+        color_list = []
+        mag_list = []
+
+        for param_item in model_points["teff"]:
+            model_param["teff"] = param_item
+
+            mag_1 = read_model_1.get_magnitude(model_param)
+            mag_2 = read_model_2.get_magnitude(model_param)
+            mag_3 = read_model_3.get_magnitude(model_param)
+
+            param_list.append(param_item)
+            color_list.append(mag_1[0] - mag_2[0])
+            mag_list.append(mag_3[0])
+
+        return box.create_box(
+            "colormag",
+            library=self.model,
+            object_type="spectra",
+            filters_color=filters_color,
+            filter_mag=filter_mag,
+            color=color_list,
+            magnitude=mag_list,
+            sptype=param_list,
+        )
+
+    @typechecked
+    def create_color_color(
+        self,
+        model_param: Dict[str, float],
+        filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
+    ) -> box.ColorColorBox:
+        """
+        Function for creating a :class:`~species.core.box.
+        ColorColorBox` for a given set of filter names and model
+        parameters. The effective temperature, :math:`T_\\mathrm{eff}`,
+        is varied such that the returned :class:`~species.core.box.
+        ColorColorBox` contains the colors as function of
+        :math:`T_\\mathrm{eff}` and can be provide as input to the
+        :func:`~species.plot.plot_color.plot_color_color` function.
+
+        Parameters
+        ----------
+        model_param : dict
+            Dictionary with the model parameters and values. The values
+            should be within the boundaries of the grid. The boundaries
+            of the model grid can be inspected by using the
+            :func:`~species.read.read_model.ReadModel.get_bounds()`
+            method. The effective temperature, :math:`T_\\mathrm{eff}`,
+            does not need to be included in the dictionary since it
+            is varied. The values of :math:`T_\\mathrm{eff}` are set to
+            the grid points. The grid points can be inspected with the
+            :func:`~species.read.read_model.ReadModel.get_points()`
+            method.
+        filters_colors : tuple(tuple(str, str), tuple(str, str))
+            Filter names that are used for the two colors. Any of
+            the filter names from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ are
+            compatible.
+
+        Returns
+        -------
+        species.core.box.ColorColorBox
+            Box with the colors.
+        """
+
+        if "distance" not in model_param:
+            model_param["distance"] = 10.0
+
+        if "radius" not in model_param:
+            model_param["radius"] = 1.0
+
+        if "parallax" in model_param:
+            del model_param["parallax"]
+
+        read_model_1 = ReadModel(self.model, filter_name=filters_colors[0][0])
+        read_model_2 = ReadModel(self.model, filter_name=filters_colors[0][1])
+        read_model_3 = ReadModel(self.model, filter_name=filters_colors[1][0])
+        read_model_4 = ReadModel(self.model, filter_name=filters_colors[1][1])
+
+        model_points = self.get_points()
+
+        param_list = []
+        color_1_list = []
+        color_2_list = []
+
+        for param_item in model_points["teff"]:
+            model_param["teff"] = param_item
+
+            mag_1 = read_model_1.get_magnitude(model_param)
+            mag_2 = read_model_2.get_magnitude(model_param)
+            mag_3 = read_model_3.get_magnitude(model_param)
+            mag_4 = read_model_4.get_magnitude(model_param)
+
+            param_list.append(param_item)
+            color_1_list.append(mag_1[0] - mag_2[0])
+            color_2_list.append(mag_3[0] - mag_4[0])
+
+        return box.create_box(
+            "colorcolor",
+            library=self.model,
+            object_type="spectra",
+            filters=filters_colors,
+            color1=color_1_list,
+            color2=color_2_list,
+            sptype=param_list,
+        )

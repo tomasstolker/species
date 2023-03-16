@@ -6,7 +6,8 @@ import configparser
 import json
 import os
 import pathlib
-import urllib.error
+import sys
+# import urllib.error
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -16,7 +17,7 @@ import h5py
 import numpy as np
 
 from astropy.io import fits
-from astroquery.simbad import Simbad
+# from astroquery.simbad import Simbad
 from scipy.integrate import simps
 from tqdm.auto import tqdm
 from typeguard import typechecked
@@ -24,9 +25,11 @@ from typeguard import typechecked
 from species.analysis import photometry
 from species.core import box, constants
 from species.data import (
+    accretion,
     allers2013,
     bonnefoy2014,
-    companions,
+    companion_spectra,
+    custom_model,
     dust,
     evolution,
     filters,
@@ -139,11 +142,19 @@ class Database:
             List with the object names that are stored in the database.
         """
 
-        spec_data = companions.get_spec_data()
+        data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            comp_data = json.load(json_file)
+
+        spec_file = pathlib.Path(__file__).parent.resolve() / "companion_spectra.json"
+
+        with open(spec_file, "r", encoding="utf-8") as json_file:
+            comp_spec = json.load(json_file)
 
         comp_names = []
 
-        for planet_name, planet_dict in companions.get_data().items():
+        for planet_name, planet_dict in comp_data.items():
             comp_names.append(planet_name)
 
             print(f"Object name = {planet_name}")
@@ -158,15 +169,19 @@ class Database:
 
             app_mag = planet_dict["app_mag"]
 
-            for mag_name, mag_dict in app_mag.items():
-                if isinstance(mag_dict, list):
-                    for item in mag_dict:
-                        print(f"{mag_name} (mag) = {item[0]} +/- {item[1]}")
+            for mag_key, mag_value in app_mag.items():
+                if isinstance(mag_value[0], list) or isinstance(mag_value[0], tuple):
+                    for item in mag_value:
+                        print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
                 else:
-                    print(f"{mag_name} (mag) = {mag_dict[0]} +/- {mag_dict[1]}")
+                    print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
 
-            if planet_name in spec_data:
-                for key, value in spec_data[planet_name].items():
+            print("References:")
+            for ref_item in planet_dict["references"]:
+                print(f"   - {ref_item}")
+
+            if planet_name in comp_spec:
+                for key, value in comp_spec[planet_name].items():
                     print(f"{key} spectrum from {value[3]}")
 
             print()
@@ -258,7 +273,7 @@ class Database:
 
             else:
                 warnings.warn(
-                    f"The dataset {data_set} is not " f"found in {self.database}."
+                    f"The dataset {data_set} is not found in {self.database}."
                 )
 
     @typechecked
@@ -268,10 +283,10 @@ class Database:
         verbose: bool = True,
     ) -> None:
         """
-        Function for adding the magnitudes and spectra of directly
-        imaged planets and brown dwarfs from
-        :class:`~species.data.companions.get_data` and
-        :func:`~species.data.companions.get_comp_spec` to the database.
+        Function for adding the magnitudes and spectra of
+        directly imaged planets and brown dwarfs from
+        `data/companion_data.json` and
+        :func:`~species.data.companion_spectra` to the database.
 
         Parameters
         ----------
@@ -293,45 +308,61 @@ class Database:
         if isinstance(name, str):
             name = list((name,))
 
-        data = companions.get_data()
+        data_file = pathlib.Path(__file__).parent.resolve() / "companion_data.json"
+
+        with open(data_file, "r", encoding="utf-8") as json_file:
+            comp_data = json.load(json_file)
 
         if name is None:
-            name = data.keys()
+            name = comp_data.keys()
 
         for item in name:
-            spec_dict = companions.companion_spectra(
+            spec_dict = companion_spectra.companion_spectra(
                 self.input_path, item, verbose=verbose
             )
 
             parallax = None
 
-            try:
-                # Query SIMBAD to get the parallax
-                simbad = Simbad()
-                simbad.add_votable_fields("parallax")
-                simbad_result = simbad.query_object(data[item]["simbad"])
-
-                if simbad_result is not None:
-                    par_sim = (
-                        simbad_result["PLX_VALUE"][0],  # (mas)
-                        simbad_result["PLX_ERROR"][0],
-                    )  # (mas)
-
-                    if not np.ma.is_masked(par_sim[0]) and not np.ma.is_masked(
-                        par_sim[1]
-                    ):
-                        parallax = (float(par_sim[0]), float(par_sim[1]))
-
-            except urllib.error.URLError:
-                parallax = data[item]["parallax"]
+            # try:
+            #     # Query SIMBAD to get the parallax
+            #     simbad = Simbad()
+            #     simbad.add_votable_fields("parallax")
+            #     simbad_result = simbad.query_object(comp_data[item]["simbad"])
+            #
+            #     if simbad_result is not None:
+            #         par_sim = (
+            #             simbad_result["PLX_VALUE"][0],  # (mas)
+            #             simbad_result["PLX_ERROR"][0],
+            #         )  # (mas)
+            #
+            #         if not np.ma.is_masked(par_sim[0]) and not np.ma.is_masked(
+            #             par_sim[1]
+            #         ):
+            #             parallax = (float(par_sim[0]), float(par_sim[1]))
+            #
+            # except urllib.error.URLError:
+            #     parallax = tuple(comp_data[item]["parallax"])
 
             if parallax is None:
-                parallax = data[item]["parallax"]
+                parallax = tuple(comp_data[item]["parallax"])
+
+            app_mag = comp_data[item]["app_mag"]
+
+            for key, value in app_mag.items():
+                if isinstance(value[0], list):
+                    mag_list = []
+                    for mag_item in value:
+                        mag_list.append(tuple(mag_item))
+
+                    app_mag[key] = mag_list
+
+                else:
+                    app_mag[key] = tuple(value)
 
             self.add_object(
                 object_name=item,
                 parallax=parallax,
-                app_mag=data[item]["app_mag"],
+                app_mag=app_mag,
                 spectrum=spec_dict,
                 verbose=verbose,
             )
@@ -373,6 +404,36 @@ class Database:
 
         dust.add_optical_constants(self.input_path, h5_file)
         dust.add_cross_sections(self.input_path, h5_file)
+
+        h5_file.close()
+
+    @typechecked
+    def add_accretion(self) -> None:
+        """
+        Function for adding the coefficients for converting line
+        luminosities of hydrogen emission lines into accretion
+        luminosities (see `Aoyama et al. (2021) <https://ui.
+        adsabs.harvard.edu/abs/ 2021ApJ...917L..30A/abstract>`_
+        and `Marleau & Aoyama (2022) <https://ui.adsabs.harvard.
+        edu/abs/2022RNAAS...6..262M/abstract>`_ for details).
+        The relation is used by
+        :class:`~species.analysis.emission_line.EmissionLine`
+        for converting the fitted line luminosity.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        h5_file = h5py.File(self.database, "a")
+
+        if "accretion" in h5_file:
+            del h5_file["accretion"]
+
+        h5_file.create_group("accretion")
+
+        accretion.add_accretion_relation(self.input_path, h5_file)
 
         h5_file.close()
 
@@ -480,14 +541,14 @@ class Database:
         Parameters
         ----------
         model : str
-            Evolutionary model ('ames', 'bt-settl', 'sonora',
-            'saumon2008', 'nextgen', 'baraffe2015', or 'manual').
-            Isochrones will be automatically downloaded.
-            Alternatively, isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/ or
-            https://perso.ens-lyon.fr/isabelle.baraffe/, and can be
-            manually added by setting the ``filename`` and ``tag``
-            arguments, and setting ``model='manual'``.
+            Evolutionary model ('ames', 'atmo', 'baraffe2015',
+            'bt-settl', 'nextgen', 'saumon2008', 'sonora',
+            or 'manual'). Isochrones will be automatically
+            downloaded. Alternatively, isochrone data can be
+            downloaded from https://phoenix.ens-lyon.fr/Grids/ or
+            https://perso.ens-lyon.fr/isabelle.baraffe/, and can
+            be manually added by setting the ``filename`` and
+            ``tag`` arguments, and setting ``model='manual'``.
         filename : str, None
             Filename with the isochrone data. Only required with
             ``model='manual'`` and can be set to ``None`` otherwise.
@@ -513,7 +574,7 @@ class Database:
         if "isochrones" not in h5_file:
             h5_file.create_group("isochrones")
 
-        if model in ["phoenix", "marleau", "manual"]:
+        if model in ["manual", "marleau", "phoenix"]:
             if f"isochrones/{tag}" in h5_file:
                 del h5_file[f"isochrones/{tag}"]
 
@@ -523,17 +584,25 @@ class Database:
             if "isochrones/ames-dusty" in h5_file:
                 del h5_file["isochrones/ames-dusty"]
 
+        elif model == "atmo":
+            if "isochrones/atmo-ceq" in h5_file:
+                del h5_file["isochrones/atmo-ceq"]
+            if "isochrones/atmo-neq-weak" in h5_file:
+                del h5_file["isochrones/atmo-neq-weak"]
+            if "isochrones/atmo-neq-strong" in h5_file:
+                del h5_file["isochrones/atmo-neq-strong"]
+
+        elif model == "baraffe2015":
+            if "isochrones/baraffe2015" in h5_file:
+                del h5_file["isochrones/baraffe2015"]
+
         elif model == "bt-settl":
             if "isochrones/bt-settl" in h5_file:
                 del h5_file["isochrones/bt-settl"]
 
-        elif model == "sonora":
-            if "isochrones/sonora+0.0" in h5_file:
-                del h5_file["isochrones/sonora+0.0"]
-            if "isochrones/sonora+0.5" in h5_file:
-                del h5_file["isochrones/sonora+0.5"]
-            if "isochrones/sonora-0.5" in h5_file:
-                del h5_file["isochrones/sonora-0.5"]
+        elif model == "nextgen":
+            if "isochrones/nextgen" in h5_file:
+                del h5_file["isochrones/nextgen"]
 
         elif model == "saumon2008":
             if "isochrones/saumon2008-nc_solar" in h5_file:
@@ -547,37 +616,47 @@ class Database:
             if "isochrones/saumon2008-hybrid_solar" in h5_file:
                 del h5_file["isochrones/saumon2008-hybrid_solar"]
 
-        elif model == "nextgen":
-            if "isochrones/nextgen" in h5_file:
-                del h5_file["isochrones/nextgen"]
+        elif model == "sonora":
+            if "isochrones/sonora+0.0" in h5_file:
+                del h5_file["isochrones/sonora+0.0"]
+            if "isochrones/sonora+0.5" in h5_file:
+                del h5_file["isochrones/sonora+0.5"]
+            if "isochrones/sonora-0.5" in h5_file:
+                del h5_file["isochrones/sonora-0.5"]
+
+        if model == "ames":
+            isochrones.add_ames(h5_file, self.input_path)
+
+        elif model == "atmo":
+            isochrones.add_atmo(h5_file, self.input_path)
 
         elif model == "baraffe2015":
-            if "isochrones/baraffe2015" in h5_file:
-                del h5_file["isochrones/baraffe2015"]
+            isochrones.add_baraffe2015(h5_file, self.input_path)
 
-        if model == "manual":
+        elif model == "bt-settl":
+            isochrones.add_btsettl(h5_file, self.input_path)
+
+        elif model == "manual":
             isochrones.add_manual(h5_file, tag, filename)
 
         elif model == "marleau":
             isochrones.add_marleau(h5_file, tag, filename)
 
-        elif model == "ames":
-            isochrones.add_ames(h5_file, self.input_path)
-
-        elif model == "bt-settl":
-            isochrones.add_btsettl(h5_file, self.input_path)
-
-        elif model == "sonora":
-            isochrones.add_sonora(h5_file, self.input_path)
+        elif model == "nextgen":
+            isochrones.add_nextgen(h5_file, self.input_path)
 
         elif model == "saumon2008":
             isochrones.add_saumon(h5_file, self.input_path)
 
-        elif model == "nextgen":
-            isochrones.add_nextgen(h5_file, self.input_path)
+        elif model == "sonora":
+            isochrones.add_sonora(h5_file, self.input_path)
 
-        elif model == "baraffe2015":
-            isochrones.add_baraffe2015(h5_file, self.input_path)
+        else:
+            raise ValueError(f"The evolutionary model \'{model}\' is "
+                             "not supported. Please choose another "
+                             "argument for \'model\'. Have a look "
+                             "at the documentation of add_isochrones "
+                             "for details on the supported models.")
 
         h5_file.close()
 
@@ -627,13 +706,15 @@ class Database:
         Parameters
         ----------
         model : str
-            Model name ('ames-cond', 'ames-dusty', 'atmo', 'bt-settl',
+            Model name ('ames-cond', 'ames-dusty', 'atmo-ceq',
+            'atmo-neq-weak', 'atmo-neq-strong', 'bt-settl',
             'bt-settl-cifist', 'bt-nextgen', 'drift-phoenix',
             'petitcode-cool-clear', 'petitcode-cool-cloudy',
             'petitcode-hot-clear', 'petitcode-hot-cloudy', 'exo-rem',
             'blackbody', bt-cond', 'bt-cond-feh, 'morley-2012',
             'sonora-cholla', 'sonora-bobcat', 'sonora-bobcat-co',
-            'koester-wd').
+            'koester-wd', 'saumon2008-clear', 'saumon2008-cloudy',
+            'petrus2023').
         wavel_range : tuple(float, float), None
             Wavelength range (um) for adding a subset of the spectra.
             The full wavelength range is used if the argument is set
@@ -661,6 +742,82 @@ class Database:
 
             model_spectra.add_model_grid(
                 model, self.input_path, h5_file, wavel_range, teff_range, spec_res
+            )
+
+    @typechecked
+    def add_custom_model(
+        self,
+        model: str,
+        data_path: str,
+        parameters: List[str],
+        wavel_range: Optional[Tuple[float, float]] = None,
+        spec_res: Optional[float] = None,
+        teff_range: Optional[Tuple[float, float]] = None,
+    ) -> None:
+        """
+        Function for adding a custom grid of model spectra to the
+        database. The spectra are read from the ``data_path`` and
+        should contain the ``model_name`` and ``parameters`` in
+        the filenames in the following format example:
+        `model-name_teff_1000_logg_4.0_feh_0.0_spec.dat`. The
+        list with ``parameters`` should contain the same parameters
+        as are included in the filename. Each datafile should contain
+        two columns with the wavelengths in :math:`\\mu\\text{m}`
+        and the fluxes in
+        :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`. Each file
+        should contain the same number and values of wavelengths. The
+        wavelengths should be logarithmically sampled, so at a constant
+        resolution, :math:`\\lambda/\\Delta\\lambda`. If not, then the
+        ``wavel_range`` and ``spec_res`` parameters should be used
+        such that the wavelengths are resampled when reading the data
+        into the ``species`` database.
+
+        Parameters
+        ----------
+        model : str
+            Name of the model grid. Should be identical to the model
+            name that is used in the filenames.
+        data_path : str
+            Path where the files with the model spectra are located.
+            It is best to provide an absolute path to the folder.
+        parameters : list(str)
+            List with the model parameters. The following parameters
+            are supported: ``teff`` (for :math:`T_\\mathrm{eff}`),
+            ``logg`` (for :math:`\\log\\,g`), ``feh`` (for [Fe/H]),
+            ``c_o_ratio`` (for C/O), ``fsed`` (for
+            :math:`f_\\mathrm{sed}`), ``log_kzz`` (for
+            :math:`\\log\\,K_\\mathrm{zz}`), and ``ad_index`` (for
+            :math:`\\gamma_\\mathrm{ad}`). Please contact the code
+            maintainer if support for other parameters should be added.
+        wavel_range : tuple(float, float), None
+            Wavelength range (:math:`\\mu\\text{m}`) for adding a
+            subset of the spectra. The full wavelength range is
+            used if the argument is set to ``None``.
+        spec_res : float, None
+            Spectral resolution to which the spectra will be resampled.
+            This parameter should be used in combination with
+            ``wavel_range`` if the input spectra at ``data_path``
+            are not sampled at a constant
+            :math:`\\lambda/\\Delta\\lambda`. The argument is
+            only used if ``wavel_range`` is not ``None`` and it is
+            not used if set to ``None``.
+        teff_range : tuple(float, float), None
+            Effective temperature range (K) for adding a subset of the
+            model grid. The full parameter grid will be added if the
+            argument is set to ``None``.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        with h5py.File(self.database, "a") as h5_file:
+            if "models" not in h5_file:
+                h5_file.create_group("models")
+
+            custom_model.add_custom_model_grid(
+                model, data_path, parameters, h5_file, wavel_range, teff_range, spec_res,
             )
 
     @typechecked
@@ -747,6 +904,13 @@ class Database:
         NoneType
             None
         """
+
+        # First add filters here because ReadFilter
+        # will also open the HDF5 database
+
+        if app_mag is not None:
+            for mag_item in app_mag:
+                read_filt = read_filter.ReadFilter(mag_item)
 
         h5_file = h5py.File(self.database, "a")
 
@@ -1489,15 +1653,19 @@ class Database:
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
         """
-        DEPRECATION: This method is deprecated and will be removed in a future release. Please use
-        the :func:`~species.data.database.Database.add_spectra` method instead.
+        DEPRECATION: This method is deprecated and will be
+        removed in a future release. Please use the
+        :func:`~species.data.database.Database.add_spectra`
+        method instead.
 
         Parameters
         ----------
         spec_library : str
-            Spectral library ('irtf', 'spex', 'kesseli+2017', 'bonnefoy+2014', 'allers+2013').
+            Spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013').
         sptypes : list(str)
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T').
+            Currently only implemented for 'irtf'.
 
         Returns
         -------
@@ -1543,12 +1711,20 @@ class Database:
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
         """
+        Function for adding empirical spectral libraries to the
+        database. The spectra are stored together with several
+        attributes such as spectral type, parallax, and Simbad ID.
+        The spectra can be read with the functionalities of
+        :class:`~species.read.read_spectrum.ReadSpectrum`.
+
         Parameters
         ----------
         spec_library : str
-            Spectral library ('irtf', 'spex', 'kesseli+2017', 'bonnefoy+2014', 'allers+2013').
+            Spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013').
         sptypes : list(str)
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently only implemented for 'irtf'.
+            Spectral types ('F', 'G', 'K', 'M', 'L', 'T'). Currently
+            only implemented for ``spec_library='irtf'``.
 
         Returns
         -------
@@ -1561,7 +1737,7 @@ class Database:
         if "spectra" not in h5_file:
             h5_file.create_group("spectra")
 
-        if "spectra/" + spec_library in h5_file:
+        if f"spectra/{spec_library}" in h5_file:
             del h5_file["spectra/" + spec_library]
 
         if spec_library[0:5] == "vega":
@@ -2561,16 +2737,14 @@ class Database:
             Uncertainty on the log-evidence.
         """
 
-        h5_file = h5py.File(self.database, "r")
-        dset = h5_file[f"results/fit/{tag}/samples"]
+        with h5py.File(self.database, "r") as h5_file:
+            dset = h5_file[f"results/fit/{tag}/samples"]
 
-        if "ln_evidence" in dset.attrs:
-            ln_evidence = dset.attrs["ln_evidence"]
-        else:
-            # For backward compatibility
-            ln_evidence = (None, None)
-
-        h5_file.close()
+            if "ln_evidence" in dset.attrs:
+                ln_evidence = dset.attrs["ln_evidence"]
+            else:
+                # For backward compatibility
+                ln_evidence = (None, None)
 
         return ln_evidence[0], ln_evidence[1]
 
@@ -2579,10 +2753,10 @@ class Database:
         self, tag: str, random: Optional[int] = None, out_file: Optional[str] = None
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Function for returning the pressure-temperature profiles from
-        the posterior of the atmospheric retrieval with
-        ``petitRADTRANS``. The data can also optionally be written to
-        an output file.
+        Function for returning the pressure-temperature profiles
+        from the posterior of the atmospheric retrieval with
+        ``petitRADTRANS``. The data can also optionally be
+        written to an output file.
 
         Parameters
         ----------
@@ -2628,6 +2802,11 @@ class Database:
             n_param = dset.attrs["n_param"]
         elif "nparam" in dset.attrs:
             n_param = dset.attrs["nparam"]
+
+        if "temp_nodes" in dset.attrs:
+            temp_nodes = dset.attrs["temp_nodes"]
+        else:
+            temp_nodes = 15
 
         samples = np.asarray(dset)
 
@@ -2699,15 +2878,15 @@ class Database:
                 else:
                     pt_smooth = 0.0
 
-                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), 15)
+                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), temp_nodes)
 
                 knot_temp = []
-                for j in range(15):
-                    knot_temp.append(item[param_index[f"t{i}"]])
+                for k in range(temp_nodes):
+                    knot_temp.append(item[param_index[f"t{k}"]])
 
                 knot_temp = np.asarray(knot_temp)
 
-                temp[:, j] = retrieval_util.pt_spline_interp(
+                temp[:, i] = retrieval_util.pt_spline_interp(
                     knot_press, knot_temp, press, pt_smooth
                 )
 
@@ -2973,12 +3152,12 @@ class Database:
 
         json_filename = os.path.join(output_folder, "params.json")
 
-        with open(json_filename) as json_file:
+        with open(json_filename, encoding="utf-8") as json_file:
             parameters = json.load(json_file)
 
         radtrans_filename = os.path.join(output_folder, "radtrans.json")
 
-        with open(radtrans_filename) as json_file:
+        with open(radtrans_filename, encoding="utf-8") as json_file:
             radtrans = json.load(json_file)
 
         post_new = os.path.join(output_folder, "retrieval_post_equal_weights.dat")
@@ -3079,8 +3258,10 @@ class Database:
 
             if "temp_nodes" not in radtrans or radtrans["temp_nodes"] is None:
                 dset.attrs["temp_nodes"] = "None"
+                temp_nodes = 15
             else:
                 dset.attrs["temp_nodes"] = radtrans["temp_nodes"]
+                temp_nodes = radtrans["temp_nodes"]
 
             if "pt_smooth" in radtrans:
                 dset.attrs["pt_smooth"] = radtrans["pt_smooth"]
@@ -3112,10 +3293,10 @@ class Database:
                     print(" [DONE]")
 
                     print("Importing chemistry module...", end="", flush=True)
-                    from poor_mans_nonequ_chem_FeH.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                        interpol_abundances,
-                    )
-
+                    if "poor_mans_nonequ_chem" in sys.modules:
+                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+                    else:
+                        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
                     print(" [DONE]")
 
                     rt_object = Radtrans(
@@ -3168,11 +3349,11 @@ class Database:
                         or radtrans["pt_profile"] == "monotonic"
                     ):
                         knot_press = np.logspace(
-                            np.log10(pressure[0]), np.log10(pressure[-1]), 15
+                            np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
                         )
 
                         knot_temp = []
-                        for k in range(15):
+                        for k in range(temp_nodes):
                             knot_temp.append(sample_dict[f"t{k}"])
 
                         knot_temp = np.asarray(knot_temp)
@@ -3272,11 +3453,11 @@ class Database:
                     or radtrans["pt_profile"] == "monotonic"
                 ):
                     knot_press = np.logspace(
-                        np.log10(pressure[0]), np.log10(pressure[-1]), 15
+                        np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
                     )
 
                     knot_temp = []
-                    for k in range(15):
+                    for k in range(temp_nodes):
                         knot_temp.append(sample_dict[f"t{k}"])
 
                     knot_temp = np.asarray(knot_temp)
@@ -3386,7 +3567,11 @@ class Database:
             Database tag with the posterior samples.
         random : int, None
             Number of randomly selected samples. All samples
-            are used if set to ``None``.
+            are selected if set to ``None``. When setting ``random=0``,
+            no random spectra are sampled (so the returned list
+            with ``ModelBox`` objects is empty), but the
+            :class:`~species.read.read_radtrans.ReadRadtrans`
+            instance is still returned.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. The
             wavelength range from the retrieval is adopted
@@ -3404,7 +3589,7 @@ class Database:
         -------
         list(box.ModelBox)
             Boxes with the randomly sampled spectra.
-        read_radtrans.Radtrans
+        read_radtrans.ReadRadtrans
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
 
@@ -3703,7 +3888,7 @@ class Database:
 
         with h5py.File(self.database, "a") as h5_file:
             print(
-                f"Storing Teff (K) as attribute of " f"results/fit/{tag}/samples...",
+                f"Storing Teff (K) as attribute of results/fit/{tag}/samples...",
                 end="",
             )
 
@@ -3718,7 +3903,7 @@ class Database:
             print(" [DONE]")
 
             print(
-                f"Storing log(L/Lsun) as attribute of " f"results/fit/{tag}/samples...",
+                f"Storing log(L/Lsun) as attribute of results/fit/{tag}/samples...",
                 end="",
             )
 
@@ -3805,6 +3990,16 @@ class Database:
         else:
             p_quench = None
 
+        if "temp_nodes" in sample_box.attributes:
+            temp_nodes = sample_box.attributes["temp_nodes"]
+        else:
+            temp_nodes = 15
+
+        if "pressure_grid" in sample_box.attributes:
+            pressure_grid = sample_box.attributes["pressure_grid"]
+        else:
+            pressure_grid = "smaller"
+
         pressure = np.logspace(-6.0, 3.0, 180)
 
         if sample_box.attributes["pt_profile"] == "molliere":
@@ -3819,10 +4014,10 @@ class Database:
             )
 
         else:
-            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), 15)
+            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
 
             knot_temp = []
-            for i in range(15):
+            for i in range(temp_nodes):
                 knot_temp.append(model_param[f"t{i}"])
 
             knot_temp = np.asarray(knot_temp)
@@ -3836,7 +4031,10 @@ class Database:
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
 
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        if "poor_mans_nonequ_chem" in sys.modules:
+            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+        else:
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
 
         # Interpolate the abundances, following chemical equilibrium
         abund_in = interpol_abundances(
@@ -3919,7 +4117,7 @@ class Database:
             cloud_species=cloud_species,
             scattering=True,
             wavel_range=(0.5, 50.0),
-            pressure_grid=sample_box.attributes["pressure_grid"],
+            pressure_grid=pressure_grid,
             res_mode="c-k",
             cloud_wavel=cloud_wavel,
         )

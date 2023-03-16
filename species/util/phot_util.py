@@ -200,12 +200,16 @@ def absolute_to_apparent(
     Parameters
     ----------
     abs_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Absolute magnitude and uncertainty (mag). The same uncertainty
-        is used for the apparent magnitude.
+        Tuple with the absolute magnitude and uncertainty (mag).
+        The uncertainty on the returned apparent magnitude is
+        simply adopted from the absolute magnitude. Providing the
+        uncertainty is optional and can be set to ``None``.
     distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Distance and uncertainty (pc). The uncertainty is optional
-        and actually not used by this function but included for
-        redundancy.
+        Tuple with the distance and uncertainty (pc). The uncertainty
+        is optional and can be set to ``None``. The distance
+        uncertainty is currently not used by this function but
+        included so it can be implemented at some point into the
+        error budget.
 
     Returns
     -------
@@ -246,7 +250,7 @@ def get_residuals(
     objectbox : species.core.box.ObjectBox
         Box with the photometry and/or spectra of an object. A scaling
         and/or error inflation of the spectra should be applied with
-        :func:`~species.util.read_util.update_spectra` beforehand.
+        :func:`~species.util.read_util.update_objectbox` beforehand.
     inc_phot : bool, list(str)
         Include photometric data in the fit. If a boolean, either all
         (``True``) or none (``False``) of the data are selected. If a

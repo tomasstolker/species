@@ -45,7 +45,7 @@ class TestPlanck:
             255.37728257033913, rel=self.limit, abs=0.0
         )
         assert np.sum(modelbox.flux) == pytest.approx(
-            4.0434750652879004e-12, rel=self.limit, abs=0.0
+            4.228433207324114e-12, rel=self.limit, abs=0.0
         )
 
     def test_get_flux(self):
@@ -53,11 +53,11 @@ class TestPlanck:
 
         # low relative precision because of filter profile precision
         flux = read_planck.get_flux({"teff": 2000.0, "radius": 1.0, "distance": 10.0})
-        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=1e-4, abs=0.0)
+        assert flux[0] == pytest.approx(2.079882900702339e-14, rel=1e-4, abs=0.0)
 
         # low relative precision because of filter profile precision
         synphot = species.SyntheticPhotometry(filter_name="MKO/NSFCam.J")
         flux = read_planck.get_flux(
             {"teff": 2000.0, "radius": 1.0, "distance": 10.0}, synphot=synphot
         )
-        assert flux[0] == pytest.approx(1.9888885697002363e-14, rel=1e-4, abs=0.0)
+        assert flux[0] == pytest.approx(2.079882900702339e-14, rel=1e-4, abs=0.0)

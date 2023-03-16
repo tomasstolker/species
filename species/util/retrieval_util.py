@@ -357,7 +357,7 @@ def pt_spline_interp(
     knot_press: np.ndarray,
     knot_temp: np.ndarray,
     pressure: np.ndarray,
-    pt_smooth: float = 0.3,
+    pt_smooth: Optional[float] = 0.3,
 ) -> np.ndarray:
     """
     Function for interpolating the P-T nodes with a PCHIP 1-D monotonic
@@ -374,13 +374,14 @@ def pt_spline_interp(
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
-    pt_smooth : float, dict
+    pt_smooth : float, dict, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex.
+        set to 0.3 dex. No smoothing is applied if the argument
+        is set to ``None``.
 
     Returns
     -------
@@ -398,9 +399,10 @@ def pt_spline_interp(
     if np.std(np.diff(log_press)) / log_diff > 1e-6:
         raise ValueError("Expecting equally spaced pressures in log space.")
 
-    temp_interp = gaussian_filter(
-        temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
-    )
+    if pt_smooth is not None:
+        temp_interp = gaussian_filter(
+            temp_interp, sigma=pt_smooth / log_diff, mode="nearest"
+        )
 
     return temp_interp
 
@@ -414,7 +416,7 @@ def create_pt_profile(
     knot_press: Optional[np.ndarray],
     metallicity: float,
     c_o_ratio: float,
-    pt_smooth: Union[float, Dict[str, float]] = 0.3,
+    pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
 ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating the P-T profile.
@@ -438,13 +440,14 @@ def create_pt_profile(
         Metallicity [Fe/H].
     c_o_ratio : float
         Carbon-to-oxgen ratio.
-    pt_smooth : float, dict
+    pt_smooth : float, dict, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the P-T profile, after the temperature nodes
         have been interpolated to a higher pressure resolution.
         The argument should be given as
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-        set to 0.3 dex.
+        set to 0.3 dex. No smoothing is applied if the argument
+        is set to ``None``.
 
     Returns
     -------
@@ -1930,6 +1933,70 @@ def cloud_mass_fraction(
 
 
 @typechecked
+def get_condensation_curve(
+    composition: str,
+    press: np.ndarray,
+    metallicity: float,
+    c_o_ratio: float,
+    mmw: float = 2.33,
+) -> np.ndarray:
+    """
+    Function to find the base of the cloud deck by intersecting the
+    P-T profile with the saturation vapor pressure.
+
+    Parameters
+    ----------
+    composition : str
+        Cloud composition ('Fe', 'MgSiO3', 'Mg2SiO4', 'Al2O3',
+        'Na2S', or 'KCL').
+    press : np.ndarray
+        Pressures (bar).
+    metallicity : float
+        Metallicity [Fe/H].
+    c_o_ratio : float
+        Carbon-to-oxygen ratio.
+    mmw : float
+        Mean molecular weight.
+
+    Returns
+    -------
+    np.array
+        Condensation temperatures (K) for the provided input pressures.
+    """
+
+    if composition == "Fe":
+        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
+
+    elif composition == "MgSiO3":
+        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
+
+    elif composition == "Mg2SiO4":
+        Pc, Tc = return_T_cond_Mg2SiO4(metallicity)
+
+    elif composition == "Al2O3":
+        Pc, Tc = return_T_cond_Al2O3(metallicity)
+
+    elif composition == "Na2S":
+        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
+
+    elif composition == "KCL":
+        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
+
+    else:
+        raise ValueError(
+            f"The '{composition}' composition is not "
+            "supported by get_condensation_curve."
+        )
+
+    index = (Pc > 1e-8) & (Pc < 1e5)
+    Pc, Tc = Pc[index], Tc[index]
+
+    tcond_p = interp1d(Pc, Tc)
+
+    return tcond_p(press)
+
+
+@typechecked
 def find_cloud_deck(
     composition: str,
     press: np.ndarray,
@@ -1967,34 +2034,12 @@ def find_cloud_deck(
         Pressure (bar) at the base of the cloud deck.
     """
 
-    if composition == "Fe":
-        Pc, Tc = return_T_cond_Fe_comb(metallicity, c_o_ratio, mmw)
-
-    elif composition == "MgSiO3":
-        Pc, Tc = return_T_cond_MgSiO3(metallicity, c_o_ratio, mmw)
-
-    elif composition == "Mg2SiO4":
-        Pc, Tc = return_T_cond_Mg2SiO4(metallicity)
-
-    elif composition == "Al2O3":
-        Pc, Tc = return_T_cond_Al2O3(metallicity)
-
-    elif composition == "Na2S":
-        Pc, Tc = return_T_cond_Na2S(metallicity, c_o_ratio, mmw)
-
-    elif composition == "KCL":
-        Pc, Tc = return_T_cond_KCl(metallicity, c_o_ratio, mmw)
-
-    else:
-        raise ValueError(
-            f"The '{composition}' composition is not supported by find_cloud_deck."
-        )
-
-    index = (Pc > 1e-8) & (Pc < 1e5)
-    Pc, Tc = Pc[index], Tc[index]
-
-    tcond_p = interp1d(Pc, Tc)
-    Tcond_on_input_grid = tcond_p(press)
+    Tcond_on_input_grid = get_condensation_curve(
+        composition=composition,
+        press=press,
+        metallicity=metallicity,
+        c_o_ratio=c_o_ratio,
+        mmw=mmw)
 
     Tdiff = Tcond_on_input_grid - temp
     diff_vec = Tdiff[1:] * Tdiff[:-1]
@@ -2617,9 +2662,9 @@ def quench_pressure(
     log_kzz: float,
 ) -> Optional[float]:
     """
-    Function to determine the CO/CH4 quenching pressure by intersecting
-    the pressure-dependent timescales of the vertical mixing and the
-    CO/CH4 reaction rates.
+    Function to determine the CO/CH$_4$ quenching pressure by
+    intersecting the pressure-dependent timescales of the
+    vertical mixing and the CO/CH$_4$ reaction rates.
 
     Parameters
     ----------

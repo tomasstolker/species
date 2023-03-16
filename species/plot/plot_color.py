@@ -3,6 +3,9 @@ Module with functions for creating plots with color-magnitude
 diagrams and color-color diagrams.
 """
 
+import json
+import os
+import pathlib
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -17,7 +20,6 @@ from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.core import box
-from species.data import companions
 from species.read import read_filter, read_object
 from species.util import dust_util, plot_util
 
@@ -31,10 +33,8 @@ def plot_color_magnitude(
             List[Tuple[str, str, str, str, Optional[dict], Optional[dict]]],
         ]
     ] = None,
-    mass_labels: Optional[Union[List[float],
-                                List[Tuple[float, str]],
-                                Dict[str, List[Tuple[float, str]]]]] = None,
-    teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+    mass_labels: Optional[Dict[str, List[Tuple[float, str]]]] = None,
+    teff_labels: Optional[Dict[str, List[Tuple[float, str]]]] = None,
     companion_labels: bool = False,
     accretion: bool = False,
     reddening: Optional[
@@ -98,8 +98,8 @@ def plot_color_magnitude(
         Plot accreting, directly imaged objects with a different symbol
         than the regular, directly imaged objects. The object names
         from ``objects`` will be compared with the data from
-        :func:`~species.data.companions.get_data` to check if a
-        companion is accreting or not.
+        `data/companion_data.json` to check if a companion is
+        accreting or not.
     reddening : list(tuple(tuple(str, str), tuple(str, float),
             str, float, tuple(float, float))), None
         Include reddening arrows by providing a list with tuples. Each
@@ -154,7 +154,6 @@ def plot_color_magnitude(
 
     """
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -162,9 +161,17 @@ def plot_color_magnitude(
 
     # model_color = ("#234398", "#f6a432", "black")
 
-    model_color = ("tab:blue", "tab:orange", "tab:green",
-                   "tab:red", "tab:purple", "tab:brown",
-                   "tab:pink", "tab:olive", "tab:cyan")
+    model_color = (
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:olive",
+        "tab:cyan",
+    )
 
     model_linestyle = ("-", "--", ":", "-.")
 
@@ -342,11 +349,11 @@ def plot_color_magnitude(
                         interp_color = interp1d(item.sptype, item.color)
 
                         if item.iso_tag in mass_labels:
-                            m_select = mass_labels[item.iso_tag]
+                            label_select = mass_labels[item.iso_tag]
                         else:
-                            m_select = []
+                            label_select = []
 
-                        for i, mass_item in enumerate(m_select):
+                        for i, mass_item in enumerate(label_select):
                             if isinstance(mass_item, tuple):
                                 mass_val = mass_item[0]
                                 mass_pos = mass_item[1]
@@ -370,9 +377,7 @@ def plot_color_magnitude(
                                 mass_ha = "left"
                                 mass_xytext = (pos_color + 0.05, pos_mag)
 
-                            mass_label = (
-                                str(int(mass_val)) + r" M$_\mathregular{J}$"
-                            )
+                            mass_label = str(int(mass_val)) + r" M$_\mathregular{J}$"
 
                             xlim = ax1.get_xlim()
                             ylim = ax1.get_ylim()
@@ -435,7 +440,12 @@ def plot_color_magnitude(
                 interp_magnitude = interp1d(item.sptype, item.magnitude)
                 interp_color = interp1d(item.sptype, item.color)
 
-                for i, teff_item in enumerate(teff_labels):
+                if item.library in teff_labels:
+                    label_select = teff_labels[item.library]
+                else:
+                    label_select = []
+
+                for i, teff_item in enumerate(label_select):
                     if isinstance(teff_item, tuple):
                         teff_val = teff_item[0]
                         teff_pos = teff_item[1]
@@ -541,6 +551,7 @@ def plot_color_magnitude(
 
                 cb.set_ticks(ticks)
                 cb.set_ticklabels(ticklabels)
+                cb.ax.minorticks_off()
 
             elif item.object_type == "young":
                 if objects is not None:
@@ -613,7 +624,7 @@ def plot_color_magnitude(
             x_pos_text = item[4][0] + delta_x / 2.0
             y_pos_text = item[4][1] + delta_y / 2.0
 
-            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x**2 + delta_y**2)
 
             if item[2] == "MgSiO3":
                 dust_species = r"MgSiO$_{3}$"
@@ -682,12 +693,12 @@ def plot_color_magnitude(
             x_pos_text = item[3][0] + delta_x / 2.0
             y_pos_text = item[3][1] + delta_y / 2.0
 
-            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x**2 + delta_y**2)
 
             if (item[2]).is_integer():
-                red_label = fr"A$_\mathregular{{V}}$ = {item[2]:.0f}"
+                red_label = rf"A$_\mathregular{{V}}$ = {item[2]:.0f}"
             else:
-                red_label = fr"A$_\mathregular{{V}}$ = {item[2]:.1f}"
+                red_label = rf"A$_\mathregular{{V}}$ = {item[2]:.1f}"
 
             text = ax1.annotate(
                 red_label,
@@ -742,7 +753,11 @@ def plot_color_magnitude(
             colorerr = np.sqrt(objcolor1[1] ** 2 + objcolor2[1] ** 2)
             x_color = objcolor1[0] - objcolor2[0]
 
-            companion_data = companions.get_data()
+            species_folder = str(pathlib.Path(__file__).parent.resolve())[:-4]
+            data_file = os.path.join(species_folder, "data/companion_data.json")
+
+            with open(data_file, "r", encoding="utf-8") as json_file:
+                comp_data = json.load(json_file)
 
             if len(item) > 4 and item[4] is not None:
                 kwargs = item[4]
@@ -759,8 +774,8 @@ def plot_color_magnitude(
 
                 if (
                     accretion
-                    and item[0] in companion_data
-                    and companion_data[item[0]]["accretion"]
+                    and item[0] in comp_data
+                    and comp_data[item[0]]["accretion"]
                 ):
                     kwargs["marker"] = "X"
                     kwargs["ms"] = 7.0
@@ -803,14 +818,18 @@ def plot_color_magnitude(
         by_label = dict(zip(labels, handles))
 
         if handles:
-            ax1.legend(
-                by_label.values(),
-                by_label.keys(),
-                loc=legend,
-                fontsize=8.5,
-                frameon=False,
-                numpoints=1,
-            )
+            if isinstance(legend, (str, tuple)):
+                ax1.legend(
+                    by_label.values(),
+                    by_label.keys(),
+                    loc=legend,
+                    fontsize=8.5,
+                    frameon=False,
+                    numpoints=1,
+                )
+
+            else:
+                ax1.legend(by_label.values(), by_label.keys(), **legend)
 
     if output is None:
         plt.show()
@@ -840,10 +859,8 @@ def plot_color_color(
             ],
         ]
     ] = None,
-    mass_labels: Optional[Union[List[float],
-                                List[Tuple[float, str]],
-                                Dict[str, List[Tuple[float, str]]]]] = None,
-    teff_labels: Optional[Union[List[float], List[Tuple[float, str]]]] = None,
+    mass_labels: Optional[Dict[str, List[Tuple[float, str]]]] = None,
+    teff_labels: Optional[Dict[str, List[Tuple[float, str]]]] = None,
     companion_labels: bool = False,
     reddening: Optional[
         List[
@@ -944,7 +961,6 @@ def plot_color_color(
         None
     """
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -952,9 +968,17 @@ def plot_color_color(
 
     # model_color = ("#234398", "#f6a432", "black")
 
-    model_color = ("tab:blue", "tab:orange", "tab:green",
-                   "tab:red", "tab:purple", "tab:brown",
-                   "tab:pink", "tab:olive", "tab:cyan")
+    model_color = (
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:olive",
+        "tab:cyan",
+    )
 
     model_linestyle = ("-", "--", ":", "-.")
 
@@ -962,6 +986,7 @@ def plot_color_color(
     planck = []
     models = []
     empirical = []
+    spectra = []
 
     for item in boxes:
         if isinstance(item, box.IsochroneBox):
@@ -970,6 +995,9 @@ def plot_color_color(
         elif isinstance(item, box.ColorColorBox):
             if item.object_type == "model":
                 models.append(item)
+
+            elif item.object_type == "spectra":
+                spectra.append(item)
 
             elif item.library == "planck":
                 planck.append(item)
@@ -1037,8 +1065,6 @@ def plot_color_color(
 
     ax1.set_xlabel(label_x, fontsize=14)
     ax1.set_ylabel(label_y, fontsize=14)
-
-    ax1.invert_yaxis()
 
     if offset:
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
@@ -1132,11 +1158,11 @@ def plot_color_color(
                         interp_color2 = interp1d(item.sptype, item.color2)
 
                         if item.iso_tag in mass_labels:
-                            m_select = mass_labels[item.iso_tag]
+                            label_select = mass_labels[item.iso_tag]
                         else:
-                            m_select = []
+                            label_select = []
 
-                        for i, mass_item in enumerate(m_select):
+                        for i, mass_item in enumerate(label_select):
                             mass_val = mass_item[0]
                             mass_pos = mass_item[1]
 
@@ -1151,14 +1177,15 @@ def plot_color_color(
                                 mass_ha = "left"
                                 mass_xytext = (pos_color1 + 0.05, pos_color2)
 
-                            mass_label = str(int(mass_val)) \
-                                + r" M$_\mathregular{J}$"
+                            mass_label = str(int(mass_val)) + r" M$_\mathregular{J}$"
 
                             xlim = ax1.get_xlim()
                             ylim = ax1.get_ylim()
 
-                            if (xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
-                                    and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2):
+                            if (
+                                xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
+                                and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
+                            ):
 
                                 ax1.scatter(
                                     pos_color1,
@@ -1184,7 +1211,8 @@ def plot_color_color(
                                 warnings.warn(
                                     f"Please use larger axes limits "
                                     f"to include the mass label for "
-                                    f"{mass_val} Mjup.")
+                                    f"{mass_val} Mjup."
+                                )
 
             else:
                 ax1.plot(
@@ -1219,7 +1247,12 @@ def plot_color_color(
                     interp_color1 = interp1d(item.sptype, item.color1)
                     interp_color2 = interp1d(item.sptype, item.color2)
 
-                    for i, teff_item in enumerate(teff_labels):
+                    if item.library in teff_labels:
+                        label_select = teff_labels[item.library]
+                    else:
+                        label_select = []
+
+                    for i, teff_item in enumerate(label_select):
                         if isinstance(teff_item, tuple):
                             teff_val = teff_item[0]
                             teff_pos = teff_item[1]
@@ -1277,6 +1310,91 @@ def plot_color_color(
 
             planck_count += 1
 
+    if spectra is not None:
+        spectra_count = 0
+
+        for j, item in enumerate(spectra):
+
+            if spectra_count == 0:
+                label = plot_util.model_name(item.library)
+
+                ax1.plot(
+                    item.color1,
+                    item.color2,
+                    ls="--",
+                    linewidth=0.8,
+                    color="tomato",
+                    label=label,
+                    zorder=0,
+                )
+
+                if teff_labels is not None:
+                    interp_color1 = interp1d(item.sptype, item.color1)
+                    interp_color2 = interp1d(item.sptype, item.color2)
+
+                    if item.library in teff_labels:
+                        label_select = teff_labels[item.library]
+                    else:
+                        label_select = []
+
+                    for i, teff_item in enumerate(label_select):
+                        if isinstance(teff_item, tuple):
+                            teff_val = teff_item[0]
+                            teff_pos = teff_item[1]
+
+                        else:
+                            teff_val = teff_item
+                            teff_pos = "right"
+
+                        if j == 0 or (j > 0 and teff_val < 20.0):
+                            pos_color1 = interp_color1(teff_val)
+                            pos_color2 = interp_color2(teff_val)
+
+                            if teff_pos == "left":
+                                teff_ha = "right"
+                                teff_xytext = (pos_color1 - 0.05, pos_color2)
+
+                            else:
+                                teff_ha = "left"
+                                teff_xytext = (pos_color1 + 0.05, pos_color2)
+
+                            teff_label = f"{int(teff_val)} K"
+
+                            xlim = ax1.get_xlim()
+                            ylim = ax1.get_ylim()
+
+                            if (
+                                xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
+                                and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
+                            ):
+
+                                ax1.scatter(
+                                    pos_color1,
+                                    pos_color2,
+                                    c="tomato",
+                                    s=15,
+                                    edgecolor="none",
+                                    zorder=0,
+                                )
+
+                                ax1.annotate(
+                                    teff_label,
+                                    (pos_color1, pos_color2),
+                                    color="tomato",
+                                    fontsize=9,
+                                    xytext=teff_xytext,
+                                    zorder=3,
+                                    ha=teff_ha,
+                                    va="center",
+                                )
+
+            else:
+                ax1.plot(
+                    item.color1, item.color2, ls="--", lw=0.5, color="tomato", zorder=0
+                )
+
+            spectra_count += 1
+
     if empirical:
         cmap = plt.cm.viridis
 
@@ -1333,6 +1451,7 @@ def plot_color_color(
 
                 cb.set_ticks(ticks)
                 cb.set_ticklabels(ticklabels)
+                cb.ax.minorticks_off()
 
             elif item.object_type == "young":
                 if objects is not None:
@@ -1406,7 +1525,7 @@ def plot_color_color(
             x_pos_text = item[5][0] + delta_x / 2.0
             y_pos_text = item[5][1] + delta_y / 2.0
 
-            vector_len = np.sqrt(delta_x ** 2 + delta_y ** 2)
+            vector_len = np.sqrt(delta_x**2 + delta_y**2)
 
             if item[3] == "MgSiO3":
                 dust_species = r"MgSiO$_{3}$"
@@ -1449,34 +1568,42 @@ def plot_color_color(
             objphot4 = objdata.get_photometry(item[2][1])
 
             if objphot1.ndim == 2:
-                print(f"Found {objphot1.shape[1]} values for "
-                      f"filter {item[1][0]} of {item[0]} "
-                      f"so using the first magnitude: "
-                      f"{objphot1[0, 0]} +/- {objphot1[1, 0]}")
+                print(
+                    f"Found {objphot1.shape[1]} values for "
+                    f"filter {item[1][0]} of {item[0]} "
+                    f"so using the first magnitude: "
+                    f"{objphot1[0, 0]} +/- {objphot1[1, 0]}"
+                )
 
                 objphot1 = objphot1[:, 0]
 
             if objphot2.ndim == 2:
-                print(f"Found {objphot2.shape[1]} values for "
-                      f"filter {item[1][1]} of {item[0]} "
-                      f"so using the first magnitude: "
-                      f"{objphot2[0, 0]} +/- {objphot2[1, 0]}")
+                print(
+                    f"Found {objphot2.shape[1]} values for "
+                    f"filter {item[1][1]} of {item[0]} "
+                    f"so using the first magnitude: "
+                    f"{objphot2[0, 0]} +/- {objphot2[1, 0]}"
+                )
 
                 objphot2 = objphot2[:, 0]
 
             if objphot3.ndim == 2:
-                print(f"Found {objphot3.shape[1]} values for "
-                      f"filter {item[2][0]} of {item[0]} "
-                      f"so using the first magnitude: "
-                      f"{objphot3[0, 0]} +/- {objphot3[1, 0]}")
+                print(
+                    f"Found {objphot3.shape[1]} values for "
+                    f"filter {item[2][0]} of {item[0]} "
+                    f"so using the first magnitude: "
+                    f"{objphot3[0, 0]} +/- {objphot3[1, 0]}"
+                )
 
                 objphot3 = objphot3[:, 0]
 
             if objphot4.ndim == 2:
-                print(f"Found {objphot4.shape[1]} values for "
-                      f"filter {item[2][1]} of {item[0]} "
-                      f"so using the first magnitude: "
-                      f"{objphot4[0, 0]} +/- {objphot4[1, 0]}")
+                print(
+                    f"Found {objphot4.shape[1]} values for "
+                    f"filter {item[2][1]} of {item[0]} "
+                    f"so using the first magnitude: "
+                    f"{objphot4[0, 0]} +/- {objphot4[1, 0]}"
+                )
 
                 objphot4 = objphot4[:, 0]
 
@@ -1536,14 +1663,18 @@ def plot_color_color(
         by_label = dict(zip(labels, handles))
 
         if handles:
-            ax1.legend(
-                by_label.values(),
-                by_label.keys(),
-                loc=legend,
-                fontsize=8.5,
-                frameon=False,
-                numpoints=1,
-            )
+            if isinstance(legend, (str, tuple)):
+                ax1.legend(
+                    by_label.values(),
+                    by_label.keys(),
+                    loc=legend,
+                    fontsize=8.5,
+                    frameon=False,
+                    numpoints=1,
+                )
+
+            else:
+                ax1.legend(by_label.values(), by_label.keys(), **legend)
 
     if output is None:
         plt.show()

@@ -79,7 +79,6 @@ def plot_statistic(
     sptypes = np.array(h5_file[f"results/empirical/{tag}/sptypes"])
     g_fit = np.array(h5_file[f"results/empirical/{tag}/goodness_of_fit"])
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -192,7 +191,7 @@ def plot_statistic(
 @typechecked
 def plot_empirical_spectra(
     tag: str,
-    n_spectra: int,
+    n_spectra: Optional[int] = None,
     flux_offset: Optional[float] = None,
     label_pos: Optional[Tuple[float, float]] = None,
     xlim: Optional[Tuple[float, float]] = None,
@@ -203,23 +202,29 @@ def plot_empirical_spectra(
     output: Optional[str] = "empirical.pdf",
 ):
     """
-    Function for plotting the results from the empirical spectrum comparison.
+    Function for plotting the results from the empirical
+    spectrum comparison.
 
     Parameters
     ----------
     tag : str
-        Database tag where the results from the empirical comparison with
-        :class:`~species.analysis.empirical.CompareSpectra.spectral_type` are stored.
-    n_spectra : int
-        The number of spectra with the lowest goodness-of-fit statistic that will be plotted in
-        comparison with the data.
+        Database tag where the results from the empirical
+        comparison with
+        :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+        are stored.
+    n_spectra : int, None
+        The number of spectra with the lowest goodness-of-fit
+        statistic that will be plotted in comparison with the data.
+        All spectra are selected if the argument is set to ``None``.
     label_pos : tuple(float, float), None
-        Position for the name labels. Should be provided as (x, y) for the lowest spectrum. The
-        ``flux_offset`` will be applied to the remaining spectra. The labels are only
-        plotted if the argument of both ``label_pos`` and ``flux_offset`` are not ``None``.
+        Position for the name labels. Should be provided as (x, y)
+        for the lowest spectrum. The ``flux_offset`` will be applied
+        to the remaining spectra. The labels are only plotted if the
+        argument of both ``label_pos`` and ``flux_offset`` are not
+        ``None``.
     flux_offset : float, None
-        Offset to be applied such that the spectra do not overlap. No offset is applied if the
-        argument is set to ``None``.
+        Offset to be applied such that the spectra do not overlap. No
+        offset is applied if the argument is set to ``None``.
     xlim : tuple(float, float)
         Limits of the spectral type axis.
     ylim : tuple(float, float)
@@ -274,7 +279,9 @@ def plot_empirical_spectra(
     rad_vel = np.array(h5_file[f"results/empirical/{tag}/rad_vel"])
     rad_vel *= 1e3  # (m s-1)
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
+    if n_spectra is None:
+        n_spectra = names.size
+
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -320,13 +327,13 @@ def plot_empirical_spectra(
     ax.xaxis.set_minor_locator(AutoMinorLocator(5))
     ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-    ax.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
 
     if flux_offset == 0.0:
-        ax.set_ylabel(r"$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$)", fontsize=11)
+        ax.set_ylabel(r"$\mathregular{F}_\lambda$" + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)", fontsize=11)
     else:
         ax.set_ylabel(
-            r"$\mathregular{F}_\lambda$ (W m$^{-2}$ µm$^{-1}$) + offset", fontsize=11
+            r"$\mathregular{F}_\lambda$ (W m$^{-2}$" + " \N{GREEK SMALL LETTER MU}m$^{-1}$) + offset", fontsize=11
         )
 
     if xlim is not None:
@@ -531,7 +538,6 @@ def plot_grid_statistic(
     else:
         coord_y = None
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 

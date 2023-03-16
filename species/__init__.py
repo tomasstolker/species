@@ -38,8 +38,6 @@ from species.core.constants import *
 
 from species.core.init import SpeciesInit
 
-from species.data.companions import get_data
-
 from species.data.database import Database
 
 from species.plot.plot_comparison import (
@@ -86,7 +84,7 @@ from species.util.read_util import (
 
 __author__ = "Tomas Stolker"
 __license__ = "MIT"
-__version__ = "0.5.3"
+__version__ = "0.5.5"
 __maintainer__ = "Tomas Stolker"
 __email__ = "stolker@strw.leidenuniv.nl"
 __status__ = "Development"

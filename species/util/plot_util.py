@@ -2,6 +2,8 @@
 Utility functions for plotting data.
 """
 
+import warnings
+
 from string import ascii_lowercase
 from typing import Optional, Tuple, List
 
@@ -270,8 +272,19 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("parallax")
         param[index] = r"$\varpi$ (mas)"
 
+    if "vsini" in param:
+        index = param.index("vsini")
+        param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
+
     if "mass" in param:
         index = param.index("mass")
+        if object_type == "planet":
+            param[index] = r"$M$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M$ ($M_\mathrm{\odot}$)"
+
+    if "log_mass" in param:
+        index = param.index("log_mass")
         if object_type == "planet":
             param[index] = r"$\log\,M/M_\mathrm{J}$"
         elif object_type == "star":
@@ -495,6 +508,12 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$b_\mathrm{{{item_name}}}$"
 
+        elif item[0:7] == "radvel_":
+            item_name = item[7:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
+
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
@@ -631,6 +650,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("line_luminosity")
         param[index] = r"$L_\mathrm{line}$ ($L_\mathrm{\odot}$)"
 
+    if "log_line_lum" in param:
+        index = param.index("log_line_lum")
+        param[index] = r"$\log\,L_\mathrm{line}/L_\mathrm{\odot}$"
+
+    if "log_acc_lum" in param:
+        index = param.index("log_acc_lum")
+        param[index] = r"$\log\,L_\mathrm{acc}/L_\mathrm{\odot}$"
+
     if "line_eq_width" in param:
         index = param.index("line_eq_width")
         param[index] = r"EW ($\AA$)"
@@ -711,13 +738,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
 
 @typechecked
-def model_name(key: str) -> str:
+def model_name(in_name: str) -> str:
     """
     Function for updating a model name for use in plots.
 
     Parameters
     ----------
-    key : str
+    in_name : str
         Model name as used by species.
 
     Returns
@@ -726,64 +753,83 @@ def model_name(key: str) -> str:
         Updated model name for plots.
     """
 
-    if key == "drift-phoenix":
-        name = "DRIFT-PHOENIX"
+    if in_name == "drift-phoenix":
+        out_name = "DRIFT-PHOENIX"
 
-    elif key == "ames-cond":
-        name = "AMES-Cond"
+    elif in_name == "ames-cond":
+        out_name = "AMES-Cond"
 
-    elif key == "ames-dusty":
-        name = "AMES-Dusty"
+    elif in_name == "ames-dusty":
+        out_name = "AMES-Dusty"
 
-    elif key == "atmo":
-        name = "ATMO"
+    elif in_name == "atmo":
+        out_name = "ATMO"
 
-    elif key == "bt-cond":
-        name = "BT-Cond"
+    elif in_name == "atmo-ceq":
+        out_name = "ATMO CEQ"
 
-    elif key == "bt-cond-feh":
-        name = "BT-Cond"
+    elif in_name == "atmo-neq-weak":
+        out_name = "ATMO NEQ weak"
 
-    elif key == "bt-settl":
-        name = "BT-Settl"
+    elif in_name == "atmo-neq-strong":
+        out_name = "ATMO NEQ strong"
 
-    elif key == "bt-settl-cifist":
-        name = "BT-Settl"
+    elif in_name == "bt-cond":
+        out_name = "BT-Cond"
 
-    elif key == "bt-nextgen":
-        name = "BT-NextGen"
+    elif in_name == "bt-cond-feh":
+        out_name = "BT-Cond"
 
-    elif key == "petitcode-cool-clear":
-        name = "petitCODE"
+    elif in_name == "bt-settl":
+        out_name = "BT-Settl"
 
-    elif key == "petitcode-cool-cloudy":
-        name = "petitCODE"
+    elif in_name == "bt-settl-cifist":
+        out_name = "BT-Settl"
 
-    elif key == "petitcode-hot-clear":
-        name = "petitCODE"
+    elif in_name == "bt-nextgen":
+        out_name = "BT-NextGen"
 
-    elif key == "petitcode-hot-cloudy":
-        name = "petitCODE"
+    elif in_name == "petitcode-cool-clear":
+        out_name = "petitCODE"
 
-    elif key == "exo-rem":
-        name = "Exo-REM"
+    elif in_name == "petitcode-cool-cloudy":
+        out_name = "petitCODE"
 
-    elif key == "planck":
-        name = "Blackbody radiation"
+    elif in_name == "petitcode-hot-clear":
+        out_name = "petitCODE"
 
-    elif key == "zhu2015":
-        name = "Zhu (2015)"
+    elif in_name == "petitcode-hot-cloudy":
+        out_name = "petitCODE"
 
-    elif key == "sonora-cholla":
-        name = "Sonora Cholla"
+    elif in_name == "exo-rem":
+        out_name = "Exo-REM"
 
-    elif key == "sonora-bobcat":
-        name = "Sonora Bobcat"
+    elif in_name == "planck":
+        out_name = "Blackbody radiation"
 
-    elif key == "sonora-bobcat-co":
-        name = "Sonora Bobcat C/O"
+    elif in_name == "zhu2015":
+        out_name = "Zhu (2015)"
 
-    return name
+    elif in_name == "sonora-cholla":
+        out_name = "Sonora Cholla"
+
+    elif in_name == "sonora-bobcat":
+        out_name = "Sonora Bobcat"
+
+    elif in_name == "sonora-bobcat-co":
+        out_name = "Sonora Bobcat C/O"
+
+    elif in_name == "petitradtrans":
+        out_name = "petitRADTRANS"
+
+    else:
+        out_name = in_name
+
+        warnings.warn(f"The model name '{in_name}' is not known "
+                      "so the output name will not get adjusted "
+                      "for plot purposes")
+
+    return out_name
 
 
 @typechecked
@@ -815,59 +861,39 @@ def quantity_unit(
     unit = []
     label = []
 
-    if "teff" in param:
-        quantity.append("teff")
-        unit.append("K")
-        label.append(r"$T_\mathrm{eff}$")
-
-    if "logg" in param:
-        quantity.append("logg")
-        unit.append(None)
-        label.append(r"$\log g$")
-
-    if "metallicity" in param:
-        quantity.append("metallicity")
-        unit.append(None)
-        label.append("[Fe/H]")
-
-    if "feh" in param:
-        quantity.append("feh")
-        unit.append(None)
-        label.append("[Fe/H]")
-
-    if "fsed" in param:
-        quantity.append("fsed")
-        unit.append(None)
-        label.append(r"$f_\mathrm{sed}$")
-
-    if "c_o_ratio" in param:
-        quantity.append("c_o_ratio")
-        unit.append(None)
-        label.append("C/O")
-
-    if "radius" in param:
-        quantity.append("radius")
-
-        if object_type == "planet":
-            unit.append(r"$R_\mathrm{J}$")
-
-        elif object_type == "star":
-            unit.append(r"$R_\mathrm{\odot}$")
-
-        label.append(r"$R$")
-
-    for i in range(100):
-        if f"teff_{i}" in param:
-            quantity.append(f"teff_{i}")
+    for item in param:
+        if item == "teff":
+            quantity.append("teff")
             unit.append("K")
-            label.append(rf"$T_\mathrm{{{i+1}}}$")
+            label.append(r"$T_\mathrm{eff}$")
 
-        else:
-            break
+        if item == "logg":
+            quantity.append("logg")
+            unit.append(None)
+            label.append(r"$\log g$")
 
-    for i in range(100):
-        if f"radius_{i}" in param:
-            quantity.append(f"radius_{i}")
+        if item == "metallicity":
+            quantity.append("metallicity")
+            unit.append(None)
+            label.append("[Fe/H]")
+
+        if item == "feh":
+            quantity.append("feh")
+            unit.append(None)
+            label.append("[Fe/H]")
+
+        if item == "fsed":
+            quantity.append("fsed")
+            unit.append(None)
+            label.append(r"$f_\mathrm{sed}$")
+
+        if item == "c_o_ratio":
+            quantity.append("c_o_ratio")
+            unit.append(None)
+            label.append("C/O")
+
+        if item == "radius":
+            quantity.append("radius")
 
             if object_type == "planet":
                 unit.append(r"$R_\mathrm{J}$")
@@ -875,51 +901,72 @@ def quantity_unit(
             elif object_type == "star":
                 unit.append(r"$R_\mathrm{\odot}$")
 
-            label.append(rf"$R_\mathrm{{{i+1}}}$")
+            label.append(r"$R$")
 
-        else:
-            break
+        for i in range(100):
+            if item == f"teff_{i}":
+                quantity.append(f"teff_{i}")
+                unit.append("K")
+                label.append(rf"$T_\mathrm{{{i+1}}}$")
 
-    if "distance" in param:
-        quantity.append("distance")
-        unit.append("pc")
-        label.append(r"$d$")
+            else:
+                break
 
-    if "mass" in param:
-        quantity.append("mass")
+        for i in range(100):
+            if item == f"radius_{i}":
+                quantity.append(f"radius_{i}")
 
-        if object_type == "planet":
-            unit.append(r"$M_\mathrm{J}$")
+                if object_type == "planet":
+                    unit.append(r"$R_\mathrm{J}$")
 
-        elif object_type == "star":
-            unit.append(r"$M_\mathrm{\odot}$")
+                elif object_type == "star":
+                    unit.append(r"$R_\mathrm{\odot}$")
 
-        label.append("M")
+                label.append(rf"$R_\mathrm{{{i+1}}}$")
 
-    if "luminosity" in param:
-        quantity.append("luminosity")
-        unit.append(None)
-        label.append(r"$\log\,L/L_\mathrm{\odot}$")
+            else:
+                break
 
-    if "ism_ext" in param:
-        quantity.append("ism_ext")
-        unit.append(None)
-        label.append(r"$A_V$")
+        if item == "distance":
+            quantity.append("distance")
+            unit.append("pc")
+            label.append(r"$d$")
 
-    if "lognorm_ext" in param:
-        quantity.append("lognorm_ext")
-        unit.append(None)
-        label.append(r"$A_V$")
+        if item == "mass":
+            quantity.append("mass")
 
-    if "powerlaw_ext" in param:
-        quantity.append("powerlaw_ext")
-        unit.append(None)
-        label.append(r"$A_V$")
+            if object_type == "planet":
+                unit.append(r"$M_\mathrm{J}$")
 
-    if "pt_smooth" in param:
-        quantity.append("pt_smooth")
-        unit.append(None)
-        label.append(r"$\sigma_\mathrm{P-T}$")
+            elif object_type == "star":
+                unit.append(r"$M_\mathrm{\odot}$")
+
+            label.append("M")
+
+        if item == "luminosity":
+            quantity.append("luminosity")
+            unit.append(None)
+            label.append(r"$\log\,L/L_\mathrm{\odot}$")
+
+        if item == "ism_ext":
+            quantity.append("ism_ext")
+            unit.append(None)
+            label.append(r"$A_V$")
+
+        if item == "lognorm_ext":
+            quantity.append("lognorm_ext")
+            unit.append(None)
+            label.append(r"$A_V$")
+
+        if item == "powerlaw_ext":
+            quantity.append("powerlaw_ext")
+            unit.append(None)
+            label.append(r"$A_V$")
+
+        if item == "pt_smooth":
+            quantity.append("pt_smooth")
+            unit.append(None)
+            label.append(r"$\sigma_\mathrm{P-T}$")
 
     return quantity, unit, label
 

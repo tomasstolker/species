@@ -31,7 +31,8 @@ def create_box(boxtype, **kwargs):
         box.filter_mag = kwargs["filter_mag"]
         box.color = kwargs["color"]
         box.magnitude = kwargs["magnitude"]
-        box.names = kwargs["names"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
         if "sptype" in kwargs:
             box.sptype = kwargs["sptype"]
         if "mass" in kwargs:
@@ -48,7 +49,8 @@ def create_box(boxtype, **kwargs):
         box.filters = kwargs["filters"]
         box.color1 = kwargs["color1"]
         box.color2 = kwargs["color2"]
-        box.names = kwargs["names"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
         if "sptype" in kwargs:
             box.sptype = kwargs["sptype"]
         if "mass" in kwargs:
@@ -58,17 +60,40 @@ def create_box(boxtype, **kwargs):
         if "iso_tag" in kwargs:
             box.iso_tag = kwargs["iso_tag"]
 
+    elif boxtype == "cooling":
+        box = CoolingBox()
+        box.model = kwargs["model"]
+        box.mass = kwargs["mass"]
+        if "age" in kwargs:
+            box.age = kwargs["age"]
+        else:
+            box.age = kwargs["ages"]
+        box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
+        box.logg = kwargs["logg"]
+        box.radius = kwargs["radius"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
+
+
     elif boxtype == "isochrone":
         box = IsochroneBox()
         box.model = kwargs["model"]
-        box.filters_color = kwargs["filters_color"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.color = kwargs["color"]
-        box.magnitude = kwargs["magnitude"]
-        box.log_lum = kwargs["log_lum"]
+        box.age = kwargs["age"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        else:
+            box.mass = kwargs["masses"]
         box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
         box.logg = kwargs["logg"]
-        box.masses = kwargs["masses"]
+        box.radius = kwargs["radius"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
 
     elif boxtype == "model":
         box = ModelBox()
@@ -146,6 +171,8 @@ def create_box(boxtype, **kwargs):
             box.sptype = kwargs["sptype"]
         if "distance" in kwargs:
             box.distance = kwargs["distance"]
+        if "spec_res" in kwargs:
+            box.spec_res = kwargs["spec_res"]
 
     elif boxtype == "synphot":
         box = SynphotBox()
@@ -237,6 +264,33 @@ class ColorColorBox(Box):
         self.radius = None
 
 
+class CoolingBox(Box):
+    """
+    Class for storing cooling curve data in
+    a :class:`~species.core.box.Box`.
+    """
+
+    def __init__(self):
+        """
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.model = None
+        self.mass = None
+        self.age = None
+        self.teff = None
+        self.log_lum = None
+        self.logg = None
+        self.radius = None
+        self.filter_mag = None
+        self.magnitude = None
+        self.filters_color = None
+        self.color = None
+
+
 class IsochroneBox(Box):
     """
     Class for storing isochrone data in a
@@ -252,14 +306,16 @@ class IsochroneBox(Box):
         """
 
         self.model = None
-        self.filters_color = None
-        self.filter_mag = None
-        self.color = None
-        self.magnitude = None
-        self.log_lum = None
+        self.age = None
+        self.mass = None
         self.teff = None
+        self.log_lum = None
         self.logg = None
-        self.masses = None
+        self.radius = None
+        self.filter_mag = None
+        self.magnitude = None
+        self.filters_color = None
+        self.color = None
 
 
 class PhotometryBox(Box):
@@ -505,6 +561,7 @@ class SpectrumBox(Box):
         self.simbad = None
         self.sptype = None
         self.distance = None
+        self.spec_res = None
 
 
 class SynphotBox(Box):

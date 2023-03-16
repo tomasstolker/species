@@ -29,11 +29,11 @@ class ReadSpectrum:
         Parameters
         ----------
         spec_library : str
-            Name of the spectral library ('irtf', 'spex') or other type
-            of spectrum ('vega').
+            Name of the spectral library ('irtf', 'spex', 'kesseli+2017',
+            'bonnefoy+2014', 'allers+2013', or 'vega').
         filter_name : str, None
-            Filter name for the wavelength range. Full spectra are read
-            if set to ``None``.
+            Filter name for the wavelength range. Full spectra
+            are read if the argument is set to ``None``.
 
         Returns
         -------
@@ -102,6 +102,7 @@ class ReadSpectrum:
         list_simbad = []
         list_sptype = []
         list_parallax = []
+        list_spec_res = []
 
         for item in h5_file[f"spectra/{self.spec_library}"]:
             dset = h5_file[f"spectra/{self.spec_library}/{item}"]
@@ -177,6 +178,11 @@ class ReadSpectrum:
                 else:
                     list_parallax.append((np.nan, np.nan))
 
+                if "spec_res" in attrs:
+                    list_spec_res.append(dset.attrs["spec_res"])
+                else:
+                    list_spec_res.append(np.nan)
+
             else:
                 list_wavelength.append(np.array([]))
                 list_flux.append(np.array([]))
@@ -185,43 +191,47 @@ class ReadSpectrum:
                 list_simbad.append("")
                 list_sptype.append("None")
                 list_parallax.append((np.nan, np.nan))
+                list_spec_res.append(np.nan)
 
-        specbox = box.SpectrumBox()
-        specbox.spec_library = self.spec_library
+        spec_box = box.SpectrumBox()
+        spec_box.spec_library = self.spec_library
 
         if sptypes is not None:
             indices = []
 
-            specbox.wavelength = []
-            specbox.flux = []
-            specbox.error = []
-            specbox.name = []
-            specbox.simbad = []
-            specbox.sptype = []
-            specbox.parallax = []
+            spec_box.wavelength = []
+            spec_box.flux = []
+            spec_box.error = []
+            spec_box.name = []
+            spec_box.simbad = []
+            spec_box.sptype = []
+            spec_box.parallax = []
+            spec_box.spec_res = []
 
             for item in sptypes:
 
                 for i, spec_item in enumerate(list_sptype):
                     if item == spec_item[:2]:
-                        specbox.wavelength.append(list_wavelength[i])
-                        specbox.flux.append(list_flux[i])
-                        specbox.error.append(list_error[i])
-                        specbox.name.append(list_name[i])
-                        specbox.simbad.append(list_simbad[i])
-                        specbox.sptype.append(list_sptype[i])
-                        specbox.parallax.append(list_parallax[i])
+                        spec_box.wavelength.append(list_wavelength[i])
+                        spec_box.flux.append(list_flux[i])
+                        spec_box.error.append(list_error[i])
+                        spec_box.name.append(list_name[i])
+                        spec_box.simbad.append(list_simbad[i])
+                        spec_box.sptype.append(list_sptype[i])
+                        spec_box.parallax.append(list_parallax[i])
+                        spec_box.spec_res.append(list_spec_res[i])
 
         else:
-            specbox.wavelength = list_wavelength
-            specbox.flux = list_flux
-            specbox.error = list_error
-            specbox.name = list_name
-            specbox.simbad = list_simbad
-            specbox.sptype = list_sptype
-            specbox.parallax = list_parallax
+            spec_box.wavelength = list_wavelength
+            spec_box.flux = list_flux
+            spec_box.error = list_error
+            spec_box.name = list_name
+            spec_box.simbad = list_simbad
+            spec_box.sptype = list_sptype
+            spec_box.parallax = list_parallax
+            spec_box.spec_res = list_spec_res
 
-        return specbox
+        return spec_box
 
     @typechecked
     def get_flux(self, sptypes: List[str] = None) -> box.PhotometryBox:
@@ -242,9 +252,9 @@ class ReadSpectrum:
             Box with the synthetic photometry.
         """
 
-        specbox = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
+        spec_box = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
 
-        n_spectra = len(specbox.wavelength)
+        n_spectra = len(spec_box.wavelength)
 
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
@@ -258,9 +268,9 @@ class ReadSpectrum:
 
         for i in range(n_spectra):
             flux = synphot.spectrum_to_flux(
-                wavelength=specbox.wavelength[i],
-                flux=specbox.flux[i],
-                error=specbox.error[i],
+                wavelength=spec_box.wavelength[i],
+                flux=spec_box.flux[i],
+                error=spec_box.error[i],
             )
 
             phot_flux.append(flux)
@@ -269,8 +279,8 @@ class ReadSpectrum:
 
         return box.create_box(
             boxtype="photometry",
-            name=specbox.name,
-            sptype=specbox.sptype,
+            name=spec_box.name,
+            sptype=spec_box.sptype,
             wavelength=wavelengths,
             flux=phot_flux,
             app_mag=None,
@@ -297,9 +307,9 @@ class ReadSpectrum:
             Box with the synthetic photometry.
         """
 
-        specbox = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
+        spec_box = self.get_spectrum(sptypes=sptypes, exclude_nan=True)
 
-        n_spectra = len(specbox.wavelength)
+        n_spectra = len(spec_box.wavelength)
 
         filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
@@ -314,19 +324,19 @@ class ReadSpectrum:
 
         for i in range(n_spectra):
 
-            if np.isnan(specbox.parallax[i][0]):
+            if np.isnan(spec_box.parallax[i][0]):
                 app_tmp = (np.nan, np.nan)
                 abs_tmp = (np.nan, np.nan)
 
             else:
 
                 app_tmp, abs_tmp = synphot.spectrum_to_magnitude(
-                    specbox.wavelength[i],
-                    specbox.flux[i],
-                    error=specbox.error[i],
+                    spec_box.wavelength[i],
+                    spec_box.flux[i],
+                    error=spec_box.error[i],
                     parallax=(
-                        float(specbox.parallax[i][0]),
-                        float(specbox.parallax[i][1]),
+                        float(spec_box.parallax[i][0]),
+                        float(spec_box.parallax[i][1]),
                     ),
                 )
 
@@ -335,8 +345,8 @@ class ReadSpectrum:
 
         return box.create_box(
             boxtype="photometry",
-            name=specbox.name,
-            sptype=specbox.sptype,
+            name=spec_box.name,
+            sptype=spec_box.sptype,
             wavelength=wavelengths,
             flux=None,
             app_mag=np.asarray(app_mag),

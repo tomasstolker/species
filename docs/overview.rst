@@ -19,7 +19,7 @@ The following data and models are currently supported:
 
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_
-- `ATMO <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=atmo2020_ceq>`_
+- `ATMO (CEQ, NEQ weak, NEQ strong) <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_
 - `BT-Cond <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-cond>`_
 - `BT-Dusty <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-dusty>`_
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_
@@ -32,6 +32,10 @@ The following data and models are currently supported:
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_
+- `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+
+.. tip::
+  It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`. Have a look at the documentation for details on the required file format.
 
 .. tip::
   The :func:`~species.data.database.Database.available_models()` method of the :class:`~species.data.database.Database` class can be used for getting a complete overview of all model grids, including details on the input parameters, wavelength range, :math:`T_\mathrm{eff}` range, and spectral resolution:
@@ -52,13 +56,13 @@ The following data and models are currently supported:
 - `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K/abstract>`_
 - NIR spectra of young M/L dwarfs by `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_
 - NIR spectra of young M/L dwarfs by `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
-- `Spectra of directly imaged planets and brown dwarfs <https://species.readthedocs.io/en/latest/species.data.html#species.data.companions.get_spec_data>`_
+- `Spectra of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_spectra.json>`_
 
 **Photometric libraries**
 
 - `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `S. Leggett <http://www.gemini.edu/staff/sleggett>`_
-- `Magnitudes of directly imaged planets and brown dwarfs <https://species.readthedocs.io/en/latest/species.data.html#species.data.companions.get_data>`_
+- `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data.json>`_
 
 **Evolutionary tracks**
 
@@ -67,6 +71,7 @@ The following data and models are currently supported:
 - Evolutionary data from `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - Isochrones from `Baraffe et al. (2015) <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
 - Isochrones from `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- `ATMO <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ isochrones (CEQ, NEQ weak, NEQ strong)
 
 **Calibration**
 
@@ -90,6 +95,7 @@ After adding the relevant data to the database, the user can take advantage of t
 - Calculating synthetic photometry spectra (see :class:`~species.analysis.photometry.SyntheticPhotometry`).
 - Interpolating and plotting model spectra (see :class:`~species.read.read_model.ReadModel` and :func:`~species.plot.plot_spectrum.plot_spectrum`).
 - Atmospheric retrievals with model grids and Bayesian inference (see :class:`~species.analysis.fit_model.FitModel` and :mod:`~species.plot.plot_mcmc`).
+- Wrapper for generating spectra with `petitRADTRANS <https://petitradtrans.readthedocs.io>`_ using various parameterizations for P-T structures, abundances, and clouds (see :class:`~species.read.read_radtrans.ReadRadtrans`).
 - Comparing a spectrum with a full grid of model spectra (see :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model`).
 - Free atmospheric retrievals with a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see :class:`~species.analysis.retrieval.AtmosphericRetrieval`).
 - Retrieval of age and bulk parameters (see :class:`~species.analysis.evolution.PlanetEvolution`).

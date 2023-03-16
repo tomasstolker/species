@@ -1,0 +1,2327 @@
+{
+    "beta Pic b": {
+        "simbad": "beta Pic",
+        "parallax": [
+            50.9307,
+            0.1482
+        ],
+        "app_mag": {
+            "Magellan/VisAO.Ys": [
+                15.53,
+                0.34
+            ],
+            "Paranal/NACO.J": [
+                14.11,
+                0.21
+            ],
+            "Gemini/NICI.ED286": [
+                13.18,
+                0.15
+            ],
+            "Paranal/NACO.H": [
+                13.32,
+                0.14
+            ],
+            "Paranal/NACO.Ks": [
+                12.64,
+                0.11
+            ],
+            "Paranal/NACO.NB374": [
+                11.25,
+                0.23
+            ],
+            "Paranal/NACO.Lp": [
+                11.3,
+                0.06
+            ],
+            "Paranal/NACO.NB405": [
+                10.98,
+                0.05
+            ],
+            "Paranal/NACO.Mp": [
+                11.1,
+                0.12
+            ]
+        },
+        "semi_major": [
+            10.31,
+            0.11
+        ],
+        "mass_star": [
+            1.83,
+            0.04
+        ],
+        "mass_companion": [
+            9.8,
+            2.7
+        ],
+        "accretion": false,
+        "references": [
+            "Bonnefoy et al. 2011",
+            "Currie et al. 2013",
+            "Gaia Early Data Release 3",
+            "Males et al. 2014",
+            "Mirek Brandt et al. 2021",
+            "Stolker et al. 2019",
+            "Stolker et al. 2020a"
+        ]
+    },
+    "beta Pic c": {
+        "simbad": "beta Pic",
+        "parallax": [
+            50.9307,
+            0.1482
+        ],
+        "app_mag": {
+            "MKO/NSFCam.K": [
+                14.3,
+                0.1
+            ]
+        },
+        "semi_major": [
+            2.75,
+            0.04
+        ],
+        "mass_star": [
+            1.83,
+            0.04
+        ],
+        "mass_companion": [
+            8.3,
+            1.1
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Mirek Brandt et al. 2021",
+            "Nowak et al. 2020"
+        ]
+    },
+    "HIP 65426 b": {
+        "simbad": "HIP 65426",
+        "parallax": [
+            9.3031,
+            0.0346
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                17.94,
+                0.05
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                17.58,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                17.01,
+                0.09
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                16.79,
+                0.09
+            ],
+            "Paranal/NACO.Lp": [
+                15.33,
+                0.12
+            ],
+            "Paranal/NACO.NB405": [
+                15.23,
+                0.22
+            ],
+            "Paranal/NACO.Mp": [
+                14.65,
+                0.29
+            ]
+        },
+        "semi_major": [
+            110.0,
+            45.0
+        ],
+        "mass_star": [
+            1.96,
+            0.04
+        ],
+        "mass_companion": [
+            9.9,
+            1.8
+        ],
+        "accretion": false,
+        "references": [
+            "Chauvin et al. 2017",
+            "Cheetham et al. 2019",
+            "Gaia Early Data Release 3",
+            "Marleau et al. 2019",
+            "Stolker et al. 2020a"
+        ]
+    },
+    "51 Eri b": {
+        "simbad": "51 Eri",
+        "parallax": [
+            33.439,
+            0.0777
+        ],
+        "app_mag": {
+            "MKO/NSFCam.J": [
+                19.04,
+                0.4
+            ],
+            "MKO/NSFCam.H": [
+                18.99,
+                0.21
+            ],
+            "MKO/NSFCam.K": [
+                18.67,
+                0.19
+            ],
+            "Paranal/SPHERE.IRDIS_B_H": [
+                19.45,
+                0.29
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                18.41,
+                0.26
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                17.55,
+                0.14
+            ],
+            "Keck/NIRC2.Lp": [
+                16.2,
+                0.11
+            ],
+            "Keck/NIRC2.Ms": [
+                16.1,
+                0.5
+            ]
+        },
+        "semi_major": [
+            12.0,
+            4.0
+        ],
+        "mass_star": [
+            1.75,
+            0.05
+        ],
+        "mass_companion": [
+            9.1,
+            4.9
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Maire et al. 2019",
+            "Rajan et al. 2017",
+            "Samland et al. 2017",
+            "Simon & Schaefer 2011"
+        ]
+    },
+    "HR 8799 b": {
+        "simbad": "HR 8799",
+        "parallax": [
+            24.462,
+            0.0455
+        ],
+        "app_mag": {
+            "Subaru/CIAO.z": [
+                21.22,
+                0.29
+            ],
+            "Paranal/SPHERE.IRDIS_B_J": [
+                19.78,
+                0.09
+            ],
+            "Keck/NIRC2.H": [
+                18.05,
+                0.09
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                18.08,
+                0.14
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                17.78,
+                0.1
+            ],
+            "Keck/NIRC2.Ks": [
+                17.03,
+                0.08
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                17.15,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                16.97,
+                0.09
+            ],
+            "Paranal/NACO.Lp": [
+                15.52,
+                0.1
+            ],
+            "Paranal/NACO.NB405": [
+                14.82,
+                0.18
+            ],
+            "Keck/NIRC2.Ms": [
+                16.05,
+                0.3
+            ]
+        },
+        "semi_major": [
+            69.5,
+            9.3
+        ],
+        "mass_star": [
+            1.52,
+            0.15
+        ],
+        "mass_companion": [
+            5.8,
+            0.5
+        ],
+        "accretion": false,
+        "references": [
+            "Baines et al. 2012",
+            "Currie et al. 2011",
+            "Currie et al. 2012",
+            "Currie et al. 2014",
+            "Gaia Early Data Release 3",
+            "Galicher et al. 2011",
+            "Marois et al. 2010",
+            "Wang et al. 2018",
+            "Zurlo et al. 2016"
+        ]
+    },
+    "HR 8799 c": {
+        "simbad": "HR 8799",
+        "parallax": [
+            24.462,
+            0.0455
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_J": [
+                18.6,
+                0.13
+            ],
+            "Keck/NIRC2.H": [
+                17.06,
+                0.13
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                17.09,
+                0.12
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                16.78,
+                0.1
+            ],
+            "Keck/NIRC2.Ks": [
+                16.11,
+                0.08
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.19,
+                0.05
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                15.86,
+                0.07
+            ],
+            "Paranal/NACO.Lp": [
+                14.65,
+                0.11
+            ],
+            "Paranal/NACO.NB405": [
+                13.97,
+                0.11
+            ],
+            "Keck/NIRC2.Ms": [
+                15.03,
+                0.14
+            ]
+        },
+        "semi_major": [
+            37.6,
+            2.2
+        ],
+        "mass_star": [
+            1.52,
+            0.15
+        ],
+        "mass_companion": [
+            7.2,
+            0.7
+        ],
+        "accretion": false,
+        "references": [
+            "Baines et al. 2012",
+            "Currie et al. 2012",
+            "Currie et al. 2014",
+            "Gaia Early Data Release 3",
+            "Galicher et al. 2011",
+            "Marois et al. 2010",
+            "Wang et al. 2018",
+            "Zurlo et al. 2016"
+        ]
+    },
+    "HR 8799 d": {
+        "simbad": "HR 8799",
+        "parallax": [
+            24.462,
+            0.0455
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_J": [
+                18.59,
+                0.37
+            ],
+            "Keck/NIRC2.H": [
+                16.71,
+                0.24
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                17.02,
+                0.17
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                16.85,
+                0.16
+            ],
+            "Keck/NIRC2.Ks": [
+                16.09,
+                0.12
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.2,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                15.84,
+                0.1
+            ],
+            "Paranal/NACO.Lp": [
+                14.55,
+                0.14
+            ],
+            "Paranal/NACO.NB405": [
+                13.87,
+                0.15
+            ],
+            "Keck/NIRC2.Ms": [
+                14.65,
+                0.35
+            ]
+        },
+        "semi_major": [
+            27.7,
+            2.2
+        ],
+        "mass_star": [
+            1.52,
+            0.15
+        ],
+        "mass_companion": [
+            7.2,
+            0.7
+        ],
+        "accretion": false,
+        "references": [
+            "Baines et al. 2012",
+            "Currie et al. 2012",
+            "Currie et al. 2014",
+            "Gaia Early Data Release 3",
+            "Galicher et al. 2011",
+            "Marois et al. 2010",
+            "Wang et al. 2018",
+            "Zurlo et al. 2016"
+        ]
+    },
+    "HR 8799 e": {
+        "simbad": "HR 8799",
+        "parallax": [
+            24.462,
+            0.0455
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_J": [
+                18.4,
+                0.21
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                16.91,
+                0.2
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                16.68,
+                0.21
+            ],
+            "Keck/NIRC2.Ks": [
+                15.91,
+                0.22
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.12,
+                0.1
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                15.82,
+                0.11
+            ],
+            "Paranal/NACO.Lp": [
+                14.49,
+                0.21
+            ],
+            "Paranal/NACO.NB405": [
+                13.72,
+                0.2
+            ]
+        },
+        "semi_major": [
+            15.3,
+            1.4
+        ],
+        "mass_star": [
+            1.52,
+            0.15
+        ],
+        "mass_companion": [
+            7.2,
+            0.7
+        ],
+        "accretion": false,
+        "references": [
+            "Baines et al. 2012",
+            "Currie et al. 2014",
+            "Gaia Early Data Release 3",
+            "Marois et al. 2010",
+            "Wang et al. 2018",
+            "Zurlo et al. 2016"
+        ]
+    },
+    "HD 95086 b": {
+        "simbad": "HD 95086",
+        "parallax": [
+            11.5659,
+            0.0187
+        ],
+        "app_mag": {
+            "Gemini/GPI.H": [
+                20.51,
+                0.25
+            ],
+            "Gemini/GPI.K1": [
+                18.99,
+                0.2
+            ],
+            "Paranal/NACO.Lp": [
+                16.27,
+                0.19
+            ]
+        },
+        "semi_major": [
+            52.0,
+            24.0
+        ],
+        "mass_star": [
+            1.6,
+            0.1
+        ],
+        "mass_companion": [
+            5.0,
+            2.0
+        ],
+        "accretion": false,
+        "references": [
+            "Chauvin et al. 2018",
+            "De Rosa et al. 2016",
+            "Gaia Early Data Release 3",
+            "Rameau et al. 2013"
+        ]
+    },
+    "PDS 70 b": {
+        "simbad": "PDS 70",
+        "parallax": [
+            8.8975,
+            0.0191
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                18.12,
+                0.21
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                17.97,
+                0.18
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.66,
+                0.04
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                16.37,
+                0.06
+            ],
+            "MKO/NSFCam.J": [
+                20.04,
+                0.09
+            ],
+            "MKO/NSFCam.H": [
+                18.24,
+                0.04
+            ],
+            "Paranal/NACO.Lp": [
+                14.68,
+                0.22
+            ],
+            "Paranal/NACO.NB405": [
+                14.68,
+                0.27
+            ],
+            "Paranal/NACO.Mp": [
+                13.8,
+                0.27
+            ],
+            "Keck/NIRC2.Lp": [
+                14.64,
+                0.18
+            ]
+        },
+        "semi_major": [
+            20.8,
+            0.7
+        ],
+        "mass_star": [
+            0.98,
+            0.07
+        ],
+        "mass_companion": [
+            3.2,
+            1.6
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                8.1e-19,
+                3e-20
+            ],
+            "h-beta": [
+                2.3e-19,
+                2.3e-19
+            ]
+        },
+        "references": [
+            "Gaia Early Data Release 3",
+            "Haffert et al. 2019",
+            "Hashimoto et al. 2020",
+            "Stolker et al. 2020b",
+            "Wang et al. 2020",
+            "Wang et al. 2021"
+        ]
+    },
+    "PDS 70 c": {
+        "simbad": "PDS 70",
+        "parallax": [
+            8.8975,
+            0.0191
+        ],
+        "app_mag": {
+            "Paranal/NACO.NB405": [
+                14.91,
+                0.35
+            ],
+            "Keck/NIRC2.Lp": [
+                15.5,
+                0.46
+            ]
+        },
+        "semi_major": [
+            34.3,
+            2.2
+        ],
+        "mass_star": [
+            0.98,
+            0.07
+        ],
+        "mass_companion": [
+            7.5,
+            4.7
+        ],
+        "accretion": true,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Haffert et al. 2019",
+            "Stolker et al. 2020b",
+            "Wang et al. 2020",
+            "Wang et al. 2021"
+        ]
+    },
+    "2M 1207 B": {
+        "simbad": "2MASSWJ 1207334-393254",
+        "parallax": [
+            15.4624,
+            0.1163
+        ],
+        "app_mag": {
+            "HST/NICMOS1.F090M": [
+                22.58,
+                0.35
+            ],
+            "HST/NICMOS1.F110M": [
+                20.61,
+                0.15
+            ],
+            "HST/NICMOS1.F145M": [
+                19.05,
+                0.03
+            ],
+            "HST/NICMOS1.F160W": [
+                18.27,
+                0.02
+            ],
+            "Paranal/NACO.J": [
+                20.0,
+                0.2
+            ],
+            "Paranal/NACO.H": [
+                18.09,
+                0.21
+            ],
+            "Paranal/NACO.Ks": [
+                16.93,
+                0.11
+            ],
+            "Paranal/NACO.Lp": [
+                15.28,
+                0.14
+            ]
+        },
+        "semi_major": [
+            46.0,
+            46.0
+        ],
+        "mass_star": [
+            0.023864855849233126,
+            0.0047729711698466255
+        ],
+        "mass_companion": [
+            8.0,
+            2.0
+        ],
+        "accretion": false,
+        "references": [
+            "Chauvin et al. 2004",
+            "Gaia Early Data Release 3",
+            "Mohanty et al. 2007",
+            "Mohanty et al. 200z",
+            "Patience et al. 2010",
+            "Song et al. 2006"
+        ]
+    },
+    "AB Pic B": {
+        "simbad": "AB Pic",
+        "parallax": [
+            19.9452,
+            0.0124
+        ],
+        "app_mag": {
+            "Paranal/NACO.J": [
+                16.18,
+                0.1
+            ],
+            "Paranal/NACO.H": [
+                14.69,
+                0.1
+            ],
+            "Paranal/NACO.Ks": [
+                14.14,
+                0.08
+            ]
+        },
+        "semi_major": [
+            260.0,
+            260.0
+        ],
+        "mass_star": [
+            0.8,
+            0.8
+        ],
+        "mass_companion": [
+            13.5,
+            0.5
+        ],
+        "accretion": false,
+        "references": [
+            "Chauvin et al. 2005",
+            "Gaia Early Data Release 3",
+            "Perez et al. 2019"
+        ]
+    },
+    "HD 206893 B": {
+        "simbad": "HD 206893",
+        "parallax": [
+            24.5275,
+            0.0354
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_H": [
+                16.79,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                15.2,
+                0.1
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                14.88,
+                0.09
+            ],
+            "Paranal/NACO.Lp": [
+                13.79,
+                0.31
+            ],
+            "Paranal/NACO.NB405": [
+                13.16,
+                0.34
+            ],
+            "Paranal/NACO.Mp": [
+                12.77,
+                0.27
+            ]
+        },
+        "semi_major": [
+            11.0,
+            11.0
+        ],
+        "mass_star": [
+            1.31,
+            0.03
+        ],
+        "mass_companion": [
+            20.0,
+            20.0
+        ],
+        "accretion": false,
+        "references": [
+            "Delorme et al. 2017",
+            "Gaia Early Data Release 3",
+            "Grandjean et al. 2019",
+            "Milli et al. 2017",
+            "Stolker et al. 2020a",
+            "Ward-Duong et al. 2020"
+        ]
+    },
+    "RZ Psc B": {
+        "simbad": "RZ Psc",
+        "parallax": [
+            5.3661,
+            0.0274
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_H": [
+                [
+                    13.71,
+                    0.14
+                ],
+                [
+                    13.85,
+                    0.26
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_B_Ks": [
+                13.51,
+                0.2
+            ]
+        },
+        "semi_major": [
+            23.0,
+            23.0
+        ],
+        "mass_star": [
+            0.9,
+            0.9
+        ],
+        "mass_companion": [
+            125.70786175925727,
+            10.475655146604774
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Kennedy et al. 2020"
+        ]
+    },
+    "GQ Lup B": {
+        "simbad": "GQ Lup",
+        "parallax": [
+            6.4893,
+            0.0289
+        ],
+        "app_mag": {
+            "HST/WFPC2-PC.F606W": [
+                19.19,
+                0.07
+            ],
+            "HST/WFPC2-PC.F814W": [
+                17.67,
+                0.05
+            ],
+            "HST/NICMOS2.F171M": [
+                13.84,
+                0.13
+            ],
+            "HST/NICMOS2.F190N": [
+                14.08,
+                0.2
+            ],
+            "HST/NICMOS2.F215N": [
+                13.4,
+                0.15
+            ],
+            "Magellan/VisAO.ip": [
+                18.89,
+                0.24
+            ],
+            "Magellan/VisAO.zp": [
+                16.4,
+                0.1
+            ],
+            "Magellan/VisAO.Ys": [
+                15.88,
+                0.1
+            ],
+            "MKO/NSFCam.H": [
+                14.01,
+                0.13
+            ],
+            "Paranal/NACO.NB405": [
+                12.29,
+                0.06
+            ],
+            "Paranal/NACO.Mp": [
+                11.97,
+                0.08
+            ],
+            "Paranal/NACO.Ks": [
+                [
+                    13.474,
+                    0.031
+                ],
+                [
+                    13.386,
+                    0.032
+                ],
+                [
+                    13.496,
+                    0.05
+                ],
+                [
+                    13.501,
+                    0.028
+                ]
+            ],
+            "Subaru/CIAO.CH4s": [
+                13.76,
+                0.26
+            ],
+            "Subaru/CIAO.K": [
+                13.37,
+                0.12
+            ],
+            "Subaru/CIAO.Lp": [
+                12.44,
+                0.22
+            ]
+        },
+        "semi_major": [
+            150.0,
+            50.0
+        ],
+        "mass_star": [
+            1.03,
+            0.05
+        ],
+        "mass_companion": [
+            25.0,
+            15.0
+        ],
+        "radius_companion": [
+            3.6,
+            0.1
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                3.31e-18,
+                4e-20
+            ],
+            "h-beta": [
+                2.7e-19,
+                2.7e-19
+            ],
+            "pa-beta": [
+                1.32e-18,
+                1e-20
+            ]
+        },
+        "references": [
+            "Gaia Data Release 3",
+            "Ginski et al. 2014",
+            "MacGregor et al. 2017",
+            "Marois et al. 2007",
+            "Schwarz et al. 2016",
+            "Seifahrt et al. 2007",
+            "Stolker et al. in prep.",
+            "Wu et al. 2017"
+        ]
+    },
+    "PZ Tel B": {
+        "simbad": "PZ Tel",
+        "parallax": [
+            21.1621,
+            0.0223
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.ZIMPOL_R_PRIM": [
+                17.84,
+                0.31
+            ],
+            "Paranal/SPHERE.ZIMPOL_I_PRIM": [
+                15.16,
+                0.12
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                11.78,
+                0.19
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                11.65,
+                0.19
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                11.56,
+                0.09
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                11.29,
+                0.1
+            ],
+            "Paranal/NACO.J": [
+                12.47,
+                0.2
+            ],
+            "Paranal/NACO.H": [
+                11.93,
+                0.14
+            ],
+            "Paranal/NACO.Ks": [
+                11.53,
+                0.07
+            ],
+            "Paranal/NACO.Lp": [
+                11.04,
+                0.22
+            ],
+            "Paranal/NACO.NB405": [
+                10.94,
+                0.07
+            ],
+            "Paranal/NACO.Mp": [
+                10.93,
+                0.03
+            ],
+            "Gemini/NICI.ED286": [
+                11.68,
+                0.14
+            ],
+            "Gemini/NIRI.H2S1v2-1-G0220": [
+                11.39,
+                0.14
+            ]
+        },
+        "semi_major": [
+            25.0,
+            25.0
+        ],
+        "mass_star": [
+            1.2,
+            1.2
+        ],
+        "mass_companion": [
+            55.0,
+            17.0
+        ],
+        "accretion": false,
+        "line_flux": {
+            "h-alpha": [
+                2.2e-18,
+                9e-19
+            ]
+        },
+        "references": [
+            "Biller et al. 2010",
+            "Gaia Early Data Release 3",
+            "Ginski et al. 2014",
+            "Maire et al. 2015",
+            "Maire et al. 2016",
+            "Musso Barcucci et al. 2019",
+            "Stolker et al. 2020a"
+        ]
+    },
+    "kappa And b": {
+        "simbad": "kappa And",
+        "parallax": [
+            19.4064,
+            0.2104
+        ],
+        "app_mag": {
+            "Subaru/CIAO.J": [
+                15.86,
+                0.21
+            ],
+            "Subaru/CIAO.H": [
+                14.95,
+                0.13
+            ],
+            "Subaru/CIAO.Ks": [
+                14.32,
+                0.09
+            ],
+            "Keck/NIRC2.Lp": [
+                13.12,
+                0.1
+            ],
+            "Keck/NIRC2.NB_4.05": [
+                13.0,
+                0.2
+            ],
+            "LBT/LMIRCam.M_77K": [
+                13.3,
+                0.3
+            ]
+        },
+        "semi_major": [
+            55.0,
+            55.0
+        ],
+        "mass_star": [
+            2.7,
+            0.1
+        ],
+        "mass_companion": [
+            13.0,
+            12.0
+        ],
+        "accretion": false,
+        "references": [
+            "Bonnefoy et al. 2014",
+            "Currie et al. 2013",
+            "Gaia Early Data Release 3",
+            "Jones et al. 2016"
+        ]
+    },
+    "HD 1160 B": {
+        "simbad": "HD 1160",
+        "parallax": [
+            8.2721,
+            0.0355
+        ],
+        "app_mag": {
+            "MKO/NSFCam.J": [
+                14.69,
+                0.05
+            ],
+            "MKO/NSFCam.H": [
+                14.21,
+                0.02
+            ],
+            "MKO/NSFCam.Ks": [
+                14.12,
+                0.05
+            ],
+            "Paranal/NACO.Lp": [
+                13.6,
+                0.1
+            ],
+            "Keck/NIRC2.Ms": [
+                13.81,
+                0.24
+            ]
+        },
+        "semi_major": [
+            81.0,
+            81.0
+        ],
+        "mass_star": [
+            2.2,
+            2.2
+        ],
+        "mass_companion": [
+            80.0,
+            10.0
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Maire et al. 2016",
+            "Nielsen et al. 2012",
+            "Victor Garcia et al. 2017"
+        ]
+    },
+    "ROXs 12 B": {
+        "simbad": "ROXs 12 B",
+        "parallax": [
+            7.217,
+            0.0172
+        ],
+        "app_mag": {
+            "MKO/NSFCam.J": [
+                15.82,
+                0.03
+            ],
+            "MKO/NSFCam.H": [
+                14.83,
+                0.03
+            ],
+            "MKO/NSFCam.Kp": [
+                14.14,
+                0.03
+            ]
+        },
+        "semi_major": [
+            210.0,
+            210.0
+        ],
+        "mass_star": [
+            0.87,
+            0.08
+        ],
+        "mass_companion": [
+            17.5,
+            1.5
+        ],
+        "accretion": false,
+        "references": [
+            "Bowler et al. 2017",
+            "Gaia Early Data Release 3",
+            "Kraus et al. 2014"
+        ]
+    },
+    "ROXs 42 Bb": {
+        "simbad": "ROXs 42 B",
+        "parallax": [
+            6.8284,
+            0.0309
+        ],
+        "app_mag": {
+            "Keck/NIRC2.J": [
+                16.91,
+                0.11
+            ],
+            "Keck/NIRC2.H": [
+                15.88,
+                0.05
+            ],
+            "Keck/NIRC2.Ks": [
+                15.01,
+                0.06
+            ],
+            "Keck/NIRC2.Lp": [
+                13.97,
+                0.06
+            ],
+            "Keck/NIRC2.NB_4.05": [
+                13.9,
+                0.08
+            ],
+            "Keck/NIRC2.Ms": [
+                14.01,
+                0.23
+            ]
+        },
+        "semi_major": [
+            157.0,
+            157.0
+        ],
+        "mass_star": [
+            0.89,
+            0.08
+        ],
+        "mass_companion": [
+            9.0,
+            3.0
+        ],
+        "accretion": false,
+        "references": [
+            "Currie et al. 2014",
+            "Currie et al. 2014a",
+            "Currie et al. 2014b",
+            "Daemgen et al. 2017",
+            "Gaia Early Data Release 3",
+            "Kraus et al. 2014"
+        ]
+    },
+    "GJ 504 b": {
+        "simbad": "GJ 504",
+        "parallax": [
+            56.8577,
+            0.1224
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_Y23_2": [
+                20.98,
+                0.2
+            ],
+            "Paranal/SPHERE.IRDIS_D_Y23_3": [
+                20.14,
+                0.09
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                19.01,
+                0.17
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                18.95,
+                0.3
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                21.81,
+                0.35
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                18.77,
+                0.2
+            ],
+            "Subaru/CIAO.J": [
+                19.78,
+                0.1
+            ],
+            "Subaru/CIAO.H": [
+                20.01,
+                0.14
+            ],
+            "Subaru/CIAO.Ks": [
+                19.38,
+                0.11
+            ],
+            "Subaru/CIAO.CH4s": [
+                19.58,
+                0.13
+            ],
+            "Subaru/IRCS.Lp": [
+                16.7,
+                0.17
+            ]
+        },
+        "semi_major": [
+            43.5,
+            43.5
+        ],
+        "mass_star": [
+            1.18,
+            0.08
+        ],
+        "mass_companion": [
+            16.5,
+            13.5
+        ],
+        "accretion": false,
+        "references": [
+            "Bonnefoy et al. 2018",
+            "Gaia Early Data Release 3",
+            "Janson et al. 2013",
+            "Kuzuhara et al. 2013",
+            "Skemer et al. 2016"
+        ]
+    },
+    "GU Psc b": {
+        "simbad": "GU Psc",
+        "parallax": [
+            21.0051,
+            0.026
+        ],
+        "app_mag": {
+            "Gemini/GMOS-S.z": [
+                21.75,
+                0.07
+            ],
+            "CFHT/Wircam.Y": [
+                19.4,
+                0.05
+            ],
+            "CFHT/Wircam.J": [
+                18.12,
+                0.03
+            ],
+            "CFHT/Wircam.H": [
+                17.7,
+                0.03
+            ],
+            "CFHT/Wircam.Ks": [
+                17.4,
+                0.03
+            ],
+            "WISE/WISE.W1": [
+                17.17,
+                0.33
+            ],
+            "WISE/WISE.W2": [
+                15.41,
+                0.22
+            ]
+        },
+        "semi_major": [
+            2000.0,
+            2000.0
+        ],
+        "mass_star": [
+            0.33,
+            0.3
+        ],
+        "mass_companion": [
+            11.0,
+            2.0
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Naud et al. 2014"
+        ]
+    },
+    "2M0103 ABb": {
+        "simbad": "2MASS J01033563-5515561",
+        "parallax": [
+            21.18,
+            1.37
+        ],
+        "app_mag": {
+            "Paranal/NACO.J": [
+                15.47,
+                0.3
+            ],
+            "Paranal/NACO.H": [
+                14.27,
+                0.2
+            ],
+            "Paranal/NACO.Ks": [
+                13.67,
+                0.2
+            ],
+            "Paranal/NACO.Lp": [
+                12.67,
+                0.1
+            ]
+        },
+        "semi_major": [
+            84.0,
+            84.0
+        ],
+        "mass_star": [
+            0.19,
+            0.02
+        ],
+        "mass_companion": [
+            13.0,
+            1.0
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                1.28e-18,
+                7e-20
+            ],
+            "h-beta": [
+                1.39e-19,
+                1e-20
+            ]
+        },
+        "references": [
+            "Delorme et al. 2013",
+            "Eriksson et al. 2020",
+            "Riedel et al. 2014"
+        ]
+    },
+    "1RXS 1609 B": {
+        "simbad": "1RXS J160929.1-210524",
+        "parallax": [
+            7.2444,
+            0.0176
+        ],
+        "app_mag": {
+            "Gemini/NIRI.J-G0202w": [
+                17.9,
+                0.12
+            ],
+            "Gemini/NIRI.H-G0203w": [
+                16.87,
+                0.07
+            ],
+            "Gemini/NIRI.K-G0204w": [
+                16.17,
+                0.18
+            ],
+            "Gemini/NIRI.Lprime-G0207w": [
+                14.8,
+                0.3
+            ]
+        },
+        "semi_major": [
+            330.0,
+            320.0
+        ],
+        "mass_star": [
+            0.85,
+            0.2
+        ],
+        "mass_companion": [
+            14.0,
+            2.0
+        ],
+        "accretion": false,
+        "references": [
+            "Bowler et al. 2011",
+            "Gaia Early Data Release 3",
+            "Lafreniere et al. 2008",
+            "Lafreniere et al. 2010",
+            "Wu et al. 2015"
+        ]
+    },
+    "GSC 06214 B": {
+        "simbad": "GSC 06214-00210",
+        "parallax": [
+            9.1923,
+            0.0214
+        ],
+        "app_mag": {
+            "MKO/NSFCam.J": [
+                16.24,
+                0.04
+            ],
+            "MKO/NSFCam.H": [
+                15.55,
+                0.04
+            ],
+            "MKO/NSFCam.Kp": [
+                14.95,
+                0.05
+            ],
+            "MKO/NSFCam.Lp": [
+                13.75,
+                0.07
+            ],
+            "LBT/LMIRCam.M_77K": [
+                13.75,
+                0.3
+            ]
+        },
+        "semi_major": [
+            320.0,
+            320.0
+        ],
+        "mass_star": [
+            0.9,
+            0.1
+        ],
+        "mass_companion": [
+            14.0,
+            2.0
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                7.08e-19,
+                2.12e-18
+            ],
+            "pa-beta": [
+                1.12e-18,
+                3e-20
+            ]
+        },
+        "references": [
+            "Bailey et al. 2013",
+            "Bowler et al. 2011",
+            "Gaia Early Data Release 3",
+            "Ireland et al. 2011",
+            "Zhou et al. 2014"
+        ]
+    },
+    "HD 72946 B": {
+        "simbad": "HD 72946",
+        "parallax": [
+            38.9809,
+            0.0412
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                14.56,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                14.4,
+                0.07
+            ]
+        },
+        "semi_major": [
+            6.45,
+            0.08
+        ],
+        "mass_star": [
+            0.99,
+            0.03
+        ],
+        "mass_companion": [
+            72.4,
+            1.6
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Maire et al. 2019"
+        ]
+    },
+    "HIP 64892 B": {
+        "simbad": "HIP 64892",
+        "parallax": [
+            8.3595,
+            0.0483
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                14.21,
+                0.17
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                13.94,
+                0.17
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                13.77,
+                0.17
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                13.45,
+                0.19
+            ],
+            "Paranal/NACO.Lp": [
+                13.09,
+                0.17
+            ]
+        },
+        "semi_major": [
+            159.0,
+            159.0
+        ],
+        "mass_star": [
+            2.35,
+            0.09
+        ],
+        "mass_companion": [
+            33.0,
+            4.0
+        ],
+        "accretion": false,
+        "references": [
+            "Cheetham et al. 2018",
+            "Gaia Early Data Release 3"
+        ]
+    },
+    "HD 13724 B": {
+        "simbad": "HD 13724",
+        "parallax": [
+            23.0157,
+            0.0178
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_J23_2": [
+                17.09,
+                0.16
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                17.82,
+                0.32
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                18.23,
+                0.4
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                17.1,
+                0.05
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.67,
+                0.18
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                17.48,
+                0.46
+            ]
+        },
+        "semi_major": [
+            26.3,
+            5.6
+        ],
+        "mass_star": [
+            1.14,
+            0.06
+        ],
+        "mass_companion": [
+            50.5,
+            3.5
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Rickman et al. 2020"
+        ]
+    },
+    "YSES 1 b": {
+        "simbad": "TYC 8998-760-1",
+        "parallax": [
+            10.6124,
+            0.0116
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_Y23_2": [
+                17.03,
+                0.21
+            ],
+            "Paranal/SPHERE.IRDIS_D_Y23_3": [
+                16.67,
+                0.16
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_2": [
+                16.27,
+                0.08
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                15.73,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                15.11,
+                0.08
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                14.78,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                14.44,
+                0.04
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                14.07,
+                0.04
+            ],
+            "Paranal/SPHERE.IRDIS_B_J": [
+                15.73,
+                0.38
+            ],
+            "Paranal/SPHERE.IRDIS_B_H": [
+                15.87,
+                0.38
+            ],
+            "Paranal/SPHERE.IRDIS_B_Ks": [
+                14.7,
+                0.14
+            ],
+            "Paranal/NACO.Lp": [
+                13.3,
+                0.08
+            ],
+            "Paranal/NACO.Mp": [
+                13.08,
+                0.2
+            ]
+        },
+        "semi_major": [
+            162.0,
+            162.0
+        ],
+        "mass_star": [
+            1.0,
+            0.02
+        ],
+        "mass_companion": [
+            14.0,
+            3.0
+        ],
+        "accretion": true,
+        "references": [
+            "Bohn et al. 2019",
+            "Gaia Early Data Release 3",
+            "Zhang et al. 2021"
+        ]
+    },
+    "YSES 1 c": {
+        "simbad": "TYC 8998-760-1",
+        "parallax": [
+            10.6124,
+            0.0116
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_Y23_3": [
+                22.37,
+                0.31
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_2": [
+                21.81,
+                0.22
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                21.17,
+                0.15
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                19.78,
+                0.08
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                19.32,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                18.34,
+                0.04
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                17.85,
+                0.09
+            ],
+            "Paranal/SPHERE.IRDIS_B_H": [
+                19.69,
+                0.23
+            ],
+            "Paranal/NACO.Lp": [
+                16.29,
+                0.21
+            ]
+        },
+        "semi_major": [
+            320.0,
+            320.0
+        ],
+        "mass_star": [
+            1.0,
+            0.02
+        ],
+        "mass_companion": [
+            6.0,
+            1.0
+        ],
+        "accretion": false,
+        "references": [
+            "Bohn et al. 2019",
+            "Bohn et al. 2020",
+            "Gaia Early Data Release 3"
+        ]
+    },
+    "YSES 2 b": {
+        "simbad": "TYC 8984-2245-1",
+        "parallax": [
+            9.1115,
+            0.031
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_H": [
+                18.76,
+                0.11
+            ],
+            "Paranal/SPHERE.IRDIS_B_Ks": [
+                17.9,
+                0.11
+            ]
+        },
+        "semi_major": [
+            115.0,
+            115.0
+        ],
+        "mass_star": [
+            1.1,
+            0.03
+        ],
+        "mass_companion": [
+            7.0,
+            1.0
+        ],
+        "accretion": false,
+        "references": [
+            "Bohn et al. 2021",
+            "Gaia Early Data Release 3"
+        ]
+    },
+    "HD 142527 B": {
+        "simbad": "HD 142527",
+        "parallax": [
+            6.2791,
+            0.0284
+        ],
+        "app_mag": {
+            "Paranal/NACO.J": [
+                10.86,
+                0.05
+            ],
+            "Paranal/NACO.H": [
+                [
+                    10.5,
+                    0.2
+                ],
+                [
+                    10.3,
+                    0.5
+                ]
+            ],
+            "Paranal/NACO.Ks": [
+                [
+                    10.0,
+                    0.3
+                ],
+                [
+                    9.8,
+                    0.1
+                ]
+            ],
+            "Paranal/NACO.Lp": [
+                [
+                    9.1,
+                    0.1
+                ],
+                [
+                    9.1,
+                    0.1
+                ]
+            ],
+            "Paranal/NACO.Mp": [
+                9.2,
+                0.2
+            ]
+        },
+        "semi_major": [
+            38.0,
+            20.0
+        ],
+        "mass_star": [
+            2.0,
+            0.3
+        ],
+        "mass_companion": [
+            136.18351690586204,
+            31.426965439814317
+        ],
+        "radius_companion": [
+            19.1,
+            1.0
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                7.6e-17,
+                3.5e-17
+            ]
+        },
+        "references": [
+            "Biller et al. 2012",
+            "Christiaens et al. 2018",
+            "Claudi et al. 2019",
+            "Close et al. 2014",
+            "Cugno et al. 2019",
+            "Gaia Early Data Release 3",
+            "Lacour et al. 2012",
+            "Lacour et al. 2016",
+            "Mendigut\u00eda et al. 2014"
+        ]
+    },
+    "CS Cha B": {
+        "simbad": "CS Cha",
+        "parallax": [
+            5.9251,
+            0.0675
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_B_J": [
+                19.16,
+                0.21
+            ],
+            "Paranal/SPHERE.IRDIS_B_H": [
+                17.65,
+                0.62
+            ],
+            "Paranal/NACO.Ks": [
+                17.4,
+                0.16
+            ]
+        },
+        "semi_major": [
+            214.0,
+            0.0
+        ],
+        "mass_star": [
+            1.0,
+            0.1
+        ],
+        "mass_companion": [
+            314.2696543981432,
+            104.75655146604774
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                1.73e-19,
+                2.1e-20
+            ]
+        },
+        "references": [
+            "Gaia Early Data Release 3",
+            "Ginski et al. 2018",
+            "Haffert et al. 2020"
+        ]
+    },
+    "CT Cha B": {
+        "simbad": "CT Cha",
+        "parallax": [
+            5.2645,
+            0.0116
+        ],
+        "app_mag": {
+            "Paranal/NACO.J": [
+                16.61,
+                0.3
+            ],
+            "Paranal/NACO.Ks": [
+                [
+                    14.95,
+                    0.3
+                ],
+                [
+                    14.89,
+                    0.3
+                ]
+            ]
+        },
+        "semi_major": [
+            430.0,
+            0.0
+        ],
+        "mass_star": [
+            0.55,
+            0.0
+        ],
+        "mass_companion": [
+            17.0,
+            5.0
+        ],
+        "accretion": true,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Hartmann et al. 1998",
+            "Schmidt et al. 2008",
+            "Wu et al. 2015",
+            "Wu et al. 2020"
+        ]
+    },
+    "SR 12 C": {
+        "simbad": "2MASS J16271951-2441403",
+        "parallax": [
+            8.9034,
+            0.4288
+        ],
+        "app_mag": {
+            "MKO/NSFCam.J": [
+                15.93,
+                0.03
+            ],
+            "MKO/NSFCam.H": [
+                15.18,
+                0.03
+            ],
+            "MKO/NSFCam.Ks": [
+                14.57,
+                0.03
+            ],
+            "MKO/NSFCam.Lp": [
+                13.1,
+                0.08
+            ]
+        },
+        "semi_major": [
+            1100.0,
+            0.0
+        ],
+        "mass_star": [
+            1.05,
+            0.05
+        ],
+        "mass_companion": [
+            13.0,
+            7.0
+        ],
+        "accretion": true,
+        "line_flux": {
+            "h-alpha": [
+                1.34e-18,
+                5e-20
+            ],
+            "h-beta": [
+                2.19e-19,
+                3e-21
+            ]
+        },
+        "references": [
+            "Bowler et al. 2014",
+            "Gaia Data Release 2",
+            "Kuzuhara et al. 2011",
+            "Santamar\u00eda-Miranda et al. 2018",
+            "Santamar\u00eda-Miranda et al. 2019 (erratum)"
+        ]
+    },
+    "DH Tau B": {
+        "simbad": "DH Tau",
+        "parallax": [
+            7.4936,
+            0.0255
+        ],
+        "app_mag": {
+            "Subaru/CIAO.J": [
+                15.71,
+                0.05
+            ],
+            "Subaru/CIAO.H": [
+                14.96,
+                0.04
+            ],
+            "Subaru/CIAO.Ks": [
+                14.19,
+                0.02
+            ]
+        },
+        "semi_major": [
+            330.0,
+            0.0
+        ],
+        "mass_star": [
+            0.33,
+            0.0
+        ],
+        "mass_companion": [
+            11.0,
+            3.0
+        ],
+        "accretion": true,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Itoh et al. 2005",
+            "Patience et al. 2012",
+            "Zhou et al. 2014"
+        ]
+    },
+    "HD 4747 B": {
+        "simbad": "HD 4747",
+        "parallax": [
+            53.0526,
+            0.0282
+        ],
+        "app_mag": {
+            "Keck/NIRC2.Ks": [
+                14.36,
+                0.14
+            ],
+            "Keck/NIRC2.Lp": [
+                13.02,
+                0.44
+            ]
+        },
+        "semi_major": [
+            10.1,
+            0.4
+        ],
+        "mass_star": [
+            0.82,
+            0.08
+        ],
+        "mass_companion": [
+            66.3,
+            3.0
+        ],
+        "accretion": false,
+        "references": [
+            "Brandt et al. 2019",
+            "Crepp et al. 2014",
+            "Gaia Early Data Release 3"
+        ]
+    },
+    "HR 3549 B": {
+        "simbad": "HR 3549",
+        "parallax": [
+            10.5509,
+            0.0383
+        ],
+        "app_mag": {
+            "Paranal/NACO.Lp": [
+                [
+                    13.85,
+                    0.25
+                ],
+                [
+                    13.63,
+                    0.5
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_B_Y": [
+                16.81,
+                0.16
+            ],
+            "Paranal/SPHERE.IRDIS_B_J": [
+                15.89,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                15.07,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                14.97,
+                0.02
+            ]
+        },
+        "semi_major": [
+            80.0,
+            0.0
+        ],
+        "mass_star": [
+            2.32,
+            0.2
+        ],
+        "mass_companion": [
+            47.5,
+            32.5
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Mawet et al. 2015",
+            "Mesa et al. 2016"
+        ]
+    },
+    "CHXR 73 B": {
+        "simbad": "CHXR 73",
+        "parallax": [
+            5.2256,
+            0.0804
+        ],
+        "app_mag": {
+            "HST/ACS_WFC.F775W": [
+                24.57,
+                0.03
+            ],
+            "HST/ACS_WFC.F850LP": [
+                22.58,
+                0.03
+            ]
+        },
+        "semi_major": [
+            210.0,
+            0.0
+        ],
+        "mass_star": [
+            0.35,
+            0.0
+        ],
+        "mass_companion": [
+            12.0,
+            1.0
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Luhman et al. 2006"
+        ]
+    },
+    "HD 19467 B": {
+        "simbad": "HD 19467",
+        "parallax": [
+            31.2191,
+            0.024
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                16.95,
+                0.05
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                17.88,
+                0.05
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.92,
+                0.07
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                18.52,
+                0.08
+            ],
+            "Paranal/NACO.Lp": [
+                15.46,
+                0.17
+            ]
+        },
+        "semi_major": [
+            54.0,
+            9.0
+        ],
+        "mass_star": [
+            0.95,
+            0.02
+        ],
+        "mass_companion": [
+            74.0,
+            12.0
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Maire et al. 2020"
+        ]
+    },
+    "b Cen (AB)b": {
+        "simbad": "b Cen",
+        "parallax": [
+            10.0339,
+            0.3142
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_J23_2": [
+                17.98,
+                0.25
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                17.64,
+                0.25
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.37,
+                0.06
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                16.13,
+                0.06
+            ]
+        },
+        "semi_major": [
+            530.0,
+            530.0
+        ],
+        "mass_star": [
+            8.0,
+            2.0
+        ],
+        "mass_companion": [
+            10.9,
+            1.6
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Janson et al. 2021"
+        ]
+    }
+}

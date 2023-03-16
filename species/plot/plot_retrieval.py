@@ -29,6 +29,7 @@ from species.util import retrieval_util
 def plot_pt_profile(
     tag: str,
     random: Optional[int] = 100,
+    envelope: bool = False,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
@@ -46,7 +47,12 @@ def plot_pt_profile(
         Database tag with the posterior samples.
     random : int, None
         Number of randomly selected samples from the posterior. All
-        samples are selected if set to ``None``.
+        samples are selected if the argument is set to ``None``.
+    envelope : bool
+        Plot an envelope instead of the individual samples. The
+        envelopes show the 68 and 99.7 percent confidence intervals,
+        so :math:`1\\sigma` and :math:`3\\sigma` in case of
+        Gaussian distributions.
     xlim : tuple(float, float), None
         Limits of the temperature axis. Default values are used if
         set to ``None``.
@@ -83,13 +89,17 @@ def plot_pt_profile(
 
     cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCL(c)"]
 
-    cloud_color = {
-        "Fe(c)": "tab:blue",
-        "MgSiO3(c)": "tab:orange",
-        "Al2O3(c)": "tab:green",
-        "Na2S(c)": "tab:cyan",
-        "KCL(c)": "tab:pink",
-    }
+    cloud_colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:cyan",
+        "tab:pink",
+        "tab:brown",
+        "tab:olive",
+    ]
+
+    color_iter = iter(cloud_colors)
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -108,7 +118,6 @@ def plot_pt_profile(
     for item in parameters:
         param_index[item] = np.argwhere(parameters == item)[0][0]
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -199,7 +208,7 @@ def plot_pt_profile(
 
         temp_index = []
         for i in range(temp_nodes):
-            temp_index.append(np.argwhere(parameters == f"t{i}")[0])
+            temp_index.append(np.argwhere(parameters == f"t{i}")[0][0])
 
         knot_press = np.logspace(
             np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
@@ -207,6 +216,11 @@ def plot_pt_profile(
 
     if pt_profile == "molliere":
         conv_press = np.zeros(samples.shape[0])
+
+    if envelope:
+        temp_list = np.zeros((samples.shape[0], pressure.shape[0]))
+    else:
+        temp_list = None
 
     for i, item in enumerate(samples):
         # C/O and [Fe/H]
@@ -357,7 +371,10 @@ def plot_pt_profile(
         #
         #     temp = copy.copy(tfinal)
 
-        ax.plot(temp, pressure, "-", lw=0.3, color="gray", alpha=0.5, zorder=1)
+        if envelope:
+            temp_list[i] = temp
+        else:
+            ax.plot(temp, pressure, "-", lw=0.3, color="gray", zorder=1)
 
     if box.attributes["chemistry"] == "free":
         # TODO Set [Fe/H] = 0
@@ -426,6 +443,29 @@ def plot_pt_profile(
             knot_press, knot_temp, pressure, pt_smooth=pt_smooth
         )
 
+    if envelope:
+        temp_percent = np.percentile(temp_list, [0.3, 16.0, 84.0, 99.7], axis=0)
+
+        ax.fill_betweenx(
+            y=pressure,
+            x1=temp_percent[0],
+            x2=temp_percent[3],
+            color="peachpuff",
+            alpha=0.4,
+            zorder=1,
+            linewidth=0.0,
+        )
+
+        ax.fill_betweenx(
+            y=pressure,
+            x1=temp_percent[1],
+            x2=temp_percent[2],
+            color="peachpuff",
+            alpha=1.0,
+            zorder=1,
+            linewidth=0.0,
+        )
+
     ax.plot(temp, pressure, "-", lw=1, color="black", zorder=2)
 
     # data = np.loadtxt('res_struct.dat')
@@ -484,65 +524,24 @@ def plot_pt_profile(
                     pressure_grid=radtrans.pressure_grid,
                 )
 
-        if "Fe(c)" in radtrans.cloud_species:
-            sat_press, sat_temp = retrieval_util.return_T_cond_Fe_comb(
-                median["metallicity"], median["c_o_ratio"], MMW=np.mean(abund_in["MMW"])
-            )
+        for cloud_item in cloud_species:
 
-            ax.plot(
-                sat_temp, sat_press, "--", lw=0.8, color=cloud_color["Fe(c)"], zorder=2
-            )
+            if cloud_item in radtrans.cloud_species:
+                cond_temp = retrieval_util.get_condensation_curve(
+                    composition=cloud_item[:-3],
+                    press=pressure,
+                    metallicity=median["metallicity"],
+                    c_o_ratio=median["c_o_ratio"],
+                    mmw=np.mean(abund_in["MMW"]))
 
-        if "MgSiO3(c)" in radtrans.cloud_species:
-            sat_press, sat_temp = retrieval_util.return_T_cond_MgSiO3(
-                median["metallicity"], median["c_o_ratio"], MMW=np.mean(abund_in["MMW"])
-            )
-
-            ax.plot(
-                sat_temp,
-                sat_press,
-                "--",
-                lw=0.8,
-                color=cloud_color["MgSiO3(c)"],
-                zorder=2,
-            )
-
-        if "Al2O3(c)" in radtrans.cloud_species:
-            sat_press, sat_temp = retrieval_util.return_T_cond_Al2O3(
-                median["metallicity"], median["c_o_ratio"], MMW=np.mean(abund_in["MMW"])
-            )
-
-            ax.plot(
-                sat_temp,
-                sat_press,
-                "--",
-                lw=0.8,
-                color=cloud_color["Al2O3(c)"],
-                zorder=2,
-            )
-
-        if "Na2S(c)" in radtrans.cloud_species:
-            sat_press, sat_temp = retrieval_util.return_T_cond_Na2S(
-                median["metallicity"], median["c_o_ratio"], MMW=np.mean(abund_in["MMW"])
-            )
-
-            ax.plot(
-                sat_temp,
-                sat_press,
-                "--",
-                lw=0.8,
-                color=cloud_color["Na2S(c)"],
-                zorder=2,
-            )
-
-        if "KCL(c)" in radtrans.cloud_species:
-            sat_press, sat_temp = retrieval_util.return_T_cond_KCl(
-                median["metallicity"], median["c_o_ratio"], MMW=np.mean(abund_in["MMW"])
-            )
-
-            ax.plot(
-                sat_temp, sat_press, "--", lw=0.8, color=cloud_color["KCL(c)"], zorder=2
-            )
+                ax.plot(
+                    cond_temp,
+                    pressure,
+                    "--",
+                    lw=0.8,
+                    color=next(color_iter, "black"),
+                    zorder=2,
+                )
 
     if box.attributes["chemistry"] == "free":
         # Remove these parameters otherwise ReadRadtrans.get_model()
@@ -637,7 +636,7 @@ def plot_pt_profile(
 
             ax2.set_yscale("log")
 
-            ax2.set_xlabel("Wavelength (µm)", fontsize=13, va="bottom")
+            ax2.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13, va="bottom")
 
             if offset is not None:
                 ax2.get_xaxis().set_label_coords(0.5, 1.0 + abs(offset[0]))
@@ -720,28 +719,31 @@ def plot_pt_profile(
                     "None."
                 )
 
-            for item in radtrans.cloud_species:
-                cloud_index = radtrans.rt_object.cloud_species.index(item)
+            color_iter = iter(cloud_colors)
 
-                label = ""
-                for char in item[:-3]:
-                    if char.isnumeric():
-                        label += f"$_{char}$"
-                    else:
-                        label += char
+            for cloud_item in cloud_species:
+                if cloud_item in radtrans.cloud_species:
+                    cloud_index = radtrans.rt_object.cloud_species.index(cloud_item)
 
-                if label == "KCL":
-                    label = "KCl"
+                    label = ""
+                    for char in cloud_item[:-3]:
+                        if char.isnumeric():
+                            label += f"$_{char}$"
+                        else:
+                            label += char
 
-                ax2.plot(
-                    # (cm) -> (um)
-                    radtrans.rt_object.r_g[:, cloud_index] * 1e4,
-                    # (Ba) -> (Bar)
-                    radtrans.rt_object.press * 1e-6,
-                    lw=0.8,
-                    color=cloud_color[item],
-                    label=label,
-                )
+                    if label == "KCL":
+                        label = "KCl"
+
+                    ax2.plot(
+                        # (cm) -> (um)
+                        radtrans.rt_object.r_g[:, cloud_index] * 1e4,
+                        # (Ba) -> (Bar)
+                        radtrans.rt_object.press * 1e-6,
+                        lw=0.8,
+                        color=next(color_iter),
+                        label=label,
+                    )
 
         if extra_axis is not None:
             ax2.legend(loc="upper right", frameon=False, fontsize=12.0)
@@ -804,7 +806,6 @@ def plot_opacities(
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -1139,13 +1140,11 @@ def plot_opacities(
         np.transpose(albedo),
         cmap="viridis",
         shading="gouraud",
-        norm=LogNorm(vmin=1e-4*np.amax(albedo), vmax=np.amax(albedo)),
+        norm=LogNorm(vmin=1e-4 * np.amax(albedo), vmax=np.amax(albedo)),
     )
 
     cb = Colorbar(ax=ax4, mappable=fig, orientation="vertical", ticklocation="right")
-    cb.ax.set_ylabel(
-        "Single scattering albedo", rotation=270, labelpad=20, fontsize=11
-    )
+    cb.ax.set_ylabel("Single scattering albedo", rotation=270, labelpad=20, fontsize=11)
 
     fig = ax5.pcolormesh(
         xx_grid,
@@ -1181,12 +1180,12 @@ def plot_opacities(
 
     ax1.set_ylabel("Pressure (bar)", fontsize=13)
 
-    ax2.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax2.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
     ax2.set_ylabel("Pressure (bar)", fontsize=13)
 
     ax5.set_ylabel("Pressure (bar)", fontsize=13)
 
-    ax6.set_xlabel("Wavelength (µm)", fontsize=13)
+    ax6.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
     ax6.set_ylabel("Pressure (bar)", fontsize=13)
 
     ax1.set_xlim(wavelength[0], wavelength[-1])
@@ -1309,7 +1308,6 @@ def plot_clouds(
     else:
         print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
-    # mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
     mpl.rcParams["font.family"] = "serif"
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -1423,7 +1421,7 @@ def plot_clouds(
     ax1.text(
         0.07,
         0.07,
-        fr"$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}",
+        rf"$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}",
         ha="left",
         va="bottom",
         transform=ax1.transAxes,

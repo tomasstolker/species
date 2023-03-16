@@ -9,7 +9,7 @@ with open('requirements.txt') as req_txt:
 
 setuptools.setup(
     name='species',
-    version='0.5.3',
+    version='0.5.5',
     description='Toolkit for atmospheric characterization of directly imaged exoplanets',
     long_description=open('README.rst').read(),
     long_description_content_type='text/x-rst',

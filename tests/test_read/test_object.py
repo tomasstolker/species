@@ -58,17 +58,17 @@ class TestObject:
         read_object = species.ReadObject("beta Pic b")
         parallax = read_object.get_parallax()
 
-        assert parallax == (51.44, 0.11999999731779099)
+        assert parallax == (50.9307, 0.1482)
 
     def test_get_distance(self):
         read_object = species.ReadObject("beta Pic b")
         distance = read_object.get_distance()
 
-        assert distance == (19.440124416796266, 0.04535045826554729)
+        assert distance == (19.63452298908124, 0.05713373162362245)
 
     def test_get_absmag(self):
         read_object = species.ReadObject("beta Pic b")
         abs_mag = read_object.get_absmag("Paranal/NACO.Lp")
 
-        assert abs_mag[0] == pytest.approx(9.85650479958083, rel=self.limit, abs=0.0)
-        assert abs_mag[1] == pytest.approx(0.06021346211401161, rel=self.limit, abs=0.0)
+        assert abs_mag[0] == pytest.approx(9.834898226163453, rel=self.limit, abs=0.0)
+        assert abs_mag[1] == pytest.approx(0.06033179718686261, rel=self.limit, abs=0.0)

@@ -1,13 +1,12 @@
 """
 Module for adding young, M- and L-type dwarf spectra from
-`Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
-to the database.
+`Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/
+2014A%26A...562A.127B/abstract>`_ to the database.
 """
 
 import gzip
 import os
 import shutil
-import tarfile
 import urllib.request
 
 import h5py
@@ -16,13 +15,15 @@ import numpy as np
 from astropy.io import fits
 from typeguard import typechecked
 
+from species.util import data_util
+
 
 @typechecked
 def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the SINFONI spectra of young, M- and L-type dwarfs from
-    `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
-    to the database.
+    Function for adding the SINFONI spectra of young, M- and L-type
+    dwarfs from `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.
+    edu/abs/2014A%26A...562A.127B/abstract>`_ to the database.
 
     Parameters
     ----------
@@ -52,9 +53,7 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
         shutil.rmtree(data_folder)
 
     print(f"Unpacking {print_text} (2.3 MB)...", end="", flush=True)
-    tar = tarfile.open(data_file)
-    tar.extractall(data_folder)
-    tar.close()
+    data_util.extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     spec_dict = {}
@@ -107,13 +106,13 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
                         continue
 
                     if "JHK.fits" in fname_split:
-                        spec_dict[name]["JHK"] = data
+                        value["JHK"] = data
 
                     elif "J" in fname_split:
-                        spec_dict[name]["J"] = data
+                        value["J"] = data
 
                     elif "H+K" in fname_split or "HK" in fname_split:
-                        spec_dict[name]["HK"] = data
+                        value["HK"] = data
 
     for name, value in spec_dict.items():
         empty_message = len(print_message) * " "

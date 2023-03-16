@@ -4,6 +4,14 @@ species.data package
 Submodules
 ----------
 
+species.data.accretion module
+-----------------------------
+
+.. automodule:: species.data.accretion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.allers2013 module
 ------------------------------
 
@@ -20,10 +28,18 @@ species.data.bonnefoy2014 module
    :undoc-members:
    :show-inheritance:
 
-species.data.companions module
-------------------------------
+species.data.companion\_spectra module
+--------------------------------------
 
-.. automodule:: species.data.companions
+.. automodule:: species.data.companion_spectra
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.custom\_model module
+---------------------------------
+
+.. automodule:: species.data.custom_model
    :members:
    :undoc-members:
    :show-inheritance:
