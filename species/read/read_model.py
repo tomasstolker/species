@@ -141,9 +141,19 @@ class ReadModel:
         except KeyError:
             h5_file.close()
 
-            raise ValueError(
-                f"The '{self.model}' model spectra are not present in the database."
+            warnings.warn(
+                f"The '{self.model}' model spectra are not present "
+                "in the database. Will try to add the model grid. "
+                "If this does not work (e.g. currently without an "
+                "internet connection) then please use the "
+                "\'add_model\' method of \'Database\' to add the "
+                "grid of spectra yourself."
             )
+
+            species_db = database.Database()
+            species_db.add_model(self.model)
+
+            h5_file = h5py.File(database_path, "r")
 
         return h5_file
 

@@ -64,9 +64,10 @@ class ReadIsochrone:
             cooling curves extracted with
             :func:`~species.read.read_isochrone.ReadIsochrone.get_cooling_curve`.
         extrapolate : str
-            This parameter has been renamed to ``create_regular_grid``
-            and will be deprecated in a future release. Please use
-            the ``create_regular_grid`` parameter instead.
+            DEPRECATED: This parameter has been renamed to
+            ``create_regular_grid`` and will be removed in a future
+            release. Please use the ``create_regular_grid``
+            parameter instead.
 
         Returns
         -------
@@ -79,15 +80,17 @@ class ReadIsochrone:
         self.create_regular_grid = create_regular_grid
 
         if self.extrapolate:
-            warnings.warn("The \'extrapolate\' parameter has been "
-                          "renamed to \'create_regular_grid\' and "
-                          "will be removed in a future release.",
-                          DeprecationWarning)
+            warnings.warn(
+                "The 'extrapolate' parameter has been "
+                "renamed to 'create_regular_grid' and "
+                "will be removed in a future release.",
+                DeprecationWarning,
+            )
 
             if not self.create_regular_grid:
-                warnings.warn("Setting \'create_regular_grid=True\' "
-                              "since \'extrapolate=True\'.")
-
+                warnings.warn(
+                    "Setting 'create_regular_grid=True' since 'extrapolate=True'."
+                )
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -110,6 +113,20 @@ class ReadIsochrone:
                 )
 
         self.mag_models = ["ames", "atmo", "baraffe", "bt-settl", "manual", "nextgen"]
+
+        # Connect isochrone model with atmosphere model
+        # key = isochrone model, value = atmosphere model
+        self.atmosphere_model = {
+            "ames-cond": "ames-cond",
+            "ames-dusty": "ames-dusty",
+            "atmo-ceq": "atmo-ceq",
+            "atmo-neq-strong": "atmo-neq-strong",
+            "atmo-neq-weak": "atmo-neq-weak",
+            "bt-settl": "bt-settl",
+            "saumon2008-nc_solar": "saumon2008-clear",
+            "saumon2008-f2_solar": "saumon2008-cloudy",
+            "sonora+0.0": "sonora-bobcat",
+        }
 
     @typechecked
     def _read_data(
@@ -184,7 +201,9 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_loglum[j * n_masses : (j + 1) * n_masses] = interp_loglum(mass_unique)
+                new_loglum[j * n_masses : (j + 1) * n_masses] = interp_loglum(
+                    mass_unique
+                )
 
                 interp_logg = interpolate.interp1d(
                     iso_mass[age_select],
@@ -200,7 +219,9 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_radius[j * n_masses : (j + 1) * n_masses] = interp_radius(mass_unique)
+                new_radius[j * n_masses : (j + 1) * n_masses] = interp_radius(
+                    mass_unique
+                )
 
             iso_age = new_age.copy()
             iso_mass = new_mass.copy()
@@ -594,14 +615,17 @@ class ReadIsochrone:
         self,
         age: float,
         masses: np.ndarray,
-        model: str,
         filters_color: Tuple[str, str],
         filter_mag: str,
         adapt_logg: bool = False,
+        model: Optional[str] = None,
     ) -> box.ColorMagBox:
         """
-        Function for calculating color-magnitude
-        combinations from a selected isochrone.
+        Function for calculating color-magnitude pairs
+        from a selected isochrone. The function selects the
+        corresponding atmosphere model and computes synthetic
+        photometry by interpolating and integrating the
+        spectra for any given filters.
 
         Parameters
         ----------
@@ -610,8 +634,6 @@ class ReadIsochrone:
         masses : np.ndarray
             Masses (:math:`M_\\mathrm{J}`) at which the isochrone
             data is interpolated.
-        model : str
-            Atmospheric model used to compute the synthetic photometry.
         filters_color : tuple(str, str)
             Filter names for the color as listed in the file with the
             isochrone data. The filter names should be provided in the
@@ -627,6 +649,11 @@ class ReadIsochrone:
             radius lies outside the available range of the synthetic
             spectra. Typically :math:`\\log(g)` has only a minor
             impact on the broadband magnitudes and colors.
+        model : str
+            DEPRECATED: Atmospheric model used to compute the synthetic photometry.
+            This parameter will be removed in a future release
+            since the atmospheric model that is associated with
+            the isochrone model will be automatically selected.
 
         Returns
         -------
@@ -634,22 +661,45 @@ class ReadIsochrone:
             Box with the color-magnitude data.
         """
 
+        if model is not None:
+            warnings.warn(
+                "The 'model' parameter is no longer being "
+                "used and will be removed in a future "
+                "release. Instead, the correct atmosphere "
+                "model that is associated with the "
+                "evolutionary model will be automatically "
+                "selected. Setting the argument of "
+                "'model' to 'None' will prevent this "
+                "warning from being shown.",
+                DeprecationWarning,
+            )
+
         isochrone = self.get_isochrone(
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        model1 = read_model.ReadModel(model=model, filter_name=filters_color[0])
-        model2 = read_model.ReadModel(model=model, filter_name=filters_color[1])
+        if self.tag in self.atmosphere_model:
+            model_name = self.atmosphere_model[self.tag]
+        else:
+            raise ValueError(
+                "Can not find the atmosphere model "
+                f"associated with the '{self.tag}' "
+                "evolutionary model. Please contact "
+                "the code maintainer."
+            )
 
-        param_bounds = model1.get_bounds()
+        model_1 = read_model.ReadModel(model=model_name, filter_name=filters_color[0])
+        model_2 = read_model.ReadModel(model=model_name, filter_name=filters_color[1])
 
-        if model1.get_parameters() == ["teff", "logg", "feh"]:
+        param_bounds = model_1.get_bounds()
+
+        if model_1.get_parameters() == ["teff", "logg", "feh"]:
             if model == "sonora-bobcat":
                 iso_feh = float(self.tag[-4:])
             else:
                 iso_feh = 0.0
 
-        elif model1.get_parameters() != ["teff", "logg"]:
+        elif model_1.get_parameters() != ["teff", "logg"]:
             raise ValueError(
                 "Creating synthetic colors and magnitudes from "
                 "isochrones is currently only implemented for "
@@ -738,8 +788,8 @@ class ReadIsochrone:
                             )
 
                 if not np.isnan(mag1[i]):
-                    mag1[i], _ = model1.get_magnitude(model_param)
-                    mag2[i], _ = model2.get_magnitude(model_param)
+                    mag1[i], _ = model_1.get_magnitude(model_param)
+                    mag2[i], _ = model_2.get_magnitude(model_param)
 
         if filter_mag == filters_color[0]:
             abs_mag = mag1
@@ -771,12 +821,15 @@ class ReadIsochrone:
         self,
         age: float,
         masses: np.ndarray,
-        model: str,
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
+        model: Optional[str] = None,
     ) -> box.ColorColorBox:
         """
-        Function for calculating color-magnitude combinations from a
-        selected isochrone.
+        Function for calculating color-color pairs
+        from a selected isochrone. The function selects the
+        corresponding atmosphere model and computes synthetic
+        photometry by interpolating and integrating the spectra
+        for any given filters.
 
         Parameters
         ----------
@@ -785,12 +838,15 @@ class ReadIsochrone:
         masses : np.ndarray
             Masses (:math:`M_\\mathrm{J}`) at which the isochrone
             data is interpolated.
-        model : str
-            Atmospheric model used to compute the synthetic photometry.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
             Filter names for the colors as listed in the file with the
             isochrone data. The filter names should be provided in the
             format of the SVO Filter Profile Service.
+        model : str
+            DEPRECATED: Atmospheric model used to compute the synthetic photometry.
+            This parameter will be removed in a future release
+            since the atmospheric model that is associated with
+            the isochrone model will be automatically selected.
 
         Returns
         -------
@@ -798,22 +854,53 @@ class ReadIsochrone:
             Box with the color-color data.
         """
 
+        if model is not None:
+            warnings.warn(
+                "The 'model' parameter is no longer being "
+                "used and will be removed in a future "
+                "release. Instead, the correct atmosphere "
+                "model that is associated with the "
+                "evolutionary model will be automatically "
+                "selected. Setting the argument of "
+                "'model' to 'None' will prevent this "
+                "warning from being shown.",
+                DeprecationWarning,
+            )
+
         isochrone = self.get_isochrone(
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        model1 = read_model.ReadModel(model=model, filter_name=filters_colors[0][0])
-        model2 = read_model.ReadModel(model=model, filter_name=filters_colors[0][1])
-        model3 = read_model.ReadModel(model=model, filter_name=filters_colors[1][0])
-        model4 = read_model.ReadModel(model=model, filter_name=filters_colors[1][1])
+        if self.tag in self.atmosphere_model:
+            model_name = self.atmosphere_model[self.tag]
+        else:
+            raise ValueError(
+                "Can not find the atmosphere model "
+                f"associated with the '{self.tag}' "
+                "evolutionary model. Please contact "
+                "the code maintainer."
+            )
 
-        if model1.get_parameters() == ["teff", "logg", "feh"]:
+        model_1 = read_model.ReadModel(
+            model=model_name, filter_name=filters_colors[0][0]
+        )
+        model_2 = read_model.ReadModel(
+            model=model_name, filter_name=filters_colors[0][1]
+        )
+        model_3 = read_model.ReadModel(
+            model=model_name, filter_name=filters_colors[1][0]
+        )
+        model_4 = read_model.ReadModel(
+            model=model_name, filter_name=filters_colors[1][1]
+        )
+
+        if model_1.get_parameters() == ["teff", "logg", "feh"]:
             if model == "sonora-bobcat":
                 iso_feh = float(self.tag[-4:])
             else:
                 iso_feh = 0.0
 
-        elif model1.get_parameters() != ["teff", "logg"]:
+        elif model_1.get_parameters() != ["teff", "logg"]:
             raise ValueError(
                 "Creating synthetic colors and magnitudes from "
                 "isochrones is currently only implemented for "
@@ -855,8 +942,8 @@ class ReadIsochrone:
                 )
 
             else:
-                for item_bounds in model1.get_bounds():
-                    if model_param[item_bounds] < model1.get_bounds()[item_bounds][0]:
+                for item_bounds in model_1.get_bounds():
+                    if model_param[item_bounds] < model_1.get_bounds()[item_bounds][0]:
                         mag1[i] = np.nan
                         mag2[i] = np.nan
                         mag3[i] = np.nan
@@ -866,12 +953,14 @@ class ReadIsochrone:
                             f"The value of {item_bounds} is "
                             f"{model_param[item_bounds]}, which is "
                             f"below the lower bound of the model grid "
-                            f" ({model1.get_bounds()[item_bounds][0]}). "
+                            f" ({model_1.get_bounds()[item_bounds][0]}). "
                             f"Setting the magnitudes to NaN for the "
                             f"following isochrone sample: {model_param}."
                         )
 
-                    elif model_param[item_bounds] > model1.get_bounds()[item_bounds][1]:
+                    elif (
+                        model_param[item_bounds] > model_1.get_bounds()[item_bounds][1]
+                    ):
                         mag1[i] = np.nan
                         mag2[i] = np.nan
                         mag3[i] = np.nan
@@ -881,7 +970,7 @@ class ReadIsochrone:
                             f"The value of {item_bounds} is "
                             f"{model_param[item_bounds]}, which is above "
                             f"the upper bound of the model grid "
-                            f"({model1.get_bounds()[item_bounds][1]}). "
+                            f"({model_1.get_bounds()[item_bounds][1]}). "
                             f"Setting the magnitudes to NaN for the "
                             f"following isochrone sample: {model_param}."
                         )
@@ -892,10 +981,10 @@ class ReadIsochrone:
                     and not np.isnan(mag3[i])
                     and not np.isnan(mag4[i])
                 ):
-                    mag1[i], _ = model1.get_magnitude(model_param)
-                    mag2[i], _ = model2.get_magnitude(model_param)
-                    mag3[i], _ = model3.get_magnitude(model_param)
-                    mag4[i], _ = model4.get_magnitude(model_param)
+                    mag1[i], _ = model_1.get_magnitude(model_param)
+                    mag2[i], _ = model_2.get_magnitude(model_param)
+                    mag3[i], _ = model_3.get_magnitude(model_param)
+                    mag4[i], _ = model_4.get_magnitude(model_param)
 
         return box.create_box(
             boxtype="colorcolor",
@@ -1044,3 +1133,82 @@ class ReadIsochrone:
                 filters = None
 
         return filters
+
+    @typechecked
+    def get_photometry(
+        self,
+        age: float,
+        mass: float,
+        distance: float,
+        filter_name: str,
+    ) -> box.PhotometryBox:
+        """
+        Function for computing synthetic photometry by interpolating
+        and integrating the associated spectra. Bulk and atmosphere
+        parameters are interpolated from the evolutionary data for
+        the requested age and mass. The output from the evolutionary
+        data is then used as input for the atmospheric model. This
+        function is useful if the required magnitudes or fluxes
+        are not part of the available filters of the evolutionary
+        data (i.e. the filters returned by
+        :func:`~species.read.read_isochrone.ReadIsochrone.get_filters`).
+        The atmospheric model that is associated with the evolutionary
+        model is automatically selected and added to the database if
+        needed.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the bulk parameters will be
+            interpolated from the grid with evolutionary data.
+        mass : float
+            Mass (:math:`M_\\mathrm{J}`) at which the bulk
+            parameters will be interpolated from the grid with
+            evolutionary data.
+        distance : float
+            Distance (pc) that is used for scaling the fluxes
+            from the atmosphere to the observer.
+        filter_name : tuple(str, str), None
+            Filter name for which the synthetic photometry will be
+            computed. Any filter name from the `SVO Filter Profile
+            Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
+            can be used as argument.
+
+        Returns
+        -------
+        species.core.box.PhotometryBox
+            Box with the synthetic photometry (magnitude and flux).
+        """
+
+        if self.tag in self.atmosphere_model:
+            model_name = self.atmosphere_model[self.tag]
+        else:
+            raise ValueError(
+                "Can not find the atmosphere model "
+                f"associated with the '{self.tag}' "
+                "evolutionary model. Please contact "
+                "the code maintainer."
+            )
+
+        iso_box = self.get_isochrone(age=age, masses=np.array([mass]))
+
+        model_param = {
+            "teff": iso_box.teff[0],
+            "logg": iso_box.logg[0],
+            "radius": iso_box.radius[0],
+            "distance": distance,
+        }
+
+        model_reader = read_model.ReadModel(model=model_name, filter_name=filter_name)
+
+        param_list = model_reader.get_parameters()
+
+        if "feh" in param_list:
+            model_param["feh"] = 0.0
+
+        if "c_o_ratio" in param_list:
+            model_param["c_o_ratio"] = 0.55
+
+        phot_box = model_reader.get_flux(model_param=model_param, return_box=True)
+
+        return phot_box

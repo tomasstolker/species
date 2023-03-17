@@ -26,9 +26,9 @@ def download_filter(
     Parameters
     ----------
     filter_id : str
-        Filter name as listed on the website of the SVO
-        Filter Profile Service (see
-        http://svo2.cab.inta-csic.es/svo/theory/fps/).
+        Filter name as listed on the website of the `SVO
+        Filter Profile Service
+        <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_.
 
     Returns
     -------

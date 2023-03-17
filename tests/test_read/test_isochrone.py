@@ -72,7 +72,6 @@ class TestIsochrone:
         colormag_box = read_isochrone.get_color_magnitude(
             100.0,
             np.linspace(35.0, 45.0, 10),
-            "ames-cond",
             ("MKO/NSFCam.J", "MKO/NSFCam.H"),
             "MKO/NSFCam.J",
         )
@@ -99,7 +98,6 @@ class TestIsochrone:
         colorcolor_box = read_isochrone.get_color_color(
             100.0,
             np.linspace(35.0, 45.0, 10),
-            "ames-cond",
             (("MKO/NSFCam.J", "MKO/NSFCam.H"), ("MKO/NSFCam.H", "MKO/NSFCam.Ks")),
         )
 
