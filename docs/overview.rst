@@ -15,7 +15,7 @@ The toolkit benefits from publicly available data resources such as atmospheric 
 
 The following data and models are currently supported:
 
-**Atmospheric model spectra**
+**Atmospheric models**
 
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_
@@ -49,6 +49,16 @@ The following data and models are currently supported:
      database = species.Database()
      database.available_models()
 
+**Evolutionary models**
+
+- `AMES-Cond <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..701B/abstract>`_
+- `AMES-Dusty <https://ui.adsabs.harvard.edu/abs/2000ApJ...542..464C/abstract>`_
+- `ATMO <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ (CEQ, NEQ weak, NEQ strong)
+- `Baraffe et al. (2015) <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
+- `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- `Sonora Bobcat <https://zenodo.org/record/5063476>`_
+- All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
+
 **Spectral libraries**
 
 - `IRTF Spectral Library <http://irtfweb.ifa.hawaii.edu/~spex/IRTF_Spectral_Library/>`_
@@ -63,14 +73,6 @@ The following data and models are currently supported:
 - `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `S. Leggett <http://www.gemini.edu/staff/sleggett>`_
 - `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data.json>`_
-
-**Evolutionary tracks**
-
-- All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
-- Evolutionary data from `Sonora Bobcat <https://zenodo.org/record/5063476>`_
-- Isochrones from `Baraffe et al. (2015) <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
-- Isochrones from `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
-- `ATMO <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ isochrones (CEQ, NEQ weak, NEQ strong)
 
 **Calibration**
 

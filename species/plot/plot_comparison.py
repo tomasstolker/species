@@ -29,7 +29,7 @@ def plot_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: Optional[str] = "statistic.pdf",
+    output: Optional[str] = None,
 ):
     """
     Function for plotting the goodness-of-fit statistic of the empirical spectral comparison.
@@ -49,7 +49,7 @@ def plot_statistic(
         Offset for the label of the x- and y-axis.
     figsize : tuple(float, float)
         Figure size.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
@@ -199,7 +199,7 @@ def plot_empirical_spectra(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: Optional[str] = "empirical.pdf",
+    output: Optional[str] = None,
 ):
     """
     Function for plotting the results from the empirical
@@ -235,7 +235,7 @@ def plot_empirical_spectra(
         Offset for the label of the x- and y-axis.
     figsize : tuple(float, float)
         Figure size.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
@@ -455,7 +455,7 @@ def plot_grid_statistic(
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
-    output: Optional[str] = "grid_statistic.pdf",
+    output: Optional[str] = None,
 ):
     """
     Function for plotting the results from the empirical spectrum comparison.
@@ -477,7 +477,7 @@ def plot_grid_statistic(
         Offset for the label of the x- and y-axis.
     figsize : tuple(float, float)
         Figure size.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 

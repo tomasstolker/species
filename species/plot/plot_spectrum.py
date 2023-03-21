@@ -45,7 +45,7 @@ def plot_spectrum(
     figsize: Optional[Tuple[float, float]] = (10.0, 5.0),
     object_type: str = "planet",
     quantity: str = "flux density",
-    output: Optional[str] = "spectrum.pdf",
+    output: Optional[str] = None,
     leg_param: Optional[List[str]] = None,
     grid_hspace: float = 0.1,
     inc_model_name: bool = False,
@@ -141,7 +141,7 @@ def plot_spectrum(
     quantity: str
         The quantity of the y-axis ('flux density', 'flux',
         or 'magnitude').
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     leg_param : list(str), None
@@ -161,8 +161,15 @@ def plot_spectrum(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
+    matplotlib.axes._axes.Axes, None
+        Tuple with the three ``Axes`` objects that can be used
+        for further customization of the plot. The second and
+        third item of the tuple can be ``None``, since these
+        are the axes for the optional ``filters`` and
+        ``residuals``, respectively.
     """
 
     mpl.rcParams["font.family"] = "serif"

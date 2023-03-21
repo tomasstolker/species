@@ -27,7 +27,7 @@ def plot_walkers(
     tag: str,
     nsteps: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "walkers.pdf",
+    output: Optional[str] = None,
 ) -> None:
     """
     Function to plot the step history of the walkers.
@@ -42,7 +42,7 @@ def plot_walkers(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values
         are used if the arguments is set to ``None``.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
@@ -199,7 +199,7 @@ def plot_posterior(
     inc_log_mass: bool = False,
     inc_pt_param: bool = False,
     inc_loglike: bool = False,
-    output: Optional[str] = "posterior.pdf",
+    output: Optional[str] = None,
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
 ) -> None:
@@ -252,7 +252,7 @@ def plot_posterior(
     inc_loglike : bool
         Include the log10 of the likelihood as additional
         parameter in the corner plot.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     object_type : str
@@ -906,7 +906,7 @@ def plot_mag_posterior(
     filter_name: str,
     burnin: int = None,
     xlim: Tuple[float, float] = None,
-    output: Optional[str] = "mag_posterior.pdf",
+    output: Optional[str] = None,
 ) -> np.ndarray:
     """
     Function to plot the posterior distribution of the synthetic
@@ -924,7 +924,7 @@ def plot_mag_posterior(
     xlim : tuple(float, float), None
         Axis limits. Automatically set if the argument is
         set to ``None``.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
@@ -1016,7 +1016,7 @@ def plot_size_distributions(
     burnin: Optional[int] = None,
     random: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "size_distributions.pdf",
+    output: Optional[str] = None,
 ) -> None:
     """
     Function to plot random samples of the log-normal
@@ -1036,7 +1036,7 @@ def plot_size_distributions(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used
         if the argument set to ``None``.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
@@ -1197,7 +1197,7 @@ def plot_extinction(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "extinction.pdf",
+    output: Optional[str] = None,
 ) -> None:
     """
     Function to plot random samples of the extinction, either from
@@ -1229,7 +1229,7 @@ def plot_extinction(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used
         if the argument is set to ``None``.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 

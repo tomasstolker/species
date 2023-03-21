@@ -27,7 +27,7 @@ class ReadIsochrone:
     :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
     extracts the isochrones at the masses of the original
     grid, so using that option helps with comparing results
-    for which the masses have been interpolated. Similar, by
+    for which the masses have been interpolated. Similarly, by
     setting ``ages=None`` with the
     :func:`~species.read.read_isochrone.ReadIsochrone.get_isochrone`
     method will fix the ages to those of the original grid.
@@ -116,7 +116,7 @@ class ReadIsochrone:
 
         # Connect isochrone model with atmosphere model
         # key = isochrone model, value = atmosphere model
-        self.atmosphere_model = {
+        self.match_model = {
             "ames-cond": "ames-cond",
             "ames-dusty": "ames-dusty",
             "atmo-ceq": "atmo-ceq",
@@ -132,7 +132,7 @@ class ReadIsochrone:
     def _read_data(
         self,
     ) -> Tuple[
-        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray],
     ]:
         """
         Internal function for reading the evolutionary
@@ -154,6 +154,11 @@ class ReadIsochrone:
             Array with the :math:`\\log{(g)}`.
         np.ndarray
             Array with the radius (:math:`R_\\mathrm{J}`).
+        np.ndarray, None
+            Optional array with the absolute magnitudes. The
+            array has two axes with the length of the second
+            axis equal to the number of filters for which
+            there are magnitudes available.
         """
 
         with h5py.File(self.database, "r") as h5_file:
@@ -165,6 +170,11 @@ class ReadIsochrone:
             iso_loglum = np.asarray(h5_file[f"isochrones/{self.tag}/log_lum"])
             iso_logg = np.asarray(h5_file[f"isochrones/{self.tag}/log_g"])
             iso_radius = np.asarray(h5_file[f"isochrones/{self.tag}/radius"])
+
+            if f"isochrones/{self.tag}/magnitudes" in h5_file:
+                iso_mag = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
+            else:
+                iso_mag = None
 
         if self.create_regular_grid:
             age_unique = np.unique(iso_age)
@@ -179,6 +189,9 @@ class ReadIsochrone:
             new_loglum = np.zeros((n_ages * n_masses))
             new_logg = np.zeros((n_ages * n_masses))
             new_radius = np.zeros((n_ages * n_masses))
+
+            if iso_mag is not None:
+                new_mag = np.zeros(((n_ages * n_masses, iso_mag.shape[1])))
 
             for j, age_item in enumerate(age_unique):
                 age_select = iso_age == age_item
@@ -223,6 +236,17 @@ class ReadIsochrone:
                     mass_unique
                 )
 
+                for k in range(iso_mag.shape[1]):
+                    interp_mag = interpolate.interp1d(
+                        iso_mass[age_select],
+                        iso_mag[age_select, k],
+                        fill_value="extrapolate",
+                    )
+
+                    new_mag[j * n_masses : (j + 1) * n_masses, k] = interp_mag(
+                        mass_unique
+                    )
+
             iso_age = new_age.copy()
             iso_mass = new_mass.copy()
             iso_teff = new_teff.copy()
@@ -230,15 +254,66 @@ class ReadIsochrone:
             iso_logg = new_logg.copy()
             iso_radius = new_radius.copy()
 
-        return model_name, iso_age, iso_mass, iso_teff, iso_loglum, iso_logg, iso_radius
+            if iso_mag is not None:
+                iso_mag = new_mag.copy()
+
+        return model_name, iso_age, iso_mass, iso_teff, iso_loglum, iso_logg, iso_radius, iso_mag
+
+    @typechecked
+    def _check_model(self, atmospheric_model: Optional[str]) -> str:
+        """
+        Internal function for matching the atmospheric model with
+        the evolutionary model and checking if the expected
+        atmospheric model is used.
+
+        Parameters
+        ----------
+        atmospheric_model : str, None
+            Name of the atmospheric model. By setting the argument to
+            ``None``, the atmospheric model associated with the
+            evolutionary model is automatically selected.
+
+        Returns
+        -------
+        str
+            Name of the atmospheric model.
+        """
+
+        if atmospheric_model is None:
+            if self.tag in self.match_model:
+                atmospheric_model = self.match_model[self.tag]
+            else:
+                raise ValueError(
+                    "Can not find the atmosphere model "
+                    f"associated with the '{self.tag}' "
+                    "evolutionary model. Please contact "
+                    "the code maintainer."
+                )
+
+        elif self.tag in self.match_model:
+            if atmospheric_model != self.match_model[self.tag]:
+                warnings.warn(
+                    "Please note that you have selected "
+                    f"'{atmospheric_model}' as "
+                    f"atmospheric model for '{self.tag}' "
+                    f"while '{self.match_model[self.tag]}'"
+                    " is the atmospheric model that is "
+                    f"self-consistently associated with "
+                    f"'{self.tag}'. It is recommended "
+                    "to set 'atmospheric_model=None' to "
+                    "automatically select the correct "
+                    "grid with model spectra."
+                )
+
+        return atmospheric_model
 
     @typechecked
     def get_isochrone(
         self,
         age: float,
         masses: Optional[np.ndarray] = None,
-        filters_color: Optional[Tuple[str, str]] = None,
         filter_mag: Optional[str] = None,
+        filters_color: Optional[Tuple[str, str]] = None,
     ) -> box.IsochroneBox:
         """
         Function for interpolating an isochrone.
@@ -252,14 +327,14 @@ class ReadIsochrone:
             data is interpolated. The masses are not interpolated
             if the argument is set to ``None``, in which case the
             mass sampling from the evolutionary data is used.
-        filters_color : tuple(str, str), None
-            Filter names for the color as listed in the file with the
-            isochrone data. Not selected if set to ``None`` or if only
-            evolutionary tracks are available.
         filter_mag : str, None
             Filter name for the absolute magnitude as listed in the
             file with the isochrone data. Not selected if set to
             ``None`` or if only evolutionary tracks are available.
+        filters_color : tuple(str, str), None
+            Filter names for the color as listed in the file with the
+            isochrone data. Not selected if set to ``None`` or if only
+            evolutionary tracks are available.
 
         Returns
         -------
@@ -280,6 +355,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_mag,
         ) = self._read_data()
 
         if masses is None:
@@ -290,11 +366,7 @@ class ReadIsochrone:
         age_points = np.full(masses.shape[0], age)  # (Myr)
         grid_points = np.column_stack([iso_age, iso_mass])
 
-        if model in self.mag_models:
-            filters = self.get_filters()
-
-            with h5py.File(self.database, "r") as h5_file:
-                magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
+        filters = self.get_filters()
 
         if model in self.mag_models:
             if filters_color is not None:
@@ -340,7 +412,7 @@ class ReadIsochrone:
             if filters_color is not None:
                 mag_color_1 = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_color_1],
+                    values=iso_mag[:, index_color_1],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -349,7 +421,7 @@ class ReadIsochrone:
 
                 mag_color_2 = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_color_2],
+                    values=iso_mag[:, index_color_2],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -361,7 +433,7 @@ class ReadIsochrone:
             if filter_mag is not None:
                 mag_abs = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_mag],
+                    values=iso_mag[:, index_mag],
                     xi=np.stack((age_points, masses), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -442,8 +514,8 @@ class ReadIsochrone:
         self,
         mass: float,
         ages: Optional[np.ndarray] = None,
-        filters_color: Optional[Tuple[str, str]] = None,
         filter_mag: Optional[str] = None,
+        filters_color: Optional[Tuple[str, str]] = None,
     ) -> box.CoolingBox:
         """
         Function for interpolating a cooling curve.
@@ -458,14 +530,14 @@ class ReadIsochrone:
             interpolated. The ages are not interpolated
             if the argument is set to ``None``, in which case the
             age sampling from the evolutionary data is used.
-        filters_color : tuple(str, str), None
-            Filter names for the color as listed in the file with the
-            isochrone data. Not selected if set to ``None`` or if only
-            evolutionary tracks are available.
         filter_mag : str, None
             Filter name for the absolute magnitude as listed in the
             file with the isochrone data. Not selected if set to
             ``None`` or if only evolutionary tracks are available.
+        filters_color : tuple(str, str), None
+            Filter names for the color as listed in the file with the
+            isochrone data. Not selected if set to ``None`` or if only
+            evolutionary tracks are available.
 
         Returns
         -------
@@ -486,6 +558,7 @@ class ReadIsochrone:
             iso_loglum,
             iso_logg,
             iso_radius,
+            iso_mag,
         ) = self._read_data()
 
         if ages is None:
@@ -496,11 +569,7 @@ class ReadIsochrone:
         mass_points = np.full(ages.shape[0], mass)  # (Mjup)
         grid_points = np.column_stack([iso_age, iso_mass])
 
-        if model in self.mag_models:
-            filters = self.get_filters()
-
-            with h5py.File(self.database, "r") as h5_file:
-                magnitudes = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
+        filters = self.get_filters()
 
         if model in self.mag_models:
             if filters_color is not None:
@@ -513,7 +582,7 @@ class ReadIsochrone:
             if filters_color is not None:
                 mag_color_1 = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_color_1],
+                    values=iso_mag[:, index_color_1],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -522,7 +591,7 @@ class ReadIsochrone:
 
                 mag_color_2 = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_color_2],
+                    values=iso_mag[:, index_color_2],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -534,7 +603,7 @@ class ReadIsochrone:
             if filter_mag is not None:
                 mag_abs = interpolate.griddata(
                     points=grid_points,
-                    values=magnitudes[:, index_mag],
+                    values=iso_mag[:, index_mag],
                     xi=np.stack((ages, mass_points), axis=1),
                     method=self.interp_method,
                     fill_value="nan",
@@ -614,11 +683,11 @@ class ReadIsochrone:
     def get_color_magnitude(
         self,
         age: float,
-        masses: np.ndarray,
+        masses: Optional[np.ndarray],
         filters_color: Tuple[str, str],
         filter_mag: str,
         adapt_logg: bool = False,
-        model: Optional[str] = None,
+        atmospheric_model: Optional[str] = None,
     ) -> box.ColorMagBox:
         """
         Function for calculating color-magnitude pairs
@@ -631,9 +700,11 @@ class ReadIsochrone:
         ----------
         age : float
             Age (Myr) at which the isochrone data is interpolated.
-        masses : np.ndarray
+        masses : np.ndarray, None
             Masses (:math:`M_\\mathrm{J}`) at which the isochrone
-            data is interpolated.
+            data is interpolated. The masses at the nearest age
+            in the grid with evolutionary data are selected if
+            the argument is set to ``None``.
         filters_color : tuple(str, str)
             Filter names for the color as listed in the file with the
             isochrone data. The filter names should be provided in the
@@ -649,11 +720,15 @@ class ReadIsochrone:
             radius lies outside the available range of the synthetic
             spectra. Typically :math:`\\log(g)` has only a minor
             impact on the broadband magnitudes and colors.
-        model : str
-            DEPRECATED: Atmospheric model used to compute the synthetic photometry.
-            This parameter will be removed in a future release
-            since the atmospheric model that is associated with
-            the isochrone model will be automatically selected.
+        atmospheric_model : str, None
+            Atmospheric model used to compute the synthetic photometry.
+            The argument can be set to ``None`` such that the correct
+            atmospheric model is automatically selected that is
+            associated with the evolutionary model. If the user
+            nonetheless wants to test a "non-self-consistent" approach
+            by using a different atmospheric model, then the argument
+            can be set to any of the models that can be added with
+            :func:`~species.data.database.Database.add_model`.
 
         Returns
         -------
@@ -661,42 +736,30 @@ class ReadIsochrone:
             Box with the color-magnitude data.
         """
 
-        if model is not None:
-            warnings.warn(
-                "The 'model' parameter is no longer being "
-                "used and will be removed in a future "
-                "release. Instead, the correct atmosphere "
-                "model that is associated with the "
-                "evolutionary model will be automatically "
-                "selected. Setting the argument of "
-                "'model' to 'None' will prevent this "
-                "warning from being shown.",
-                DeprecationWarning,
-            )
+        atmospheric_model = self._check_model(atmospheric_model)
 
         isochrone = self.get_isochrone(
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        if self.tag in self.atmosphere_model:
-            model_name = self.atmosphere_model[self.tag]
-        else:
-            raise ValueError(
-                "Can not find the atmosphere model "
-                f"associated with the '{self.tag}' "
-                "evolutionary model. Please contact "
-                "the code maintainer."
-            )
-
-        model_1 = read_model.ReadModel(model=model_name, filter_name=filters_color[0])
-        model_2 = read_model.ReadModel(model=model_name, filter_name=filters_color[1])
+        model_1 = read_model.ReadModel(
+            model=atmospheric_model, filter_name=filters_color[0]
+        )
+        model_2 = read_model.ReadModel(
+            model=atmospheric_model, filter_name=filters_color[1]
+        )
 
         param_bounds = model_1.get_bounds()
 
         if model_1.get_parameters() == ["teff", "logg", "feh"]:
-            if model == "sonora-bobcat":
+            if atmospheric_model == "sonora-bobcat":
                 iso_feh = float(self.tag[-4:])
             else:
+                warnings.warn(
+                    "The metallicity is a parameter of "
+                    f"{atmospheric_model}. Setting its "
+                    "value to solar, so [Fe/H] = 0.0."
+                )
                 iso_feh = 0.0
 
         elif model_1.get_parameters() != ["teff", "logg"]:
@@ -805,13 +868,13 @@ class ReadIsochrone:
 
         return box.create_box(
             boxtype="colormag",
-            library=model,
+            library=atmospheric_model,
             object_type="model",
             filters_color=filters_color,
             filter_mag=filter_mag,
             color=mag1 - mag2,
             magnitude=abs_mag,
-            mass=masses,
+            mass=isochrone.mass,
             radius=isochrone.radius,
             iso_tag=self.tag,
         )
@@ -820,9 +883,9 @@ class ReadIsochrone:
     def get_color_color(
         self,
         age: float,
-        masses: np.ndarray,
+        masses: Optional[np.ndarray],
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
-        model: Optional[str] = None,
+        atmospheric_model: Optional[str] = None,
     ) -> box.ColorColorBox:
         """
         Function for calculating color-color pairs
@@ -835,18 +898,24 @@ class ReadIsochrone:
         ----------
         age : float
             Age (Myr) at which the isochrone data is interpolated.
-        masses : np.ndarray
+        masses : np.ndarray, None
             Masses (:math:`M_\\mathrm{J}`) at which the isochrone
-            data is interpolated.
+            data is interpolated. The masses at the nearest age
+            in the grid with evolutionary data are selected if
+            the argument is set to ``None``.
         filters_colors : tuple(tuple(str, str), tuple(str, str))
             Filter names for the colors as listed in the file with the
             isochrone data. The filter names should be provided in the
             format of the SVO Filter Profile Service.
-        model : str
-            DEPRECATED: Atmospheric model used to compute the synthetic photometry.
-            This parameter will be removed in a future release
-            since the atmospheric model that is associated with
-            the isochrone model will be automatically selected.
+        atmospheric_model : str, None
+            Atmospheric model used to compute the synthetic photometry.
+            The argument can be set to ``None`` such that the correct
+            atmospheric model is automatically selected that is
+            associated with the evolutionary model. If the user
+            nonetheless wants to test a "non-self-consistent" approach
+            by using a different atmospheric model, then the argument
+            can be set to any of the models that can be added with
+            :func:`~species.data.database.Database.add_model`.
 
         Returns
         -------
@@ -854,50 +923,35 @@ class ReadIsochrone:
             Box with the color-color data.
         """
 
-        if model is not None:
-            warnings.warn(
-                "The 'model' parameter is no longer being "
-                "used and will be removed in a future "
-                "release. Instead, the correct atmosphere "
-                "model that is associated with the "
-                "evolutionary model will be automatically "
-                "selected. Setting the argument of "
-                "'model' to 'None' will prevent this "
-                "warning from being shown.",
-                DeprecationWarning,
-            )
+        atmospheric_model = self._check_model(atmospheric_model)
 
         isochrone = self.get_isochrone(
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        if self.tag in self.atmosphere_model:
-            model_name = self.atmosphere_model[self.tag]
-        else:
-            raise ValueError(
-                "Can not find the atmosphere model "
-                f"associated with the '{self.tag}' "
-                "evolutionary model. Please contact "
-                "the code maintainer."
-            )
-
         model_1 = read_model.ReadModel(
-            model=model_name, filter_name=filters_colors[0][0]
+            model=atmospheric_model, filter_name=filters_colors[0][0]
         )
         model_2 = read_model.ReadModel(
-            model=model_name, filter_name=filters_colors[0][1]
+            model=atmospheric_model, filter_name=filters_colors[0][1]
         )
         model_3 = read_model.ReadModel(
-            model=model_name, filter_name=filters_colors[1][0]
+            model=atmospheric_model, filter_name=filters_colors[1][0]
         )
         model_4 = read_model.ReadModel(
-            model=model_name, filter_name=filters_colors[1][1]
+            model=atmospheric_model, filter_name=filters_colors[1][1]
         )
 
         if model_1.get_parameters() == ["teff", "logg", "feh"]:
-            if model == "sonora-bobcat":
+            if atmospheric_model == "sonora-bobcat":
                 iso_feh = float(self.tag[-4:])
             else:
+                warnings.warn(
+                    "The metallicity is a parameter of "
+                    f"{atmospheric_model}. Setting its "
+                    "value to solar, so [Fe/H] = 0.0."
+                )
+
                 iso_feh = 0.0
 
         elif model_1.get_parameters() != ["teff", "logg"]:
@@ -917,8 +971,6 @@ class ReadIsochrone:
         mag3 = np.zeros(isochrone.mass.shape[0])
         mag4 = np.zeros(isochrone.mass.shape[0])
 
-        print(isochrone.mass.size)
-
         for i in range(isochrone.mass.size):
             model_param = {
                 "teff": isochrone.teff[i],
@@ -937,8 +989,9 @@ class ReadIsochrone:
                 mag4[i] = np.nan
 
                 warnings.warn(
-                    f"The value of Teff is NaN for the following isochrone "
-                    f"sample: {model_param}. Setting the magnitudes to NaN."
+                    "The value of Teff is NaN for the following "
+                    f"isochrone sample: {model_param}. Setting "
+                    "the magnitudes to NaN."
                 )
 
             else:
@@ -988,12 +1041,12 @@ class ReadIsochrone:
 
         return box.create_box(
             boxtype="colorcolor",
-            library=model,
+            library=atmospheric_model,
             object_type="model",
             filters=filters_colors,
             color1=mag1 - mag2,
             color2=mag3 - mag4,
-            mass=masses,
+            mass=isochrone.mass,
             radius=isochrone.radius,
             iso_tag=self.tag,
         )
@@ -1031,6 +1084,7 @@ class ReadIsochrone:
             iso_mass,
             _,
             iso_loglum,
+            _,
             _,
             _,
         ) = self._read_data()
@@ -1087,6 +1141,7 @@ class ReadIsochrone:
             iso_loglum,
             _,
             iso_radius,
+            _,
         ) = self._read_data()
 
         # Interpolate radius
@@ -1141,6 +1196,7 @@ class ReadIsochrone:
         mass: float,
         distance: float,
         filter_name: str,
+        atmospheric_model: Optional[str] = None,
     ) -> box.PhotometryBox:
         """
         Function for computing synthetic photometry by interpolating
@@ -1173,6 +1229,15 @@ class ReadIsochrone:
             computed. Any filter name from the `SVO Filter Profile
             Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
             can be used as argument.
+        atmospheric_model : str, None
+            Atmospheric model used to compute the synthetic photometry.
+            The argument can be set to ``None`` such that the correct
+            atmospheric model is automatically selected that is
+            associated with the evolutionary model. If the user
+            nonetheless wants to test a "non-self-consistent" approach
+            by using a different atmospheric model, then the argument
+            can be set to any of the models that can be added with
+            :func:`~species.data.database.Database.add_model`.
 
         Returns
         -------
@@ -1180,15 +1245,7 @@ class ReadIsochrone:
             Box with the synthetic photometry (magnitude and flux).
         """
 
-        if self.tag in self.atmosphere_model:
-            model_name = self.atmosphere_model[self.tag]
-        else:
-            raise ValueError(
-                "Can not find the atmosphere model "
-                f"associated with the '{self.tag}' "
-                "evolutionary model. Please contact "
-                "the code maintainer."
-            )
+        atmospheric_model = self._check_model(atmospheric_model)
 
         iso_box = self.get_isochrone(age=age, masses=np.array([mass]))
 
@@ -1199,14 +1256,28 @@ class ReadIsochrone:
             "distance": distance,
         }
 
-        model_reader = read_model.ReadModel(model=model_name, filter_name=filter_name)
+        model_reader = read_model.ReadModel(
+            model=atmospheric_model, filter_name=filter_name
+        )
 
         param_list = model_reader.get_parameters()
 
         if "feh" in param_list:
+            warnings.warn(
+                "The metallicity is a parameter of "
+                f"'{atmospheric_model}'. Setting its "
+                "value to solar, so [Fe/H] = 0."
+            )
+
             model_param["feh"] = 0.0
 
         if "c_o_ratio" in param_list:
+            warnings.warn(
+                "The carbon-to-oyxgen ratio is a parameter "
+                f"of '{atmospheric_model}'. Setting its "
+                "value to solar, so C/O = 0.55"
+            )
+
             model_param["c_o_ratio"] = 0.55
 
         phot_box = model_reader.get_flux(model_param=model_param, return_box=True)

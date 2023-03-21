@@ -36,7 +36,10 @@ class TestIsochrone:
         read_isochrone = species.ReadIsochrone("ames-cond")
 
         isochrone_box = read_isochrone.get_isochrone(
-            100.0, np.linspace(10.0, 100.0, 10), ("J", "H"), "J"
+            age=100.0,
+            masses=np.linspace(10.0, 100.0, 10),
+            filter_mag="J",
+            filters_color=("J", "H"),
         )
 
         assert np.sum(isochrone_box.mass) == pytest.approx(
@@ -70,10 +73,10 @@ class TestIsochrone:
         read_isochrone = species.ReadIsochrone("ames-cond")
 
         colormag_box = read_isochrone.get_color_magnitude(
-            100.0,
-            np.linspace(35.0, 45.0, 10),
-            ("MKO/NSFCam.J", "MKO/NSFCam.H"),
-            "MKO/NSFCam.J",
+            age=100.0,
+            masses=np.linspace(35.0, 45.0, 10),
+            filters_color=("MKO/NSFCam.J", "MKO/NSFCam.H"),
+            filter_mag="MKO/NSFCam.J",
         )
 
         assert colormag_box.object_type == "model"
@@ -96,9 +99,9 @@ class TestIsochrone:
         read_isochrone = species.ReadIsochrone("ames-cond")
 
         colorcolor_box = read_isochrone.get_color_color(
-            100.0,
-            np.linspace(35.0, 45.0, 10),
-            (("MKO/NSFCam.J", "MKO/NSFCam.H"), ("MKO/NSFCam.H", "MKO/NSFCam.Ks")),
+            age=100.0,
+            masses=np.linspace(35.0, 45.0, 10),
+            filters_colors = (("MKO/NSFCam.J", "MKO/NSFCam.H"), ("MKO/NSFCam.H", "MKO/NSFCam.Ks")),
         )
 
         assert colorcolor_box.object_type == "model"

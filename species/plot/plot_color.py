@@ -51,8 +51,8 @@ def plot_color_magnitude(
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.8),
-    output: Optional[str] = "color-magnitude.pdf",
-) -> None:
+    output: Optional[str] = None,
+) -> Tuple[mpl.figure.Figure, mpl.axes._axes.Axes]:
     """
     Function for creating a color-magnitude diagram.
 
@@ -143,15 +143,18 @@ def plot_color_magnitude(
         is shown if set to ``None``.
     figsize : tuple(float, float)
         Figure size.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
     Returns
     -------
-    NoneType
-        None
-
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
+    matplotlib.axes._axes.Axes
+        The ``Axes`` object that can be used for further
+        customization of the plot.
     """
 
     mpl.rcParams["font.family"] = "serif"
@@ -201,7 +204,7 @@ def plot_color_magnitude(
             )
 
     if empirical:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -209,7 +212,7 @@ def plot_color_magnitude(
         ax2 = plt.subplot(gridsp[0, 0])
 
     else:
-        plt.figure(1, figsize=figsize)
+        fig = plt.figure(1, figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(1, 1)
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -345,8 +348,8 @@ def plot_color_magnitude(
                     )
 
                     if mass_labels is not None:
-                        interp_magnitude = interp1d(item.sptype, item.magnitude)
-                        interp_color = interp1d(item.sptype, item.color)
+                        interp_magnitude = interp1d(item.mass, item.magnitude)
+                        interp_color = interp1d(item.mass, item.color)
 
                         if item.iso_tag in mass_labels:
                             label_select = mass_labels[item.iso_tag]
@@ -836,10 +839,9 @@ def plot_color_magnitude(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig, ax1
 
 
 @typechecked
@@ -882,8 +884,8 @@ def plot_color_color(
     offset: Optional[Tuple[float, float]] = None,
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.3),
-    output: Optional[str] = "color-color.pdf",
-) -> None:
+    output: Optional[str] = None,
+) -> Tuple[mpl.figure.Figure, mpl.axes._axes.Axes]:
     """
     Function for creating a color-color diagram.
 
@@ -951,14 +953,18 @@ def plot_color_color(
         No legend is shown if the argument is set to ``None``.
     figsize : tuple(float, float)
         Figure size.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
+    matplotlib.axes._axes.Axes
+        The ``Axes`` object that can be used for further
+        customization of the plot.
     """
 
     mpl.rcParams["font.family"] = "serif"
@@ -1011,7 +1017,7 @@ def plot_color_color(
                 f"IsochroneBox objects can be provided to 'boxes'."
             )
 
-    plt.figure(1, figsize=figsize)
+    fig = plt.figure(1, figsize=figsize)
 
     if empirical:
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.0])
@@ -1154,8 +1160,8 @@ def plot_color_color(
                     )
 
                     if mass_labels is not None:
-                        interp_color1 = interp1d(item.sptype, item.color1)
-                        interp_color2 = interp1d(item.sptype, item.color2)
+                        interp_color1 = interp1d(item.mass, item.color1)
+                        interp_color2 = interp1d(item.mass, item.color2)
 
                         if item.iso_tag in mass_labels:
                             label_select = mass_labels[item.iso_tag]
@@ -1681,7 +1687,6 @@ def plot_color_color(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig, ax1

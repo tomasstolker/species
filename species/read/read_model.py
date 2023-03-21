@@ -1380,8 +1380,8 @@ class ReadModel:
                 name=self.model,
                 wavelength=[self.mean_wavelength],
                 flux=[model_flux],
-                app_mag=[(model_mag[0], 0.0)],
-                abs_mag=[(model_mag[1], 0.0)],
+                app_mag=[(model_mag[0], None)],
+                abs_mag=[(model_mag[1], None)],
                 filter_name=[self.filter_name],
             )
 
@@ -1493,8 +1493,8 @@ class ReadModel:
                 name=self.model,
                 wavelength=[self.mean_wavelength],
                 flux=[model_flux],
-                app_mag=[(app_mag[0], 0.0)],
-                abs_mag=[(abs_mag[0], 0.0)],
+                app_mag=[(app_mag[0], None)],
+                abs_mag=[(abs_mag[0], None)],
                 filter_name=[self.filter_name],
             )
 

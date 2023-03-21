@@ -33,7 +33,7 @@ def plot_pt_profile(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "pt_profile.pdf",
+    output: Optional[str] = None,
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
@@ -62,7 +62,7 @@ def plot_pt_profile(
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used
         if set to ``None``.
-    output : str
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
@@ -771,7 +771,7 @@ def plot_opacities(
     tag: str,
     radtrans: read_radtrans.ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "opacities.pdf",
+    output: Optional[str] = None,
 ) -> None:
     """
     Function to plot the line and continuum opacity
@@ -1259,7 +1259,7 @@ def plot_opacities(
 def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
-    output: Optional[str] = "clouds.pdf",
+    output: Optional[str] = None,
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     composition: str = "MgSiO3",
 ) -> None:
@@ -1273,12 +1273,14 @@ def plot_clouds(
     tag : str
         Database tag with the posterior samples.
     offset : tuple(float, float), None
-        Offset of the x- and y-axis label. Default values are used if set to ``None``.
-    output : str
+        Offset of the x- and y-axis label. Default values are
+        used if set to ``None``.
+    output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
-        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`. Not used if set to ``None``.
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        Not used if set to ``None``.
     composition : str
         Cloud composition (e.g. 'MgSiO3', 'Fe', 'Al2O3', 'Na2S', 'KCl').
 
