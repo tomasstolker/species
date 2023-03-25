@@ -14,6 +14,7 @@ PyAstronomy ~= 0.18.0
 PyMieScatt ~= 1.8.0
 pymultinest ~= 2.11.0
 scipy ~= 1.10.0
+shapely ~= 2.0.0
 spectres ~= 2.2.0
 specutils ~= 1.9.0
 tqdm ~= 4.65.0

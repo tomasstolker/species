@@ -6,7 +6,7 @@ import configparser
 import os
 import warnings
 
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -16,6 +16,7 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_model
+from species.util import plot_util
 
 
 class ReadIsochrone:
@@ -132,7 +133,14 @@ class ReadIsochrone:
     def _read_data(
         self,
     ) -> Tuple[
-        str, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Optional[np.ndarray],
+        str,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        Optional[np.ndarray],
     ]:
         """
         Internal function for reading the evolutionary
@@ -257,7 +265,16 @@ class ReadIsochrone:
             if iso_mag is not None:
                 iso_mag = new_mag.copy()
 
-        return model_name, iso_age, iso_mass, iso_teff, iso_loglum, iso_logg, iso_radius, iso_mag
+        return (
+            model_name,
+            iso_age,
+            iso_mass,
+            iso_teff,
+            iso_loglum,
+            iso_logg,
+            iso_radius,
+            iso_mag,
+        )
 
     @typechecked
     def _check_model(self, atmospheric_model: Optional[str]) -> str:
@@ -306,6 +323,80 @@ class ReadIsochrone:
                 )
 
         return atmospheric_model
+
+    @typechecked
+    def _update_param(
+        self,
+        atmospheric_model: str,
+        model_param: Dict[str, float],
+        param_bounds: Dict[str, Tuple[float, float]],
+        extra_param: Dict[str, float],
+    ) -> Tuple[Dict[str, float], Dict[str, float]]:
+        """
+        Internal function for updating the dictionary with model
+        parameters for the atmospheric model. Parameters that are
+        not part of the evolutionary model but are required for the
+        atmospheric model will be included by either adopting them
+        from the ``extra_param`` dictionary or asking for manual
+        input in case a parameter is missing. In the latter case,
+        the ``extra_param`` dictionary will also be updated.
+
+        Parameters
+        ----------
+        atmospheric_model : str
+            Name of the atmospheric model.
+        model_param : dict
+            Dictionary with the parameters at which the atmospheric
+            model spectra will be interpolated.
+        param_bounds : dict
+            Dictionary with the parameter boundaries of grid with
+            atmospheric model spectra.
+        extra_param : dict
+            Dictionary with additional parameters that are optionally
+            required for the atmospheric model but are not part of
+            the evolutionary model grid. In case additional
+            parameters are required for the atmospheric model but
+            they are not provided in ``extra_param`` then a manual
+            input will be requested when running the
+            ``get_photometry`` method. Typically the ``extra_param``
+            parameter is not needed so the argument can be set to
+            ``None``. It will only be required if a non-self-consistent
+            approach will be tested, that is, the calculation of
+            synthetic photometry from an atmospheric model that is
+            not associated with the evolutionary model.
+
+        Returns
+        -------
+        dict
+            Updated dictionary with parameters for the interpolation
+            of atmospheric model grid.
+        dict
+            Updated dictionary with only the parameters that
+            are required for the atmospheric model but not for
+            the evolutionary model.
+        """
+
+        for key, value in param_bounds.items():
+            if key not in model_param:
+                if key in extra_param:
+                    model_param[key] = extra_param[key]
+
+                else:
+                    param_name = plot_util.update_labels([key])[0]
+
+                    input_value = input(
+                        f"The '{atmospheric_model}' atmospheric model "
+                        f"requires the '{key}' parameter (i.e. "
+                        f"{param_name}) as input, while it is not "
+                        f"part of the '{self.tag}' evolutionary model. "
+                        "Please provide a value within the available "
+                        f"range from {value[0]} to {value[1]}: "
+                    )
+
+                    model_param[key] = float(input_value)
+                    extra_param[key] = float(input_value)
+
+        return model_param, extra_param
 
     @typechecked
     def get_isochrone(
@@ -688,6 +779,7 @@ class ReadIsochrone:
         filter_mag: str,
         adapt_logg: bool = False,
         atmospheric_model: Optional[str] = None,
+        extra_param: Optional[Dict[str, float]] = None,
     ) -> box.ColorMagBox:
         """
         Function for calculating color-magnitude pairs
@@ -725,16 +817,32 @@ class ReadIsochrone:
             The argument can be set to ``None`` such that the correct
             atmospheric model is automatically selected that is
             associated with the evolutionary model. If the user
-            nonetheless wants to test a "non-self-consistent" approach
+            nonetheless wants to test a non-self-consistent approach
             by using a different atmospheric model, then the argument
             can be set to any of the models that can be added with
             :func:`~species.data.database.Database.add_model`.
+        extra_param : dict, None
+            Optional dictionary with additional parameters that are
+            required for the atmospheric model but are not part of
+            the evolutionary model grid. In case additional
+            parameters are required for the atmospheric model but
+            they are not provided in ``extra_param`` then a manual
+            input will be requested when running the
+            ``get_photometry`` method. Typically the ``extra_param``
+            parameter is not needed so the argument can be set to
+            ``None``. It will only be required if a non-self-consistent
+            approach will be tested, that is, the calculation of
+            synthetic photometry from an atmospheric model that is
+            not associated with the evolutionary model.
 
         Returns
         -------
         species.core.box.ColorMagBox
             Box with the color-magnitude data.
         """
+
+        if extra_param is None:
+            extra_param = {}
 
         atmospheric_model = self._check_model(atmospheric_model)
 
@@ -751,29 +859,6 @@ class ReadIsochrone:
 
         param_bounds = model_1.get_bounds()
 
-        if model_1.get_parameters() == ["teff", "logg", "feh"]:
-            if atmospheric_model == "sonora-bobcat":
-                iso_feh = float(self.tag[-4:])
-            else:
-                warnings.warn(
-                    "The metallicity is a parameter of "
-                    f"{atmospheric_model}. Setting its "
-                    "value to solar, so [Fe/H] = 0.0."
-                )
-                iso_feh = 0.0
-
-        elif model_1.get_parameters() != ["teff", "logg"]:
-            raise ValueError(
-                "Creating synthetic colors and magnitudes from "
-                "isochrones is currently only implemented for "
-                "models with only Teff and log(g) as free parameters. "
-                "Please contact Tomas Stolker if additional "
-                "functionalities are required."
-            )
-
-        else:
-            iso_feh = None
-
         mag1 = np.zeros(isochrone.mass.shape[0])
         mag2 = np.zeros(isochrone.mass.shape[0])
 
@@ -785,8 +870,14 @@ class ReadIsochrone:
                 "distance": 10.0,
             }
 
-            if iso_feh is not None:
-                model_param["feh"] = iso_feh
+            if atmospheric_model == "sonora-bobcat":
+                model_param["feh"] = float(self.tag[-4:])
+
+            # The get_bounds of model_1 and model_2 are the
+            # same since the same atmospheric_model is used
+            model_param, extra_param = self._update_param(
+                atmospheric_model, model_param, model_1.get_bounds(), extra_param
+            )
 
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
@@ -886,6 +977,7 @@ class ReadIsochrone:
         masses: Optional[np.ndarray],
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
         atmospheric_model: Optional[str] = None,
+        extra_param: Optional[Dict[str, float]] = None,
     ) -> box.ColorColorBox:
         """
         Function for calculating color-color pairs
@@ -912,16 +1004,32 @@ class ReadIsochrone:
             The argument can be set to ``None`` such that the correct
             atmospheric model is automatically selected that is
             associated with the evolutionary model. If the user
-            nonetheless wants to test a "non-self-consistent" approach
+            nonetheless wants to test a non-self-consistent approach
             by using a different atmospheric model, then the argument
             can be set to any of the models that can be added with
             :func:`~species.data.database.Database.add_model`.
+        extra_param : dict, None
+            Optional dictionary with additional parameters that are
+            required for the atmospheric model but are not part of
+            the evolutionary model grid. In case additional
+            parameters are required for the atmospheric model but
+            they are not provided in ``extra_param`` then a manual
+            input will be requested when running the
+            ``get_photometry`` method. Typically the ``extra_param``
+            parameter is not needed so the argument can be set to
+            ``None``. It will only be required if a non-self-consistent
+            approach will be tested, that is, the calculation of
+            synthetic photometry from an atmospheric model that is
+            not associated with the evolutionary model.
 
         Returns
         -------
         species.core.box.ColorColorBox
             Box with the color-color data.
         """
+
+        if extra_param is None:
+            extra_param = {}
 
         atmospheric_model = self._check_model(atmospheric_model)
 
@@ -942,30 +1050,6 @@ class ReadIsochrone:
             model=atmospheric_model, filter_name=filters_colors[1][1]
         )
 
-        if model_1.get_parameters() == ["teff", "logg", "feh"]:
-            if atmospheric_model == "sonora-bobcat":
-                iso_feh = float(self.tag[-4:])
-            else:
-                warnings.warn(
-                    "The metallicity is a parameter of "
-                    f"{atmospheric_model}. Setting its "
-                    "value to solar, so [Fe/H] = 0.0."
-                )
-
-                iso_feh = 0.0
-
-        elif model_1.get_parameters() != ["teff", "logg"]:
-            raise ValueError(
-                "Creating synthetic colors and magnitudes from "
-                "isochrones is currently only implemented for "
-                "models with only Teff and log(g) as free parameters. "
-                "Please contact Tomas Stolker if additional "
-                "functionalities are required."
-            )
-
-        else:
-            iso_feh = None
-
         mag1 = np.zeros(isochrone.mass.shape[0])
         mag2 = np.zeros(isochrone.mass.shape[0])
         mag3 = np.zeros(isochrone.mass.shape[0])
@@ -979,8 +1063,14 @@ class ReadIsochrone:
                 "distance": 10.0,
             }
 
-            if iso_feh is not None:
-                model_param["feh"] = iso_feh
+            if atmospheric_model == "sonora-bobcat":
+                model_param["feh"] = float(self.tag[-4:])
+
+            # The get_bounds of model_1 and model_2 are the
+            # same since the same atmospheric_model is used
+            model_param, extra_param = self._update_param(
+                atmospheric_model, model_param, model_1.get_bounds(), extra_param
+            )
 
             if np.isnan(isochrone.teff[i]):
                 mag1[i] = np.nan
@@ -1197,6 +1287,7 @@ class ReadIsochrone:
         distance: float,
         filter_name: str,
         atmospheric_model: Optional[str] = None,
+        extra_param: Optional[Dict[str, float]] = None,
     ) -> box.PhotometryBox:
         """
         Function for computing synthetic photometry by interpolating
@@ -1234,16 +1325,32 @@ class ReadIsochrone:
             The argument can be set to ``None`` such that the correct
             atmospheric model is automatically selected that is
             associated with the evolutionary model. If the user
-            nonetheless wants to test a "non-self-consistent" approach
+            nonetheless wants to test a non-self-consistent approach
             by using a different atmospheric model, then the argument
             can be set to any of the models that can be added with
             :func:`~species.data.database.Database.add_model`.
+        extra_param : dict, None
+            Optional dictionary with additional parameters that are
+            required for the atmospheric model but are not part of
+            the evolutionary model grid. In case additional
+            parameters are required for the atmospheric model but
+            they are not provided in ``extra_param`` then a manual
+            input will be requested when running the
+            ``get_photometry`` method. Typically the ``extra_param``
+            parameter is not needed so the argument can be set to
+            ``None``. It will only be required if a non-self-consistent
+            approach will be tested, that is, the calculation of
+            synthetic photometry from an atmospheric model that is
+            not associated with the evolutionary model.
 
         Returns
         -------
         species.core.box.PhotometryBox
             Box with the synthetic photometry (magnitude and flux).
         """
+
+        if extra_param is None:
+            extra_param = {}
 
         atmospheric_model = self._check_model(atmospheric_model)
 
@@ -1260,25 +1367,9 @@ class ReadIsochrone:
             model=atmospheric_model, filter_name=filter_name
         )
 
-        param_list = model_reader.get_parameters()
-
-        if "feh" in param_list:
-            warnings.warn(
-                "The metallicity is a parameter of "
-                f"'{atmospheric_model}'. Setting its "
-                "value to solar, so [Fe/H] = 0."
-            )
-
-            model_param["feh"] = 0.0
-
-        if "c_o_ratio" in param_list:
-            warnings.warn(
-                "The carbon-to-oyxgen ratio is a parameter "
-                f"of '{atmospheric_model}'. Setting its "
-                "value to solar, so C/O = 0.55"
-            )
-
-            model_param["c_o_ratio"] = 0.55
+        model_param, _ = self._update_param(
+            atmospheric_model, model_param, model_reader.get_bounds(), extra_param
+        )
 
         phot_box = model_reader.get_flux(model_param=model_param, return_box=True)
 
