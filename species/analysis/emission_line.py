@@ -629,7 +629,7 @@ class EmissionLine:
             flux_rand = spec_interp(wavel_high_res)
 
             # Integrate line flux (W m-2)
-            flux_sample[i] = np.trapz(flux_rand, wavel_high_res)
+            flux_sample[i] = np.trapz(flux_rand, x=wavel_high_res)
 
             # Line luminosity (Lsun)
             lum_sample[i] = (
@@ -642,8 +642,8 @@ class EmissionLine:
 
             # Weighted (with flux) mean wavelength (um)
             mean_sample[i] = np.trapz(
-                wavel_high_res * flux_rand, wavel_high_res
-            ) / np.trapz(flux_rand, wavel_high_res)
+                wavel_high_res * flux_rand, x=wavel_high_res
+            ) / np.trapz(flux_rand, x=wavel_high_res)
 
             # Radial velocity (km s-1)
             vrad_sample[i] = (
@@ -696,7 +696,7 @@ class EmissionLine:
 
         flux_high_res = spec_interp(wavel_high_res)
 
-        line_flux = np.trapz(flux_high_res, wavel_high_res)
+        line_flux = np.trapz(flux_high_res, x=wavel_high_res)
 
         ax1.plot(
             wavel_high_res, flux_high_res, color="tab:blue", label="High resolution"
@@ -1076,7 +1076,7 @@ class EmissionLine:
                 double_gaussian=double_gaussian,
             )
 
-            line_flux[i] = np.trapz(model_box.flux, model_box.wavelength)  # (W m-2)
+            line_flux[i] = np.trapz(model_box.flux, x=model_box.wavelength)  # (W m-2)
 
             line_lum[i] = (
                 4.0
@@ -1094,7 +1094,7 @@ class EmissionLine:
                 indices = ~np.isnan(spec_norm)
 
                 eq_width[i] = np.trapz(
-                    1.0 - spec_norm[indices], model_box.wavelength[indices]
+                    1.0 - spec_norm[indices], x=model_box.wavelength[indices]
                 )  # (um)
                 eq_width[i] *= 1e4  # (A)
 

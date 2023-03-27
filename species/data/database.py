@@ -2138,6 +2138,11 @@ class Database:
         else:
             binary = False
 
+        if "ext_filter" in dset.attrs:
+            ext_filter = dset.attrs["ext_filter"]
+        else:
+            ext_filter = None
+
         ignore_param = []
 
         for i in range(n_scaling):
@@ -2252,6 +2257,7 @@ class Database:
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
                             smooth=True,
+                            ext_filter=ext_filter,
                         )
 
                         param_1 = read_util.binary_to_single(model_param, 1)
@@ -2261,6 +2267,7 @@ class Database:
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
                             smooth=True,
+                            ext_filter=ext_filter,
                         )
 
                         flux_comb = (
@@ -2283,6 +2290,7 @@ class Database:
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
                             smooth=True,
+                            ext_filter=ext_filter,
                         )
 
             elif spectrum_type == "calibration":

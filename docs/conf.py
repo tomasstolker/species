@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'species'
-copyright = '2018-2022, Tomas Stolker'
+copyright = '2018-2023, Tomas Stolker'
 author = 'Tomas Stolker'
 
 
@@ -72,7 +72,7 @@ html_theme_options = {
     'use_issues_button': True,
     'use_repository_button': True,
     'use_download_button': True,
-    'logo_only': True,
+    # 'logo_only': True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

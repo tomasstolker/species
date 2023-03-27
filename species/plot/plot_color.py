@@ -162,6 +162,8 @@ def plot_color_magnitude(
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
 
+    plt.clf()
+
     # model_color = ("#234398", "#f6a432", "black")
 
     model_color = (
@@ -971,6 +973,8 @@ def plot_color_color(
     mpl.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.rc("axes", edgecolor="black", linewidth=2.2)
+
+    plt.clf()
 
     # model_color = ("#234398", "#f6a432", "black")
 

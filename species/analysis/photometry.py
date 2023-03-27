@@ -77,20 +77,17 @@ class SyntheticPhotometry:
 
         h5_file = h5py.File(self.database, "r")
 
-        try:
-            h5_file["spectra/calibration/vega"]
-
-        except KeyError:
+        if "spectra/calibration/vega" not in h5_file:
             h5_file.close()
             species_db = database.Database()
             species_db.add_spectra("vega")
             h5_file = h5py.File(self.database, "r")
 
-        readcalib = read_calibration.ReadCalibration("vega", None)
-        calibbox = readcalib.get_spectrum()
+        read_calib = read_calibration.ReadCalibration("vega", None)
+        calib_box = read_calib.get_spectrum()
 
-        wavelength = calibbox.wavelength
-        flux = calibbox.flux
+        wavelength = calib_box.wavelength
+        flux = calib_box.flux
 
         wavelength_crop = wavelength[
             (wavelength > self.wavel_range[0]) & (wavelength < self.wavel_range[1])
@@ -232,8 +229,8 @@ class SyntheticPhotometry:
                         )
                         integrand2 = wavelength[indices] * transmission[indices]
 
-                    integral1 = np.trapz(integrand1, wavelength[indices])
-                    integral2 = np.trapz(integrand2, wavelength[indices])
+                    integral1 = np.trapz(integrand1, x=wavelength[indices])
+                    integral2 = np.trapz(integrand2, x=wavelength[indices])
 
                     syn_flux = integral1 / integral2
 

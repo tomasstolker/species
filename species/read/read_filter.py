@@ -12,9 +12,10 @@ import h5py
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d, InterpolatedUnivariateSpline, interpolate
+from scipy import interpolate
 
 from species.data import database
+from species.read import read_calibration
 
 
 class ReadFilter:
@@ -54,19 +55,20 @@ class ReadFilter:
             h5_file.close()
             species_db = database.Database()
             species_db.add_filter(self.filter_name)
-            h5_file = h5py.File(self.database, "r")
 
-        h5_file.close()
+        else:
+            h5_file.close()
 
     @typechecked
     def get_filter(self) -> np.ndarray:
         """
-        Function for selecting a filter profile from the database.
+        Select a filter profile from the database.
 
         Returns
         -------
         np.ndarray
-            Array with the wavelengths and filter transmission.
+            Array with the wavelengths and filter transmission. The
+            array has 2 dimensions with the shape (n_wavelengths, 2).
         """
 
         with h5py.File(self.database, "r") as h5_file:
@@ -79,19 +81,22 @@ class ReadFilter:
         return data
 
     @typechecked
-    def interpolate_filter(self) -> interp1d:
+    def interpolate_filter(self) -> interpolate.interp1d:
         """
-        Function for linearly interpolating a filter profile.
+        Interpolate a filter profile with the `interp1d <https://
+        docs.scipy.org/doc/scipy/reference/generated/
+        scipy.interpolate.interp1d.html>`_ function from
+        ``scipy.interpolate`` and linear kind of interpolation.
 
         Returns
         -------
         scipy.interpolate.interp1d
-            Linearly interpolated filter.
+            Linearly interpolated filter profile.
         """
 
         data = self.get_filter()
 
-        return interp1d(
+        return interpolate.interp1d(
             data[:, 0],
             data[:, 1],
             kind="linear",
@@ -109,9 +114,9 @@ class ReadFilter:
         Returns
         -------
         float
-            Minimum wavelength (um).
+            Minimum wavelength (:math:`\\mu\\mathrm{m}`).
         float
-            Maximum wavelength (um).
+            Maximum wavelength (:math:`\\mu\\mathrm{m}`).
         """
 
         data = self.get_filter()
@@ -126,14 +131,46 @@ class ReadFilter:
         Returns
         -------
         float
-            Mean wavelength (um).
+            Mean wavelength (:math:`\\mu\\mathrm{m}`).
         """
 
         data = self.get_filter()
 
-        return np.trapz(data[:, 0] * data[:, 1], data[:, 0]) / np.trapz(
-            data[:, 1], data[:, 0]
+        return np.trapz(data[:, 0] * data[:, 1], x=data[:, 0]) / np.trapz(
+            data[:, 1], x=data[:, 0]
         )
+
+    @typechecked
+    def effective_wavelength(self) -> Union[np.float32, np.float64]:
+        """
+        Calculate the effective wavelength of the filter profile.
+        The effective wavelength is calculated as the weighted
+        average based on the filter profile and the spectrum of Vega.
+
+        Returns
+        -------
+        float
+            Effective wavelength (:math:`\\mu\\mathrm{m}`).
+        """
+
+        data = self.get_filter()
+
+        h5_file = h5py.File(self.database, "r")
+
+        if "spectra/calibration/vega" not in h5_file:
+            h5_file.close()
+            species_db = database.Database()
+            species_db.add_spectra("vega")
+
+        else:
+            h5_file.close()
+
+        read_calib = read_calibration.ReadCalibration("vega")
+        calib_box = read_calib.resample_spectrum(data[:, 0])
+
+        return np.trapz(
+            data[:, 0] * data[:, 1] * calib_box.flux, x=data[:, 0]
+        ) / np.trapz(data[:, 1] * calib_box.flux, x=data[:, 0])
 
     @typechecked
     def filter_fwhm(self) -> float:
@@ -144,12 +181,12 @@ class ReadFilter:
         Returns
         -------
         float
-            Full width at half maximum (um).
+            Full width at half maximum (:math:`\\mu\\mathrm{m}`).
         """
 
         data = self.get_filter()
 
-        spline = InterpolatedUnivariateSpline(
+        spline = interpolate.InterpolatedUnivariateSpline(
             data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
         )
         root = spline.roots()
@@ -172,12 +209,12 @@ class ReadFilter:
         Returns
         -------
         float
-            Effective width (um).
+            Effective width (:math:`\\mu\\mathrm{m}`).
         """
 
         data = self.get_filter()
 
-        return np.trapz(data[:, 1], data[:, 0]) / np.amax(data[:, 1])
+        return np.trapz(data[:, 1], x=data[:, 0]) / np.amax(data[:, 1])
 
     @typechecked
     def detector_type(self) -> str:
@@ -201,7 +238,7 @@ class ReadFilter:
                     f"Detector type not found for {self.filter_name}. "
                     "The database was probably created before the "
                     "detector type was introduced in species v0.3.1. "
-                    "Assuming an photon-counting detector."
+                    "Assuming a photon-counting detector."
                 )
 
                 det_type = "photon"

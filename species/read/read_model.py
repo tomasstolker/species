@@ -488,8 +488,8 @@ class ReadModel:
 
                 cross_tmp = cross_interp(filt_trans[:, 0])
 
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
@@ -588,8 +588,8 @@ class ReadModel:
 
                 cross_tmp = cross_interp(filt_trans[:, 0])
 
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
@@ -647,6 +647,7 @@ class ReadModel:
         magnitude: bool = False,
         smooth: bool = False,
         fast_rot_broad: bool = True,
+        ext_filter: Optional[str] = None,
     ) -> box.ModelBox:
         """
         Function for extracting a model spectrum by linearly
@@ -688,6 +689,15 @@ class ReadModel:
             of the spectrum is somewhat narrow (e.g. only the :math:`K`
             band). The argument is only used if the ``vsini`` parameter
             is included in the ``model_param`` dictionary.
+        ext_filter : str, None
+            Filter that is associated with the (optional) extinction
+            parameter, ``ism_ext``. When the argument of ``ext_filter``
+            is set to ``None``, the extinction is defined in the visual
+            as usual (i.e. :math:`A_V`). By providing a filter name
+            from the `SVO Filter Profile Service <http://svo2.cab.
+            inta-csic.es/svo/theory/fps/>`_ as argument then the
+            extinction ``ism_ext`` is defined in that filter instead
+            of the $V$ band.
 
         Returns
         -------
@@ -764,6 +774,15 @@ class ReadModel:
         for item in check_param:
             if item in model_param and item not in ignore_param:
                 parameters.append(model_param[item])
+
+        # Check if the ext_filter should be adjusted
+        # to the name that is extracted from the
+        # phot_ext_{ext_filter} parameter
+
+        if ext_filter is None:
+            for param_item in model_param:
+                if param_item.startswith('phot_ext_'):
+                    ext_filter = param_item[9:]
 
         # Interpolate the spectrum from the grid
 
@@ -909,13 +928,23 @@ class ReadModel:
                 model_param["powerlaw_ext"],
             )
 
-        if "ism_ext" in model_param:
+        if "ism_ext" in model_param or ext_filter is not None:
             ism_reddening = model_param.get("ism_red", 3.1)
+
+            if ext_filter is not None:
+                ism_ext_av = dust_util.convert_to_av(
+                    filter_name=ext_filter,
+                    filter_ext=model_param[f"phot_ext_{ext_filter}"],
+                    v_band_red=ism_reddening,
+                )
+
+            else:
+                ism_ext_av = model_param["ism_ext"]
 
             model_box.flux, ext_mag = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
-                model_param["ism_ext"],
+                ism_ext_av,
                 ism_reddening,
             )
 
@@ -985,15 +1014,15 @@ class ReadModel:
         # Convert flux to magnitude
 
         if magnitude:
-            with h5py.File(self.database, "r") as h5_file:
-                try:
-                    h5_file["spectra/calibration/vega"]
+            h5_file = h5py.File(self.database, "r")
 
-                except KeyError:
-                    h5_file.close()
-                    species_db = database.Database()
-                    species_db.add_spectra("vega")
-                    h5_file = h5py.File(self.database, "r")
+            if "spectra/calibration/vega" not in h5_file:
+                h5_file.close()
+                species_db = database.Database()
+                species_db.add_spectra("vega")
+
+            else:
+                h5_file.close()
 
             readcalib = read_calibration.ReadCalibration("vega", filter_name=None)
             calibbox = readcalib.get_spectrum()
@@ -1062,6 +1091,7 @@ class ReadModel:
         model_param: Dict[str, float],
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
+        ext_filter: Optional[str] = None,
     ) -> box.ModelBox:
         """
         Function for selecting a model spectrum (without interpolation)
@@ -1085,6 +1115,15 @@ class ReadModel:
             smoothing the spectrum with a Gaussian kernel. The original
             wavelength points are used if the argument is set to
             ``None``.
+        ext_filter : str, None
+            Filter that is associated with the (optional) extinction
+            parameter, ``ism_ext``. When the argument of ``ext_filter``
+            is set to ``None``, the extinction is defined in the visual
+            as usual (i.e. :math:`A_V`). By providing a filter name
+            from the `SVO Filter Profile Service <http://svo2.cab.
+            inta-csic.es/svo/theory/fps/>`_ as argument then the
+            extinction ``ism_ext`` is defined in that filter instead
+            of the $V$ band.
 
         Returns
         -------
@@ -1137,6 +1176,15 @@ class ReadModel:
             if item in model_param and item not in ignore_param:
                 param_key.append(item)
                 param_val.append(model_param[item])
+
+        # Check if the ext_filter should be adjusted
+        # to the name that is extracted from the
+        # phot_ext_{ext_filter} parameter
+
+        if ext_filter is None:
+            for param_item in model_param:
+                if param_item.startswith('phot_ext_'):
+                    ext_filter = param_item[9:]
 
         # Read the grid of fluxes from the database
 
@@ -1261,10 +1309,20 @@ class ReadModel:
         if "ism_ext" in model_param:
             ism_reddening = model_param.get("ism_red", 3.1)
 
+            if ext_filter is not None:
+                ism_ext_av = dust_util.convert_to_av(
+                    filter_name=ext_filter,
+                    filter_ext=model_param[f"phot_ext_{ext_filter}"],
+                    v_band_red=ism_reddening,
+                )
+
+            else:
+                ism_ext_av = model_param["ism_ext"]
+
             model_box.flux, ext_mag = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
-                model_param["ism_ext"],
+                ism_ext_av,
                 ism_reddening,
             )
 

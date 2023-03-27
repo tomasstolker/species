@@ -408,8 +408,8 @@ def interp_lognorm(
 
                 cross_tmp = cross_interp(filt_trans[:, 0])
 
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
@@ -518,8 +518,8 @@ def interp_powerlaw(
 
                 cross_tmp = cross_interp(filt_trans[:, 0])
 
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], filt_trans[:, 0])
+                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
@@ -548,7 +548,6 @@ def interp_powerlaw(
         cross_sections[spec_item] = []
 
         for i in range(wavel_spec.shape[0]):
-
             cross_tmp = interp2d(
                 exponent,
                 radius_max,
@@ -660,3 +659,49 @@ def apply_ism_ext(
     ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
 
     return flux * 10.0 ** (-0.4 * ext_mag)
+
+
+@typechecked
+def convert_to_av(
+    filter_name: str, filter_ext: float, v_band_red: float = 3.1
+) -> float:
+    """
+    Function for converting the extinction in any filter from
+    the `SVO Filter Profile Service <http://svo2.cab.inta-csic.
+    es/svo/theory/fps/>`_ to a visual extinction, :math:`A_V`.
+    This is done by simply scaling the extinction so at the
+    mean wavelength of the filter.
+
+    filter_name : str
+        Filter name for which the extinction will be
+        converted to a visual extinction (i.e. :math:`A_V`).
+    filter_ext : float
+        Extinction (mag) for the ``filter_name``.
+    v_band_red : float
+        Reddening in the $V$ band.
+
+    Returns
+    -------
+    float
+        Visual extinction (i.e. :math:`A_V`) for which the
+        extinction in the ``filter_name`` band is ``filter_ext``.
+    """
+
+    av_test = 1.0
+
+    # Mean wavelength for filter_name
+    read_filt = read_filter.ReadFilter(filter_name)
+    filt_wavel = np.array([read_filt.mean_wavelength()])
+
+    # Calculate test extinction for A_V = 1.0
+    # at mean wavelength of filter_name
+    ext_ref = ism_extinction(av_test, v_band_red, filt_wavel)[0]
+
+    # Scaling for A_V = 1.0 to the A_V for which
+    # extinction of filter_name is filter_ext
+    scaling = filter_ext / ext_ref
+
+    # Should be the same as filter_ext
+    # filter_ext_test = ism_extinction(scaling * av_test, v_band_red, filt_wavel)[0]
+
+    return scaling * av_test

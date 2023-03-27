@@ -82,6 +82,7 @@ class FitModel:
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
         weights: Optional[Dict[str, float]] = None,
+        ext_filter: Optional[str] = None,
     ) -> None:
         """
         Parameters
@@ -370,6 +371,15 @@ class FitModel:
             can for example be used to bias the weighting of the
             photometric data points. An equal weighting is applied if
             the argument is set to ``None``.
+        ext_filter : str, None
+            Filter that is associated with the (optional) extinction
+            parameter, ``ism_ext``. When the argument of ``ext_filter``
+            is set to ``None``, the extinction is defined in the visual
+            as usual (i.e. :math:`A_V`). By providing a filter name
+            from the `SVO Filter Profile Service <http://svo2.cab.
+            inta-csic.es/svo/theory/fps/>`_ as argument then the
+            extinction ``ism_ext`` is fitted in that filter instead
+            of the $V$ band.
 
         Returns
         -------
@@ -388,6 +398,7 @@ class FitModel:
         self.object = read_object.ReadObject(object_name)
         self.parallax = self.object.get_parallax()
         self.binary = False
+        self.ext_filter = ext_filter
 
         if fit_corr is None:
             self.fit_corr = []
@@ -890,7 +901,13 @@ class FitModel:
             self.cross_sections = None
 
         if "ism_ext" in self.bounds:
-            self.modelpar.append("ism_ext")
+            if self.ext_filter is not None:
+                self.modelpar.append(f"phot_ext_{self.ext_filter}")
+                self.bounds[f"phot_ext_{self.ext_filter}"] = self.bounds["ism_ext"]
+                del self.bounds["ism_ext"]
+
+            else:
+                self.modelpar.append("ism_ext")
 
         if "ism_red" in self.bounds:
             self.modelpar.append("ism_red")
@@ -1029,6 +1046,9 @@ class FitModel:
                 dust_param[item] = params[self.cube_index[item]]
 
             elif item[:4] == "ism_":
+                dust_param[item] = params[self.cube_index[item]]
+
+            elif self.ext_filter is not None and item == f"phot_ext_{self.ext_filter}":
                 dust_param[item] = params[self.cube_index[item]]
 
             elif item == "disk_teff":
@@ -1302,12 +1322,30 @@ class FitModel:
 
             elif "ism_ext" in dust_param:
                 read_filt = read_filter.ReadFilter(phot_filter)
-                filt_wavel = np.array([read_filt.mean_wavelength()])
+                phot_wavel = np.array([read_filt.mean_wavelength()])
 
                 ism_reddening = dust_param.get("ism_red", 3.1)
 
                 ext_filt = dust_util.ism_extinction(
-                    dust_param["ism_ext"], ism_reddening, filt_wavel
+                    dust_param["ism_ext"], ism_reddening, phot_wavel
+                )
+
+                phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
+
+            elif self.ext_filter is not None:
+                ism_reddening = dust_param.get("ism_red", 3.1)
+
+                read_filt = read_filter.ReadFilter(phot_filter)
+                phot_wavel = np.array([read_filt.mean_wavelength()])
+
+                av_required = dust_util.convert_to_av(
+                    filter_name=self.ext_filter,
+                    filter_ext=dust_param[f"phot_ext_{self.ext_filter}"],
+                    v_band_red=ism_reddening,
+                )
+
+                ext_filt = dust_util.ism_extinction(
+                    av_required, ism_reddening, phot_wavel
                 )
 
                 phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
@@ -1538,11 +1576,26 @@ class FitModel:
             elif "ism_ext" in dust_param:
                 ism_reddening = dust_param.get("ism_red", 3.1)
 
-                ext_filt = dust_util.ism_extinction(
+                ext_spec = dust_util.ism_extinction(
                     dust_param["ism_ext"], ism_reddening, self.spectrum[item][0][:, 0]
                 )
 
-                model_flux *= 10.0 ** (-0.4 * ext_filt)
+                model_flux *= 10.0 ** (-0.4 * ext_spec)
+
+            elif self.ext_filter is not None:
+                ism_reddening = dust_param.get("ism_red", 3.1)
+
+                av_required = dust_util.convert_to_av(
+                    filter_name=self.ext_filter,
+                    filter_ext=dust_param[f"phot_ext_{self.ext_filter}"],
+                    v_band_red=ism_reddening,
+                )
+
+                ext_spec = dust_util.ism_extinction(
+                    av_required, ism_reddening, self.spectrum[item][0][:, 0]
+                )
+
+                model_flux *= 10.0 ** (-0.4 * ext_spec)
 
             if self.spectrum[item][2] is not None:
                 # Use the inverted covariance matrix
@@ -1810,6 +1863,7 @@ class FitModel:
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
             "parallax": self.parallax[0],
+            "ext_filter": self.ext_filter,
         }
 
         # Add samples to the database
@@ -2035,6 +2089,7 @@ class FitModel:
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
             "parallax": self.parallax[0],
+            "ext_filter": self.ext_filter,
         }
 
         # Add samples to the database

@@ -397,6 +397,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("ism_red")
         param[index] = r"$R_V$"
 
+    for item in param:
+        if item.startswith("phot_ext_"):
+            index = param.index(item)
+            filter_name = item[9:].split("/")[1]
+            param[index] = rf"$A_\mathrm{{{filter_name}}}$"
+            break
+
     if "tint" in param:
         index = param.index("tint")
         param[index] = r"$T_\mathrm{int}$ (K)"
@@ -929,6 +936,12 @@ def quantity_unit(
             quantity.append("powerlaw_ext")
             unit.append(None)
             label.append(r"$A_V$")
+
+        if item.startswith("phot_ext_"):
+            quantity.append(item)
+            unit.append(None)
+            filter_name = item[9:].split("/")[1]
+            label.append(rf"$A_\mathrm{{{filter_name}}}$")
 
         if item == "pt_smooth":
             quantity.append("pt_smooth")

@@ -178,6 +178,8 @@ def plot_spectrum(
     plt.rc("axes", edgecolor="black", linewidth=2.2)
     plt.rcParams["axes.axisbelow"] = False
 
+    plt.clf()
+
     if plot_kwargs is None:
         plot_kwargs = []
 

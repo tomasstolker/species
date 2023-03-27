@@ -276,10 +276,10 @@ def get_residuals(
         Box with the residuals.
     """
 
-    if isinstance(inc_phot, bool) and inc_phot:
-        inc_phot = objectbox.filters
+    if inc_phot and objectbox.filters is not None:
+        if isinstance(inc_phot, bool) and inc_phot:
+            inc_phot = objectbox.filters
 
-    if inc_phot:
         model_phot = multi_photometry(
             datatype=datatype,
             spectrum=spectrum,
@@ -310,7 +310,7 @@ def get_residuals(
     else:
         res_phot = None
 
-    if inc_spec:
+    if inc_spec and objectbox.spectrum is not None:
         res_spec = {}
 
         if spectrum == "petitradtrans":
