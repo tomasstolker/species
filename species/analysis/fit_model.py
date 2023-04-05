@@ -1105,6 +1105,9 @@ class FitModel:
             elif item[:4] == "ism_":
                 dust_param[item] = self.fix_param[item]
 
+            elif item[:9] == "phot_ext_":
+                dust_param[item] = self.fix_param[item]
+
             elif item == "disk_teff":
                 disk_param["teff"] = self.fix_param[item]
 
