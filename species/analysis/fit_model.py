@@ -1866,8 +1866,10 @@ class FitModel:
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
             "parallax": self.parallax[0],
-            "ext_filter": self.ext_filter,
         }
+
+        if self.ext_filter is not None:
+            attr_dict["ext_filter"] = self.ext_filter
 
         # Add samples to the database
 
@@ -2092,8 +2094,10 @@ class FitModel:
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
             "parallax": self.parallax[0],
-            "ext_filter": self.ext_filter,
         }
+
+        if self.ext_filter is not None:
+            attr_dict["ext_filter"] = self.ext_filter
 
         # Add samples to the database
 
