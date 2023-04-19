@@ -945,12 +945,10 @@ class ReadRadtrans:
                 # Sum over all species
                 optical_depth = np.sum(optical_depth, axis=1)
 
-            mpl.rcParams["font.family"] = "serif"
-            mpl.rcParams["mathtext.fontset"] = "dejavuserif"
+            plt.rcParams["font.family"] = "serif"
+            plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-            plt.rc("axes", edgecolor="black", linewidth=2.5)
-
-            plt.figure(1, figsize=(8.0, 4.0))
+            plt.figure(figsize=(8.0, 4.0))
             gridsp = mpl.gridspec.GridSpec(1, 1)
             gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 

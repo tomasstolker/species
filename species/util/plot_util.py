@@ -269,7 +269,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if object_type == "planet":
             param[index] = r"$R$ ($R_\mathrm{J}$)"
         elif object_type == "star":
-            param[index] = r"$R$ ($R_\mathrm{\odot}$)"
+            param[index] = r"$R_\ast$ ($R_\mathrm{\odot}$)"
 
     if "distance" in param:
         index = param.index("distance")
@@ -288,14 +288,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if object_type == "planet":
             param[index] = r"$M$ ($M_\mathrm{J}$)"
         elif object_type == "star":
-            param[index] = r"$M$ ($M_\mathrm{\odot}$)"
+            param[index] = r"$M_\ast$ ($M_\mathrm{\odot}$)"
 
     if "log_mass" in param:
         index = param.index("log_mass")
         if object_type == "planet":
             param[index] = r"$\log\,M/M_\mathrm{J}$"
         elif object_type == "star":
-            param[index] = r"$\log\,M/M_\mathrm{\odot}$"
+            param[index] = r"$\log\,M_\ast/M_\mathrm{\odot}$"
 
     if "age" in param:
         index = param.index("age")
@@ -351,7 +351,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "luminosity" in param:
         index = param.index("luminosity")
-        param[index] = r"$\log\,L/L_\mathrm{\odot}$"
+        if object_type == "planet":
+            param[index] = r"$\log\,L/L_\mathrm{\odot}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,L_\ast/L_\mathrm{\odot}$"
 
     if "luminosity_ratio" in param:
         index = param.index("luminosity_ratio")
@@ -871,11 +874,11 @@ def quantity_unit(
 
             if object_type == "planet":
                 unit.append(r"$R_\mathrm{J}$")
+                label.append(r"$R$")
 
             elif object_type == "star":
                 unit.append(r"$R_\mathrm{\odot}$")
-
-            label.append(r"$R$")
+                label.append(r"$R_\ast$")
 
         for i in range(100):
             if item == f"teff_{i}":
@@ -911,11 +914,11 @@ def quantity_unit(
 
             if object_type == "planet":
                 unit.append(r"$M_\mathrm{J}$")
+                label.append("M")
 
             elif object_type == "star":
                 unit.append(r"$M_\mathrm{\odot}$")
-
-            label.append("M")
+                label.append("M_\ast")
 
         if item == "luminosity":
             quantity.append("luminosity")

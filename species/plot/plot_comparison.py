@@ -30,7 +30,7 @@ def plot_statistic(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
-):
+) -> mpl.figure.Figure:
     """
     Function for plotting the goodness-of-fit statistic of the empirical spectral comparison.
 
@@ -79,13 +79,11 @@ def plot_statistic(
     sptypes = np.array(h5_file[f"results/empirical/{tag}/sptypes"])
     g_fit = np.array(h5_file[f"results/empirical/{tag}/goodness_of_fit"])
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
     plt.rcParams["axes.axisbelow"] = False
 
-    plt.figure(1, figsize=figsize)
+    fig = plt.figure(figsize=figsize)
     gridsp = mpl.gridspec.GridSpec(1, 1)
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -180,12 +178,11 @@ def plot_statistic(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     h5_file.close()
 
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -200,7 +197,7 @@ def plot_empirical_spectra(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
-):
+) -> mpl.figure.Figure:
     """
     Function for plotting the results from the empirical
     spectrum comparison.
@@ -241,8 +238,9 @@ def plot_empirical_spectra(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -282,13 +280,11 @@ def plot_empirical_spectra(
     if n_spectra is None:
         n_spectra = names.size
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
     plt.rcParams["axes.axisbelow"] = False
 
-    plt.figure(1, figsize=figsize)
+    fig = plt.figure(figsize=figsize)
     gridsp = mpl.gridspec.GridSpec(1, 1)
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -438,12 +434,11 @@ def plot_empirical_spectra(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     h5_file.close()
 
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -456,7 +451,7 @@ def plot_grid_statistic(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
-):
+) -> mpl.figure.Figure:
     """
     Function for plotting the results from the empirical spectrum comparison.
 
@@ -483,8 +478,9 @@ def plot_grid_statistic(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -538,13 +534,11 @@ def plot_grid_statistic(
     else:
         coord_y = None
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
     plt.rcParams["axes.axisbelow"] = False
 
-    plt.figure(1, figsize=figsize)
+    fig = plt.figure(figsize=figsize)
 
     if coord_y is None:
         gridsp = mpl.gridspec.GridSpec(1, 1)
@@ -765,9 +759,8 @@ def plot_grid_statistic(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     h5_file.close()
 
     print(" [DONE]")
+
+    return fig

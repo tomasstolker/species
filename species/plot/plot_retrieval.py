@@ -3,7 +3,6 @@ Module for plotting atmospheric retrieval results.
 """
 
 # import copy
-import os
 import sys
 import warnings
 
@@ -37,7 +36,7 @@ def plot_pt_profile(
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution.
 
@@ -78,8 +77,9 @@ def plot_pt_profile(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -118,12 +118,10 @@ def plot_pt_profile(
     for item in parameters:
         param_index[item] = np.argwhere(parameters == item)[0][0]
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    plt.rc("axes", edgecolor="black", linewidth=2.5)
-
-    plt.figure(1, figsize=(4.0, 5.0))
+    fig = plt.figure(figsize=(4.0, 5.0))
     gridsp = mpl.gridspec.GridSpec(1, 1)
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -760,10 +758,9 @@ def plot_pt_profile(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -772,7 +769,7 @@ def plot_opacities(
     radtrans: read_radtrans.ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot the line and continuum opacity
     structure from the median posterior samples.
@@ -793,8 +790,9 @@ def plot_opacities(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -806,12 +804,10 @@ def plot_opacities(
     box = species_db.get_samples(tag)
     median = box.median_sample
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    plt.rc("axes", edgecolor="black", linewidth=2.5)
-
-    plt.figure(1, figsize=(10.0, 6.0))
+    fig = plt.figure(figsize=(10.0, 6.0))
     gridsp = mpl.gridspec.GridSpec(2, 5, width_ratios=[4, 0.25, 1.5, 4, 0.25])
     gridsp.update(wspace=0.1, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
@@ -1122,7 +1118,7 @@ def plot_opacities(
 
     xx_grid, yy_grid = np.meshgrid(wavelength, 1e-6 * radtrans.rt_object.press)
 
-    fig = ax1.pcolormesh(
+    fig_1 = ax1.pcolormesh(
         xx_grid,
         yy_grid,
         np.transpose(opacity_line),
@@ -1131,10 +1127,10 @@ def plot_opacities(
         norm=LogNorm(vmin=1e-6 * np.amax(opacity_line), vmax=np.amax(opacity_line)),
     )
 
-    cb = Colorbar(ax=ax3, mappable=fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(ax=ax3, mappable=fig_1, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel("Line opacity (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11)
 
-    fig = ax2.pcolormesh(
+    fig_2 = ax2.pcolormesh(
         xx_grid,
         yy_grid,
         np.transpose(albedo),
@@ -1143,10 +1139,10 @@ def plot_opacities(
         norm=LogNorm(vmin=1e-4 * np.amax(albedo), vmax=np.amax(albedo)),
     )
 
-    cb = Colorbar(ax=ax4, mappable=fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(ax=ax4, mappable=fig_2, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel("Single scattering albedo", rotation=270, labelpad=20, fontsize=11)
 
-    fig = ax5.pcolormesh(
+    fig_3 = ax5.pcolormesh(
         xx_grid,
         yy_grid,
         np.transpose(opacity_cont_abs),
@@ -1157,12 +1153,12 @@ def plot_opacities(
         ),
     )
 
-    cb = Colorbar(ax=ax7, mappable=fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(ax=ax7, mappable=fig_3, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel(
         "Continuum absorption (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11
     )
 
-    fig = ax6.pcolormesh(
+    fig_4 = ax6.pcolormesh(
         xx_grid,
         yy_grid,
         np.transpose(opacity_cont_scat),
@@ -1173,7 +1169,7 @@ def plot_opacities(
         ),
     )
 
-    cb = Colorbar(ax=ax8, mappable=fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(ax=ax8, mappable=fig_4, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel(
         "Continuum scattering (cm$^2$/g)", rotation=270, labelpad=20, fontsize=11
     )
@@ -1249,10 +1245,9 @@ def plot_opacities(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -1262,7 +1257,7 @@ def plot_clouds(
     output: Optional[str] = None,
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
     composition: str = "MgSiO3",
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot the size distributions for a given cloud composition as function as pressure.
     The size distributions are calculated for the median sample by using the radius_g (as function
@@ -1286,8 +1281,9 @@ def plot_clouds(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for
+        further customization of the plot.
     """
 
     species_db = database.Database()
@@ -1310,12 +1306,10 @@ def plot_clouds(
     else:
         print(f"Plotting {composition} clouds: {output}...", end="", flush=True)
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    plt.rc("axes", edgecolor="black", linewidth=2.5)
-
-    plt.figure(1, figsize=(4.0, 3.0))
+    fig = plt.figure(figsize=(4.0, 3.0))
     gridsp = mpl.gridspec.GridSpec(1, 2, width_ratios=[4, 0.25])
     gridsp.update(wspace=0.1, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -1402,7 +1396,7 @@ def plot_clouds(
 
     xx_grid, yy_grid = np.meshgrid(radii, 1e-6 * radtrans.rt_object.press)
 
-    fig = ax1.pcolormesh(
+    mesh_fig = ax1.pcolormesh(
         xx_grid,
         yy_grid,
         dn_dr,
@@ -1411,7 +1405,7 @@ def plot_clouds(
         norm=LogNorm(vmin=1e-10 * np.amax(dn_dr), vmax=np.amax(dn_dr)),
     )
 
-    cb = Colorbar(ax=ax2, mappable=fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(ax=ax2, mappable=mesh_fig, orientation="vertical", ticklocation="right")
     cb.ax.set_ylabel("dn/dr", rotation=270, labelpad=20, fontsize=11)
 
     for item in radtrans.rt_object.press * 1e-6:  # (bar)
@@ -1456,7 +1450,6 @@ def plot_clouds(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig

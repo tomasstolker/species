@@ -49,14 +49,7 @@ def plot_spectrum(
     leg_param: Optional[List[str]] = None,
     grid_hspace: float = 0.1,
     inc_model_name: bool = False,
-) -> Tuple[
-    mpl.figure.Figure,
-    Tuple[
-        mpl.axes._axes.Axes,
-        Optional[mpl.axes._axes.Axes],
-        Optional[mpl.axes._axes.Axes],
-    ],
-]:
+) -> mpl.figure.Figure:
     """
     Function for plotting a spectral energy distribution and combining
     various data such as spectra, photometric fluxes, model spectra,
@@ -164,21 +157,11 @@ def plot_spectrum(
     matplotlib.figure.Figure
         The ``Figure`` object that can be used for further
         customization of the plot.
-    matplotlib.axes._axes.Axes, None
-        Tuple with the three ``Axes`` objects that can be used
-        for further customization of the plot. The second and
-        third item of the tuple can be ``None``, since these
-        are the axes for the optional ``filters`` and
-        ``residuals``, respectively.
     """
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
     plt.rcParams["axes.axisbelow"] = False
-
-    plt.clf()
 
     if plot_kwargs is None:
         plot_kwargs = []
@@ -190,7 +173,7 @@ def plot_spectrum(
         )
 
     if residuals is not None and filters is not None:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(3, 1, height_ratios=[1, 3, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -199,7 +182,7 @@ def plot_spectrum(
         ax3 = plt.subplot(grid_sp[2, 0])
 
     elif residuals is not None:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[4, 1])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -208,7 +191,7 @@ def plot_spectrum(
         ax3 = plt.subplot(grid_sp[1, 0])
 
     elif filters is not None:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(2, 1, height_ratios=[1, 4])
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -217,7 +200,7 @@ def plot_spectrum(
         ax3 = None
 
     else:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         grid_sp = mpl.gridspec.GridSpec(1, 1)
         grid_sp.update(wspace=0, hspace=grid_hspace, left=0, right=1, bottom=0, top=1)
 
@@ -413,7 +396,7 @@ def plot_spectrum(
                         r"$F_\lambda$ (W m$^{-2}$ "
                         + "\N{GREEK SMALL LETTER MU}m$^{-1}$)"
                     )
-                
+
                 else:
                     ylabel = (
                         r"$F_\lambda$ (10$^{"
@@ -1325,4 +1308,4 @@ def plot_spectrum(
 
     print(" [DONE]")
 
-    return fig, (ax1, ax2, ax3)
+    return fig

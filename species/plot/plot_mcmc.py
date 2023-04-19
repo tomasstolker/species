@@ -2,7 +2,6 @@
 Module for plotting MCMC results.
 """
 
-import os
 import warnings
 
 from typing import List, Optional, Tuple, Union
@@ -28,7 +27,7 @@ def plot_walkers(
     nsteps: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot the step history of the walkers.
 
@@ -48,8 +47,9 @@ def plot_walkers(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -57,10 +57,8 @@ def plot_walkers(
     else:
         print(f"Plotting walkers: {output}...", end="", flush=True)
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -79,7 +77,7 @@ def plot_walkers(
 
     ndim = samples.shape[-1]
 
-    plt.figure(1, figsize=(6, ndim * 1.5))
+    fig = plt.figure(figsize=(6, ndim * 1.5))
     gridsp = mpl.gridspec.GridSpec(ndim, 1)
     gridsp.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
@@ -178,10 +176,9 @@ def plot_walkers(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -202,7 +199,7 @@ def plot_posterior(
     output: Optional[str] = None,
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution
     of the fitted parameters.
@@ -267,14 +264,13 @@ def plot_posterior(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     if burnin is None:
         burnin = 0
@@ -495,9 +491,7 @@ def plot_posterior(
                     )
 
             # Store the updated sample to the array
-            updated_samples[
-                i,
-            ] = samples_item
+            updated_samples[i,] = samples_item
 
         # Overwrite the samples in the SamplesBox
         box.samples = updated_samples
@@ -707,17 +701,19 @@ def plot_posterior(
     if "radius" in box.parameters:
         radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
         if object_type == "star":
-            samples[:, radius_index] *= constants.R_JUP/constants.R_SUN
+            samples[:, radius_index] *= constants.R_JUP / constants.R_SUN
 
     if "mass" in box.parameters:
         mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
         if object_type == "star":
-            samples[:, mass_index] *= constants.M_JUP/constants.M_SUN
+            samples[:, mass_index] *= constants.M_JUP / constants.M_SUN
 
     if "log_mass" in box.parameters:
         mass_index = np.argwhere(np.array(box.parameters) == "log_mass")[0]
         if object_type == "star":
-            samples[:, mass_index] = np.log10(10.**samples[:, mass_index]*constants.M_JUP/constants.M_SUN)
+            samples[:, mass_index] = np.log10(
+                10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
+            )
 
     if inc_loglike:
         # Get ln(L) of the samples
@@ -730,7 +726,7 @@ def plot_posterior(
         log_prob = ln_prob * np.exp(1.0)
 
         # Convert log10(L) to L
-        prob = 10.0 ** log_prob
+        prob = 10.0**log_prob
 
         # Normalize to an integrated probability of 1
         prob /= np.sum(prob)
@@ -739,8 +735,7 @@ def plot_posterior(
         box.parameters.append("log_prob")
         ndim += 1
 
-    labels = plot_util.update_labels(
-        box.parameters, object_type=object_type)
+    labels = plot_util.update_labels(box.parameters, object_type=object_type)
 
     # Check if parameter values were fixed
 
@@ -780,7 +775,7 @@ def plot_posterior(
         else:
             param_label = item[:unit_start]
             # Remove parenthesis from the units
-            unit_label = item[unit_start + 1: -1]
+            unit_label = item[unit_start + 1 : -1]
 
         q_16, q_50, q_84 = corner.quantile(samples[:, i], [0.16, 0.5, 0.84])
         q_minus, q_plus = q_50 - q_16, q_84 - q_50
@@ -894,10 +889,9 @@ def plot_posterior(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -907,7 +901,7 @@ def plot_mag_posterior(
     burnin: int = None,
     xlim: Tuple[float, float] = None,
     output: Optional[str] = None,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, mpl.figure.Figure]:
     """
     Function to plot the posterior distribution of the synthetic
     magnitudes. The posterior samples are also returned.
@@ -932,12 +926,13 @@ def plot_mag_posterior(
     -------
     np.ndarray
         Array with the posterior samples of the magnitude.
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     species_db = database.Database()
 
@@ -1002,12 +997,9 @@ def plot_mag_posterior(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
 
-    return samples
+    return samples, fig
 
 
 @typechecked
@@ -1017,7 +1009,7 @@ def plot_size_distributions(
     random: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot random samples of the log-normal
     or power-law size distributions.
@@ -1042,8 +1034,9 @@ def plot_size_distributions(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if output is None:
@@ -1054,10 +1047,8 @@ def plot_size_distributions(
     if burnin is None:
         burnin = 0
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -1072,9 +1063,7 @@ def plot_size_distributions(
 
     if samples.ndim == 2 and random is not None:
         ran_index = np.random.randint(samples.shape[0], size=random)
-        samples = samples[
-            ran_index,
-        ]
+        samples = samples[ran_index,]
 
     elif samples.ndim == 3:
         if burnin > samples.shape[1]:
@@ -1103,7 +1092,7 @@ def plot_size_distributions(
         r_max = samples[:, r_max_index]
         exponent = samples[:, exponent_index]
 
-    plt.figure(1, figsize=(6, 3))
+    fig = plt.figure(figsize=(6, 3))
     gridsp = mpl.gridspec.GridSpec(1, 1)
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -1182,10 +1171,9 @@ def plot_size_distributions(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig
 
 
 @typechecked
@@ -1198,7 +1186,7 @@ def plot_extinction(
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-) -> None:
+) -> mpl.figure.Figure:
     """
     Function to plot random samples of the extinction, either from
     fitting a size distribution of enstatite grains (``dust_radius``,
@@ -1235,8 +1223,9 @@ def plot_extinction(
 
     Returns
     -------
-    NoneType
-        None
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
     """
 
     if burnin is None:
@@ -1245,10 +1234,8 @@ def plot_extinction(
     if wavel_range is None:
         wavel_range = (0.4, 10.0)
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
@@ -1257,9 +1244,7 @@ def plot_extinction(
 
     if samples.ndim == 2 and random is not None:
         ran_index = np.random.randint(samples.shape[0], size=random)
-        samples = samples[
-            ran_index,
-        ]
+        samples = samples[ran_index,]
 
     elif samples.ndim == 3:
         if burnin > samples.shape[1]:
@@ -1274,7 +1259,7 @@ def plot_extinction(
         ran_step = np.random.randint(samples.shape[1], size=random)
         samples = samples[ran_walker, ran_step, :]
 
-    plt.figure(1, figsize=(6, 3))
+    fig = plt.figure(figsize=(6, 3))
     gridsp = mpl.gridspec.GridSpec(1, 1)
     gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -1336,7 +1321,6 @@ def plot_extinction(
         and "lognorm_sigma" in box.parameters
         and "lognorm_ext" in box.parameters
     ):
-
         cross_optical, dust_radius, dust_sigma = dust_util.interp_lognorm([], [], None)
 
         log_r_index = box.parameters.index("lognorm_radius")
@@ -1382,7 +1366,6 @@ def plot_extinction(
         and "powerlaw_exp" in box.parameters
         and "powerlaw_ext" in box.parameters
     ):
-
         cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [], None)
 
         r_max_index = box.parameters.index("powerlaw_max")
@@ -1424,7 +1407,6 @@ def plot_extinction(
             ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
     elif "ism_ext" in box.parameters:
-
         ext_index = box.parameters.index("ism_ext")
         ism_ext = samples[:, ext_index]
 
@@ -1454,7 +1436,6 @@ def plot_extinction(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    plt.clf()
-    plt.close()
-
     print(" [DONE]")
+
+    return fig

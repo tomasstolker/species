@@ -52,7 +52,7 @@ def plot_color_magnitude(
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.8),
     output: Optional[str] = None,
-) -> Tuple[mpl.figure.Figure, mpl.axes._axes.Axes]:
+) -> mpl.figure.Figure:
     """
     Function for creating a color-magnitude diagram.
 
@@ -152,17 +152,10 @@ def plot_color_magnitude(
     matplotlib.figure.Figure
         The ``Figure`` object that can be used for further
         customization of the plot.
-    matplotlib.axes._axes.Axes
-        The ``Axes`` object that can be used for further
-        customization of the plot.
     """
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
-
-    plt.clf()
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     # model_color = ("#234398", "#f6a432", "black")
 
@@ -206,7 +199,7 @@ def plot_color_magnitude(
             )
 
     if empirical:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.5])
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -214,7 +207,7 @@ def plot_color_magnitude(
         ax2 = plt.subplot(gridsp[0, 0])
 
     else:
-        fig = plt.figure(1, figsize=figsize)
+        fig = plt.figure(figsize=figsize)
         gridsp = mpl.gridspec.GridSpec(1, 1)
         gridsp.update(wspace=0.0, hspace=0.0, left=0, right=1, bottom=0, top=1)
 
@@ -843,7 +836,7 @@ def plot_color_magnitude(
 
     print(" [DONE]")
 
-    return fig, ax1
+    return fig
 
 
 @typechecked
@@ -887,7 +880,7 @@ def plot_color_color(
     legend: Optional[Union[str, dict, Tuple[float, float]]] = "upper left",
     figsize: Optional[Tuple[float, float]] = (4.0, 4.3),
     output: Optional[str] = None,
-) -> Tuple[mpl.figure.Figure, mpl.axes._axes.Axes]:
+) -> mpl.figure.Figure:
     """
     Function for creating a color-color diagram.
 
@@ -964,17 +957,10 @@ def plot_color_color(
     matplotlib.figure.Figure
         The ``Figure`` object that can be used for further
         customization of the plot.
-    matplotlib.axes._axes.Axes
-        The ``Axes`` object that can be used for further
-        customization of the plot.
     """
 
-    mpl.rcParams["font.family"] = "serif"
-    mpl.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    plt.rc("axes", edgecolor="black", linewidth=2.2)
-
-    plt.clf()
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     # model_color = ("#234398", "#f6a432", "black")
 
@@ -1021,7 +1007,7 @@ def plot_color_color(
                 f"IsochroneBox objects can be provided to 'boxes'."
             )
 
-    fig = plt.figure(1, figsize=figsize)
+    fig = plt.figure(figsize=figsize)
 
     if empirical:
         gridsp = mpl.gridspec.GridSpec(3, 1, height_ratios=[0.2, 0.1, 4.0])
@@ -1693,4 +1679,4 @@ def plot_color_color(
 
     print(" [DONE]")
 
-    return fig, ax1
+    return fig

@@ -268,13 +268,11 @@ class EmissionLine:
         else:
             print(f"Plotting continuum fit: {plot_filename}...", end="", flush=True)
 
-        mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
-        mpl.rcParams["font.family"] = "serif"
-
-        plt.rc("axes", edgecolor="black", linewidth=2)
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams["mathtext.fontset"] = "dejavuserif"
         plt.rcParams["axes.axisbelow"] = False
 
-        plt.figure(1, figsize=(6, 6))
+        plt.figure(figsize=(6, 6))
         gs = mpl.gridspec.GridSpec(2, 1)
         gs.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
@@ -521,13 +519,11 @@ class EmissionLine:
 
         # Creating plot
 
-        mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
-        mpl.rcParams["font.family"] = "serif"
-
-        plt.rc("axes", edgecolor="black", linewidth=2)
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams["mathtext.fontset"] = "dejavuserif"
         plt.rcParams["axes.axisbelow"] = False
 
-        plt.figure(1, figsize=(6, 3))
+        plt.figure(figsize=(6, 3))
         gs = mpl.gridspec.GridSpec(1, 1)
         gs.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -1201,13 +1197,11 @@ class EmissionLine:
                 flush=True,
             )
 
-        mpl.rcParams["font.serif"] = ["Bitstream Vera Serif"]
-        mpl.rcParams["font.family"] = "serif"
-
-        plt.rc("axes", edgecolor="black", linewidth=2)
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams["mathtext.fontset"] = "dejavuserif"
         plt.rcParams["axes.axisbelow"] = False
 
-        plt.figure(1, figsize=(6, 6))
+        plt.figure(figsize=(6, 6))
         gs = mpl.gridspec.GridSpec(2, 1)
         gs.update(wspace=0, hspace=0.1, left=0, right=1, bottom=0, top=1)
 
