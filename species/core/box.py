@@ -178,6 +178,12 @@ def create_box(boxtype, **kwargs):
         box = SynphotBox()
         box.name = kwargs["name"]
         box.flux = kwargs["flux"]
+        if "wavelength" in kwargs:
+            box.wavelength = kwargs["wavelength"]
+        if "app_mag" in kwargs:
+            box.app_mag = kwargs["app_mag"]
+        if "abs_mag" in kwargs:
+            box.abs_mag = kwargs["abs_mag"]
 
     return box
 
@@ -579,4 +585,7 @@ class SynphotBox(Box):
         """
 
         self.name = None
+        self.wavelength = None
         self.flux = None
+        self.app_mag = None
+        self.abs_mag = None        

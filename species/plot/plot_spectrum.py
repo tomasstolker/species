@@ -980,6 +980,8 @@ def plot_spectrum(
                                 )
 
         elif isinstance(box_item, box.SynphotBox):
+            obj_index = None
+
             for i, find_item in enumerate(boxes):
                 if isinstance(find_item, box.ObjectBox):
                     obj_index = i
@@ -993,7 +995,21 @@ def plot_spectrum(
                 if quantity == "flux":
                     flux_scaling = wavelength
 
-                if not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
+                if plot_kwargs[j] is not None and item in plot_kwargs[j]:
+                    kwargs_copy = plot_kwargs[j][item].copy()
+
+                    if "zorder" not in kwargs_copy:
+                        kwargs_copy["zorder"] = 4.0
+
+                    ax1.errorbar(
+                        wavelength,
+                        flux_scaling * box_item.flux[item] / scaling,
+                        xerr=fwhm / 2.0,
+                        yerr=None,
+                        **kwargs_copy,
+                    )
+
+                elif obj_index is None or not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
                     ax1.errorbar(
                         wavelength,
                         flux_scaling * box_item.flux[item] / scaling,

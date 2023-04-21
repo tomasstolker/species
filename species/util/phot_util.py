@@ -33,13 +33,20 @@ def multi_photometry(
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
 ) -> box.SynphotBox:
     """
+    Function for calculating synthetic photometry for a list of
+    filters and a specified atmosphere model and related parameters.
+    This function can for example be used for calculating the
+    synthetic photometry from a best-fit model spectrum. It returns
+    a :class:`~species.core.box.SynphotBox` that can be provided
+    as input to :func:`~species.plot.plot_spectrum.plot_spectrum`.
+
     Parameters
     ----------
     datatype : str
         Data type ('model' or 'calibration').
     spectrum : str
-        Spectrum name (e.g., 'drift-phoenix', 'planck', 'powerlaw',
-        'petitradtrans').
+        Spectrum name (e.g., 'drift-phoenix', 'bt-settl-cifist',
+        planck', 'powerlaw', 'petitradtrans').
     filters : list(str)
         List with the filter names.
     parameters : dict
@@ -48,8 +55,8 @@ def multi_photometry(
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         Only required with ``spectrum='petitradtrans'`. Make sure that
         the ``wavel_range`` of the ``ReadRadtrans`` instance is
-        sufficiently broad to cover all the ``filters``. Not used if
-        set to `None`.
+        sufficiently broad to cover all the ``filters``. The argument
+        can be set to ``None`` for any other model than petitRADTRANS.
 
     Returns
     -------
@@ -59,6 +66,12 @@ def multi_photometry(
 
     print("Calculating synthetic photometry...", end="", flush=True)
 
+    mean_wavel = {}
+
+    for item in filters:
+        read_filt = read_filter.ReadFilter(item)
+        mean_wavel[item] = read_filt.mean_wavelength
+
     flux = {}
 
     if datatype == "model":
@@ -67,7 +80,6 @@ def multi_photometry(
             radtrans_box = radtrans.get_model(parameters)
 
         for item in filters:
-
             if spectrum == "petitradtrans":
                 # Use an instance of SyntheticPhotometry instead
                 # of get_flux from ReadRadtrans in order to not
@@ -132,9 +144,36 @@ def multi_photometry(
             readcalib = read_calibration.ReadCalibration(spectrum, filter_name=item)
             flux[item] = readcalib.get_flux(parameters)[0]
 
+    app_mag = {}
+    abs_mag = {}
+
+    for key, value in flux.items():
+        syn_phot = photometry.SyntheticPhotometry(key)
+        if "parallax" in parameters:
+            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
+                flux=value, error=None, parallax=(parameters["parallax"], None)
+            )
+
+        elif "distance" in parameters:
+            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
+                flux=value, error=None, distance=(parameters["distance"], None)
+            )
+
+        else:
+            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
+                flux=value, error=None
+            )
+
     print(" [DONE]")
 
-    return box.create_box("synphot", name="synphot", flux=flux)
+    return box.create_box(
+        "synphot",
+        name="synphot",
+        flux=flux,
+        wavelength=mean_wavel,
+        app_mag=app_mag,
+        abs_mag=abs_mag,
+    )
 
 
 @typechecked
@@ -191,7 +230,9 @@ def absolute_to_apparent(
     abs_mag: Union[
         Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
     ],
-    distance: Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]],
+    distance: Union[
+        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
+    ],
 ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
     Function for converting an absolute magnitude
@@ -234,7 +275,6 @@ def get_residuals(
     inc_spec: Union[bool, List[str]] = True,
     radtrans: Optional[read_radtrans.ReadRadtrans] = None,
 ) -> box.ResidualsBox:
-
     """
     Function for calculating the residuals from fitting model or
     calibration spectra to a set of spectra and/or photometry.
@@ -318,7 +358,6 @@ def get_residuals(
             model = radtrans.get_model(parameters)
 
         for key in objectbox.spectrum:
-
             if isinstance(inc_spec, bool) or key in inc_spec:
                 wavel_range = (
                     0.9 * objectbox.spectrum[key][0][0, 0],
@@ -478,8 +517,9 @@ def get_residuals(
 
 @typechecked
 def parallax_to_distance(
-    parallax: Union[Tuple[float, Optional[float]],
-                    Tuple[np.ndarray, Optional[np.ndarray]]],
+    parallax: Union[
+        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
+    ],
 ) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
     """
     Function for converting from parallax to distance.
