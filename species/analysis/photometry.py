@@ -176,7 +176,6 @@ class SyntheticPhotometry:
                 wavelength[0] > self.wavel_range[0]
                 or wavelength[-1] < self.wavel_range[1]
             ):
-
                 warnings.warn(
                     f"The filter profile of {self.filter_name} "
                     f"({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) extends "
@@ -201,7 +200,6 @@ class SyntheticPhotometry:
                         or wavelength[-1] > self.wavel_range[-1]
                     )
                 ):
-
                     warnings.warn(
                         f"The filter profile of {self.filter_name} "
                         f"({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) "
@@ -357,7 +355,7 @@ class SyntheticPhotometry:
 
             if error_app_mag is not None and distance[1] is not None:
                 error_dist = distance[1] * (5.0 / (distance[0] * math.log(10.0)))
-                error_abs_mag = math.sqrt(error_app_mag ** 2 + error_dist ** 2)
+                error_abs_mag = math.sqrt(error_app_mag**2 + error_dist**2)
 
             else:
                 error_abs_mag = None
@@ -424,7 +422,10 @@ class SyntheticPhotometry:
         ] = None,
     ) -> Tuple[
         Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]],
-        Union[Tuple[Optional[float], Optional[float]], Tuple[Optional[np.ndarray], Optional[np.ndarray]]],
+        Union[
+            Tuple[Optional[float], Optional[float]],
+            Tuple[Optional[np.ndarray], Optional[np.ndarray]],
+        ],
     ]:
         """
         Function for converting a flux into a magnitude.
@@ -464,6 +465,13 @@ class SyntheticPhotometry:
 
         zp_flux = self.zero_point()
 
+        if flux <= 0.0:
+            raise ValueError(
+                "Converting a flux into a magnitude "
+                "is only possible if the argument of "
+                "'flux' has a positive value."
+            )
+
         app_mag = self.vega_mag - 2.5 * np.log10(flux / zp_flux)
 
         if error is None:
@@ -471,13 +479,32 @@ class SyntheticPhotometry:
             error_abs_mag = None
 
         else:
-            error_app_lower = app_mag - (
-                self.vega_mag - 2.5 * np.log10((flux + error) / zp_flux)
-            )
-            error_app_upper = (
-                self.vega_mag - 2.5 * np.log10((flux - error) / zp_flux)
-            ) - app_mag
-            error_app_mag = (error_app_lower + error_app_upper) / 2.0
+            if flux + error > 0.0:
+                error_app_lower = app_mag - (
+                    self.vega_mag - 2.5 * np.log10((flux + error) / zp_flux)
+                )
+
+            else:
+                error_app_lower = np.nan
+
+            if flux - error > 0.0:
+                error_app_upper = (
+                    self.vega_mag - 2.5 * np.log10((flux - error) / zp_flux)
+                ) - app_mag
+
+            else:
+                error_app_upper = np.nan
+
+            error_app_mag = np.nanmean([error_app_lower, error_app_upper])
+
+            if np.isnan(error_app_mag):
+                error_app_mag = None
+
+                warnings.warn(
+                    "This warning should not have occurred "
+                    "since either error_app_lower and/or "
+                    "error_app_upper should not be NaN."
+                )
 
         if distance is None:
             abs_mag = None
