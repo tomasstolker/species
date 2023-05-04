@@ -1300,8 +1300,8 @@ class ReadIsochrone:
         data (i.e. the filters returned by
         :func:`~species.read.read_isochrone.ReadIsochrone.get_filters`).
         The atmospheric model that is associated with the evolutionary
-        model is automatically selected and added to the database if
-        needed.
+        model is by default automatically selected and added to the
+        database if needed.
 
         Parameters
         ----------
@@ -1374,3 +1374,99 @@ class ReadIsochrone:
         phot_box = model_reader.get_flux(model_param=model_param, return_box=True)
 
         return phot_box
+
+    @typechecked
+    def get_spectrum(
+        self,
+        age: float,
+        mass: float,
+        distance: float,
+        wavel_range: Optional[Tuple[float, float]] = None,
+        spec_res: Optional[float] = None,
+        atmospheric_model: Optional[str] = None,
+        extra_param: Optional[Dict[str, float]] = None,
+    ) -> box.ModelBox:
+        """
+        Function for interpolating the model spectrum at a specified
+        age and mass. Bulk and atmosphere parameters are interpolated
+        from the evolutionary data for the requested age and mass.
+        The output from the evolutionary data is then used as input
+        for the atmospheric model. The atmospheric model that is
+        associated with the evolutionary model is by default
+        automatically selected and added to the database if needed.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the bulk parameters will be
+            interpolated from the grid with evolutionary data.
+        mass : float
+            Mass (:math:`M_\\mathrm{J}`) at which the bulk
+            parameters will be interpolated from the grid with
+            evolutionary data.
+        distance : float
+            Distance (pc) that is used for scaling the fluxes
+            from the atmosphere to the observer.
+        wavel_range : tuple(float, float), None
+            Wavelength range (um). Full spectrum is selected if
+            the argument is set to ``None``.
+        spec_res : float, None
+            Spectral resolution that is used for smoothing the spectrum
+            with a Gaussian kernel. No smoothing is applied when the
+            argument is set to ``None``.
+        atmospheric_model : str, None
+            Atmospheric model used to compute the synthetic photometry.
+            The argument can be set to ``None`` such that the correct
+            atmospheric model is automatically selected that is
+            associated with the evolutionary model. If the user
+            nonetheless wants to test a non-self-consistent approach
+            by using a different atmospheric model, then the argument
+            can be set to any of the models that can be added with
+            :func:`~species.data.database.Database.add_model`.
+        extra_param : dict, None
+            Optional dictionary with additional parameters that are
+            required for the atmospheric model but are not part of
+            the evolutionary model grid. In case additional
+            parameters are required for the atmospheric model but
+            they are not provided in ``extra_param`` then a manual
+            input will be requested when running the
+            ``get_photometry`` method. Typically the ``extra_param``
+            parameter is not needed so the argument can be set to
+            ``None``. It will only be required if a non-self-consistent
+            approach will be tested, that is, the calculation of
+            synthetic photometry from an atmospheric model that is
+            not associated with the evolutionary model.
+
+        Returns
+        -------
+        species.core.box.ModelBox
+            Box with the model spectrum.
+        """
+
+        if extra_param is None:
+            extra_param = {}
+
+        atmospheric_model = self._check_model(atmospheric_model)
+
+        iso_box = self.get_isochrone(age=age, masses=np.array([mass]))
+
+        model_param = {
+            "teff": iso_box.teff[0],
+            "logg": iso_box.logg[0],
+            "radius": iso_box.radius[0],
+            "distance": distance,
+        }
+
+        model_reader = read_model.ReadModel(
+            model=atmospheric_model, wavel_range=wavel_range
+        )
+
+        model_param, _ = self._update_param(
+            atmospheric_model, model_param, model_reader.get_bounds(), extra_param
+        )
+
+        model_box = model_reader.get_model(
+            model_param=model_param, spec_res=spec_res, smooth=True
+        )
+
+        return model_box
