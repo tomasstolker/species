@@ -142,7 +142,7 @@ def download_filter(
 
             warnings.warn(
                 f"Filter '{filter_id}' is not available "
-                f"on the SVO Filter ProfileService."
+                f"on the SVO Filter Profile Service."
             )
 
         except:

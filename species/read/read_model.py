@@ -146,7 +146,7 @@ class ReadModel:
                 "in the database. Will try to add the model grid. "
                 "If this does not work (e.g. currently without an "
                 "internet connection) then please use the "
-                "\'add_model\' method of \'Database\' to add the "
+                "'add_model' method of 'Database' to add the "
                 "grid of spectra yourself."
             )
 
@@ -737,7 +737,11 @@ class ReadModel:
         ignore_param = []
 
         for key in model_param.keys():
-            if key not in self.get_parameters() and key not in self.extra_param:
+            if (
+                key not in self.get_parameters()
+                and key not in self.extra_param
+                and not key.startswith("phot_ext_")
+            ):
                 warnings.warn(
                     f"The '{key}' parameter is not required by "
                     f"'{self.model}' so the parameter will be "
@@ -781,7 +785,7 @@ class ReadModel:
 
         if ext_filter is None:
             for param_item in model_param:
-                if param_item.startswith('phot_ext_'):
+                if param_item.startswith("phot_ext_"):
                     ext_filter = param_item[9:]
 
         # Interpolate the spectrum from the grid
@@ -1183,7 +1187,7 @@ class ReadModel:
 
         if ext_filter is None:
             for param_item in model_param:
-                if param_item.startswith('phot_ext_'):
+                if param_item.startswith("phot_ext_"):
                     ext_filter = param_item[9:]
 
         # Read the grid of fluxes from the database
@@ -1306,7 +1310,7 @@ class ReadModel:
                 model_param["powerlaw_ext"],
             )
 
-        if "ism_ext" in model_param:
+        if "ism_ext" in model_param or ext_filter is not None:
             ism_reddening = model_param.get("ism_red", 3.1)
 
             if ext_filter is not None:

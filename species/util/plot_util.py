@@ -914,11 +914,11 @@ def quantity_unit(
 
             if object_type == "planet":
                 unit.append(r"$M_\mathrm{J}$")
-                label.append("M")
+                label.append(r"$M$")
 
             elif object_type == "star":
                 unit.append(r"$M_\mathrm{\odot}$")
-                label.append("M_\ast")
+                label.append(r"$M_\ast$")
 
         if item == "luminosity":
             quantity.append("luminosity")

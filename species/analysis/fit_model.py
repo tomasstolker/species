@@ -375,11 +375,11 @@ class FitModel:
             Filter that is associated with the (optional) extinction
             parameter, ``ism_ext``. When the argument of ``ext_filter``
             is set to ``None``, the extinction is defined in the visual
-            as usual (i.e. :math:`A_V`). By providing a filter name
-            from the `SVO Filter Profile Service <http://svo2.cab.
-            inta-csic.es/svo/theory/fps/>`_ as argument then the
-            extinction ``ism_ext`` is fitted in that filter instead
-            of the $V$ band.
+            (i.e. :math:`A_V`). By providing a filter name from the
+            `SVO Filter Profile Service <http://svo2.cab.inta-csic.es/
+            svo/theory/fps/>`_ as argument then the extinction
+            ``ism_ext`` is fitted in that filter instead of the
+            $V$ band.
 
         Returns
         -------
@@ -1336,22 +1336,16 @@ class FitModel:
                 phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
 
             elif self.ext_filter is not None:
-                ism_reddening = dust_param.get("ism_red", 3.1)
+                readmodel = read_model.ReadModel(self.model, filter_name=phot_filter)
 
-                read_filt = read_filter.ReadFilter(phot_filter)
-                phot_wavel = np.array([read_filt.mean_wavelength()])
+                param_dict[f"phot_ext_{self.ext_filter}"] = dust_param[f"phot_ext_{self.ext_filter}"]
+                param_dict["ism_red"] = dust_param.get("ism_red", 3.1)
 
-                av_required = dust_util.convert_to_av(
-                    filter_name=self.ext_filter,
-                    filter_ext=dust_param[f"phot_ext_{self.ext_filter}"],
-                    v_band_red=ism_reddening,
-                )
+                phot_flux = readmodel.get_flux(param_dict)[0]
+                phot_flux *= flux_scaling
 
-                ext_filt = dust_util.ism_extinction(
-                    av_required, ism_reddening, phot_wavel
-                )
-
-                phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
+                del param_dict[f"phot_ext_{self.ext_filter}"]
+                del param_dict["ism_red"]
 
             if obj_item.ndim == 1:
                 phot_var = obj_item[1] ** 2

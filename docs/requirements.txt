@@ -6,3 +6,4 @@ nbsphinx
 pandoc
 sphinx-automodapi
 sphinx_book_theme
+urllib3<2
