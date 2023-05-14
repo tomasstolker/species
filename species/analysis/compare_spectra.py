@@ -24,8 +24,8 @@ from species.util import dust_util, read_util
 
 class CompareSpectra:
     """
-    Class for comparing a spectrum of an object with a
-    library of empirical or model spectra.
+    Class for comparing the spectrum of an object with
+    a library of empirical or model spectra.
     """
 
     @typechecked
@@ -83,16 +83,17 @@ class CompareSpectra:
     def spectral_type(
         self,
         tag: str,
-        spec_library,
+        spec_library: str,
         wavel_range: Optional[Tuple[Optional[float], Optional[float]]] = None,
         sptypes: Optional[List[str]] = None,
-        av_ext: Optional[Union[List[float], np.array]] = None,
-        rad_vel: Optional[Union[List[float], np.array]] = None,
+        av_ext: Optional[Union[List[float], np.ndarray]] = None,
+        rad_vel: Optional[Union[List[float], np.ndarray]] = None,
     ) -> None:
         """
         Method for finding the best fitting empirical spectra
         from a selected library by evaluating the goodness-of-fit
-        statistic from Cushing et al. (2008).
+        statistic from `Cushing et al. (2008) <https://ui.adsabs.
+        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_.
 
         Parameters
         ----------
@@ -103,23 +104,28 @@ class CompareSpectra:
             only the parameters that minimize the goodness-of-fit
             statistic will be stored.
         spec_library : str
-            Name of the spectral library ('irtf', 'spex',
+            Name of the spectral library (e.g. 'irtf', 'spex',
             'kesseli+2017', 'bonnefoy+2014').
         wavel_range : tuple(float, float), None
-            Wavelength range (um) that is used for the empirical
-            comparison.
+            Wavelength range (:math:`\\mu\\mathrm{m}`) that
+            is evaluated.
         sptypes : list(str), None
-            List with spectral types to compare with. The list should
-            only contains types, for example ``sptypes=['M', 'L']``.
-            All available spectral types in the ``spec_library``
-            are compared with if set to ``None``.
-        av_ext : list(float), np.array, None
+            List with spectral types to compare with, for example
+            ``sptypes=['M', 'L']``. All available spectral types
+            in the ``spec_library`` are compared with if the
+            argument is set to ``None``.
+        av_ext : list(float), np.ndarray, None
             List of :math:`A_V` for which the goodness-of-fit
             statistic is tested. The extinction is calculated with
-            the empirical relation from Cardelli et al. (1989).
-        rad_vel : list(float), np.array, None
+            the empirical relation from `Cardelli et al. (1989)
+            <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/
+            abstract>`_. The extinction is not varied if the argument
+            is set to ``None``.
+        rad_vel : list(float), np.ndarray, None
             List of radial velocities (km s-1) for which the
-            goodness-of-fit statistic is tested.
+            goodness-of-fit statistic is tested. The radial
+            velocity is not varied if the argument is set
+            to ``None``.
 
         Returns
         -------
@@ -211,9 +217,7 @@ class CompareSpectra:
                             "argument of 'wavel_range'."
                         )
 
-                    spectrum = spectrum[
-                        indices,
-                    ]
+                    spectrum = spectrum[indices,]
 
                 empty_message = len(print_message) * " "
                 print(f"\r{empty_message}", end="")
@@ -387,11 +391,12 @@ class CompareSpectra:
         """
         Method for finding the best fitting spectrum from a grid of
         atmospheric model spectra by evaluating the goodness-of-fit
-        statistic from Cushing et al. (2008). Currently, this method
-        only supports model grids with only :math:`T_\\mathrm{eff}`
-        and :math:`\\log(g)` as free parameters (e.g. BT-Settl).
-        Please create an issue on Github if support for models with
-        more than two parameters is required.
+        statistic from `Cushing et al. (2008) <https://ui.adsabs.
+        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_. Currently,
+        this method only supports model grids with only
+        :math:`T_\\mathrm{eff}` and :math:`\\log(g)` as free parameters
+        (e.g. BT-Settl). Please create an issue on Github if support
+        for models with more than two parameters is required.
 
         Parameters
         ----------
@@ -406,7 +411,9 @@ class CompareSpectra:
         av_points : list(float), np.array, None
             List of :math:`A_V` extinction values for which the
             goodness-of-fit statistic will be tested. The extinction is
-            calculated with the relation from Cardelli et al. (1989).
+            calculated with the relation from `Cardelli et al. (1989)
+            <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/
+            abstract>`_.
         fix_logg : float, None
             Fix the value of :math:`\\log(g)`, for example if estimated
             from gravity-sensitive spectral features. Typically,
@@ -420,9 +427,9 @@ class CompareSpectra:
             wavelengths bins.
         inc_phot : list(str), None
             Filter names of the photometry to include in the
-            comparison. Photometry points are weighted by the FWHM of
-            the filter profile. No photometric fluxes will be used if
-            the argument is set to ``None``.
+            comparison. Photometry points are weighted by the FWHM
+            of the filter profile. No photometric fluxes will be
+            used if the argument is set to ``None``.
 
         Returns
         -------

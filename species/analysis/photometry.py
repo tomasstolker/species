@@ -368,7 +368,7 @@ class SyntheticPhotometry:
         magnitude: float,
         error: Optional[float] = None,
         zp_flux: Optional[float] = None,
-    ) -> Tuple[np.float64, np.float64]:
+    ) -> Tuple[Union[float, np.float64], Optional[Union[float, np.float64]]]:
         """
         Function for converting a magnitude to a flux.
 
@@ -386,8 +386,9 @@ class SyntheticPhotometry:
         -------
         float
             Flux (W m-2 um-1).
-        float
-            Error (W m-2 um-1).
+        float, None
+            Error (W m-2 um-1). The returned value is ``None`` if
+            the argument of ``error`` is ``None``.
         """
 
         if zp_flux is None:
