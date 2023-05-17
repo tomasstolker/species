@@ -1,6 +1,6 @@
 """
-Module with functions for creating plots with color-magnitude
-diagrams and color-color diagrams.
+Module with functions for creating plots of
+color-magnitude  color-color diagrams.
 """
 
 import json
@@ -124,10 +124,13 @@ def plot_color_magnitude(
         filter_mag, A_V, (x_pos, y_pos))``. The parameter is not used
         if the argument is set to ``None``.
     field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple
-        should contain the lower and upper value ('early M', 'late M',
-        'early L', 'late L', 'early T', 'late T', 'early Y). The full
-        range is used if set to ``None``.
+        Range of spectral types for which the field objects will be
+        plotted and labeled at the discrete colorbar. The tuple
+        should contain the lower and upper value of either the classes,
+        for example ('K', 'T'), or as subclasses by including
+        early/late, for example ('late K', 'early T'). The range is
+        set to the default of 'early M' to 'early Y' if the
+        argument is set to ``None``.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -172,6 +175,26 @@ def plot_color_magnitude(
     )
 
     model_linestyle = ("-", "--", ":", "-.")
+
+    if field_range is None:
+        field_range = ("early M", "early Y")
+
+    if (len(field_range[0]) == 1 and len(field_range[1]) != 1) or (
+        len(field_range[0]) != 1 and len(field_range[1]) == 1
+    ):
+        raise ValueError(
+            "The argument of 'field_range' should "
+            "be a tuple with either the range of "
+            "spectral type classes, for example "
+            "('A', 'M'), or a tuple with the range "
+            "of subclasses, for example ('early K', "
+            "'late L')."
+        )
+
+    if len(field_range[0]) == 1 and len(field_range[1]) == 1:
+        check_subclass = False
+    else:
+        check_subclass = True
 
     isochrones = []
     planck = []
@@ -384,7 +407,6 @@ def plot_color_magnitude(
                                 xlim[0] + 0.2 < pos_color < xlim[1] - 0.2
                                 and ylim[1] + 0.2 < pos_mag < ylim[0] - 0.2
                             ):
-
                                 ax1.scatter(
                                     pos_color,
                                     pos_mag,
@@ -473,7 +495,6 @@ def plot_color_magnitude(
                             xlim[0] + 0.2 < pos_color < xlim[1] - 0.2
                             and ylim[1] + 0.2 < pos_mag < ylim[0] - 0.2
                         ):
-
                             ax1.scatter(
                                 pos_color, pos_mag, c="gray", s=15, ec="none", zorder=0
                             )
@@ -495,7 +516,9 @@ def plot_color_magnitude(
     if empirical:
         cmap = plt.cm.viridis
 
-        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
+        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(
+            field_range, check_subclass
+        )
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in empirical:
@@ -514,7 +537,9 @@ def plot_color_magnitude(
                 color = color[indices]
                 magnitude = magnitude[indices]
 
-                spt_disc = plot_util.sptype_substellar(sptype, color.shape)
+                spt_disc = plot_util.sptype_to_index(
+                    field_range, sptype, check_subclass
+                )
 
                 _, unique = np.unique(color, return_index=True)
 
@@ -929,10 +954,13 @@ def plot_color_color(
         'MgSiO3' (both with crystalline structure). The parameter is
         not used if set to ``None``.
     field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple
-        should contain the lower and upper value ('early M', 'late M',
-        'early L', 'late L', 'early T', 'late T', 'early Y).
-        The full range is used if the argument is set to ``None``.
+        Range of spectral types for which the field objects will be
+        plotted and labeled at the discrete colorbar. The tuple
+        should contain the lower and upper value of either the classes,
+        for example ('K', 'T'), or as subclasses by including
+        early/late, for example ('late K', 'early T'). The range is
+        set to the default of 'early M' to 'early Y' if the
+        argument is set to ``None``.
     label_x : str
         Label for the x-axis.
     label_y : str
@@ -977,6 +1005,26 @@ def plot_color_color(
     )
 
     model_linestyle = ("-", "--", ":", "-.")
+
+    if field_range is None:
+        field_range = ("early M", "early Y")
+
+    if (len(field_range[0]) == 1 and len(field_range[1]) != 1) or (
+        len(field_range[0]) != 1 and len(field_range[1]) == 1
+    ):
+        raise ValueError(
+            "The argument of 'field_range' should "
+            "be a tuple with either the range of "
+            "spectral type classes, for example "
+            "('A', 'M'), or a tuple with the range "
+            "of subclasses, for example ('early K', "
+            "'late L')."
+        )
+
+    if len(field_range[0]) == 1 and len(field_range[1]) == 1:
+        check_subclass = False
+    else:
+        check_subclass = True
 
     isochrones = []
     planck = []
@@ -1182,7 +1230,6 @@ def plot_color_color(
                                 xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
                                 and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
                             ):
-
                                 ax1.scatter(
                                     pos_color1,
                                     pos_color2,
@@ -1225,7 +1272,6 @@ def plot_color_color(
         planck_count = 0
 
         for j, item in enumerate(planck):
-
             if planck_count == 0:
                 label = plot_util.model_name(item.library)
 
@@ -1278,7 +1324,6 @@ def plot_color_color(
                                 xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
                                 and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
                             ):
-
                                 ax1.scatter(
                                     pos_color1,
                                     pos_color2,
@@ -1310,7 +1355,6 @@ def plot_color_color(
         spectra_count = 0
 
         for j, item in enumerate(spectra):
-
             if spectra_count == 0:
                 label = plot_util.model_name(item.library)
 
@@ -1363,7 +1407,6 @@ def plot_color_color(
                                 xlim[0] + 0.2 < pos_color1 < xlim[1] - 0.2
                                 and ylim[0] + 0.2 < pos_color2 < ylim[1] - 0.2
                             ):
-
                                 ax1.scatter(
                                     pos_color1,
                                     pos_color2,
@@ -1394,7 +1437,9 @@ def plot_color_color(
     if empirical:
         cmap = plt.cm.viridis
 
-        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(field_range)
+        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(
+            field_range, check_subclass
+        )
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in empirical:
@@ -1413,7 +1458,9 @@ def plot_color_color(
                 color1 = color1[indices]
                 color2 = color2[indices]
 
-                spt_disc = plot_util.sptype_substellar(sptype, color1.shape)
+                spt_disc = plot_util.sptype_to_index(
+                    field_range, sptype, check_subclass
+                )
                 _, unique = np.unique(color1, return_index=True)
 
                 sptype = sptype[unique]

@@ -313,7 +313,7 @@ class Database:
             comp_data = json.load(json_file)
 
         if name is None:
-            name = comp_data.keys()
+            name = list(comp_data.keys())
 
         for item in name:
             spec_dict = companion_spectra.companion_spectra(

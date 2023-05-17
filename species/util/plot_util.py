@@ -12,118 +12,173 @@ from typeguard import typechecked
 
 
 @typechecked
-def sptype_substellar(sptype: np.ndarray, shape: Tuple[int]) -> np.ndarray:
+def sptype_to_index(
+    field_range: Tuple[str, str], spec_types: np.ndarray, check_subclass: bool
+) -> np.ndarray:
     """
-    Function for mapping the spectral types of substellar objects
-    (M, L, T, and Y) to numbers.
+    Function for mapping the spectral types of stellar and
+    substellar objects to indices that corresponds with the
+    discrete colorbar of a color-magnitude or color-color
+    diagram.
 
     Parameters
     ----------
-    sptype : np.ndarray
-        Array with spectral types.
-    shape : tuple(int)
-        Shape (1D) of the output array
+    field_range : tuple(str, str)
+        Range of the discrete colorbar for the field objects. The tuple
+        should contain the lower and upper value ('early M', 'late M',
+        'early L', 'late L', 'early T', 'late T', 'early Y). Also
+        stellar spectral types can be specified.
+    spec_types : np.ndarray
+        Array with the spectral types.
+    check_subclass : bool
+        Set to ``True`` if the discrete colorbar should distinguish
+        early and late spectral types with different colors or set
+        to ``False`` if subclasses should not be distinguished.
 
     Returns
     -------
     np.ndarray
-        Array with spectral types mapped to numbers.
+        Array with spectral types mapped to indices. Spectral types
+        that are not within the range specified with ``field_range``
+        will be set to NaN.
     """
 
-    spt_disc = np.zeros(shape)
+    spt_discrete = np.zeros(spec_types.size)
 
-    for i, item in enumerate(sptype):
-        if item[0:2] in ["M0", "M1", "M2", "M3", "M4"]:
-            spt_disc[i] = 0.5
+    if check_subclass:
+        spt_check = [
+            ("early O", "late O"),
+            ("early B", "late B"),
+            ("early A", "late A"),
+            ("early F", "late F"),
+            ("early G", "late G"),
+            ("early K", "late K"),
+            ("early M", "late M"),
+            ("early L", "late L"),
+            ("early T", "late T"),
+            ("early Y", "late Y"),
+        ]
 
-        elif item[0:2] in ["M5", "M6", "M7", "M8", "M9"]:
-            spt_disc[i] = 1.5
+        for i, item in enumerate(spec_types):
+            if item[0:2] in ["O0", "O1", "O2", "O3", "O4"]:
+                spt_discrete[i] = 0.5
 
-        elif item[0:2] in ["L0", "L1", "L2", "L3", "L4"]:
-            spt_disc[i] = 2.5
+            elif item[0:2] in ["O5", "O6", "O7", "O8", "O9"]:
+                spt_discrete[i] = 1.5
 
-        elif item[0:2] in ["L5", "L6", "L7", "L8", "L9"]:
-            spt_disc[i] = 3.5
+            elif item[0:2] in ["B0", "B1", "B2", "B3", "B4"]:
+                spt_discrete[i] = 2.5
 
-        elif item[0:2] in ["T0", "T1", "T2", "T3", "T4"]:
-            spt_disc[i] = 4.5
+            elif item[0:2] in ["B5", "B6", "B7", "B8", "B9"]:
+                spt_discrete[i] = 3.5
 
-        elif item[0:2] in ["T5", "T6", "T7", "T8", "T9"]:
-            spt_disc[i] = 5.5
+            elif item[0:2] in ["A0", "A1", "A2", "A3", "A4"]:
+                spt_discrete[i] = 4.5
 
-        elif "Y" in item:
-            spt_disc[i] = 6.5
+            elif item[0:2] in ["A5", "A6", "A7", "A8", "A9"]:
+                spt_discrete[i] = 5.5
 
-        else:
-            spt_disc[i] = np.nan
-            continue
+            elif item[0:2] in ["F0", "F1", "F2", "F3", "F4"]:
+                spt_discrete[i] = 6.5
 
-    return spt_disc
+            elif item[0:2] in ["F5", "F6", "F7", "F8", "F9"]:
+                spt_discrete[i] = 7.5
 
+            elif item[0:2] in ["G0", "G1", "G2", "G3", "G4"]:
+                spt_discrete[i] = 8.5
 
-@typechecked
-def sptype_stellar(sptype: np.ndarray, shape: Tuple[int]) -> np.ndarray:
-    """
-    Function for mapping all spectral types (O through Y) to numbers.
+            elif item[0:2] in ["G5", "G6", "G7", "G8", "G9"]:
+                spt_discrete[i] = 9.5
 
-    Parameters
-    ----------
-    sptype : np.ndarray
-        Array with spectral types.
-    shape : tuple(int)
-        Shape (1D) of the output array
+            elif item[0:2] in ["K0", "K1", "K2", "K3", "K4"]:
+                spt_discrete[i] = 10.5
 
-    Returns
-    -------
-    np.ndarray
-        Array with spectral types mapped to numbers.
-    """
+            elif item[0:2] in ["K5", "K6", "K7", "K8", "K9"]:
+                spt_discrete[i] = 11.5
 
-    spt_disc = np.zeros(shape)
+            elif item[0:2] in ["M0", "M1", "M2", "M3", "M4"]:
+                spt_discrete[i] = 12.5
 
-    for i, item in enumerate(sptype):
-        if item[0] == "O":
-            spt_disc[i] = 0.5
+            elif item[0:2] in ["M5", "M6", "M7", "M8", "M9"]:
+                spt_discrete[i] = 13.5
 
-        elif item[0] == "B":
-            spt_disc[i] = 1.5
+            elif item[0:2] in ["L0", "L1", "L2", "L3", "L4"]:
+                spt_discrete[i] = 14.5
 
-        elif item[0] == "A":
-            spt_disc[i] = 2.5
+            elif item[0:2] in ["L5", "L6", "L7", "L8", "L9"]:
+                spt_discrete[i] = 15.5
 
-        elif item[0] == "F":
-            spt_disc[i] = 3.5
+            elif item[0:2] in ["T0", "T1", "T2", "T3", "T4"]:
+                spt_discrete[i] = 16.5
 
-        elif item[0] == "G":
-            spt_disc[i] = 4.5
+            elif item[0:2] in ["T5", "T6", "T7", "T8", "T9"]:
+                spt_discrete[i] = 17.5
 
-        elif item[0] == "K":
-            spt_disc[i] = 5.5
+            elif "Y" in item:
+                spt_discrete[i] = 18.5
 
-        elif item[0] == "M":
-            spt_disc[i] = 6.5
+            else:
+                spt_discrete[i] = np.nan
 
-        elif item[0] == "L":
-            spt_disc[i] = 7.5
+        for i, item in enumerate(spt_check):
+            for j in range(2):
+                if field_range[0] == item[j]:
+                    spt_discrete -= float(i)
+                    break
 
-        elif item[0] == "T":
-            spt_disc[i] = 8.5
+    else:
+        spt_check = ["O", "B", "A", "F", "G", "K", "M", "L", "T", "Y"]
 
-        elif item[0] == "Y":
-            spt_disc[i] = 9.5
+        for i, item in enumerate(spec_types):
+            if item[0] == "O":
+                spt_discrete[i] = 0.5
 
-        else:
-            spt_disc[i] = np.nan
-            continue
+            elif item[0] == "B":
+                spt_discrete[i] = 1.5
 
-    return spt_disc
+            elif item[0] == "A":
+                spt_discrete[i] = 2.5
+
+            elif item[0] == "F":
+                spt_discrete[i] = 3.5
+
+            elif item[0] == "G":
+                spt_discrete[i] = 4.5
+
+            elif item[0] == "K":
+                spt_discrete[i] = 5.5
+
+            elif item[0] == "M":
+                spt_discrete[i] = 6.5
+
+            elif item[0] == "L":
+                spt_discrete[i] = 7.5
+
+            elif item[0] == "T":
+                spt_discrete[i] = 8.5
+
+            elif item[0] == "Y":
+                spt_discrete[i] = 9.5
+
+            else:
+                spt_discrete[i] = np.nan
+
+        for i, item in enumerate(spt_check):
+            if field_range[0] == item:
+                spt_discrete -= float(i)
+                break
+
+    set_to_nan = spt_discrete < 0.0
+    spt_discrete[set_to_nan] = np.nan
+
+    return spt_discrete
 
 
 @typechecked
 def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     """
-    Function for formatting the model parameters to use them as labels
-    in the posterior plot.
+    Function for formatting the model parameters to use them
+    as labels in the posterior plot.
 
     Parameters
     ----------
@@ -449,8 +504,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if f"{item}_fraction" in param:
             index = param.index(f"{item}_fraction")
             param[index] = (
-                rf"$\log\,\tilde{{\mathrm{{X}}}}"
-                rf"_\mathrm{{{cloud_labels[i]}}}$"
+                rf"$\log\,\tilde{{\mathrm{{X}}}}" rf"_\mathrm{{{cloud_labels[i]}}}$"
             )
 
         if f"{item}_tau" in param:
@@ -802,9 +856,11 @@ def model_name(in_name: str) -> str:
     else:
         out_name = in_name
 
-        warnings.warn(f"The model name '{in_name}' is not known "
-                      "so the output name will not get adjusted "
-                      "for plot purposes")
+        warnings.warn(
+            f"The model name '{in_name}' is not known "
+            "so the output name will not get adjusted "
+            "for plot purposes"
+        )
 
     return out_name
 
@@ -954,65 +1010,192 @@ def quantity_unit(
     return quantity, unit, label
 
 
-def field_bounds_ticks(field_range):
+@typechecked
+def field_bounds_ticks(
+    field_range: Tuple[str, str],
+    check_subclass: bool,
+) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """
+    Function for converting the specified field range into boundaries
+    and labels for the discrete colorbar that is plotted with a
+    color-magnitude or color-color diagram.
+
     Parameters
     ----------
-    field_range : tuple(str, str), None
-        Range of the discrete colorbar for the field dwarfs. The tuple
+    field_range : tuple(str, str)
+        Range of the discrete colorbar for the field objects. The tuple
         should contain the lower and upper value ('early M', 'late M',
-        'early L', 'late L', 'early T', 'late T', 'early Y). The full
-        range is used if set to None.
+        'early L', 'late L', 'early T', 'late T', 'early Y). Also
+        stellar spectral types can be specified.
+    check_subclass : bool
+        Set to ``True`` if the discrete colorbar should distinguish
+        early and late spectral types with different colors or set
+        to ``False`` if subclasses should not be distinguished.
 
     Returns
     -------
     np.ndarray
+        Array with the boundaries for the discrete colorbar.
     np.ndarray
-    list(str, )
+        Array with the midpoints for the discrete colorbar.
+    list(str)
+        List with the tick labels for the discrete colorbar.
     """
 
-    spectral_ranges = ["M0-M4", "M5-M9", "L0-L4", "L5-L9", "T0-T4", "T5-T9", "Y1-Y2"]
+    if check_subclass:
+        spectral_ranges = [
+            "O0-O4",
+            "O5-O9",
+            "B0-B4",
+            "B5-B9",
+            "A0-A4",
+            "A5-A9",
+            "F0-F4",
+            "F5-F9",
+            "G0-G4",
+            "G5-G9",
+            "K0-K4",
+            "K5-K9",
+            "M0-M4",
+            "M5-M9",
+            "L0-L4",
+            "L5-L9",
+            "T0-T4",
+            "T5-T9",
+            "Y1-Y2",
+        ]
 
-    if field_range is None:
-        index_start = 0
-        index_end = 7
+        if field_range[0] == "early O":
+            index_start = 0
+        elif field_range[0] == "late O":
+            index_start = 1
+        elif field_range[0] == "early B":
+            index_start = 2
+        elif field_range[0] == "late B":
+            index_start = 3
+        elif field_range[0] == "early A":
+            index_start = 4
+        elif field_range[0] == "late A":
+            index_start = 5
+        elif field_range[0] == "early F":
+            index_start = 6
+        elif field_range[0] == "late F":
+            index_start = 7
+        elif field_range[0] == "early G":
+            index_start = 8
+        elif field_range[0] == "late G":
+            index_start = 9
+        elif field_range[0] == "early K":
+            index_start = 10
+        elif field_range[0] == "late K":
+            index_start = 11
+        elif field_range[0] == "early M":
+            index_start = 12
+        elif field_range[0] == "late M":
+            index_start = 13
+        elif field_range[0] == "early L":
+            index_start = 14
+        elif field_range[0] == "late L":
+            index_start = 15
+        elif field_range[0] == "early T":
+            index_start = 16
+        elif field_range[0] == "late T":
+            index_start = 17
+        elif field_range[0] == "early Y":
+            index_start = 18
+
+        if field_range[1] == "early O":
+            index_end = 1
+        elif field_range[1] == "late O":
+            index_end = 2
+        elif field_range[1] == "early B":
+            index_end = 3
+        elif field_range[1] == "late B":
+            index_end = 4
+        elif field_range[1] == "early A":
+            index_end = 5
+        elif field_range[1] == "late A":
+            index_end = 6
+        elif field_range[1] == "early F":
+            index_end = 7
+        elif field_range[1] == "late F":
+            index_end = 8
+        elif field_range[1] == "early G":
+            index_end = 9
+        elif field_range[1] == "late G":
+            index_end = 10
+        elif field_range[1] == "early K":
+            index_end = 11
+        elif field_range[1] == "late K":
+            index_end = 12
+        elif field_range[1] == "early M":
+            index_end = 13
+        elif field_range[1] == "late M":
+            index_end = 14
+        elif field_range[1] == "early L":
+            index_end = 15
+        elif field_range[1] == "late L":
+            index_end = 16
+        elif field_range[1] == "early T":
+            index_end = 17
+        elif field_range[1] == "late T":
+            index_end = 18
+        elif field_range[1] == "early Y":
+            index_end = 19
 
     else:
-        if field_range[0] == "early M":
-            index_start = 0
-        elif field_range[0] == "late M":
-            index_start = 1
-        elif field_range[0] == "early L":
-            index_start = 2
-        elif field_range[0] == "late L":
-            index_start = 3
-        elif field_range[0] == "early T":
-            index_start = 4
-        elif field_range[0] == "late T":
-            index_start = 5
-        elif field_range[0] == "early Y":
-            index_start = 6
+        spectral_ranges = ["O", "B", "A", "F", "G", "K", "M", "L", "T", "Y"]
 
-        if field_range[1] == "early M":
+        if field_range[0] == "O":
+            index_start = 0
+        elif field_range[0] == "B":
+            index_start = 1
+        elif field_range[0] == "A":
+            index_start = 2
+        elif field_range[0] == "F":
+            index_start = 3
+        elif field_range[0] == "G":
+            index_start = 4
+        elif field_range[0] == "K":
+            index_start = 5
+        elif field_range[0] == "M":
+            index_start = 6
+        elif field_range[0] == "L":
+            index_start = 7
+        elif field_range[0] == "T":
+            index_start = 8
+        elif field_range[0] == "Y":
+            index_start = 9
+
+        if field_range[1] == "O":
             index_end = 1
-        elif field_range[1] == "late M":
+        elif field_range[1] == "B":
             index_end = 2
-        elif field_range[1] == "early L":
+        elif field_range[1] == "A":
             index_end = 3
-        elif field_range[1] == "late L":
+        elif field_range[1] == "F":
             index_end = 4
-        elif field_range[1] == "early T":
+        elif field_range[1] == "G":
             index_end = 5
-        elif field_range[1] == "late T":
+        elif field_range[1] == "K":
             index_end = 6
-        elif field_range[1] == "early Y":
+        elif field_range[1] == "M":
             index_end = 7
+        elif field_range[1] == "L":
+            index_end = 8
+        elif field_range[1] == "T":
+            index_end = 9
+        elif field_range[1] == "Y":
+            index_end = 10
 
     index_range = index_end - index_start + 1
 
     bounds = np.linspace(index_start, index_end, index_range)
     ticks = np.linspace(index_start + 0.5, index_end - 0.5, index_range - 1)
     labels = spectral_ranges[index_start:index_end]
+
+    ticks -= bounds[0]
+    bounds -= bounds[0]
 
     return bounds, ticks, labels
 
