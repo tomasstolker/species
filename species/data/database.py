@@ -7,6 +7,7 @@ import json
 import os
 import pathlib
 import sys
+
 # import urllib.error
 import warnings
 
@@ -17,6 +18,7 @@ import h5py
 import numpy as np
 
 from astropy.io import fits
+
 # from astroquery.simbad import Simbad
 from scipy.integrate import simps
 from tqdm.auto import tqdm
@@ -563,10 +565,12 @@ class Database:
         """
 
         if model == "phoenix":
-            warnings.warn("Please set model='manual' instead of "
-                          "model='phoenix' when using the filename "
-                          "parameter for adding isochrone data.",
-                          DeprecationWarning)
+            warnings.warn(
+                "Please set model='manual' instead of "
+                "model='phoenix' when using the filename "
+                "parameter for adding isochrone data.",
+                DeprecationWarning,
+            )
 
         h5_file = h5py.File(self.database, "a")
 
@@ -651,11 +655,13 @@ class Database:
             isochrones.add_sonora(h5_file, self.input_path)
 
         else:
-            raise ValueError(f"The evolutionary model \'{model}\' is "
-                             "not supported. Please choose another "
-                             "argument for \'model\'. Have a look "
-                             "at the documentation of add_isochrones "
-                             "for details on the supported models.")
+            raise ValueError(
+                f"The evolutionary model '{model}' is "
+                "not supported. Please choose another "
+                "argument for 'model'. Have a look "
+                "at the documentation of add_isochrones "
+                "for details on the supported models."
+            )
 
         h5_file.close()
 
@@ -793,7 +799,13 @@ class Database:
                 h5_file.create_group("models")
 
             custom_model.add_custom_model_grid(
-                model, data_path, parameters, h5_file, wavel_range, teff_range, spec_res,
+                model,
+                data_path,
+                parameters,
+                h5_file,
+                wavel_range,
+                teff_range,
+                spec_res,
             )
 
     @typechecked
@@ -980,7 +992,6 @@ class Database:
                     dered_phot[mag_item] = 1.0
 
                 if isinstance(app_mag[mag_item], tuple):
-
                     try:
                         synphot = photometry.SyntheticPhotometry(mag_item)
 
@@ -1007,7 +1018,6 @@ class Database:
                     error_list = []
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
-
                         try:
                             synphot = photometry.SyntheticPhotometry(mag_item)
 
@@ -1406,7 +1416,6 @@ class Database:
                 print("   - Spectral resolution:")
 
             for key, value in spectrum.items():
-
                 h5_file.create_dataset(
                     f"objects/{object_name}/spectrum/{key}/spectrum",
                     data=read_spec[key],
@@ -2179,10 +2188,8 @@ class Database:
         # samples = samples[samples[:, 2] > 100., ]
 
         if samples.ndim == 2:
-            ran_index = np.random.randint(samples.shape[0], size=random)
-            samples = samples[
-                ran_index,
-            ]
+            rand_index = np.random.randint(samples.shape[0], size=random)
+            samples = samples[rand_index, ]
 
         elif samples.ndim == 3:
             if burnin > samples.shape[0]:
@@ -2521,7 +2528,6 @@ class Database:
             distance = None
 
         if inc_phot:
-
             magnitude = {}
             flux = {}
             mean_wavel = {}
@@ -2541,7 +2547,6 @@ class Database:
             phot_filters = list(magnitude.keys())
 
         else:
-
             magnitude = None
             flux = None
             phot_filters = None
@@ -2554,7 +2559,6 @@ class Database:
                 data_group = f"objects/{object_name}/spectrum/{item}"
 
                 if isinstance(inc_spec, bool) or item in inc_spec:
-
                     if f"{data_group}/covariance" not in h5_file:
                         spectrum[item] = (
                             np.asarray(h5_file[f"{data_group}/spectrum"]),
@@ -2862,7 +2866,9 @@ class Database:
                 else:
                     pt_smooth = 0.0
 
-                knot_press = np.logspace(np.log10(press[0]), np.log10(press[-1]), temp_nodes)
+                knot_press = np.logspace(
+                    np.log10(press[0]), np.log10(press[-1]), temp_nodes
+                )
 
                 knot_temp = []
                 for k in range(temp_nodes):
@@ -2933,7 +2939,6 @@ class Database:
         """
 
         with h5py.File(self.database, "a") as h5_file:
-
             if "results" not in h5_file:
                 h5_file.create_group("results")
 
@@ -2988,6 +2993,10 @@ class Database:
         extra_scaling: Optional[np.ndarray],
     ) -> None:
         """
+        Function for adding results obtained with
+        :class:`~species.analysis.compare_spectra.CompareSpectra`
+        to the HDF5 database.
+
         Parameters
         ----------
         tag : str
@@ -2995,24 +3004,29 @@ class Database:
         goodness_of_fit : np.ndarray
             Array with the goodness-of-fit values.
         flux_scaling : np.ndarray
-            Array with the best-fit scaling values to match the model spectra with the data.
+            Array with the best-fit scaling values to match the model
+            spectra with the data.
         model_param : list(str)
             List with the names of the model parameters.
         coord_points : list(np.ndarray)
-            List with 1D arrays of the model grid points, in the same order as ``model_param``.
+            List with 1D arrays of the model grid points, in the same
+            order as ``model_param``.
         object_name : str
             Object name as stored in the database with
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         spec_name : list(str)
-            List with spectrum names that are stored at the object data of ``object_name``.
+            List with spectrum names that are stored at the object
+            data of ``object_name``.
         model : str
             Atmospheric model grid that is used for the comparison.
         scale_spec : list(str)
-            List with spectrum names to which an additional scaling has been applied.
+            List with spectrum names to which an additional scaling
+            has been applied.
         extra_scaling : np.ndarray. None
-            Array with extra scalings that have been applied to the spectra of ``scale_spec``.
-            The argument can be set to ``None`` if no extra scalings have been applied.
+            Array with extra scalings that have been applied to the
+            spectra of ``scale_spec``. The argument can be set to
+            ``None`` if no extra scalings have been applied.
 
         Returns
         -------
@@ -3024,7 +3038,6 @@ class Database:
         parallax = read_obj.get_parallax()[0]  # (mas)
 
         with h5py.File(self.database, "a") as h5_file:
-
             if "results" not in h5_file:
                 h5_file.create_group("results")
 
@@ -3082,7 +3095,7 @@ class Database:
                 dset.attrs[f"best_param{i}"] = best_param
                 print(f"   - {item} = {best_param}")
 
-            scaling = flux_scaling[best_index[0], best_index[1], best_index[2]]
+            scaling = flux_scaling[best_index]
 
             radius = np.sqrt(scaling * (1e3 * constants.PARSEC / parallax) ** 2)  # (m)
             radius /= constants.R_JUP  # (Rjup)
@@ -3094,10 +3107,8 @@ class Database:
             print(f"   - Scaling = {scaling:.2e}")
 
             for i, item in enumerate(scale_spec):
-                scale_tmp = (
-                    scaling
-                    / extra_scaling[best_index[0], best_index[1], best_index[2], i]
-                )
+                scaling_idx = list(best_index).append(i)
+                scale_tmp = scaling / extra_scaling[tuple(scaling_idx)]
                 print(f"   - {item} scaling = {scale_tmp:.2e}")
                 dset.attrs[f"scaling_{item}"] = scale_tmp
 
@@ -3162,12 +3173,9 @@ class Database:
                 f"of the '{output_folder}' folder."
             )
 
-            samples = samples[
-                np.newaxis,
-            ]
+            samples = samples[np.newaxis, ]
 
         with h5py.File(self.database, "a") as h5_file:
-
             if "results" not in h5_file:
                 h5_file.create_group("results")
 
@@ -3278,9 +3286,13 @@ class Database:
 
                     print("Importing chemistry module...", end="", flush=True)
                     if "poor_mans_nonequ_chem" in sys.modules:
-                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                            interpol_abundances,
+                        )
                     else:
-                        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+                        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                            interpol_abundances,
+                        )
                     print(" [DONE]")
 
                     rt_object = Radtrans(
@@ -3308,9 +3320,7 @@ class Database:
                 for j in tqdm(range(samples.shape[0]), desc=desc):
                     sample_dict = retrieval_util.list_to_dict(
                         parameters,
-                        samples[
-                            j,
-                        ],
+                        samples[j, ],
                     )
 
                     if radtrans["pt_profile"] == "molliere":
@@ -3408,9 +3418,7 @@ class Database:
                 # Convert list of parameters and samples into dictionary
                 sample_dict = retrieval_util.list_to_dict(
                     parameters,
-                    samples[
-                        i,
-                    ],
+                    samples[i, ],
                 )
 
                 # Recalculate the P-T profile from the sampled parameters
@@ -3998,7 +4006,9 @@ class Database:
             )
 
         else:
-            knot_press = np.logspace(np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes)
+            knot_press = np.logspace(
+                np.log10(pressure[0]), np.log10(pressure[-1]), temp_nodes
+            )
 
             knot_temp = []
             for i in range(temp_nodes):
@@ -4018,7 +4028,9 @@ class Database:
         if "poor_mans_nonequ_chem" in sys.modules:
             from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                interpol_abundances,
+            )
 
         # Interpolate the abundances, following chemical equilibrium
         abund_in = interpol_abundances(

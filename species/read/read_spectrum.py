@@ -86,10 +86,7 @@ class ReadSpectrum:
 
         h5_file = h5py.File(self.database, "r")
 
-        try:
-            h5_file[f"spectra/{self.spec_library}"]
-
-        except KeyError:
+        if self.spec_library not in h5_file[f"spectra"]:
             h5_file.close()
             species_db = database.Database()
             species_db.add_spectra(self.spec_library, sptypes)
@@ -112,13 +109,11 @@ class ReadSpectrum:
             error = dset[:, 2]  # (W m-2 um-1)
 
             if exclude_nan:
-                indices = np.isnan(flux)
-                indices = np.logical_not(indices)
-                indices = np.where(indices)[0]
+                nan_index = np.isnan(flux)
 
-                wavelength = wavelength[indices]
-                flux = flux[indices]
-                error = error[indices]
+                wavelength = wavelength[~nan_index]
+                flux = flux[~nan_index]
+                error = error[~nan_index]
 
             if self.wavel_range is None:
                 wl_index = np.arange(0, len(wavelength), 1)
@@ -197,8 +192,6 @@ class ReadSpectrum:
         spec_box.spec_library = self.spec_library
 
         if sptypes is not None:
-            indices = []
-
             spec_box.wavelength = []
             spec_box.flux = []
             spec_box.error = []
@@ -292,14 +285,14 @@ class ReadSpectrum:
     def get_magnitude(self, sptypes: List[str] = None) -> box.PhotometryBox:
         """
         Function for calculating the apparent magnitude for the
-        ``filter_name``.
+        specified ``filter_name``.
 
         Parameters
         ----------
         sptypes : list(str)
-            Spectral types to select from a library. The spectral types
-            should be indicated with two characters (e.g. 'M5', 'L2',
-            'T3'). All spectra are selected if set to ``None``.
+            Spectral types to select from the library. The spectral
+            types should be indicated with two characters (e.g. 'M5',
+            'L2', 'T3'). All spectra are selected if set to ``None``.
 
         Returns
         -------

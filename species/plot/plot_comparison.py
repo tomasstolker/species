@@ -1,5 +1,7 @@
 """
-Module with a function for plotting results from the empirical spectral analysis.
+Module with functions for plotting results from a spectral
+analysis that compares data with a library of empirical
+spectra or a grid of model spectra
 """
 
 import configparser
@@ -18,7 +20,7 @@ from typeguard import typechecked
 
 from species.core import constants
 from species.read import read_object
-from species.util import dust_util, read_util
+from species.util import dust_util, plot_util, read_util
 
 
 @typechecked
@@ -32,15 +34,20 @@ def plot_statistic(
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
-    Function for plotting the goodness-of-fit statistic of the empirical spectral comparison.
+    Function for plotting the goodness-of-fit statistic from a
+    comparison with an empirical spectral library with
+    :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+    that enables a determination of the spectral type
 
     Parameters
     ----------
     tag : str
         Database tag where the results from the empirical comparison with
-        :class:`~species.analysis.empirical.CompareSpectra.spectral_type` are stored.
+        :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+        are stored.
     xlim : tuple(float, float)
-        Limits of the spectral type axis in numbers (i.e. 0=M0, 5=M5, 10=L0, etc.).
+        Limits of the spectral type axis in numbers (i.e.
+        0=M0, 5=M5, 10=L0, etc.).
     ylim : tuple(float, float)
         Limits of the goodness-of-fit axis.
     title : str
@@ -451,30 +458,38 @@ def plot_grid_statistic(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
+    nlevels_main: int = 20,
+    nlevels_extra: int = 10,
 ) -> mpl.figure.Figure:
     """
-    Function for plotting the results from the empirical spectrum comparison.
+    Function for plotting the results from the comparison with
+    a grid of empirical or model spectra
 
     Parameters
     ----------
     tag : str
-        Database tag where the results from the empirical comparison with
-        :class:`~species.analysis.empirical.CompareSpectra.spectral_type` are stored.
+        Database tag where the results from the comparison with
+        :class:`~species.analysis.empirical.CompareSpectra` are stored.
     upsample : bool
-        Upsample the goodness-of-fit grid to a higher resolution for a smoother appearance.
-    xlim : tuple(float, float)
-        Limits of the spectral type axis.
-    ylim : tuple(float, float)
-        Limits of the goodness-of-fit axis.
-    title : str
-        Plot title.
-    offset : tuple(float, float)
-        Offset for the label of the x- and y-axis.
-    figsize : tuple(float, float)
+        Upsample the goodness-of-fit grid to a higher resolution
+        for a smoother appearance.
+    xlim : tuple(float, float), None
+        Limits of the x-axis (spectral type or effective temperature).
+    ylim : tuple(float, float), None
+        Limits of the y-axis.
+    title : str, None
+        Title that is shown above the plot.
+    offset : tuple(float, float), None
+        Offset for the label for the x- and y-axis.
+    figsize : tuple(float, float), None
         Figure size.
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
+    nlevels_main : int
+        Number of contour levels for the main plot.
+    nlevels_extra : int
+        Number of contour levels for the optional extra parameter.
 
     Returns
     -------
@@ -526,13 +541,14 @@ def plot_grid_statistic(
         )
 
     coord_x = coord_points[0]
+    coord_y = None
+    param_y = None
 
-    if len(coord_points[1]) > 1:
-        coord_y = coord_points[1]
-    elif len(coord_points[2]) > 1:
-        coord_y = coord_points[2]
-    else:
-        coord_y = None
+    for i, item in enumerate(coord_points[1:]):
+        if len(item) > 1:
+            coord_y = item
+            param_y = model_param[i+1]
+            break
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -588,16 +604,25 @@ def plot_grid_statistic(
     ax.xaxis.set_minor_locator(AutoMinorLocator(5))
     ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-    ax.set_xlabel(r"T$_\mathregular{eff}$ (K)", fontsize=13.0)
+    ax.set_xlabel(r"$T_\mathregular{eff}$ (K)", fontsize=13.0)
 
-    if coord_y is None:
-        ax.set_ylabel(r"$\Delta\mathregular{log}\,\mathregular{G}$", fontsize=13.0)
+    if param_y is None:
+        ax.set_ylabel(r"$\Delta\mathregular{log}\,G$", fontsize=13.0)
 
-    elif len(coord_points[1]) > 1:
-        ax.set_ylabel(r"$\mathregular{log}\,\mathregular{g}$", fontsize=13.0)
-
-    elif len(coord_points[2]) > 1:
+    elif param_y == "ism_ext":
         ax.set_ylabel(r"$\mathregular{A}_\mathregular{V}$", fontsize=13.0)
+
+    elif param_y == "logg":
+        ax.set_ylabel(r"$\mathregular{log}\,g$", fontsize=13.0)
+
+    elif param_y == "feh":
+        ax.set_ylabel("[Fe/H]", fontsize=13.0)
+
+    elif param_y == "c_o_ratio":
+        ax.set_ylabel("C/O", fontsize=13.0)
+
+    elif param_y == "fsed":
+        ax.set_ylabel(r"$f_\mathregular{sed}$", fontsize=13.0)
 
     if xlim is not None:
         ax.set_xlim(xlim[0], xlim[1])
@@ -616,28 +641,63 @@ def plot_grid_statistic(
     if title is not None:
         ax.set_title(title, y=1.02, fontsize=14.0)
 
-    # Sum/collapse over log(g) if it contains a single value
-    if len(coord_points[1]) == 1:
-        goodness_fit = np.sum(goodness_fit, axis=1)
+    # Sum/collapse over parameters with a single value
+    for i, item in enumerate(coord_points):
+        if len(item) == 1:
+            goodness_fit = np.sum(goodness_fit, axis=i)
 
     # Indices of the best-fit model
     best_index = np.unravel_index(goodness_fit.argmin(), goodness_fit.shape)
 
-    # Make Teff the x axis and log(g) the y axis
-    goodness_fit = np.transpose(goodness_fit)
+    extra_param = None
 
-    if len(coord_points[1]) > 1 and len(coord_points[2]) > 1:
-        # Indices with the minimum G_k for the tested A_V values
-        indices = np.argmin(goodness_fit, axis=0)
+    if len(model_param) > 2:
+        n_collapse = len(coord_points) - 3
+
+        if "ism_ext" in model_param:
+            extra_param = "ism_ext"
+            extra_idx = model_param.index("ism_ext")
+
+            if extra_idx != 2:
+                goodness_fit = np.swapaxes(goodness_fit, extra_idx, 2)
+                coord_points = [coord_points[0], coord_points[1], coord_points[extra_idx]]
+                extra_idx = 2
+
+        else:
+            extra_param = model_param[2]
+            extra_idx = 2
+
+        if len(model_param) > 3:
+            # Select minimum G_k for tested A_V values
+            axis = []
+            for i in range(n_collapse):
+                axis.append(3+i)
+
+            goodness_fit = np.amin(goodness_fit, axis=tuple(axis))
+
+        # Indices with the minimum G_k for the tested
+        # values of A_V or the 3rd axis otherwise
+        indices = np.argmin(goodness_fit, axis=extra_idx)
 
         # Select minimum G_k for tested A_V values
-        goodness_fit = np.amin(goodness_fit, axis=0)
+        # or the values of the 3rd otherwise
+        goodness_fit = np.amin(goodness_fit, axis=extra_idx)
 
         extra_map = np.zeros(goodness_fit.shape)
 
         for i in range(extra_map.shape[0]):
             for j in range(extra_map.shape[1]):
-                extra_map[i, j] = coord_points[2][indices[i, j]]
+                extra_map[i, j] = coord_points[extra_idx][indices[i, j]]
+
+    else:
+        extra_map = None
+
+    # Transpose for plot so make Teff the x axis
+
+    goodness_fit = np.transpose(goodness_fit)
+
+    if extra_map is not None:
+        extra_map = np.transpose(extra_map)
 
     if coord_y is not None:
         if upsample:
@@ -665,7 +725,7 @@ def plot_grid_statistic(
         )
 
     else:
-        c = ax.contourf(x_grid, y_grid, goodness_fit, levels=20)
+        c = ax.contourf(x_grid, y_grid, goodness_fit, levels=nlevels_main)
 
         cb = mpl.colorbar.Colorbar(
             ax=ax_cb,
@@ -702,13 +762,13 @@ def plot_grid_statistic(
             fontsize=13.0,
         )
 
-        if len(coord_points[1]) > 1 and len(coord_points[2]) > 1:
+        if extra_map is not None:
             if upsample:
                 extra_interp = RegularGridInterpolator((coord_y, coord_x), extra_map)
                 extra_map = extra_interp((y_grid, x_grid))
 
                 cs = ax.contour(
-                    x_grid, y_grid, extra_map, levels=10, colors="white", linewidths=0.7
+                    x_grid, y_grid, extra_map, levels=nlevels_extra, colors="white", linewidths=0.7
                 )
 
             else:
@@ -716,7 +776,7 @@ def plot_grid_statistic(
                     coord_x,
                     coord_y,
                     extra_map,
-                    levels=10,
+                    levels=nlevels_extra,
                     colors="white",
                     linewidths=0.7,
                 )
@@ -729,7 +789,7 @@ def plot_grid_statistic(
         # if extra_scaling is not None and len(coord_points[2]) > 1:
         #     ratio = np.transpose(flux_scaling[:, 0, :])/np.transpose(extra_scaling[:, 0, :, 0])
         #
-        #     cs = ax.contour(coord_x, coord_y, ratio, levels=10, colors='white',
+        #     cs = ax.contour(coord_x, coord_y, ratio, levels=nlevels_extra, colors='white',
         #                     linestyles='-', linewidths=0.7)
         #
         #     ax.clabel(cs, cs.levels, inline=True, fontsize=8, fmt='%1.1f')
@@ -753,6 +813,11 @@ def plot_grid_statistic(
         #
         # ax.annotate(par_text, (best_param[0]+50., best_param[1]), ha='left', va='center',
         #             color='white', fontsize=12.)
+
+    if extra_param is not None:
+        extra_label = plot_util.update_labels([extra_param])[0]
+        ax.plot([], [], ls='-', lw=1.2, color='white', label=extra_label)
+        ax.legend(loc='best', frameon=False, labelcolor='linecolor', fontsize=12.)
 
     if output is None:
         plt.show()

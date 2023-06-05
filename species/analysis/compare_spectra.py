@@ -33,7 +33,6 @@ class CompareSpectra:
         self,
         object_name: str,
         spec_name: Union[str, List[str]],
-        spec_library: Optional[str] = None,
     ) -> None:
         """
         Parameters
@@ -46,9 +45,6 @@ class CompareSpectra:
             Name of the spectrum or list with spectrum names that
             are stored at the object data of ``object_name``. The
             argument can be either a string or a list of strings.
-        spec_library : str, None
-            DEPRECATED: Name of the spectral library
-            ('irtf', 'spex', or 'kesseli+2017).
 
         Returns
         -------
@@ -61,14 +57,6 @@ class CompareSpectra:
 
         if isinstance(self.spec_name, str):
             self.spec_name = [self.spec_name]
-
-        if spec_library is not None:
-            warnings.warn(
-                "The 'spec_library' parameter is no longer used "
-                "by the constructor of CompareSpectra and will "
-                "be removed in a future release.",
-                DeprecationWarning,
-            )
 
         self.object = read_object.ReadObject(object_name)
 
@@ -382,7 +370,7 @@ class CompareSpectra:
         self,
         tag: str,
         model: str,
-        av_points: Optional[Union[List[float], np.array]] = None,
+        av_points: Optional[Union[List[float], np.ndarray]] = None,
         fix_logg: Optional[float] = None,
         scale_spec: Optional[List[str]] = None,
         weights: bool = True,
@@ -392,11 +380,7 @@ class CompareSpectra:
         Method for finding the best fitting spectrum from a grid of
         atmospheric model spectra by evaluating the goodness-of-fit
         statistic from `Cushing et al. (2008) <https://ui.adsabs.
-        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_. Currently,
-        this method only supports model grids with only
-        :math:`T_\\mathrm{eff}` and :math:`\\log(g)` as free parameters
-        (e.g. BT-Settl). Please create an issue on Github if support
-        for models with more than two parameters is required.
+        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_.
 
         Parameters
         ----------
@@ -420,8 +404,10 @@ class CompareSpectra:
             :math:`\\log(g)` can not be accurately determined when
             comparing the spectra over a broad wavelength range.
         scale_spec : list(str), None
-            List with names of observed spectra to which a flux scaling
-            is applied to best match the spectral templates.
+            List with names of observed spectra to which an additional
+            flux scaling is applied to best match the spectral
+            templates. This can be used to account for a difference in
+            absolute calibration between spectra.
         weights : bool
             Apply a weighting based on the widths of the
             wavelengths bins.
@@ -464,16 +450,10 @@ class CompareSpectra:
             w_i[phot_item] = read_filt.filter_fwhm()
             phot_wavel[phot_item] = read_filt.mean_wavelength()
 
-        if av_points is None:
-            av_points = np.array([0.0])
+        model_reader = read_model.ReadModel(model)
 
-        elif isinstance(av_points, list):
-            av_points = np.array(av_points)
-
-        readmodel = read_model.ReadModel(model)
-
-        model_param = readmodel.get_parameters()
-        grid_points = readmodel.get_points()
+        model_param = model_reader.get_parameters()
+        grid_points = model_reader.get_points()
 
         coord_points = []
         for key, value in grid_points.items():
@@ -497,9 +477,13 @@ class CompareSpectra:
             coord_points.append(av_points)
 
         grid_shape = []
-
         for item in coord_points:
             grid_shape.append(len(item))
+
+        for _ in range(len(coord_points), 6):
+            model_param.append(None)
+            coord_points.append([None])
+            grid_shape.append(1)
 
         fit_stat = np.zeros(grid_shape)
         flux_scaling = np.zeros(grid_shape)
@@ -511,120 +495,194 @@ class CompareSpectra:
             grid_shape.append(len(scale_spec))
             extra_scaling = np.zeros(grid_shape)
 
+        n_iter = 1
+        for item in coord_points:
+            if len(item) > 0:
+                n_iter *= len(item)
+
         count = 1
 
-        if len(coord_points) == 3:
-            n_iter = len(coord_points[0]) * len(coord_points[1]) * len(coord_points[2])
-
-            for i, item_i in enumerate(coord_points[0]):
-                for j, item_j in enumerate(coord_points[1]):
-                    for k, item_k in enumerate(coord_points[2]):
-                        print(
-                            f"\rProcessing model spectrum {count}/{n_iter}...", end=""
-                        )
-
-                        model_spec = {}
-                        model_phot = {}
-
-                        for spec_item in self.spec_name:
-                            obj_spec = self.object.get_spectrum()[spec_item][0]
-                            obj_res = self.object.get_spectrum()[spec_item][3]
-
-                            param_dict = {
-                                model_param[0]: item_i,
-                                model_param[1]: item_j,
-                                model_param[2]: item_k,
-                            }
-
-                            wavel_range = (0.9 * obj_spec[0, 0], 1.1 * obj_spec[-1, 0])
-                            readmodel = read_model.ReadModel(
-                                model, wavel_range=wavel_range
-                            )
-
-                            model_box = readmodel.get_data(
-                                param_dict,
-                                spec_res=obj_res,
-                                wavel_resample=obj_spec[:, 0],
-                            )
-
-                            model_spec[spec_item] = model_box.flux
-
-                        for phot_item in inc_phot:
-                            readmodel = read_model.ReadModel(
-                                model, filter_name=phot_item
-                            )
-
-                            model_phot[phot_item] = readmodel.get_flux(param_dict)[0]
-
-                        def g_fit(x, scaling):
-                            g_stat = 0.0
-
-                            for spec_item in self.spec_name:
-                                obs_spec = self.object.get_spectrum()[spec_item][0]
-
-                                if spec_item in scale_spec:
-                                    spec_idx = scale_spec.index(spec_item)
-
-                                    c_numer = (
-                                        w_i[spec_item]
-                                        * obs_spec[:, 1]
-                                        * model_spec[spec_item]
-                                        / obs_spec[:, 2] ** 2
-                                    )
-
-                                    c_denom = (
-                                        w_i[spec_item]
-                                        * model_spec[spec_item] ** 2
-                                        / obs_spec[:, 2] ** 2
-                                    )
-
-                                    extra_scaling[i, j, k, spec_idx] = np.sum(
-                                        c_numer
-                                    ) / np.sum(c_denom)
-
-                                    g_stat += np.sum(
-                                        w_i[spec_item]
-                                        * (
-                                            obs_spec[:, 1]
-                                            - extra_scaling[i, j, k, spec_idx]
-                                            * model_spec[spec_item]
-                                        )
-                                        ** 2
-                                        / obs_spec[:, 2] ** 2
-                                    )
-
-                                else:
-                                    g_stat += np.sum(
-                                        w_i[spec_item]
-                                        * (
-                                            obs_spec[:, 1]
-                                            - scaling * model_spec[spec_item]
-                                        )
-                                        ** 2
-                                        / obs_spec[:, 2] ** 2
-                                    )
-
-                            for phot_item in inc_phot:
-                                obs_phot = self.object.get_photometry(phot_item)
-
-                                g_stat += (
-                                    w_i[phot_item]
-                                    * (obs_phot[2] - scaling * model_phot[phot_item])
-                                    ** 2
-                                    / obs_phot[3] ** 2
+        for coord_0_idx, coord_0_item in enumerate(coord_points[0]):
+            for coord_1_idx, coord_1_item in enumerate(coord_points[1]):
+                for coord_2_idx, coord_2_item in enumerate(coord_points[2]):
+                    for coord_3_idx, coord_3_item in enumerate(coord_points[3]):
+                        for coord_4_idx, coord_4_item in enumerate(coord_points[4]):
+                            for coord_5_idx, coord_5_item in enumerate(coord_points[5]):
+                                print(
+                                    f"\rProcessing model spectrum {count}/{n_iter}...",
+                                    end="",
                                 )
 
-                            return g_stat
+                                model_spec = {}
+                                model_phot = {}
 
-                        popt, _ = curve_fit(g_fit, xdata=[0.0], ydata=[0.0])
-                        scaling = popt[0]
+                                param_dict = {}
 
-                        flux_scaling[i, j, k] = scaling
-                        fit_stat[i, j, k] = g_fit(0.0, scaling)
+                                if model_param[0] is not None:
+                                    param_dict[model_param[0]] = coord_0_item
 
-                        count += 1
+                                if model_param[1] is not None:
+                                    param_dict[model_param[1]] = coord_1_item
+
+                                if model_param[2] is not None:
+                                    param_dict[model_param[2]] = coord_2_item
+
+                                if model_param[3] is not None:
+                                    param_dict[model_param[3]] = coord_3_item
+
+                                if model_param[4] is not None:
+                                    param_dict[model_param[4]] = coord_4_item
+
+                                if model_param[5] is not None:
+                                    param_dict[model_param[5]] = coord_5_item
+
+                                for spec_item in self.spec_name:
+                                    obj_spec = self.object.get_spectrum()[spec_item][0]
+                                    obj_res = self.object.get_spectrum()[spec_item][3]
+
+                                    wavel_range = (
+                                        0.9 * obj_spec[0, 0],
+                                        1.1 * obj_spec[-1, 0],
+                                    )
+
+                                    model_reader = read_model.ReadModel(
+                                        model, wavel_range=wavel_range
+                                    )
+
+                                    model_box = model_reader.get_data(
+                                        param_dict,
+                                        spec_res=obj_res,
+                                        wavel_resample=obj_spec[:, 0],
+                                    )
+
+                                    model_spec[spec_item] = model_box.flux
+
+                                for phot_item in inc_phot:
+                                    model_reader = read_model.ReadModel(
+                                        model, filter_name=phot_item
+                                    )
+
+                                    model_phot[phot_item] = model_reader.get_flux(
+                                        param_dict
+                                    )[0]
+
+                                def g_fit(x, scaling):
+                                    g_stat = 0.0
+
+                                    for spec_item in self.spec_name:
+                                        obs_spec = self.object.get_spectrum()[
+                                            spec_item
+                                        ][0]
+
+                                        if spec_item in scale_spec:
+                                            spec_idx = scale_spec.index(spec_item)
+
+                                            c_numer = (
+                                                w_i[spec_item]
+                                                * obs_spec[:, 1]
+                                                * model_spec[spec_item]
+                                                / obs_spec[:, 2] ** 2
+                                            )
+
+                                            c_denom = (
+                                                w_i[spec_item]
+                                                * model_spec[spec_item] ** 2
+                                                / obs_spec[:, 2] ** 2
+                                            )
+
+                                            extra_scaling[
+                                                coord_0_idx,
+                                                coord_1_idx,
+                                                coord_2_idx,
+                                                coord_3_idx,
+                                                coord_4_idx,
+                                                coord_5_idx,
+                                                spec_idx,
+                                            ] = np.sum(c_numer) / np.sum(c_denom)
+
+                                            g_stat += np.sum(
+                                                w_i[spec_item]
+                                                * (
+                                                    obs_spec[:, 1]
+                                                    - extra_scaling[
+                                                        coord_0_idx,
+                                                        coord_1_idx,
+                                                        coord_2_idx,
+                                                        coord_3_idx,
+                                                        coord_4_idx,
+                                                        coord_5_idx,
+                                                        spec_idx,
+                                                    ]
+                                                    * model_spec[spec_item]
+                                                )
+                                                ** 2
+                                                / obs_spec[:, 2] ** 2
+                                            )
+
+                                        else:
+                                            g_stat += np.sum(
+                                                w_i[spec_item]
+                                                * (
+                                                    obs_spec[:, 1]
+                                                    - scaling * model_spec[spec_item]
+                                                )
+                                                ** 2
+                                                / obs_spec[:, 2] ** 2
+                                            )
+
+                                    for phot_item in inc_phot:
+                                        obs_phot = self.object.get_photometry(phot_item)
+
+                                        g_stat += (
+                                            w_i[phot_item]
+                                            * (
+                                                obs_phot[2]
+                                                - scaling * model_phot[phot_item]
+                                            )
+                                            ** 2
+                                            / obs_phot[3] ** 2
+                                        )
+
+                                    return g_stat
+
+                                popt, _ = curve_fit(g_fit, xdata=[0.0], ydata=[0.0])
+                                scaling = popt[0]
+
+                                flux_scaling[
+                                    coord_0_idx,
+                                    coord_1_idx,
+                                    coord_2_idx,
+                                    coord_3_idx,
+                                    coord_4_idx,
+                                    coord_5_idx,
+                                ] = scaling
+                                fit_stat[
+                                    coord_0_idx,
+                                    coord_1_idx,
+                                    coord_2_idx,
+                                    coord_3_idx,
+                                    coord_4_idx,
+                                    coord_5_idx,
+                                ] = g_fit(0.0, scaling)
+
+                                count += 1
 
         print(" [DONE]")
+
+        for param_idx, param_item in enumerate(model_param):
+            if param_item is None:
+                model_param = model_param[:param_idx]
+                coord_points = coord_points[:param_idx]
+                grid_shape = grid_shape[:param_idx]
+                break
+
+        for dim_idx in range(fit_stat.ndim, 0, -1):
+            if dim_idx > len(model_param):
+                fit_stat = fit_stat[..., 0]
+                flux_scaling = flux_scaling[..., 0]
+
+                if extra_scaling is not None:
+                    extra_scaling = extra_scaling[..., 0, :]
 
         species_db = database.Database()
 

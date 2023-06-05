@@ -978,7 +978,7 @@ class FitModel:
     @typechecked
     def lnlike_func(
         self, params, prior: Optional[Dict[str, Tuple[float, float]]]
-    ) -> np.float64:
+    ) -> Union[np.float64, float]:
         """
         Function for calculating the log-likelihood for the sampled
         parameter cube.
