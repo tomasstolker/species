@@ -792,7 +792,7 @@ def plot_color_magnitude(
                     "color": "black",
                     "mfc": "white",
                     "mec": "black",
-                    "label": "Direct imaging",
+                    "label": "Companions",
                 }
 
                 if (
@@ -1666,7 +1666,7 @@ def plot_color_color(
                     "color": "black",
                     "mfc": "white",
                     "mec": "black",
-                    "label": "Direct imaging",
+                    "label": "Companions",
                 }
 
             ax1.errorbar(color1, color2, xerr=error1, yerr=error2, zorder=3, **kwargs)
