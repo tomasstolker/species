@@ -2323,5 +2323,51 @@
             "Gaia Early Data Release 3",
             "Janson et al. 2021"
         ]
+    },
+    "VHS 1256 B": {
+        "simbad": "SIPS J1256-1257",
+        "parallax": [
+            47.2733,
+            0.4731
+        ],
+        "app_mag": {
+            "2MASS/2MASS.J": [
+                16.662,
+                0.287
+            ],
+            "2MASS/2MASS.H": [
+                15.595,
+                0.209
+            ],
+            "2MASS/2MASS.Ks": [
+                14.568,
+                0.121
+            ],
+            "WISE/WISE.W1": [
+                13.6,
+                0.5
+            ],
+            "WISE/WISE.W2": [
+                12.8,
+                0.5
+            ]
+        },
+        "semi_major": [
+            150.0,
+            150.0
+        ],
+        "mass_star": [
+            0.07,
+            0.02
+        ],
+        "mass_companion": [
+            11.2,
+            10.0
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Gauza et al. 2015"
+        ]
     }
 }

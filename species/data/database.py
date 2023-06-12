@@ -1271,17 +1271,17 @@ class Database:
 
                     read_spec[key] = read_spec[key].transpose()
 
-                nan_index = np.isnan(read_spec[key][:, 1])
+                nan_idx = np.isnan(read_spec[key][:, 1])
 
                 # Add NaN booleans to dictionary for adjusting
                 # the covariance matrix later on
-                spec_nan[key] = nan_index
+                spec_nan[key] = nan_idx
 
-                if sum(nan_index) != 0:
-                    read_spec[key] = read_spec[key][~nan_index, :]
+                if np.sum(nan_idx) != 0:
+                    read_spec[key] = read_spec[key][~nan_idx, :]
 
                     warnings.warn(
-                        f"Found {sum(nan_index)} fluxes with NaN in "
+                        f"Found {np.sum(nan_idx)} fluxes with NaN in "
                         f"the data of {key}. Removing the spectral "
                         f"fluxes that contain a NaN."
                     )
@@ -1566,13 +1566,13 @@ class Database:
             else:
                 data = np.loadtxt(filename)
 
-        nan_index = np.isnan(data[:, 1])
+        nan_idx = np.isnan(data[:, 1])
 
-        if sum(nan_index) != 0:
-            data = data[~nan_index, :]
+        if np.sum(nan_idx) != 0:
+            data = data[~nan_idx, :]
 
             warnings.warn(
-                f"Found {sum(nan_index)} fluxes with NaN in "
+                f"Found {np.sum(nan_idx)} fluxes with NaN in "
                 f"the data of {filename}. Removing the "
                 f"spectral fluxes that contain a NaN."
             )
@@ -1610,15 +1610,15 @@ class Database:
         else:
             error = np.repeat(0.0, wavelength.size)
 
-        # nan_index = np.isnan(flux)
+        # nan_idx = np.isnan(flux)
         #
-        # if sum(nan_index) != 0:
-        #     wavelength = wavelength[~nan_index]
-        #     flux = flux[~nan_index]
-        #     error = error[~nan_index]
+        # if np.sum(nan_idx) != 0:
+        #     wavelength = wavelength[~nan_idx]
+        #     flux = flux[~nan_idx]
+        #     error = error[~nan_idx]
         #
         #     warnings.warn(
-        #         f"Found {sum(nan_index)} fluxes with NaN in "
+        #         f"Found {np.sum(nan_idx)} fluxes with NaN in "
         #         f"the calibration spectrum. Removing the "
         #         f"spectral fluxes that contain a NaN."
         #     )

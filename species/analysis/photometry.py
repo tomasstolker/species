@@ -109,7 +109,8 @@ class SyntheticPhotometry:
         error: Optional[np.ndarray] = None,
         threshold: Optional[float] = 0.05,
     ) -> Tuple[
-        Union[np.float32, np.float64], Union[Optional[np.float32], Optional[np.float64]]
+        Union[float, np.float32, np.float64],
+        Union[Optional[float], Optional[np.float32], Optional[np.float64]],
     ]:
         """
         Function for calculating the average flux from a spectrum and
@@ -138,6 +139,23 @@ class SyntheticPhotometry:
         float, None
             Uncertainty (W m-2 um-1).
         """
+
+        # Remove fluxes that are a NaN
+
+        nan_idx = np.isnan(flux)
+
+        if np.sum(nan_idx) > 0:
+            warnings.warn(
+                f"Found {np.sum(nan_idx)} fluxes with NaN. Removing "
+                "these spectral fluxes from the input data before "
+                "calculating synthetic photometry."
+            )
+
+            wavelength = wavelength[~nan_idx]
+            flux = flux[~nan_idx]
+
+            if error is not None:
+                error = error[~nan_idx]
 
         if error is not None:
             # The error calculation requires the original
@@ -247,6 +265,16 @@ class SyntheticPhotometry:
                     wavel_error, spec_random, error=None, threshold=threshold
                 )[0]
 
+            nan_idx = np.isnan(phot_random)
+
+            if np.sum(nan_idx) > 0:
+                warnings.warn(f"{np.sum(nan_idx)} out of 200 samples "
+                              "that are used for estimating the "
+                              "uncertainty on the synthetic flux "
+                              "are NaN so removing these samples.")
+
+                phot_random = phot_random[~nan_idx]
+
             error_flux = np.std(phot_random)
 
         elif error is not None and np.any(np.isnan(error)):
@@ -310,6 +338,23 @@ class SyntheticPhotometry:
             Absolute magnitude and uncertainty.
         """
 
+        # Remove fluxes that are a NaN
+
+        nan_idx = np.isnan(flux)
+
+        if np.sum(nan_idx) > 0:
+            warnings.warn(
+                f"Found {np.sum(nan_idx)} fluxes with NaN. Removing "
+                "these spectral fluxes from the input data before "
+                "calculating synthetic photometry."
+            )
+
+            wavelength = wavelength[~nan_idx]
+            flux = flux[~nan_idx]
+
+            if error is not None:
+                error = error[~nan_idx]
+
         if parallax is not None:
             distance = phot_util.parallax_to_distance(parallax)
 
@@ -336,6 +381,16 @@ class SyntheticPhotometry:
                 )
 
                 mag_random[i] = self.vega_mag - 2.5 * np.log10(flux_random[0] / zp_flux)
+
+            nan_idx = np.isnan(mag_random)
+
+            if np.sum(nan_idx) > 0:
+                warnings.warn(f"{np.sum(nan_idx)} out of 200 samples "
+                              "that are used for estimating the "
+                              "uncertainty on the synthetic magnitude "
+                              "are NaN so removing these samples.")
+
+                mag_random = mag_random[~nan_idx]
 
             error_app_mag = np.std(mag_random)
 
@@ -368,7 +423,10 @@ class SyntheticPhotometry:
         magnitude: float,
         error: Optional[float] = None,
         zp_flux: Optional[float] = None,
-    ) -> Tuple[Union[float, np.float64], Optional[Union[float, np.float64]]]:
+    ) -> Tuple[
+        Union[float, np.float32, np.float64],
+        Optional[Union[float, np.float32, np.float64]],
+    ]:
         """
         Function for converting a magnitude to a flux.
 

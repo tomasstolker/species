@@ -86,12 +86,14 @@ def plot_color_magnitude(
         if an isochrone tag is not included in the dictionary. The
         tags are stored as the ``iso_tag`` attribute of each
         :class:`~species.core.box.ColorColorBox`.
-    teff_labels : list(float), list(tuple(float, str)), None
-        Plot labels with temperatures (K) next to the synthetic Planck
-        photometry. Alternatively, a list of tuples can be provided
-        with the planet mass and position of the label ('left' or
-        'right), for example ``[(1000., 'left'), (1200., 'right')]``.
-        No labels are shown if set to ``None``.
+    teff_labels : dict(str, list(tuple(float, str))), None
+        Plot labels with temperatures (K) next to the isochrones. The
+        argument is a dictionary with the names of the models and a
+        list with tuples that contain the effective temperatures and
+        'left' or 'right' to indicate the position of the label (so
+        similar to the use of mass_labels``). For example,
+        ``{'planck': [(1000., 'left'), (1200., 'right')]``. No labels
+        are shown if the argument is set to ``None``.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     accretion : bool
@@ -935,12 +937,14 @@ def plot_color_color(
         if an isochrone tag is not included in the dictionary. The
         tags are stored as the ``iso_tag`` attribute of each
         :class:`~species.core.box.ColorColorBox`.
-    teff_labels : list(float), list(tuple(float, str)), None
-        Plot labels with temperatures (K) next to the synthetic Planck
-        photometry. Alternatively, a list of tuples can be provided
-        with the planet mass and position of the label ('left' or
-        'right), for example ``[(1000., 'left'), (1200., 'right')]``.
-        No labels are shown if the argument is set to ``None``.
+    teff_labels : dict(str, list(tuple(float, str))), None
+        Plot labels with temperatures (K) next to the isochrones. The
+        argument is a dictionary with the names of the models and a
+        list with tuples that contain the effective temperatures and
+        'left' or 'right' to indicate the position of the label (so
+        similar to the use of mass_labels``). For example,
+        ``{'planck': [(1000., 'left'), (1200., 'right')]``. No labels
+        are shown if the argument is set to ``None``.
     companion_labels : bool
         Plot labels with the names of the directly imaged companions.
     reddening : list(tuple(tuple(str, str), tuple(str, str),
