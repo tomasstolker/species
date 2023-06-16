@@ -7,7 +7,7 @@ import math
 import warnings
 import configparser
 
-from typing import Optional, Union, Tuple, List
+from typing import List, Optional, Union, Tuple
 
 import h5py
 import numpy as np
@@ -22,20 +22,39 @@ from species.util import phot_util
 class SyntheticPhotometry:
     """
     Class for calculating synthetic photometry from a spectrum and also
-    for conversion between magnitudes and fluxes. Note that depending
-    on the detector type (energy- or photon-counting) the integral for
-    the filter-weighted flux contains an additional wavelength factor.
+    for converting between magnitudes and fluxes. Any filter from the
+    `SVO Filter Profile Service <http://svo2.cab.inta-csic.es/svo/
+    theory/fps/>`_ will be automatically downloaded and added to the
+    database. Also the detector type (energy- or photon-counting) will
+    be fetched. For a photon-counting detector, an additional
+    wavelength factor is included in the integral for calculating the
+    synthetic photometry, although typically the impact of the factor
+    on the calculated flux is negligible. It is also important to note
+    that by default the magnitude of Vega is set to 0.03 for all
+    filters. The value can be adjusted in the `configuration file
+    <https://species.readthedocs.io/en/latest/configuration.html>`_.
     """
 
     @typechecked
-    def __init__(self, filter_name: str) -> None:
+    def __init__(self, filter_name: str, zero_point: Optional[float] = None) -> None:
         """
         Parameters
         ----------
         filter_name : str
-            Filter name as listed in the database. Filters from the
-            SVO Filter Profile Service are automatically downloaded
-            and added to the database.
+            Filter name by which the profile is stored in database.
+            Any filter from the `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ will be
+            automatically downloaded and added to the database.
+        zero_point : float, None
+            Zero-point flux (W m-2 um-1) for ``filter_name``. This flux
+            is equalized to the magnitude of Vega, which by default is
+            set to 0.03 for all filters. The value can be adjusted in
+            the `configuration file <https://species.readthedocs.io/en/
+            latest/configuration.html>`_. By default, the argument
+            of ``zero_point`` is set to ``None``, in which case the
+            zero point is calculated internally. The zero point can be
+            accessed through ``zero_point`` attribute from instance of
+            :class:`~species.analysis.photometry.SyntheticPhotometry`.
 
         Returns
         -------
@@ -44,10 +63,9 @@ class SyntheticPhotometry:
         """
 
         self.filter_name = filter_name
+        self.zero_point = zero_point
         self.filter_interp = None
         self.wavel_range = None
-
-        self.vega_mag = 0.03  # (mag)
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -55,15 +73,32 @@ class SyntheticPhotometry:
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.vega_mag = float(config["species"]["vega_mag"])
 
         read_filt = read_filter.ReadFilter(self.filter_name)
         self.det_type = read_filt.detector_type()
 
+        if self.zero_point is None:
+            self.zero_point = self.calc_zero_point()
+
+        else:
+            warnings.warn(
+                "Please note that a manually provided zero-point flux "
+                "is by default equalized to a magnitude of 0.03 for "
+                "all filters. The magnitude of Vega can be adjusted "
+                "in the configuration file (see https://species."
+                "readthedocs.io/en/latest/configuration.html) by "
+                "setting the 'vega_mag' parameter. Currently the "
+                f"parameter is set to {self.vega_mag}."
+            )
+
     @typechecked
-    def zero_point(self) -> np.float64:
+    def calc_zero_point(self) -> np.float64:
         """
-        Internal function for calculating the zero point
-        of the provided ``filter_name``.
+        Internal function for calculating the zero point of the
+        provided ``filter_name``. The zero point is here defined
+        as the flux of Vega, which by default is set to a
+        magnitude of 0.03 for all filters.
 
         Returns
         -------
@@ -268,10 +303,12 @@ class SyntheticPhotometry:
             nan_idx = np.isnan(phot_random)
 
             if np.sum(nan_idx) > 0:
-                warnings.warn(f"{np.sum(nan_idx)} out of 200 samples "
-                              "that are used for estimating the "
-                              "uncertainty on the synthetic flux "
-                              "are NaN so removing these samples.")
+                warnings.warn(
+                    f"{np.sum(nan_idx)} out of 200 samples "
+                    "that are used for estimating the "
+                    "uncertainty on the synthetic flux "
+                    "are NaN so removing these samples."
+                )
 
                 phot_random = phot_random[~nan_idx]
 
@@ -358,13 +395,11 @@ class SyntheticPhotometry:
         if parallax is not None:
             distance = phot_util.parallax_to_distance(parallax)
 
-        zp_flux = self.zero_point()
-
         syn_flux = self.spectrum_to_flux(
             wavelength, flux, error=error, threshold=threshold
         )
 
-        app_mag = self.vega_mag - 2.5 * math.log10(syn_flux[0] / zp_flux)
+        app_mag = self.vega_mag - 2.5 * math.log10(syn_flux[0] / self.zero_point)
 
         if error is not None and not np.any(np.isnan(error)):
             mag_random = np.zeros(200)
@@ -380,15 +415,19 @@ class SyntheticPhotometry:
                     wavelength, spec_random, error=None, threshold=threshold
                 )
 
-                mag_random[i] = self.vega_mag - 2.5 * np.log10(flux_random[0] / zp_flux)
+                mag_random[i] = self.vega_mag - 2.5 * np.log10(
+                    flux_random[0] / self.zero_point
+                )
 
             nan_idx = np.isnan(mag_random)
 
             if np.sum(nan_idx) > 0:
-                warnings.warn(f"{np.sum(nan_idx)} out of 200 samples "
-                              "that are used for estimating the "
-                              "uncertainty on the synthetic magnitude "
-                              "are NaN so removing these samples.")
+                warnings.warn(
+                    f"{np.sum(nan_idx)} out of 200 samples "
+                    "that are used for estimating the "
+                    "uncertainty on the synthetic magnitude "
+                    "are NaN so removing these samples."
+                )
 
                 mag_random = mag_random[~nan_idx]
 
@@ -437,22 +476,39 @@ class SyntheticPhotometry:
         error : float, None
             Error on the magnitude. Not used if set to ``None``.
         zp_flux : float, None
-            Zero-point flux (W m-2 um-1). The value is
-            calculated if the argument is set to ``None``.
+            DEPRECATED: Zero-point flux (W m-2 um-1). This
+            parameter is deprecated and will be removed in a
+            future release. Please use the zero_point parameter
+            of the constructor of 
+            :class:`~species.analysis.photometry.SyntheticPhotometry`
+            instead. By default, the zero point is calculated
+            internally and stored as the ``zero_point`` attribute
+            of an instance from
+            :class:`~species.analysis.photometry.SyntheticPhotometry`.
 
         Returns
         -------
         float
             Flux (W m-2 um-1).
         float, None
-            Error (W m-2 um-1). The returned value is ``None`` if
-            the argument of ``error`` is ``None``.
+            Error (W m-2 um-1). The returned value is ``None``
+            if the argument of ``error`` is ``None``.
         """
 
         if zp_flux is None:
-            zp_flux = self.zero_point()
+            flux = 10.0 ** (-0.4 * (magnitude - self.vega_mag)) * self.zero_point
 
-        flux = 10.0 ** (-0.4 * (magnitude - self.vega_mag)) * zp_flux
+        else:
+            flux = 10.0 ** (-0.4 * (magnitude - self.vega_mag)) * zp_flux
+
+            warnings.warn(
+                "The 'zp_flux' parameter is deprecated "
+                "and will be removed in a future release. "
+                "Please use the 'zero_point' parameter "
+                "of the SyntheticPhotometry constructor "
+                "instead.",
+                DeprecationWarning,
+            )
 
         if error is None:
             error_flux = None
@@ -522,8 +578,6 @@ class SyntheticPhotometry:
         if parallax is not None:
             distance = phot_util.parallax_to_distance(parallax)
 
-        zp_flux = self.zero_point()
-
         if flux <= 0.0:
             raise ValueError(
                 "Converting a flux into a magnitude "
@@ -531,7 +585,7 @@ class SyntheticPhotometry:
                 "'flux' has a positive value."
             )
 
-        app_mag = self.vega_mag - 2.5 * np.log10(flux / zp_flux)
+        app_mag = self.vega_mag - 2.5 * np.log10(flux / self.zero_point)
 
         if error is None:
             error_app_mag = None
@@ -540,7 +594,7 @@ class SyntheticPhotometry:
         else:
             if flux + error > 0.0:
                 error_app_lower = app_mag - (
-                    self.vega_mag - 2.5 * np.log10((flux + error) / zp_flux)
+                    self.vega_mag - 2.5 * np.log10((flux + error) / self.zero_point)
                 )
 
             else:
@@ -548,7 +602,7 @@ class SyntheticPhotometry:
 
             if flux - error > 0.0:
                 error_app_upper = (
-                    self.vega_mag - 2.5 * np.log10((flux - error) / zp_flux)
+                    self.vega_mag - 2.5 * np.log10((flux - error) / self.zero_point)
                 ) - app_mag
 
             else:

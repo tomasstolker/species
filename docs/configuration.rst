@@ -32,3 +32,6 @@ A configuration file with default values is automatically created when `species`
 
 .. tip::
    The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
+
+.. important::
+   A flux-calibrated spectrum of Vega is used for the conversion between a flux density and magnitude. The magnitude of Vega is set to 0.03 for all filters. If needed, the magnitude of Vega can be adjusted with the ``vega_mag`` parameter in the configuration file.

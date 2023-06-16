@@ -513,6 +513,7 @@ def plot_spectrum(
                             "logg",
                             "feh",
                             "metallicity",
+                            "fsed",
                             "lognorm_ext",
                             "powerlaw_ext",
                             "ism_ext",
