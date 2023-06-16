@@ -48,10 +48,10 @@ class TestObject:
         assert photometry[0] == pytest.approx(11.3, rel=self.limit, abs=0.0)
         assert photometry[1] == pytest.approx(0.06, rel=self.limit, abs=0.0)
         assert photometry[2] == pytest.approx(
-            1.5898815856603153e-15, rel=self.limit, abs=0.0
+            1.5566122192562612e-15, rel=self.limit, abs=0.0
         )
         assert photometry[3] == pytest.approx(
-            8.790482938961674e-17, rel=self.limit, abs=0.0
+            8.606536033479756e-17, rel=self.limit, abs=0.0
         )
 
     def test_get_parallax(self):

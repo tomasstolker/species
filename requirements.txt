@@ -13,6 +13,7 @@ pooch ~= 1.7.0
 PyAstronomy ~= 0.18.0
 PyMieScatt ~= 1.8.0
 pymultinest ~= 2.11.0
+requests ~= 2.31.0
 scipy ~= 1.10.0
 shapely ~= 2.0.0
 spectres ~= 2.2.0

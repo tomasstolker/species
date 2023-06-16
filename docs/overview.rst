@@ -77,7 +77,7 @@ The following data and models are currently supported:
 **Calibration**
 
 - All filters from the `Filter Profile Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_
-- `Flux-calibrated spectrum of Vega <http://ssb.stsci.edu/cdbs/calspec/>`_
+- Latest `flux-calibrated spectrum of Vega <https://www.stsci.edu/hst/instrumentation/reference-data-for-calibration-and-tools/astronomical-catalogs/calspec>`_
 
 **Dust extinction**
 

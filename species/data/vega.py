@@ -1,18 +1,23 @@
 """
-Text
+Module for adding a flux-calibrated spectrum of Vega to the database.
 """
 
 import os
-import urllib.request
 
 import numpy as np
+import pooch
+import requests
 
 from astropy.io import fits
 
 
 def add_vega(input_path, database):
     """
-    Function for adding a flux-calibrated spectrum of Vega to the database.
+    Function for adding a flux-calibrated spectrum of Vega to the
+    database. The latest spectrum (alpha_lyr_stis_011.fits) is
+    downloaded from the STScI archive (see `CALSPEC page <https://
+    www.stsci.edu/hst/instrumentation/reference-data-for-calibration
+    -and-tools/astronomical-catalogs/calspec>`_ for details).
 
     Parameters
     ----------
@@ -27,34 +32,38 @@ def add_vega(input_path, database):
         None
     """
 
-    data_file = os.path.join(input_path, "alpha_lyr_stis_008.fits")
+    data_file = os.path.join(input_path, "alpha_lyr_stis_011.fits")
 
     if not os.path.isfile(data_file):
-        print("Downloading Vega spectrum (270 kB)...", end="", flush=True)
-
         try:
-            url = "http://ssb.stsci.edu/cdbs/calspec/alpha_lyr_stis_008.fits"
-            urllib.request.urlretrieve(url, data_file)
+            url = "https://archive.stsci.edu/hlsps/reference-atlases" \
+                  "/cdbs/current_calspec/alpha_lyr_stis_011.fits"
 
-        except urllib.error.HTTPError:
-            url = "https://home.strw.leidenuniv.nl/~stolker/species/alpha_lyr_stis_008.fits"
-            urllib.request.urlretrieve(url, data_file)
+            pooch.retrieve(url=url,
+                           known_hash='60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa',
+                           fname="alpha_lyr_stis_011.fits",
+                           path=input_path,
+                           progressbar=True)
 
-        print(" [DONE]")
+        except requests.exceptions.HTTPError:
+            url = "https://home.strw.leidenuniv.nl/~stolker/" \
+                  "species/alpha_lyr_stis_011.fits"
 
-    if "spectra/calibration" not in database:
-        database.create_group("spectra/calibration")
+            pooch.retrieve(url=url,
+                           known_hash='60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa',
+                           fname="alpha_lyr_stis_011.fits",
+                           path=input_path,
+                           progressbar=True)
 
     if "spectra/calibration/vega" in database:
         del database["spectra/calibration/vega"]
 
-    hdu = fits.open(data_file)
-    data = hdu[1].data
-    wavelength = data["WAVELENGTH"]  # (Angstrom)
-    flux = data["FLUX"]  # (erg s-1 cm-2 A-1)
-    error_stat = data["STATERROR"]  # (erg s-1 cm-2 A-1)
-    error_sys = data["SYSERROR"]  # (erg s-1 cm-2 A-1)
-    hdu.close()
+    with fits.open(data_file) as hdu_list:
+        vega_data = hdu_list[1].data
+        wavelength = vega_data["WAVELENGTH"]  # (Angstrom)
+        flux = vega_data["FLUX"]  # (erg s-1 cm-2 A-1)
+        error_stat = vega_data["STATERROR"]  # (erg s-1 cm-2 A-1)
+        error_sys = vega_data["SYSERROR"]  # (erg s-1 cm-2 A-1)
 
     wavelength *= 1e-4  # (Angstrom) -> (um)
     flux *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
@@ -68,3 +77,6 @@ def add_vega(input_path, database):
     )
 
     print(" [DONE]")
+
+    print("Reference: Bohlin et al. 2014, PASP, 126")
+    print("URL: https://ui.adsabs.harvard.edu/abs/2014PASP..126..711B/abstract")

@@ -63,7 +63,7 @@ class TestModel:
             92.26773310928259, rel=self.limit, abs=0.0
         )
         assert np.sum(model_box.flux) == pytest.approx(
-            647.3334129388782, rel=self.limit, abs=0.0
+            646.3576115533599, rel=self.limit, abs=0.0
         )
 
     def test_get_data(self):
@@ -88,10 +88,10 @@ class TestModel:
         magnitude = read_model.get_magnitude(self.model_param)
 
         assert magnitude[0] == pytest.approx(
-            11.30857596704594, rel=self.limit, abs=0.0
+            11.291213115013914, rel=self.limit, abs=0.0
         )
         assert magnitude[1] == pytest.approx(
-            11.308575967045941, rel=self.limit, abs=0.0
+            11.291213115013914, rel=self.limit, abs=0.0
         )
 
     def test_get_bounds(self):

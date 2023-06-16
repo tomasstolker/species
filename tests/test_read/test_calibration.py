@@ -38,7 +38,7 @@ class TestCalibration:
 
         assert np.sum(spec_box.wavelength) == 15.0
         assert np.sum(spec_box.flux) == pytest.approx(
-            2.288734760321133e-08, rel=self.limit, abs=0.0
+            2.2628022608148692e-08, rel=self.limit, abs=0.0
         )
 
     def test_get_spectrum(self):
@@ -48,17 +48,17 @@ class TestCalibration:
         )
 
         assert np.sum(spec_box.wavelength) == pytest.approx(
-            183.34793783628004, rel=self.limit, abs=0.0
+            183.35527924487636, rel=self.limit, abs=0.0
         )
         assert np.sum(spec_box.flux) == pytest.approx(
-            2.363239096767195e-09, rel=self.limit, abs=0.0
+            2.3131999524734138e-09, rel=self.limit, abs=0.0
         )
 
     def test_get_flux(self):
         read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
         flux = read_calib.get_flux(model_param=self.model_param)
 
-        assert flux[0] == pytest.approx(1.1329023591019857e-09, rel=self.limit, abs=0.0)
+        assert flux[0] == pytest.approx(1.1149293297882683e-09, rel=self.limit, abs=0.0)
 
     def test_get_magnitude(self):
         read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
