@@ -46,14 +46,16 @@ class SyntheticPhotometry:
             <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_ will be
             automatically downloaded and added to the database.
         zero_point : float, None
-            Zero-point flux (W m-2 um-1) for ``filter_name``. This flux
-            is equalized to the magnitude of Vega, which by default is
-            set to 0.03 for all filters. The value can be adjusted in
-            the `configuration file <https://species.readthedocs.io/en/
-            latest/configuration.html>`_. By default, the argument
-            of ``zero_point`` is set to ``None``, in which case the
-            zero point is calculated internally. The zero point can be
-            accessed through ``zero_point`` attribute from instance of
+            Zero-point flux (:math:`\\mathrm{W}`
+            :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`) for
+            ``filter_name``. This flux is equalized to the magnitude of
+            Vega, which by default is set to 0.03 for all filters. The
+            value can be adjusted in the `configuration file <https://
+            species.readthedocs.io/en/latest/configuration.html>`_.
+            By default, the argument of ``zero_point`` is set to
+            ``None``, in which case the zero point is calculated
+            internally. The zero point can be accessed through
+            ``zero_point`` attribute from instance of
             :class:`~species.analysis.photometry.SyntheticPhotometry`.
 
         Returns
@@ -103,7 +105,8 @@ class SyntheticPhotometry:
         Returns
         -------
         float
-            Zero-point flux (W m-2 um-1).
+            Zero-point flux (:math:`\\mathrm{W}`
+            :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`).
         """
 
         if self.wavel_range is None:
@@ -157,9 +160,11 @@ class SyntheticPhotometry:
         wavelength : np.ndarray
             Wavelength points (um).
         flux : np.ndarray
-            Flux (W m-2 um-1).
+            Flux (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         error : np.ndarray, None
-            Uncertainty (W m-2 um-1). Not used if set to ``None``.
+            Uncertainty (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`). Not used if set to ``None``.
         threshold : float, None
             Transmission threshold (value between 0 and 1). If the
             minimum transmission value is larger than the threshold,
@@ -170,9 +175,11 @@ class SyntheticPhotometry:
         Returns
         -------
         float
-            Average flux (W m-2 um-1).
+            Average flux (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         float, None
-            Uncertainty (W m-2 um-1).
+            Uncertainty (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         """
 
         # Remove fluxes that are a NaN
@@ -346,9 +353,11 @@ class SyntheticPhotometry:
         wavelength : np.ndarray
             Wavelength points (um).
         flux : np.ndarray
-            Flux (W m-2 um-1).
+            Flux (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         error : np.ndarray, list(np.ndarray), None
-            Uncertainty (W m-2 um-1).
+            Uncertainty (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         parallax : tuple(float, float), None
             Parallax and uncertainty (mas). No absolute magnitude is
             calculated if set to ``None``. No error on the absolute
@@ -476,8 +485,9 @@ class SyntheticPhotometry:
         error : float, None
             Error on the magnitude. Not used if set to ``None``.
         zp_flux : float, None
-            DEPRECATED: Zero-point flux (W m-2 um-1). This
-            parameter is deprecated and will be removed in a
+            DEPRECATED: Zero-point flux (:math:`\\mathrm{W}`
+            :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`).
+            This parameter is deprecated and will be removed in a
             future release. Please use the zero_point parameter
             of the constructor of 
             :class:`~species.analysis.photometry.SyntheticPhotometry`
@@ -489,10 +499,12 @@ class SyntheticPhotometry:
         Returns
         -------
         float
-            Flux (W m-2 um-1).
+            Flux (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         float, None
-            Error (W m-2 um-1). The returned value is ``None``
-            if the argument of ``error`` is ``None``.
+            Error (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`). The returned value is
+            ``None`` if the argument of ``error`` is ``None``.
         """
 
         if zp_flux is None:
@@ -548,9 +560,11 @@ class SyntheticPhotometry:
         Parameters
         ----------
         flux : float, np.ndarray
-            Flux (W m-2 um-1).
+            Flux (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`).
         error : float, np.ndarray, None
-            Uncertainty (W m-2 um-1). Not used if set to None.
+            Uncertainty (:math:`\\mathrm{W}` :math:`\\mathrm{m}^{-2}`
+            :math:`\\mu\\mathrm{m}^{-1}`). Not used if set to None.
         parallax : tuple(float, float), , tuple(np.ndarray, np.ndarray), None
             Parallax and uncertainty (mas). The returned absolute
             magnitude is set to ``None`` in case ``parallax`` and

@@ -5,14 +5,14 @@ Module for adding a grid of model spectra to the database.
 import json
 import os
 import pathlib
-import urllib.request
 import warnings
 
 from typing import Optional, Tuple
 
 import h5py
-import spectres
 import numpy as np
+import pooch
+import spectres
 
 from typeguard import typechecked
 
@@ -105,14 +105,11 @@ def add_model_grid(
     url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_name}.tgz"
 
     if not os.path.isfile(data_file):
-        print(
-            f"Downloading {model_info['name']} model "
-            f"spectra ({model_info['file size']})...",
-            end="",
-            flush=True,
-        )
-        urllib.request.urlretrieve(url, data_file)
-        print(" [DONE]")
+        pooch.retrieve(url=url,
+                       known_hash=None,
+                       fname=input_file,
+                       path=input_path,
+                       progressbar=True)
 
     print(
         f"Unpacking {model_info['name']} model "

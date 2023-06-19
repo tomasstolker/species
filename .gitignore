@@ -14,7 +14,7 @@ docs/tutorials/.ipynb_checkpoints/*
 build/
 dist/
 species.egg-info/
-.coverage
+.coverage*
 coverage.xml
 .pytest_cache/
 htmlcov/

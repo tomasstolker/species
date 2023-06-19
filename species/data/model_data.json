@@ -10,7 +10,7 @@
     "ames-dusty": {
         "parameters": ["teff", "logg"],
         "name": "AMES-Dusty",
-        "file size": "59 MB",
+        "file size": "58 MB",
         "wavelength range": [0.5, 40],
         "resolution": 4000,
         "teff range": [500, 4000]

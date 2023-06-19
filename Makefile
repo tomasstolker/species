@@ -38,7 +38,7 @@ test:
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -rf {} +
-	rm -f .coverage
+	rm -f .coverage*
 	rm -f coverage.xml
 	rm -rf .pytest_cache/
 	rm -rf docs/_build/
