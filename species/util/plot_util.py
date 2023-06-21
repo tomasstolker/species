@@ -120,11 +120,13 @@ def sptype_to_index(
             else:
                 spt_discrete[i] = np.nan
 
+        count = 0
         for i, item in enumerate(spt_check):
             for j in range(2):
                 if field_range[0] == item[j]:
-                    spt_discrete -= float(i)
+                    spt_discrete -= float(count)
                     break
+                count += 1
 
     else:
         spt_check = ["O", "B", "A", "F", "G", "K", "M", "L", "T", "Y"]
@@ -1192,6 +1194,7 @@ def field_bounds_ticks(
 
     bounds = np.linspace(index_start, index_end, index_range)
     ticks = np.linspace(index_start + 0.5, index_end - 0.5, index_range - 1)
+
     labels = spectral_ranges[index_start:index_end]
 
     ticks -= bounds[0]
