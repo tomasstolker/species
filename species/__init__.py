@@ -78,7 +78,7 @@ from species.util.read_util import (
 
 __author__ = "Tomas Stolker"
 __license__ = "MIT"
-__version__ = "0.5.5"
+__version__ = "0.6.0"
 __maintainer__ = "Tomas Stolker"
 __email__ = "stolker@strw.leidenuniv.nl"
 __status__ = "Development"
