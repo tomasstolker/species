@@ -578,12 +578,12 @@ def make_half_pressure_better(
 
 @typechecked
 def create_abund_dict(
-    abund_in: dict,
-    line_species: list,
+    abund_in: Dict[str, np.ndarray],
+    line_species: List[str],
     chemistry: str,
     pressure_grid: str = "smaller",
-    indices: Optional[np.array] = None,
-) -> dict:
+    indices: Optional[np.ndarray] = None,
+) -> Dict[str, np.ndarray]:
     """
     Function to update the names in the abundance dictionary.
 

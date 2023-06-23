@@ -49,9 +49,9 @@ class SpeciesInit:
             latest_version = None
 
         if latest_version is not None and species.__version__ != latest_version:
-            print(f"A new version ({latest_version}) is available!")
-            print("It is recommended to update to the latest version, "
-                  "see https://github.com/tomasstolker/species.")
+            print(f" -> A new version ({latest_version}) is available!")
+            print(" -> It is recommended to update to the latest version")
+            print(" -> See https://github.com/tomasstolker/species for details")
 
         if not os.path.isfile(config_file):
             print("Creating species_config.ini...", end="", flush=True)

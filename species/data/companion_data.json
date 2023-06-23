@@ -1894,6 +1894,42 @@
             "Paranal/NACO.Mp": [
                 9.2,
                 0.2
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                10.03,
+                0.12
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                9.78,
+                0.11
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                [
+                    9.75,
+                    0.07
+                ],
+                [
+                    9.68,
+                    0.19
+                ],
+                [
+                    9.70,
+                    0.16
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                [
+                    9.57,
+                    0.08
+                ],
+                [
+                    9.44,
+                    0.18
+                ],
+                [
+                    9.50,
+                    0.15
+                ]
             ]
         },
         "semi_major": [
@@ -1928,7 +1964,8 @@
             "Gaia Early Data Release 3",
             "Lacour et al. 2012",
             "Lacour et al. 2016",
-            "Mendigut\u00eda et al. 2014"
+            "Mendigut\u00eda et al. 2014",
+            "Stolker et al. (2023)"
         ]
     },
     "CS Cha B": {

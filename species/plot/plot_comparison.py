@@ -19,7 +19,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from typeguard import typechecked
 
 from species.core import constants
-from species.read import read_object
+from species.read import read_model, read_object
 from species.util import dust_util, plot_util, read_util
 
 
@@ -36,14 +36,14 @@ def plot_statistic(
     """
     Function for plotting the goodness-of-fit statistic from a
     comparison with an empirical spectral library with
-    :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+    :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
     that enables a determination of the spectral type
 
     Parameters
     ----------
     tag : str
         Database tag where the results from the empirical comparison with
-        :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+        :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
         are stored.
     xlim : tuple(float, float)
         Limits of the spectral type axis in numbers (i.e.
@@ -214,7 +214,7 @@ def plot_empirical_spectra(
     tag : str
         Database tag where the results from the empirical
         comparison with
-        :class:`~species.analysis.empirical.CompareSpectra.spectral_type`
+        :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
         are stored.
     n_spectra : int, None
         The number of spectra with the lowest goodness-of-fit
@@ -469,7 +469,7 @@ def plot_grid_statistic(
     ----------
     tag : str
         Database tag where the results from the comparison with
-        :class:`~species.analysis.empirical.CompareSpectra` are stored.
+        :class:`~species.analysis.compare_spectra.CompareSpectra` are stored.
     upsample : bool
         Upsample the goodness-of-fit grid to a higher resolution
         for a smoother appearance.
