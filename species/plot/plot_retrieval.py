@@ -106,13 +106,11 @@ def plot_pt_profile(
 
     parameters = np.asarray(box.parameters)
     samples = box.samples
-    median = box.median_sample
+    model_param = box.median_sample
 
     if random is not None:
         indices = np.random.randint(samples.shape[0], size=random)
-        samples = samples[
-            indices,
-        ]
+        samples = samples[indices,]
 
     param_index = {}
     for item in parameters:
@@ -376,18 +374,18 @@ def plot_pt_profile(
 
     if box.attributes["chemistry"] == "free":
         # TODO Set [Fe/H] = 0
-        median["metallicity"] = metallicity
-        median["c_o_ratio"] = c_o_ratio
+        model_param["metallicity"] = metallicity
+        model_param["c_o_ratio"] = c_o_ratio
 
     if pt_profile == "molliere":
         temp, _, conv_press_median = retrieval_util.pt_ret_model(
-            np.array([median["t1"], median["t2"], median["t3"]]),
-            10.0 ** median["log_delta"],
-            median["alpha"],
-            median["tint"],
+            np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
+            10.0 ** model_param["log_delta"],
+            model_param["alpha"],
+            model_param["tint"],
             pressure,
-            median["metallicity"],
-            median["c_o_ratio"],
+            model_param["metallicity"],
+            model_param["c_o_ratio"],
         )
 
         if rad_conv_bound:
@@ -406,20 +404,20 @@ def plot_pt_profile(
             ax.axhline(conv_press_median, zorder=0, color="cornflowerblue", alpha=0.5)
 
     elif pt_profile == "eddington":
-        tau = pressure * 1e6 * 10.0 ** median["log_delta"]
-        temp = (0.75 * median["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
+        tau = pressure * 1e6 * 10.0 ** model_param["log_delta"]
+        temp = (0.75 * model_param["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
     elif pt_profile == "free":
         knot_temp = []
         for i in range(temp_nodes):
-            knot_temp.append(median[f"t{i}"])
+            knot_temp.append(model_param[f"t{i}"])
 
         knot_temp = np.asarray(knot_temp)
 
         ax.plot(knot_temp, knot_press, "o", ms=5.0, mew=0.0, color="tomato", zorder=3.0)
 
         if "pt_smooth" in parameters:
-            pt_smooth = median["pt_smooth"]
+            pt_smooth = model_param["pt_smooth"]
 
         elif "pt_smooth_0" in parameters:
             pt_smooth = {}
@@ -428,10 +426,10 @@ def plot_pt_profile(
 
         elif "pt_turn" in parameters:
             pt_smooth = {
-                "pt_smooth_1": median["pt_smooth_1"],
-                "pt_smooth_2": median["pt_smooth_2"],
-                "pt_turn": median["pt_turn"],
-                "pt_index": median["pt_index"],
+                "pt_smooth_1": model_param["pt_smooth_1"],
+                "pt_smooth_2": model_param["pt_smooth_2"],
+                "pt_turn": model_param["pt_turn"],
+                "pt_index": model_param["pt_index"],
             }
 
         else:
@@ -471,19 +469,22 @@ def plot_pt_profile(
 
     # Add cloud condensation profiles
 
-    if extra_axis == "grains" and "metallicity" in median and "c_o_ratio" in median:
-
+    if (
+        extra_axis == "grains"
+        and "metallicity" in model_param
+        and "c_o_ratio" in model_param
+    ):
         if box.attributes["quenching"] == "pressure":
-            p_quench = 10.0 ** median["log_p_quench"]
+            p_quench = 10.0 ** model_param["log_p_quench"]
 
         elif box.attributes["quenching"] == "diffusion":
             p_quench = retrieval_util.quench_pressure(
                 radtrans.rt_object.press,
                 radtrans.rt_object.temp,
-                median["metallicity"],
-                median["c_o_ratio"],
-                median["logg"],
-                median["log_kzz"],
+                model_param["metallicity"],
+                model_param["c_o_ratio"],
+                model_param["logg"],
+                model_param["log_kzz"],
             )
 
         else:
@@ -494,23 +495,25 @@ def plot_pt_profile(
         if "poor_mans_nonequ_chem" in sys.modules:
             from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                interpol_abundances,
+            )
 
         abund_in = interpol_abundances(
-            np.full(pressure.shape[0], median["c_o_ratio"]),
-            np.full(pressure.shape[0], median["metallicity"]),
+            np.full(pressure.shape[0], model_param["c_o_ratio"]),
+            np.full(pressure.shape[0], model_param["metallicity"]),
             temp,
             pressure,
             Pquench_carbon=p_quench,
         )
 
         for item in cloud_species:
-            if f"{item[:-3].lower()}_tau" in median:
+            if f"{item[:-3].lower()}_tau" in model_param:
                 # Calculate the scaled mass fraction of the clouds
-                median[
+                model_param[
                     f"{item[:-3].lower()}_fraction"
                 ] = retrieval_util.scale_cloud_abund(
-                    median,
+                    model_param,
                     radtrans.rt_object,
                     pressure,
                     temp,
@@ -518,19 +521,19 @@ def plot_pt_profile(
                     "equilibrium",
                     abund_in,
                     item,
-                    median[f"{item[:-3].lower()}_tau"],
+                    model_param[f"{item[:-3].lower()}_tau"],
                     pressure_grid=radtrans.pressure_grid,
                 )
 
         for cloud_item in cloud_species:
-
             if cloud_item in radtrans.cloud_species:
                 cond_temp = retrieval_util.get_condensation_curve(
                     composition=cloud_item[:-3],
                     press=pressure,
-                    metallicity=median["metallicity"],
-                    c_o_ratio=median["c_o_ratio"],
-                    mmw=np.mean(abund_in["MMW"]))
+                    metallicity=model_param["metallicity"],
+                    c_o_ratio=model_param["c_o_ratio"],
+                    mmw=np.mean(abund_in["MMW"]),
+                )
 
                 ax.plot(
                     cond_temp,
@@ -544,12 +547,12 @@ def plot_pt_profile(
     if box.attributes["chemistry"] == "free":
         # Remove these parameters otherwise ReadRadtrans.get_model()
         # will assume equilibrium chemistry
-        del median["metallicity"]
-        del median["c_o_ratio"]
+        del model_param["metallicity"]
+        del model_param["c_o_ratio"]
 
     if radtrans is not None:
         # Recalculate the best-fit model to update the attributes of radtrans.rt_object
-        model_box = radtrans.get_model(median)
+        model_box = radtrans.get_model(model_param)
 
         contr_1d = np.mean(model_box.contribution, axis=1)
         contr_1d = ax.get_xlim()[0] + 0.5 * (contr_1d / np.amax(contr_1d)) * (
@@ -563,7 +566,7 @@ def plot_pt_profile(
         if extra_axis == "photosphere":
             # Calculate the total optical depth
             # (line and continuum opacities)
-            # radtrans.rt_object.calc_opt_depth(10.**median['logg'])
+            # radtrans.rt_object.calc_opt_depth(10.**model_param['logg'])
 
             wavelength = radtrans.rt_object.lambda_angstroem * 1e-4  # (um)
 
@@ -634,7 +637,9 @@ def plot_pt_profile(
 
             ax2.set_yscale("log")
 
-            ax2.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13, va="bottom")
+            ax2.set_xlabel(
+                "Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13, va="bottom"
+            )
 
             if offset is not None:
                 ax2.get_xaxis().set_label_coords(0.5, 1.0 + abs(offset[0]))
@@ -658,7 +663,6 @@ def plot_pt_profile(
             )
 
         elif extra_axis == "grains":
-
             if len(radtrans.cloud_species) > 0:
                 ax2 = ax.twiny()
 
@@ -703,7 +707,7 @@ def plot_pt_profile(
                 ax2.set_xlabel("Average particle radius (µm)", fontsize=13, va="bottom")
 
                 # Recalculate the best-fit model to update the r_g attribute of radtrans.rt_object
-                radtrans.get_model(median)
+                radtrans.get_model(model_param)
 
                 if offset is not None:
                     ax2.get_xaxis().set_label_coords(0.5, 1.0 + abs(offset[0]))
@@ -771,8 +775,8 @@ def plot_opacities(
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
-    Function to plot the line and continuum opacity
-    structure from the median posterior samples.
+    Function to plot the line and continuum opacity structure of the
+    atmosphere by using the median parameters from posterior samples.
 
     Parameters
     ----------
@@ -780,10 +784,10 @@ def plot_opacities(
         Database tag with the posterior samples.
     radtrans : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
-        The parameter is not used if set to ``None``.
+        The parameter is not used if the argument is set to ``None``.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are used
-        if set to ``None``.
+        if the argument is set to ``None``.
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -802,7 +806,7 @@ def plot_opacities(
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
-    median = box.median_sample
+    model_param = box.median_sample
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -821,7 +825,7 @@ def plot_opacities(
     ax7 = plt.subplot(gridsp[0, 4])
     ax8 = plt.subplot(gridsp[1, 4])
 
-    radtrans.get_model(median)
+    radtrans.get_model(model_param)
 
     # Line opacities
 
@@ -1259,9 +1263,10 @@ def plot_clouds(
     composition: str = "MgSiO3",
 ) -> mpl.figure.Figure:
     """
-    Function to plot the size distributions for a given cloud composition as function as pressure.
-    The size distributions are calculated for the median sample by using the radius_g (as function
-    of pressure) and sigma_g.
+    Function to plot the size distributions for a given cloud
+    composition as function as pressure. The size distributions are
+    calculated for the median sample by using the ``radius_g`` (as
+    function of pressure) and ``sigma_g``.
 
     Parameters
     ----------
@@ -1269,13 +1274,13 @@ def plot_clouds(
         Database tag with the posterior samples.
     offset : tuple(float, float), None
         Offset of the x- and y-axis label. Default values are
-        used if set to ``None``.
+        used if the argument set to ``None``.
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     radtrans : read_radtrans.ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
-        Not used if set to ``None``.
+        The parameter is not used if the argument is set to ``None``.
     composition : str
         Cloud composition (e.g. 'MgSiO3', 'Fe', 'Al2O3', 'Na2S', 'KCl').
 
@@ -1288,17 +1293,17 @@ def plot_clouds(
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
-    median = box.median_sample
+    model_param = box.median_sample
 
     if (
-        f"{composition.lower()}_fraction" not in median
-        and "log_tau_cloud" not in median
-        and f"{composition}(c)" not in median
+        f"{composition.lower()}_fraction" not in model_param
+        and "log_tau_cloud" not in model_param
+        and f"{composition}(c)" not in model_param
     ):
-
         raise ValueError(
-            f"The mass fraction of the {composition} clouds is not found. The median "
-            f"sample contains the following parameters: {list(median.keys())}"
+            f"The mass fraction of the {composition} clouds is "
+            "not found. The median sample contains the following "
+            f"parameters: {list(model_param.keys())}"
         )
 
     if output is None:
@@ -1316,11 +1321,11 @@ def plot_clouds(
     ax1 = plt.subplot(gridsp[0, 0])
     ax2 = plt.subplot(gridsp[0, 1])
 
-    radtrans.get_model(median)
+    radtrans.get_model(model_param)
 
     cloud_index = radtrans.rt_object.cloud_species.index(f"{composition}(c)")
     radius_g = radtrans.rt_object.r_g[:, cloud_index] * 1e4  # (cm) -> (um)
-    sigma_g = median["sigma_lnorm"]
+    sigma_g = model_param["sigma_lnorm"]
 
     r_bins = np.logspace(-3.0, 3.0, 1000)
     radii = (r_bins[1:] + r_bins[:-1]) / 2.0
@@ -1328,9 +1333,7 @@ def plot_clouds(
     dn_dr = np.zeros((radius_g.shape[0], radii.shape[0]))
 
     for i, item in enumerate(radius_g):
-        dn_dr[
-            i,
-        ] = lognorm.pdf(radii, s=np.log(sigma_g), loc=0.0, scale=item)
+        dn_dr[i,] = lognorm.pdf(radii, s=np.log(sigma_g), loc=0.0, scale=item)
 
     ax1.tick_params(
         axis="both",
@@ -1405,7 +1408,9 @@ def plot_clouds(
         norm=LogNorm(vmin=1e-10 * np.amax(dn_dr), vmax=np.amax(dn_dr)),
     )
 
-    cb = Colorbar(ax=ax2, mappable=mesh_fig, orientation="vertical", ticklocation="right")
+    cb = Colorbar(
+        ax=ax2, mappable=mesh_fig, orientation="vertical", ticklocation="right"
+    )
     cb.ax.set_ylabel("dn/dr", rotation=270, labelpad=20, fontsize=11)
 
     for item in radtrans.rt_object.press * 1e-6:  # (bar)
