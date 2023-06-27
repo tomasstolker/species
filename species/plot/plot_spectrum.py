@@ -407,13 +407,13 @@ def plot_spectrum(
 
             elif quantity == "flux":
                 if exponent is None:
-                    ylabel = (
-                        r"$\lambda$$F_\lambda$ (W m$^{-2}$)"
-                    )
+                    ylabel = r"$\lambda$$F_\lambda$ (W m$^{-2}$)"
 
                 else:
                     ylabel = (
-                        r"$\lambda$$F_\lambda$ (10$^{" + str(exponent) + r"}$ W m$^{-2}$)"
+                        r"$\lambda$$F_\lambda$ (10$^{"
+                        + str(exponent)
+                        + r"}$ W m$^{-2}$)"
                     )
 
             ax1.set_ylabel(ylabel, fontsize=11)
@@ -488,99 +488,17 @@ def plot_spectrum(
 
                 if isinstance(box_item, box.ModelBox):
                     param = box_item.parameters.copy()
+                    if inc_model_name:
+                        model_name = box_item.model
+                    else:
+                        model_name = None
 
-                    if leg_param is not None:
-                        for item in list(param.keys()):
-                            if item not in leg_param:
-                                del param[item]
-
-                    if leg_param is not None:
-                        param_new = {k: param[k] for k in leg_param}
-                        param = param_new.copy()
-
-                    par_key, par_unit, par_label = plot_util.quantity_unit(
-                        param=list(param.keys()), object_type=object_type
+                    label = plot_util.create_model_label(
+                        model_param=param,
+                        model_name=box_item.model,
+                        object_type=object_type,
+                        leg_param=leg_param,
                     )
-
-                    label = ""
-                    # newline = False
-
-                    for i, item in enumerate(par_key):
-                        if item[:4] == "teff":
-                            value = f"{param[item]:.0f}"
-
-                        elif item in [
-                            "logg",
-                            "feh",
-                            "metallicity",
-                            "fsed",
-                            "lognorm_ext",
-                            "powerlaw_ext",
-                            "ism_ext",
-                        ]:
-                            value = f"{param[item]:.1f}"
-
-                        elif item in ["co", "c_o_ratio"]:
-                            value = f"{param[item]:.2f}"
-
-                        elif item[:6] == "radius":
-                            if object_type == "planet":
-                                value = f"{param[item]:.1f}"
-
-                                # if item == 'radius_1':
-                                #     value = f'{param[item]:.0f}'
-                                # else:
-                                #     value = f'{param[item]:.1f}'
-
-                            elif object_type == "star":
-                                value = (
-                                    f"{param[item]*constants.R_JUP/constants.R_SUN:.1f}"
-                                )
-
-                        elif (
-                            item == "mass"
-                            and leg_param is not None
-                            and item in leg_param
-                        ):
-                            if object_type == "planet":
-                                value = f"{param[item]:.0f}"
-
-                            elif object_type == "star":
-                                value = (
-                                    f"{param[item]*constants.M_JUP/constants.M_SUN:.1f}"
-                                )
-
-                        elif (
-                            item == "luminosity"
-                            and leg_param is not None
-                            and item in leg_param
-                        ):
-                            value = f"{np.log10(param[item]):.2f}"
-
-                        else:
-                            continue
-
-                        # if len(label) > 80 and newline == False:
-                        #     label += '\n'
-                        #     newline = True
-
-                        model_name = plot_util.model_name(box_item.model)
-
-                        if par_unit[i] is None:
-                            if len(label) > 0:
-                                label += ", "
-                            elif inc_model_name:
-                                label += f"{model_name}: "
-
-                            label += f"{par_label[i]} = {value}"
-
-                        else:
-                            if len(label) > 0:
-                                label += ", "
-                            elif inc_model_name:
-                                label += f"{model_name}: "
-
-                            label += f"{par_label[i]} = {value} {par_unit[i]}"
 
                 else:
                     label = None
@@ -1010,7 +928,11 @@ def plot_spectrum(
                         **kwargs_copy,
                     )
 
-                elif obj_index is None or not plot_kwargs[obj_index] or item not in plot_kwargs[obj_index]:
+                elif (
+                    obj_index is None
+                    or not plot_kwargs[obj_index]
+                    or item not in plot_kwargs[obj_index]
+                ):
                     ax1.errorbar(
                         wavelength,
                         flux_scaling * box_item.flux[item] / scaling,

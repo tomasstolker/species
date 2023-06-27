@@ -1,7 +1,7 @@
 """
 Module with functions for plotting results from a spectral
 analysis that compares data with a library of empirical
-spectra or a grid of model spectra
+spectra or a grid of model spectra.
 """
 
 import configparser
@@ -333,10 +333,16 @@ def plot_empirical_spectra(
     ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
 
     if flux_offset == 0.0:
-        ax.set_ylabel(r"$\mathregular{F}_\lambda$" + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)", fontsize=11)
+        ax.set_ylabel(
+            r"$\mathregular{F}_\lambda$"
+            + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)",
+            fontsize=11,
+        )
     else:
         ax.set_ylabel(
-            r"$\mathregular{F}_\lambda$ (W m$^{-2}$" + " \N{GREEK SMALL LETTER MU}m$^{-1}$) + offset", fontsize=11
+            r"$\mathregular{F}_\lambda$ (W m$^{-2}$"
+            + " \N{GREEK SMALL LETTER MU}m$^{-1}$) + offset",
+            fontsize=11,
         )
 
     if xlim is not None:
@@ -409,14 +415,14 @@ def plot_empirical_spectra(
             )
 
             indices = np.where(
-                (obj_spec[j][:, 0] > np.amin(spectrum[:, 0]))
-                & (obj_spec[j][:, 0] < np.amax(spectrum[:, 0]))
+                (spec_item[:, 0] > np.amin(spectrum[:, 0]))
+                & (spec_item[:, 0] < np.amax(spectrum[:, 0]))
             )[0]
 
-            flux_resample = interp_spec(obj_spec[j][indices, 0])
+            flux_resample = interp_spec(spec_item[indices, 0])
 
             ax.plot(
-                obj_spec[j][indices, 0],
+                spec_item[indices, 0],
                 (n_spectra - i - 1) * flux_offset + flux_scaling[i][j] * flux_resample,
                 color="tomato",
                 lw=0.5,
@@ -547,7 +553,7 @@ def plot_grid_statistic(
     for i, item in enumerate(coord_points[1:]):
         if len(item) > 1:
             coord_y = item
-            param_y = model_param[i+1]
+            param_y = model_param[i + 1]
             break
 
     plt.rcParams["font.family"] = "serif"
@@ -660,7 +666,11 @@ def plot_grid_statistic(
 
             if extra_idx != 2:
                 goodness_fit = np.swapaxes(goodness_fit, extra_idx, 2)
-                coord_points = [coord_points[0], coord_points[1], coord_points[extra_idx]]
+                coord_points = [
+                    coord_points[0],
+                    coord_points[1],
+                    coord_points[extra_idx],
+                ]
                 extra_idx = 2
 
         else:
@@ -671,7 +681,7 @@ def plot_grid_statistic(
             # Select minimum G_k for tested A_V values
             axis = []
             for i in range(n_collapse):
-                axis.append(3+i)
+                axis.append(3 + i)
 
             goodness_fit = np.amin(goodness_fit, axis=tuple(axis))
 
@@ -719,9 +729,7 @@ def plot_grid_statistic(
     if coord_y is None:
         ax.plot(
             coord_x,
-            goodness_fit[
-                0,
-            ],
+            goodness_fit[0,],
         )
 
     else:
@@ -768,7 +776,12 @@ def plot_grid_statistic(
                 extra_map = extra_interp((y_grid, x_grid))
 
                 cs = ax.contour(
-                    x_grid, y_grid, extra_map, levels=nlevels_extra, colors="white", linewidths=0.7
+                    x_grid,
+                    y_grid,
+                    extra_map,
+                    levels=nlevels_extra,
+                    colors="white",
+                    linewidths=0.7,
                 )
 
             else:
@@ -816,8 +829,272 @@ def plot_grid_statistic(
 
     if extra_param is not None:
         extra_label = plot_util.update_labels([extra_param])[0]
-        ax.plot([], [], ls='-', lw=1.2, color='white', label=extra_label)
-        ax.legend(loc='best', frameon=False, labelcolor='linecolor', fontsize=12.)
+        ax.plot([], [], ls="-", lw=1.2, color="white", label=extra_label)
+        ax.legend(loc="best", frameon=False, labelcolor="linecolor", fontsize=12.0)
+
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(output, bbox_inches="tight")
+
+    h5_file.close()
+
+    print(" [DONE]")
+
+    return fig
+
+
+@typechecked
+def plot_model_spectra(
+    tag: str,
+    n_spectra: Optional[int] = None,
+    flux_offset: Optional[float] = None,
+    label_pos: Optional[Tuple[float, float]] = None,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = None,
+    offset: Optional[Tuple[float, float]] = None,
+    figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
+    output: Optional[str] = None,
+) -> mpl.figure.Figure:
+    """
+    Function for plotting the results from comparing a spectrum
+    with a grid of model spectra.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag where the results from the model
+        comparison with
+        :class:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        are stored.
+    n_spectra : int, None
+        The number of spectra with the lowest goodness-of-fit
+        statistic that will be plotted in comparison with the data.
+        All spectra are selected if the argument is set to ``None``.
+    label_pos : tuple(float, float), None
+        Position for the name labels. Should be provided as (x, y)
+        for the lowest spectrum. The ``flux_offset`` will be applied
+        to the remaining spectra. The labels are only plotted if the
+        argument of both ``label_pos`` and ``flux_offset`` are not
+        ``None``.
+    flux_offset : float, None
+        Offset to be applied such that the spectra do not overlap. No
+        offset is applied if the argument is set to ``None``.
+    xlim : tuple(float, float)
+        Limits of the spectral type axis.
+    ylim : tuple(float, float)
+        Limits of the goodness-of-fit axis.
+    title : str
+        Plot title.
+    offset : tuple(float, float)
+        Offset for the label of the x- and y-axis.
+    figsize : tuple(float, float)
+        Figure size.
+    output : str, None
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for further
+        customization of the plot.
+    """
+
+    if output is None:
+        print("Plotting model spectra comparison...", end="")
+    else:
+        print(f"Plotting model spectra comparison: {output}...", end="")
+
+    if flux_offset is None:
+        flux_offset = 0.0
+
+    config_file = os.path.join(os.getcwd(), "species_config.ini")
+
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    db_path = config["species"]["database"]
+
+    h5_file = h5py.File(db_path, "r")
+
+    dset = h5_file[f"results/comparison/{tag}/goodness_of_fit"]
+
+    object_name = dset.attrs["object_name"]
+    n_spec_name = dset.attrs["n_spec_name"]
+    model_name = dset.attrs["model"]
+    n_param = dset.attrs["n_param"]
+    n_scale_spec = dset.attrs["n_scale_spec"]
+
+    spec_name = []
+    for i in range(n_spec_name):
+        spec_name.append(dset.attrs[f"spec_name{i}"])
+
+    model_param = []
+    coord_points = []
+    for i in range(n_param):
+        model_param.append(dset.attrs[f"parameter{i}"])
+        coord_points.append(
+            np.array(h5_file[f"results/comparison/{tag}/coord_points{i}"])
+        )
+
+    scale_spec = []
+    for i in range(n_scale_spec):
+        # TODO Not implemented yet
+        scale_spec.append(dset.attrs[f"scale_spec{i}"])
+
+    goodness_fit = np.array(dset)
+    sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
+    sort_idx = list(sort_idx)
+
+    for i, item in enumerate(sort_idx):
+        sort_idx[i] = item[:n_spectra]
+
+    flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
+
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.rcParams["axes.axisbelow"] = False
+
+    fig = plt.figure(figsize=figsize)
+    gridsp = mpl.gridspec.GridSpec(1, 1)
+    gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
+
+    ax = plt.subplot(gridsp[0, 0])
+
+    ax.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+    )
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+    ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=13)
+
+    if flux_offset == 0.0:
+        ax.set_ylabel(
+            r"$\mathregular{F}_\lambda$"
+            + " (W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$)",
+            fontsize=11,
+        )
+    else:
+        ax.set_ylabel(
+            r"$\mathregular{F}_\lambda$ (W m$^{-2}$"
+            + " \N{GREEK SMALL LETTER MU}m$^{-1}$) + offset",
+            fontsize=11,
+        )
+
+    if xlim is not None:
+        ax.set_xlim(xlim[0], xlim[1])
+
+    if ylim is not None:
+        ax.set_ylim(ylim[0], ylim[1])
+
+    if offset is not None:
+        ax.get_xaxis().set_label_coords(0.5, offset[0])
+        ax.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax.get_xaxis().set_label_coords(0.5, -0.1)
+        ax.get_yaxis().set_label_coords(-0.1, 0.5)
+
+    if title is not None:
+        ax.set_title(title, y=1.02, fontsize=13)
+
+    read_obj = read_object.ReadObject(object_name)
+
+    obj_spec = []
+    obj_res = []
+
+    for item in spec_name:
+        obj_spec.append(read_obj.get_spectrum()[item][0])
+        obj_res.append(read_obj.get_spectrum()[item][3])
+
+    if flux_offset == 0.0:
+        for spec_item in obj_spec:
+            ax.plot(spec_item[:, 0], spec_item[:, 1], "-", lw=0.5, color="black")
+
+    model_reader = read_model.ReadModel(model_name)
+
+    for i in range(n_spectra):
+        param_select = {}
+        idx_select = []
+
+        for param_idx, param_item in enumerate(model_param):
+            param_select[param_item] = coord_points[param_idx][sort_idx[param_idx][i]]
+            idx_select.append(sort_idx[param_idx][i])
+
+        scaling_select = flux_scaling[tuple(idx_select)]
+
+        if flux_offset != 0.0:
+            for spec_item in obj_spec:
+                ax.plot(
+                    spec_item[:, 0],
+                    (n_spectra - i - 1) * flux_offset + spec_item[:, 1],
+                    "-",
+                    lw=0.5,
+                    color="black",
+                )
+
+        for j, spec_item in enumerate(obj_spec):
+            model_box = model_reader.get_data(
+                model_param=param_select,
+                spec_res=obj_res[j],
+                wavel_resample=spec_item[:, 0],
+            )
+
+            ax.plot(
+                model_box.wavelength,
+                (n_spectra - i - 1) * flux_offset + scaling_select * model_box.flux,
+                color="tomato",
+                lw=0.5,
+            )
+
+        if label_pos is not None and flux_offset != 0.0:
+            label_text = plot_util.create_model_label(
+                model_param=param_select,
+                model_name=None,
+                object_type="planet",
+                leg_param=None,
+            )
+
+            # if av_ext[i] != 0.0:
+            #     label_text += r", A$_\mathregular{V}$ = " + f"{av_ext[i]:.1f}"
+
+            ax.text(
+                label_pos[0],
+                label_pos[1] + (n_spectra - i - 1) * flux_offset,
+                label_text,
+                fontsize=8.0,
+                ha="left",
+            )
 
     if output is None:
         plt.show()

@@ -40,6 +40,7 @@ from species.plot.plot_comparison import (
     plot_statistic,
     plot_empirical_spectra,
     plot_grid_statistic,
+    plot_model_spectra,
 )
 
 from species.plot.plot_color import plot_color_magnitude, plot_color_color

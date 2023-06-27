@@ -1,14 +1,16 @@
 """
-Utility functions for plotting data.
+Module with utility functions for plotting data.
 """
 
 import warnings
 
-from typing import Optional, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
 from typeguard import typechecked
+
+from species.core import constants
 
 
 @typechecked
@@ -771,7 +773,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
 
 @typechecked
-def model_name(in_name: str) -> str:
+def convert_model_name(in_name: str) -> str:
     """
     Function for updating a model name for use in plots.
 
@@ -1251,3 +1253,121 @@ def remove_color_duplicates(
         indices.append(i)
 
     return indices
+
+
+@typechecked
+def create_model_label(
+    model_param: Dict[str, float],
+    object_type: str,
+    model_name: Optional[str] = None,
+    leg_param: Optional[List[str]] = None,
+) -> str:
+    """ "
+    Function for creating a label that includes the parameters of a
+    model spectrum that can be used for a legend of a plot.
+
+    Parameters
+    ----------
+    model_param : dict
+        Dictionary with model parameters.
+    model_name : str, None
+        Name of the atmospheric model.
+    object_type : str
+        Object type ('planet' or 'star') that determines if
+        Jupiter or solar units are used.
+    leg_param : list(str), None
+        List with the parameters to include. Apart from atmospheric
+        parameters (e.g. 'teff', 'logg', 'radius') also parameters
+        such as 'mass' and 'luminosity' can be included. The default
+        atmospheric parameters are included in the legend if the
+        argument is set to ``None``.
+
+    Returns
+    -------
+    str
+        List with selected indices of the young/low-gravity objects.
+    """
+
+    if leg_param is not None:
+        for item in list(model_param.keys()):
+            if item not in leg_param:
+                del model_param[item]
+
+    if leg_param is not None:
+        param_new = {k: model_param[k] for k in leg_param}
+        model_param = param_new.copy()
+
+    par_key, par_unit, par_label = quantity_unit(
+        param=list(model_param.keys()), object_type=object_type
+    )
+
+    label = ""
+    # newline = False
+
+    for i, item in enumerate(par_key):
+        if item[:4] == "teff":
+            value = f"{model_param[item]:.0f}"
+
+        elif item in [
+            "logg",
+            "feh",
+            "metallicity",
+            "fsed",
+            "lognorm_ext",
+            "powerlaw_ext",
+            "ism_ext",
+        ]:
+            value = f"{model_param[item]:.1f}"
+
+        elif item in ["co", "c_o_ratio"]:
+            value = f"{model_param[item]:.2f}"
+
+        elif item[:6] == "radius":
+            if object_type == "planet":
+                value = f"{model_param[item]:.1f}"
+
+                # if item == 'radius_1':
+                #     value = f'{model_param[item]:.0f}'
+                # else:
+                #     value = f'{model_param[item]:.1f}'
+
+            elif object_type == "star":
+                value = f"{model_param[item]*constants.R_JUP/constants.R_SUN:.1f}"
+
+        elif item == "mass" and leg_param is not None and item in leg_param:
+            if object_type == "planet":
+                value = f"{model_param[item]:.0f}"
+
+            elif object_type == "star":
+                value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:.1f}"
+
+        elif item == "luminosity" and leg_param is not None and item in leg_param:
+            value = f"{np.log10(model_param[item]):.2f}"
+
+        else:
+            continue
+
+        # if len(label) > 80 and newline == False:
+        #     label += '\n'
+        #     newline = True
+
+        if model_name is not None:
+            model_name_new = convert_model_name(model_name)
+
+        if par_unit[i] is None:
+            if len(label) > 0:
+                label += ", "
+            elif model_name is not None:
+                label += f"{model_name_new}: "
+
+            label += f"{par_label[i]} = {value}"
+
+        else:
+            if len(label) > 0:
+                label += ", "
+            elif model_name is not None:
+                label += f"{model_name_new}: "
+
+            label += f"{par_label[i]} = {value} {par_unit[i]}"
+
+    return label

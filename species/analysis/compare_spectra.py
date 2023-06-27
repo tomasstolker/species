@@ -1,11 +1,13 @@
 """
-Module with functionalities for comparing a spectrum
-with a library of empirical or model spectra.
+Module with functionalities for comparing a spectrum with a library of
+empirical or model spectra. Empirical libraries of field or low-gravity
+objects can be used to determine the spectral type. A comparison with
+model spectra are useful for exploring the parameter space of
+atmospheric parameters.
 """
 
 import configparser
 import os
-import warnings
 
 from typing import List, Optional, Tuple, Union
 
