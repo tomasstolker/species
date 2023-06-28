@@ -1355,6 +1355,13 @@ class ReadModel:
 
             model_box.wavelength = wavel_resample
 
+        # Add the planet mass to the parameter dictionary
+
+        if "radius" in model_param and "logg" in model_param:
+            model_param["mass"] = read_util.get_mass(
+                model_param["logg"], model_param["radius"]
+            )
+
         # Add the luminosity to the parameter dictionary
 
         if "radius" in model_box.parameters:

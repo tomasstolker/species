@@ -7,7 +7,7 @@ spectra or a grid of model spectra.
 import configparser
 import os
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -856,6 +856,7 @@ def plot_model_spectra(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
+    leg_param: Optional[List[str]] = None,
 ) -> mpl.figure.Figure:
     """
     Function for plotting the results from comparing a spectrum
@@ -894,6 +895,13 @@ def plot_model_spectra(
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
+    leg_param : list(str), None
+        List with the parameters to include in the legend of the
+        model spectra. Apart from atmospheric parameters (e.g.
+        'teff', 'logg', 'radius') also parameters such as 'mass'
+        and 'luminosity' can be included. The default atmospheric
+        parameters are included in the legend if the argument is
+        set to ``None``.
 
     Returns
     -------
@@ -926,6 +934,7 @@ def plot_model_spectra(
     model_name = dset.attrs["model"]
     n_param = dset.attrs["n_param"]
     n_scale_spec = dset.attrs["n_scale_spec"]
+    parallax = dset.attrs["parallax"]
 
     spec_name = []
     for i in range(n_spec_name):
@@ -952,6 +961,10 @@ def plot_model_spectra(
         sort_idx[i] = item[:n_spectra]
 
     flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
+    radius = (
+        np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
+        / constants.R_JUP
+    )
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -1044,14 +1057,14 @@ def plot_model_spectra(
     model_reader = read_model.ReadModel(model_name)
 
     for i in range(n_spectra):
-        param_select = {}
+        param_select = {"parallax": parallax}
         idx_select = []
 
         for param_idx, param_item in enumerate(model_param):
             param_select[param_item] = coord_points[param_idx][sort_idx[param_idx][i]]
             idx_select.append(sort_idx[param_idx][i])
 
-        scaling_select = flux_scaling[tuple(idx_select)]
+        param_select["radius"] = radius[tuple(idx_select)]
 
         if flux_offset != 0.0:
             for spec_item in obj_spec:
@@ -1072,21 +1085,22 @@ def plot_model_spectra(
 
             ax.plot(
                 model_box.wavelength,
-                (n_spectra - i - 1) * flux_offset + scaling_select * model_box.flux,
+                (n_spectra - i - 1) * flux_offset + model_box.flux,
                 color="tomato",
                 lw=0.5,
             )
 
         if label_pos is not None and flux_offset != 0.0:
+            if leg_param is None:
+                leg_param = model_param.copy()
+                leg_param.append("radius")
+
             label_text = plot_util.create_model_label(
                 model_param=param_select,
                 model_name=None,
                 object_type="planet",
-                leg_param=None,
+                leg_param=leg_param,
             )
-
-            # if av_ext[i] != 0.0:
-            #     label_text += r", A$_\mathregular{V}$ = " + f"{av_ext[i]:.1f}"
 
             ax.text(
                 label_pos[0],

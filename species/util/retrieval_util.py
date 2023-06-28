@@ -243,7 +243,6 @@ def pt_ret_model(
     else:
         for i_intp in range(2):
             if i_intp == 0:
-
                 # Create the pressure coordinates for the spline
                 # support nodes at low pressure
                 support_points_low = np.logspace(
@@ -270,7 +269,6 @@ def pt_ret_model(
                 support_points[4:] = support_points_high[1:]
 
             else:
-
                 # Create the pressure coordinates for the spline
                 # support nodes at low pressure
                 support_points_low = np.logspace(
@@ -329,8 +327,6 @@ def pt_ret_model(
                 # The temperature at p_bot_spline (from
                 # the radiative-convective solution)
                 t_support[len(support_points_low) - 1] = tfintp(p_bot_spline)
-
-                # print('diff', t_connect_calc - tfintp(p_bot_spline))
 
                 try:
                     t_support[len(support_points_low) :] = tfintp(
@@ -419,7 +415,7 @@ def create_pt_profile(
     pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
 ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
     """
-    Function for creating the P-T profile.
+    Function for creating a pressure-temperature profile.
 
     Parameters
     ----------
@@ -438,7 +434,7 @@ def create_pt_profile(
         ``pt_profile`` is either 'free' or 'monotonic'.
     metallicity : float
         Metallicity [Fe/H].
-    c_o_ratio : float
+    c_o_ratio : float, None
         Carbon-to-oxgen ratio.
     pt_smooth : float, dict, None
         Standard deviation of the Gaussian kernel that is used for
@@ -583,6 +579,7 @@ def create_abund_dict(
     chemistry: str,
     pressure_grid: str = "smaller",
     indices: Optional[np.ndarray] = None,
+    knot_press_abund: Optional[np.ndarray] = None
 ) -> Dict[str, np.ndarray]:
     """
     Function to update the names in the abundance dictionary.
@@ -612,12 +609,20 @@ def create_abund_dict(
         Pressure indices from the adaptive refinement in a cloudy
         atmosphere. Only required with ``pressure_grid='clouds'``.
         Otherwise, the argument can be set to ``None``.
+    knot_press_abund : np.ndarray, None
+        Pressure nodes at which the abundances are sampled. Only
+        required when ``chemistry='free'``.
 
     Returns
     -------
     dict
         Dictionary with the updated names of the abundances.
     """
+
+    if knot_press_abund is None:
+        abund_nodes = 1
+    else:
+        abund_nodes = knot_press_abund.size
 
     # create a dictionary with the updated abundance names
 
@@ -772,6 +777,8 @@ def calc_spectrum_clear(
     p_quench: Optional[float],
     log_x_abund: Optional[dict],
     chemistry: str,
+    line_species: List[str],
+    knot_press_abund: Optional[np.ndarray],
     pressure_grid: str = "smaller",
     contribution: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
@@ -800,7 +807,10 @@ def calc_spectrum_clear(
         Dictionary with the log10 of the abundances. Only required when
         ``chemistry='free'``.
     chemistry : str
-        Chemistry type (``'equilibrium'`` or ``'free'``).
+        Chemistry type ('equilibrium' or 'free').
+    knot_press_abund : np.ndarray, None
+        Pressure nodes at which the abundances are sampled. Only
+        required when ``chemistry='free'``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -856,7 +866,9 @@ def calc_spectrum_clear(
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund)
+        abund_in = mass_fractions(
+            log_x_abund, rt_object, line_species, knot_press_abund
+        )
 
         # Mean molecular weight
         mmw = mean_molecular_weight(abund_in)
@@ -881,6 +893,7 @@ def calc_spectrum_clear(
         chemistry,
         pressure_grid=pressure_grid,
         indices=None,
+        knot_press_abund=knot_press_abund,
     )
 
     # calculate the emission spectrum
@@ -919,6 +932,7 @@ def calc_spectrum_clouds(
     cloud_dict: Dict[str, Optional[float]],
     log_g: float,
     chemistry: str,
+    knot_press_abund: Optional[np.ndarray],
     pressure_grid: str = "smaller",
     plotting: bool = False,
     contribution: bool = False,
@@ -957,7 +971,10 @@ def calc_spectrum_clouds(
     log_g : float
         Log10 of the surface gravity (cm s-2).
     chemistry : str
-        Chemistry type (only ``'equilibrium'`` is supported).
+        Chemistry type ('equilibrium' or 'free').
+    knot_press_abund : np.ndarray, None
+        Pressure nodes at which the abundances are sampled. Only
+        required when ``chemistry='free'``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -1029,17 +1046,43 @@ def calc_spectrum_clouds(
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund)
+        abund_in = mass_fractions(log_x_abund, rt_object.line_species, knot_press_abund)
 
         # Mean molecular weight
-        mmw = mean_molecular_weight(abund_in)
+        if knot_press_abund is None:
+            mmw = mean_molecular_weight(abund_in)
+            mmw *= np.ones_like(pressure)
+
+        # Create list of all species
+        abund_species = rt_object.line_species.copy()
+        abund_species.append("H2")
+        abund_species.append("He")
 
         # Create arrays of constant atmosphere abundance
-        for item in abund_in:
-            abund_in[item] *= np.ones_like(pressure)
+        if knot_press_abund is None:
+            for abund_item in abund_species:
+                abund_in[abund_item] = np.full(pressure.size, abund_in[f"{abund_item}_0"])
+                del abund_in[f"{abund_item}_0"]
 
-        # Create an array of a constant mean molecular weight
-        mmw *= np.ones_like(pressure)
+        else:
+            for abund_item in abund_species:
+                knot_abund = np.zeros(knot_press_abund.shape)
+
+                for nod_idx in range(knot_press_abund.size):
+                    knot_abund[nod_idx] = abund_in[f"{abund_item}_{nod_idx}"]
+                    del abund_in[f"{abund_item}_{nod_idx}"]
+
+                abund_in[abund_item] = pt_spline_interp(
+                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                )
+
+            mmw = np.zeros(pressure.shape[0])
+
+            for i in range(pressure.size):
+                abund_dict = {}
+                for key, value in abund_in.items():
+                    abund_dict[f"{key}_0"] = value[i]
+                mmw[i] = mean_molecular_weight(abund_dict)
 
     if log_x_base is not None:
         p_base = {}
@@ -1077,6 +1120,7 @@ def calc_spectrum_clouds(
         chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
+        knot_press_abund=knot_press_abund,
     )
 
     # Create dictionary with sedimentation parameters
@@ -1137,6 +1181,18 @@ def calc_spectrum_clouds(
             plt.plot(abundances["H2O"], pressure, label="H2O")
         if "H2O_HITEMP" in abundances:
             plt.plot(abundances["H2O_HITEMP"], pressure, label="H2O")
+        if "Na" in abundances:
+            plt.plot(abundances["Na"], pressure, label="Na")
+        if "K" in abundances:
+            plt.plot(abundances["K"], pressure, label="K")
+        if "Na_allard" in abundances:
+            plt.plot(abundances["Na_allard"], pressure, label="Na")
+        if "K_allard" in abundances:
+            plt.plot(abundances["K_allard"], pressure, label="K")
+        if "Na_burrows" in abundances:
+            plt.plot(abundances["Na_burrows"], pressure, label="Na")
+        if "K_burrows" in abundances:
+            plt.plot(abundances["K_burrows"], pressure, label="K")
         plt.xlim(1e-10, 1.0)
         plt.ylim(pressure[-1], pressure[0])
         plt.yscale("log")
@@ -1437,15 +1493,25 @@ def calc_spectrum_clouds(
 
 
 @typechecked
-def mass_fractions(log_x_abund: dict) -> dict:
+def mass_fractions(
+    log_x_abund: Dict[str, float],
+    line_species: List[str],
+    knot_press_abund: Optional[np.ndarray],
+) -> Dict[str, float]:
     """
     Function to return a dictionary with the mass fractions of
-    all species.
+    all species, including molecular hydrogen and helium.
 
     Parameters
     ----------
     log_x_abund : dict
         Dictionary with the log10 of the mass fractions of metals.
+    line_species : list(str)
+        List with the line species.
+    knot_press_abund : np.ndarray, None
+        Array with the pressures (bar) for the abundances. The
+        argument can be set to ``None`` if abundances are constant
+        with pressure.
 
     Returns
     -------
@@ -1453,31 +1519,39 @@ def mass_fractions(log_x_abund: dict) -> dict:
         Dictionary with the mass fractions of all species.
     """
 
-    # initiate abundance dictionary
+    if knot_press_abund is None:
+        abund_nodes = 1
+    else:
+        abund_nodes = knot_press_abund.size
+
+    # Initiate abundance dictionary
     abund = {}
 
-    # initiate the total mass fraction of the metals
-    metal_sum = 0.0
+    for nod_idx in range(abund_nodes):
+        # Initiate the total mass fraction of the metals
+        metal_sum = 0.0
 
-    for item in log_x_abund:
-        # add the mass fraction to the dictionary
-        abund[item] = 10.0 ** log_x_abund[item]
+        for item in line_species:
+            # Add the mass fraction to the dictionary
+            abund[f"{item}_{nod_idx}"] = 10.0 ** log_x_abund[f"{item}_{nod_idx}"]
 
-        # update the total mass fraction of the metals
-        metal_sum += abund[item]
+            # Update the total mass fraction of the metals
+            metal_sum += abund[f"{item}_{nod_idx}"]
 
-    # mass fraction of H2 and He
-    ab_h2_he = 1.0 - metal_sum
+        # Mass fraction of H2 and He
+        ab_h2_he = 1.0 - metal_sum
 
-    # add H2 and He mass fraction to the dictionary
-    abund["H2"] = ab_h2_he * 0.75
-    abund["He"] = ab_h2_he * 0.25
+        # Add H2 and He mass fraction to the dictionary
+        abund[f"H2_{nod_idx}"] = ab_h2_he * 0.75
+        abund[f"He_{nod_idx}"] = ab_h2_he * 0.25
 
     return abund
 
 
 @typechecked
-def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float]:
+def calc_metal_ratio(
+    log_x_abund: Dict[str, float], line_species: List[str]
+) -> Tuple[float, float, float]:
     """
     Function for calculating [C/H], [O/H], and C/O for a given set
     of abundances.
@@ -1486,6 +1560,8 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     ----------
     log_x_abund : dict
         Dictionary with the log10 mass fractions.
+    line_species : list(str)
+        List with the line species.
 
     Returns
     -------
@@ -1507,7 +1583,9 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
     masses = atomic_masses()
 
     # Create a dictionary with all mass fractions
-    abund = mass_fractions(log_x_abund)
+    abund = mass_fractions(
+        log_x_abund=log_x_abund, line_species=line_species, knot_press_abund=None
+    )
 
     # Calculate the mean molecular weight from the input mass fractions
     mmw = mean_molecular_weight(abund)
@@ -1519,89 +1597,89 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
 
     # Calculate the total C abundance
 
-    if "CO" in abund:
-        c_abund += abund["CO"] * mmw / masses["CO"]
+    if "CO_0" in abund:
+        c_abund += abund["CO_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso" in abund:
-        c_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+    if "CO_all_iso_0" in abund:
+        c_abund += abund["CO_all_iso_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        c_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+    if "CO_all_iso_HITEMP_0" in abund:
+        c_abund += abund["CO_all_iso_HITEMP_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso_Chubb" in abund:
-        c_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+    if "CO_all_iso_Chubb_0" in abund:
+        c_abund += abund["CO_all_iso_Chubb_0"] * mmw / masses["CO"]
 
-    if "CO2" in abund:
-        c_abund += abund["CO2"] * mmw / masses["CO2"]
+    if "CO2_0" in abund:
+        c_abund += abund["CO2_0"] * mmw / masses["CO2"]
 
-    if "CO2_main_iso" in abund:
-        c_abund += abund["CO2_main_iso"] * mmw / masses["CO2"]
+    if "CO2_main_iso_0" in abund:
+        c_abund += abund["CO2_main_iso_0"] * mmw / masses["CO2"]
 
-    if "CH4" in abund:
-        c_abund += abund["CH4"] * mmw / masses["CH4"]
+    if "CH4_0" in abund:
+        c_abund += abund["CH4_0"] * mmw / masses["CH4"]
 
-    if "CH4_main_iso" in abund:
-        c_abund += abund["CH4_main_iso"] * mmw / masses["CH4"]
+    if "CH4_main_iso_0" in abund:
+        c_abund += abund["CH4_main_iso_0"] * mmw / masses["CH4"]
 
     # Calculate the total O abundance
 
-    if "CO" in abund:
-        o_abund += abund["CO"] * mmw / masses["CO"]
+    if "CO_0" in abund:
+        o_abund += abund["CO_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso" in abund:
-        o_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+    if "CO_all_iso_0" in abund:
+        o_abund += abund["CO_all_iso_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        o_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+    if "CO_all_iso_HITEMP_0" in abund:
+        o_abund += abund["CO_all_iso_HITEMP_0"] * mmw / masses["CO"]
 
-    if "CO_all_iso_Chubb" in abund:
-        o_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+    if "CO_all_iso_Chubb_0" in abund:
+        o_abund += abund["CO_all_iso_Chubb_0"] * mmw / masses["CO"]
 
-    if "CO2" in abund:
-        o_abund += 2.0 * abund["CO2"] * mmw / masses["CO2"]
+    if "CO2_0" in abund:
+        o_abund += 2.0 * abund["CO2_0"] * mmw / masses["CO2"]
 
-    if "CO2_main_iso" in abund:
-        o_abund += 2.0 * abund["CO2_main_iso"] * mmw / masses["CO2"]
+    if "CO2_main_iso_0" in abund:
+        o_abund += 2.0 * abund["CO2_main_iso_0"] * mmw / masses["CO2"]
 
-    if "H2O" in abund:
-        o_abund += abund["H2O"] * mmw / masses["H2O"]
+    if "H2O_0" in abund:
+        o_abund += abund["H2O_0"] * mmw / masses["H2O"]
 
-    if "H2O_HITEMP" in abund:
-        o_abund += abund["H2O_HITEMP"] * mmw / masses["H2O"]
+    if "H2O_HITEMP_0" in abund:
+        o_abund += abund["H2O_HITEMP_0"] * mmw / masses["H2O"]
 
-    if "H2O_main_iso" in abund:
-        o_abund += abund["H2O_main_iso"] * mmw / masses["H2O"]
+    if "H2O_main_iso_0" in abund:
+        o_abund += abund["H2O_main_iso_0"] * mmw / masses["H2O"]
 
     # Calculate the total H abundance
 
-    h_abund += 2.0 * abund["H2"] * mmw / masses["H2"]
+    h_abund += 2.0 * abund["H2_0"] * mmw / masses["H2"]
 
-    if "CH4" in abund:
-        h_abund += 4.0 * abund["CH4"] * mmw / masses["CH4"]
+    if "CH4_0" in abund:
+        h_abund += 4.0 * abund["CH4_0"] * mmw / masses["CH4"]
 
-    if "CH4_main_iso" in abund:
-        h_abund += 4.0 * abund["CH4_main_iso"] * mmw / masses["CH4"]
+    if "CH4_main_iso_0" in abund:
+        h_abund += 4.0 * abund["CH4_main_iso_0"] * mmw / masses["CH4"]
 
-    if "H2O" in abund:
-        h_abund += 2.0 * abund["H2O"] * mmw / masses["H2O"]
+    if "H2O_0" in abund:
+        h_abund += 2.0 * abund["H2O_0"] * mmw / masses["H2O"]
 
-    if "H2O_HITEMP" in abund:
-        h_abund += 2.0 * abund["H2O_HITEMP"] * mmw / masses["H2O"]
+    if "H2O_HITEMP_0" in abund:
+        h_abund += 2.0 * abund["H2O_HITEMP_0"] * mmw / masses["H2O"]
 
-    if "H2O_main_iso" in abund:
-        h_abund += 2.0 * abund["H2O_main_iso"] * mmw / masses["H2O"]
+    if "H2O_main_iso_0" in abund:
+        h_abund += 2.0 * abund["H2O_main_iso_0"] * mmw / masses["H2O"]
 
-    if "NH3" in abund:
-        h_abund += 3.0 * abund["NH3"] * mmw / masses["NH3"]
+    if "NH3_0" in abund:
+        h_abund += 3.0 * abund["NH3_0"] * mmw / masses["NH3"]
 
-    if "NH3_main_iso" in abund:
-        h_abund += 3.0 * abund["NH3_main_iso"] * mmw / masses["NH3"]
+    if "NH3_main_iso_0" in abund:
+        h_abund += 3.0 * abund["NH3_main_iso_0"] * mmw / masses["NH3"]
 
-    if "H2S" in abund:
-        h_abund += 2.0 * abund["H2S"] * mmw / masses["H2S"]
+    if "H2S_0" in abund:
+        h_abund += 2.0 * abund["H2S_0"] * mmw / masses["H2S"]
 
-    if "H2S_main_iso" in abund:
-        h_abund += 2.0 * abund["H2S_main_iso"] * mmw / masses["H2S"]
+    if "H2S_main_iso_0" in abund:
+        h_abund += 2.0 * abund["H2S_main_iso_0"] * mmw / masses["H2S"]
 
     return (
         np.log10(c_abund / h_abund / c_h_solar),
@@ -1611,15 +1689,16 @@ def calc_metal_ratio(log_x_abund: Dict[str, float]) -> Tuple[float, float, float
 
 
 @typechecked
-def mean_molecular_weight(abundances: dict) -> float:
+def mean_molecular_weight(abundances: Dict[str, float]) -> float:
     """
-    Function to calculate the mean molecular weight from the
-    abundances.
+    Function to calculate the mean molecular weight from a
+    dictionary with mass fractions.
 
     Parameters
     ----------
     abundances : dict
         Dictionary with the mass fraction of each species.
+        Keys should be the line species, always ending with "_0".
 
     Returns
     -------
@@ -1628,33 +1707,38 @@ def mean_molecular_weight(abundances: dict) -> float:
     """
 
     masses = atomic_masses()
+    mmw_sum = 0.0
 
-    mmw = 0.0
+    for abund_item in abundances:
+        key = abund_item[:-2]
 
-    for key in abundances:
         if key in ["CO_all_iso", "CO_all_iso_HITEMP", "CO_all_iso_Chubb"]:
-            mmw += abundances[key] / masses["CO"]
+            mmw_sum += abundances[abund_item] / masses["CO"]
 
         elif key in ["Na_lor_cut", "Na_allard", "Na_burrows"]:
-            mmw += abundances[key] / masses["Na"]
+            mmw_sum += abundances[abund_item] / masses["Na"]
 
         elif key in ["K_lor_cut", "K_allard", "K_burrows"]:
-            mmw += abundances[key] / masses["K"]
+            mmw_sum += abundances[abund_item] / masses["K"]
 
         elif key == "CH4_main_iso":
-            mmw += abundances[key] / masses["CH4"]
+            mmw_sum += abundances[abund_item] / masses["CH4"]
 
         elif key in ["H2O_main_iso", "H2O_HITEMP"]:
-            mmw += abundances[key] / masses["H2O"]
+            mmw_sum += abundances[abund_item] / masses["H2O"]
 
         else:
-            mmw += abundances[key] / masses[key]
+            mmw_sum += abundances[abund_item] / masses[key]
 
-    return 1.0 / mmw
+    return 1.0 / mmw_sum
 
 
 @typechecked
-def potassium_abundance(log_x_abund: dict) -> float:
+def potassium_abundance(
+    log_x_abund: Dict[str, float],
+    line_species: List[str],
+    knot_press_abund: Optional[np.ndarray],
+) -> List[float]:
     """
     Function to calculate the mass fraction of potassium at a solar
     ratio of the sodium and potassium abundances.
@@ -1663,49 +1747,74 @@ def potassium_abundance(log_x_abund: dict) -> float:
     ----------
     log_x_abund : dict
         Dictionary with the log10 of the mass fractions.
+    line_species : list(str)
+        List with the line species.
+    knot_press_abund : np.ndarray, None
+        Array with the pressures (bar) for the abundances. The
+        argument can be set to ``None`` if abundances are constant
+        with pressure.
 
     Returns
     -------
-    float
-        Log10 of the mass fraction of potassium.
+    list(float)
+        Log10 of the mass fractions of potassium in the order
+        of ``knot_press_abund``.
     """
 
-    # solar volume mixing ratios of Na and K (Asplund et al. 2009)
+    if knot_press_abund is None:
+        abund_nodes = 1
+    else:
+        abund_nodes = knot_press_abund.size
+
+    # Solar volume mixing ratios of Na and K (Asplund et al. 2009)
     n_na_solar = 1.60008694353205e-06
     n_k_solar = 9.86605611925677e-08
 
-    # get the atomic masses
+    # Get the atomic masses
     masses = atomic_masses()
 
-    # create a dictionary with all mass fractions
-    x_abund = mass_fractions(log_x_abund)
+    # Create a dictionary with all mass fractions
+    x_abund = mass_fractions(log_x_abund, line_species, knot_press_abund)
 
-    # calculate the mean molecular weight from the input mass fractions
-    mmw = mean_molecular_weight(x_abund)
+    log_x_k = []
 
-    # volume mixing ratio of sodium
-    if "Na" in log_x_abund:
-        n_na_abund = x_abund["Na"] * mmw / masses["Na"]
+    for node_idx in range(abund_nodes):
+        # Calculate mean molecular weight from the mass fractions
 
-    elif "Na_lor_cut" in log_x_abund:
-        n_na_abund = x_abund["Na_lor_cut"] * mmw / masses["Na"]
+        abund_dict = {}
+        for abund_item in line_species:
+            abund_dict[f"{abund_item}_0"] = x_abund[f"{abund_item}_{node_idx}"]
 
-    elif "Na_allard" in log_x_abund:
-        n_na_abund = x_abund["Na_allard"] * mmw / masses["Na"]
+        mmw = mean_molecular_weight(abund_dict)
 
-    elif "Na_burrows" in log_x_abund:
-        n_na_abund = x_abund["Na_burrows"] * mmw / masses["Na"]
+        # Volume mixing ratio of sodium
 
-    # volume mixing ratio of potassium
-    n_k_abund = n_na_abund * n_k_solar / n_na_solar
+        if f"Na_{node_idx}" in log_x_abund:
+            n_na_abund = x_abund[f"Na_{node_idx}"] * mmw / masses["Na"]
 
-    return np.log10(n_k_abund * masses["K"] / mmw)
+        elif f"Na_lor_cut_{node_idx}" in log_x_abund:
+            n_na_abund = x_abund[f"Na_lor_cut_{node_idx}"] * mmw / masses["Na"]
+
+        elif f"Na_allard_{node_idx}" in log_x_abund:
+            n_na_abund = x_abund[f"Na_allard_{node_idx}"] * mmw / masses["Na"]
+
+        elif f"Na_burrows_{node_idx}" in log_x_abund:
+            n_na_abund = x_abund[f"Na_burrows_{node_idx}"] * mmw / masses["Na"]
+
+        # Volume mixing ratio of potassium
+
+        n_k_abund = n_na_abund * n_k_solar / n_na_solar
+
+        # Mass fraction of potassium
+        log_x_k.append(np.log10(n_k_abund * masses["K"] / mmw))
+
+    return log_x_k
 
 
 @typechecked
 def log_x_cloud_base(
-    c_o_ratio: float, metallicity: float, cloud_fractions: dict
-) -> dict:
+    c_o_ratio: float, metallicity: float, cloud_fractions: Dict[str, float]
+) -> Dict[str, float]:
     """
     Function for returning a dictionary with the log10 mass fractions
     at the cloud base.
@@ -2039,7 +2148,8 @@ def find_cloud_deck(
         press=press,
         metallicity=metallicity,
         c_o_ratio=c_o_ratio,
-        mmw=mmw)
+        mmw=mmw,
+    )
 
     Tdiff = Tcond_on_input_grid - temp
     diff_vec = Tdiff[1:] * Tdiff[:-1]
@@ -2177,6 +2287,7 @@ def scale_cloud_abund(
         chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
+        knot_press_abund=None,
     )
 
     # Interpolate the line opacities to the temperature structure
