@@ -2,12 +2,12 @@
 Module with functionalities for comparing a spectrum with a library of
 empirical or model spectra. Empirical libraries of field or low-gravity
 objects can be used to determine the spectral type. A comparison with
-model spectra are useful for exploring the parameter space of
-atmospheric parameters.
+model spectra are useful for exploration of the atmospheric parameter.
 """
 
 import configparser
 import os
+import warnings
 
 from typing import List, Optional, Tuple, Union
 
@@ -15,7 +15,6 @@ import h5py
 import numpy as np
 
 from scipy.interpolate import interp1d
-from scipy.optimize import curve_fit
 from typeguard import typechecked
 
 from species.core import constants
@@ -44,9 +43,10 @@ class CompareSpectra:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         spec_name : str, list(str)
-            Name of the spectrum or list with spectrum names that
-            are stored at the object data of ``object_name``. The
-            argument can be either a string or a list of strings.
+            Name of the spectrum or a list with the names of the
+            spectra that will be used for the analysis. The spectrum
+            names should have been stored at the object data of
+            ``object_name``.
 
         Returns
         -------
@@ -376,10 +376,10 @@ class CompareSpectra:
         fix_logg: Optional[float] = None,
         scale_spec: Optional[List[str]] = None,
         weights: bool = True,
-        inc_phot: Optional[List[str]] = None,
+        inc_phot: Union[List[str], bool] = False,
     ) -> None:
         """
-        Method for finding the best fitting spectrum from a grid of
+        Method for finding the best-fit spectrum from a grid of
         atmospheric model spectra by evaluating the goodness-of-fit
         statistic from `Cushing et al. (2008) <https://ui.adsabs.
         harvard.edu/abs/2008ApJ...678.1372C/abstract>`_.
@@ -388,13 +388,10 @@ class CompareSpectra:
         ----------
         tag : str
             Database tag where for each spectrum from the spectral
-            library the best-fit parameters will be stored. So when
-            testing a range of values for ``av_ext`` and ``rad_vel``,
-            only the parameters that minimize the goodness-of-fit
-            statistic will be stored.
+            library the best-fit parameters will be stored.
         model : str
-            Name of the atmospheric model grid with synthetic spectra.
-        av_points : list(float), np.array, None
+            Name of the model grid with synthetic spectra.
+        av_points : list(float), np.ndarray, None
             List of :math:`A_V` extinction values for which the
             goodness-of-fit statistic will be tested. The extinction is
             calculated with the relation from `Cardelli et al. (1989)
@@ -411,13 +408,17 @@ class CompareSpectra:
             templates. This can be used to account for a difference in
             absolute calibration between spectra.
         weights : bool
-            Apply a weighting based on the widths of the
-            wavelengths bins.
-        inc_phot : list(str), None
-            Filter names of the photometry to include in the
-            comparison. Photometry points are weighted by the FWHM
-            of the filter profile. No photometric fluxes will be
-            used if the argument is set to ``None``.
+            Apply a weighting of the spectra and photometry based on
+            the widths of the wavelengths bins and the FWHM of the
+            filter profiles, respectively. No weighting is applied
+            if the argument is set to ``False``.
+        inc_phot : list(str), bool
+            Filter names for which photometric fluxes of the
+            selected ``object_name`` will be included in the
+            comparison. The argument can be a list with filter names
+            or a boolean to select all or none of the photometry.
+            By default the argument is set to ``False`` so
+            photometric fluxes are not included.
 
         Returns
         -------
@@ -428,6 +429,9 @@ class CompareSpectra:
         w_i = {}
 
         for spec_item in self.spec_name:
+            # Determine width of wavelength bins for the spectra
+            # Set the optional weights for the statistic to the
+            # width of the bins or otherwise to one
             obj_wavel = self.object.get_spectrum()[spec_item][0][:, 0]
 
             diff = (np.diff(obj_wavel)[1:] + np.diff(obj_wavel)[:-1]) / 2.0
@@ -439,21 +443,32 @@ class CompareSpectra:
             else:
                 w_i[spec_item] = np.ones(obj_wavel.shape[0])
 
-        if inc_phot is None:
-            inc_phot = []
+        if isinstance(inc_phot, bool):
+            if inc_phot:
+                # Select all filters if inc_phot=True
+                species_db = database.Database()
+                object_box = species_db.get_object(self.object_name)
+                inc_phot = object_box.filters
+
+            else:
+                inc_phot = []
 
         if scale_spec is None:
             scale_spec = []
 
         phot_wavel = {}
-
         for phot_item in inc_phot:
             read_filt = read_filter.ReadFilter(phot_item)
-            w_i[phot_item] = read_filt.filter_fwhm()
             phot_wavel[phot_item] = read_filt.mean_wavelength()
 
-        model_reader = read_model.ReadModel(model)
+            if weights:
+                # Set the weight for the photometric fluxes
+                # to the FWHM of the filter profile
+                w_i[phot_item] = read_filt.filter_fwhm()
+            else:
+                w_i[phot_item] = 1.0
 
+        model_reader = read_model.ReadModel(model)
         model_param = model_reader.get_parameters()
         grid_points = model_reader.get_points()
 
@@ -487,15 +502,17 @@ class CompareSpectra:
             coord_points.append([None])
             grid_shape.append(1)
 
+        spec_data = self.object.get_spectrum()
+
         fit_stat = np.zeros(grid_shape)
         flux_scaling = np.zeros(grid_shape)
 
-        if len(scale_spec) == 0:
-            extra_scaling = None
-
-        else:
+        if len(scale_spec) > 0:
             grid_shape.append(len(scale_spec))
             extra_scaling = np.zeros(grid_shape)
+
+        else:
+            extra_scaling = None
 
         n_iter = 1
         for item in coord_points:
@@ -515,10 +532,8 @@ class CompareSpectra:
                                     end="",
                                 )
 
-                                model_spec = {}
-                                model_phot = {}
-
                                 param_dict = {}
+                                model_spec = {}
 
                                 if model_param[0] is not None:
                                     param_dict[model_param[0]] = coord_0_item
@@ -557,98 +572,69 @@ class CompareSpectra:
                                         wavel_resample=obj_spec[:, 0],
                                     )
 
+                                    nan_wavel = np.sum(np.isnan(model_box.flux))
+
+                                    if nan_wavel > 0:
+                                        warnings.warn(
+                                            "The extracted model spectrum contains "
+                                            f"{nan_wavel} fluxes with NaN. Probably "
+                                            "because some of the wavelengths of the "
+                                            "data are outside the available "
+                                            "wavelength range of the model grid. "
+                                            "These wavelengths are ignored when "
+                                            "calculating the goodness-of-fit statistic."
+                                        )
+
                                     model_spec[spec_item] = model_box.flux
+
+                                model_list = []
+                                data_list = []
+                                weights_list = []
+                                for spec_item in self.spec_name:
+                                    if spec_item not in scale_spec:
+                                        model_list.append(model_spec[spec_item])
+                                        data_list.append(spec_data[spec_item][0])
+                                        weights_list.append(w_i[spec_item])
 
                                 for phot_item in inc_phot:
                                     model_reader = read_model.ReadModel(
                                         model, filter_name=phot_item
                                     )
 
-                                    model_phot[phot_item] = model_reader.get_flux(
-                                        param_dict
-                                    )[0]
+                                    model_phot = model_reader.get_flux(param_dict)
+                                    model_list.append(np.array([model_phot[0]]))
 
-                                def g_fit(x, scaling):
-                                    g_stat = 0.0
+                                    phot_flux = object_box.flux[phot_item]
+                                    phot_data = np.array(
+                                        [
+                                            [
+                                                phot_wavel[phot_item],
+                                                phot_flux[0],
+                                                phot_flux[1],
+                                            ]
+                                        ]
+                                    )
+                                    data_list.append(phot_data)
 
-                                    for spec_item in self.spec_name:
-                                        obs_spec = self.object.get_spectrum()[
-                                            spec_item
-                                        ][0]
+                                    weights_list.append(np.array([w_i[phot_item]]))
 
-                                        if spec_item in scale_spec:
-                                            spec_idx = scale_spec.index(spec_item)
+                                data_list = np.concatenate(data_list)
+                                model_list = np.concatenate(model_list)
+                                weights_list = np.concatenate(weights_list)
 
-                                            c_numer = (
-                                                w_i[spec_item]
-                                                * obs_spec[:, 1]
-                                                * model_spec[spec_item]
-                                                / obs_spec[:, 2] ** 2
-                                            )
+                                c_numer = (
+                                    weights_list
+                                    * data_list[:, 1]
+                                    * model_list
+                                    / data_list[:, 2] ** 2
+                                )
+                                c_denom = (
+                                    weights_list
+                                    * model_list**2
+                                    / data_list[:, 2] ** 2
+                                )
 
-                                            c_denom = (
-                                                w_i[spec_item]
-                                                * model_spec[spec_item] ** 2
-                                                / obs_spec[:, 2] ** 2
-                                            )
-
-                                            extra_scaling[
-                                                coord_0_idx,
-                                                coord_1_idx,
-                                                coord_2_idx,
-                                                coord_3_idx,
-                                                coord_4_idx,
-                                                coord_5_idx,
-                                                spec_idx,
-                                            ] = np.sum(c_numer) / np.sum(c_denom)
-
-                                            g_stat += np.sum(
-                                                w_i[spec_item]
-                                                * (
-                                                    obs_spec[:, 1]
-                                                    - extra_scaling[
-                                                        coord_0_idx,
-                                                        coord_1_idx,
-                                                        coord_2_idx,
-                                                        coord_3_idx,
-                                                        coord_4_idx,
-                                                        coord_5_idx,
-                                                        spec_idx,
-                                                    ]
-                                                    * model_spec[spec_item]
-                                                )
-                                                ** 2
-                                                / obs_spec[:, 2] ** 2
-                                            )
-
-                                        else:
-                                            g_stat += np.sum(
-                                                w_i[spec_item]
-                                                * (
-                                                    obs_spec[:, 1]
-                                                    - scaling * model_spec[spec_item]
-                                                )
-                                                ** 2
-                                                / obs_spec[:, 2] ** 2
-                                            )
-
-                                    for phot_item in inc_phot:
-                                        obs_phot = self.object.get_photometry(phot_item)
-
-                                        g_stat += (
-                                            w_i[phot_item]
-                                            * (
-                                                obs_phot[2]
-                                                - scaling * model_phot[phot_item]
-                                            )
-                                            ** 2
-                                            / obs_phot[3] ** 2
-                                        )
-
-                                    return g_stat
-
-                                popt, _ = curve_fit(g_fit, xdata=[0.0], ydata=[0.0])
-                                scaling = popt[0]
+                                scaling = np.nansum(c_numer) / np.nansum(c_denom)
 
                                 flux_scaling[
                                     coord_0_idx,
@@ -658,6 +644,67 @@ class CompareSpectra:
                                     coord_4_idx,
                                     coord_5_idx,
                                 ] = scaling
+
+                                for spec_item in scale_spec:
+                                    spec_idx = scale_spec.index(spec_item)
+
+                                    c_numer = (
+                                        w_i[spec_item]
+                                        * scaling
+                                        * model_spec[spec_item]
+                                        * spec_data[spec_item][0][:, 1]
+                                        / spec_data[spec_item][0][:, 2] ** 2
+                                    )
+
+                                    c_denom = (
+                                        w_i[spec_item]
+                                        * spec_data[spec_item][0][:, 1] ** 2
+                                        / spec_data[spec_item][0][:, 2] ** 2
+                                    )
+
+                                    spec_scaling = np.nansum(c_numer) / np.nansum(
+                                        c_denom
+                                    )
+
+                                    extra_scaling[
+                                        coord_0_idx,
+                                        coord_1_idx,
+                                        coord_2_idx,
+                                        coord_3_idx,
+                                        coord_4_idx,
+                                        coord_5_idx,
+                                        spec_idx,
+                                    ] = spec_scaling
+
+                                g_fit = 0.0
+
+                                for spec_item in self.spec_name:
+                                    if spec_item in scale_spec:
+                                        spec_idx = scale_spec.index(spec_item)
+
+                                        data_scaling = extra_scaling[
+                                            coord_0_idx,
+                                            coord_1_idx,
+                                            coord_2_idx,
+                                            coord_3_idx,
+                                            coord_4_idx,
+                                            coord_5_idx,
+                                            spec_idx,
+                                        ]
+
+                                    else:
+                                        data_scaling = 1.0
+
+                                    g_fit += np.nansum(
+                                        w_i[spec_item]
+                                        * (
+                                            data_scaling * spec_data[spec_item][0][:, 1]
+                                            - scaling * model_spec[spec_item]
+                                        )
+                                        ** 2
+                                        / spec_data[spec_item][0][:, 2] ** 2
+                                    )
+
                                 fit_stat[
                                     coord_0_idx,
                                     coord_1_idx,
@@ -665,7 +712,7 @@ class CompareSpectra:
                                     coord_3_idx,
                                     coord_4_idx,
                                     coord_5_idx,
-                                ] = g_fit(0.0, scaling)
+                                ] = g_fit
 
                                 count += 1
 
@@ -675,7 +722,6 @@ class CompareSpectra:
             if param_item is None:
                 model_param = model_param[:param_idx]
                 coord_points = coord_points[:param_idx]
-                grid_shape = grid_shape[:param_idx]
                 break
 
         for dim_idx in range(fit_stat.ndim, 0, -1):

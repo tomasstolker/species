@@ -1202,7 +1202,7 @@ def calc_spectrum_clouds(
         if p_quench is not None:
             plt.axhline(p_quench, ls="--", color="black")
         plt.legend(loc="best")
-        plt.savefig("abundances.pdf", bbox_inches="tight")
+        plt.savefig("abundances.png", bbox_inches="tight")
         plt.clf()
 
         plt.plot(temperature, pressure, "o", ls="none", ms=2.0)
@@ -1215,7 +1215,7 @@ def calc_spectrum_clouds(
         plt.yscale("log")
         plt.ylim(1e3, 1e-6)
         plt.xlim(0.0, 4000.0)
-        plt.savefig("pt_cloud_deck.pdf", bbox_inches="tight")
+        plt.savefig("pt_cloud_deck.png", bbox_inches="tight")
         plt.clf()
 
         for item in log_x_base:
@@ -1233,7 +1233,7 @@ def calc_spectrum_clouds(
                 f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, "
                 + f"X_b = {log_x_base_item:.2f}"
             )
-            plt.savefig(f"{item.lower()}_clouds.pdf", bbox_inches="tight")
+            plt.savefig(f"{item.lower()}_clouds.png", bbox_inches="tight")
             plt.clf()
 
     # Turn clouds off
@@ -1486,7 +1486,7 @@ def calc_spectrum_clouds(
     #     plt.ylabel("Opacity at smallest pressure")
     #     plt.yscale("log")
     #     plt.legend(loc="best")
-    #     plt.savefig("continuum_opacity.pdf", bbox_inches="tight")
+    #     plt.savefig("continuum_opacity.png", bbox_inches="tight")
     #     plt.clf()
 
     return wavel, f_lambda, contr_em, mmw
@@ -2169,7 +2169,7 @@ def find_cloud_deck(
         plt.yscale("log")
         plt.xlim(0.0, 3000.0)
         plt.ylim(1e2, 1e-6)
-        plt.savefig(f"{composition.lower()}_clouds_cdf.pdf", bbox_inches="tight")
+        plt.savefig(f"{composition.lower()}_clouds_cdf.png", bbox_inches="tight")
         plt.clf()
 
     return P_cloud

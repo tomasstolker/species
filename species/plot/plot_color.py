@@ -317,7 +317,7 @@ def plot_color_magnitude(
             model_count = model_dict[model_key]
 
             if model_count[1] == 0:
-                label = plot_util.model_name(item.library)
+                label = plot_util.convert_model_name(item.library)
 
                 if item.library == "sonora-bobcat":
                     metal = float(item.iso_tag[-4:])
@@ -444,7 +444,7 @@ def plot_color_magnitude(
 
         for j, item in enumerate(planck):
             if planck_count == 0:
-                label = plot_util.model_name(item.library)
+                label = plot_util.convert_model_name(item.library)
             else:
                 label = None
 
@@ -1151,7 +1151,7 @@ def plot_color_color(
             model_count = model_dict[model_key]
 
             if model_count[1] == 0:
-                label = plot_util.model_name(item.library)
+                label = plot_util.convert_model_name(item.library)
 
                 if item.library == "sonora-bobcat":
                     metal = float(item.iso_tag[-4:])
@@ -1277,7 +1277,7 @@ def plot_color_color(
 
         for j, item in enumerate(planck):
             if planck_count == 0:
-                label = plot_util.model_name(item.library)
+                label = plot_util.convert_model_name(item.library)
 
                 ax1.plot(
                     item.color1,
@@ -1360,7 +1360,7 @@ def plot_color_color(
 
         for j, item in enumerate(spectra):
             if spectra_count == 0:
-                label = plot_util.model_name(item.library)
+                label = plot_util.convert_model_name(item.library)
 
                 ax1.plot(
                     item.color1,

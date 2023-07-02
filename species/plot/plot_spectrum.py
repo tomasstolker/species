@@ -488,14 +488,11 @@ def plot_spectrum(
 
                 if isinstance(box_item, box.ModelBox):
                     param = box_item.parameters.copy()
-                    if inc_model_name:
-                        model_name = box_item.model
-                    else:
-                        model_name = None
 
                     label = plot_util.create_model_label(
                         model_param=param,
                         model_name=box_item.model,
+                        inc_model_name=inc_model_name,
                         object_type=object_type,
                         leg_param=leg_param,
                     )

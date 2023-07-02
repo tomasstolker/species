@@ -594,20 +594,20 @@ class FitModel:
 
         if isinstance(inc_phot, bool):
             if inc_phot:
-                # Select all filters if True
+                # Select all filters if inc_phot=True
                 species_db = database.Database()
-                objectbox = species_db.get_object(object_name)
-                inc_phot = objectbox.filters
+                object_box = species_db.get_object(object_name)
+                inc_phot = object_box.filters
 
             else:
                 inc_phot = []
 
         if isinstance(inc_spec, bool):
             if inc_spec:
-                # Select all filters if True
+                # Select all spectra if inc_spec=True
                 species_db = database.Database()
-                objectbox = species_db.get_object(object_name)
-                inc_spec = list(objectbox.spectrum.keys())
+                object_box = species_db.get_object(object_name)
+                inc_spec = list(object_box.spectrum.keys())
 
             else:
                 inc_spec = []

@@ -613,7 +613,7 @@ def plot_grid_statistic(
     ax.set_xlabel(r"$T_\mathregular{eff}$ (K)", fontsize=13.0)
 
     if param_y is None:
-        ax.set_ylabel(r"$\Delta\mathregular{log}\,G$", fontsize=13.0)
+        ax.set_ylabel(r"$\Delta\log\,G_k$", fontsize=13.0)
 
     elif param_y == "ism_ext":
         ax.set_ylabel(r"$\mathregular{A}_\mathregular{V}$", fontsize=13.0)
@@ -764,7 +764,7 @@ def plot_grid_statistic(
         )
 
         cb.ax.set_ylabel(
-            r"$\Delta\mathregular{log}\,\mathregular{G}$",
+            r"$\Delta\log\,G_k$",
             rotation=270,
             labelpad=22,
             fontsize=13.0,
@@ -950,10 +950,12 @@ def plot_model_spectra(
 
     scale_spec = []
     for i in range(n_scale_spec):
-        # TODO Not implemented yet
         scale_spec.append(dset.attrs[f"scale_spec{i}"])
 
     goodness_fit = np.array(dset)
+    goodness_fit = np.log10(goodness_fit)
+    goodness_fit -= np.amin(goodness_fit)
+
     sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
     sort_idx = list(sort_idx)
 
@@ -961,6 +963,12 @@ def plot_model_spectra(
         sort_idx[i] = item[:n_spectra]
 
     flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
+
+    if n_scale_spec > 0:
+        extra_scaling = np.array(h5_file[f"results/comparison/{tag}/extra_scaling"])
+    else:
+        extra_scaling = None
+
     radius = (
         np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
         / constants.R_JUP
@@ -1042,17 +1050,14 @@ def plot_model_spectra(
         ax.set_title(title, y=1.02, fontsize=13)
 
     read_obj = read_object.ReadObject(object_name)
-
-    obj_spec = []
-    obj_res = []
-
-    for item in spec_name:
-        obj_spec.append(read_obj.get_spectrum()[item][0])
-        obj_res.append(read_obj.get_spectrum()[item][3])
+    obj_spec = read_obj.get_spectrum()
 
     if flux_offset == 0.0:
-        for spec_item in obj_spec:
-            ax.plot(spec_item[:, 0], spec_item[:, 1], "-", lw=0.5, color="black")
+        for spec_key, spec_item in obj_spec.items():
+            if spec_key not in spec_name:
+                continue
+
+            ax.plot(spec_item[0][:, 0], spec_item[0][:, 1], "-", lw=0.5, color="black")
 
     model_reader = read_model.ReadModel(model_name)
 
@@ -1067,20 +1072,35 @@ def plot_model_spectra(
         param_select["radius"] = radius[tuple(idx_select)]
 
         if flux_offset != 0.0:
-            for spec_item in obj_spec:
+            for spec_key, spec_item in obj_spec.items():
+                if spec_key not in spec_name:
+                    continue
+
+                if spec_key in scale_spec:
+                    spec_idx = scale_spec.index(spec_key)
+                    scaling_idx = np.append(idx_select, spec_idx)
+                    data_scaling = extra_scaling[tuple(scaling_idx)]
+
+                else:
+                    data_scaling = 1.0
+
                 ax.plot(
-                    spec_item[:, 0],
-                    (n_spectra - i - 1) * flux_offset + spec_item[:, 1],
+                    spec_item[0][:, 0],
+                    (n_spectra - i - 1) * flux_offset
+                    + data_scaling * spec_item[0][:, 1],
                     "-",
                     lw=0.5,
                     color="black",
                 )
 
-        for j, spec_item in enumerate(obj_spec):
+        for spec_key, spec_item in obj_spec.items():
+            if spec_key not in spec_name:
+                continue
+
             model_box = model_reader.get_data(
                 model_param=param_select,
-                spec_res=obj_res[j],
-                wavel_resample=spec_item[:, 0],
+                spec_res=spec_item[3],
+                wavel_resample=spec_item[0][:, 0],
             )
 
             ax.plot(
@@ -1097,9 +1117,15 @@ def plot_model_spectra(
 
             label_text = plot_util.create_model_label(
                 model_param=param_select,
-                model_name=None,
+                model_name=model_name,
+                inc_model_name=False,
                 object_type="planet",
                 leg_param=leg_param,
+            )
+
+            label_text = (
+                rf"$\Delta\log\,G_k = "
+                rf"{goodness_fit[tuple(idx_select)]:.2f}$: {label_text}"
             )
 
             ax.text(

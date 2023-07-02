@@ -1259,7 +1259,8 @@ def remove_color_duplicates(
 def create_model_label(
     model_param: Dict[str, float],
     object_type: str,
-    model_name: Optional[str] = None,
+    model_name: str,
+    inc_model_name: bool,
     leg_param: Optional[List[str]] = None,
 ) -> str:
     """ "
@@ -1270,8 +1271,10 @@ def create_model_label(
     ----------
     model_param : dict
         Dictionary with model parameters.
-    model_name : str, None
+    model_name : str
         Name of the atmospheric model.
+    inc_model_name : bool
+        Include the model name in the label.
     object_type : str
         Object type ('planet' or 'star') that determines if
         Jupiter or solar units are used.
@@ -1292,6 +1295,25 @@ def create_model_label(
         for item in list(model_param.keys()):
             if item not in leg_param:
                 del model_param[item]
+
+        del_param = []
+        for item in leg_param:
+            if item not in model_param.keys():
+                warnings.warn(
+                    f"The '{item}' parameter in "
+                    "'leg_param' is not a parameter of "
+                    f"'{model_name}' so it will not be "
+                    "included with the legend."
+                )
+
+                del_param.append(item)
+
+        new_leg_param = []
+        for item in leg_param:
+            if item not in del_param:
+                new_leg_param.append(item)
+
+        leg_param = new_leg_param.copy()
 
     if leg_param is not None:
         param_new = {k: model_param[k] for k in leg_param}

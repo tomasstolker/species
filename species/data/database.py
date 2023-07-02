@@ -2030,8 +2030,10 @@ class Database:
     @typechecked
     def get_compare_sample(self, tag: str) -> Dict[str, float]:
         """
-        Function for extracting the sample parameters
-        with the highest posterior probability.
+        Function for extracting the sample parameters for which
+        the goodness-of-fit statistic has been minimized when using
+        :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        for comparing data with a grid of model spectra.
 
         Parameters
         ----------
@@ -2043,7 +2045,13 @@ class Database:
         Returns
         -------
         dict
-            Dictionary with the best-fit parameters.
+            Dictionary with the best-fit parameters, including optional
+            scaling parameters for spectra that can be applied by
+            running :func:`~species.util.read_util.update_objectbox`
+            on an :func:`~species.core.box.ObjectBox` by providing
+            the returned dictionary from
+            :func:`~species.data.database.Database.get_compare_sample`
+            as argument.
         """
 
         with h5py.File(self.database, "a") as h5_file:
@@ -2189,7 +2197,7 @@ class Database:
 
         if samples.ndim == 2:
             rand_index = np.random.randint(samples.shape[0], size=random)
-            samples = samples[rand_index, ]
+            samples = samples[rand_index,]
 
         elif samples.ndim == 3:
             if burnin > samples.shape[0]:
@@ -3090,10 +3098,10 @@ class Database:
             print("Best-fit parameters:")
             print(f"   - Goodness-of-fit = {goodness_of_fit[best_index]:.2e}")
 
-            for i, item in enumerate(model_param):
-                best_param = coord_points[i][best_index[i]]
-                dset.attrs[f"best_param{i}"] = best_param
-                print(f"   - {item} = {best_param}")
+            for param_idx, param_item in enumerate(model_param):
+                best_param = coord_points[param_idx][best_index[param_idx]]
+                dset.attrs[f"best_param{param_idx}"] = best_param
+                print(f"   - {param_item} = {best_param}")
 
             scaling = flux_scaling[best_index]
 
@@ -3106,11 +3114,11 @@ class Database:
             dset.attrs["scaling"] = scaling
             print(f"   - Scaling = {scaling:.2e}")
 
-            for i, item in enumerate(scale_spec):
-                scaling_idx = list(best_index).append(i)
-                scale_tmp = scaling / extra_scaling[tuple(scaling_idx)]
-                print(f"   - {item} scaling = {scale_tmp:.2e}")
-                dset.attrs[f"scaling_{item}"] = scale_tmp
+            for spec_idx, spec_item in enumerate(scale_spec):
+                scaling_idx = np.append(best_index, spec_idx)
+                scale_tmp = extra_scaling[tuple(scaling_idx)]
+                dset.attrs[f"scaling_{spec_item}"] = scale_tmp
+                print(f"   - {spec_item} scaling = {scale_tmp:.2f}")
 
     def add_retrieval(
         self, tag: str, output_folder: str, inc_teff: bool = False
@@ -3173,7 +3181,7 @@ class Database:
                 f"of the '{output_folder}' folder."
             )
 
-            samples = samples[np.newaxis, ]
+            samples = samples[np.newaxis,]
 
         with h5py.File(self.database, "a") as h5_file:
             if "results" not in h5_file:
@@ -3320,7 +3328,7 @@ class Database:
                 for j in tqdm(range(samples.shape[0]), desc=desc):
                     sample_dict = retrieval_util.list_to_dict(
                         parameters,
-                        samples[j, ],
+                        samples[j,],
                     )
 
                     if radtrans["pt_profile"] == "molliere":
@@ -3418,7 +3426,7 @@ class Database:
                 # Convert list of parameters and samples into dictionary
                 sample_dict = retrieval_util.list_to_dict(
                     parameters,
-                    samples[i, ],
+                    samples[i,],
                 )
 
                 # Recalculate the P-T profile from the sampled parameters

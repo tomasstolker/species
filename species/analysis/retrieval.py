@@ -2274,7 +2274,7 @@ class AtmosphericRetrieval:
                 plt.plot(temp, self.pressure, "-")
                 plt.yscale("log")
                 plt.ylim(1e3, 1e-6)
-                plt.savefig("pt_profile.pdf", bbox_inches="tight")
+                plt.savefig("pt_profile.png", bbox_inches="tight")
                 plt.clf()
 
             # Prepare the scaling based on the cloud optical depth
@@ -2568,7 +2568,7 @@ class AtmosphericRetrieval:
                         plt.yscale("log")
                         plt.ylim(1e3, 1e-6)
                         plt.xlim(0.0, 6000.0)
-                        plt.savefig("pt_low_res.pdf", bbox_inches="tight")
+                        plt.savefig("pt_low_res.png", bbox_inches="tight")
                         plt.clf()
 
                     # Bolometric flux (W m-2) from the low-resolution spectrum
@@ -2711,7 +2711,7 @@ class AtmosphericRetrieval:
                             plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
                             plt.xscale("log")
                             plt.yscale("log")
-                            plt.savefig("lowres_spec.pdf", bbox_inches="tight")
+                            plt.savefig("lowres_spec.png", bbox_inches="tight")
                             plt.clf()
 
                     else:
@@ -3321,7 +3321,7 @@ class AtmosphericRetrieval:
                 plt.plot(wlen_micron, flux_smooth, color="black", zorder=-20)
                 plt.xlabel(r"Wavelength ($\mu$m)")
                 plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
-                plt.savefig("spectrum.pdf", bbox_inches="tight")
+                plt.savefig("spectrum.png", bbox_inches="tight")
                 plt.clf()
 
             return ln_prior + ln_like
