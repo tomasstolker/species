@@ -213,18 +213,33 @@ class SyntheticPhotometry:
                 self.wavel_range = transmission.wavelength_range()
 
         if wavelength.size == 0:
-            raise ValueError(
-                f"Calculation of the mean flux for "
-                f"{self.filter_name} is not possible "
-                f"because the wavelength array is empty."
+            syn_flux = np.nan
+
+            if error is not None:
+                error_flux = np.nan
+            else:
+                error_flux = None
+
+            indices = None
+
+            warnings.warn(
+                f"Calculation of the mean flux for {self.filter_name} "
+                "is not possible because the wavelength array is "
+                "empty. Returning a NaN for the flux."
             )
 
-        indices = np.where(
-            (self.wavel_range[0] <= wavelength) & (wavelength <= self.wavel_range[1])
-        )[0]
+        else:
+            indices = np.where(
+                (self.wavel_range[0] <= wavelength) & (wavelength <= self.wavel_range[1])
+            )[0]
 
-        if indices.size < 2:
+        if indices is not None and indices.size < 2:
             syn_flux = np.nan
+
+            if error is not None:
+                error_flux = np.nan
+            else:
+                error_flux = None
 
             warnings.warn(
                 "Calculating a synthetic flux requires more than "
@@ -292,7 +307,7 @@ class SyntheticPhotometry:
 
                     syn_flux = integral1 / integral2
 
-        if error is not None and not np.any(np.isnan(error)):
+        if error is not None and not np.any(np.isnan(error)) and not np.isnan(syn_flux):
             phot_random = np.zeros(200)
 
             for i in range(200):

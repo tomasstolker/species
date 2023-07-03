@@ -3091,7 +3091,7 @@ class Database:
 
             # Indices of the best-fit model
             best_index = np.unravel_index(
-                goodness_of_fit.argmin(), goodness_of_fit.shape
+                np.nanargmin(goodness_of_fit), goodness_of_fit.shape
             )
             dset.attrs["best_fit"] = goodness_of_fit[best_index]
 

@@ -634,7 +634,16 @@ class CompareSpectra:
                                     / data_list[:, 2] ** 2
                                 )
 
-                                scaling = np.nansum(c_numer) / np.nansum(c_denom)
+                                if np.nansum(model_list) == 0.:
+                                    # This happens if model spectra contain
+                                    # only zeros because the grid point was
+                                    # missing and could not be fixed with
+                                    # an interpolation when the grid was
+                                    # added to the database
+                                    scaling = np.nan
+
+                                else:
+                                    scaling = np.nansum(c_numer) / np.nansum(c_denom)
 
                                 flux_scaling[
                                     coord_0_idx,
@@ -704,6 +713,14 @@ class CompareSpectra:
                                         ** 2
                                         / spec_data[spec_item][0][:, 2] ** 2
                                     )
+
+                                if np.nansum(model_list) == 0.:
+                                    # This happens if model spectra contain
+                                    # only zeros because the grid point was
+                                    # missing and could not be fixed with
+                                    # an interpolation when the grid was
+                                    # added to the database
+                                    g_fit = np.nan
 
                                 fit_stat[
                                     coord_0_idx,

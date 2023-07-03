@@ -485,17 +485,20 @@ def get_residuals(
         for key, value in res_phot.items():
             if value.ndim == 1:
                 chi2_stat += value[1] ** 2
+                n_dof += 1
 
             elif value.ndim == 2:
                 for i in range(value.shape[1]):
                     chi2_stat += value[1][i] ** 2
-
-            n_dof += 1
+                    n_dof += 1
 
     if res_spec is not None:
         for key, value in res_spec.items():
-            chi2_stat += np.sum(value[:, 1] ** 2)
+            count_nan = np.sum(np.isnan(value[:, 1]))
+            chi2_stat += np.nansum(value[:, 1] ** 2)
+
             n_dof += value.shape[0]
+            n_dof -= count_nan
 
     for item in parameters:
         if item not in ["mass", "luminosity", "distance"]:
