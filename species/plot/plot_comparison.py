@@ -6,6 +6,7 @@ spectra or a grid of model spectra.
 
 import configparser
 import os
+import warnings
 
 from typing import List, Optional, Tuple
 
@@ -464,6 +465,7 @@ def plot_grid_statistic(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
+    extra_param: Optional[str] = None,
     nlevels_main: int = 20,
     nlevels_extra: int = 10,
 ) -> mpl.figure.Figure:
@@ -492,6 +494,15 @@ def plot_grid_statistic(
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
+    extra_param : str, None
+        Extra parameter to be overplotted with contours. The argument
+        can be set to any of the atmospheric parameters that were used
+        for the comparison, for example, 'teff', 'logg', 'feh', or
+        'radius'. Optionally, the argument can be set to 'ism_ext' in
+        case the ``av_points`` parameter of the
+        :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        method was used. Extra contours are not plotted if the
+        argument is set to ``None``.
     nlevels_main : int
         Number of contour levels for the main plot.
     nlevels_extra : int
@@ -521,8 +532,14 @@ def plot_grid_statistic(
     dset = h5_file[f"results/comparison/{tag}/goodness_of_fit"]
 
     n_param = dset.attrs["n_param"]
+    parallax = dset.attrs["parallax"]
 
-    # flux_scaling = np.array(h5_file[f'results/comparison/{tag}/flux_scaling'])
+    flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
+
+    radius = (
+        np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
+        / constants.R_JUP
+    )
 
     # if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
     #     extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
@@ -546,12 +563,15 @@ def plot_grid_statistic(
             np.array(h5_file[f"results/comparison/{tag}/coord_points{i}"])
         )
 
+    # Set the coordinate for the x-axis to Teff
     coord_x = coord_points[0]
     coord_y = None
     param_y = None
 
     for i, item in enumerate(coord_points[1:]):
         if len(item) > 1:
+            # Set the coordinate for the y-axis to the 1st axis after
+            # Teff that has a length larger than 1
             coord_y = item
             param_y = model_param[i + 1]
             break
@@ -563,12 +583,14 @@ def plot_grid_statistic(
     fig = plt.figure(figsize=figsize)
 
     if coord_y is None:
+        # Create a line plot if there is not a parameter for the y-axis
         gridsp = mpl.gridspec.GridSpec(1, 1)
         gridsp.update(wspace=0, hspace=0, left=0, right=1, bottom=0, top=1)
 
         ax = plt.subplot(gridsp[0, 0])
 
     else:
+        # Create a contour plot if there is a second parameter to show
         gridsp = mpl.gridspec.GridSpec(1, 2, width_ratios=[4.0, 0.25])
         gridsp.update(wspace=0.07, hspace=0, left=0, right=1, bottom=0, top=1)
 
@@ -653,60 +675,109 @@ def plot_grid_statistic(
             goodness_fit = np.sum(goodness_fit, axis=i)
 
     # Indices of the best-fit model
-    best_index = np.unravel_index(goodness_fit.argmin(), goodness_fit.shape)
+    best_index = np.unravel_index(np.nanargmin(goodness_fit), goodness_fit.shape)
 
-    extra_param = None
+    if len(model_param) > 2 or extra_param == "radius":
+        if extra_param is None:
+            # Select all axes beyond the 1st and 2nd axis
+            ax_list = []
+            for i in range(len(coord_points) - 2):
+                ax_list.append(2 + i)
 
-    if len(model_param) > 2:
-        n_collapse = len(coord_points) - 3
-
-        if "ism_ext" in model_param:
-            extra_param = "ism_ext"
-            extra_idx = model_param.index("ism_ext")
-
-            if extra_idx != 2:
-                goodness_fit = np.swapaxes(goodness_fit, extra_idx, 2)
-                coord_points = [
-                    coord_points[0],
-                    coord_points[1],
-                    coord_points[extra_idx],
-                ]
-                extra_idx = 2
+            # Select minimum G_k along the axes of ax_list
+            # This creates a 3D array of goodness_fit
+            goodness_fit = np.nanmin(goodness_fit, axis=tuple(ax_list))
 
         else:
-            extra_param = model_param[2]
-            extra_idx = 2
+            if extra_param == "radius":
+                goodness_full = goodness_fit.copy()
 
-        if len(model_param) > 3:
-            # Select minimum G_k for tested A_V values
-            axis = []
-            for i in range(n_collapse):
-                axis.append(3 + i)
+                # Select all axes beyond the 2nd axis
+                ax_list = []
+                for i in range(len(coord_points) - 2):
+                    ax_list.append(2 + i)
 
-            goodness_fit = np.amin(goodness_fit, axis=tuple(axis))
+                # Select minimum G_k along the axes of ax_list
+                # This creates a 2D array from goodness_fit
+                goodness_fit = np.nanmin(goodness_fit, axis=tuple(ax_list))
 
-        # Indices with the minimum G_k for the tested
-        # values of A_V or the 3rd axis otherwise
-        indices = np.argmin(goodness_fit, axis=extra_idx)
+                extra_map = np.zeros(goodness_fit.shape[:2])
+                for i in range(goodness_fit.shape[0]):
+                    for j in range(goodness_fit.shape[1]):
+                        # Get the indices in the goodness_full array
+                        # for the values from the collapsed (2D)
+                        # goodness_fit array
+                        min_idx = np.argwhere(goodness_fit[i, j] == goodness_full)
 
-        # Select minimum G_k for tested A_V values
-        # or the values of the 3rd otherwise
-        goodness_fit = np.amin(goodness_fit, axis=extra_idx)
+                        if len(min_idx) > 1:
+                            warnings.warn(
+                                f"Found {len(min_idx)} positions in the "
+                                "goodness-of-fit grid with the value "
+                                f"{goodness_fit[i, j]:.2f}. Using the "
+                                "first position in the list but this "
+                                "warning is not expected to have occurred."
+                            )
 
-        extra_map = np.zeros(goodness_fit.shape)
+                        extra_map[i, j] = radius[tuple(min_idx[0])]
 
-        for i in range(extra_map.shape[0]):
-            for j in range(extra_map.shape[1]):
-                extra_map[i, j] = coord_points[extra_idx][indices[i, j]]
+            else:
+                extra_idx = model_param.index(extra_param)
 
-    else:
-        extra_map = None
+                if extra_idx != 2:
+                    goodness_fit = np.swapaxes(goodness_fit, extra_idx, 2)
+
+                    coord_points_new = [
+                        coord_points[0],
+                        coord_points[1],
+                        coord_points[extra_idx],
+                    ]
+
+                    for coord_idx in range(len(coord_points)):
+                        if coord_idx in [0, 1, extra_idx]:
+                            continue
+
+                        # Add remaining coordinate points but skip
+                        # 1st, 2nd, and extra axis that have already
+                        # been added before the for loop
+                        coord_points_new.append(coord_points[coord_idx])
+
+                    coord_points = coord_points_new.copy()
+
+                    # Set the extra axis to the 3rd axis after the swap
+                    extra_idx = 2
+
+                if len(model_param) > 3:
+                    # Select all axes beyond the axis of extra_param
+                    ax_list = []
+                    for i in range(len(coord_points) - 3):
+                        ax_list.append(3 + i)
+
+                    # Select minimum G_k along the axes of ax_list
+                    # This creates a 3D array of goodness_fit
+                    goodness_fit = np.nanmin(goodness_fit, axis=tuple(ax_list))
+
+                # Indices with the minimum G_k for the tested values
+                # of the 3rd axis, that is, the extra_param axis
+                # This creates a 2D array with the shape of the
+                # 1st and 2nd axis of goodness_fit
+                indices = np.argmin(goodness_fit, axis=extra_idx)
+
+                # Select minimum G_k along the 3rd axis
+                # This creates a 2D array of goodness_fit
+                goodness_fit = np.nanmin(goodness_fit, axis=extra_idx)
+
+                # Create 2D array with the extra map that will
+                # be plotted as contours over the main map
+                extra_map = np.zeros(goodness_fit.shape)
+                for i in range(extra_map.shape[0]):
+                    for j in range(extra_map.shape[1]):
+                        extra_map[i, j] = coord_points[extra_idx][indices[i, j]]
 
     # Transpose for plot so make Teff the x axis
 
     goodness_fit = np.transpose(goodness_fit)
 
-    if extra_map is not None:
+    if extra_param is not None:
         extra_map = np.transpose(extra_map)
 
     if coord_y is not None:
@@ -724,7 +795,17 @@ def plot_grid_statistic(
             x_grid, y_grid = np.meshgrid(coord_x, coord_y)
 
     goodness_fit = np.log10(goodness_fit)
-    goodness_fit -= np.amin(goodness_fit)
+    goodness_fit -= np.nanmin(goodness_fit)
+
+    nan_points = np.sum(np.isnan(goodness_fit))
+    if nan_points > 0:
+        warnings.warn(
+            f"Found {nan_points} NaN values in the "
+            "goodness-of-fit grid. These points will be set "
+            "to zero in the contour map."
+        )
+
+        goodness_fit = np.nan_to_num(goodness_fit)
 
     if coord_y is None:
         ax.plot(
@@ -770,7 +851,7 @@ def plot_grid_statistic(
             fontsize=13.0,
         )
 
-        if extra_map is not None:
+        if extra_param is not None:
             if upsample:
                 extra_interp = RegularGridInterpolator((coord_y, coord_x), extra_map)
                 extra_map = extra_interp((y_grid, x_grid))
@@ -867,7 +948,7 @@ def plot_model_spectra(
     tag : str
         Database tag where the results from the model
         comparison with
-        :class:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
         are stored.
     n_spectra : int, None
         The number of spectra with the lowest goodness-of-fit
@@ -954,7 +1035,7 @@ def plot_model_spectra(
 
     goodness_fit = np.array(dset)
     goodness_fit = np.log10(goodness_fit)
-    goodness_fit -= np.amin(goodness_fit)
+    goodness_fit -= np.nanmin(goodness_fit)
 
     sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
     sort_idx = list(sort_idx)
