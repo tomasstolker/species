@@ -823,6 +823,7 @@ class Database:
         ] = None,
         deredden: Union[Dict[str, float], float] = None,
         verbose: bool = True,
+        units: Optional[Dict[str, Union[str, Tuple[str, str]]]] = None,
     ) -> None:
         """
         Function for adding the photometry and/or spectra
@@ -886,12 +887,30 @@ class Database:
         verbose : bool
             Print details on the object data that are added to
             the database.
+        units : dict, None
+            Dictionary with the units of the data provided with
+            ``flux_density`` and ``spectrum``. Only required if
+            the wavelength units are not :math:`\\mu\\text{m}^{-1}`
+            and/or the flux units are not provided as
+            :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
+            Otherwise, the argument of ``units`` can be set to
+            ``None`` such that it will be ignored. The dictionary
+            keys should be the filter names as provided with
+            ``flux_density`` and the spectrum names as provided
+            with ``spectrum``. Supported units can be found in
+            the docstring of
+            :func:`~species.util.data_util.convert_units`.
 
         Returns
         -------
         NoneType
             None
         """
+
+        # Set default units
+
+        if units is None:
+            units = {}
 
         # First add filters here because ReadFilter
         # will also open the HDF5 database
@@ -944,14 +963,6 @@ class Database:
             )  # (mas)
 
         if distance is not None:
-            warnings.warn(
-                "The 'distance' parameter is deprecated "
-                "and will be removed in a future release. "
-                "Please use the 'parallax' parameter "
-                "instead",
-                DeprecationWarning,
-            )
-
             if verbose:
                 print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
 
@@ -968,8 +979,10 @@ class Database:
 
         if app_mag is not None:
             for mag_item in app_mag:
+                read_filt = read_filter.ReadFilter(mag_item)
+                mean_wavel = read_filt.mean_wavelength()
+
                 if isinstance(deredden, float) or mag_item in deredden:
-                    read_filt = read_filter.ReadFilter(mag_item)
                     filter_profile = read_filt.get_filter()
 
                     if isinstance(deredden, float):
@@ -1048,9 +1061,9 @@ class Database:
 
                 else:
                     raise ValueError(
-                        "The values in the dictionary with magnitudes should be "
-                        "tuples or a list with tuples (in case duplicate filter "
-                        "names are required)."
+                        "The values in the dictionary with magnitudes "
+                        "should be tuples or a list with tuples (in "
+                        "case duplicate filter names are required)."
                     )
 
             for mag_item in app_mag:
@@ -1072,6 +1085,8 @@ class Database:
                             f"      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- "
                             f"{app_mag[mag_item][1]:.2f}"
                         )
+
+                        print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
 
                         print(
                             f"      - Flux (W m-2 um-1) = {flux[mag_item]:.2e} +/- "
@@ -1114,6 +1129,8 @@ class Database:
                                 f"{app_mag_item[1]:.2f}"
                             )
 
+                            print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
+
                             print(
                                 f"      - Flux (W m-2 um-1) = {flux[mag_item][i]:.2e} +/- "
                                 f"{error[mag_item][i]:.2e}"
@@ -1141,25 +1158,21 @@ class Database:
 
         if flux_density is not None:
             for flux_item in flux_density:
+                read_filt = read_filter.ReadFilter(flux_item)
+                mean_wavel = read_filt.mean_wavelength()
+
                 if isinstance(deredden, float) or flux_item in deredden:
                     warnings.warn(
-                        f"The deredden parameter is not supported by flux_density. "
-                        f"Please use app_mag instead and/or open an issue on Github. "
-                        f"Ignoring the dereddening of {flux_item}."
+                        "The deredden parameter is not supported "
+                        "by flux_density. Please use app_mag instead "
+                        "and/or open an issue on Github. Ignoring "
+                        f"the dereddening of {flux_item}."
                     )
 
                 if f"objects/{object_name}/{flux_item}" in h5_file:
                     del h5_file[f"objects/{object_name}/{flux_item}"]
 
                 if isinstance(flux_density[flux_item], tuple):
-                    if verbose:
-                        print(f"   - {flux_item}:")
-
-                        print(
-                            f"      - Flux (W m-2 um-1) = {flux_density[flux_item][0]:.2e} +/- "
-                            f"{flux_density[flux_item][1]:.2e}"
-                        )
-
                     data = np.asarray(
                         [
                             np.nan,
@@ -1168,6 +1181,17 @@ class Database:
                             flux_density[flux_item][1],
                         ]
                     )
+
+                    if flux_item in units:
+                        flux_in = np.array([[mean_wavel, data[2], data[3]]])
+                        flux_out = data_util.convert_units(flux_in, ('um', units[flux_item]))
+
+                        data = [np.nan, np.nan, flux_out[0, 1], flux_out[0, 2]]
+
+                    if verbose:
+                        print(f"   - {flux_item}:")
+                        print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
+                        print(f"      - Flux (W m-2 um-1) = {data[2]:.2e} +/- {data[3]:.2e}")
 
                     # None, None, (W m-2 um-1), (W m-2 um-1)
                     dset = h5_file.create_dataset(
@@ -1187,9 +1211,9 @@ class Database:
 
             spec_nan = {}
 
-            for key, value in spectrum.items():
-                if value[0].endswith(".fits") or value[0].endswith(".fit"):
-                    with fits.open(value[0]) as hdulist:
+            for spec_item, spec_value in spectrum.items():
+                if spec_value[0].endswith(".fits") or spec_value[0].endswith(".fit"):
+                    with fits.open(spec_value[0]) as hdulist:
                         if (
                             "INSTRU" in hdulist[0].header
                             and hdulist[0].header["INSTRU"] == "GRAVITY"
@@ -1206,7 +1230,7 @@ class Database:
                             covariance = hdulist[1].data["COVARIANCE"]  # (W m-2 um-1)^2
                             error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
 
-                            read_spec[key] = np.column_stack([wavelength, flux, error])
+                            read_spec[spec_item] = np.column_stack([wavelength, flux, error])
 
                         else:
                             # Otherwise try to read a 2D dataset with 3 columns
@@ -1218,82 +1242,90 @@ class Database:
 
                                 if (
                                     data.ndim == 2
-                                    and 3 in data.shape
-                                    and key not in read_spec
+                                    and data.shape[1] == 3
+                                    and spec_item not in read_spec
                                 ):
-                                    read_spec[key] = data
+                                    if spec_item in units:
+                                        data = data_util.convert_units(data, units[spec_item])
 
-                            if key not in read_spec:
+                                    read_spec[spec_item] = data
+
+                            if spec_item not in read_spec:
                                 raise ValueError(
-                                    f"The spectrum data from {value[0]} can not be "
-                                    f"read. The data format should be 2D with 3 "
-                                    f"columns."
+                                    f"The spectrum data from {spec_value[0]} can not "
+                                    f"be read. The data format should be 2D with "
+                                    f"3 columns."
                                 )
 
                 else:
                     try:
-                        data = np.loadtxt(value[0])
+                        data = np.loadtxt(spec_value[0])
+
                     except UnicodeDecodeError:
                         raise ValueError(
-                            f"The spectrum data from {value[0]} can not be read. "
-                            f"Please provide a FITS or ASCII file."
+                            f"The spectrum data from {spec_value[0]} can not "
+                            "be read. Please provide a FITS or ASCII file."
                         )
 
                     if data.ndim != 2 or 3 not in data.shape:
                         raise ValueError(
-                            f"The spectrum data from {value[0]} "
-                            f"can not be read. The data format "
-                            f"should be 2D with 3 columns."
+                            f"The spectrum data from {spec_value[0]} "
+                            "can not be read. The data format "
+                            "should be 2D with 3 columns."
                         )
 
                     if verbose:
                         print("   - Spectrum:")
-                    read_spec[key] = data
+
+                    if spec_item in units:
+                        data = data_util.convert_units(data, units[spec_item])
+
+                    read_spec[spec_item] = data
 
                 if isinstance(deredden, float):
                     ext_mag = dust_util.ism_extinction(
-                        deredden, 3.1, read_spec[key][:, 0]
+                        deredden, 3.1, read_spec[spec_item][:, 0]
                     )
-                    read_spec[key][:, 1] *= 10.0 ** (0.4 * ext_mag)
+                    read_spec[spec_item][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
-                elif key in deredden:
+                elif spec_item in deredden:
                     ext_mag = dust_util.ism_extinction(
-                        deredden[key], 3.1, read_spec[key][:, 0]
+                        deredden[spec_item], 3.1, read_spec[spec_item][:, 0]
                     )
-                    read_spec[key][:, 1] *= 10.0 ** (0.4 * ext_mag)
+                    read_spec[spec_item][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
-                if read_spec[key].shape[0] == 3 and read_spec[key].shape[1] != 3:
+                if read_spec[spec_item].shape[0] == 3 and read_spec[spec_item].shape[1] != 3:
                     warnings.warn(
-                        f"Transposing the data of {key} because "
+                        f"Transposing the data of {spec_item} because "
                         f"the first instead of the second axis "
                         f"has a length of 3."
                     )
 
-                    read_spec[key] = read_spec[key].transpose()
+                    read_spec[spec_item] = read_spec[spec_item].transpose()
 
-                nan_idx = np.isnan(read_spec[key][:, 1])
+                nan_idx = np.isnan(read_spec[spec_item][:, 1])
 
                 # Add NaN booleans to dictionary for adjusting
                 # the covariance matrix later on
-                spec_nan[key] = nan_idx
+                spec_nan[spec_item] = nan_idx
 
                 if np.sum(nan_idx) != 0:
-                    read_spec[key] = read_spec[key][~nan_idx, :]
+                    read_spec[spec_item] = read_spec[spec_item][~nan_idx, :]
 
                     warnings.warn(
                         f"Found {np.sum(nan_idx)} fluxes with NaN in "
-                        f"the data of {key}. Removing the spectral "
+                        f"the data of {spec_item}. Removing the spectral "
                         f"fluxes that contain a NaN."
                     )
 
-                wavelength = read_spec[key][:, 0]
-                flux = read_spec[key][:, 1]
-                error = read_spec[key][:, 2]
+                wavelength = read_spec[spec_item][:, 0]
+                flux = read_spec[spec_item][:, 1]
+                error = read_spec[spec_item][:, 2]
 
                 if verbose:
-                    print(f"      - Database tag: {key}")
-                    print(f"      - Filename: {value[0]}")
-                    print(f"      - Data shape: {read_spec[key].shape}")
+                    print(f"      - Database tag: {spec_item}")
+                    print(f"      - Filename: {spec_value[0]}")
+                    print(f"      - Data shape: {read_spec[spec_item].shape}")
                     print(
                         f"      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}"
                     )
@@ -1303,17 +1335,17 @@ class Database:
                     if isinstance(deredden, float):
                         print(f"      - Dereddening A_V: {deredden}")
 
-                    elif key in deredden:
-                        print(f"      - Dereddening A_V: {deredden[key]}")
+                    elif spec_item in deredden:
+                        print(f"      - Dereddening A_V: {deredden[spec_item]}")
 
             # Read covariance matrix
 
-            for key, value in spectrum.items():
-                if value[1] is None:
-                    read_cov[key] = None
+            for spec_item, spec_value in spectrum.items():
+                if spec_value[1] is None:
+                    read_cov[spec_item] = None
 
-                elif value[1].endswith(".fits") or value[1].endswith(".fit"):
-                    with fits.open(value[1]) as hdulist:
+                elif spec_value[1].endswith(".fits") or spec_value[1].endswith(".fit"):
+                    with fits.open(spec_value[1]) as hdulist:
                         if (
                             "INSTRU" in hdulist[0].header
                             and hdulist[0].header["INSTRU"] == "GRAVITY"
@@ -1325,11 +1357,19 @@ class Database:
                                 print("   - GRAVITY covariance matrix:")
                                 print(f"      - Object: {gravity_object}")
 
-                            read_cov[key] = hdulist[1].data[
+                            read_cov[spec_item] = hdulist[1].data[
                                 "COVARIANCE"
                             ]  # (W m-2 um-1)^2
 
                         else:
+                            if spec_item in units:
+                                warnings.warn("The unit conversion has not been "
+                                              "implemented for covariance matrices. "
+                                              "Please open an issue on the Github "
+                                              "page if such functionality is required "
+                                              "or provide the file with covariances "
+                                              "in (W m-2 um-1)^2.")
+
                             # Otherwise try to read a square, 2D dataset
                             if verbose:
                                 print("   - Covariance matrix:")
@@ -1338,29 +1378,29 @@ class Database:
                                 data = np.asarray(hdu_item.data)
 
                                 corr_warn = (
-                                    f"The matrix from {value[1]} contains "
+                                    f"The matrix from {spec_value[1]} contains "
                                     f"ones along the diagonal. Converting this "
                                     f"correlation matrix into a covariance matrix."
                                 )
 
                                 if data.ndim == 2 and data.shape[0] == data.shape[1]:
-                                    if key not in read_cov:
-                                        if data.shape[0] == read_spec[key].shape[0]:
+                                    if spec_item not in read_cov:
+                                        if data.shape[0] == read_spec[spec_item].shape[0]:
                                             if np.all(np.diag(data) == 1.0):
                                                 warnings.warn(corr_warn)
 
                                                 read_cov[
-                                                    key
+                                                    spec_item
                                                 ] = data_util.correlation_to_covariance(
-                                                    data, read_spec[key][:, 2]
+                                                    data, read_spec[spec_item][:, 2]
                                                 )
 
                                             else:
-                                                read_cov[key] = data
+                                                read_cov[spec_item] = data
 
-                            if key not in read_cov:
+                            if spec_item not in read_cov:
                                 raise ValueError(
-                                    f"The covariance matrix from {value[1]} can not "
+                                    f"The covariance matrix from {spec_value[1]} can not "
                                     f"be read. The data format should be 2D with the "
                                     f"same number of wavelength points as the "
                                     f"spectrum."
@@ -1368,17 +1408,17 @@ class Database:
 
                 else:
                     try:
-                        data = np.loadtxt(value[1])
+                        data = np.loadtxt(spec_value[1])
                     except UnicodeDecodeError:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} "
+                            f"The covariance matrix from {spec_value[1]} "
                             f"can not be read. Please provide a "
                             f"FITS or ASCII file."
                         )
 
                     if data.ndim != 2 or data.shape[0] != data.shape[1]:
                         raise ValueError(
-                            f"The covariance matrix from {value[1]} "
+                            f"The covariance matrix from {spec_value[1]} "
                             f"can not be read. The data format "
                             f"should be 2D with the same number of "
                             f"wavelength points as the spectrum."
@@ -1389,60 +1429,60 @@ class Database:
 
                     if np.all(np.diag(data) == 1.0):
                         warnings.warn(
-                            f"The matrix from {value[1]} contains "
+                            f"The matrix from {spec_value[1]} contains "
                             f"ones on the diagonal. Converting this "
                             f" correlation matrix into a covariance "
                             f"matrix."
                         )
 
-                        read_cov[key] = data_util.correlation_to_covariance(
-                            data, read_spec[key][:, 2]
+                        read_cov[spec_item] = data_util.correlation_to_covariance(
+                            data, read_spec[spec_item][:, 2]
                         )
 
                     else:
-                        read_cov[key] = data
+                        read_cov[spec_item] = data
 
-                if read_cov[key] is not None:
+                if read_cov[spec_item] is not None:
                     # Remove the wavelengths for which the flux is NaN
-                    read_cov[key] = read_cov[key][~spec_nan[key], :]
-                    read_cov[key] = read_cov[key][:, ~spec_nan[key]]
+                    read_cov[spec_item] = read_cov[spec_item][~spec_nan[spec_item], :]
+                    read_cov[spec_item] = read_cov[spec_item][:, ~spec_nan[spec_item]]
 
-                if verbose and read_cov[key] is not None:
-                    print(f"      - Database tag: {key}")
-                    print(f"      - Filename: {value[1]}")
-                    print(f"      - Data shape: {read_cov[key].shape}")
+                if verbose and read_cov[spec_item] is not None:
+                    print(f"      - Database tag: {spec_item}")
+                    print(f"      - Filename: {spec_value[1]}")
+                    print(f"      - Data shape: {read_cov[spec_item].shape}")
 
             if verbose:
                 print("   - Spectral resolution:")
 
-            for key, value in spectrum.items():
+            for spec_item, spec_value in spectrum.items():
                 h5_file.create_dataset(
-                    f"objects/{object_name}/spectrum/{key}/spectrum",
-                    data=read_spec[key],
+                    f"objects/{object_name}/spectrum/{spec_item}/spectrum",
+                    data=read_spec[spec_item],
                 )
 
-                if read_cov[key] is not None:
+                if read_cov[spec_item] is not None:
                     h5_file.create_dataset(
-                        f"objects/{object_name}/spectrum/{key}/covariance",
-                        data=read_cov[key],
+                        f"objects/{object_name}/spectrum/{spec_item}/covariance",
+                        data=read_cov[spec_item],
                     )
 
                     h5_file.create_dataset(
-                        f"objects/{object_name}/spectrum/{key}/inv_covariance",
-                        data=np.linalg.inv(read_cov[key]),
+                        f"objects/{object_name}/spectrum/{spec_item}/inv_covariance",
+                        data=np.linalg.inv(read_cov[spec_item]),
                     )
 
-                dset = h5_file[f"objects/{object_name}/spectrum/{key}"]
+                dset = h5_file[f"objects/{object_name}/spectrum/{spec_item}"]
 
-                if value[2] is None:
+                if spec_value[2] is None:
                     if verbose:
-                        print(f"      - {key}: None")
+                        print(f"      - {spec_item}: None")
                     dset.attrs["specres"] = 0.0
 
                 else:
                     if verbose:
-                        print(f"      - {key}: {value[2]:.1f}")
-                    dset.attrs["specres"] = value[2]
+                        print(f"      - {spec_item}: {spec_value[2]:.1f}")
+                    dset.attrs["specres"] = spec_value[2]
 
         if not verbose:
             print(" [DONE]")
@@ -2549,8 +2589,8 @@ class Database:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
 
-                            filter_trans = read_filter.ReadFilter(name)
-                            mean_wavel[name] = filter_trans.mean_wavelength()
+                            read_filt = read_filter.ReadFilter(name)
+                            mean_wavel[name] = read_filt.mean_wavelength()
 
             phot_filters = list(magnitude.keys())
 

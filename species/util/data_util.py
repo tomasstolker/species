@@ -5,7 +5,7 @@ Utility functions for data processing.
 import os
 import tarfile
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
@@ -13,7 +13,7 @@ import numpy as np
 from scipy.interpolate import griddata
 from typeguard import typechecked
 
-from species.core import box
+from species.core import box, constants
 from species.read import read_radtrans
 
 
@@ -40,7 +40,6 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
 
         @typechecked
         def is_within_directory(directory: str, target: str):
-
             abs_directory = os.path.abspath(directory)
             abs_target = os.path.abspath(target)
 
@@ -49,11 +48,12 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
             return prefix == abs_directory
 
         @typechecked
-        def safe_extract(tar: tarfile.TarFile,
-                         path: str = ".",
-                         members: Optional[List] = None,
-                         numeric_owner: bool = False):
-
+        def safe_extract(
+            tar: tarfile.TarFile,
+            path: str = ".",
+            members: Optional[List] = None,
+            numeric_owner: bool = False,
+        ):
             for member in tar.getmembers():
                 member_path = os.path.join(path, member.name)
 
@@ -89,7 +89,6 @@ def update_sptype(sptypes: np.ndarray) -> List[str]:
     sptypes_updated = []
 
     for spt_item in sptypes:
-
         if spt_item == "None":
             sptypes_updated.append("None")
 
@@ -802,7 +801,10 @@ def add_missing(
     database.create_dataset(f"models/{model}/flux", data=10.0**flux)
 
 
-def correlation_to_covariance(cor_matrix, spec_sigma):
+@typechecked
+def correlation_to_covariance(
+    cor_matrix: np.ndarray, spec_sigma: np.ndarray
+) -> np.ndarray:
     """
     Parameters
     ----------
@@ -813,7 +815,7 @@ def correlation_to_covariance(cor_matrix, spec_sigma):
 
     Returns
     -------
-    np.ndarrays
+    np.ndarray
         Covariance matrix of the spectrum.
     """
 
@@ -1034,3 +1036,105 @@ def retrieval_spectrum(
     model_box.type = "mcmc"
 
     return model_box
+
+
+@typechecked
+def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
+    """
+    Function for converting the wavelength units to
+    :math:`\\mu\\text{m}^{-1}` and the flux units to
+    :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
+
+    Parameters
+    ----------
+    flux_in : np.ndarray
+        Array with the input wavelengths and fluxes. The shape of the
+        array should be (n_wavelengths, 3) with the columns being
+        the wavelengths, flux densities, and uncertainties. For
+        photometric fluxes, the array should also be 2D but with
+        a single row/wavelength.
+    units_in : tuple(str, str)
+        Tuple with the units of the wavelength ("um", "angstrom", "nm",
+        "mm", "cm", "m") and the units of the flux density
+        ("w m-2 um-1", "w m-2 m-1", "w m-2 hz-1", "erg s-1 cm-2 hz-1",
+        "jy", "mjy").
+
+    Returns
+    -------
+    np.ndarray
+        Array with the output in the same shape as ``flux_in``.
+    """
+
+    speed_light = constants.LIGHT * 1e6  # (um s-1)
+
+    flux_out = np.zeros(flux_in.shape)
+
+    # Convert wavelengths to micrometer (um)
+
+    wavel_units = ["um", "angstrom", "nm", "mm", "cm", "m"]
+
+    if units_in[0] == "um":
+        pass
+
+    elif units_in[0] == "angstrom":
+        flux_out[:, 0] = flux_in[:, 0] * 1e-4
+
+    elif units_in[0] == "nm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e-3
+
+    elif units_in[0] == "mm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e3
+
+    elif units_in[0] == "cm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e4
+
+    elif units_in[0] == "m":
+        flux_out[:, 0] = flux_in[:, 0] * 1e6
+
+    else:
+        raise ValueError(
+            f"The wavelength units '{units_in[0]}' are not supported. "
+            f"Please choose from the following units: {wavel_units}"
+        )
+
+    # Convert flux density to W m-2 um-1
+
+    flux_units = [
+        "w m-2 um-1",
+        "w m-2 m-1",
+        "w m-2 hz-1",
+        "erg s-1 cm-2 hz-1",
+        "jy",
+        "mjy",
+    ]
+
+    if units_in[1] == "w m-2 um-1":
+        pass
+
+    elif units_in[1] == "w m-2 m-1":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-6
+        flux_out[:, 2] = flux_in[:, 2] * 1e-6
+
+    elif units_in[1] == "w m-2 hz-1":
+        flux_out[:, 1] = flux_in[:, 1] * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * speed_light / flux_out[:, 0] ** 2
+
+    elif units_in[1] == "erg s-1 cm-2 hz-1":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-3 * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * 1e-3 * speed_light / flux_out[:, 0] ** 2
+
+    elif units_in[1] == "jy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-26 * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * 1e-26 * speed_light / flux_out[:, 0] ** 2
+
+    elif units_in[1] == "mjy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+
+    else:
+        raise ValueError(
+            f"The flux units '{units_in[1]}' are not supported. "
+            f"Please choose from the following units: {flux_units}"
+        )
+
+    return flux_out
