@@ -1248,7 +1248,7 @@ class Database:
 
                                 if (
                                     data.ndim == 2
-                                    and data.shape[1] == 3
+                                    and 3 in data.shape
                                     and spec_item not in read_spec
                                 ):
                                     if spec_item in units:
@@ -3325,10 +3325,10 @@ class Database:
             if "max_press" in radtrans:
                 dset.attrs["max_press"] = radtrans["max_press"]
 
-            if "abund_nodes" in radtrans:
-                dset.attrs["abund_nodes"] = radtrans["abund_nodes"]
-            else:
+            if "abund_nodes" not in radtrans or radtrans["abund_nodes"] is None:
                 dset.attrs["abund_nodes"] = "None"
+            else:
+                dset.attrs["abund_nodes"] = radtrans["abund_nodes"]
 
         print(" [DONE]")
 
