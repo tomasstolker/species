@@ -1379,7 +1379,7 @@ def create_model_label(
         if par_unit[i] is None:
             if len(label) > 0:
                 label += ", "
-            elif model_name is not None:
+            elif inc_model_name and model_name is not None:
                 label += f"{model_name_new}: "
 
             label += f"{par_label[i]} = {value}"
@@ -1387,7 +1387,7 @@ def create_model_label(
         else:
             if len(label) > 0:
                 label += ", "
-            elif model_name is not None:
+            elif inc_model_name and model_name is not None:
                 label += f"{model_name_new}: "
 
             label += f"{par_label[i]} = {value} {par_unit[i]}"

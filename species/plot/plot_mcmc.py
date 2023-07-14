@@ -196,6 +196,7 @@ def plot_posterior(
     inc_log_mass: bool = False,
     inc_pt_param: bool = False,
     inc_loglike: bool = False,
+    inc_abund: bool = True,
     output: Optional[str] = None,
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
@@ -249,6 +250,9 @@ def plot_posterior(
     inc_loglike : bool
         Include the log10 of the likelihood as additional
         parameter in the corner plot.
+    inc_abund : bool
+        Include the abundances when retrieving free abundances with
+        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -324,127 +328,46 @@ def plot_posterior(
         for item in item_del:
             box.parameters.remove(item)
 
+    if box.spectrum == "petitradtrans":
+        n_line_species = box.attributes["n_line_species"]
+
+        line_species = []
+        for i in range(n_line_species):
+            line_species.append(box.attributes[f"line_species{i}"])
+
+    if "abund_nodes" not in box.attributes:
+        box.attributes["abund_nodes"] = "None"
+
     if box.spectrum == "petitradtrans" and box.attributes["chemistry"] == "free":
-        box.parameters.append("c_h_ratio")
-        box.parameters.append("o_h_ratio")
-        box.parameters.append("c_o_ratio")
+        if box.attributes["abund_nodes"] == "None":
+            box.parameters.append("c_h_ratio")
+            box.parameters.append("o_h_ratio")
+            box.parameters.append("c_o_ratio")
 
-        ndim += 3
+            ndim += 3
 
-        abund_index = {}
-        for i, item in enumerate(box.parameters):
-            if item == "CH4":
-                abund_index["CH4"] = i
+            abund_index = {}
 
-            elif item == "CO":
-                abund_index["CO"] = i
+            for line_item in line_species:
+                abund_index[line_item] = box.parameters.index(line_item)
 
-            elif item == "CO_all_iso":
-                abund_index["CO_all_iso"] = i
+            c_h_ratio = np.zeros(samples.shape[0])
+            o_h_ratio = np.zeros(samples.shape[0])
+            c_o_ratio = np.zeros(samples.shape[0])
 
-            elif item == "CO_all_iso_HITEMP":
-                abund_index["CO_all_iso_HITEMP"] = i
+            for sample_item in samples:
+                abund_dict = {}
+                for line_item in line_species:
+                    abund_dict[line_item] = sample_item[abund_index[line_item]]
 
-            elif item == "CO2":
-                abund_index["CO2"] = i
-
-            elif item == "FeH":
-                abund_index["FeH"] = i
-
-            elif item == "H2O":
-                abund_index["H2O"] = i
-
-            elif item == "H2O_HITEMP":
-                abund_index["H2O_HITEMP"] = i
-
-            elif item == "H2S":
-                abund_index["H2S"] = i
-
-            elif item == "Na":
-                abund_index["Na"] = i
-
-            elif item == "NH3":
-                abund_index["NH3"] = i
-
-            elif item == "K":
-                abund_index["K"] = i
-
-            elif item == "PH3":
-                abund_index["PH3"] = i
-
-            elif item == "TiO":
-                abund_index["TiO"] = i
-
-            elif item == "TiO_all_Exomol":
-                abund_index["TiO_all_Exomol"] = i
-
-            elif item == "VO":
-                abund_index["VO"] = i
-
-            elif item == "VO_Plez":
-                abund_index["VO_Plez"] = i
-
-        c_h_ratio = np.zeros(samples.shape[0])
-        o_h_ratio = np.zeros(samples.shape[0])
-        c_o_ratio = np.zeros(samples.shape[0])
-
-        for i, item in enumerate(samples):
-            abund = {}
-
-            if "CH4" in box.parameters:
-                abund["CH4"] = item[abund_index["CH4"]]
-
-            if "CO" in box.parameters:
-                abund["CO"] = item[abund_index["CO"]]
-
-            if "CO_all_iso" in box.parameters:
-                abund["CO_all_iso"] = item[abund_index["CO"]]
-
-            if "CO_all_iso_HITEMP" in box.parameters:
-                abund["CO_all_iso_HITEMP"] = item[abund_index["CO_all_iso_HITEMP"]]
-
-            if "CO2" in box.parameters:
-                abund["CO2"] = item[abund_index["CO2"]]
-
-            if "FeH" in box.parameters:
-                abund["FeH"] = item[abund_index["FeH"]]
-
-            if "H2O" in box.parameters:
-                abund["H2O"] = item[abund_index["H2O"]]
-
-            if "H2O_HITEMP" in box.parameters:
-                abund["H2O_HITEMP"] = item[abund_index["H2O_HITEMP"]]
-
-            if "H2S" in box.parameters:
-                abund["H2S"] = item[abund_index["H2S"]]
-
-            if "Na" in box.parameters:
-                abund["Na"] = item[abund_index["Na"]]
-
-            if "K" in box.parameters:
-                abund["K"] = item[abund_index["K"]]
-
-            if "NH3" in box.parameters:
-                abund["NH3"] = item[abund_index["NH3"]]
-
-            if "PH3" in box.parameters:
-                abund["PH3"] = item[abund_index["PH3"]]
-
-            if "TiO" in box.parameters:
-                abund["TiO"] = item[abund_index["TiO"]]
-
-            if "TiO_all_Exomol" in box.parameters:
-                abund["TiO_all_Exomol"] = item[abund_index["TiO_all_Exomol"]]
-
-            if "VO" in box.parameters:
-                abund["VO"] = item[abund_index["VO"]]
-
-            if "VO_Plez" in box.parameters:
-                abund["VO_Plez"] = item[abund_index["VO_Plez"]]
-
-            c_h_ratio[i], o_h_ratio[i], c_o_ratio[i] = retrieval_util.calc_metal_ratio(
-                abund
-            )
+                (
+                    c_h_ratio[i],
+                    o_h_ratio[i],
+                    c_o_ratio[i],
+                ) = retrieval_util.calc_metal_ratio(
+                    abund_dict,
+                    line_species,
+                )
 
     if (
         vmr
@@ -454,7 +377,7 @@ def plot_posterior(
         print("Changing mass fractions to number fractions...", end="", flush=True)
 
         # Get all available line species
-        line_species = retrieval_util.get_line_species()
+        all_line_species = retrieval_util.get_line_species()
 
         # Get the atomic and molecular masses
         masses = retrieval_util.atomic_masses()
@@ -467,7 +390,7 @@ def plot_posterior(
             log_x_abund = {}
 
             for param_item in box.parameters:
-                if param_item in line_species:
+                if param_item in all_line_species:
                     # Get the index of the parameter
                     param_index = box.parameters.index(param_item)
 
@@ -481,7 +404,7 @@ def plot_posterior(
             mmw = retrieval_util.mean_molecular_weight(x_abund)
 
             for param_item in box.parameters:
-                if param_item in line_species:
+                if param_item in all_line_species:
                     # Get the index of the parameter
                     param_index = box.parameters.index(param_item)
 
@@ -715,6 +638,8 @@ def plot_posterior(
                 10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
             )
 
+    # Include the log-likelihood
+
     if inc_loglike:
         # Get ln(L) of the samples
         ln_prob = box.ln_prob[..., np.newaxis]
@@ -734,6 +659,35 @@ def plot_posterior(
         samples = np.append(samples, np.log10(prob), axis=-1)
         box.parameters.append("log_prob")
         ndim += 1
+
+    # Remove abundances
+
+    if not inc_abund and box.attributes["chemistry"] == "free":
+        index_del = []
+        item_del = []
+
+        if box.attributes["abund_nodes"] == "None":
+            for line_item in line_species:
+                param_index = np.argwhere(np.array(box.parameters) == line_item)[0]
+                index_del.append(param_index)
+                item_del.append(line_item)
+
+        else:
+            for line_item in line_species:
+                for node_idx in range(box.attributes["abund_nodes"]):
+                    param_index = np.argwhere(
+                        np.array(box.parameters) == f"{line_item}_{node_idx}"
+                    )[0]
+                    index_del.append(param_index)
+                    item_del.append(f"{line_item}_{node_idx}")
+
+        samples = np.delete(samples, index_del, axis=1)
+        ndim -= len(index_del)
+
+        for item in item_del:
+            box.parameters.remove(item)
+
+    # Update axes labels
 
     labels = plot_util.update_labels(box.parameters, object_type=object_type)
 

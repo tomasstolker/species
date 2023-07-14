@@ -843,6 +843,7 @@ def retrieval_spectrum(
     distance: Optional[float],
     pt_smooth: Optional[float],
     temp_nodes: Optional[np.integer],
+    abund_nodes: Optional[np.integer],
     read_rad: read_radtrans.ReadRadtrans,
     sample: np.ndarray,
 ) -> box.ModelBox:
@@ -882,6 +883,9 @@ def retrieval_spectrum(
     temp_nodes : int, None
         Number of free temperature nodes that are used when
         ``pt_profile='monotonic'`` or ``pt_profile='free'``.
+    abund_nodes : int, None
+        Number of free abundance nodes that are used when
+        ``chemistry='free'``.
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -939,8 +943,16 @@ def retrieval_spectrum(
         model_param["metallicity"] = sample[indices["metallicity"]]
 
     elif chemistry == "free":
-        for species_item in line_species:
-            model_param[species_item] = sample[indices[species_item]]
+        if abund_nodes is None:
+            for line_item in line_species:
+                model_param[line_item] = sample[indices[line_item]]
+
+        else:
+            for line_item in line_species:
+                for node_idx in range(abund_nodes):
+                    model_param[f"{line_item}_{node_idx}"] = sample[
+                        indices[f"{line_item}_{node_idx}"]
+                    ]
 
     if quenching == "pressure":
         model_param["log_p_quench"] = sample[indices["log_p_quench"]]
@@ -1054,10 +1066,10 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
         photometric fluxes, the array should also be 2D but with
         a single row/wavelength.
     units_in : tuple(str, str)
-        Tuple with the units of the wavelength ("um", "angstrom", "nm",
-        "mm", "cm", "m") and the units of the flux density
-        ("w m-2 um-1", "w m-2 m-1", "w m-2 hz-1", "erg s-1 cm-2 hz-1",
-        "jy", "mjy").
+        Tuple with the units of the wavelength ("um", "angstrom", "A",
+        "nm", "mm", "cm", "m") and the units of the flux density
+        ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1", "erg s-1 cm-2 Hz-1",
+        "mJy", "Jy", "MJy").
 
     Returns
     -------
@@ -1071,12 +1083,12 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
 
     # Convert wavelengths to micrometer (um)
 
-    wavel_units = ["um", "angstrom", "nm", "mm", "cm", "m"]
+    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m"]
 
     if units_in[0] == "um":
-        pass
+        flux_out[:, 0] = flux_in[:, 0].copy()
 
-    elif units_in[0] == "angstrom":
+    elif units_in[0] in ["angstrom", "A"]:
         flux_out[:, 0] = flux_in[:, 0] * 1e-4
 
     elif units_in[0] == "nm":
@@ -1100,36 +1112,42 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
     # Convert flux density to W m-2 um-1
 
     flux_units = [
-        "w m-2 um-1",
-        "w m-2 m-1",
-        "w m-2 hz-1",
-        "erg s-1 cm-2 hz-1",
-        "jy",
-        "mjy",
+        "W m-2 um-1",
+        "W m-2 m-1",
+        "W m-2 Hz-1",
+        "erg s-1 cm-2 Hz-1",
+        "mJy",
+        "Jy",
+        "MJy",
     ]
 
-    if units_in[1] == "w m-2 um-1":
-        pass
+    if units_in[1] == "W m-2 um-1":
+        flux_out[:, 1] = flux_in[:, 1].copy()
+        flux_out[:, 2] = flux_in[:, 2].copy()
 
-    elif units_in[1] == "w m-2 m-1":
+    elif units_in[1] == "W m-2 m-1":
         flux_out[:, 1] = flux_in[:, 1] * 1e-6
         flux_out[:, 2] = flux_in[:, 2] * 1e-6
 
-    elif units_in[1] == "w m-2 hz-1":
+    elif units_in[1] == "W m-2 Hz-1":
         flux_out[:, 1] = flux_in[:, 1] * speed_light / flux_out[:, 0] ** 2
         flux_out[:, 2] = flux_in[:, 2] * speed_light / flux_out[:, 0] ** 2
 
-    elif units_in[1] == "erg s-1 cm-2 hz-1":
+    elif units_in[1] == "erg s-1 cm-2 Hz-1":
         flux_out[:, 1] = flux_in[:, 1] * 1e-3 * speed_light / flux_out[:, 0] ** 2
         flux_out[:, 2] = flux_in[:, 2] * 1e-3 * speed_light / flux_out[:, 0] ** 2
 
-    elif units_in[1] == "jy":
+    elif units_in[1] == "mJy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+
+    elif units_in[1] == "Jy":
         flux_out[:, 1] = flux_in[:, 1] * 1e-26 * speed_light / flux_out[:, 0] ** 2
         flux_out[:, 2] = flux_in[:, 2] * 1e-26 * speed_light / flux_out[:, 0] ** 2
 
-    elif units_in[1] == "mjy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-29 * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+    elif units_in[1] == "MJy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e-20 * speed_light / flux_out[:, 0] ** 2
+        flux_out[:, 2] = flux_in[:, 2] * 1e-20 * speed_light / flux_out[:, 0] ** 2
 
     else:
         raise ValueError(

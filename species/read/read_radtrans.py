@@ -229,7 +229,7 @@ class ReadRadtrans:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         plot_contribution: Optional[Union[bool, str]] = False,
-        temp_nodes: Optional[int] = None,
+        temp_nodes: Optional[Union[int, np.integer]] = None,
     ) -> box.ModelBox:
         """
         Function for calculating a model spectrum with
@@ -458,17 +458,53 @@ class ReadRadtrans:
         else:
             chemistry = "free"
 
-            # Check if all line species from the Radtrans object
-            # are also present in the model_param dictionary
+            check_nodes = {}
 
-            for item in self.line_species:
-                if item not in model_param:
-                    raise RuntimeError(
-                        f"The abundance of {item} is not found "
-                        f"in the dictionary with parameters of "
-                        f"'model_param'. Please add the log10 "
-                        f"mass fraction of {item}."
-                    )
+            for line_item in self.line_species:
+                abund_count = 0
+
+                for node_idx in range(100):
+                    if f"{line_item}_{node_idx}" in model_param:
+                        abund_count += 1
+                    else:
+                        break
+
+                check_nodes[line_item] = abund_count
+
+            # Check if there are an equal number of
+            # abundance nodes for all the line species
+
+            nodes_list = list(check_nodes.values())
+
+            if not all(value == nodes_list[0] for value in nodes_list):
+                raise ValueError("The number of abundance nodes is "
+                                 "not equal for all the lines "
+                                 f"species: {check_nodes}")
+
+            if all(value == 0 for value in nodes_list):
+                abund_nodes = None
+            else:
+                abund_nodes = nodes_list[0]
+
+            for line_item in self.line_species:
+                if abund_nodes is None:
+                    if line_item not in model_param:
+                        raise RuntimeError(
+                            f"The abundance of {line_item} is not "
+                            "found in the dictionary with parameters "
+                            "of 'model_param'. Please add the log10 "
+                            f"mass fraction of {line_item}."
+                        )
+
+                else:
+                    for node_idx in range(abund_nodes):
+                        if f"{line_item}_{node_idx}" not in model_param:
+                            raise RuntimeError(
+                                f"The abundance of {line_item} is not "
+                                "found in the dictionary with parameters "
+                                "of 'model_param'. Please add the log10 "
+                                f"mass fraction of {line_item}."
+                            )
 
         # Check quenching parameter
 
@@ -490,6 +526,16 @@ class ReadRadtrans:
                 "'pressure', 'diffusion', or None."
             )
 
+        # Abundance nodes
+
+        if chemistry == "free" and abund_nodes is not None:
+            knot_press_abund = np.logspace(
+                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), abund_nodes
+            )
+
+        else:
+            knot_press_abund = None
+
         # C/O and [Fe/H]
 
         if chemistry == "equilibrium":
@@ -508,12 +554,26 @@ class ReadRadtrans:
 
             # Create a dictionary with the mass fractions
 
-            log_x_abund = {}
+            if abund_nodes is None:
+                log_x_abund = {}
+                for line_item in self.line_species:
+                    log_x_abund[line_item] = model_param[line_item]
 
-            for item in self.line_species:
-                log_x_abund[item] = model_param[item]
+                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(
+                    log_x_abund, self.line_species
+                )
 
-            _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+            else:
+                log_x_abund = {}
+                for line_item in self.line_species:
+                    for node_idx in range(abund_nodes):
+                        log_x_abund[f"{line_item}_{node_idx}"] = model_param[
+                            f"{line_item}_{node_idx}"
+                        ]
+
+                # TODO Set C/O = 0.55 for Molliere P-T profile
+                # and cloud condensation profiles
+                c_o_ratio = 0.55
 
         # Create the P-T profile
 
@@ -543,8 +603,8 @@ class ReadRadtrans:
             if temp_nodes is None:
                 temp_nodes = 0
 
-                for i in range(100):
-                    if f"t{i}" in model_param:
+                for temp_idx in range(100):
+                    if f"t{temp_idx}" in model_param:
                         temp_nodes += 1
                     else:
                         break
@@ -554,8 +614,8 @@ class ReadRadtrans:
             )
 
             knot_temp = []
-            for i in range(temp_nodes):
-                knot_temp.append(model_param[f"t{i}"])
+            for temp_idx in range(temp_nodes):
+                knot_temp.append(model_param[f"t{temp_idx}"])
 
             knot_temp = np.asarray(knot_temp)
 
@@ -604,7 +664,6 @@ class ReadRadtrans:
             or "log_kappa_gray" in model_param
             or "log_kappa_abs" in model_param
         ):
-
             tau_cloud = None
             log_x_base = None
 
@@ -627,7 +686,6 @@ class ReadRadtrans:
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
-
                     if f"{item[:-3].lower()}_fraction" in model_param:
                         cloud_fractions[item] = model_param[
                             f"{item[:-3].lower()}_fraction"
@@ -769,6 +827,7 @@ class ReadRadtrans:
                     cloud_dict,
                     model_param["logg"],
                     chemistry=chemistry,
+                    knot_press_abund=knot_press_abund,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -796,6 +855,7 @@ class ReadRadtrans:
                     cloud_dict,
                     model_param["logg"],
                     chemistry=chemistry,
+                    knot_press_abund=knot_press_abund,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -831,6 +891,7 @@ class ReadRadtrans:
                     model_param,
                     model_param["logg"],
                     chemistry=chemistry,
+                    knot_press_abund=knot_press_abund,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -852,6 +913,7 @@ class ReadRadtrans:
                 None,
                 pressure_grid=self.pressure_grid,
                 chemistry=chemistry,
+                knot_press_abund=knot_press_abund,
                 contribution=True,
             )
 
@@ -871,6 +933,7 @@ class ReadRadtrans:
                 None,
                 log_x_abund,
                 chemistry=chemistry,
+                knot_press_abund=knot_press_abund,
                 pressure_grid=self.pressure_grid,
                 contribution=True,
             )

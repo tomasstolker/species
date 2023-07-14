@@ -18,8 +18,6 @@ from typing import Dict, List, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy import stats
-
 try:
     import pymultinest
 except:
@@ -32,7 +30,7 @@ except:
 
 from molmass import Formula
 from scipy.integrate import simps
-from scipy.stats import invgamma
+from scipy.stats import invgamma, norm
 from typeguard import typechecked
 
 from species.analysis import photometry
@@ -347,10 +345,11 @@ class AtmosphericRetrieval:
 
         self.parameters = []
 
-        # Initiate the optional P-T parameters
+        # Initiate the optional P-T and abundance parameters
 
         self.pt_smooth = None
         self.temp_nodes = None
+        self.abund_nodes = None
 
         # Weighting of the photometric and spectroscopic data
 
@@ -456,15 +455,18 @@ class AtmosphericRetrieval:
         # Abundance parameters
 
         if chemistry == "equilibrium":
-
             self.parameters.append("metallicity")
             self.parameters.append("c_o_ratio")
 
         elif chemistry == "free":
+            if self.abund_nodes is None:
+                for line_item in self.line_species:
+                    self.parameters.append(line_item)
 
-            for i in range(self.abund_nodes):
-                for item in self.line_species:
-                    self.parameters.append(f"{item}_{i}")
+            else:
+                for node_idx in range(self.abund_nodes):
+                    for line_item in self.line_species:
+                        self.parameters.append(f"{line_item}_{node_idx}")
 
         # Non-equilibrium chemistry
 
@@ -829,7 +831,7 @@ class AtmosphericRetrieval:
                   can be included when ``pt_profile='monotonic'`` or
                   ``pt_profile='free'``. A prior will be applied
                   that penalizes wiggles in the P-T profile through
-                  the second derivative of the temperature structure 
+                  the second derivative of the temperature structure
                   (see `Line et al. (2015)
                   <https://ui.adsabs.harvard.edu/abs/2015ApJ...807
                   ..183L/abstract>`_ for details).
@@ -901,9 +903,8 @@ class AtmosphericRetrieval:
             ``pt_profile='monotonic'`` or ``pt_profile='free'``.
         abund_nodes : int, None
             Number of free abundances nodes that are used with
-            ``chemistry='free'``. The default value of 1 is used,
-            that is, constant abundances with altitude if the
-            argument is set to ``None``.
+            ``chemistry='free'``. Constant abundances with
+            altitude are used if the argument is set to ``None``.
         prior : dict(str, tuple(float, float)), None
             Dictionary with Gaussian priors for one or multiple
             parameters. The prior can be set for any of the
@@ -939,7 +940,7 @@ class AtmosphericRetrieval:
             warnings.warn(
                 "The 'quenching' parameter can only be used in "
                 "combination with chemistry='equilibrium'. The "
-                "argument of \'quenching\' will be set to None."
+                "argument of 'quenching' will be set to None."
             )
 
             quenching = None
@@ -966,8 +967,8 @@ class AtmosphericRetrieval:
         # Set number of free abundance nodes
 
         if chemistry == "free":
-            if abund_nodes is None:
-                self.abund_nodes = 1
+            if abund_nodes is None or abund_nodes == 1:
+                self.abund_nodes = None
             else:
                 self.abund_nodes = abund_nodes
 
@@ -1009,7 +1010,9 @@ class AtmosphericRetrieval:
         if "poor_mans_nonequ_chem" in sys.modules:
             from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
         else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
+            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
+                interpol_abundances,
+            )
 
         print(" [DONE]")
 
@@ -1079,17 +1082,18 @@ class AtmosphericRetrieval:
             if "o_h_ratio" in bounds:
                 del bounds["o_h_ratio"]
 
-        if chemistry == "free" and self.abund_nodes > 1:
+        if chemistry == "free" and self.abund_nodes is not None:
             for param_item in ["c_h_ratio", "o_h_ratio", "c_o_ratio"]:
                 if param_item in bounds:
-                    warnings.warn(f"The \'{param_item}\' parameter "
-                                  "can not be used if the "
-                                  "\'abund_nodes\' argument is set "
-                                  "to a value larger than 1. The "
-                                  "prior boundaries of "
-                                  f"\'{param_item}\' will therefore "
-                                  "be removed from the \'bounds\' "
-                                  "dictionary.")
+                    warnings.warn(
+                        f"The '{param_item}' parameter "
+                        "can not be used if the "
+                        "'abund_nodes' argument is set. "
+                        "The  prior boundaries of "
+                        f"'{param_item}' will therefore "
+                        "be removed from the 'bounds' "
+                        "dictionary."
+                    )
 
                     del bounds[param_item]
 
@@ -1188,8 +1192,10 @@ class AtmosphericRetrieval:
             # The pressure structure is reinitiated after the
             # refinement around the cloud deck so the current
             # initializiation to 60 pressure points is not used
-            print("Number of pressure levels used with the "
-                  "radiative transfer: adaptive refinement")
+            print(
+                "Number of pressure levels used with the "
+                "radiative transfer: adaptive refinement"
+            )
 
             rt_object.setup_opa_structure(self.pressure[::24])
 
@@ -1203,9 +1209,7 @@ class AtmosphericRetrieval:
 
         if pt_profile in ["free", "monotonic"]:
             knot_press = np.logspace(
-                np.log10(self.pressure[0]),
-                np.log10(self.pressure[-1]),
-                self.temp_nodes
+                np.log10(self.pressure[0]), np.log10(self.pressure[-1]), self.temp_nodes
             )
 
         else:
@@ -1213,11 +1217,11 @@ class AtmosphericRetrieval:
 
         # Create the knot pressures for abundance profile
 
-        if chemistry == "free" and self.abund_nodes > 1:
+        if chemistry == "free" and self.abund_nodes is not None:
             knot_press_abund = np.logspace(
                 np.log10(self.pressure[0]),
                 np.log10(self.pressure[-1]),
-                self.abund_nodes
+                self.abund_nodes,
             )
 
         else:
@@ -1273,16 +1277,15 @@ class AtmosphericRetrieval:
 
             # Parallax (mas), Gaussian prior
 
-            cube[cube_index["parallax"]] = stats.norm.ppf(
+            cube[cube_index["parallax"]] = norm.ppf(
                 cube[cube_index["parallax"]],
                 loc=self.parallax[0],
-                scale=self.parallax[1]
+                scale=self.parallax[1],
             )
 
             # Pressure-temperature profile
 
             if pt_profile in ["molliere", "mod-molliere"]:
-
                 # Internal temperature (K) of the Eddington
                 # approximation (middle altitudes)
                 # see Eq. 2 in Mollière et al. (2020)
@@ -1300,7 +1303,7 @@ class AtmosphericRetrieval:
 
                 if pt_profile == "molliere":
                     # Connection temperature (K)
-                    t_connect = (3.0 / 4.0 * tint ** 4.0 * (0.1 + 2.0 / 3.0)) ** 0.25
+                    t_connect = (3.0 / 4.0 * tint**4.0 * (0.1 + 2.0 / 3.0)) ** 0.25
 
                     # The temperature (K) at temp_3 is scaled down from t_connect
                     temp_3 = t_connect * (1 - cube[cube_index["t3"]])
@@ -1416,7 +1419,6 @@ class AtmosphericRetrieval:
                         )
 
             if pt_profile == "eddington":
-
                 # Internal temperature (K) for the
                 # Eddington approximation
                 if "tint" in bounds:
@@ -1461,7 +1463,7 @@ class AtmosphericRetrieval:
 
                 # Input log_gamma_r is sampled between 0 and 1
                 gamma_r = invgamma.ppf(
-                    cube[cube_index["log_gamma_r"]], a=1.0, scale=10.0 ** log_beta_r
+                    cube[cube_index["log_gamma_r"]], a=1.0, scale=10.0**log_beta_r
                 )
                 cube[cube_index["log_gamma_r"]] = np.log10(gamma_r)
 
@@ -1499,23 +1501,52 @@ class AtmosphericRetrieval:
 
                 log_x_abund = {}
 
-                for node_idx in range(self.abund_nodes):
+                if self.abund_nodes is None:
                     for line_item in self.line_species:
-                        item = f"{line_item}_{node_idx}"
-
                         if line_item in bounds:
-                            cube[cube_index[item]] = (
+                            cube[cube_index[line_item]] = (
                                 bounds[line_item][0]
                                 + (bounds[line_item][1] - bounds[line_item][0])
-                                * cube[cube_index[item]]
+                                * cube[cube_index[line_item]]
                             )
 
-                        elif item not in ["K", "K_lor_cut", "K_burrows", "K_allard"]:
+                        elif line_item not in [
+                            "K",
+                            "K_lor_cut",
+                            "K_burrows",
+                            "K_allard",
+                        ]:
                             # Default: -10. - 0. dex
-                            cube[cube_index[item]] = -10.0 * cube[cube_index[item]]
+                            cube[cube_index[line_item]] = (
+                                -10.0 * cube[cube_index[line_item]]
+                            )
 
                             # Add the log10 of the mass fraction to the abundace dictionary
-                            log_x_abund[item] = cube[cube_index[item]]
+                            log_x_abund[line_item] = cube[cube_index[line_item]]
+
+                else:
+                    for node_idx in range(self.abund_nodes):
+                        for line_item in self.line_species:
+                            item = f"{line_item}_{node_idx}"
+
+                            if line_item in bounds:
+                                cube[cube_index[item]] = (
+                                    bounds[line_item][0]
+                                    + (bounds[line_item][1] - bounds[line_item][0])
+                                    * cube[cube_index[item]]
+                                )
+
+                            elif item not in [
+                                "K",
+                                "K_lor_cut",
+                                "K_burrows",
+                                "K_allard",
+                            ]:
+                                # Default: -10. - 0. dex
+                                cube[cube_index[item]] = -10.0 * cube[cube_index[item]]
+
+                                # Add the log10 of the mass fraction to the abundace dictionary
+                                log_x_abund[item] = cube[cube_index[item]]
 
                 if (
                     "Na" in self.line_species
@@ -1523,21 +1554,48 @@ class AtmosphericRetrieval:
                     or "Na_burrows" in self.line_species
                     or "Na_allard" in self.line_species
                 ):
+                    if self.abund_nodes is None:
+                        log_x_k_abund = retrieval_util.potassium_abundance(
+                            log_x_abund, self.line_species, abund_nodes
+                        )
 
-                    log_x_k_abund = retrieval_util.potassium_abundance(log_x_abund, self.line_species, knot_press_abund)
-
-                    for node_idx in range(self.abund_nodes):
                         if "K" in self.line_species:
-                            cube[cube_index[f"K_{node_idx}"]] = log_x_k_abund[node_idx]
+                            cube[cube_index["K"]] = log_x_k_abund
 
                         elif "K_lor_cut" in self.line_species:
-                            cube[cube_index[f"K_lor_cut_{node_idx}"]] = log_x_k_abund[node_idx]
+                            cube[cube_index["K_lor_cut"]] = log_x_k_abund
 
                         elif "K_burrows" in self.line_species:
-                            cube[cube_index[f"K_burrows_{node_idx}"]] = log_x_k_abund[node_idx]
+                            cube[cube_index["K_burrows"]] = log_x_k_abund
 
                         elif "K_allard" in self.line_species:
-                            cube[cube_index[f"K_allard_{node_idx}"]] = log_x_k_abund[node_idx]
+                            cube[cube_index["K_allard"]] = log_x_k_abund
+
+                    else:
+                        log_x_k_abund = retrieval_util.potassium_abundance(
+                            log_x_abund, self.line_species, abund_nodes
+                        )
+
+                        for node_idx in range(self.abund_nodes):
+                            if "K" in self.line_species:
+                                cube[cube_index[f"K_{node_idx}"]] = log_x_k_abund[
+                                    node_idx
+                                ]
+
+                            elif "K_lor_cut" in self.line_species:
+                                cube[
+                                    cube_index[f"K_lor_cut_{node_idx}"]
+                                ] = log_x_k_abund[node_idx]
+
+                            elif "K_burrows" in self.line_species:
+                                cube[
+                                    cube_index[f"K_burrows_{node_idx}"]
+                                ] = log_x_k_abund[node_idx]
+
+                            elif "K_allard" in self.line_species:
+                                cube[
+                                    cube_index[f"K_allard_{node_idx}"]
+                                ] = log_x_k_abund[node_idx]
 
                 # log10 abundances of the cloud species
 
@@ -2002,10 +2060,10 @@ class AtmosphericRetrieval:
             # Standard deviation of the Gaussian kernel for smoothing the P-T profile
 
             if "pt_smooth" in bounds:
-                cube[cube_index[f"pt_smooth"]] = (
+                cube[cube_index["pt_smooth"]] = (
                     bounds["pt_smooth"][0]
                     + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
-                    * cube[cube_index[f"pt_smooth"]]
+                    * cube[cube_index["pt_smooth"]]
                 )
 
             # Mixing-length for convective flux
@@ -2140,11 +2198,18 @@ class AtmosphericRetrieval:
 
                 # Create a dictionary with the mass fractions
 
-                log_x_abund = {}
+                if self.abund_nodes is None:
+                    log_x_abund = {}
+                    for line_item in self.line_species:
+                        log_x_abund[line_item] = cube[cube_index[line_item]]
 
-                for node_idx in range(self.abund_nodes):
-                    for item in self.line_species:
-                        log_x_abund[f"{item}_{node_idx}"] = cube[cube_index[f"{item}_{node_idx}"]]
+                else:
+                    log_x_abund = {}
+                    for node_idx in range(self.abund_nodes):
+                        for line_item in self.line_species:
+                            log_x_abund[f"{line_item}_{node_idx}"] = cube[
+                                cube_index[f"{line_item}_{node_idx}"]
+                            ]
 
                 # Check if the sum of fractional abundances is smaller than unity
 
@@ -2153,7 +2218,7 @@ class AtmosphericRetrieval:
 
                 # Check if the C/H and O/H ratios are within the prior boundaries
 
-                if self.abund_nodes == 1:
+                if self.abund_nodes is None:
                     c_h_ratio, o_h_ratio, c_o_ratio = retrieval_util.calc_metal_ratio(
                         log_x_abund, self.line_species
                     )
@@ -2162,22 +2227,19 @@ class AtmosphericRetrieval:
                         c_h_ratio < bounds["c_h_ratio"][0]
                         or c_h_ratio > bounds["c_h_ratio"][1]
                     ):
-
                         return -np.inf
 
                     if "o_h_ratio" in bounds and (
                         o_h_ratio < bounds["o_h_ratio"][0]
                         or o_h_ratio > bounds["o_h_ratio"][1]
                     ):
-
                         return -np.inf
 
                     if "c_o_ratio" in bounds and (
                         c_o_ratio < bounds["c_o_ratio"][0]
                         or c_o_ratio > bounds["c_o_ratio"][1]
                     ):
-
-                        return -np.inf                    
+                        return -np.inf
 
                 else:
                     c_o_ratio = 0.55
@@ -2372,7 +2434,11 @@ class AtmosphericRetrieval:
 
                 tau_cloud = None
 
-                if "log_kappa_0" in bounds or "log_kappa_gray" in bounds or "log_kappa_abs" in bounds:
+                if (
+                    "log_kappa_0" in bounds
+                    or "log_kappa_gray" in bounds
+                    or "log_kappa_abs" in bounds
+                ):
                     if "log_tau_cloud" in self.parameters:
                         tau_cloud = 10.0 ** cube[cube_index["log_tau_cloud"]]
 
@@ -2686,11 +2752,11 @@ class AtmosphericRetrieval:
                         # bolometric flux at each pressure
 
                         ln_prior += np.sum(
-                            -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol ** 2
+                            -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol**2
                         )
 
                         ln_prior += (
-                            -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol ** 2)
+                            -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
                         )
 
                         # for i in range(i_conv):
@@ -2834,9 +2900,9 @@ class AtmosphericRetrieval:
                         np.argmin(np.abs(rt_object.tau_rosse - 1.0))
                     ]
 
-                    index_tp = (press_tmp > rosse_pphot / 10.0) & (
-                        press_tmp < rosse_pphot * 10.0
-                    )
+                    # index_tp = (press_tmp > rosse_pphot / 10.0) & (
+                    #     press_tmp < rosse_pphot * 10.0
+                    # )
 
                     # tau_pow = np.mean(
                     #     np.diff(np.log(rt_object.tau_rosse[index_tp]))
@@ -2871,8 +2937,8 @@ class AtmosphericRetrieval:
                     if hasattr(rt_object, "tau_pow"):
                         ln_like += -0.5 * (
                             cube[cube_index["alpha"]] - rt_object.tau_pow
-                        ) ** 2.0 / sigma_alpha ** 2.0 - 0.5 * np.log(
-                            2.0 * np.pi * sigma_alpha ** 2.0
+                        ) ** 2.0 / sigma_alpha**2.0 - 0.5 * np.log(
+                            2.0 * np.pi * sigma_alpha**2.0
                         )
 
                     else:
@@ -2896,7 +2962,6 @@ class AtmosphericRetrieval:
                 lbl_flux = {}
 
                 for item in cross_corr:
-
                     (
                         lbl_wavel[item],
                         lbl_flux[item],
@@ -3170,7 +3235,7 @@ class AtmosphericRetrieval:
                                 )
                                 + (1.0 - corr_amp[item] ** 2)
                                 * np.eye(data_wavel.shape[0])
-                                * error_i ** 2
+                                * error_i**2
                             )
 
                             dot_tmp = np.dot(
@@ -3190,7 +3255,7 @@ class AtmosphericRetrieval:
                                 -0.5
                                 * weight
                                 * np.sum(
-                                    flux_diff ** 2 / data_var
+                                    flux_diff**2 / data_var
                                     + np.log(2.0 * np.pi * data_var)
                                 )
                             )
@@ -3351,6 +3416,7 @@ class AtmosphericRetrieval:
         radtrans_dict["pressure_grid"] = self.pressure_grid
         radtrans_dict["wavel_range"] = self.wavel_range
         radtrans_dict["temp_nodes"] = self.temp_nodes
+        radtrans_dict["abund_nodes"] = self.abund_nodes
         radtrans_dict["max_press"] = self.max_pressure
 
         if "pt_smooth" not in bounds:

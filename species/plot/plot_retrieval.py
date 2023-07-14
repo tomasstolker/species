@@ -172,6 +172,15 @@ def plot_pt_profile(
         # For backward compatibility
         temp_nodes = 15
 
+    if "abund_nodes" in box.attributes:
+        if box.attributes["abund_nodes"] == "None":
+            abund_nodes = None
+        else:
+            abund_nodes = box.attributes["abund_nodes"]
+    else:
+        # For backward compatibility
+        abund_nodes = None
+
     if "max_press" in box.attributes:
         max_press = box.attributes["max_press"]
     else:
@@ -231,15 +240,29 @@ def plot_pt_profile(
 
             # Create a dictionary with the mass fractions
 
-            log_x_abund = {}
+            if abund_nodes is None:
+                log_x_abund = {}
 
-            for j in range(box.attributes["n_line_species"]):
-                line_item = box.attributes[f"line_species{j}"]
-                log_x_abund[line_item] = item[param_index[line_item]]
+                for line_idx in range(box.attributes["n_line_species"]):
+                    line_item = box.attributes[f"line_species{line_idx}"]
+                    log_x_abund[line_item] = item[param_index[line_item]]
 
-            # Check if the C/H and O/H ratios are within the prior boundaries
+                # Check if the C/H and O/H ratios are within the prior boundaries
 
-            _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+
+            else:
+                log_x_abund = {}
+                for line_idx in range(box.attributes["n_line_species"]):
+                    line_item = box.attributes[f"line_species{line_idx}"]
+                    for node_idx in range(abund_nodes):
+                        log_x_abund[f"{line_item}_{node_idx}"] = model_param[
+                            f"{line_item}_{node_idx}"
+                        ]
+
+                # TODO Set C/O = 0.55 for Molliere P-T profile
+                # and cloud condensation profiles
+                c_o_ratio = 0.55
 
         if pt_profile == "molliere":
             t3_param = np.array(
@@ -716,9 +739,9 @@ def plot_pt_profile(
 
             else:
                 raise ValueError(
-                    "The Radtrans object does not contain any cloud species. Please "
-                    "set the argument of 'extra_axis' either to 'photosphere' or "
-                    "None."
+                    "The Radtrans object does not contain any cloud "
+                    "species. Please set the argument of 'extra_axis' "
+                    "either to 'photosphere' or None."
                 )
 
             color_iter = iter(cloud_colors)
