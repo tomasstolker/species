@@ -851,7 +851,8 @@ class Database:
             photometry is stored if the argument is set to ``None``.
         flux_density : dict, None
             Dictionary with filter names, flux densities (W m-2 um-1),
-            and uncertainties (W m-1 um-1). For example,
+            and uncertainties (W m-1 um-1), or setting the ``units``
+            parameter when other flux units are used. For example,
             ``{'Paranal/NACO.Lp': (1e-15, 1e-16)}``. Currently, the use
             of duplicate filters is not implemented. The use of
             ``app_mag`` is preferred over ``flux_density`` because with
@@ -867,8 +868,10 @@ class Database:
             and spectral resolution for each instrument. The input data
             can either have a FITS or ASCII format. The spectra should
             have 3 columns with wavelength (um), flux (W m-2 um-1), and
-            uncertainty (W m-2 um-1). The covariance matrix should be
-            2D with the same number of wavelength points as the
+            uncertainty (W m-2 um-1), or setting the ``units``
+            parameter allows for reading in data with different
+            wavelength and/or flux units. The covariance matrix should
+            be 2D with the same number of wavelength points as the
             spectrum. For example, ``{'SPHERE': ('spectrum.dat',
             'covariance.fits', 50.)}``. No covariance data is stored
             if set to ``None``, for example, ``{'SPHERE':

@@ -57,6 +57,7 @@ class AtmosphericRetrieval:
         object_name: str,
         line_species: Optional[List[str]] = None,
         cloud_species: Optional[List[str]] = None,
+        res_mode: str = "c-k",
         output_folder: str = "multinest",
         wavel_range: Optional[Tuple[float, float]] = None,
         scattering: bool = True,
@@ -64,8 +65,9 @@ class AtmosphericRetrieval:
         inc_phot: Union[bool, List[str]] = False,
         pressure_grid: str = "smaller",
         weights: Optional[Dict[str, float]] = None,
-        lbl_species: Optional[List[str]] = None,
+        ccf_species: Optional[List[str]] = None,
         max_pressure: float = 1e3,
+        lbl_opacity_sampling: Optional[int] = None,
     ) -> None:
         """
         Parameters
@@ -79,6 +81,13 @@ class AtmosphericRetrieval:
         cloud_species : list, None
             List with the cloud species. No cloud species are used if
             the argument is to ``None``.
+        res_mode : str
+            Resolution mode ('c-k' or 'lbl'). The low-resolution mode
+            ('c-k') calculates the spectrum with the correlated-k
+            assumption at :math:`\\lambda/\\Delta \\lambda = 1000`. The
+            high-resolution mode ('lbl') calculates the spectrum with a
+            line-by-line treatment at
+            :math:`\\lambda/\\Delta \\lambda = 10^6`.
         output_folder : str
             Folder name that is used for the output files from
             ``MultiNest``. The folder is created if it does not exist.
@@ -134,20 +143,31 @@ class AtmosphericRetrieval:
             weighting of the photometric data points relative to the
             spectroscopic data. An equal weighting is applied if the
             argument is set to ``None``.
-        lbl_species : list, None
+        ccf_species : list, None
             List with the line species that will be used for
             calculating line-by-line spectra for the list of
             high-resolution spectra that are provided as argument of
             ``cross_corr`` when starting the retrieval with
             :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`.
             The argument can be set to ``None`` when ``cross_corr=None``.
-            The ``lbl_species`` and ``cross_corr`` parameters should
+            The ``ccf_species`` and ``cross_corr`` parameters should
             only be used if the log-likelihood component should be
             determined with a cross-correlation instead of a direct
             comparison of data and model.
         max_pressure : float
             Maximum pressure  (bar) that is used for the P-T profile.
             The default is set to 1000 bar.
+        lbl_opacity_sampling : int, None
+            This is the same parameter as in ``petitRADTRANS`` which is
+            used with ``res_mode='lbl'`` to downsample the line-by-line
+            opacities by selecting every ``lbl_opacity_sampling``-th
+            wavelength from the original sampling of
+            :math:`\\lambda/\\Delta \\lambda = 10^6`. Setting this
+            parameter will lower the computation time. By setting the
+            argument to ``None``, the value is automatically set,
+            based on the spectral resolution of the input data. By
+            setting the parameter to ``lbl_opacity_sampling=1``, the
+            original sampling is used so no downsampling is applied.
 
         Returns
         -------
@@ -163,7 +183,7 @@ class AtmosphericRetrieval:
         self.scattering = scattering
         self.output_folder = output_folder
         self.pressure_grid = pressure_grid
-        self.lbl_species = lbl_species
+        self.ccf_species = ccf_species
         self.max_pressure = max_pressure
 
         # Get object data
@@ -200,18 +220,38 @@ class AtmosphericRetrieval:
 
         # Line species (high-resolution / line-by-line)
 
-        if self.lbl_species is None:
-            print("Line-by-line species: None")
-            self.lbl_species = []
+        if self.ccf_species is None:
+            print("Cross-correlation species: None")
+            self.ccf_species = []
 
         else:
-            print("Line-by-line species:")
-            for item in self.lbl_species:
+            print("Cross-correlation species:")
+            for item in self.ccf_species:
                 print(f"   - {item}")
 
         # Scattering
 
         print(f"Scattering: {self.scattering}")
+
+        # Opacity mode
+
+        self.res_mode = res_mode
+
+        if self.res_mode == "c-k":
+            print(f"Opacity mode: correlated-k (lambda/Dlambda = 1,000)")
+
+        elif self.res_mode == "lbl":
+            print(f"Opacity mode: line-by-line (lambda/Dlambda = 1,000,000)")
+
+        else:
+            raise ValueError("The argument of 'res_mode' is set to "
+                             f"an incorrect value, '{self.res_mode}'. "
+                             "Please set the argument to either "
+                             "'c-k' or 'lbl'.")
+
+        # Downsampling of line-by-line opacities
+
+        self.lbl_opacity_sampling = lbl_opacity_sampling
 
         # Get ObjectBox
 
@@ -629,7 +669,7 @@ class AtmosphericRetrieval:
             print(f"   - {item}")
 
     @typechecked
-    def rebin_opacities(self, wavel_bin: float, out_folder: str = "rebin_out") -> None:
+    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
         """
         Function for downsampling the ``c-k`` opacities from
         :math:`\\lambda/\\Delta\\lambda = 1000` to a smaller wavelength
@@ -638,8 +678,8 @@ class AtmosphericRetrieval:
 
         Parameters
         ----------
-        wavel_bin : float
-            Wavelength binning, :math:`\\lambda/\\Delta\\lambda`, to
+        spec_res : float
+            Spectral resolution, :math:`\\lambda/\\Delta\\lambda`, to
             which the opacities will be downsampled.
         out_folder : str
             Path of the output folder where the downsampled opacities
@@ -652,6 +692,7 @@ class AtmosphericRetrieval:
         """
 
         print("Importing petitRADTRANS...", end="", flush=True)
+
         from petitRADTRANS.radtrans import Radtrans
 
         print(" [DONE]")
@@ -706,7 +747,7 @@ class AtmosphericRetrieval:
                 mol_masses[item] = Formula(item).isotope.massnumber
 
         rt_object.write_out_rebin(
-            wavel_bin, path=out_folder, species=self.line_species, masses=mol_masses
+            spec_res, path=out_folder, species=self.line_species, masses=mol_masses
         )
 
     @typechecked
@@ -1045,6 +1086,43 @@ class AtmosphericRetrieval:
                 "used with multiple fsed parameters."
             )
 
+        # Check if the res_mode is appropriate for the data
+
+        data_spec_res = []
+
+        for spec_key, spec_value in self.spectrum.items():
+            data_spec_res.append(spec_value[3])
+
+        max_spec_res = max(data_spec_res)
+
+        if max_spec_res > 1000. and self.res_mode == "c-k":
+            warnings.warn("The maximum spectral resolution of "
+                          f"the input data is R = {max_spec_res} "
+                          "whereas the 'res_mode' argument has been "
+                          "set to 'c-k' (i.e. correlated-k mode). It "
+                          "is recommended to set the 'res_mode' "
+                          "argument to 'lbl' (i.e. line-by-line mode) "
+                          "instead.")
+
+        # Adjust lbl_opacity_sampling is needed
+
+        if self.lbl_opacity_sampling is None and self.res_mode == "lbl":
+            self.lbl_opacity_sampling = int(np.ceil(4.*1e6/max_spec_res))
+
+            warnings.warn("The argument of 'lbl_opacity_sampling' is "
+                          "set to None but the maximum spectral "
+                          f"resolution of the data is {max_spec_res}. "
+                          "The value of 'lbl_opacity_sampling' is "
+                          "therefore adjusted to "
+                          f"{self.lbl_opacity_sampling} (i.e. "
+                          "downsampling to 4 times the resolution "
+                          "of the data) to speed up the computation. "
+                          "If setting 'lbl_opacity_sampling' to None "
+                          "was intentional (i.e. opacity sampling at "
+                          "lambda/Dlambda=10^6) then please set "
+                          "the argument to 1 such that the line-by-"
+                          "line species will not be downsampled.")
+
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
 
@@ -1056,9 +1134,10 @@ class AtmosphericRetrieval:
             cloud_species=self.cloud_species,
             continuum_opacities=["H2-H2", "H2-He"],
             wlen_bords_micron=self.wavel_range,
-            mode="c-k",
+            mode=self.res_mode,
             test_ck_shuffle_comp=self.scattering,
             do_scat_emis=self.scattering,
+            lbl_opacity_sampling=self.lbl_opacity_sampling,
         )
 
         # Create list with parameters for MultiNest
@@ -1106,22 +1185,22 @@ class AtmosphericRetrieval:
 
         # Create instance of Radtrans for high-resolution spectra
 
-        lbl_radtrans = {}
+        ccf_radtrans = {}
 
         for item in cross_corr:
-            lbl_wavel_range = (
+            ccf_wavel_range = (
                 0.95 * self.spectrum[item][0][0, 0],
                 1.05 * self.spectrum[item][0][-1, 0],
             )
 
-            lbl_cloud_species = self.cloud_species_full.copy()
+            ccf_cloud_species = self.cloud_species_full.copy()
 
-            lbl_radtrans[item] = Radtrans(
-                line_species=self.lbl_species,
+            ccf_radtrans[item] = Radtrans(
+                line_species=self.ccf_species,
                 rayleigh_species=["H2", "He"],
-                cloud_species=lbl_cloud_species,
+                cloud_species=ccf_cloud_species,
                 continuum_opacities=["H2-H2", "H2-He"],
-                wlen_bords_micron=lbl_wavel_range,
+                wlen_bords_micron=ccf_wavel_range,
                 mode="lbl",
                 test_ck_shuffle_comp=self.scattering,
                 do_scat_emis=self.scattering,
@@ -1162,7 +1241,7 @@ class AtmosphericRetrieval:
 
             rt_object.setup_opa_structure(self.pressure)
 
-            for item in lbl_radtrans.values():
+            for item in ccf_radtrans.values():
                 item.setup_opa_structure(self.pressure)
 
             if check_flux is not None:
@@ -1176,7 +1255,7 @@ class AtmosphericRetrieval:
 
             rt_object.setup_opa_structure(self.pressure[::3])
 
-            for item in lbl_radtrans.values():
+            for item in ccf_radtrans.values():
                 item.setup_opa_structure(self.pressure[::3])
 
             if check_flux is not None:
@@ -1199,7 +1278,7 @@ class AtmosphericRetrieval:
 
             rt_object.setup_opa_structure(self.pressure[::24])
 
-            for item in lbl_radtrans.values():
+            for item in ccf_radtrans.values():
                 item.setup_opa_structure(self.pressure[::24])
 
             if check_flux is not None:
@@ -2469,7 +2548,7 @@ class AtmosphericRetrieval:
 
                             if len(cross_corr) != 0:
                                 raise ValueError(
-                                    "Check if it works correctly with lbl species."
+                                    "Check if it works correctly with ccf species."
                                 )
 
                     if "log_tau_cloud" in self.parameters:
@@ -2958,17 +3037,17 @@ class AtmosphericRetrieval:
 
                 # Calculate cloudy spectra for high-resolution data (i.e. line-by-line)
 
-                lbl_wavel = {}
-                lbl_flux = {}
+                ccf_wavel = {}
+                ccf_flux = {}
 
                 for item in cross_corr:
                     (
-                        lbl_wavel[item],
-                        lbl_flux[item],
+                        ccf_wavel[item],
+                        ccf_flux[item],
                         _,
                         _,
                     ) = retrieval_util.calc_spectrum_clouds(
-                        lbl_radtrans[item],
+                        ccf_radtrans[item],
                         self.pressure,
                         temp,
                         c_o_ratio,
@@ -2986,7 +3065,7 @@ class AtmosphericRetrieval:
                         tau_cloud=tau_cloud,
                     )
 
-                    if lbl_wavel[item] is None and lbl_flux[item] is None:
+                    if ccf_wavel[item] is None and ccf_flux[item] is None:
                         return -np.inf
 
             else:
@@ -3011,16 +3090,16 @@ class AtmosphericRetrieval:
 
                     # Calculate clear spectra for high-resolution data (i.e. line-by-line)
 
-                    lbl_wavel = {}
-                    lbl_flux = {}
+                    ccf_wavel = {}
+                    ccf_flux = {}
 
                     for item in cross_corr:
                         (
-                            lbl_wavel[item],
-                            lbl_flux[item],
+                            ccf_wavel[item],
+                            ccf_flux[item],
                             _,
                         ) = retrieval_util.calc_spectrum_clear(
-                            lbl_radtrans[item],
+                            ccf_radtrans[item],
                             self.pressure,
                             temp,
                             cube[cube_index["logg"]],
@@ -3054,34 +3133,34 @@ class AtmosphericRetrieval:
 
                     # Calculate clear spectra for high-resolution data (i.e. line-by-line)
 
-                    lbl_wavel = {}
-                    lbl_flux = {}
+                    ccf_wavel = {}
+                    ccf_flux = {}
 
                     for item in cross_corr:
-                        log_x_lbl = {}
+                        log_x_ccf = {}
 
-                        if "CO_all_iso" in self.lbl_species:
-                            log_x_lbl["CO_all_iso"] = log_x_abund["CO_all_iso"]
+                        if "CO_all_iso" in self.ccf_species:
+                            log_x_ccf["CO_all_iso"] = log_x_abund["CO_all_iso"]
 
-                        if "H2O_main_iso" in self.lbl_species:
-                            log_x_lbl["H2O_main_iso"] = log_x_abund["H2O"]
+                        if "H2O_main_iso" in self.ccf_species:
+                            log_x_ccf["H2O_main_iso"] = log_x_abund["H2O"]
 
-                        if "CH4_main_iso" in self.lbl_species:
-                            log_x_lbl["CH4_main_iso"] = log_x_abund["CH4"]
+                        if "CH4_main_iso" in self.ccf_species:
+                            log_x_ccf["CH4_main_iso"] = log_x_abund["CH4"]
 
                         (
-                            lbl_wavel[item],
-                            lbl_flux[item],
+                            ccf_wavel[item],
+                            ccf_flux[item],
                             _,
                         ) = retrieval_util.calc_spectrum_clear(
-                            lbl_radtrans[item],
+                            ccf_radtrans[item],
                             self.pressure,
                             temp,
                             cube[cube_index["logg"]],
                             None,
                             None,
                             None,
-                            log_x_lbl,
+                            log_x_ccf,
                             chemistry=chemistry,
                             knot_press_abund=knot_press_abund,
                             pressure_grid=self.pressure_grid,
@@ -3100,7 +3179,7 @@ class AtmosphericRetrieval:
 
                 return -np.inf
 
-            for item in lbl_flux.values():
+            for item in ccf_flux.values():
                 if np.sum(np.isnan(item)) > 0:
                     return -np.inf
 
@@ -3120,7 +3199,7 @@ class AtmosphericRetrieval:
                 ) ** 2.0
 
             for item in cross_corr:
-                lbl_flux[item] *= (
+                ccf_flux[item] *= (
                     cube[cube_index["radius"]]
                     * constants.R_JUP
                     / (1e3 * constants.PARSEC / cube[cube_index["parallax"]])
@@ -3132,8 +3211,8 @@ class AtmosphericRetrieval:
                 # Select model spectrum
 
                 if item in cross_corr:
-                    model_wavel = lbl_wavel[item]
-                    model_flux = lbl_flux[item]
+                    model_wavel = ccf_wavel[item]
+                    model_flux = ccf_flux[item]
 
                 else:
                     model_wavel = wlen_micron
@@ -3407,7 +3486,9 @@ class AtmosphericRetrieval:
         radtrans_dict = {}
         radtrans_dict["line_species"] = self.line_species
         radtrans_dict["cloud_species"] = self.cloud_species_full
-        radtrans_dict["lbl_species"] = self.lbl_species
+        radtrans_dict["ccf_species"] = self.ccf_species
+        radtrans_dict["res_mode"] = self.res_mode
+        radtrans_dict["lbl_opacity_sampling"] = self.lbl_opacity_sampling
         radtrans_dict["parallax"] = self.parallax
         radtrans_dict["scattering"] = self.scattering
         radtrans_dict["chemistry"] = chemistry
