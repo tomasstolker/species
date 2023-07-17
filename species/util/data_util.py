@@ -1067,7 +1067,7 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
         a single row/wavelength.
     units_in : tuple(str, str)
         Tuple with the units of the wavelength ("um", "angstrom", "A",
-        "nm", "mm", "cm", "m") and the units of the flux density
+        "nm", "mm", "cm", "m", "Hz") and the units of the flux density
         ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1", "erg s-1 cm-2 Hz-1",
         "mJy", "Jy", "MJy").
 
@@ -1083,7 +1083,7 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
 
     # Convert wavelengths to micrometer (um)
 
-    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m"]
+    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz"]
 
     if units_in[0] == "um":
         flux_out[:, 0] = flux_in[:, 0].copy()
@@ -1102,6 +1102,9 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
 
     elif units_in[0] == "m":
         flux_out[:, 0] = flux_in[:, 0] * 1e6
+
+    elif units_in[0] == "Hz":
+        flux_out[:, 0] = speed_light / flux_in[:, 0]
 
     else:
         raise ValueError(

@@ -1393,3 +1393,114 @@ def create_model_label(
             label += f"{par_label[i]} = {value} {par_unit[i]}"
 
     return label
+
+
+@typechecked
+def convert_units_plot(flux_in: np.ndarray, units_out: Tuple[str, str]) -> np.ndarray:
+    """
+    Function for converting the wavelength units from
+    :math:`\\mu\\text{m}^{-1}` and the flux units from
+    :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
+
+    Parameters
+    ----------
+    flux_in : np.ndarray
+        Array with the input wavelengths and fluxes. The shape of the
+        array should be (n_wavelengths, 3) with the columns being
+        the wavelengths, flux densities, and uncertainties. For
+        photometric fluxes, the array should also be 2D but with
+        a single row/wavelength.
+    units_out : tuple(str, str)
+        Tuple with the units of the wavelength ("um", "angstrom", "A",
+        "nm", "mm", "cm", "m", "Hz") and the units of the flux density
+        ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1", "erg s-1 cm-2 Hz-1",
+        "mJy", "Jy", "MJy").
+
+    Returns
+    -------
+    np.ndarray
+        Array with the output in the same shape as ``flux_in``.
+    """
+
+    speed_light = constants.LIGHT * 1e6  # (um s-1)
+
+    flux_out = np.zeros(flux_in.shape)
+
+    # Convert wavelengths from micrometer (um)
+
+    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz"]
+
+    if units_out[0] == "um":
+        flux_out[:, 0] = flux_in[:, 0].copy()
+
+    elif units_out[0] in ["angstrom", "A"]:
+        flux_out[:, 0] = flux_in[:, 0] * 1e4
+
+    elif units_out[0] == "nm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e3
+
+    elif units_out[0] == "mm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e-3
+
+    elif units_out[0] == "cm":
+        flux_out[:, 0] = flux_in[:, 0] * 1e-4
+
+    elif units_out[0] == "m":
+        flux_out[:, 0] = flux_in[:, 0] * 1e-6
+
+    elif units_out[0] == "Hz":
+        flux_out[:, 0] = speed_light / flux_in[:, 0]
+
+    else:
+        raise ValueError(
+            f"The wavelength units '{units_out[0]}' are not supported. "
+            f"Please choose from the following units: {wavel_units}"
+        )
+
+    # Convert flux density from W m-2 um-1
+
+    flux_units = [
+        "W m-2 um-1",
+        "W m-2 m-1",
+        "W m-2 Hz-1",
+        "erg s-1 cm-2 Hz-1",
+        "mJy",
+        "Jy",
+        "MJy",
+    ]
+
+    if units_out[1] == "W m-2 um-1":
+        flux_out[:, 1] = flux_in[:, 1].copy()
+        flux_out[:, 2] = flux_in[:, 2].copy()
+
+    elif units_out[1] == "W m-2 m-1":
+        flux_out[:, 1] = flux_in[:, 1] * 1e6
+        flux_out[:, 2] = flux_in[:, 2] * 1e6
+
+    elif units_out[1] == "W m-2 Hz-1":
+        flux_out[:, 1] = flux_in[:, 1] * flux_out[:, 0] ** 2 / speed_light
+        flux_out[:, 2] = flux_in[:, 2] * flux_out[:, 0] ** 2 / speed_light
+
+    elif units_out[1] == "erg s-1 cm-2 Hz-1":
+        flux_out[:, 1] = flux_in[:, 1] * 1e3 * flux_out[:, 0] ** 2 / speed_light
+        flux_out[:, 2] = flux_in[:, 2] * 1e3 * flux_out[:, 0] ** 2 / speed_light
+
+    elif units_out[1] == "mJy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e29 * flux_out[:, 0] ** 2 / speed_light
+        flux_out[:, 2] = flux_in[:, 2] * 1e29 * flux_out[:, 0] ** 2 / speed_light
+
+    elif units_out[1] == "Jy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e26 * flux_out[:, 0] ** 2 / speed_light
+        flux_out[:, 2] = flux_in[:, 2] * 1e26 * flux_out[:, 0] ** 2 / speed_light
+
+    elif units_out[1] == "MJy":
+        flux_out[:, 1] = flux_in[:, 1] * 1e20 * flux_out[:, 0] ** 2 / speed_light
+        flux_out[:, 2] = flux_in[:, 2] * 1e20 * flux_out[:, 0] ** 2 / speed_light
+
+    else:
+        raise ValueError(
+            f"The flux units '{units_out[1]}' are not supported. "
+            f"Please choose from the following units: {flux_units}"
+        )
+
+    return flux_out

@@ -42,13 +42,14 @@ def plot_spectrum(
             List[Optional[Union[dict, str, Tuple[float, float]]]],
         ]
     ] = None,
-    figsize: Optional[Tuple[float, float]] = (10.0, 5.0),
+    figsize: Optional[Tuple[float, float]] = (6.0, 3.0),
     object_type: str = "planet",
     quantity: str = "flux density",
     output: Optional[str] = None,
     leg_param: Optional[List[str]] = None,
     grid_hspace: float = 0.1,
     inc_model_name: bool = False,
+    units: Tuple[str, str] = ("um", "W m-2 um-1"),
 ) -> mpl.figure.Figure:
     """
     Function for plotting a spectral energy distribution and combining
@@ -151,6 +152,8 @@ def plot_spectrum(
     inc_model_name : bool
         Include the model name in the legend of any
         :class:`~species.core.box.ModelBox`.
+    units : tuple(str, str)
+        This parameter has not yet been implemented.
 
     Returns
     -------
@@ -365,7 +368,7 @@ def plot_spectrum(
             ax3.set_ylabel(r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=11)
 
     if xlim is None:
-        ax1.set_xlim(0.6, 6.0)
+        ax1.set_xlim(0.5, 5.0)
     else:
         ax1.set_xlim(xlim[0], xlim[1])
 
@@ -468,9 +471,9 @@ def plot_spectrum(
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    else:
-        ax1.get_xaxis().set_label_coords(0.5, -0.12)
-        ax1.get_yaxis().set_label_coords(-0.1, 0.5)
+    # else:
+    #     ax1.get_xaxis().set_label_coords(0.5, -0.12)
+    #     ax1.get_yaxis().set_label_coords(-0.1, 0.5)
 
     for j, box_item in enumerate(boxes):
         flux_scaling = 1.0
