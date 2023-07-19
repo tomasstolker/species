@@ -20,5 +20,5 @@ spectres ~= 2.2.0
 specutils ~= 1.9.0
 tqdm ~= 4.65.0
 typeguard ~= 3.0.0
-ultranest ~= 3.5.0
+ultranest ~= 3.6.0
 xlrd ~= 2.0.0

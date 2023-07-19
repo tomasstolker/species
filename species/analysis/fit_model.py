@@ -81,7 +81,7 @@ class FitModel:
         inc_phot: Union[bool, List[str]] = True,
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
-        weights: Optional[Dict[str, float]] = None,
+        apply_weights: Union[bool, Dict[str, Union[float, np.ndarray]]] = False,
         ext_filter: Optional[str] = None,
     ) -> None:
         """
@@ -364,13 +364,18 @@ class FitModel:
             determined from the data are not available for the spectra
             of ``object_name``. The parameters that will be fitted
             are the correlation length and the fractional amplitude.
-        weights : dict(str, float), None
+        apply_weights : bool, dict
             Weights to be applied to the log-likelihood components of
-            the different spectroscopic and photometric data that are
-            provided with ``inc_spec`` and ``inc_phot``. This parameter
-            can for example be used to bias the weighting of the
-            photometric data points. An equal weighting is applied if
-            the argument is set to ``None``.
+            the spectra and photometric fluxes that are provided with
+            ``inc_spec`` and ``inc_phot``. This parameter can for
+            example be used to increase the weighting of the
+            photometric fluxes relative to a spectrum that consists
+            of many wavelength points. By setting the argument to
+            ``True``, the weighting factors are automatically set,
+            based on the FWHM of the filter profiles or the wavelength
+            spacing calculated from the spectral resolution. By
+            setting the argument to ``False``, there will be no
+            weighting applied.
         ext_filter : str, None
             Filter that is associated with the (optional) extinction
             parameter, ``ism_ext``. When the argument of ``ext_filter``
@@ -958,22 +963,62 @@ class FitModel:
 
         print("Weights for the log-likelihood function:")
 
-        if weights is None:
+        if isinstance(apply_weights, bool):
             self.weights = {}
+
+            if apply_weights:
+                for spec_item in inc_spec:
+                    spec_size = self.spectrum[spec_item][0].shape[0]
+
+                    if spec_item not in self.weights:
+                        # Set weight for spectrum to lambda/R
+                        spec_wavel = self.spectrum[spec_item][0][:, 0]
+                        spec_res = self.spectrum[spec_item][3]
+                        self.weights[spec_item] = spec_wavel/spec_res
+
+                    elif not isinstance(self.weights[spec_item], np.ndarray):
+                        self.weights[spec_item] = np.full(spec_size, self.weights[spec_item])
+
+                    if np.all(self.weights[spec_item] == self.weights[spec_item][0]):
+                        print(f"   - {spec_item} = {self.weights[spec_item][0]:.2e}")
+
+                    else:
+                        print(f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}")
+
+                for phot_item in inc_phot:
+                    if phot_item not in self.weights:
+                        # Set weight for photometry to FWHM of filter
+                        read_filt = read_filter.ReadFilter(phot_item)
+                        self.weights[phot_item] = read_filt.filter_fwhm()
+
         else:
-            self.weights = weights
+            self.weights = apply_weights
 
-        for item in inc_spec:
-            if item not in self.weights:
-                self.weights[item] = 1.0
+            for spec_item in inc_spec:
+                spec_size = self.spectrum[spec_item][0].shape[0]
 
-            print(f"   - {item} = {self.weights[item]:.2e}")
+                if spec_item not in self.weights:
+                    # Set weight for spectrum to lambda/R
+                    spec_wavel = self.spectrum[spec_item][0][:, 0]
+                    spec_res = self.spectrum[spec_item][3]
+                    self.weights[spec_item] = spec_wavel/spec_res
 
-        for item in inc_phot:
-            if item not in self.weights:
-                self.weights[item] = 1.0
+                elif not isinstance(self.weights[spec_item], np.ndarray):
+                    self.weights[spec_item] = np.full(spec_size, self.weights[spec_item])
 
-            print(f"   - {item} = {self.weights[item]:.2e}")
+                if np.all(self.weights[spec_item] == self.weights[spec_item][0]):
+                    print(f"   - {spec_item} = {self.weights[spec_item][0]:.2e}")
+
+                else:
+                    print(f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}")
+
+            for phot_item in inc_phot:
+                if phot_item not in self.weights:
+                    # Set weight for photometry to FWHM of filter
+                    read_filt = read_filter.ReadFilter(phot_item)
+                    self.weights[phot_item] = read_filt.filter_fwhm()
+
+                print(f"   - {phot_item} = {self.weights[phot_item]:.2e}")
 
     @typechecked
     def lnlike_func(
@@ -1364,7 +1409,7 @@ class FitModel:
                 ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
 
                 # Only required when fitting an error inflation
-                ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
+                ln_like += -0.5 * np.log(2.0 * np.pi * phot_var)
 
             else:
                 for j in range(obj_item.shape[1]):
@@ -1384,7 +1429,7 @@ class FitModel:
                     )
 
                     # Only required when fitting an error inflation
-                    ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
+                    ln_like += -0.5 * np.log(2.0 * np.pi * phot_var)
 
         for i, item in enumerate(self.spectrum.keys()):
             # Calculate or interpolate the model spectrum
@@ -1598,14 +1643,13 @@ class FitModel:
                 # Use the inverted covariance matrix
                 ln_like += (
                     -0.5
-                    * weight
                     * np.dot(
-                        data_flux - model_flux,
+                        weight * (data_flux - model_flux),
                         np.dot(data_cov_inv, data_flux - model_flux),
                     )
                 )
 
-                ln_like += -0.5 * weight * np.nansum(np.log(2.0 * np.pi * data_var))
+                ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
 
             else:
                 if item in self.fit_corr:
@@ -1629,17 +1673,17 @@ class FitModel:
                     )
 
                     dot_tmp = np.dot(
-                        data_flux - model_flux,
+                        weight * (data_flux - model_flux),
                         np.dot(np.linalg.inv(cov_matrix), data_flux - model_flux),
                     )
 
-                    ln_like += -0.5 * weight * dot_tmp
+                    ln_like += -0.5 * dot_tmp
                     ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
 
                 else:
                     # Calculate the chi-square without a covariance matrix
                     chi_sq = -0.5 * weight * (data_flux - model_flux) ** 2 / data_var
-                    chi_sq += -0.5 * weight * np.log(2.0 * np.pi * data_var)
+                    chi_sq += -0.5 * np.log(2.0 * np.pi * data_var)
 
                     ln_like += np.nansum(chi_sq)
 
