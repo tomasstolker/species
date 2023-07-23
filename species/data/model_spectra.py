@@ -100,6 +100,15 @@ def add_model_grid(
             "be downloaded and added to the HDF5 database."
         )
 
+    elif model_name == "exo-rem-highres" and teff_range is None:
+        warnings.warn(
+            "Adding the full high-resolution grid of Exo-Rem to the "
+            "HDF5 database may not be feasible since it requires "
+            "a large amount of memory. Please consider using the "
+            "'teff_range' parameter to only add a small "
+            "Teff range of model spectra to the database."
+        )
+
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 

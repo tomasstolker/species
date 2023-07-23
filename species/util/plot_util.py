@@ -839,6 +839,9 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "exo-rem":
         out_name = "Exo-REM"
 
+    elif in_name == "exo-rem-highres":
+        out_name = "Exo-REM"
+
     elif in_name == "planck":
         out_name = "Blackbody radiation"
 

@@ -1711,16 +1711,15 @@ def calc_metal_ratio(
 
 
 @typechecked
-def mean_molecular_weight(abundances: Dict[str, float]) -> float:
+def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
     """
     Function to calculate the mean molecular weight from a
     dictionary with mass fractions.
 
     Parameters
     ----------
-    abundances : dict
+    mass_frac : dict
         Dictionary with the mass fraction of each species.
-        Keys should be the line species, always ending with "_0".
 
     Returns
     -------
@@ -1731,24 +1730,11 @@ def mean_molecular_weight(abundances: Dict[str, float]) -> float:
     masses = atomic_masses()
     mmw_sum = 0.0
 
-    for abund_item in abundances:
-        if abund_item in ["CO_all_iso", "CO_all_iso_HITEMP", "CO_all_iso_Chubb"]:
-            mmw_sum += abundances[abund_item] / masses["CO"]
-
-        elif abund_item in ["Na_lor_cut", "Na_allard", "Na_burrows"]:
-            mmw_sum += abundances[abund_item] / masses["Na"]
-
-        elif abund_item in ["K_lor_cut", "K_allard", "K_burrows"]:
-            mmw_sum += abundances[abund_item] / masses["K"]
-
-        elif abund_item == "CH4_main_iso":
-            mmw_sum += abundances[abund_item] / masses["CH4"]
-
-        elif abund_item in ["H2O_main_iso", "H2O_HITEMP"]:
-            mmw_sum += abundances[abund_item] / masses["H2O"]
-
+    for abund_item in mass_frac:
+        if "_" in abund_item:
+            mmw_sum += mass_frac[abund_item] / masses[abund_item.split("_")[0]]
         else:
-            mmw_sum += abundances[abund_item] / masses[abund_item]
+            mmw_sum += mass_frac[abund_item] / masses[abund_item]
 
     return 1.0 / mmw_sum
 
