@@ -134,10 +134,20 @@
     "exo-rem": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "Exo-REM",
-        "file size": "706 MB",
-        "wavelength range": [0.9, 5],
-        "resolution": 10000,
-        "teff range": [1000, 2000],
+        "file size": "530 MB",
+        "wavelength range": [0.35, 250.0],
+        "resolution": 500,
+        "teff range": [400, 2000],
+        "reference": "Charney et al. (2018)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
+    },
+    "exo-rem-highres": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "Exo-REM",
+        "file size": "16 GB",
+        "wavelength range": [0.67, 250.0],
+        "resolution": 20000,
+        "teff range": [400, 2000],
         "reference": "Charney et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
     },

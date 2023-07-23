@@ -301,12 +301,22 @@ def update_objectbox(
             instr_name = key.split(".")[0]
 
             if f"{key}_error" in model_param:
-                # Inflate photometric error of filter
-                var_add = model_param[f"{key}_error"] ** 2 * value[0] ** 2
+                # Inflate photometry uncertainty of filter
+
+                # Scale relative to the flux
+                # var_add = model_param[f"{key}_error"] ** 2 * value[0] ** 2
+
+                # Scale relative to the uncertainty
+                var_add = model_param[f"{key}_error"] ** 2 * value[1] ** 2
 
             elif f"{instr_name}_error" in model_param:
-                # Inflate photometric error of instrument
-                var_add = model_param[f"{instr_name}_error"] ** 2 * value[0] ** 2
+                # Inflate photometry uncertainty of instrument
+
+                # Scale relative to the flux
+                # var_add = model_param[f"{instr_name}_error"] ** 2 * value[0] ** 2
+
+                # Scale relative to the uncertainty
+                var_add = model_param[f"{instr_name}_error"] ** 2 * value[1] ** 2
 
             else:
                 # No inflation required

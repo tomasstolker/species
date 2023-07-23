@@ -990,6 +990,18 @@ class FitModel:
                         # Set weight for photometry to FWHM of filter
                         read_filt = read_filter.ReadFilter(phot_item)
                         self.weights[phot_item] = read_filt.filter_fwhm()
+                        print(f"   - {phot_item} = {self.weights[phot_item]:.2e}")
+
+            else:
+                for spec_item in inc_spec:
+                    spec_size = self.spectrum[spec_item][0].shape[0]
+                    self.weights[spec_item] = np.full(spec_size, 1.)
+                    print(f"   - {spec_item} = {self.weights[spec_item][0]:.2f}")
+
+                for phot_item in inc_phot:
+                    # Set weight to 1 if apply_weights=False
+                    self.weights[phot_item] = 1.
+                    print(f"   - {phot_item} = {self.weights[phot_item]:.2f}")
 
         else:
             self.weights = apply_weights
@@ -1399,12 +1411,22 @@ class FitModel:
                 instr_check = phot_filter.split(".")[0]
 
                 if phot_filter in phot_scaling:
-                    # Inflate photometric error for filter
-                    phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0] ** 2
+                    # Inflate photometry uncertainty for filter
+
+                    # Scale relative to the flux
+                    # phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0] ** 2
+
+                    # Scale relative to the uncertainty
+                    phot_var += phot_scaling[phot_filter] ** 2 * obj_item[1] ** 2
 
                 elif instr_check in phot_scaling:
-                    # Inflate photometric error for instrument
-                    phot_var += phot_scaling[instr_check] ** 2 * obj_item[0] ** 2
+                    # Inflate photometry uncertainty for instrument
+
+                    # Scale relative to the flux
+                    # phot_var += phot_scaling[instr_check] ** 2 * obj_item[0] ** 2
+
+                    # Scale relative to the uncertainty
+                    phot_var += phot_scaling[instr_check] ** 2 * obj_item[1] ** 2
 
                 ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
 
@@ -1415,14 +1437,26 @@ class FitModel:
                 for j in range(obj_item.shape[1]):
                     phot_var = obj_item[1, j] ** 2
 
-                    if (
-                        self.model == "powerlaw"
-                        and f"{phot_filter}_error" in param_dict
-                    ):
-                        phot_var += (
-                            param_dict[f"{phot_filter}_error"] ** 2
-                            * obj_item[0, j] ** 2
-                        )
+                    # Get the telescope/instrument name
+                    instr_check = phot_filter.split(".")[0]
+
+                    if phot_filter in phot_scaling:
+                        # Inflate photometry uncertainty for filter
+
+                        # Scale relative to the flux
+                        # phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0, j] ** 2
+
+                        # Scale relative to the uncertainty
+                        phot_var += phot_scaling[phot_filter] ** 2 * obj_item[1, j] ** 2
+
+                    elif instr_check in phot_scaling:
+                        # Inflate photometry uncertainty for instrument
+
+                        # Scale relative to the flux
+                        # phot_var += phot_scaling[instr_check] ** 2 * obj_item[0, j] ** 2
+
+                        # Scale relative to the uncertainty
+                        phot_var += phot_scaling[instr_check] ** 2 * obj_item[1, j] ** 2
 
                     ln_like += (
                         -0.5 * weight * (obj_item[0, j] - phot_flux) ** 2 / phot_var

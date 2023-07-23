@@ -91,6 +91,15 @@ def add_model_grid(
             "add_model of Database."
         )
 
+    elif model_name == "exo-rem":
+        warnings.warn(
+            "The Exo-Rem grid has been updated to the latest version "
+            "from https://lesia.obspm.fr/exorem/YGP_grids/. Please "
+            "consider removing the grid from the 'data_folder' if "
+            "needed such that the latest version of the grid will "
+            "be downloaded and added to the HDF5 database."
+        )
+
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
