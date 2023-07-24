@@ -43,6 +43,7 @@ class ReadRadtrans:
         cloud_wavel: Optional[Tuple[float, float]] = None,
         max_press: float = None,
         pt_manual: Optional[np.ndarray] = None,
+        lbl_opacity_sampling: Optional[Union[int, np.int_]] = None,
     ) -> None:
         """
         Parameters
@@ -102,6 +103,15 @@ class ReadRadtrans:
             be (n_pressure, 2), with pressure (bar) as first column
             and temperature (K) as second column. It is recommended
             that the pressures are logarithmically spaced.
+        lbl_opacity_sampling : int, None
+            This is the same parameter as in ``petitRADTRANS`` which is
+            used with ``res_mode='lbl'`` to downsample the line-by-line
+            opacities by selecting every ``lbl_opacity_sampling``-th
+            wavelength from the original sampling of
+            :math:`\\lambda/\\Delta \\lambda = 10^6`. Setting this
+            parameter will lower the computation time. By setting the
+            argument to ``None``, the original sampling is used so no
+            downsampling is applied.
 
         Returns
         -------
@@ -117,6 +127,7 @@ class ReadRadtrans:
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
         self.pt_manual = pt_manual
+        self.lbl_opacity_sampling = lbl_opacity_sampling
 
         # Set maximum pressure
 
@@ -205,6 +216,7 @@ class ReadRadtrans:
             mode=res_mode,
             test_ck_shuffle_comp=self.scattering,
             do_scat_emis=self.scattering,
+            lbl_opacity_sampling=lbl_opacity_sampling,
         )
 
         # Setup the opacity arrays

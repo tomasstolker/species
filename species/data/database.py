@@ -3333,6 +3333,16 @@ class Database:
             else:
                 dset.attrs["abund_nodes"] = radtrans["abund_nodes"]
 
+            if "res_mode" in radtrans:
+                dset.attrs["res_mode"] = radtrans["res_mode"]
+            else:
+                dset.attrs["res_mode"] = "c-k"
+
+            if "lbl_opacity_sampling" in radtrans:
+                dset.attrs["lbl_opacity_sampling"] = radtrans["lbl_opacity_sampling"]
+            else:
+                dset.attrs["lbl_opacity_sampling"] = None
+
         print(" [DONE]")
 
         # Set number of pressures
@@ -3797,6 +3807,20 @@ class Database:
         for i in range(n_cloud_species):
             cloud_species.append(dset.attrs[f"cloud_species{i}"])
 
+        # Get resolution mode
+
+        if "res_mode" in dset.attrs:
+            res_mode = dset.attrs["res_mode"]
+        else:
+            res_mode = "c-k"
+
+        # High-resolution downsampling factor
+
+        if "lbl_opacity_sampling" in dset.attrs:
+            lbl_opacity_sampling = dset.attrs["lbl_opacity_sampling"]
+        else:
+            lbl_opacity_sampling = None
+
         # Create an instance of ReadRadtrans
         # Afterwards, the names of the cloud_species have been shortened
         # from e.g. 'MgSiO3(c)_cd' to 'MgSiO3(c)'
@@ -3809,6 +3833,8 @@ class Database:
             pressure_grid=pressure_grid,
             cloud_wavel=cloud_wavel,
             max_press=max_press,
+            res_mode=res_mode,
+            lbl_opacity_sampling=lbl_opacity_sampling,
         )
 
         # Set quenching attribute such that the parameter of get_model is not required
