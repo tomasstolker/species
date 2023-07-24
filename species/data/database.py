@@ -2742,12 +2742,8 @@ class Database:
 
         h5_file.close()
 
-        if samples.ndim == 3:
-            prob_sample = self.get_probable_sample(tag, burnin)
-        else:
-            prob_sample = None
-
         median_sample = self.get_median_sample(tag, burnin)
+        prob_sample = self.get_probable_sample(tag, burnin)
 
         if json_file is not None:
             samples_dict = {}

@@ -21,7 +21,7 @@ from species.read import (
     read_planck,
     read_radtrans,
 )
-from species.util import read_util
+from species.util import read_util, retrieval_util
 
 
 @typechecked
@@ -355,6 +355,7 @@ def get_residuals(
 
         if spectrum == "petitradtrans":
             # Calculate the petitRADTRANS spectrum only once
+            # Smoothing and resampling not with get_model
             model = radtrans.get_model(parameters)
 
         for key in objectbox.spectrum:
@@ -386,11 +387,16 @@ def get_residuals(
                     )
 
                 elif spectrum == "petitradtrans":
-                    # Separate resampling to the new wavelength points
+                    # Smoothing to the instrument resolution
+                    flux_smooth = retrieval_util.convolve(
+                        model.wavelength, model.flux, spec_res
+                    )
+
+                    # Resampling to the new wavelength points
                     flux_new = spectres.spectres(
                         wl_new,
                         model.wavelength,
-                        model.flux,
+                        flux_smooth,
                         spec_errs=None,
                         fill=0.0,
                         verbose=True,

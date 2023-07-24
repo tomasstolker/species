@@ -53,7 +53,12 @@ from species.plot.plot_mcmc import (
     plot_extinction,
 )
 
-from species.plot.plot_retrieval import plot_clouds, plot_opacities, plot_pt_profile
+from species.plot.plot_retrieval import (
+    plot_abundances,
+    plot_clouds,
+    plot_opacities,
+    plot_pt_profile,
+)
 
 from species.plot.plot_spectrum import plot_spectrum
 

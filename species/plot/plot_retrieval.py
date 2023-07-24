@@ -106,7 +106,7 @@ def plot_pt_profile(
 
     parameters = np.asarray(box.parameters)
     samples = box.samples
-    model_param = box.median_sample
+    model_param = box.prob_sample
 
     if random is not None:
         indices = np.random.randint(samples.shape[0], size=random)
@@ -829,7 +829,7 @@ def plot_opacities(
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
-    model_param = box.median_sample
+    model_param = box.prob_sample
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -1316,7 +1316,7 @@ def plot_clouds(
 
     species_db = database.Database()
     box = species_db.get_samples(tag)
-    model_param = box.median_sample
+    model_param = box.prob_sample
 
     if (
         f"{composition.lower()}_fraction" not in model_param
@@ -1472,6 +1472,153 @@ def plot_clouds(
     ax1.set_xscale("log")
     ax1.set_yscale("log")
     ax2.set_yscale("log")
+
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(output, bbox_inches="tight")
+
+    print(" [DONE]")
+
+    return fig
+
+
+@typechecked
+def plot_abundances(
+    tag: str,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    offset: Optional[Tuple[float, float]] = None,
+    output: Optional[str] = None,
+    legend: Optional[dict] = None,
+    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+) -> mpl.figure.Figure:
+    """
+    Function to plotting the retrieved abundance profiles.
+
+    Parameters
+    ----------
+    tag : str
+        Database tag with the posterior samples.
+    xlim : tuple(float, float), None
+        Limits of the temperature axis. Default values are used if
+        set to ``None``.
+    ylim : tuple(float, float), None
+        Limits of the pressure axis. Default values are used if set
+        to ``None``.
+    offset : tuple(float, float), None
+        Offset of the x- and y-axis label. Default values are
+        used if the argument set to ``None``.
+    output : str, None
+        Output filename for the plot. The plot is shown in an
+        interface window if the argument is set to ``None``.
+    legend : dict, None
+        Dictionary with legend properties. Default values will
+        be used if the argument is set to ``None``.
+    radtrans : read_radtrans.ReadRadtrans, None
+        Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
+        The parameter is not used if the argument is set to ``None``.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The ``Figure`` object that can be used for
+        further customization of the plot.
+    """
+
+    species_db = database.Database()
+    box = species_db.get_samples(tag)
+    model_param = box.prob_sample
+
+    if output is None:
+        print("Plotting abundances...", end="", flush=True)
+    else:
+        print(f"Plotting abundances: {output}...", end="", flush=True)
+
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
+    fig = plt.figure(figsize=(4.0, 3.0))
+    gridsp = mpl.gridspec.GridSpec(1, 1)
+    gridsp.update(wspace=0.1, hspace=0.0, left=0, right=1, bottom=0, top=1)
+
+    ax = plt.subplot(gridsp[0, 0])
+
+    radtrans.get_model(model_param)
+
+    ax.tick_params(
+        axis="both",
+        which="major",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=5,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+        labelbottom=True,
+    )
+
+    ax.tick_params(
+        axis="both",
+        which="minor",
+        colors="black",
+        labelcolor="black",
+        direction="in",
+        width=1,
+        length=3,
+        labelsize=12,
+        top=True,
+        bottom=True,
+        left=True,
+        right=True,
+        labelbottom=True,
+    )
+
+    sub_num = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+    for line_idx, line_item in enumerate(radtrans.rt_object.line_species):
+        line_label = line_item.split("_")[0]
+        line_label = line_label.translate(sub_num)
+
+        ax.plot(
+            radtrans.rt_object.line_abundances[:, line_idx],
+            radtrans.rt_object.press * 1e-6,
+            lw=0.7,
+            label=line_label,
+        )
+
+    ax.set_xlabel("Abundance", fontsize=13)
+    ax.set_ylabel("Pressure (bar)", fontsize=13)
+
+    if xlim is not None:
+        ax.set_xlim(1e-10, 1.0)
+
+    if ylim is None:
+        ax.set_ylim(
+            1e-6 * radtrans.rt_object.press[-1], 1e-6 * radtrans.rt_object.press[0]
+        )
+    else:
+        ax.set_ylim(ylim[0], ylim[1])
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+
+    if offset is not None:
+        ax.get_xaxis().set_label_coords(0.5, offset[0])
+        ax.get_yaxis().set_label_coords(offset[1], 0.5)
+
+    else:
+        ax.get_xaxis().set_label_coords(0.5, -0.1)
+        ax.get_yaxis().set_label_coords(-0.15, 0.5)
+
+    if legend is None:
+        ax.legend(loc="upper left", fontsize=7.0)
+    else:
+        ax.legend(**legend)
 
     if output is None:
         plt.show()
