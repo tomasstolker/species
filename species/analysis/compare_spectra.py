@@ -571,7 +571,9 @@ class CompareSpectra:
                                     # Resample model spectrum
 
                                     flux_intep = interp1d(
-                                        model_box_full.wavelength, model_flux
+                                        model_box_full.wavelength,
+                                        model_flux,
+                                        bounds_error=False,
                                     )
                                     model_flux = flux_intep(obj_spec[:, 0])
 
