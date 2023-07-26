@@ -1072,9 +1072,16 @@ def calc_spectrum_clouds(
                     knot_abund[node_idx] = abund_in[f"{abund_item}_{node_idx}"]
                     del abund_in[f"{abund_item}_{node_idx}"]
 
-                abund_in[abund_item] = pt_spline_interp(
-                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
-                )
+                try:
+                    abund_in[abund_item] = pt_spline_interp(
+                        knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                    )
+
+                except ValueError:
+                    print("knot_press", knot_press_abund)
+                    print("knot_temp", knot_abund)
+                    
+                    return None, None, None, np.zeros(1)
 
             # Mean molecular weight
 
