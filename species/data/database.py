@@ -1864,80 +1864,78 @@ class Database:
         if spec_labels is None:
             spec_labels = []
 
-        h5_file = h5py.File(self.database, "a")
+        with h5py.File(self.database, "a") as h5_file:
 
-        if "results" not in h5_file:
-            h5_file.create_group("results")
+            if "results" not in h5_file:
+                h5_file.create_group("results")
 
-        if "results/fit" not in h5_file:
-            h5_file.create_group("results/fit")
+            if "results/fit" not in h5_file:
+                h5_file.create_group("results/fit")
 
-        if f"results/fit/{tag}" in h5_file:
-            del h5_file[f"results/fit/{tag}"]
+            if f"results/fit/{tag}" in h5_file:
+                del h5_file[f"results/fit/{tag}"]
 
-        dset = h5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
-        h5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=ln_prob)
+            dset = h5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
+            h5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=ln_prob)
 
-        if attr_dict is not None and "spec_type" in attr_dict:
-            dset.attrs["type"] = attr_dict["spec_type"]
-        else:
-            dset.attrs["type"] = str(spectrum[0])
-
-        if attr_dict is not None and "spec_name" in attr_dict:
-            dset.attrs["spectrum"] = attr_dict["spec_name"]
-        else:
-            dset.attrs["spectrum"] = str(spectrum[1])
-
-        dset.attrs["n_param"] = int(len(modelpar))
-        dset.attrs["sampler"] = str(sampler)
-
-        if parallax is not None:
-            dset.attrs["parallax"] = float(parallax)
-
-        if attr_dict is not None and "mean_accept" in attr_dict:
-            mean_accept = float(attr_dict["mean_accept"])
-            dset.attrs["mean_accept"] = mean_accept
-            print(f"Mean acceptance fraction: {mean_accept:.3f}")
-
-        elif mean_accept is not None:
-            dset.attrs["mean_accept"] = float(mean_accept)
-            print(f"Mean acceptance fraction: {mean_accept:.3f}")
-
-        if ln_evidence is not None:
-            dset.attrs["ln_evidence"] = ln_evidence
-
-        count_scaling = 0
-
-        for i, item in enumerate(modelpar):
-            dset.attrs[f"parameter{i}"] = str(item)
-
-            if item in spec_labels:
-                dset.attrs[f"scaling{count_scaling}"] = str(item)
-                count_scaling += 1
-
-        dset.attrs["n_scaling"] = int(count_scaling)
-
-        if "teff_0" in modelpar and "teff_1" in modelpar:
-            dset.attrs["binary"] = True
-        else:
-            dset.attrs["binary"] = False
-
-        print("Integrated autocorrelation time:")
-
-        for i, item in enumerate(modelpar):
-            auto_corr = emcee.autocorr.integrated_time(samples[:, i], quiet=True)[0]
-
-            if np.allclose(samples[:, i], np.mean(samples[:, i])):
-                print(f"   - {item}: fixed")
+            if attr_dict is not None and "spec_type" in attr_dict:
+                dset.attrs["type"] = attr_dict["spec_type"]
             else:
-                print(f"   - {item}: {auto_corr:.2f}")
+                dset.attrs["type"] = str(spectrum[0])
 
-            dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
+            if attr_dict is not None and "spec_name" in attr_dict:
+                dset.attrs["spectrum"] = attr_dict["spec_name"]
+            else:
+                dset.attrs["spectrum"] = str(spectrum[1])
 
-        for key, value in attr_dict.items():
-            dset.attrs[key] = value
+            dset.attrs["n_param"] = int(len(modelpar))
+            dset.attrs["sampler"] = str(sampler)
 
-        h5_file.close()
+            if parallax is not None:
+                dset.attrs["parallax"] = float(parallax)
+
+            if attr_dict is not None and "mean_accept" in attr_dict:
+                mean_accept = float(attr_dict["mean_accept"])
+                dset.attrs["mean_accept"] = mean_accept
+                print(f"Mean acceptance fraction: {mean_accept:.3f}")
+
+            elif mean_accept is not None:
+                dset.attrs["mean_accept"] = float(mean_accept)
+                print(f"Mean acceptance fraction: {mean_accept:.3f}")
+
+            if ln_evidence is not None:
+                dset.attrs["ln_evidence"] = ln_evidence
+
+            count_scaling = 0
+
+            for i, item in enumerate(modelpar):
+                dset.attrs[f"parameter{i}"] = str(item)
+
+                if item in spec_labels:
+                    dset.attrs[f"scaling{count_scaling}"] = str(item)
+                    count_scaling += 1
+
+            dset.attrs["n_scaling"] = int(count_scaling)
+
+            if "teff_0" in modelpar and "teff_1" in modelpar:
+                dset.attrs["binary"] = True
+            else:
+                dset.attrs["binary"] = False
+
+            print("Integrated autocorrelation time:")
+
+            for i, item in enumerate(modelpar):
+                auto_corr = emcee.autocorr.integrated_time(samples[:, i], quiet=True)[0]
+
+                if np.allclose(samples[:, i], np.mean(samples[:, i])):
+                    print(f"   - {item}: fixed")
+                else:
+                    print(f"   - {item}: {auto_corr:.2f}")
+
+                dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
+
+            for key, value in attr_dict.items():
+                dset.attrs[key] = value
 
     @typechecked
     def get_probable_sample(

@@ -17,6 +17,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
+from species.analysis import photometry
 from species.core import constants
 from species.data import database
 from species.read import read_filter, read_model, read_object
@@ -553,26 +554,28 @@ class CompareSpectra:
                                 if model_param[5] is not None:
                                     param_dict[model_param[5]] = coord_5_item
 
+                                model_box_full = model_reader.get_data(param_dict)
+
                                 for spec_item in self.spec_name:
                                     obj_spec = self.object.get_spectrum()[spec_item][0]
                                     obj_res = self.object.get_spectrum()[spec_item][3]
 
-                                    wavel_range = (
-                                        0.9 * obj_spec[0, 0],
-                                        1.1 * obj_spec[-1, 0],
+                                    # Smooth model spectrum
+
+                                    model_flux = read_util.smooth_spectrum(
+                                        model_box_full.wavelength,
+                                        model_box_full.flux,
+                                        obj_res,
                                     )
 
-                                    model_reader = read_model.ReadModel(
-                                        model, wavel_range=wavel_range
-                                    )
+                                    # Resample model spectrum
 
-                                    model_box = model_reader.get_data(
-                                        param_dict,
-                                        spec_res=obj_res,
-                                        wavel_resample=obj_spec[:, 0],
+                                    flux_intep = interp1d(
+                                        model_box_full.wavelength, model_flux
                                     )
+                                    model_flux = flux_intep(obj_spec[:, 0])
 
-                                    nan_wavel = np.sum(np.isnan(model_box.flux))
+                                    nan_wavel = np.sum(np.isnan(model_flux))
 
                                     if nan_wavel > 0:
                                         warnings.warn(
@@ -585,7 +588,7 @@ class CompareSpectra:
                                             "calculating the goodness-of-fit statistic."
                                         )
 
-                                    model_spec[spec_item] = model_box.flux
+                                    model_spec[spec_item] = model_flux
 
                                 model_list = []
                                 data_list = []
@@ -597,11 +600,10 @@ class CompareSpectra:
                                         weights_list.append(w_i[spec_item])
 
                                 for phot_item in inc_phot:
-                                    model_reader = read_model.ReadModel(
-                                        model, filter_name=phot_item
+                                    syn_phot = photometry.SyntheticPhotometry(phot_item)
+                                    model_phot = syn_phot.spectrum_to_flux(
+                                        model_box_full.wavelength, model_box_full.flux
                                     )
-
-                                    model_phot = model_reader.get_flux(param_dict)
                                     model_list.append(np.array([model_phot[0]]))
 
                                     phot_flux = object_box.flux[phot_item]
@@ -634,7 +636,7 @@ class CompareSpectra:
                                     / data_list[:, 2] ** 2
                                 )
 
-                                if np.nansum(model_list) == 0.:
+                                if np.nansum(model_list) == 0.0:
                                     # This happens if model spectra contain
                                     # only zeros because the grid point was
                                     # missing and could not be fixed with
@@ -714,7 +716,7 @@ class CompareSpectra:
                                         / spec_data[spec_item][0][:, 2] ** 2
                                     )
 
-                                if np.nansum(model_list) == 0.:
+                                if np.nansum(model_list) == 0.0:
                                     # This happens if model spectra contain
                                     # only zeros because the grid point was
                                     # missing and could not be fixed with

@@ -63,7 +63,7 @@ class TestModel:
             92.26773310928259, rel=self.limit, abs=0.0
         )
         assert np.sum(model_box.flux) == pytest.approx(
-            646.3576115533599, rel=self.limit, abs=0.0
+            646.3776539114224, rel=self.limit, abs=0.0
         )
 
     def test_get_data(self):

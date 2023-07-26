@@ -63,7 +63,7 @@
         "resolution": 3000,
         "teff range": [800, 3000],
         "reference": "Petrus et al. (2023)",
-        "url": "https://arxiv.org/abs/2207.06622"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P/abstract"
     },
     "blackbody": {
         "parameters": ["teff"],

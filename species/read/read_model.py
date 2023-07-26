@@ -10,7 +10,7 @@ import configparser
 from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
-import spectres
+# import spectres
 import numpy as np
 
 from PyAstronomy.pyasl import rotBroad, fastRotBroad
@@ -841,9 +841,12 @@ class ReadModel:
             else:
                 planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
 
-            flux += spectres.spectres(
-                self.wl_points, planck_box.wavelength, planck_box.flux
-            )
+            flux_interp = interp1d(planck_box.wavelength, planck_box.flux)
+            flux += flux_interp(self.wl_points)
+
+            # flux += spectres.spectres(
+            #     self.wl_points, planck_box.wavelength, planck_box.flux
+            # )
 
         # Create ModelBox with the spectrum
 
@@ -972,14 +975,17 @@ class ReadModel:
         # Resample the spectrum
 
         if wavel_resample is not None:
-            model_box.flux = spectres.spectres(
-                wavel_resample,
-                model_box.wavelength,
-                model_box.flux,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
-            )
+            flux_interp = interp1d(model_box.wavelength, model_box.flux)
+            model_box.flux = flux_interp(wavel_resample)
+
+            # model_box.flux = spectres.spectres(
+            #     wavel_resample,
+            #     model_box.wavelength,
+            #     model_box.flux,
+            #     spec_errs=None,
+            #     fill=np.nan,
+            #     verbose=True,
+            # )
 
             model_box.wavelength = wavel_resample
 
@@ -1004,14 +1010,17 @@ class ReadModel:
 
             wavel_resample = wavel_resample[indices]
 
-            model_box.flux = spectres.spectres(
-                wavel_resample,
-                model_box.wavelength,
-                model_box.flux,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
-            )
+            flux_interp = interp1d(model_box.wavelength, model_box.flux)
+            model_box.flux = flux_interp(wavel_resample)
+
+            # model_box.flux = spectres.spectres(
+            #     wavel_resample,
+            #     model_box.wavelength,
+            #     model_box.flux,
+            #     spec_errs=None,
+            #     fill=np.nan,
+            #     verbose=True,
+            # )
 
             model_box.wavelength = wavel_resample
 
@@ -1028,17 +1037,20 @@ class ReadModel:
             else:
                 h5_file.close()
 
-            readcalib = read_calibration.ReadCalibration("vega", filter_name=None)
-            calibbox = readcalib.get_spectrum()
+            read_calib = read_calibration.ReadCalibration("vega", filter_name=None)
+            calib_box = read_calib.get_spectrum()
 
-            flux_vega, _ = spectres.spectres(
-                model_box.wavelength,
-                calibbox.wavelength,
-                calibbox.flux,
-                spec_errs=calibbox.error,
-                fill=np.nan,
-                verbose=True,
-            )
+            flux_interp = interp1d(calib_box.wavelength, calib_box.flux)
+            flux_vega = flux_interp(model_box.wavelength)
+
+            # flux_vega, _ = spectres.spectres(
+            #     model_box.wavelength,
+            #     calib_box.wavelength,
+            #     calib_box.flux,
+            #     spec_errs=calib_box.error,
+            #     fill=np.nan,
+            #     verbose=True,
+            # )
 
             model_box.flux = -2.5 * np.log10(model_box.flux / flux_vega)
             model_box.quantity = "magnitude"
@@ -1269,7 +1281,10 @@ class ReadModel:
             else:
                 planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
 
-            flux += spectres.spectres(wl_points, planck_box.wavelength, planck_box.flux)
+            flux_interp = interp1d(planck_box.wavelength, planck_box.flux)
+            flux += flux_interp(wl_points)
+
+            # flux += spectres.spectres(wl_points, planck_box.wavelength, planck_box.flux)
 
         # Create ModelBox with the spectrum
 
@@ -1344,14 +1359,17 @@ class ReadModel:
         # Resample the spectrum
 
         if wavel_resample is not None:
-            model_box.flux = spectres.spectres(
-                wavel_resample,
-                model_box.wavelength,
-                model_box.flux,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
-            )
+            flux_interp = interp1d(model_box.wavelength, model_box.flux)
+            model_box.flux = flux_interp(wavel_resample)
+
+            # model_box.flux = spectres.spectres(
+            #     wavel_resample,
+            #     model_box.wavelength,
+            #     model_box.flux,
+            #     spec_errs=None,
+            #     fill=np.nan,
+            #     verbose=True,
+            # )
 
             model_box.wavelength = wavel_resample
 
