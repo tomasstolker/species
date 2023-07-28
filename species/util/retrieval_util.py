@@ -452,7 +452,7 @@ def create_pt_profile(
     np.ndarray, None
         Temperature at the knots (K). A ``None`` is returned if
         ``pt_profile`` is set to 'molliere' or 'eddington'.
-    float
+    float, None
         Pressure (bar) where the optical depth is 1.
     float, None
         Pressure (bar) at the radiative-convective boundary.
@@ -491,7 +491,14 @@ def create_pt_profile(
 
         knot_temp = np.asarray(knot_temp)
 
-        temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+        try:
+            temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+
+        except ValueError:
+            print("knot_press", knot_press)
+            print("knot_temp", knot_temp)
+            
+            return np.zeros(1), None, None, None
 
         phot_press = None
         conv_press = None
