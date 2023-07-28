@@ -413,7 +413,7 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
-) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Function for creating a pressure-temperature profile.
 
@@ -498,7 +498,7 @@ def create_pt_profile(
             print("knot_press", knot_press)
             print("knot_temp", knot_temp)
             
-            return np.zeros(1), None, None, None
+            return None, None, None, None
 
         phot_press = None
         conv_press = None

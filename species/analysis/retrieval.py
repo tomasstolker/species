@@ -2336,6 +2336,9 @@ class AtmosphericRetrieval:
                 pt_smooth,
             )
 
+            if temp is None:
+                return -np.inf
+
             # if conv_press is not None and (conv_press > 1. or conv_press < 0.01):
             #     # Maximum pressure (bar) for the radiative-convective boundary
             #     return -np.inf
