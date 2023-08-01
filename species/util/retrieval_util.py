@@ -497,8 +497,9 @@ def create_pt_profile(
         except ValueError:
             print("knot_press", knot_press)
             print("knot_temp", knot_temp)
-            print("cube", cube_index["t0"], cube_index["t1"], cube_index["t5"])
-            
+            print("cube_index", cube_index["t0"], cube_index["t1"], cube_index["t5"])
+            print("cube", cube[cube_index["t0"]], cube[cube_index["t1"]], cube[cube_index["t5"]])
+
             return None, None, None, None
 
         phot_press = None
