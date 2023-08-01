@@ -497,6 +497,7 @@ def create_pt_profile(
         except ValueError:
             print("knot_press", knot_press)
             print("knot_temp", knot_temp)
+            print("cube", cube_index["t0"], cube_index["t1"], cube_index["t5"])
             
             return None, None, None, None
 
@@ -1085,7 +1086,7 @@ def calc_spectrum_clouds(
                     )
 
                 except ValueError:
-                    print("knot_press", knot_press_abund)
+                    print("knot_press_abund", knot_press_abund)
                     print("knot_temp", knot_abund)
                     
                     return None, None, None, np.zeros(1)
