@@ -1462,40 +1462,39 @@ class AtmosphericRetrieval:
                 )
 
                 for i in range(self.temp_nodes - 2, -1, -1):
-                    # Sample temperature node relative
-                    # to previous/deeper point
-                    # cube[cube_index[f"t{i}"]] = (
-                    #     cube[cube_index[f"t{i+1}"]]
-                    #     - (cube[cube_index[f"t{i+1}"]] - 300.0)
-                    #     * cube[cube_index[f"t{i}"]]
-                    # )
+                    # Sample a temperature that is smaller
+                    # than the previous/deeper point 
 
-                    # Increasing temperature steps with
-                    # constant log-pressure steps
-                    if i == self.temp_nodes - 2:
-                        # First temperature step has no constraints
-                        cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
-                            1.0 - cube[cube_index[f"t{i}"]]
-                        )
+                    cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
+                        1.0 - cube[cube_index[f"t{i}"]]
+                    )
 
-                    else:
-                        # Temperature difference of previous step
-                        temp_diff = (
-                            cube[cube_index[f"t{i+2}"]] - cube[cube_index[f"t{i+1}"]]
-                        )
-
-                        if cube[cube_index[f"t{i+1}"]] - temp_diff < 0.0:
-                            # If previous step would make the next point
-                            # smaller than zero than use the maximum
-                            # temperature step possible
-                            temp_diff = cube[cube_index[f"t{i+1}"]]
-
-                        # Sample next temperature point with a smaller
-                        # temperature step than the previous one
-                        cube[cube_index[f"t{i}"]] = (
-                            cube[cube_index[f"t{i+1}"]]
-                            - cube[cube_index[f"t{i}"]] * temp_diff
-                        )
+                    # # Increasing temperature steps with
+                    # # constant log-pressure steps
+                    # if i == self.temp_nodes - 2:
+                    #     # First temperature step has no constraints
+                    #     cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
+                    #         1.0 - cube[cube_index[f"t{i}"]]
+                    #     )
+                    #
+                    # else:
+                    #     # Temperature difference of previous step
+                    #     temp_diff = (
+                    #         cube[cube_index[f"t{i+2}"]] - cube[cube_index[f"t{i+1}"]]
+                    #     )
+                    #
+                    #     if cube[cube_index[f"t{i+1}"]] - temp_diff < 0.0:
+                    #         # If previous step would make the next point
+                    #         # smaller than zero than use the maximum
+                    #         # temperature step possible
+                    #         temp_diff = cube[cube_index[f"t{i+1}"]]
+                    #
+                    #     # Sample next temperature point with a smaller
+                    #     # temperature step than the previous one
+                    #     cube[cube_index[f"t{i}"]] = (
+                    #         cube[cube_index[f"t{i+1}"]]
+                    #         - cube[cube_index[f"t{i}"]] * temp_diff
+                    #     )
 
             if pt_profile == "eddington":
                 # Internal temperature (K) for the
