@@ -491,16 +491,16 @@ def create_pt_profile(
 
         knot_temp = np.asarray(knot_temp)
 
-        try:
-            temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
+        nan_count = np.sum(np.isnan(knot_temp))
 
-        except ValueError:
-            print("knot_press", knot_press)
-            print("knot_temp", knot_temp)
-            print("cube_index", cube_index["t0"], cube_index["t1"], cube_index["t5"])
-            print("cube", cube[cube_index["t0"]], cube[cube_index["t1"]], cube[cube_index["t5"]])
+        if nan_count > 0:
+            # TODO Not clear why this can happen
+            warnings.warn(f"Found {nan_count} NaN values "
+                          "in sampled temperature nodes.")
 
             return None, None, None, None
+
+        temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
 
         phot_press = None
         conv_press = None
@@ -1081,16 +1081,17 @@ def calc_spectrum_clouds(
                     knot_abund[node_idx] = abund_in[f"{abund_item}_{node_idx}"]
                     del abund_in[f"{abund_item}_{node_idx}"]
 
-                try:
-                    abund_in[abund_item] = pt_spline_interp(
-                        knot_press_abund, knot_abund, pressure, pt_smooth=0.1
-                    )
+                nan_count = np.sum(np.isnan(knot_abund))
 
-                except ValueError:
-                    print("knot_press_abund", knot_press_abund)
-                    print("knot_temp", knot_abund)
-                    
+                if nan_count > 0:
+                    warnings.warn(f"Found {nan_count} NaN values "
+                                  "in sampled abundance nodes.")
+
                     return None, None, None, np.zeros(1)
+
+                abund_in[abund_item] = pt_spline_interp(
+                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                )
 
             # Mean molecular weight
 
