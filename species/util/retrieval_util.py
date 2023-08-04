@@ -6,6 +6,7 @@ This module was put together many contributions by Paul Mollière
 
 import copy
 import sys
+import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
 
