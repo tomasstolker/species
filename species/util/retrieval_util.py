@@ -414,7 +414,9 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]]:
+) -> Tuple[
+    Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]
+]:
     """
     Function for creating a pressure-temperature profile.
 
@@ -496,8 +498,9 @@ def create_pt_profile(
 
         if nan_count > 0:
             # TODO Not clear why this can happen
-            warnings.warn(f"Found {nan_count} NaN values "
-                          "in sampled temperature nodes.")
+            warnings.warn(
+                f"Found {nan_count} NaN values in sampled temperature nodes."
+            )
 
             return None, None, None, None
 
@@ -870,9 +873,7 @@ def calc_spectrum_clear(
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(
-            log_x_abund, rt_object, rt_object.line_species, abund_nodes
-        )
+        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
 
         # Mean molecular weight
         mmw = mean_molecular_weight(abund_in)
@@ -1085,8 +1086,9 @@ def calc_spectrum_clouds(
                 nan_count = np.sum(np.isnan(knot_abund))
 
                 if nan_count > 0:
-                    warnings.warn(f"Found {nan_count} NaN values "
-                                  "in sampled abundance nodes.")
+                    warnings.warn(
+                        f"Found {nan_count} NaN values in sampled abundance nodes."
+                    )
 
                     return None, None, None, np.zeros(1)
 
