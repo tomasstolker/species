@@ -3335,7 +3335,7 @@ class Database:
             if "lbl_opacity_sampling" in radtrans:
                 dset.attrs["lbl_opacity_sampling"] = radtrans["lbl_opacity_sampling"]
             else:
-                dset.attrs["lbl_opacity_sampling"] = None
+                dset.attrs["lbl_opacity_sampling"] = "None"
 
         print(" [DONE]")
 
@@ -3811,7 +3811,10 @@ class Database:
         # High-resolution downsampling factor
 
         if "lbl_opacity_sampling" in dset.attrs:
-            lbl_opacity_sampling = dset.attrs["lbl_opacity_sampling"]
+            if dset.attrs["lbl_opacity_sampling"] == "None":
+                lbl_opacity_sampling = None
+            else:
+                lbl_opacity_sampling = dset.attrs["lbl_opacity_sampling"]
         else:
             lbl_opacity_sampling = None
 

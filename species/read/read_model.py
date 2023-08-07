@@ -17,7 +17,7 @@ import numpy as np
 from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simps
-from scipy.interpolate import interp1d, interp2d, RegularGridInterpolator
+from scipy.interpolate import interp1d, RegularGridInterpolator
 
 from species.analysis import photometry
 from species.core import box, constants
@@ -443,15 +443,22 @@ class ReadModel:
         database_path = dust_util.check_dust_database()
 
         with h5py.File(database_path, "r") as h5_file:
+            # Read array with cross sections
             dust_cross = np.asarray(
                 h5_file["dust/lognorm/mgsio3/crystalline/cross_section"]
             )
+
+            # Read array with wavelengths
             dust_wavel = np.asarray(
                 h5_file["dust/lognorm/mgsio3/crystalline/wavelength"]
             )
+
+            # Read array with geometric radius
             dust_radius = np.asarray(
                 h5_file["dust/lognorm/mgsio3/crystalline/radius_g"]
             )
+
+            # Read array with geometric standard deviation
             dust_sigma = np.asarray(h5_file["dust/lognorm/mgsio3/crystalline/sigma_g"])
 
         if wavelength[0] < dust_wavel[0]:
@@ -469,6 +476,9 @@ class ReadModel:
                 f"({dust_wavel[-1]:.2e} um) of the grid with dust cross sections."
             )
 
+        # Interpolate cross sections as function of wavelength,
+        # geometric radius, and geometric standard deviation
+
         dust_interp = RegularGridInterpolator(
             (dust_wavel, dust_radius, dust_sigma),
             dust_cross,
@@ -476,13 +486,19 @@ class ReadModel:
             bounds_error=True,
         )
 
+        # Read Bessell V-band filter profile
+
         read_filt = read_filter.ReadFilter("Generic/Bessell.V")
         filt_trans = read_filt.get_filter()
+
+        # Create empty array for V-band extinction
 
         cross_phot = np.zeros((dust_radius.shape[0], dust_sigma.shape[0]))
 
         for i in range(dust_radius.shape[0]):
             for j in range(dust_sigma.shape[0]):
+                # Calculate the filter-weighted average of the extinction cross sections
+
                 cross_interp = interp1d(
                     dust_wavel, dust_cross[:, i, j], kind="linear", bounds_error=True
                 )
@@ -492,19 +508,28 @@ class ReadModel:
                 integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
                 integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
-                # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
 
-        cross_interp = interp2d(
-            dust_sigma, dust_radius, cross_phot, kind="linear", bounds_error=True
+        # Interpolate the grid with the V-band extinction as
+        # function of geometric radius and standard deviation
+
+        cross_interp = RegularGridInterpolator(
+            (dust_radius, dust_sigma), cross_phot, method="linear", bounds_error=True
         )
 
-        cross_v_band = cross_interp(sigma_interp, 10.0**radius_interp)[0]
+        cross_v_band = cross_interp((10.0**radius_interp, sigma_interp))
+
+        # Create arrays with fixed particle properties
 
         radius_full = np.full(wavelength.shape[0], 10.0**radius_interp)
         sigma_full = np.full(wavelength.shape[0], sigma_interp)
 
+        # Interpolate the cross-sections for the input wavelengths
+        # and the geometric radius and standard deviation
+
         cross_new = dust_interp(np.column_stack((wavelength, radius_full, sigma_full)))
+
+        # Calculate number of grains for the requested V-band extinction
 
         n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.0))
 
@@ -543,16 +568,29 @@ class ReadModel:
         database_path = dust_util.check_dust_database()
 
         with h5py.File(database_path, "r") as h5_file:
+            # Read array with cross sections
             dust_cross = np.asarray(
                 h5_file["dust/powerlaw/mgsio3/crystalline/cross_section"]
             )
+
+            # Read array with wavelengths
+
             dust_wavel = np.asarray(
                 h5_file["dust/powerlaw/mgsio3/crystalline/wavelength"]
             )
+
+            # Read array with maximum particle radii
+
             dust_r_max = np.asarray(
                 h5_file["dust/powerlaw/mgsio3/crystalline/radius_max"]
             )
+
+            # Read array with power-law exponents
+
             dust_exp = np.asarray(h5_file["dust/powerlaw/mgsio3/crystalline/exponent"])
+
+        # Interpolate cross sections as function of wavelength,
+        # geometric radius, and geometric standard deviation
 
         dust_interp = RegularGridInterpolator(
             (dust_wavel, dust_r_max, dust_exp),
@@ -576,13 +614,19 @@ class ReadModel:
                 f"({dust_wavel[-1]:.2e} um) of the grid with dust cross sections."
             )
 
+        # Read Bessell V-band filter profile
+
         read_filt = read_filter.ReadFilter("Generic/Bessell.V")
         filt_trans = read_filt.get_filter()
+
+        # Create empty array for V-band extinction
 
         cross_phot = np.zeros((dust_r_max.shape[0], dust_exp.shape[0]))
 
         for i in range(dust_r_max.shape[0]):
             for j in range(dust_exp.shape[0]):
+                # Calculate the filter-weighted average of the extinction cross sections
+
                 cross_interp = interp1d(
                     dust_wavel, dust_cross[:, i, j], kind="linear", bounds_error=True
                 )
@@ -592,19 +636,28 @@ class ReadModel:
                 integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
                 integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
 
-                # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
 
-        cross_interp = interp2d(
-            dust_exp, dust_r_max, cross_phot, kind="linear", bounds_error=True
+        # Interpolate the grid with the V-band extinction as
+        # function of geometric radius and standard deviation
+
+        cross_interp = RegularGridInterpolator(
+            (dust_r_max, dust_exp), cross_phot, method="linear", bounds_error=True
         )
 
-        cross_v_band = cross_interp(exp_interp, 10.0**r_max_interp)[0]
+        cross_v_band = cross_interp((10.0**r_max_interp, exp_interp))
+
+        # Create arrays with fixed particle properties
 
         r_max_full = np.full(wavelength.shape[0], 10.0**r_max_interp)
         exp_full = np.full(wavelength.shape[0], exp_interp)
 
+        # Interpolate the cross-sections for the input wavelengths
+        # and the geometric radius and standard deviation
+
         cross_new = dust_interp(np.column_stack((wavelength, r_max_full, exp_full)))
+
+        # Calculate number of grains for the requested V-band extinction
 
         n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.0))
 

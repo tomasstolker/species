@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d, interp2d
+from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.stats import lognorm
 
 from species.data import database
@@ -343,10 +343,11 @@ def calc_reddening(
 def interp_lognorm(
     inc_phot: List[str],
     inc_spec: List[str],
-    spec_data: Optional[
-        Dict[str, Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], float]]
-    ],
-) -> Tuple[Dict[str, Union[interp2d, List[interp2d]]], np.ndarray, np.ndarray]:
+) -> Tuple[
+    Dict[str, Union[RegularGridInterpolator, List[RegularGridInterpolator]]],
+    np.ndarray,
+    np.ndarray,
+]:
     """
     Function for interpolating the log-normal dust cross sections for
     each filter and spectrum.
@@ -359,10 +360,6 @@ def interp_lognorm(
         List with the spectrum names (as stored in the database with
         :func:`~species.data.database.Database.add_object`). Not used
         if the list is empty.
-    spec_data : dict, None
-        Dictionary with the spectrum data. Only required in combination
-        with ``inc_spec``, otherwise the argument needs to be set to
-        ``None``.
 
     Returns
     -------
@@ -414,35 +411,21 @@ def interp_lognorm(
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
 
-        cross_sections[phot_item] = interp2d(
-            sigma_g, radius_g, cross_phot, kind="linear", bounds_error=True
+        cross_sections[phot_item] = RegularGridInterpolator(
+            (radius_g, sigma_g), cross_phot, method="linear", bounds_error=True
         )
 
     print("Interpolating dust opacities...", end="")
 
-    for spec_item in inc_spec:
-        wavel_spec = spec_data[spec_item][0][:, 0]
-
-        cross_spec = np.zeros(
-            (wavel_spec.shape[0], radius_g.shape[0], sigma_g.shape[0])
+    if len(inc_spec) > 0:
+        cross_tmp = RegularGridInterpolator(
+            (wavelength, radius_g, sigma_g),
+            cross_section,
+            method="linear",
+            bounds_error=True,
         )
 
-        for i in range(radius_g.shape[0]):
-            for j in range(sigma_g.shape[0]):
-                cross_interp = interp1d(
-                    wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-                )
-
-                cross_spec[:, i, j] = cross_interp(wavel_spec)
-
-        cross_sections[spec_item] = []
-
-        for i in range(wavel_spec.shape[0]):
-            cross_tmp = interp2d(
-                sigma_g, radius_g, cross_spec[i, :, :], kind="linear", bounds_error=True
-            )
-
-            cross_sections[spec_item].append(cross_tmp)
+        cross_sections["spectrum"] = cross_tmp
 
     print(" [DONE]")
 
@@ -453,10 +436,11 @@ def interp_lognorm(
 def interp_powerlaw(
     inc_phot: List[str],
     inc_spec: List[str],
-    spec_data: Optional[
-        Dict[str, Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], float]]
-    ],
-) -> Tuple[Dict[str, Union[interp2d, List[interp2d]]], np.ndarray, np.ndarray]:
+) -> Tuple[
+    Dict[str, Union[RegularGridInterpolator, List[RegularGridInterpolator]]],
+    np.ndarray,
+    np.ndarray,
+]:
     """
     Function for interpolating the power-law dust cross sections for
     each filter and spectrum.
@@ -469,10 +453,6 @@ def interp_powerlaw(
         List with the spectrum names (as stored in the database with
         :func:`~species.data.database.Database.add_object`). Not used
         if the list is empty.
-    spec_data : dict, None
-        Dictionary with the spectrum data. Only required in
-        combination with ``inc_spec``, otherwise the argument needs to
-        be set to ``None``,.
 
     Returns
     -------
@@ -524,39 +504,21 @@ def interp_powerlaw(
                 # Filter-weighted average of the extinction cross section
                 cross_phot[i, j] = integral1 / integral2
 
-        cross_sections[phot_item] = interp2d(
-            exponent, radius_max, cross_phot, kind="linear", bounds_error=True
+        cross_sections[phot_item] = RegularGridInterpolator(
+            (radius_max, exponent), cross_phot, method="linear", bounds_error=True
         )
 
     print("Interpolating dust opacities...", end="")
 
-    for spec_item in inc_spec:
-        wavel_spec = spec_data[spec_item][0][:, 0]
-
-        cross_spec = np.zeros(
-            (wavel_spec.shape[0], radius_max.shape[0], exponent.shape[0])
+    if len(inc_spec) > 0:
+        cross_tmp = RegularGridInterpolator(
+            (wavelength, radius_max, exponent),
+            cross_section,
+            method="linear",
+            bounds_error=True,
         )
 
-        for i in range(radius_max.shape[0]):
-            for j in range(exponent.shape[0]):
-                cross_interp = interp1d(
-                    wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-                )
-
-                cross_spec[:, i, j] = cross_interp(wavel_spec)
-
-        cross_sections[spec_item] = []
-
-        for i in range(wavel_spec.shape[0]):
-            cross_tmp = interp2d(
-                exponent,
-                radius_max,
-                cross_spec[i, :, :],
-                kind="linear",
-                bounds_error=True,
-            )
-
-            cross_sections[spec_item].append(cross_tmp)
+        cross_sections["spectrum"] = cross_tmp
 
     print(" [DONE]")
 
