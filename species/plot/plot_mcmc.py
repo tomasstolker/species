@@ -398,7 +398,7 @@ def plot_posterior(
                     log_x_abund[param_item] = samples_item[param_index]
 
             # Create a dictionary with all mass fractions, including H2 and He
-            x_abund = retrieval_util.mass_fractions(log_x_abund)
+            x_abund = retrieval_util.mass_fractions(log_x_abund, line_species)
 
             # Calculate the mean molecular weight from the input mass fractions
             mmw = retrieval_util.mean_molecular_weight(x_abund)
@@ -1275,7 +1275,7 @@ def plot_extinction(
         and "lognorm_sigma" in box.parameters
         and "lognorm_ext" in box.parameters
     ):
-        cross_optical, dust_radius, dust_sigma = dust_util.interp_lognorm([], [], None)
+        cross_optical, dust_radius, dust_sigma = dust_util.interp_lognorm([], [])
 
         log_r_index = box.parameters.index("lognorm_radius")
         sigma_index = box.parameters.index("lognorm_sigma")
@@ -1301,7 +1301,7 @@ def plot_extinction(
 
         for i in range(samples.shape[0]):
             cross_tmp = cross_optical["Generic/Bessell.V"](
-                sigma_g[i], 10.0 ** log_r_g[i]
+                (10.0 ** log_r_g[i], sigma_g[i])
             )
 
             n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
@@ -1320,7 +1320,7 @@ def plot_extinction(
         and "powerlaw_exp" in box.parameters
         and "powerlaw_ext" in box.parameters
     ):
-        cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [], None)
+        cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [])
 
         r_max_index = box.parameters.index("powerlaw_max")
         exp_index = box.parameters.index("powerlaw_exp")
@@ -1346,7 +1346,7 @@ def plot_extinction(
 
         for i in range(samples.shape[0]):
             cross_tmp = cross_optical["Generic/Bessell.V"](
-                exponent[i], 10.0 ** r_max[i]
+                (10.0 ** r_max[i], exponent[i])
             )
 
             n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))

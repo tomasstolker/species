@@ -871,9 +871,7 @@ class FitModel:
             and "lognorm_sigma" in self.bounds
             and "lognorm_ext" in self.bounds
         ):
-            self.cross_sections, _, _ = dust_util.interp_lognorm(
-                inc_phot, inc_spec, self.spectrum
-            )
+            self.cross_sections, _, _ = dust_util.interp_lognorm(inc_phot, inc_spec)
 
             self.modelpar.append("lognorm_radius")
             self.modelpar.append("lognorm_sigma")
@@ -889,9 +887,7 @@ class FitModel:
             and "powerlaw_exp" in self.bounds
             and "powerlaw_ext" in self.bounds
         ):
-            self.cross_sections, _, _ = dust_util.interp_powerlaw(
-                inc_phot, inc_spec, self.spectrum
-            )
+            self.cross_sections, _, _ = dust_util.interp_powerlaw(inc_phot, inc_spec)
 
             self.modelpar.append("powerlaw_max")
             self.modelpar.append("powerlaw_exp")
@@ -974,16 +970,20 @@ class FitModel:
                         # Set weight for spectrum to lambda/R
                         spec_wavel = self.spectrum[spec_item][0][:, 0]
                         spec_res = self.spectrum[spec_item][3]
-                        self.weights[spec_item] = spec_wavel/spec_res
+                        self.weights[spec_item] = spec_wavel / spec_res
 
                     elif not isinstance(self.weights[spec_item], np.ndarray):
-                        self.weights[spec_item] = np.full(spec_size, self.weights[spec_item])
+                        self.weights[spec_item] = np.full(
+                            spec_size, self.weights[spec_item]
+                        )
 
                     if np.all(self.weights[spec_item] == self.weights[spec_item][0]):
                         print(f"   - {spec_item} = {self.weights[spec_item][0]:.2e}")
 
                     else:
-                        print(f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}")
+                        print(
+                            f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                        )
 
                 for phot_item in inc_phot:
                     if phot_item not in self.weights:
@@ -995,12 +995,12 @@ class FitModel:
             else:
                 for spec_item in inc_spec:
                     spec_size = self.spectrum[spec_item][0].shape[0]
-                    self.weights[spec_item] = np.full(spec_size, 1.)
+                    self.weights[spec_item] = np.full(spec_size, 1.0)
                     print(f"   - {spec_item} = {self.weights[spec_item][0]:.2f}")
 
                 for phot_item in inc_phot:
                     # Set weight to 1 if apply_weights=False
-                    self.weights[phot_item] = 1.
+                    self.weights[phot_item] = 1.0
                     print(f"   - {phot_item} = {self.weights[phot_item]:.2f}")
 
         else:
@@ -1013,16 +1013,20 @@ class FitModel:
                     # Set weight for spectrum to lambda/R
                     spec_wavel = self.spectrum[spec_item][0][:, 0]
                     spec_res = self.spectrum[spec_item][3]
-                    self.weights[spec_item] = spec_wavel/spec_res
+                    self.weights[spec_item] = spec_wavel / spec_res
 
                 elif not isinstance(self.weights[spec_item], np.ndarray):
-                    self.weights[spec_item] = np.full(spec_size, self.weights[spec_item])
+                    self.weights[spec_item] = np.full(
+                        spec_size, self.weights[spec_item]
+                    )
 
                 if np.all(self.weights[spec_item] == self.weights[spec_item][0]):
                     print(f"   - {spec_item} = {self.weights[spec_item][0]:.2e}")
 
                 else:
-                    print(f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}")
+                    print(
+                        f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                    )
 
             for phot_item in inc_phot:
                 if phot_item not in self.weights:
@@ -1271,8 +1275,8 @@ class FitModel:
 
         if "lognorm_ext" in dust_param:
             cross_tmp = self.cross_sections["Generic/Bessell.V"](
-                dust_param["lognorm_sigma"], 10.0 ** dust_param["lognorm_radius"]
-            )[0]
+                (10.0 ** dust_param["lognorm_radius"], dust_param["lognorm_sigma"])
+            )
 
             n_grains = (
                 dust_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
@@ -1280,7 +1284,7 @@ class FitModel:
 
         elif "powerlaw_ext" in dust_param:
             cross_tmp = self.cross_sections["Generic/Bessell.V"](
-                dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
+                (10.0 ** dust_param["powerlaw_max"], dust_param["powerlaw_exp"])
             )
 
             n_grains = (
@@ -1368,15 +1372,15 @@ class FitModel:
 
             if "lognorm_ext" in dust_param:
                 cross_tmp = self.cross_sections[phot_filter](
-                    dust_param["lognorm_sigma"], 10.0 ** dust_param["lognorm_radius"]
-                )[0]
+                    (10.0 ** dust_param["lognorm_radius"], dust_param["lognorm_sigma"])
+                )
 
                 phot_flux *= np.exp(-cross_tmp * n_grains)
 
             elif "powerlaw_ext" in dust_param:
                 cross_tmp = self.cross_sections[phot_filter](
-                    dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
-                )[0]
+                    (10.0 ** dust_param["powerlaw_max"], dust_param["powerlaw_exp"])
+                )
 
                 phot_flux *= np.exp(-cross_tmp * n_grains)
 
@@ -1395,7 +1399,9 @@ class FitModel:
             elif self.ext_filter is not None:
                 readmodel = read_model.ReadModel(self.model, filter_name=phot_filter)
 
-                param_dict[f"phot_ext_{self.ext_filter}"] = dust_param[f"phot_ext_{self.ext_filter}"]
+                param_dict[f"phot_ext_{self.ext_filter}"] = dust_param[
+                    f"phot_ext_{self.ext_filter}"
+                ]
                 param_dict["ism_red"] = dust_param.get("ism_red", 3.1)
 
                 phot_flux = readmodel.get_flux(param_dict)[0]
@@ -1632,22 +1638,26 @@ class FitModel:
                 model_flux += model_tmp
 
             if "lognorm_ext" in dust_param:
-                for j, cross_item in enumerate(self.cross_sections[item]):
-                    cross_tmp = cross_item(
-                        dust_param["lognorm_sigma"],
+                cross_tmp = self.cross_sections["spectrum"](
+                    (
+                        self.spectrum[item][0][:, 0],
                         10.0 ** dust_param["lognorm_radius"],
-                    )[0]
+                        dust_param["lognorm_sigma"],
+                    )
+                )
 
-                    model_flux[j] *= np.exp(-cross_tmp * n_grains)
+                model_flux *= np.exp(-cross_tmp * n_grains)
 
             elif "powerlaw_ext" in dust_param:
-                for j, cross_item in enumerate(self.cross_sections[item]):
-                    # For loop over all wavelengths of a spectrum
-                    cross_tmp = cross_item(
-                        dust_param["powerlaw_exp"], 10.0 ** dust_param["powerlaw_max"]
-                    )[0]
+                cross_tmp = self.cross_sections["spectrum"](
+                    (
+                        self.spectrum[item][0][:, 0],
+                        10.0 ** dust_param["powerlaw_max"],
+                        dust_param["powerlaw_exp"],
+                    )
+                )
 
-                    model_flux[j] *= np.exp(-cross_tmp * n_grains)
+                model_flux *= np.exp(-cross_tmp * n_grains)
 
             elif "ism_ext" in dust_param:
                 ism_reddening = dust_param.get("ism_red", 3.1)
@@ -1675,12 +1685,9 @@ class FitModel:
 
             if self.spectrum[item][2] is not None:
                 # Use the inverted covariance matrix
-                ln_like += (
-                    -0.5
-                    * np.dot(
-                        weight * (data_flux - model_flux),
-                        np.dot(data_cov_inv, data_flux - model_flux),
-                    )
+                ln_like += -0.5 * np.dot(
+                    weight * (data_flux - model_flux),
+                    np.dot(data_cov_inv, data_flux - model_flux),
                 )
 
                 ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
