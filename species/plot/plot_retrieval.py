@@ -242,14 +242,18 @@ def plot_pt_profile(
 
             if abund_nodes is None:
                 log_x_abund = {}
+                line_species = []
 
                 for line_idx in range(box.attributes["n_line_species"]):
                     line_item = box.attributes[f"line_species{line_idx}"]
                     log_x_abund[line_item] = item[param_index[line_item]]
+                    line_species.append(line_item)
 
                 # Check if the C/H and O/H ratios are within the prior boundaries
 
-                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(log_x_abund)
+                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(
+                    log_x_abund, line_species
+                )
 
             else:
                 log_x_abund = {}
