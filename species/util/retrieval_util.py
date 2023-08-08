@@ -873,7 +873,9 @@ def calc_spectrum_clear(
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
+        abund_in = mass_fractions(
+            log_x_abund, rt_object.line_species, abund_nodes
+        )
 
         # Mean molecular weight
         mmw = mean_molecular_weight(abund_in)
@@ -1617,12 +1619,15 @@ def calc_metal_ratio(
     """
 
     # Solar C/H from Asplund et al. (2009)
+
     c_h_solar = 10.0 ** (8.43 - 12.0)
 
     # Solar O/H from Asplund et al. (2009)
+
     o_h_solar = 10.0 ** (8.69 - 12.0)
 
     # Get the atomic masses
+
     masses = atomic_masses()
 
     # Create a dictionary with all mass fractions
@@ -1630,99 +1635,58 @@ def calc_metal_ratio(
     abund = mass_fractions(log_x_abund, line_species, abund_nodes=None)
 
     # Calculate the mean molecular weight from the input mass fractions
+
     mmw = mean_molecular_weight(abund)
 
     # Initiate the C, H, and O abundance
+
     c_abund = 0.0
     o_abund = 0.0
     h_abund = 0.0
 
-    # Calculate the total C abundance
+    for abund_item in abund:
+        abund_split = abund_item.split("_")[0]
 
-    if "CO" in abund:
-        c_abund += abund["CO"] * mmw / masses["CO"]
+        # Calculate the total C abundance
 
-    if "CO_all_iso" in abund:
-        c_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+        if abund_split == "CO":
+            c_abund += abund[abund_item] * mmw / masses["CO"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        c_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+        elif abund_split == "CO2":
+            c_abund += abund[abund_item] * mmw / masses["CO2"]
 
-    if "CO_all_iso_Chubb" in abund:
-        c_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+        elif abund_split == "CH4":
+            c_abund += abund[abund_item] * mmw / masses["CH4"]
 
-    if "CO2" in abund:
-        c_abund += abund["CO2"] * mmw / masses["CO2"]
+        # Calculate the total O abundance
 
-    if "CO2_main_iso" in abund:
-        c_abund += abund["CO2_main_iso"] * mmw / masses["CO2"]
+        if abund_split == "CO":
+            o_abund += abund[abund_item] * mmw / masses["CO"]
 
-    if "CH4" in abund:
-        c_abund += abund["CH4"] * mmw / masses["CH4"]
+        elif abund_split == "CO2":
+            o_abund += 2.0 * abund[abund_item] * mmw / masses["CO2"]
 
-    if "CH4_main_iso" in abund:
-        c_abund += abund["CH4_main_iso"] * mmw / masses["CH4"]
+        elif abund_split == "H2O":
+            o_abund += abund[abund_item] * mmw / masses["H2O"]
 
-    # Calculate the total O abundance
+        # Calculate the total H abundance
 
-    if "CO" in abund:
-        o_abund += abund["CO"] * mmw / masses["CO"]
+        if abund_split == "H2":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2"]
 
-    if "CO_all_iso" in abund:
-        o_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+        elif abund_split == "CH4":
+            h_abund += 4.0 * abund[abund_item] * mmw / masses["CH4"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        o_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+        elif abund_split == "H2O":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2O"]
 
-    if "CO_all_iso_Chubb" in abund:
-        o_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+        elif abund_split == "NH3":
+            h_abund += 3.0 * abund[abund_item] * mmw / masses["NH3"]
 
-    if "CO2" in abund:
-        o_abund += 2.0 * abund["CO2"] * mmw / masses["CO2"]
+        elif abund_split == "H2S":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2S"]
 
-    if "CO2_main_iso" in abund:
-        o_abund += 2.0 * abund["CO2_main_iso"] * mmw / masses["CO2"]
-
-    if "H2O" in abund:
-        o_abund += abund["H2O"] * mmw / masses["H2O"]
-
-    if "H2O_HITEMP" in abund:
-        o_abund += abund["H2O_HITEMP"] * mmw / masses["H2O"]
-
-    if "H2O_main_iso" in abund:
-        o_abund += abund["H2O_main_iso"] * mmw / masses["H2O"]
-
-    # Calculate the total H abundance
-
-    h_abund += 2.0 * abund["H2"] * mmw / masses["H2"]
-
-    if "CH4" in abund:
-        h_abund += 4.0 * abund["CH4"] * mmw / masses["CH4"]
-
-    if "CH4_main_iso" in abund:
-        h_abund += 4.0 * abund["CH4_main_iso"] * mmw / masses["CH4"]
-
-    if "H2O" in abund:
-        h_abund += 2.0 * abund["H2O"] * mmw / masses["H2O"]
-
-    if "H2O_HITEMP" in abund:
-        h_abund += 2.0 * abund["H2O_HITEMP"] * mmw / masses["H2O"]
-
-    if "H2O_main_iso" in abund:
-        h_abund += 2.0 * abund["H2O_main_iso"] * mmw / masses["H2O"]
-
-    if "NH3" in abund:
-        h_abund += 3.0 * abund["NH3"] * mmw / masses["NH3"]
-
-    if "NH3_main_iso" in abund:
-        h_abund += 3.0 * abund["NH3_main_iso"] * mmw / masses["NH3"]
-
-    if "H2S" in abund:
-        h_abund += 2.0 * abund["H2S"] * mmw / masses["H2S"]
-
-    if "H2S_main_iso" in abund:
-        h_abund += 2.0 * abund["H2S_main_iso"] * mmw / masses["H2S"]
-
+    print(c_abund, h_abund, o_abund)
     return (
         np.log10(c_abund / h_abund / c_h_solar),
         np.log10(o_abund / h_abund / o_h_solar),

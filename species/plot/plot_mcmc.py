@@ -464,8 +464,9 @@ def plot_posterior(
 
     # Add [C/H], [O/H], and C/O if free abundances were retrieved
 
-    if "H2O" in box.parameters or "H2O_HITEMP" in box.parameters:
-        samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
+    for param_item in box.parameters:
+        if param_item.split("_")[0] == "H2O":
+            samples = np.column_stack((samples, c_h_ratio, o_h_ratio, c_o_ratio))
 
     # Include the derived bolometric luminosity
 

@@ -809,6 +809,9 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "atmo-neq-strong":
         out_name = "ATMO NEQ strong"
 
+    elif in_name == "petrus2023":
+        out_name = "ATMO"
+
     elif in_name == "bt-cond":
         out_name = "BT-Cond"
 
