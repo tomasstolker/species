@@ -871,7 +871,9 @@ def calc_spectrum_clear(
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
+        abund_in = mass_fractions(
+            log_x_abund, rt_object.line_species, abund_nodes
+        )
 
         # Mean molecular weight
         mmw = mean_molecular_weight(abund_in)
@@ -1682,6 +1684,7 @@ def calc_metal_ratio(
         elif abund_split == "H2S":
             h_abund += 2.0 * abund[abund_item] * mmw / masses["H2S"]
 
+    print(c_abund, h_abund, o_abund)
     return (
         np.log10(c_abund / h_abund / c_h_solar),
         np.log10(o_abund / h_abund / o_h_solar),
