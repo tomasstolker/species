@@ -1107,7 +1107,7 @@ class AtmosphericRetrieval:
         # Adjust lbl_opacity_sampling is needed
 
         if self.lbl_opacity_sampling is None and self.res_mode == "lbl":
-            new_sampling = int(np.ceil(10.*1e6/max_spec_res))
+            new_sampling = int(np.ceil(1e6/(4.*max_spec_res)))
 
             if new_sampling < 1e6:
                 self.lbl_opacity_sampling = new_sampling
@@ -1118,7 +1118,7 @@ class AtmosphericRetrieval:
                               "The value of 'lbl_opacity_sampling' is "
                               "therefore adjusted to "
                               f"{self.lbl_opacity_sampling} (i.e. "
-                              "downsampling to 10 times the resolution "
+                              "downsampling to 4 times the resolution "
                               "of the data) to speed up the computation. "
                               "If setting 'lbl_opacity_sampling' to None "
                               "was intentional (i.e. opacity sampling at "
