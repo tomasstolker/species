@@ -1107,21 +1107,24 @@ class AtmosphericRetrieval:
         # Adjust lbl_opacity_sampling is needed
 
         if self.lbl_opacity_sampling is None and self.res_mode == "lbl":
-            self.lbl_opacity_sampling = int(np.ceil(4.*1e6/max_spec_res))
+            new_sampling = int(np.ceil(10.*1e6/max_spec_res))
 
-            warnings.warn("The argument of 'lbl_opacity_sampling' is "
-                          "set to None but the maximum spectral "
-                          f"resolution of the data is {max_spec_res}. "
-                          "The value of 'lbl_opacity_sampling' is "
-                          "therefore adjusted to "
-                          f"{self.lbl_opacity_sampling} (i.e. "
-                          "downsampling to 4 times the resolution "
-                          "of the data) to speed up the computation. "
-                          "If setting 'lbl_opacity_sampling' to None "
-                          "was intentional (i.e. opacity sampling at "
-                          "lambda/Dlambda=10^6) then please set "
-                          "the argument to 1 such that the line-by-"
-                          "line species will not be downsampled.")
+            if new_sampling < 1e6:
+                self.lbl_opacity_sampling = new_sampling
+
+                warnings.warn("The argument of 'lbl_opacity_sampling' is "
+                              "set to None but the maximum spectral "
+                              f"resolution of the data is {max_spec_res}. "
+                              "The value of 'lbl_opacity_sampling' is "
+                              "therefore adjusted to "
+                              f"{self.lbl_opacity_sampling} (i.e. "
+                              "downsampling to 10 times the resolution "
+                              "of the data) to speed up the computation. "
+                              "If setting 'lbl_opacity_sampling' to None "
+                              "was intentional (i.e. opacity sampling at "
+                              "lambda/Dlambda=10^6) then please set "
+                              "the argument to 1 such that the line-by-"
+                              "line species will not be downsampled.")
 
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans

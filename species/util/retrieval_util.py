@@ -626,7 +626,7 @@ def create_abund_dict(
         Dictionary with the updated names of the abundances.
     """
 
-    # create a dictionary with the updated abundance names
+    # Create a dictionary with the updated abundance names
 
     abund_out = {}
 
@@ -864,26 +864,70 @@ def calc_spectrum_clear(
             Pquench_carbon=p_quench,
         )
 
-        # Mean molecular weight
-        mmw = abund_in["MMW"]
-
     elif chemistry == "free":
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(
-            log_x_abund, rt_object.line_species, abund_nodes
-        )
+        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
 
-        # Mean molecular weight
-        mmw = mean_molecular_weight(abund_in)
+        # Create list of all species
+        abund_species = rt_object.line_species.copy()
+        abund_species.append("H2")
+        abund_species.append("He")
 
-        # Create arrays of constant atmosphere abundance
-        for item in abund_in:
-            abund_in[item] *= np.ones_like(pressure)
+        if abund_nodes is None:
+            # Mean molecular weight
 
-        # Create an array of a constant mean molecular weight
-        mmw *= np.ones_like(pressure)
+            mmw_float = mean_molecular_weight(abund_in)
+            mmw = np.full(pressure.size, mmw_float)
+
+            # Create arrays of constant abundances with pressure
+
+            for abund_item in abund_species:
+                abund_in[abund_item] = np.full(pressure.size, abund_in[abund_item])
+
+        else:
+            # Create arrays of pressure-dependent abundances
+
+            for abund_item in abund_species:
+                knot_abund = np.zeros(knot_press_abund.shape)
+
+                for node_idx in range(abund_nodes):
+                    knot_abund[node_idx] = abund_in[f"{abund_item}_{node_idx}"]
+                    del abund_in[f"{abund_item}_{node_idx}"]
+
+                nan_count = np.sum(np.isnan(knot_abund))
+
+                if nan_count > 0:
+                    warnings.warn(
+                        f"Found {nan_count} NaN values in sampled abundance nodes."
+                    )
+
+                    return None, None, None, np.zeros(1)
+
+                abund_in[abund_item] = pt_spline_interp(
+                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                )
+
+            # Mean molecular weight
+
+            mmw = np.zeros(pressure.size)
+
+            for press_idx in range(pressure.size):
+                abund_dict = {}
+                for abund_item, abund_value in abund_in.items():
+                    abund_dict[abund_item] = abund_value[press_idx]
+
+                mmw[press_idx] = mean_molecular_weight(abund_dict)
+
+
+
+
+
+
+
+
+
 
     # Extract every three levels when pressure_grid is set to 'smaller'
 
@@ -1132,10 +1176,13 @@ def calc_spectrum_clouds(
             p_base[f"{cloud_item}(c)"] = p_base_item
 
     # Adaptive pressure refinement around the cloud base
+
     if pressure_grid == "clouds":
         _, indices = make_half_pressure_better(p_base, pressure)
     else:
         indices = None
+
+    # Update the abundance dictionary
 
     abundances = create_abund_dict(
         abund_in,
@@ -1684,7 +1731,6 @@ def calc_metal_ratio(
         elif abund_split == "H2S":
             h_abund += 2.0 * abund[abund_item] * mmw / masses["H2S"]
 
-    print(c_abund, h_abund, o_abund)
     return (
         np.log10(c_abund / h_abund / c_h_solar),
         np.log10(o_abund / h_abund / o_h_solar),
@@ -2292,6 +2338,7 @@ def scale_cloud_abund(
         indices = None
 
     # Update the abundance dictionary
+
     abundances = create_abund_dict(
         abund_in,
         rt_object.line_species,
