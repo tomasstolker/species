@@ -489,9 +489,11 @@ class ReadRadtrans:
             nodes_list = list(check_nodes.values())
 
             if not all(value == nodes_list[0] for value in nodes_list):
-                raise ValueError("The number of abundance nodes is "
-                                 "not equal for all the lines "
-                                 f"species: {check_nodes}")
+                raise ValueError(
+                    "The number of abundance nodes is "
+                    "not equal for all the lines "
+                    f"species: {check_nodes}"
+                )
 
             if all(value == 0 for value in nodes_list):
                 abund_nodes = None
@@ -932,8 +934,16 @@ class ReadRadtrans:
         elif chemistry == "free":
             log_x_abund = {}
 
-            for ab_item in self.rt_object.line_species:
-                log_x_abund[ab_item] = model_param[ab_item]
+            if abund_nodes is None:
+                for line_item in self.rt_object.line_species:
+                    log_x_abund[line_item] = model_param[line_item]
+
+            else:
+                for line_item in self.rt_object.line_species:
+                    for node_idx in range(abund_nodes):
+                        log_x_abund[f"{line_item}_{node_idx}"] = model_param[
+                            f"{line_item}_{node_idx}"
+                        ]
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object,
