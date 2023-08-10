@@ -389,6 +389,7 @@ class AtmosphericRetrieval:
 
         self.pt_smooth = None
         self.temp_nodes = None
+        self.abund_smooth = None
         self.abund_nodes = None
 
         # Weighting of the photometric and spectroscopic data
@@ -655,6 +656,11 @@ class AtmosphericRetrieval:
         if "pt_smooth" in bounds:
             self.parameters.append("pt_smooth")
 
+        # Add abundance smoothing parameter
+
+        if "abund_smooth" in bounds:
+            self.parameters.append("abund_smooth")
+
         # Add mixing-length parameter for convective component
         # of the bolometric flux when using check_flux
 
@@ -764,6 +770,7 @@ class AtmosphericRetrieval:
         plotting: bool = False,
         check_isothermal: bool = False,
         pt_smooth: Optional[float] = 0.3,
+        abund_smooth: Optional[float] = 0.3,
         check_flux: Optional[float] = None,
         temp_nodes: Optional[int] = None,
         abund_nodes: Optional[int] = None,
@@ -920,13 +927,25 @@ class AtmosphericRetrieval:
             Standard deviation of the Gaussian kernel that is used for
             smoothing the P-T profile, after the temperature nodes
             have been interpolated to a higher pressure resolution.
-            Only required with `pt_profile='free'` or
-            `pt_profile='monotonic'`. The argument should be given as
-            :math:`\\log10{P/\\mathrm{bar}}`, with the default value
+            Only required with ```pt_profile='free'``` or
+            ```pt_profile='monotonic'```. The argument should be given
+            as :math:`\\log10{P/\\mathrm{bar}}`, with the default value
             set to 0.3 dex. No smoothing is applied if the argument
             if set to 0 or ``None``. The ``pt_smooth`` parameter can
             also be included in ``bounds``, in which case the value
             is fitted and the ``pt_smooth`` argument is ignored.
+        abund_smooth : float, None
+            Standard deviation of the Gaussian kernel that is used for
+            smoothing the abundance profiles, after the abundance nodes
+            have been interpolated to a higher pressure resolution.
+            Only required with ```chemistry='free'``` and
+            ``abund_nodes`` is not set to ``None``. The argument should
+            be given as :math:`\\log10{P/\\mathrm{bar}}`, with the
+            default value set to 0.3 dex. No smoothing is applied if
+            the argument if set to 0 or ``None``. The ``pt_smooth``
+            parameter can also be included in ``bounds``, in which
+            case the value is fitted and the ``abund_smooth`` argument
+            is ignored.
         check_flux : float, None
             Relative tolerance for enforcing a constant bolometric
             flux at all pressures layers. By default, only the
@@ -1185,6 +1204,13 @@ class AtmosphericRetrieval:
             self.pt_smooth = 0.0
         else:
             self.pt_smooth = pt_smooth
+
+        # Update the abundance smoothing parameter
+
+        if abund_smooth is None:
+            self.abund_smooth = 0.0
+        else:
+            self.abund_smooth = abund_smooth
 
         # Create instance of Radtrans for high-resolution spectra
 
@@ -2138,13 +2164,24 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["ism_red"]] = ism_red
 
-            # Standard deviation of the Gaussian kernel for smoothing the P-T profile
+            # Standard deviation of the Gaussian kernel
+            # for smoothing the P-T profile
 
             if "pt_smooth" in bounds:
                 cube[cube_index["pt_smooth"]] = (
                     bounds["pt_smooth"][0]
                     + (bounds["pt_smooth"][1] - bounds["pt_smooth"][0])
                     * cube[cube_index["pt_smooth"]]
+                )
+
+            # Standard deviation of the Gaussian kernel
+            # for smoothing the abundance profiles
+
+            if "abund_smooth" in bounds:
+                cube[cube_index["abund_smooth"]] = (
+                    bounds["abund_smooth"][0]
+                    + (bounds["abund_smooth"][1] - bounds["abund_smooth"][0])
+                    * cube[cube_index["abund_smooth"]]
                 )
 
             # Mixing-length for convective flux
@@ -2265,6 +2302,15 @@ class AtmosphericRetrieval:
 
             else:
                 pt_smooth = self.pt_smooth
+
+            # Read the abundance smoothing parameter or
+            # use the argument of run_multinest otherwise
+
+            if "abund_smooth" in cube_index:
+                abund_smooth = cube[cube_index["abund_smooth"]]
+
+            else:
+                abund_smooth = self.abund_smooth
 
             # C/O and [Fe/H]
 
@@ -2702,6 +2748,7 @@ class AtmosphericRetrieval:
                         cube[cube_index["logg"]],
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         plotting=plotting,
                         contribution=False,
@@ -2898,6 +2945,7 @@ class AtmosphericRetrieval:
                         cube[cube_index["logg"]],
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         plotting=plotting,
                         contribution=False,
@@ -2922,6 +2970,7 @@ class AtmosphericRetrieval:
                         cube[cube_index["logg"]],
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         plotting=plotting,
                         contribution=False,
@@ -2952,6 +3001,7 @@ class AtmosphericRetrieval:
                         cube[cube_index["logg"]],
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         plotting=plotting,
                         contribution=False,
@@ -3064,6 +3114,7 @@ class AtmosphericRetrieval:
                         cube[cube_index["logg"]],
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         plotting=plotting,
                         contribution=False,
@@ -3089,6 +3140,7 @@ class AtmosphericRetrieval:
                         None,
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         contribution=False,
                     )
@@ -3114,6 +3166,7 @@ class AtmosphericRetrieval:
                             None,
                             chemistry=chemistry,
                             knot_press_abund=knot_press_abund,
+                            abund_smooth=abund_smooth,
                             pressure_grid=self.pressure_grid,
                             contribution=False,
                         )
@@ -3132,6 +3185,7 @@ class AtmosphericRetrieval:
                         log_x_abund,
                         chemistry=chemistry,
                         knot_press_abund=knot_press_abund,
+                        abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         contribution=False,
                     )
@@ -3168,6 +3222,7 @@ class AtmosphericRetrieval:
                             log_x_ccf,
                             chemistry=chemistry,
                             knot_press_abund=knot_press_abund,
+                            abund_smooth=abund_smooth,
                             pressure_grid=self.pressure_grid,
                             contribution=False,
                         )
@@ -3507,6 +3562,9 @@ class AtmosphericRetrieval:
 
         if "pt_smooth" not in bounds:
             radtrans_dict["pt_smooth"] = self.pt_smooth
+
+        if "abund_smooth" not in bounds:
+            radtrans_dict["abund_smooth"] = self.abund_smooth
 
         with open(radtrans_filename, "w", encoding="utf-8") as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)

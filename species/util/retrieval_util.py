@@ -780,6 +780,7 @@ def calc_spectrum_clear(
     log_x_abund: Optional[dict],
     chemistry: str,
     knot_press_abund: Optional[np.ndarray],
+    abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
     contribution: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
@@ -812,6 +813,14 @@ def calc_spectrum_clear(
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
         required when ``chemistry='free'``.
+    abund_smooth : float, None
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the abundance profiles, after the abundance nodes
+        have been interpolated to a higher pressure resolution.
+        Only required with ```chemistry='free'``` and
+        ``knot_press_abund`` is not set to ``None``. The argument
+        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
+        smoothing is applied if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -906,7 +915,7 @@ def calc_spectrum_clear(
                     return None, None, None, np.zeros(1)
 
                 abund_in[abund_item] = pt_spline_interp(
-                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                    knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
                 )
 
             # Mean molecular weight
@@ -981,6 +990,7 @@ def calc_spectrum_clouds(
     log_g: float,
     chemistry: str,
     knot_press_abund: Optional[np.ndarray],
+    abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
     plotting: bool = False,
     contribution: bool = False,
@@ -1023,6 +1033,14 @@ def calc_spectrum_clouds(
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
         required when ``chemistry='free'``.
+    abund_smooth : float, None
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the abundance profiles, after the abundance nodes
+        have been interpolated to a higher pressure resolution.
+        Only required with ```chemistry='free'``` and
+        ``knot_press_abund`` is not set to ``None``. The argument
+        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
+        smoothing is applied if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -1137,7 +1155,7 @@ def calc_spectrum_clouds(
                     return None, None, None, np.zeros(1)
 
                 abund_in[abund_item] = pt_spline_interp(
-                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                    knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
                 )
 
             # Mean molecular weight
