@@ -844,6 +844,7 @@ def retrieval_spectrum(
     pt_smooth: Optional[float],
     temp_nodes: Optional[np.integer],
     abund_nodes: Optional[np.integer],
+    abund_smooth: Optional[float],
     read_rad: read_radtrans.ReadRadtrans,
     sample: np.ndarray,
 ) -> box.ModelBox:
@@ -874,7 +875,7 @@ def retrieval_spectrum(
         Spectral resolution.
     distance : float, None
         Distance (pc).
-    pt_smooth : float
+    pt_smooth : float, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the sampled temperature nodes of the P-T profile.
         Only required with `pt_profile='free'` or
@@ -886,6 +887,13 @@ def retrieval_spectrum(
     abund_nodes : int, None
         Number of free abundance nodes that are used when
         ``chemistry='free'``.
+    abund_smooth : float, None
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the abundance profiles, after the abundance nodes
+        have been interpolated to a higher pressure resolution.
+        Only required with ```chemistry='free'```. The argument
+        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
+        smoothing is applied if the argument if set to 0 or ``None``.
     read_rad : read_radtrans.ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
     sample : np.ndarray
@@ -953,6 +961,9 @@ def retrieval_spectrum(
                     model_param[f"{line_item}_{node_idx}"] = sample[
                         indices[f"{line_item}_{node_idx}"]
                     ]
+
+    if abund_smooth is not None:
+        model_param["abund_smooth"] = abund_smooth
 
     if quenching == "pressure":
         model_param["log_p_quench"] = sample[indices["log_p_quench"]]

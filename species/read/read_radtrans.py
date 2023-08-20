@@ -566,6 +566,14 @@ class ReadRadtrans:
             # cloud condensation profiles
             metallicity = 0.0
 
+            # Get smoothing parameter for abundance profiles
+
+            if "abund_smooth" in model_param:
+                abund_smooth = model_param["abund_smooth"]
+
+            else:
+                abund_smooth = None
+
             # Create a dictionary with the mass fractions
 
             if abund_nodes is None:
@@ -842,6 +850,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -870,6 +879,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -906,6 +916,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -928,6 +939,7 @@ class ReadRadtrans:
                 pressure_grid=self.pressure_grid,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
+                abund_smooth=abund_smooth,
                 contribution=True,
             )
 
@@ -956,6 +968,7 @@ class ReadRadtrans:
                 log_x_abund,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
+                abund_smooth=abund_smooth,
                 pressure_grid=self.pressure_grid,
                 contribution=True,
             )

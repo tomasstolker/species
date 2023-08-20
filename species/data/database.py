@@ -3848,7 +3848,8 @@ class Database:
         for i, item in enumerate(samples):
             print(f"\rGetting posterior spectra {i+1}/{random}...", end="")
 
-            # Get the P-T smoothing parameter
+            # Get smoothing parameter for P-T profile
+
             if "pt_smooth" in dset.attrs:
                 pt_smooth = dset.attrs["pt_smooth"]
 
@@ -3859,6 +3860,16 @@ class Database:
 
             else:
                 pt_smooth = item[indices["pt_smooth"]]
+
+            # Get smoothing parameter for abundance profiles
+
+            if "abund_smooth" in dset.attrs:
+                if dset.attrs["abund_smooth"] == "None":
+                    abund_smooth = None
+                else:
+                    abund_smooth = dset.attrs["abund_smooth"]
+            else:
+                abund_smooth = None
 
             # Calculate the petitRADTRANS spectrum
 
@@ -3874,6 +3885,7 @@ class Database:
                 pt_smooth=pt_smooth,
                 temp_nodes=temp_nodes,
                 abund_nodes=abund_nodes,
+                abund_smooth=abund_smooth,
                 read_rad=read_rad,
                 sample=item,
             )
