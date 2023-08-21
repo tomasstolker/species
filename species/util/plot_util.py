@@ -645,6 +645,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("pt_smooth")
         param[index] = r"$\sigma_\mathrm{P-T}$"
 
+    if "abund_smooth" in param:
+        index = param.index("abund_smooth")
+        param[index] = r"$\sigma_\mathrm{abund}$"
+
     if "log_prob" in param:
         index = param.index("log_prob")
         param[index] = r"$\log\,\mathcal{L}$"
@@ -1032,6 +1036,11 @@ def quantity_unit(
             quantity.append("pt_smooth")
             unit.append(None)
             label.append(r"$\sigma_\mathrm{P-T}$")
+
+        if item == "abund_smooth":
+            quantity.append("abund_smooth")
+            unit.append(None)
+            label.append(r"$\sigma_\mathrm{abund}$")
 
     return quantity, unit, label
 
