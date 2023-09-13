@@ -98,6 +98,9 @@ def plot_cooling(
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
     evolution_model = attr["evolution_model"]
+    object_lbol = attr["object_lbol"]
+    object_radius = attr["object_radius"]
+    object_age = (np.mean(samples[:, 0]), np.std(samples[:, 0]))
 
     read_iso = read_isochrone.ReadIsochrone(evolution_model)
 
@@ -126,6 +129,10 @@ def plot_cooling(
 
     if yscale is None:
         yscale = "linear"
+
+    cool_curves = []
+    for i in range(n_planets):
+        cool_curves.append([])
 
     for i in range(n_planets):
         ax[i].set_xscale(xscale)
@@ -189,10 +196,6 @@ def plot_cooling(
 
         ran_indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
 
-        cool_curves = []
-        for i in range(n_planets):
-            cool_curves.append([])
-
         for sample_idx in ran_indices:
             for planet_idx in range(n_planets):
                 mass = samples[sample_idx, 1 + planet_idx]
@@ -213,40 +216,36 @@ def plot_cooling(
                     alpha=0.5,
                 )
 
-        object_age = (np.mean(samples[:, 0]), np.std(samples[:, 0]))
-        object_lbol = attr["object_lbol"]
-        object_radius = attr["object_radius"]
+    for i in range(n_planets):
+        if cooling_param == "luminosity":
+            ax[i].errorbar(
+                object_age[0],
+                object_lbol[i][0],
+                xerr=object_age[1],
+                yerr=object_lbol[i][1],
+                color="tab:orange",
+            )
 
-        for i in range(n_planets):
-            if cooling_param == "luminosity":
-                ax[i].errorbar(
-                    object_age[0],
-                    object_lbol[i][0],
-                    xerr=object_age[1],
-                    yerr=object_lbol[i][1],
-                    color="tab:orange",
-                )
+        elif cooling_param == "radius" and isinstance(object_radius[i], np.ndarray):
+            # Only plot the data if these were provided as optional
+            # argument of object_radius when using FitEvolution
+            ax[i].errorbar(
+                object_age[0],
+                object_radius[i][0],
+                xerr=object_age[1],
+                yerr=object_radius[i][1],
+                color="tab:orange",
+            )
 
-            elif cooling_param == "radius" and isinstance(object_radius[i], np.ndarray):
-                # Only plot the data if these were provided as optional
-                # argument of object_radius when using FitEvolution
-                ax[i].errorbar(
-                    object_age[0],
-                    object_radius[i][0],
-                    xerr=object_age[1],
-                    yerr=object_radius[i][1],
-                    color="tab:orange",
-                )
+    if title is not None:
+        ax[0].set_title(title, fontsize=18.0)
 
-        if title is not None:
-            ax[0].set_title(title, fontsize=18.0)
+    if output is None:
+        plt.show()
+    else:
+        plt.savefig(output, bbox_inches="tight")
 
-        if output is None:
-            plt.show()
-        else:
-            plt.savefig(output, bbox_inches="tight")
-
-        print(" [DONE]")
+    print(" [DONE]")
 
     return fig, cool_curves, ran_indices
 
@@ -323,6 +322,8 @@ def plot_isochrones(
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
     evolution_model = attr["evolution_model"]
+    object_lbol = attr["object_lbol"]
+    object_mass = attr["object_mass"]
 
     read_iso = read_isochrone.ReadIsochrone(evolution_model)
 
@@ -351,6 +352,10 @@ def plot_isochrones(
 
     if yscale is None:
         yscale = "linear"
+
+    isochrones = []
+    for i in range(n_planets):
+        isochrones.append([])
 
     for i in range(n_planets):
         labelbottom = bool(i == n_planets - 1)
@@ -410,10 +415,6 @@ def plot_isochrones(
 
     ran_indices = np.random.randint(low=0, high=samples.shape[0], size=n_samples)
 
-    isochrones = []
-    for i in range(n_planets):
-        isochrones.append([])
-
     for sample_idx in ran_indices:
         for planet_idx in range(n_planets):
             age = samples[sample_idx, 0]
@@ -429,9 +430,6 @@ def plot_isochrones(
                 color="gray",
                 alpha=0.5,
             )
-
-    object_lbol = attr["object_lbol"]
-    object_mass = attr["object_mass"]
 
     for i in range(n_planets):
         ax[i].errorbar(
