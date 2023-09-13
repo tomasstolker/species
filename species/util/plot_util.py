@@ -4,6 +4,7 @@ Module with utility functions for plotting data.
 
 import warnings
 
+from string import ascii_lowercase
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -349,6 +350,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$M_\ast$ ($M_\mathrm{\odot}$)"
 
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"mass_{i}" in param:
+            index = param.index(f"mass_{i}")
+            param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
+        else:
+            break
+
     if "log_mass" in param:
         index = param.index("log_mass")
         if object_type == "planet":
@@ -407,6 +415,41 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "mcore_2" in param:
         index = param.index("mcore_2")
         param[index] = r"$M_\mathrm{core,c}$ ($M_\mathrm{E}$)"
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"teff_evol_{i}" in param:
+            index = param.index(f"teff_evol_{i}")
+            param[index] = rf"$T_\mathrm{{eff, {item}}}$ (K)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"radius_evol_{i}" in param:
+            index = param.index(f"radius_evol_{i}")
+            param[index] = rf"$R_\mathrm{{{item}}}$ ($R_\mathrm{{J}}$)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"logg_evol_{i}" in param:
+            index = param.index(f"logg_evol_{i}")
+            param[index] = rf"$\log\,g_\mathrm{{{item}}}$"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"inflate_lbol{i}" in param:
+            index = param.index(f"inflate_lbol{i}")
+            param[index] = rf"$\sigma_{{L,{{{item}}}}}$ (dex)"
+        else:
+            break
+
+    for i, item in enumerate(ascii_lowercase[1:]):
+        if f"inflate_mass{i}" in param:
+            index = param.index(f"inflate_mass{i}")
+            param[index] = rf"$\sigma_{{M,{{{item}}}}}$ ($M_\mathrm{{J}}$)"
+        else:
+            break
 
     if "luminosity" in param:
         index = param.index("luminosity")
