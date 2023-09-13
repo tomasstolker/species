@@ -20,6 +20,14 @@ species.analysis.emission\_line module
    :undoc-members:
    :show-inheritance:
 
+species.analysis.fit\_evolution module
+--------------------------------------
+
+.. automodule:: species.analysis.fit_evolution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.analysis.fit\_model module
 ----------------------------------
 
