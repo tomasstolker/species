@@ -103,9 +103,11 @@ class ReadIsochrone:
 
         with h5py.File(self.database, "r") as h5_file:
             if f"isochrones/{self.tag}" not in h5_file:
-                tag_list = []
-                for item in h5_file["isochrones"]:
-                    tag_list.append(item)
+                tag_list = list(h5_file["isochrones"])
+
+                # tag_list = []
+                # for item in h5_file["isochrones"]:
+                #     tag_list.append(item)
 
                 raise ValueError(
                     f"There is no isochrone data stored with the "
@@ -397,6 +399,42 @@ class ReadIsochrone:
                     extra_param[key] = float(input_value)
 
         return model_param, extra_param
+
+    @typechecked
+    def grid_points(self) -> Dict[str, np.ndarray]:
+        """
+        Function for returning a dictionary with the unique grid points
+        of the parameters of the evolutionary data. The grid may not
+        be regularly sampled unless ``create_regular_grid=True``.
+
+        Returns
+        -------
+        dict(str, np.array)
+            Dictionary with the parameter names and the arrays with
+            the unique values in the grid of evolutionary data.
+        """
+
+        (
+            model,
+            iso_age,
+            iso_mass,
+            iso_teff,
+            iso_loglum,
+            iso_logg,
+            iso_radius,
+            iso_mag,
+        ) = self._read_data()
+
+        grid_points = {
+            "age": iso_age,
+            "mass": iso_mass,
+            "radius": iso_radius,
+            "log_lum": iso_loglum,
+            "teff": iso_teff,
+            "logg": iso_logg,
+        }
+
+        return grid_points
 
     @typechecked
     def get_isochrone(
