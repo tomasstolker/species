@@ -6,6 +6,7 @@ This module was put together many contributions by Paul Mollière
 
 import copy
 import sys
+import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -413,7 +414,9 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
-) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[float], Optional[float]]:
+) -> Tuple[
+    Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]
+]:
     """
     Function for creating a pressure-temperature profile.
 
@@ -452,7 +455,7 @@ def create_pt_profile(
     np.ndarray, None
         Temperature at the knots (K). A ``None`` is returned if
         ``pt_profile`` is set to 'molliere' or 'eddington'.
-    float
+    float, None
         Pressure (bar) where the optical depth is 1.
     float, None
         Pressure (bar) at the radiative-convective boundary.
@@ -490,6 +493,14 @@ def create_pt_profile(
             knot_temp.append(cube[cube_index[f"t{i}"]])
 
         knot_temp = np.asarray(knot_temp)
+
+        nan_count = np.sum(np.isnan(knot_temp))
+
+        if nan_count > 0:
+            # TODO Not clear why this can happen
+            warnings.warn(f"Found {nan_count} NaN values in sampled temperature nodes.")
+
+            return None, None, None, None
 
         temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth)
 
@@ -615,7 +626,7 @@ def create_abund_dict(
         Dictionary with the updated names of the abundances.
     """
 
-    # create a dictionary with the updated abundance names
+    # Create a dictionary with the updated abundance names
 
     abund_out = {}
 
@@ -769,6 +780,7 @@ def calc_spectrum_clear(
     log_x_abund: Optional[dict],
     chemistry: str,
     knot_press_abund: Optional[np.ndarray],
+    abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
     contribution: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
@@ -801,6 +813,14 @@ def calc_spectrum_clear(
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
         required when ``chemistry='free'``.
+    abund_smooth : float, None
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the abundance profiles, after the abundance nodes
+        have been interpolated to a higher pressure resolution.
+        Only required with ```chemistry='free'``` and
+        ``knot_press_abund`` is not set to ``None``. The argument
+        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
+        smoothing is applied if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -853,26 +873,70 @@ def calc_spectrum_clear(
             Pquench_carbon=p_quench,
         )
 
-        # Mean molecular weight
-        mmw = abund_in["MMW"]
-
     elif chemistry == "free":
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(
-            log_x_abund, rt_object, rt_object.line_species, abund_nodes
-        )
+        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
 
-        # Mean molecular weight
-        mmw = mean_molecular_weight(abund_in)
+        # Create list of all species
+        abund_species = rt_object.line_species.copy()
+        abund_species.append("H2")
+        abund_species.append("He")
 
-        # Create arrays of constant atmosphere abundance
-        for item in abund_in:
-            abund_in[item] *= np.ones_like(pressure)
+        if abund_nodes is None:
+            # Mean molecular weight
 
-        # Create an array of a constant mean molecular weight
-        mmw *= np.ones_like(pressure)
+            mmw_float = mean_molecular_weight(abund_in)
+            mmw = np.full(pressure.size, mmw_float)
+
+            # Create arrays of constant abundances with pressure
+
+            for abund_item in abund_species:
+                abund_in[abund_item] = np.full(pressure.size, abund_in[abund_item])
+
+        else:
+            # Create arrays of pressure-dependent abundances
+
+            for abund_item in abund_species:
+                knot_abund = np.zeros(knot_press_abund.shape)
+
+                for node_idx in range(abund_nodes):
+                    knot_abund[node_idx] = abund_in[f"{abund_item}_{node_idx}"]
+                    del abund_in[f"{abund_item}_{node_idx}"]
+
+                nan_count = np.sum(np.isnan(knot_abund))
+
+                if nan_count > 0:
+                    warnings.warn(
+                        f"Found {nan_count} NaN values in sampled abundance nodes."
+                    )
+
+                    return None, None, None, np.zeros(1)
+
+                abund_in[abund_item] = pt_spline_interp(
+                    knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
+                )
+
+            # Mean molecular weight
+
+            mmw = np.zeros(pressure.size)
+
+            for press_idx in range(pressure.size):
+                abund_dict = {}
+                for abund_item, abund_value in abund_in.items():
+                    abund_dict[abund_item] = abund_value[press_idx]
+
+                mmw[press_idx] = mean_molecular_weight(abund_dict)
+
+
+
+
+
+
+
+
+
 
     # Extract every three levels when pressure_grid is set to 'smaller'
 
@@ -926,6 +990,7 @@ def calc_spectrum_clouds(
     log_g: float,
     chemistry: str,
     knot_press_abund: Optional[np.ndarray],
+    abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
     plotting: bool = False,
     contribution: bool = False,
@@ -968,6 +1033,14 @@ def calc_spectrum_clouds(
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
         required when ``chemistry='free'``.
+    abund_smooth : float, None
+        Standard deviation of the Gaussian kernel that is used for
+        smoothing the abundance profiles, after the abundance nodes
+        have been interpolated to a higher pressure resolution.
+        Only required with ```chemistry='free'``` and
+        ``knot_press_abund`` is not set to ``None``. The argument
+        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
+        smoothing is applied if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -1072,8 +1145,17 @@ def calc_spectrum_clouds(
                     knot_abund[node_idx] = abund_in[f"{abund_item}_{node_idx}"]
                     del abund_in[f"{abund_item}_{node_idx}"]
 
+                nan_count = np.sum(np.isnan(knot_abund))
+
+                if nan_count > 0:
+                    warnings.warn(
+                        f"Found {nan_count} NaN values in sampled abundance nodes."
+                    )
+
+                    return None, None, None, np.zeros(1)
+
                 abund_in[abund_item] = pt_spline_interp(
-                    knot_press_abund, knot_abund, pressure, pt_smooth=0.1
+                    knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
                 )
 
             # Mean molecular weight
@@ -1112,10 +1194,13 @@ def calc_spectrum_clouds(
             p_base[f"{cloud_item}(c)"] = p_base_item
 
     # Adaptive pressure refinement around the cloud base
+
     if pressure_grid == "clouds":
         _, indices = make_half_pressure_better(p_base, pressure)
     else:
         indices = None
+
+    # Update the abundance dictionary
 
     abundances = create_abund_dict(
         abund_in,
@@ -1597,12 +1682,15 @@ def calc_metal_ratio(
     """
 
     # Solar C/H from Asplund et al. (2009)
+
     c_h_solar = 10.0 ** (8.43 - 12.0)
 
     # Solar O/H from Asplund et al. (2009)
+
     o_h_solar = 10.0 ** (8.69 - 12.0)
 
     # Get the atomic masses
+
     masses = atomic_masses()
 
     # Create a dictionary with all mass fractions
@@ -1610,98 +1698,56 @@ def calc_metal_ratio(
     abund = mass_fractions(log_x_abund, line_species, abund_nodes=None)
 
     # Calculate the mean molecular weight from the input mass fractions
+
     mmw = mean_molecular_weight(abund)
 
     # Initiate the C, H, and O abundance
+
     c_abund = 0.0
     o_abund = 0.0
     h_abund = 0.0
 
-    # Calculate the total C abundance
+    for abund_item in abund:
+        abund_split = abund_item.split("_")[0]
 
-    if "CO" in abund:
-        c_abund += abund["CO"] * mmw / masses["CO"]
+        # Calculate the total C abundance
 
-    if "CO_all_iso" in abund:
-        c_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+        if abund_split == "CO":
+            c_abund += abund[abund_item] * mmw / masses["CO"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        c_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+        elif abund_split == "CO2":
+            c_abund += abund[abund_item] * mmw / masses["CO2"]
 
-    if "CO_all_iso_Chubb" in abund:
-        c_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+        elif abund_split == "CH4":
+            c_abund += abund[abund_item] * mmw / masses["CH4"]
 
-    if "CO2" in abund:
-        c_abund += abund["CO2"] * mmw / masses["CO2"]
+        # Calculate the total O abundance
 
-    if "CO2_main_iso" in abund:
-        c_abund += abund["CO2_main_iso"] * mmw / masses["CO2"]
+        if abund_split == "CO":
+            o_abund += abund[abund_item] * mmw / masses["CO"]
 
-    if "CH4" in abund:
-        c_abund += abund["CH4"] * mmw / masses["CH4"]
+        elif abund_split == "CO2":
+            o_abund += 2.0 * abund[abund_item] * mmw / masses["CO2"]
 
-    if "CH4_main_iso" in abund:
-        c_abund += abund["CH4_main_iso"] * mmw / masses["CH4"]
+        elif abund_split == "H2O":
+            o_abund += abund[abund_item] * mmw / masses["H2O"]
 
-    # Calculate the total O abundance
+        # Calculate the total H abundance
 
-    if "CO" in abund:
-        o_abund += abund["CO"] * mmw / masses["CO"]
+        if abund_split == "H2":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2"]
 
-    if "CO_all_iso" in abund:
-        o_abund += abund["CO_all_iso"] * mmw / masses["CO"]
+        elif abund_split == "CH4":
+            h_abund += 4.0 * abund[abund_item] * mmw / masses["CH4"]
 
-    if "CO_all_iso_HITEMP" in abund:
-        o_abund += abund["CO_all_iso_HITEMP"] * mmw / masses["CO"]
+        elif abund_split == "H2O":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2O"]
 
-    if "CO_all_iso_Chubb" in abund:
-        o_abund += abund["CO_all_iso_Chubb"] * mmw / masses["CO"]
+        elif abund_split == "NH3":
+            h_abund += 3.0 * abund[abund_item] * mmw / masses["NH3"]
 
-    if "CO2" in abund:
-        o_abund += 2.0 * abund["CO2"] * mmw / masses["CO2"]
-
-    if "CO2_main_iso" in abund:
-        o_abund += 2.0 * abund["CO2_main_iso"] * mmw / masses["CO2"]
-
-    if "H2O" in abund:
-        o_abund += abund["H2O"] * mmw / masses["H2O"]
-
-    if "H2O_HITEMP" in abund:
-        o_abund += abund["H2O_HITEMP"] * mmw / masses["H2O"]
-
-    if "H2O_main_iso" in abund:
-        o_abund += abund["H2O_main_iso"] * mmw / masses["H2O"]
-
-    # Calculate the total H abundance
-
-    h_abund += 2.0 * abund["H2"] * mmw / masses["H2"]
-
-    if "CH4" in abund:
-        h_abund += 4.0 * abund["CH4"] * mmw / masses["CH4"]
-
-    if "CH4_main_iso" in abund:
-        h_abund += 4.0 * abund["CH4_main_iso"] * mmw / masses["CH4"]
-
-    if "H2O" in abund:
-        h_abund += 2.0 * abund["H2O"] * mmw / masses["H2O"]
-
-    if "H2O_HITEMP" in abund:
-        h_abund += 2.0 * abund["H2O_HITEMP"] * mmw / masses["H2O"]
-
-    if "H2O_main_iso" in abund:
-        h_abund += 2.0 * abund["H2O_main_iso"] * mmw / masses["H2O"]
-
-    if "NH3" in abund:
-        h_abund += 3.0 * abund["NH3"] * mmw / masses["NH3"]
-
-    if "NH3_main_iso" in abund:
-        h_abund += 3.0 * abund["NH3_main_iso"] * mmw / masses["NH3"]
-
-    if "H2S" in abund:
-        h_abund += 2.0 * abund["H2S"] * mmw / masses["H2S"]
-
-    if "H2S_main_iso" in abund:
-        h_abund += 2.0 * abund["H2S_main_iso"] * mmw / masses["H2S"]
+        elif abund_split == "H2S":
+            h_abund += 2.0 * abund[abund_item] * mmw / masses["H2S"]
 
     return (
         np.log10(c_abund / h_abund / c_h_solar),
@@ -2310,6 +2356,7 @@ def scale_cloud_abund(
         indices = None
 
     # Update the abundance dictionary
+
     abundances = create_abund_dict(
         abund_in,
         rt_object.line_species,

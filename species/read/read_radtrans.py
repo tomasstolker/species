@@ -489,9 +489,11 @@ class ReadRadtrans:
             nodes_list = list(check_nodes.values())
 
             if not all(value == nodes_list[0] for value in nodes_list):
-                raise ValueError("The number of abundance nodes is "
-                                 "not equal for all the lines "
-                                 f"species: {check_nodes}")
+                raise ValueError(
+                    "The number of abundance nodes is "
+                    "not equal for all the lines "
+                    f"species: {check_nodes}"
+                )
 
             if all(value == 0 for value in nodes_list):
                 abund_nodes = None
@@ -563,6 +565,14 @@ class ReadRadtrans:
             # TODO Set [Fe/H] = 0 for Molliere P-T profile and
             # cloud condensation profiles
             metallicity = 0.0
+
+            # Get smoothing parameter for abundance profiles
+
+            if "abund_smooth" in model_param:
+                abund_smooth = model_param["abund_smooth"]
+
+            else:
+                abund_smooth = None
 
             # Create a dictionary with the mass fractions
 
@@ -840,6 +850,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -868,6 +879,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -904,6 +916,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
+                    abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -926,14 +939,23 @@ class ReadRadtrans:
                 pressure_grid=self.pressure_grid,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
+                abund_smooth=abund_smooth,
                 contribution=True,
             )
 
         elif chemistry == "free":
             log_x_abund = {}
 
-            for ab_item in self.rt_object.line_species:
-                log_x_abund[ab_item] = model_param[ab_item]
+            if abund_nodes is None:
+                for line_item in self.rt_object.line_species:
+                    log_x_abund[line_item] = model_param[line_item]
+
+            else:
+                for line_item in self.rt_object.line_species:
+                    for node_idx in range(abund_nodes):
+                        log_x_abund[f"{line_item}_{node_idx}"] = model_param[
+                            f"{line_item}_{node_idx}"
+                        ]
 
             wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
                 self.rt_object,
@@ -946,6 +968,7 @@ class ReadRadtrans:
                 log_x_abund,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
+                abund_smooth=abund_smooth,
                 pressure_grid=self.pressure_grid,
                 contribution=True,
             )

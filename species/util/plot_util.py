@@ -209,10 +209,15 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         "CO_all_iso_HITEMP",
         "H2O",
         "H2O_HITEMP",
+        "H2O_main_iso",
         "CH4",
+        "CH4_main_iso",
         "NH3",
+        "NH3_main_iso",
         "CO2",
+        "CO2_main_iso",
         "H2S",
+        "H2S_main_iso",
         "Na",
         "Na_allard",
         "Na_burrows",
@@ -222,11 +227,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         "K_burrows",
         "K_lor_cur",
         "PH3",
+        "PH3_main_iso",
         "VO",
         "VO_Plez",
         "TiO",
         "TiO_all_Exomol",
+        "TiO_all_iso_Plez",
         "FeH",
+        "FeH_main_iso",
         "MgSiO3(c)",
         "Fe(c)",
         "Al2O3(c)",
@@ -239,9 +247,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         "CO",
         "H_{2}O",
         "H_{2}O",
+        "H_{2}O",
+        "CH_{4}",
         "CH_{4}",
         "NH_{3}",
+        "NH_{3}",
         "CO_{2}",
+        "CO_{2}",
+        "H_{2}S",
         "H_{2}S",
         "Na",
         "Na",
@@ -252,10 +265,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         "K",
         "K",
         "PH_{3}",
+        "PH_{3}",
         "VO",
         "VO",
         "TiO",
         "TiO",
+        "TiO",
+        "FeH",
         "FeH",
         "MgSiO_{3}",
         "Fe",
@@ -672,6 +688,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("pt_smooth")
         param[index] = r"$\sigma_\mathrm{P-T}$"
 
+    if "abund_smooth" in param:
+        index = param.index("abund_smooth")
+        param[index] = r"$\sigma_\mathrm{abund}$"
+
     if "log_prob" in param:
         index = param.index("log_prob")
         param[index] = r"$\log\,\mathcal{L}$"
@@ -851,6 +871,9 @@ def convert_model_name(in_name: str) -> str:
 
     elif in_name == "atmo-neq-strong":
         out_name = "ATMO NEQ strong"
+
+    elif in_name == "petrus2023":
+        out_name = "ATMO"
 
     elif in_name == "bt-cond":
         out_name = "BT-Cond"
@@ -1056,6 +1079,11 @@ def quantity_unit(
             quantity.append("pt_smooth")
             unit.append(None)
             label.append(r"$\sigma_\mathrm{P-T}$")
+
+        if item == "abund_smooth":
+            quantity.append("abund_smooth")
+            unit.append(None)
+            label.append(r"$\sigma_\mathrm{abund}$")
 
     return quantity, unit, label
 
