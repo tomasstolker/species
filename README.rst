@@ -24,9 +24,6 @@
 .. image:: https://img.shields.io/github/license/tomasstolker/species
    :target: https://github.com/tomasstolker/species/blob/main/LICENSE
 
-.. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/tomasstolker/species/HEAD
-
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources.
 
 There are tools available for grid and free retrievals using Bayesian inference, synthetic photometry, interpolating a variety atmospheric and evolutionary model grids (including the possibility to add a custom grid), color-magnitude and color-color diagrams, empirical spectral analysis, spectral and photometric calibration, and analysis of emission lines. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
@@ -39,7 +36,7 @@ Documentation can be found at `http://species.readthedocs.io <http://species.rea
 Tutorials
 ---------
 
-There are several `Jupyter notebooks <https://species.readthedocs.io/en/latest/tutorials.html>`_ with tutorials that showcase the workflow and available tools. They can also be executed on `Binder <https://mybinder.org/v2/gh/tomasstolker/species/HEAD>`_ by navigating to the *docs/tutorials* folder.
+There are several `Jupyter notebooks <https://species.readthedocs.io/en/latest/tutorials.html>`_ with tutorials for various types of analyses and functionalities.
 
 Attribution
 -----------
