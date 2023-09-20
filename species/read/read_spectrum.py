@@ -5,7 +5,7 @@ Module with reading functionalities for spectral libraries.
 import configparser
 import os
 
-from typing import List
+from typing import List, Optional
 
 import h5py
 import numpy as np
@@ -24,7 +24,7 @@ class ReadSpectrum:
     """
 
     @typechecked
-    def __init__(self, spec_library: str, filter_name: str = None) -> None:
+    def __init__(self, spec_library: str, filter_name: Optional[str] = None) -> None:
         """
         Parameters
         ----------
@@ -60,7 +60,7 @@ class ReadSpectrum:
 
     @typechecked
     def get_spectrum(
-        self, sptypes: List[str] = None, exclude_nan: bool = True
+        self, sptypes: Optional[List[str]] = None, exclude_nan: bool = True
     ) -> box.SpectrumBox:
         """
         Function for selecting spectra from the database.
@@ -227,7 +227,7 @@ class ReadSpectrum:
         return spec_box
 
     @typechecked
-    def get_flux(self, sptypes: List[str] = None) -> box.PhotometryBox:
+    def get_flux(self, sptypes: Optional[List[str]] = None) -> box.PhotometryBox:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -282,14 +282,14 @@ class ReadSpectrum:
         )
 
     @typechecked
-    def get_magnitude(self, sptypes: List[str] = None) -> box.PhotometryBox:
+    def get_magnitude(self, sptypes: Optional[List[str]] = None) -> box.PhotometryBox:
         """
         Function for calculating the apparent magnitude for the
         specified ``filter_name``.
 
         Parameters
         ----------
-        sptypes : list(str)
+        sptypes : list(str), None
             Spectral types to select from the library. The spectral
             types should be indicated with two characters (e.g. 'M5',
             'L2', 'T3'). All spectra are selected if set to ``None``.

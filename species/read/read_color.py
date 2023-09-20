@@ -132,12 +132,40 @@ class ReadColorMagnitude:
 
             if indices.size > 0:
                 with h5py.File(self.database, "r") as h5_file:
-                    mag1 = np.asarray(
-                        h5_file[f"photometry/{self.library}/{self.filters_color[0]}"]
-                    )
-                    mag2 = np.asarray(
-                        h5_file[f"photometry/{self.library}/{self.filters_color[1]}"]
-                    )
+                    filter_list = []
+
+                    for item in list(h5_file[f"photometry/{self.library}/MKO"]):
+                        filter_list.append(f"MKO/{item}")
+
+                    for item in list(h5_file[f"photometry/{self.library}/2MASS"]):
+                        filter_list.append(f"2MASS/{item}")
+
+                    for item in list(h5_file[f"photometry/{self.library}/Paranal"]):
+                        filter_list.append(f"Paranal/{item}")
+
+                    if f"photometry/{self.library}/{self.filters_color[0]}" in h5_file:
+                        mag1 = np.asarray(
+                            h5_file[f"photometry/{self.library}/{self.filters_color[0]}"]
+                        )
+
+                    else:
+                        raise ValueError(f"The \'{self.filters_color[0]}\' "
+                                         "filter is not available in the "
+                                         f"\'{self.library}\' library. Please "
+                                         "select any of the following "
+                                         f"filters: {filter_list}")
+
+                    if f"photometry/{self.library}/{self.filters_color[1]}" in h5_file:
+                        mag2 = np.asarray(
+                            h5_file[f"photometry/{self.library}/{self.filters_color[1]}"]
+                        )
+
+                    else:
+                        raise ValueError(f"The \'{self.filters_color[1]}\' "
+                                         "filter is not available in the "
+                                         f"\'{self.library}\' library. Please "
+                                         "select any of the following "
+                                         f"filters: {filter_list}")
 
             else:
                 raise ValueError(
@@ -158,6 +186,12 @@ class ReadColorMagnitude:
                 mag, _ = phot_util.apparent_to_absolute(
                     (mag2, None), (distance[0], distance[1])
                 )
+
+            else:
+                raise ValueError("The argument of filter_mag is set "
+                                 f"to {self.filter_mag} but should be "
+                                 "the same as one of the two values of "
+                                 "filters_color.")
 
             color = color[indices]
             mag = mag[indices]

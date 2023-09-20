@@ -3,32 +3,31 @@
 Installation
 ============
 
-``species`` is compatible with `Python <https://www.python.org>`_ versions 3.8/3.9/3.10 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
+``species`` is compatible with `Python <https://www.python.org>`_ versions 3.8/3.9/3.10/3.11 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
 Installation from PyPI
 ----------------------
 
-The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_:
+The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_, but `Cython <https://cython.org>`_ should first be separately installed:
 
 .. code-block:: console
 
+    $ pip install cython
     $ pip install species
 
-Or, to update to the most recent version:
+Or, to update ``species`` to the most recent version:
 
 .. code-block:: console
 
    $ pip install --upgrade species
 
-.. important::
-   It is also required to separately install ``cython`` and ``petitRADTRANS``:
+It is also required to separately install ``petitRADTRANS``, but this step can also be skipped:
 
-   .. code-block:: console
+.. code-block:: console
 
-       $ pip install cython
-       $ pip install petitRADTRANS
+   $ pip install petitRADTRANS
 
-   The installation ``petitRADTRANS`` can be somewhat challenging on some machines. It is possible to skip the installation of this package, in which case it is still possible to use ``species``, apart from the functionalities that rely on `petitRADTRANS <https://petitradtrans.readthedocs.io>`_.
+The installation of ``petitRADTRANS`` can be somewhat challenging on some machines. When skipping the installation of `petitRADTRANS <https://petitradtrans.readthedocs.io>`_ it is still possible to use most of the functionalities of ``species``.
 
 .. important::
    The ``PyMultiNest`` package requires the manual installation of ``MultiNest``. Please follow the `instructions <https://johannesbuchner.github.io/PyMultiNest/install.html>`_ for the building the library and make sure that the ``LD_LIBRARY_PATH`` (on Linux) or ``DYLD_LIBRARY_PATH`` (on macOS) environment variable is set. It is also possible to use ``species`` without installing ``MultiNest`` (but a warning will appear), apart from the functionalities that rely on ``PyMultiNest``.

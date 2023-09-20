@@ -821,7 +821,7 @@ class Database:
         spectrum: Optional[
             Dict[str, Tuple[str, Optional[str], Optional[float]]]
         ] = None,
-        deredden: Union[Dict[str, float], float] = None,
+        deredden: Optional[Union[Dict[str, float], float]] = None,
         verbose: bool = True,
         units: Optional[Dict[str, Union[str, Tuple[str, str]]]] = None,
     ) -> None:
