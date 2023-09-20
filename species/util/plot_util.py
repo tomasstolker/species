@@ -914,6 +914,12 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "zhu2015":
         out_name = "Zhu (2015)"
 
+    elif in_name == "saumon2008-clear":
+        out_name = "Saumon & Marley (2008)"
+
+    elif in_name == "saumon2008-cloudy":
+        out_name = "Saumon & Marley (2008)"
+
     elif in_name == "sonora-cholla":
         out_name = "Sonora Cholla"
 
