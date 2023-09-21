@@ -1,9 +1,6 @@
-markupsafe==2.0.1
-jinja2==2.11.3
 cython
 jupyter
 nbsphinx
 pandoc
 sphinx-automodapi
 sphinx_book_theme
-urllib3<2
