@@ -96,7 +96,7 @@ def add_vlm_plx(input_path, database):
     database.create_dataset("photometry/vlm-plx/dec", data=phot_data["DEC"])  # (deg)
     database.create_dataset("photometry/vlm-plx/parallax", data=parallax)
     database.create_dataset("photometry/vlm-plx/parallax_error", data=parallax_error)
-    database.create_dataset("photometry/vlm-plx/Paranal/SPHERE.IRDIS_B_Y", data=phot_data["YMAG"])
+    database.create_dataset("photometry/vlm-plx/Keck/NIRC.Y", data=phot_data["YMAG"])
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.J", data=phot_data["JMAG"])
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.H", data=phot_data["HMAG"])
     database.create_dataset("photometry/vlm-plx/MKO/NSFCam.K", data=phot_data["KMAG"])

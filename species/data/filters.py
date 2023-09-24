@@ -89,6 +89,19 @@ def download_filter(
 
         os.remove("Keck_NIRC2.NB_4.05.dat")
 
+    elif filter_id == "Keck/NIRC.Y":
+        # The filter profile of the Y band has been
+        # adopted from Hillenbrand et al. (2002)
+
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/Keck_NIRC.Y.dat"
+        urllib.request.urlretrieve(url, "Keck_NIRC.Y.dat")
+
+        wavelength, transmission = np.loadtxt("Keck_NIRC.Y.dat", unpack=True)
+
+        det_type = "photon"
+
+        os.remove("Keck_NIRC.Y.dat")
+
     elif filter_id in ["LCO/VisAO.Ys", "Magellan/VisAO.Ys"]:
         url = "https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat"
         urllib.request.urlretrieve(url, "VisAO_Ys_filter_curve.dat")

@@ -140,8 +140,8 @@ class ReadColorMagnitude:
                     for item in list(h5_file[f"photometry/{self.library}/2MASS"]):
                         filter_list.append(f"2MASS/{item}")
 
-                    for item in list(h5_file[f"photometry/{self.library}/Paranal"]):
-                        filter_list.append(f"Paranal/{item}")
+                    for item in list(h5_file[f"photometry/{self.library}/Keck"]):
+                        filter_list.append(f"Keck/{item}")
 
                     if f"photometry/{self.library}/{self.filters_color[0]}" in h5_file:
                         mag1 = np.asarray(
