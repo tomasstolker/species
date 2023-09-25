@@ -36,7 +36,7 @@ class ReadIsochrone:
 
     @typechecked
     def __init__(
-        self, tag: str, create_regular_grid: bool = False, extrapolate: bool = False
+        self, tag: Optional[str] = None, create_regular_grid: bool = False, extrapolate: bool = False
     ) -> None:
         """
         Parameters
@@ -77,6 +77,7 @@ class ReadIsochrone:
         """
 
         self.tag = tag
+
         self.extrapolate = extrapolate
         self.create_regular_grid = create_regular_grid
 
@@ -101,13 +102,19 @@ class ReadIsochrone:
         self.database = config["species"]["database"]
         self.interp_method = config["species"]["interp_method"]
 
+        if self.tag is None:
+            with h5py.File(self.database, "r") as h5_file:
+                tag_list = list(h5_file["isochrones"])
+
+            self.tag = input("Please select one of the following "
+                             "isochrone tags that are stored in "
+                             "the database or use 'add_isochrones' "
+                             "to add another model to the database:"
+                             f"\n{tag_list}:\n")
+
         with h5py.File(self.database, "r") as h5_file:
             if f"isochrones/{self.tag}" not in h5_file:
                 tag_list = list(h5_file["isochrones"])
-
-                # tag_list = []
-                # for item in h5_file["isochrones"]:
-                #     tag_list.append(item)
 
                 raise ValueError(
                     f"There is no isochrone data stored with the "
@@ -115,7 +122,7 @@ class ReadIsochrone:
                     f"tags are found in the database: {tag_list}"
                 )
 
-        self.mag_models = ["ames", "atmo", "baraffe", "bt-settl", "manual", "nextgen"]
+        self.mag_models = ["ames", "atmo", "baraffe", "bt-settl", "linder2019", "manual", "nextgen"]
 
         # Connect isochrone model with atmosphere model
         # key = isochrone model, value = atmosphere model

@@ -8,7 +8,7 @@ Installation
 Installation from PyPI
 ----------------------
 
-The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_, but `Cython <https://cython.org>`_ should first be separately installed:
+The ``species`` toolkit can be installed with the `pip package manager <https://packaging.python.org/tutorials/installing-packages/>`_, but first `Cython <https://cython.org>`_ should be separately installed:
 
 .. code-block:: console
 
@@ -21,7 +21,7 @@ Or, to update ``species`` to the most recent version:
 
    $ pip install --upgrade species
 
-It is also required to separately install ``petitRADTRANS``, but this step can also be skipped:
+It is also required to separately install ``petitRADTRANS``, although this step can also be skipped:
 
 .. code-block:: console
 

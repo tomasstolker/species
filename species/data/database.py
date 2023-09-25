@@ -543,20 +543,23 @@ class Database:
         ----------
         model : str
             Evolutionary model ('ames', 'atmo', 'baraffe2015',
-            'bt-settl', 'nextgen', 'saumon2008', 'sonora',
-            or 'manual'). Isochrones will be automatically
-            downloaded. Alternatively, isochrone data can be
-            downloaded from https://phoenix.ens-lyon.fr/Grids/ or
+            'bt-settl', 'linder2019', 'nextgen', 'saumon2008',
+            'sonora', or 'manual'). Isochrones will be
+            automatically downloaded. Alternatively,
+            isochrone data can be downloaded from
+            https://phoenix.ens-lyon.fr/Grids/ or
             https://perso.ens-lyon.fr/isabelle.baraffe/, and can
             be manually added by setting the ``filename`` and
             ``tag`` arguments, and setting ``model='manual'``.
         filename : str, None
-            Filename with the isochrone data. Only required with
-            ``model='manual'`` and can be set to ``None`` otherwise.
+            Filename with the isochrone data. Setting the argument
+            is only required when ``model='manual'``. Otherwise,
+            the argument can be set to ``None``.
         tag : str
-            Database tag name where the isochrone that will be stored.
-            Only required with ``model='manual'`` and can be set to
-            ``None`` otherwise.
+            Database tag name where the isochrone that will be
+            stored. Setting the argument is only required when
+            ``model='manual'``. Otherwise, the argument can be
+            set to ``None``.
 
         Returns
         -------
@@ -603,6 +606,12 @@ class Database:
             if "isochrones/bt-settl" in h5_file:
                 del h5_file["isochrones/bt-settl"]
 
+        elif model == "linder2019":
+            if "isochrones" in h5_file:
+                for iso_item in list(h5_file["isochrones"]):
+                    if iso_item[:10] == "linder2019":
+                        del h5_file[f"isochrones/{iso_item}"]
+
         elif model == "nextgen":
             if "isochrones/nextgen" in h5_file:
                 del h5_file["isochrones/nextgen"]
@@ -638,6 +647,9 @@ class Database:
 
         elif model == "bt-settl":
             isochrones.add_btsettl(h5_file, self.input_path)
+
+        elif model == "linder2019":
+            isochrones.add_linder2019(h5_file, self.input_path)
 
         elif model == "manual":
             isochrones.add_manual(h5_file, tag, filename)

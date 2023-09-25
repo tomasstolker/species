@@ -5,6 +5,7 @@ Utility functions for data processing.
 import os
 import tarfile
 
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import h5py
@@ -39,7 +40,7 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
     with tarfile.open(data_file) as tar:
 
         @typechecked
-        def is_within_directory(directory: str, target: str):
+        def is_within_directory(directory: str, target: str) -> bool:
             abs_directory = os.path.abspath(directory)
             abs_target = os.path.abspath(target)
 
@@ -53,12 +54,12 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
             path: str = ".",
             members: Optional[List] = None,
             numeric_owner: bool = False,
-        ):
+        ) -> None:
             for member in tar.getmembers():
-                member_path = os.path.join(path, member.name)
+                member_path = Path(path) / Path(member.name)
 
-                if not is_within_directory(path, member_path):
-                    raise Exception("Attempted Path Traversal in Tar File")
+                if not is_within_directory(path, str(member_path)):
+                    raise Exception("Attempted path traversal in TAR file")
 
             tar.extractall(path, members, numeric_owner=numeric_owner)
 

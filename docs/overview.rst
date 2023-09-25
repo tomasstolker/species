@@ -55,6 +55,7 @@ The following data and models are currently supported:
 - `AMES-Dusty isochrones <https://ui.adsabs.harvard.edu/abs/2000ApJ...542..464C/abstract>`_
 - `ATMO isochrones <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_ (CEQ, NEQ weak, NEQ strong)
 - `Baraffe et al. (2015) isochrones <http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/>`_
+- `Linder et al. (2019) isochrones <https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract>`_
 - `Saumon & Marley (2008) isochrones <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat isochrones <https://zenodo.org/record/5063476>`_
 - All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
