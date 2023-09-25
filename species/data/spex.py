@@ -121,10 +121,10 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     print_message = "Downloading SpeX Prism Spectral Library... [DONE]"
     print(f"\r{print_message}")
 
-    h_twomass = photometry.SyntheticPhotometry("2MASS/2MASS.H")
-
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
-    h_zp = 1.133e-9  # (W m-2 um-1)
+    zp_hband = 1.133e-9  # (W m-2 um-1)
+
+    h_twomass = photometry.SyntheticPhotometry("2MASS/2MASS.H", zero_point=zp_hband)
 
     for votable in os.listdir(data_path):
         if votable.startswith("spex_") and votable.endswith(".xml"):
@@ -205,7 +205,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
             except KeyError:
                 sptype_nir = None
 
-            h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None, zp_flux=h_zp)
+            h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
 
             flux *= h_flux / phot[0]  # (W m-2 um-1)
