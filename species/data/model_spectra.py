@@ -72,14 +72,15 @@ def add_model_grid(
     else:
         raise ValueError(
             f"The {model_name} atmospheric model is not available. "
-            f"Please choose one of the following models: "
-            f"'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
-            f"'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
-            f"'petitcode-cool-cloudy', 'petitcode-hot-clear', "
-            f"'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
-            f"'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
-            f"'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd', "
-            f"'saumon2008-clear', 'saumon2008-cloudy', 'petrus2023' "
+            "Please choose one of the following models: "
+            "'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
+            "'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
+            "'petitcode-cool-cloudy', 'petitcode-hot-clear', "
+            "'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
+            "'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
+            "'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd', "
+            "'saumon2008-clear', 'saumon2008-cloudy', 'petrus2023', "
+            "'sphinx'"
         )
 
     if model_name == "bt-settl":

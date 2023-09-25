@@ -30,9 +30,10 @@ The following data and models are currently supported:
 - `Morley et al. (2012) T/Y dwarf spectra <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_
 - `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
+- `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_
-- `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
+- `SPHINX <https://zenodo.org/record/7416042>`_
 
 .. tip::
   It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`. Have a look at the documentation for details on the required file format.

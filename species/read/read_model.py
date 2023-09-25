@@ -1121,8 +1121,8 @@ class ReadModel:
         if np.isnan(np.sum(model_box.flux)):
             warnings.warn(
                 f"The resampled spectrum contains {np.sum(np.isnan(model_box.flux))} "
-                f"NaNs, probably because the original wavelength range does not fully "
-                f"encompass the new wavelength range. The happened with the "
+                "NaNs, probably because the original wavelength range does not fully "
+                "encompass the new wavelength range. The happened with the "
                 f"following parameters: {model_param}."
             )
 

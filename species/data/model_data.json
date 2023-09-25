@@ -259,5 +259,15 @@
         "information": "[Fe/H] = 0.0, log(g) = 5.0",
         "reference": "Marley et al. (2021)",
         "url": "https://zenodo.org/record/5063476"
+    },
+    "sphinx": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "SPHINX",
+        "file size": "143 Mb",
+        "wavelength range": [0.1, 20],
+        "resolution": 250,
+        "teff range": [2000, 4000],
+        "reference": "Aishwarya et al. (2022)",
+        "url": "https://zenodo.org/record/7416042"
     }
 }

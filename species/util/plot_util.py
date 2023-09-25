@@ -929,6 +929,9 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "sonora-bobcat-co":
         out_name = "Sonora Bobcat C/O"
 
+    elif in_name == "sphinx":
+        out_name = "SPHINX"
+
     elif in_name == "petitradtrans":
         out_name = "petitRADTRANS"
 
