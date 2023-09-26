@@ -472,7 +472,7 @@ class EmissionLine:
         wavel_int: Tuple[float, float],
         interp_kind: str = "linear",
         plot_filename: Optional[str] = "int_line.pdf",
-    ) -> Union[np.float64, np.float64]:
+    ) -> Tuple[np.float64, np.float64]:
         """
         Method for calculating the integrated line flux and error. The
         spectrum is first interpolated to :math:`R = 100000` and then
@@ -770,7 +770,7 @@ class EmissionLine:
         self,
         tag: str,
         min_num_live_points: float = 400,
-        bounds: Dict[str, Union[Tuple[float, float]]] = None,
+        bounds: Optional[Dict[str, Union[Tuple[float, float]]]] = None,
         output: str = "ultranest/",
         plot_filename: Optional[str] = "line_fit.pdf",
         show_status: bool = True,

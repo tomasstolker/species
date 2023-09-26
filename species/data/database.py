@@ -280,7 +280,7 @@ class Database:
     @typechecked
     def add_companion(
         self,
-        name: Union[Optional[str], Optional[List[str]]] = None,
+        name: Optional[Union[Optional[str], Optional[List[str]]]] = None,
         verbose: bool = True,
     ) -> None:
         """
@@ -1826,7 +1826,7 @@ class Database:
         modelpar: List[str],
         ln_evidence: Optional[Tuple[float, float]] = None,
         mean_accept: Optional[float] = None,
-        spectrum: Tuple[str, str] = None,
+        spectrum: Optional[Tuple[str, str]] = None,
         parallax: Optional[float] = None,
         spec_labels: Optional[List[str]] = None,
         attr_dict: Optional[Dict] = None,
@@ -3344,10 +3344,10 @@ class Database:
             else:
                 dset.attrs["res_mode"] = "c-k"
 
-            if "lbl_opacity_sampling" in radtrans:
-                dset.attrs["lbl_opacity_sampling"] = radtrans["lbl_opacity_sampling"]
+            if "lbl_opacity_sampling" not in radtrans or radtrans["lbl_opacity_sampling"] is None:
+                dset.attrs["abund_nodes"] = "None"
             else:
-                dset.attrs["lbl_opacity_sampling"] = "None"
+                dset.attrs["lbl_opacity_sampling"] = radtrans["lbl_opacity_sampling"]
 
         print(" [DONE]")
 
@@ -3633,7 +3633,7 @@ class Database:
     def get_retrieval_spectra(
         tag: str,
         random: Optional[int],
-        wavel_range: Union[Tuple[float, float], str] = None,
+        wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
     ) -> Tuple[List[box.ModelBox], Union[read_radtrans.ReadRadtrans]]:
         """

@@ -41,7 +41,7 @@ class ReadRadtrans:
         pressure_grid: str = "smaller",
         res_mode: str = "c-k",
         cloud_wavel: Optional[Tuple[float, float]] = None,
-        max_press: float = None,
+        max_press: Optional[float] = None,
         pt_manual: Optional[np.ndarray] = None,
         lbl_opacity_sampling: Optional[Union[int, np.int_]] = None,
     ) -> None:
@@ -232,6 +232,10 @@ class ReadRadtrans:
 
         elif self.pressure_grid == "clouds":
             self.rt_object.setup_opa_structure(self.pressure[::24])
+
+        # Set the default of abund_smooth to None
+
+        self.abund_smooth = None
 
     @typechecked
     def get_model(
@@ -569,10 +573,7 @@ class ReadRadtrans:
             # Get smoothing parameter for abundance profiles
 
             if "abund_smooth" in model_param:
-                abund_smooth = model_param["abund_smooth"]
-
-            else:
-                abund_smooth = None
+                self.abund_smooth = model_param["abund_smooth"]
 
             # Create a dictionary with the mass fractions
 
@@ -850,7 +851,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
-                    abund_smooth=abund_smooth,
+                    abund_smooth=self.abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -879,7 +880,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
-                    abund_smooth=abund_smooth,
+                    abund_smooth=self.abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -916,7 +917,7 @@ class ReadRadtrans:
                     model_param["logg"],
                     chemistry=chemistry,
                     knot_press_abund=knot_press_abund,
-                    abund_smooth=abund_smooth,
+                    abund_smooth=self.abund_smooth,
                     pressure_grid=self.pressure_grid,
                     plotting=False,
                     contribution=True,
@@ -939,7 +940,7 @@ class ReadRadtrans:
                 pressure_grid=self.pressure_grid,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
-                abund_smooth=abund_smooth,
+                abund_smooth=self.abund_smooth,
                 contribution=True,
             )
 
@@ -968,7 +969,7 @@ class ReadRadtrans:
                 log_x_abund,
                 chemistry=chemistry,
                 knot_press_abund=knot_press_abund,
-                abund_smooth=abund_smooth,
+                abund_smooth=self.abund_smooth,
                 pressure_grid=self.pressure_grid,
                 contribution=True,
             )
