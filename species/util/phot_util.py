@@ -68,9 +68,9 @@ def multi_photometry(
 
     mean_wavel = {}
 
-    for item in filters:
-        read_filt = read_filter.ReadFilter(item)
-        mean_wavel[item] = read_filt.mean_wavelength
+    for filter_item in filters:
+        read_filt = read_filter.ReadFilter(filter_item)
+        mean_wavel[filter_item] = read_filt.mean_wavelength()
 
     flux = {}
 

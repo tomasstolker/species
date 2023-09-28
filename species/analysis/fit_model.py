@@ -111,8 +111,9 @@ class FitModel:
                  ``bounds={'teff': (1000, 1500.), 'logg': (3.5, 5.)}``.
 
                - The grid boundaries (i.e. the maximum range) are
-                 adopted as priors if a parameter range is set to
-                 ``None`` or if a mandatory parameter is not included
+                 adopted as prior if a parameter range is set to
+                 ``None`` (instead of a tuple with two values),
+                 or if a mandatory parameter is not included
                  in the dictionary of ``bounds``. For example,
                  ``bounds={'teff': (1000., 1500.), 'logg': None}``.
                  The default range for the radius is
@@ -459,7 +460,7 @@ class FitModel:
                 bounds_grid = readmodel.get_bounds()
 
                 for key, value in bounds_grid.items():
-                    if key not in self.bounds:
+                    if key not in self.bounds or self.bounds[key] is None:
                         # Set the parameter boundaries to the grid
                         # boundaries if set to None or not found
                         self.bounds[key] = bounds_grid[key]
@@ -1417,19 +1418,13 @@ class FitModel:
                 instr_check = phot_filter.split(".")[0]
 
                 if phot_filter in phot_scaling:
-                    # Inflate photometry uncertainty for filter
-
-                    # Scale relative to the flux
-                    # phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0] ** 2
+                    # Inflate photometric uncertainty for filter
 
                     # Scale relative to the uncertainty
                     phot_var += phot_scaling[phot_filter] ** 2 * obj_item[1] ** 2
 
                 elif instr_check in phot_scaling:
-                    # Inflate photometry uncertainty for instrument
-
-                    # Scale relative to the flux
-                    # phot_var += phot_scaling[instr_check] ** 2 * obj_item[0] ** 2
+                    # Inflate photometric uncertainty for instrument
 
                     # Scale relative to the uncertainty
                     phot_var += phot_scaling[instr_check] ** 2 * obj_item[1] ** 2
@@ -1447,19 +1442,13 @@ class FitModel:
                     instr_check = phot_filter.split(".")[0]
 
                     if phot_filter in phot_scaling:
-                        # Inflate photometry uncertainty for filter
-
-                        # Scale relative to the flux
-                        # phot_var += phot_scaling[phot_filter] ** 2 * obj_item[0, j] ** 2
+                        # Inflate photometric uncertainty for filter
 
                         # Scale relative to the uncertainty
                         phot_var += phot_scaling[phot_filter] ** 2 * obj_item[1, j] ** 2
 
                     elif instr_check in phot_scaling:
-                        # Inflate photometry uncertainty for instrument
-
-                        # Scale relative to the flux
-                        # phot_var += phot_scaling[instr_check] ** 2 * obj_item[0, j] ** 2
+                        # Inflate photometric uncertainty for instrument
 
                         # Scale relative to the uncertainty
                         phot_var += phot_scaling[instr_check] ** 2 * obj_item[1, j] ** 2

@@ -2,7 +2,10 @@
 Module with utility functions for plotting data.
 """
 
+import json
 import warnings
+
+from pathlib import Path
 
 from string import ascii_lowercase
 from typing import Dict, List, Optional, Tuple
@@ -12,6 +15,7 @@ import numpy as np
 from typeguard import typechecked
 
 from species.core import constants
+from species.read import read_model
 
 
 @typechecked
@@ -873,7 +877,7 @@ def convert_model_name(in_name: str) -> str:
         out_name = "ATMO NEQ strong"
 
     elif in_name == "petrus2023":
-        out_name = "ATMO"
+        out_name = "ATMO (Petrus et al. 2023)"
 
     elif in_name == "bt-cond":
         out_name = "BT-Cond"
@@ -909,7 +913,7 @@ def convert_model_name(in_name: str) -> str:
         out_name = "Exo-REM"
 
     elif in_name == "planck":
-        out_name = "Blackbody radiation"
+        out_name = "Blackbody"
 
     elif in_name == "zhu2015":
         out_name = "Zhu (2015)"
@@ -1006,6 +1010,11 @@ def quantity_unit(
             quantity.append("c_o_ratio")
             unit.append(None)
             label.append("C/O")
+
+        if item == "ad_index":
+            quantity.append("ad_index")
+            unit.append(None)
+            label.append(r"$\gamma_\mathrm{ad}$")
 
         if item == "radius":
             quantity.append("radius")
@@ -1374,6 +1383,19 @@ def create_model_label(
         List with selected indices of the young/low-gravity objects.
     """
 
+    data_file = Path(__file__).parents[1].resolve() / "data/model_data.json"
+
+    with open(data_file, "r", encoding="utf-8") as json_file:
+        model_data = json.load(json_file)
+        model_list = list(model_data.keys())
+
+    if model_name in model_list:
+        read_mod = read_model.ReadModel(model_name)
+        check_param = read_mod.get_parameters()
+
+    else:
+        check_param = None
+
     if leg_param is not None:
         for item in list(model_param.keys()):
             if item not in leg_param:
@@ -1390,6 +1412,18 @@ def create_model_label(
                 )
 
                 del_param.append(item)
+
+        if check_param is not None:
+            for item in leg_param:
+                if item not in check_param and item not in del_param:
+                    warnings.warn(
+                        f"The '{item}' parameter in "
+                        "'leg_param' is not a parameter of "
+                        f"'{model_name}' so it will not be "
+                        "included with the legend."
+                    )
+
+                    del_param.append(item)
 
         new_leg_param = []
         for item in leg_param:
@@ -1424,7 +1458,7 @@ def create_model_label(
         ]:
             value = f"{model_param[item]:.1f}"
 
-        elif item in ["co", "c_o_ratio"]:
+        elif item in ["co", "c_o_ratio", "ad_index"]:
             value = f"{model_param[item]:.2f}"
 
         elif item[:6] == "radius":

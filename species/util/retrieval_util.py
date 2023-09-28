@@ -929,15 +929,6 @@ def calc_spectrum_clear(
 
                 mmw[press_idx] = mean_molecular_weight(abund_dict)
 
-
-
-
-
-
-
-
-
-
     # Extract every three levels when pressure_grid is set to 'smaller'
 
     if pressure_grid == "smaller":

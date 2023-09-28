@@ -85,7 +85,6 @@ from species.util.read_util import (
     powerlaw_spectrum,
     gaussian_spectrum,
     update_objectbox,
-    update_spectra,
 )
 
 

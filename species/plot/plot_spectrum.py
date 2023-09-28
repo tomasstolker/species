@@ -1,9 +1,8 @@
 """
 Module with a function for plotting a spectral energy distribution
-that includes photometric and/or spectral fluxes.
+that includes photometric and/or spectral data and/or models.
 """
 
-import os
 import math
 import warnings
 
@@ -14,9 +13,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from typeguard import typechecked
-from matplotlib.ticker import AutoMinorLocator, ScalarFormatter, MaxNLocator
+from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 
-from species.core import box, constants
+from species.core import box
 from species.read import read_filter
 from species.util import plot_util
 

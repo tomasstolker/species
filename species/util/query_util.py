@@ -173,12 +173,10 @@ def get_parallax(target):
 
     # Query VizieR catalogs
     if parallax is None:
-
         for item in catalogs:
             result = Vizier.query_object(target, catalog=item)
 
             if result.keys():
-
                 if "plx" in result[0].keys():
                     parallax = result[0]["plx"][0]  # (mas)
                     if np.ma.is_masked(parallax):
