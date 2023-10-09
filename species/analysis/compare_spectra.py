@@ -444,7 +444,11 @@ class CompareSpectra:
             else:
                 w_i[spec_item] = np.ones(obj_wavel.shape[0])
 
+        # Open the HDF5 databse
+        species_db = database.Database()
+
         if isinstance(inc_phot, bool):
+            # The argument of inc_phot is a boolean
             if inc_phot:
                 # Select all filters if inc_phot=True
                 species_db = database.Database()
@@ -453,6 +457,10 @@ class CompareSpectra:
 
             else:
                 inc_phot = []
+
+        else:
+            # The argument of inc_phot is a list with filters
+            object_box = species_db.get_object(self.object_name, inc_phot=inc_phot)
 
         if scale_spec is None:
             scale_spec = []
@@ -592,21 +600,26 @@ class CompareSpectra:
 
                                     model_spec[spec_item] = model_flux
 
+                                g_fit = 0.0
+
                                 model_list = []
                                 data_list = []
                                 weights_list = []
+
                                 for spec_item in self.spec_name:
                                     if spec_item not in scale_spec:
                                         model_list.append(model_spec[spec_item])
                                         data_list.append(spec_data[spec_item][0])
                                         weights_list.append(w_i[spec_item])
 
+                                model_phot = {}
+
                                 for phot_item in inc_phot:
                                     syn_phot = photometry.SyntheticPhotometry(phot_item)
-                                    model_phot = syn_phot.spectrum_to_flux(
+                                    model_phot[phot_item] = syn_phot.spectrum_to_flux(
                                         model_box_full.wavelength, model_box_full.flux
-                                    )
-                                    model_list.append(np.array([model_phot[0]]))
+                                    )[0]
+                                    model_list.append(np.array([model_phot[phot_item]]))
 
                                     phot_flux = object_box.flux[phot_item]
                                     phot_data = np.array(
@@ -632,6 +645,7 @@ class CompareSpectra:
                                     * model_list
                                     / data_list[:, 2] ** 2
                                 )
+
                                 c_denom = (
                                     weights_list
                                     * model_list**2
@@ -689,7 +703,18 @@ class CompareSpectra:
                                         spec_idx,
                                     ] = spec_scaling
 
-                                g_fit = 0.0
+                                for phot_item in inc_phot:
+                                    phot_flux = object_box.flux[phot_item]
+
+                                    g_fit += np.nansum(
+                                        w_i[phot_item]
+                                        * (
+                                            phot_flux[0]
+                                            - scaling * model_phot[phot_item]
+                                        )
+                                        ** 2
+                                        / phot_flux[1] ** 2
+                                    )
 
                                 for spec_item in self.spec_name:
                                     if spec_item in scale_spec:
@@ -766,4 +791,5 @@ class CompareSpectra:
             model=model,
             scale_spec=scale_spec,
             extra_scaling=extra_scaling,
+            inc_phot=inc_phot,
         )

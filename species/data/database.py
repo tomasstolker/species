@@ -2567,21 +2567,26 @@ class Database:
         inc_spec: Union[bool, List[str]] = True,
     ) -> box.ObjectBox:
         """
-        Function for extracting the photometric and/or spectroscopic data of an object from the
-        database. The spectroscopic data contains optionally the covariance matrix and its inverse.
+        Function for extracting the photometric and/or spectroscopic
+        data of an object from the database. The spectroscopic data
+        contains optionally the covariance matrix and its inverse.
 
         Parameters
         ----------
         object_name : str
             Object name in the database.
         inc_phot : bool, list(str)
-            Include photometric data. If a boolean, either all (``True``) or none (``False``) of
-            the data are selected. If a list, a subset of filter names (as stored in the database)
-            can be provided.
+            Include photometric data. If a boolean, either all
+            (``True``) or none (``False``) of the data are selected.
+            If a list, a subset of filter names (as stored in the
+            database) can be provided.
         inc_spec : bool, list(str)
-            Include spectroscopic data. If a boolean, either all (``True``) or none (``False``) of
-            the data are selected. If a list, a subset of spectrum names (as stored in the database
-            with :func:`~species.data.database.Database.add_object`) can be provided.
+            Include spectroscopic data. If a boolean, either all
+            (``True``) or none (``False``) of the data are selected.
+            If a list, a subset of spectrum names (as stored in the
+            database with
+            :func:`~species.data.database.Database.add_object`) can
+            be provided.
 
         Returns
         -------
@@ -3064,6 +3069,7 @@ class Database:
         model: str,
         scale_spec: List[str],
         extra_scaling: Optional[np.ndarray],
+        inc_phot: List[str],
     ) -> None:
         """
         Function for adding results obtained with
@@ -3100,6 +3106,9 @@ class Database:
             Array with extra scalings that have been applied to the
             spectra of ``scale_spec``. The argument can be set to
             ``None`` if no extra scalings have been applied.
+        inc_phot : list(str)
+            List with filter names of which photometric data
+            was included with the comparison.
 
         Returns
         -------
@@ -3130,6 +3139,7 @@ class Database:
             dset.attrs["n_spec_name"] = len(spec_name)
             dset.attrs["n_scale_spec"] = len(scale_spec)
             dset.attrs["parallax"] = parallax
+            dset.attrs["n_inc_phot"] = len(inc_phot)
 
             for i, item in enumerate(model_param):
                 dset.attrs[f"parameter{i}"] = item
@@ -3139,6 +3149,9 @@ class Database:
 
             for i, item in enumerate(scale_spec):
                 dset.attrs[f"scale_spec{i}"] = item
+
+            for i, item in enumerate(inc_phot):
+                dset.attrs[f"inc_phot{i}"] = item
 
             h5_file.create_dataset(
                 f"results/comparison/{tag}/flux_scaling", data=flux_scaling

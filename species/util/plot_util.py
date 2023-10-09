@@ -1392,6 +1392,7 @@ def create_model_label(
     if model_name in model_list:
         read_mod = read_model.ReadModel(model_name)
         check_param = read_mod.get_parameters()
+        check_param += ['radius', 'mass', 'luminosity']
 
     else:
         check_param = None

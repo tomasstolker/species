@@ -1057,7 +1057,11 @@ def plot_spectrum(
                                 )
 
                 finite = np.isfinite(residuals.photometry[item][1])
-                res_max = np.max(np.abs(residuals.photometry[item][1][finite]))
+
+                max_tmp = np.max(np.abs(residuals.photometry[item][1][finite]))
+
+                if max_tmp > res_max:
+                    res_max = max_tmp
 
         if residuals.spectrum is not None:
             for key, value in residuals.spectrum.items():

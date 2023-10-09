@@ -963,10 +963,10 @@ def plot_model_spectra(
     flux_offset : float, None
         Offset to be applied such that the spectra do not overlap. No
         offset is applied if the argument is set to ``None``.
-    xlim : tuple(float, float)
-        Limits of the spectral type axis.
-    ylim : tuple(float, float)
-        Limits of the goodness-of-fit axis.
+    xlim : tuple(float, float), None
+        Limits of the wavelength axis.
+    ylim : tuple(float, float), None
+        Limits of the flux axis.
     title : str
         Plot title.
     offset : tuple(float, float)
@@ -1016,10 +1016,15 @@ def plot_model_spectra(
     n_param = dset.attrs["n_param"]
     n_scale_spec = dset.attrs["n_scale_spec"]
     parallax = dset.attrs["parallax"]
+    n_inc_phot = dset.attrs["n_inc_phot"]
 
     spec_name = []
     for i in range(n_spec_name):
         spec_name.append(dset.attrs[f"spec_name{i}"])
+
+    inc_phot = []
+    for i in range(n_inc_phot):
+        inc_phot.append(dset.attrs[f"inc_phot{i}"])
 
     model_param = []
     coord_points = []
@@ -1173,6 +1178,19 @@ def plot_model_spectra(
                     lw=0.5,
                     color="black",
                 )
+
+        if n_inc_phot > 0 and n_spec_name == 0:
+            model_box = model_reader.get_data(
+                model_param=param_select,
+                spec_res=100.,
+            )
+
+            ax.plot(
+                model_box.wavelength,
+                (n_spectra - i - 1) * flux_offset + model_box.flux,
+                color="tomato",
+                lw=0.5,
+            )
 
         for spec_key, spec_item in obj_spec.items():
             if spec_key not in spec_name:

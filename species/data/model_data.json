@@ -138,7 +138,7 @@
         "wavelength range": [0.35, 250.0],
         "resolution": 500,
         "teff range": [400, 2000],
-        "reference": "Charney et al. (2018)",
+        "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
     },
     "exo-rem-highres": {
@@ -148,7 +148,7 @@
         "wavelength range": [0.67, 250.0],
         "resolution": 20000,
         "teff range": [400, 2000],
-        "reference": "Charney et al. (2018)",
+        "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
     },
     "koester-wd": {
