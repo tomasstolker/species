@@ -879,6 +879,9 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "petrus2023":
         out_name = "ATMO (Petrus et al. 2023)"
 
+    elif in_name == "atmo-petrus2023":
+        out_name = "ATMO (Petrus et al. 2023)"
+
     elif in_name == "bt-cond":
         out_name = "BT-Cond"
 
@@ -895,16 +898,22 @@ def convert_model_name(in_name: str) -> str:
         out_name = "BT-NextGen"
 
     elif in_name == "petitcode-cool-clear":
-        out_name = "petitCODE"
+        out_name = "petitCODE clear"
 
     elif in_name == "petitcode-cool-cloudy":
-        out_name = "petitCODE"
+        out_name = "petitCODE cloudy"
 
     elif in_name == "petitcode-hot-clear":
-        out_name = "petitCODE"
+        out_name = "petitCODE clear"
 
     elif in_name == "petitcode-hot-cloudy":
-        out_name = "petitCODE"
+        out_name = "petitCODE cloudy"
+
+    elif in_name == "petitcode-linder2019-clear":
+        out_name = "petitCODE clear (Linder et al. 2019)"
+
+    elif in_name == "petitcode-linder2019-cloudy":
+        out_name = "petitCODE cloudy (Linder et al. 2019)"
 
     elif in_name == "exo-rem":
         out_name = "Exo-REM"

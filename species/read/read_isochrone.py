@@ -133,10 +133,39 @@ class ReadIsochrone:
             "atmo-neq-strong": "atmo-neq-strong",
             "atmo-neq-weak": "atmo-neq-weak",
             "bt-settl": "bt-settl",
+            "linder2019-petitCODE-metal_-0.4": "petitcode-linder2019-clear",
+            "linder2019-petitCODE-metal_0.0": "petitcode-linder2019-clear",
+            "linder2019-petitCODE-metal_0.4": "petitcode-linder2019-clear",
+            "linder2019-petitCODE-metal_0.8": "petitcode-linder2019-clear",
+            "linder2019-petitCODE-metal_1.2": "petitcode-linder2019-clear",
+            "linder2019-petitCODE-metal_-0.4-fsed_1.0": "petitcode-linder2019-cloudy",
+            "linder2019-petitCODE-metal_0.0-fsed_1.0": "petitcode-linder2019-cloudy",
+            "linder2019-petitCODE-metal_0.4-fsed_1.0": "petitcode-linder2019-cloudy",
+            "linder2019-petitCODE-metal_0.8-fsed_1.0": "petitcode-linder2019-cloudy",
+            "linder2019-petitCODE-metal_1.2-fsed_1.0": "petitcode-linder2019-cloudy",
             "saumon2008-nc_solar": "saumon2008-clear",
             "saumon2008-f2_solar": "saumon2008-cloudy",
             "sonora+0.0": "sonora-bobcat",
         }
+
+        # Set attribute with extra parameters
+        # The attribute will be overwritten by any of
+        # the methods that have the extra_param parameter
+
+        self.extra_param = None
+
+        if self.tag.split("-")[0] == "linder2019":
+            self.extra_param = {}
+            tag_split = self.tag.split("_")
+
+            if len(tag_split) == 2:
+                self.extra_param['feh'] = float(tag_split[1])
+
+            elif len(tag_split) == 3:
+                self.extra_param['feh'] = float(tag_split[1][:-5])
+                self.extra_param['fsed'] = float(tag_split[2])
+
+            print(f"Setting 'extra_param' attribute: {self.extra_param}")
 
     @typechecked
     def _read_data(
@@ -384,6 +413,9 @@ class ReadIsochrone:
             are required for the atmospheric model but not for
             the evolutionary model.
         """
+
+        if len(extra_param) == 0 and self.extra_param is not None:
+            extra_param = self.extra_param.copy()
 
         for key, value in param_bounds.items():
             if key not in model_param:

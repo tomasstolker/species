@@ -55,7 +55,7 @@
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
     },
-    "petrus2023": {
+    "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
         "name": "ATMO (Petrus et al. 2023)",
         "file size": "2.1 GB",
@@ -211,6 +211,26 @@
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+    },
+    "petitcode-linder2019-clear": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "petitCODE (Linder et al. 2019)",
+        "file size": "225 MB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [150, 1000],
+        "reference": "Linder et al. (2019)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract"
+    },
+    "petitcode-linder2019-cloudy": {
+        "parameters": ["teff", "logg", "feh", "fsed"],
+        "name": "petitCODE hot cloudy",
+        "file size": "1.4 GB",
+        "wavelength range": [0.1, 250],
+        "resolution": 1000,
+        "teff range": [150, 1000],
+        "reference": "Linder et al. (2019)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract"
     },
     "saumon2008-clear": {
         "parameters": ["teff", "logg"],

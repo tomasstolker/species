@@ -148,7 +148,7 @@ class ReadModel:
                 "If this does not work (e.g. currently without an "
                 "internet connection) then please use the "
                 "'add_model' method of 'Database' to add the "
-                "grid of spectra yourself."
+                "grid of spectra at a later moment."
             )
 
             species_db = database.Database()
