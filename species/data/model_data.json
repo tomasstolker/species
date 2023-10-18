@@ -214,7 +214,7 @@
     },
     "petitcode-linder2019-clear": {
         "parameters": ["teff", "logg", "feh"],
-        "name": "petitCODE (Linder et al. 2019)",
+        "name": "petitCODE clear (Linder et al. 2019)",
         "file size": "225 MB",
         "wavelength range": [0.1, 250],
         "resolution": 1000,
@@ -224,7 +224,7 @@
     },
     "petitcode-linder2019-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
-        "name": "petitCODE hot cloudy",
+        "name": "petitCODE cloudy (Linder et al. 2019)",
         "file size": "1.4 GB",
         "wavelength range": [0.1, 250],
         "resolution": 1000,

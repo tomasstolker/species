@@ -530,6 +530,7 @@ def plot_grid_statistic(
     h5_file = h5py.File(db_path, "r")
 
     dset = h5_file[f"results/comparison/{tag}/goodness_of_fit"]
+    goodness_fit = np.array(dset)
 
     n_param = dset.attrs["n_param"]
     parallax = dset.attrs["parallax"]
@@ -551,8 +552,6 @@ def plot_grid_statistic(
     n_wavel = 0
     for item in read_obj.get_spectrum().values():
         n_wavel += item[0].shape[0]
-
-    goodness_fit = np.array(dset)
 
     model_param = []
     coord_points = []
@@ -702,12 +701,17 @@ def plot_grid_statistic(
                 goodness_fit = np.nanmin(goodness_fit, axis=tuple(ax_list))
 
                 extra_map = np.zeros(goodness_fit.shape[:2])
+
                 for i in range(goodness_fit.shape[0]):
                     for j in range(goodness_fit.shape[1]):
                         # Get the indices in the goodness_full array
                         # for the values from the collapsed (2D)
                         # goodness_fit array
                         min_idx = np.argwhere(goodness_fit[i, j] == goodness_full)
+
+                        if len(min_idx) == 0:
+                            extra_map[i, j] = np.nan
+                            continue
 
                         if len(min_idx) > 1:
                             warnings.warn(

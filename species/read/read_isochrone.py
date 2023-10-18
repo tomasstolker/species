@@ -6,7 +6,7 @@ import configparser
 import os
 import warnings
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -16,7 +16,7 @@ from typeguard import typechecked
 
 from species.core import box
 from species.read import read_model
-from species.util import plot_util
+from species.util import phot_util, plot_util
 
 
 class ReadIsochrone:
@@ -36,7 +36,10 @@ class ReadIsochrone:
 
     @typechecked
     def __init__(
-        self, tag: Optional[str] = None, create_regular_grid: bool = False, extrapolate: bool = False
+        self,
+        tag: Optional[str] = None,
+        create_regular_grid: bool = False,
+        extrapolate: bool = False,
     ) -> None:
         """
         Parameters
@@ -106,11 +109,13 @@ class ReadIsochrone:
             with h5py.File(self.database, "r") as h5_file:
                 tag_list = list(h5_file["isochrones"])
 
-            self.tag = input("Please select one of the following "
-                             "isochrone tags that are stored in "
-                             "the database or use 'add_isochrones' "
-                             "to add another model to the database:"
-                             f"\n{tag_list}:\n")
+            self.tag = input(
+                "Please select one of the following "
+                "isochrone tags that are stored in "
+                "the database or use 'add_isochrones' "
+                "to add another model to the database:"
+                f"\n{tag_list}:\n"
+            )
 
         with h5py.File(self.database, "r") as h5_file:
             if f"isochrones/{self.tag}" not in h5_file:
@@ -122,7 +127,15 @@ class ReadIsochrone:
                     f"tags are found in the database: {tag_list}"
                 )
 
-        self.mag_models = ["ames", "atmo", "baraffe", "bt-settl", "linder2019", "manual", "nextgen"]
+        self.mag_models = [
+            "ames",
+            "atmo",
+            "baraffe",
+            "bt-settl",
+            "linder2019",
+            "manual",
+            "nextgen",
+        ]
 
         # Connect isochrone model with atmosphere model
         # key = isochrone model, value = atmosphere model
@@ -159,11 +172,11 @@ class ReadIsochrone:
             tag_split = self.tag.split("_")
 
             if len(tag_split) == 2:
-                self.extra_param['feh'] = float(tag_split[1])
+                self.extra_param["feh"] = float(tag_split[1])
 
             elif len(tag_split) == 3:
-                self.extra_param['feh'] = float(tag_split[1][:-5])
-                self.extra_param['fsed'] = float(tag_split[2])
+                self.extra_param["feh"] = float(tag_split[1][:-5])
+                self.extra_param["fsed"] = float(tag_split[2])
 
             print(f"Setting 'extra_param' attribute: {self.extra_param}")
 
@@ -1547,3 +1560,195 @@ class ReadIsochrone:
         )
 
         return model_box
+
+    @typechecked
+    def contrast_to_mass(
+        self,
+        age: float,
+        distance: float,
+        filter_name: str,
+        star_mag: float,
+        contrast: Union[List[float], np.ndarray],
+        use_mag: bool = True,
+        atmospheric_model: Optional[str] = None,
+        extra_param: Optional[Dict[str, float]] = None,
+    ) -> np.ndarray:
+        """
+        Function for converting contrast values into masses. This
+        can be used to convert a list/array with detection
+        limits of companions into mass limits. Either
+        one of the available filter names from the isochrone grid
+        can be selected (i.e. the filters returned by
+        :func:`~species.read.read_isochrone.ReadIsochrone.get_filters`),
+        or any of the filters from the `SVO Filter Profile
+        Service <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_. For
+        the first case, the magnitudes will be directly interpolated
+        from the grid of evolution data. For the second case, the
+        associated model spectra will be used for calculating
+        synthetic photometry for the isochrone age and selected
+        filter. These will then be interpolated to the requested
+        contrast values. The atmospheric model that is associated
+        with the evolutionary model is by default automatically
+        selected and added to the database if needed.
+
+        Parameters
+        ----------
+        age : float
+            Age (Myr) at which the bulk parameters will be
+            interpolated from the grid with evolutionary data.
+        distance : float
+            Distance (pc) that is used for scaling the fluxes
+            from the atmosphere to the observer.
+        filter_name : str
+            Filter name for which the magnitudes will be interpolated,
+            either directly from the isochrone grid or by calculating
+            synthetic photometry from the associated model spectra.
+            The first case only works for the filters that are
+            returned by the
+            :func:`~species.read.read_isochrone.ReadIsochrone.get_filters`
+            method of :class:`~species.read.read_isochrone.ReadIsochrone`
+            because these will have pre-calculated magnitudes. The
+            second case will work for any of the filter names from the
+            `SVO Filter Profile Service
+            <http://svo2.cab.inta-csic.es/svo/theory/fps/>`_. This will
+            require more disk space and a bit more computation time.
+        star_mag : float
+            Stellar apparent magnitude for the filter that is set
+            as argument of `filter_name`.
+        contrast : list(float), np.ndarray
+            List or array with the contrast values between a companion
+            and the star. The magnitude of the star should be provided
+            as argument of ``star_mag``. The contrast values will be
+            converted into masses, while taking into account the
+            stellar magnitude. The values should be provided
+            either as ratio (e.g. ``[1e-2, 1e-3, 1e-4]``) or as
+            magnitudes (e.g. `[5.0, 7.5, 10.0]`). For ratios,
+            it is important to set ``use_mag=False``.
+        use_mag : bool
+            Set to ``True`` if the values of ``contrast`` are given as
+            magnitudes. Set to ``False`` if the values of ``contrast``
+            are given as ratios. The default is set to ``True``.
+        atmospheric_model : str, None
+            Atmospheric model used to compute the synthetic photometry
+            in case the ``filter_name`` is set to a value from the
+            SVO Filter Profile Service. The argument can be set to
+            ``None`` such that the correct atmospheric model is
+            automatically selected that is associated with the
+            evolutionary model. If the user nonetheless wants to test
+            a non-self-consistent approach by using a different
+            atmospheric model, then the argument can be set to any of
+            the models that can be added with
+            :func:`~species.data.database.Database.add_model`.
+        extra_param : dict, None
+            Optional dictionary with additional parameters that are
+            required for the atmospheric model but are not part of
+            the evolutionary model grid, for example because they
+            were implicitly set by the evolution model (e.g.
+            solar metallicity). In case additional parameters are
+            required for the atmospheric model but they are not
+            provided in ``extra_param`` then a manual input will
+            be requested when running the ``get_photometry`` method.
+            Typically the ``extra_param`` parameter is not needed so
+            the argument can be set to ``None``. It will only be
+            required if a non-self-consistent approach will be tested,
+            that is, the calculation of synthetic photometry from an
+            atmospheric model that is not associated with the
+            evolutionary model.
+
+        Returns
+        -------
+        np.ndarray
+            Array with the masses (in :math:`M_\\mathrm{J}`) for the
+            requested contrast values.
+        """
+
+        if isinstance(contrast, list):
+            contrast = np.array(contrast)
+
+        if use_mag and np.all(contrast < 1.0):
+            warnings.warn(
+                "All values in the array of 'contrast' are "
+                "smaller than 1.0 but the argument of "
+                "'use_mag' is set to True. Please set the "
+                "argument of 'magnitude' to False in case "
+                "the values of 'contrast' are given as "
+                "ratios instead of magnitudes."
+            )
+
+        if not use_mag:
+            # Convert contrast from ratio to magnitude
+            contrast = -2.5 * np.log10(contrast)
+
+        if extra_param is None:
+            extra_param = {}
+
+        atmospheric_model = self._check_model(atmospheric_model)
+
+        app_mag = star_mag + contrast
+        abs_mag = phot_util.apparent_to_absolute((app_mag, None), (distance, None))[0]
+
+        filter_list = self.get_filters()
+
+        if filter_name in filter_list:
+            print(
+                f"The '{filter_name}' filter is found in the list "
+                "of available filters from the isochrone data of "
+                f"'{self.tag}'.\nThe requested contrast values "
+                "will be directly interpolated from the grid with "
+                "pre-calculated magnitudes."
+            )
+
+            iso_box = self.get_isochrone(age=age, masses=None, filter_mag=filter_name)
+
+            mass_interp = interpolate.interp1d(
+                iso_box.magnitude, iso_box.mass, bounds_error=False, fill_value=np.nan
+            )
+
+            mass_array = mass_interp(abs_mag)
+
+        else:
+            print(
+                f"The '{filter_name}' filter is not found in the "
+                "list of available filters from the isochrone "
+                f"data of '{self.tag}'.\nIt will be tried to "
+                "download the filter profile (if needed) and to "
+                "use the associated atmospheric model spectra "
+                "for calculating synthetic photometry."
+            )
+
+            model_reader = read_model.ReadModel(
+                model=atmospheric_model, filter_name=filter_name
+            )
+
+            iso_box = self.get_isochrone(age=age, masses=None, filter_mag=None)
+
+            model_abs_mag = np.zeros(iso_box.mass.size)
+
+            for i in range(iso_box.mass.size):
+                model_param = {
+                    "teff": iso_box.teff[i],
+                    "logg": iso_box.logg[i],
+                    "radius": iso_box.radius[i],
+                    "distance": distance,
+                }
+
+                model_param, _ = self._update_param(
+                    atmospheric_model,
+                    model_param,
+                    model_reader.get_bounds(),
+                    extra_param,
+                )
+
+                # The get_magnitude method returns the
+                # apparent magnitude and absolute magnitude
+                _, model_abs_mag[i] = model_reader.get_magnitude(
+                    model_param=model_param, return_box=False
+                )
+
+            mass_interp = interpolate.interp1d(
+                model_abs_mag, iso_box.mass, bounds_error=False, fill_value=np.nan
+            )
+
+            mass_array = mass_interp(abs_mag)
+
+        return mass_array

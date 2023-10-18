@@ -28,7 +28,7 @@ The following data and models are currently supported:
 - `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov2/index.php?models=drift>`_
 - `Exo-REM <https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract>`_
 - `Morley et al. (2012) T/Y dwarf spectra <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_
-- `petitCODE <http://www.mpia.de/~molliere/#petitcode>`_
+- `petitCODE <https://www2.mpia-hd.mpg.de/~molliere/grids/>`_
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
 - `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_

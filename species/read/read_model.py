@@ -1875,7 +1875,7 @@ class ReadModel:
         Function for calculating the bolometric flux by integrating
         a model spectrum at the requested parameters. In principle,
         the calculated luminosity should be approximately the same
-        as the value that can be calculated directly  from the
+        as the value that can be calculated directly from the
         :math:`T_\\mathrm{eff}` and radius parameters, unless the
         atmospheric model had not properly converged.
 
