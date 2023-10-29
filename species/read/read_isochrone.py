@@ -1622,7 +1622,7 @@ class ReadIsochrone:
             converted into masses, while taking into account the
             stellar magnitude. The values should be provided
             either as ratio (e.g. ``[1e-2, 1e-3, 1e-4]``) or as
-            magnitudes (e.g. `[5.0, 7.5, 10.0]`). For ratios,
+            magnitudes (e.g. ``[5.0, 7.5, 10.0]``). For ratios,
             it is important to set ``use_mag=False``.
         use_mag : bool
             Set to ``True`` if the values of ``contrast`` are given as

@@ -38,12 +38,12 @@ class SpeciesInit:
         config_file = os.path.join(working_folder, "species_config.ini")
 
         try:
-            contents = urllib.request.urlopen(
-                "https://pypi.org/pypi/species/json", timeout=1.0
-            ).read()
+            pypi_url = "https://pypi.org/pypi/species/json"
 
-            data = json.loads(contents)
-            latest_version = data["info"]["version"]
+            with urllib.request.urlopen(pypi_url, timeout=1.0) as open_url:
+                url_content = open_url.read()
+                url_data = json.loads(url_content)
+                latest_version = url_data["info"]["version"]
 
         except (urllib.error.URLError, socket.timeout):
             latest_version = None

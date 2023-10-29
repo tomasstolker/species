@@ -16,7 +16,7 @@ Please cite `Stolker et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A.
 License
 -------
 
-*species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/pycrires/blob/main/LICENSE>`_ for the terms and conditions.
+*species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/species/blob/main/LICENSE>`_ for the terms and conditions.
 
 Logo
 ----

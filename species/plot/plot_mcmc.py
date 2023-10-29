@@ -856,7 +856,7 @@ def plot_mag_posterior(
     tag: str,
     filter_name: str,
     burnin: Optional[int] = None,
-    xlim: Tuple[float, float] = None,
+    xlim: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
 ) -> Tuple[np.ndarray, mpl.figure.Figure]:
     """

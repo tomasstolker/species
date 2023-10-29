@@ -63,7 +63,6 @@ html_theme_options = {
     'repository_url': 'https://github.com/tomasstolker/species',
     'repository_branch': 'main',
     'launch_buttons': {
-        'binderhub_url': 'https://mybinder.org',
         'notebook_interface': 'jupyterlab',
     },
     'use_edit_page_button': True,
