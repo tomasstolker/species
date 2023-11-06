@@ -14,8 +14,7 @@ import numpy as np
 from typeguard import typechecked
 from scipy import interpolate
 
-from species.data import database
-from species.read import read_calibration
+from species.data.vega import add_vega
 
 
 class ReadFilter:
@@ -53,7 +52,9 @@ class ReadFilter:
 
         if "filters" not in h5_file or self.filter_name not in h5_file["filters"]:
             h5_file.close()
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
             species_db.add_filter(self.filter_name)
 
         else:
@@ -153,24 +154,27 @@ class ReadFilter:
             Effective wavelength (:math:`\\mu\\mathrm{m}`).
         """
 
-        data = self.get_filter()
+        filter_profile = self.get_filter()
 
-        h5_file = h5py.File(self.database, "r")
+        with h5py.File(self.database, "a") as h5_file:
+            if "spectra/calibration/vega" not in h5_file:
+                add_vega(self.data_folder, h5_file)
 
-        if "spectra/calibration/vega" not in h5_file:
-            h5_file.close()
-            species_db = database.Database()
-            species_db.add_spectra("vega")
+            vega_spec = np.array(h5_file["spectra/calibration/vega"])
 
-        else:
-            h5_file.close()
+        flux_interp = interpolate.interp1d(
+            vega_spec[0,],
+            vega_spec[1,],
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
 
-        read_calib = read_calibration.ReadCalibration("vega")
-        calib_box = read_calib.resample_spectrum(data[:, 0])
+        flux_filter = flux_interp(filter_profile[:, 0])
 
         return np.trapz(
-            data[:, 0] * data[:, 1] * calib_box.flux, x=data[:, 0]
-        ) / np.trapz(data[:, 1] * calib_box.flux, x=data[:, 0])
+            filter_profile[:, 0] * filter_profile[:, 1] * flux_filter,
+            x=filter_profile[:, 0],
+        ) / np.trapz(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
 
     @typechecked
     def filter_fwhm(self) -> float:

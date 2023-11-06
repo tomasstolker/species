@@ -16,7 +16,8 @@ import spectres
 
 from typeguard import typechecked
 
-from species.util import data_util, read_util
+from species.util.data_util import add_missing, extract_tarfile, sort_data, write_data
+from species.util.spec_util import create_wavelengths
 
 
 @typechecked
@@ -24,9 +25,9 @@ def add_model_grid(
     model_name: str,
     input_path: str,
     database: h5py._hl.files.File,
-    wavel_range: Optional[Tuple[float, float]],
-    teff_range: Optional[Tuple[float, float]],
-    spec_res: Optional[float],
+    wavel_range: Optional[Tuple[float, float]] = None,
+    teff_range: Optional[Tuple[float, float]] = None,
+    spec_res: Optional[float] = None,
 ) -> None:
     """
     Function for adding a grid of model spectra to the database.
@@ -124,11 +125,13 @@ def add_model_grid(
     url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_name}.tgz"
 
     if not os.path.isfile(data_file):
-        pooch.retrieve(url=url,
-                       known_hash=None,
-                       fname=input_file,
-                       path=input_path,
-                       progressbar=True)
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
 
     print(
         f"Unpacking {model_info['name']} model "
@@ -136,7 +139,7 @@ def add_model_grid(
         end="",
         flush=True,
     )
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     if "information" in model_info:
@@ -186,7 +189,7 @@ def add_model_grid(
     flux = []
 
     if wavel_range is not None and spec_res is not None:
-        wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+        wavelength = create_wavelengths(wavel_range, spec_res)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
         print(f"Spectral resolution = {spec_res}")
 
@@ -314,7 +317,7 @@ def add_model_grid(
     if ad_index is not None:
         ad_index = np.asarray(ad_index)
 
-    data_sorted = data_util.sort_data(
+    data_sorted = sort_data(
         np.asarray(teff),
         logg,
         feh,
@@ -326,6 +329,6 @@ def add_model_grid(
         np.asarray(flux),
     )
 
-    data_util.write_data(model_name, model_info["parameters"], database, data_sorted)
+    write_data(model_name, model_info["parameters"], database, data_sorted)
 
-    data_util.add_missing(model_name, model_info["parameters"], database)
+    add_missing(model_name, model_info["parameters"], database)

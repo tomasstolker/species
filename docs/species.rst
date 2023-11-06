@@ -9,6 +9,7 @@ Subpackages
     species.analysis
     species.core
     species.data
+    species.phot
     species.plot
     species.read
     species.util

@@ -1,7 +1,9 @@
 """
-Module with functionalities for photometric and spectroscopic calibration. The fitting routine
-can be used to fit photometric data with a calibration spectrum (e.g. extracted with
-:func:`~species.read.read_model.ReadModel.get_model`) by simply fitting a scaling parameter.
+Module with functionalities for photometric and spectroscopic
+calibration. The fitting routine  be used to fit photometric
+data with a calibration spectrum (e.g. extracted with
+:func:`~species.read.read_model.ReadModel.get_model`) by
+simply fitting a scaling parameter.
 """
 
 import math
@@ -15,9 +17,9 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.data import database
-from species.read import read_calibration, read_object
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_calibration import ReadCalibration
+from species.read.read_object import ReadObject
 
 
 @typechecked
@@ -28,7 +30,7 @@ def lnprob(
     objphot: List[np.ndarray],
     specphot: Union[
         List[float],
-        List[Tuple[photometry.SyntheticPhotometry, Tuple[np.float64, np.float64]]],
+        List[Tuple[SyntheticPhotometry, Tuple[np.float64, np.float64]]],
     ],
 ) -> float:
     """
@@ -44,9 +46,9 @@ def lnprob(
         Parameter names.
     objphot : list(tuple(float, float))
         Photometry of the object.
-    specphot : list(float), photometry.SyntheticPhotometry
-        Synthetic photometry of the calibration spectrum for the same filters as the photometry
-        of the object.
+    specphot : list(float), SyntheticPhotometry
+        Synthetic photometry of the calibration spectrum for the
+        same filters as the photometry of the object.
 
     Returns
     -------
@@ -57,7 +59,6 @@ def lnprob(
     ln_prob = 0.0
 
     for i, item in enumerate(modelpar):
-
         if bounds[item][0] <= param[i] <= bounds[item][1]:
             ln_prob += 0.0
 
@@ -66,7 +67,6 @@ def lnprob(
             break
 
     if not math.isinf(ln_prob):
-
         for i, obj_item in enumerate(objphot):
             if obj_item.ndim == 1:
                 ln_prob += (
@@ -76,7 +76,6 @@ def lnprob(
                 )
 
             else:
-
                 for j in range(obj_item.shape[1]):
                     ln_prob += (
                         -0.5
@@ -106,13 +105,16 @@ class FitSpectrum:
         object_name : str
             Object name in the database.
         filters : list(str)
-            Filter names for which the photometry is selected. All available photometry of the
-            object is selected if set to ``None``.
+            Filter names for which the photometry is selected. All
+            available photometry of the object is selected if the
+            argument is set to ``None``.
         spectrum : str
-            Calibration spectrum as labelled in the database. The calibration spectrum can be
-            stored in the database with :func:`~species.data.database.Database.add_calibration`.
+            Calibration spectrum as labelled in the database. The
+            calibration spectrum can be stored in the database with
+            :func:`~species.data.database.Database.add_calibration`.
         bounds : dict
-            Boundaries of the scaling parameter, as ``{'scaling':(min, max)}``.
+            Boundaries of the scaling parameter, as
+            ``{'scaling':(min, max)}``.
 
         Returns
         -------
@@ -120,7 +122,7 @@ class FitSpectrum:
             None
         """
 
-        self.object = read_object.ReadObject(object_name)
+        self.object = ReadObject(object_name)
 
         self.spectrum = spectrum
         self.bounds = bounds
@@ -129,7 +131,9 @@ class FitSpectrum:
         self.specphot = []
 
         if filters is None:
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
 
             objectbox = species_db.get_object(
                 object_name, inc_phot=True, inc_spec=False
@@ -137,10 +141,10 @@ class FitSpectrum:
             filters = objectbox.filters
 
         for item in filters:
-            readcalib = read_calibration.ReadCalibration(self.spectrum, item)
+            readcalib = ReadCalibration(self.spectrum, item)
             calibspec = readcalib.get_spectrum()
 
-            synphot = photometry.SyntheticPhotometry(item)
+            synphot = SyntheticPhotometry(item)
             spec_phot = synphot.spectrum_to_flux(calibspec.wavelength, calibspec.flux)
             self.specphot.append(spec_phot[0])
 
@@ -217,7 +221,9 @@ class FitSpectrum:
 
         # Add samples to the database
 
-        species_db = database.Database()
+        from species.data.database import Database
+
+        species_db = Database()
 
         species_db.add_samples(
             sampler="emcee",

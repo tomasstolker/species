@@ -17,8 +17,23 @@ from matplotlib.ticker import ScalarFormatter
 from scipy.interpolate import RegularGridInterpolator
 
 from species.core import constants
-from species.data import database
-from species.util import plot_util, dust_util, read_util, retrieval_util
+from species.util.convert_util import logg_to_mass
+from species.util.plot_util import update_labels
+from species.util.dust_util import (
+    check_dust_database,
+    interp_lognorm,
+    interp_powerlaw,
+    ism_extinction,
+    log_normal_distribution,
+    power_law_distribution,
+)
+from species.util.retrieval_util import (
+    atomic_masses,
+    calc_metal_ratio,
+    get_line_species,
+    mass_fractions,
+    mean_molecular_weight,
+)
 
 
 @typechecked
@@ -60,11 +75,13 @@ def plot_walkers(
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
 
     samples = box.samples
-    labels = plot_util.update_labels(box.parameters)
+    labels = update_labels(box.parameters)
 
     if samples.ndim == 2:
         raise ValueError(
@@ -232,7 +249,7 @@ def plot_posterior(
     vmr : bool
         Plot the volume mixing ratios (i.e. number fractions)
         instead of the mass fractions of the retrieved species with
-        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        :class:`~species.fit.retrieval.AtmosphericRetrieval`.
     inc_luminosity : bool
         Include the log10 of the luminosity in the posterior plot
         as calculated from the effective temperature and radius.
@@ -246,13 +263,13 @@ def plot_posterior(
     inc_pt_param : bool
         Include the parameters of the pressure-temperature profile.
         Only used if the ``tag`` contains samples obtained with
-        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        :class:`~species.fit.retrieval.AtmosphericRetrieval`.
     inc_loglike : bool
         Include the log10 of the likelihood as additional
         parameter in the corner plot.
     inc_abund : bool
         Include the abundances when retrieving free abundances with
-        :class:`~species.analysis.retrieval.AtmosphericRetrieval`.
+        :class:`~species.fit.retrieval.AtmosphericRetrieval`.
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
@@ -279,7 +296,9 @@ def plot_posterior(
     if burnin is None:
         burnin = 0
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
 
     box = species_db.get_samples(tag, burnin=burnin)
     samples = box.samples
@@ -364,7 +383,7 @@ def plot_posterior(
                     c_h_ratio[i],
                     o_h_ratio[i],
                     c_o_ratio[i],
-                ) = retrieval_util.calc_metal_ratio(
+                ) = calc_metal_ratio(
                     abund_dict,
                     line_species,
                 )
@@ -377,10 +396,10 @@ def plot_posterior(
         print("Changing mass fractions to number fractions...", end="", flush=True)
 
         # Get all available line species
-        all_line_species = retrieval_util.get_line_species()
+        all_line_species = get_line_species()
 
         # Get the atomic and molecular masses
-        masses = retrieval_util.atomic_masses()
+        masses = atomic_masses()
 
         # Create array for the updated samples
         updated_samples = np.zeros(samples.shape)
@@ -398,10 +417,10 @@ def plot_posterior(
                     log_x_abund[param_item] = samples_item[param_index]
 
             # Create a dictionary with all mass fractions, including H2 and He
-            x_abund = retrieval_util.mass_fractions(log_x_abund, line_species)
+            x_abund = mass_fractions(log_x_abund, line_species)
 
             # Calculate the mean molecular weight from the input mass fractions
-            mmw = retrieval_util.mean_molecular_weight(x_abund)
+            mmw = mean_molecular_weight(x_abund)
 
             for param_item in box.parameters:
                 if param_item in all_line_species:
@@ -588,7 +607,7 @@ def plot_posterior(
             logg_index = np.argwhere(np.array(box.parameters) == "logg")[0]
             radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
 
-            mass_samples = read_util.get_mass(
+            mass_samples = logg_to_mass(
                 samples[..., logg_index], samples[..., radius_index]
             )
 
@@ -607,7 +626,7 @@ def plot_posterior(
             logg_index = np.argwhere(np.array(box.parameters) == "logg")[0]
             radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
 
-            mass_samples = read_util.get_mass(
+            mass_samples = logg_to_mass(
                 samples[..., logg_index], samples[..., radius_index]
             )
 
@@ -692,7 +711,7 @@ def plot_posterior(
 
     # Update axes labels
 
-    labels = plot_util.update_labels(box.parameters, object_type=object_type)
+    labels = update_labels(box.parameters, object_type=object_type)
 
     # Check if parameter values were fixed
 
@@ -891,7 +910,9 @@ def plot_mag_posterior(
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
 
     samples = species_db.get_mcmc_photometry(tag, filter_name, burnin)
 
@@ -978,7 +999,7 @@ def plot_size_distributions(
     burnin : int, None
         Number of burnin steps to exclude. All samples are used if the
         argument is set to ``None``. Only required after running MCMC
-        with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+        with :func:`~species.fit.fit_model.FitModel.run_mcmc`.
     random : int, None
         Number of randomly selected samples. All samples are used
         if the argument set to ``None``.
@@ -1007,7 +1028,9 @@ def plot_size_distributions(
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
 
     if "lognorm_radius" not in box.parameters and "powerlaw_max" not in box.parameters:
@@ -1105,7 +1128,7 @@ def plot_size_distributions(
 
     for i in range(samples.shape[0]):
         if "lognorm_radius" in box.parameters:
-            dn_grains, r_width, radii = dust_util.log_normal_distribution(
+            dn_grains, r_width, radii = log_normal_distribution(
                 10.0 ** log_r_g[i], sigma_g[i], 1000
             )
 
@@ -1117,7 +1140,7 @@ def plot_size_distributions(
             radii = radii[indices]
 
         elif "powerlaw_max" in box.parameters:
-            dn_grains, r_width, radii = dust_util.power_law_distribution(
+            dn_grains, r_width, radii = power_law_distribution(
                 exponent[i], 1e-3, 10.0 ** r_max[i], 1000
             )
 
@@ -1157,7 +1180,7 @@ def plot_extinction(
     burnin : int, None
         Number of burnin steps to exclude. All samples are used if the
         argument is set to ``None``. Only required after running MCMC
-        with :func:`~species.analysis.fit_model.FitModel.run_mcmc`.
+        with :func:`~species.fit.fit_model.FitModel.run_mcmc`.
     random : int, None
         Number of randomly selected samples. All samples are used if
         the argument is set to ``None``.
@@ -1194,7 +1217,9 @@ def plot_extinction(
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
 
     samples = box.samples
@@ -1278,7 +1303,7 @@ def plot_extinction(
         and "lognorm_sigma" in box.parameters
         and "lognorm_ext" in box.parameters
     ):
-        cross_optical, dust_radius, dust_sigma = dust_util.interp_lognorm([], [])
+        cross_optical, dust_radius, dust_sigma = interp_lognorm([], [])
 
         log_r_index = box.parameters.index("lognorm_radius")
         sigma_index = box.parameters.index("lognorm_sigma")
@@ -1288,7 +1313,7 @@ def plot_extinction(
         sigma_g = samples[:, sigma_index]
         dust_ext = samples[:, ext_index]
 
-        database_path = dust_util.check_dust_database()
+        database_path = check_dust_database()
 
         with h5py.File(database_path, "r") as h5_file:
             cross_section = np.asarray(
@@ -1323,7 +1348,7 @@ def plot_extinction(
         and "powerlaw_exp" in box.parameters
         and "powerlaw_ext" in box.parameters
     ):
-        cross_optical, dust_max, dust_exp = dust_util.interp_powerlaw([], [])
+        cross_optical, dust_max, dust_exp = interp_powerlaw([], [])
 
         r_max_index = box.parameters.index("powerlaw_max")
         exp_index = box.parameters.index("powerlaw_exp")
@@ -1333,7 +1358,7 @@ def plot_extinction(
         exponent = samples[:, exp_index]
         dust_ext = samples[:, ext_index]
 
-        database_path = dust_util.check_dust_database()
+        database_path = check_dust_database()
 
         with h5py.File(database_path, "r") as h5_file:
             cross_section = np.asarray(
@@ -1376,7 +1401,7 @@ def plot_extinction(
             ism_red = np.full(samples.shape[0], 3.1)
 
         for i in range(samples.shape[0]):
-            sample_ext = dust_util.ism_extinction(ism_ext[i], ism_red[i], sample_wavel)
+            sample_ext = ism_extinction(ism_ext[i], ism_red[i], sample_wavel)
 
             ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 

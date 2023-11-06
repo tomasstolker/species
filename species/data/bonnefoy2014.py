@@ -15,7 +15,7 @@ import numpy as np
 from astropy.io import fits
 from typeguard import typechecked
 
-from species.util import data_util
+from species.util.data_util import extract_tarfile
 
 
 @typechecked
@@ -53,7 +53,7 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
         shutil.rmtree(data_folder)
 
     print(f"Unpacking {print_text} (2.3 MB)...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     spec_dict = {}

@@ -77,8 +77,10 @@ def companion_spectra(
             if verbose:
                 print(" [DONE]")
 
-                print(f"Please cite {value[3]} when making "
-                      "use of this spectrum in a publication")
+                print(
+                    f"Please cite {value[3]} when making "
+                    "use of this spectrum in a publication"
+                )
 
     else:
         spec_dict = None

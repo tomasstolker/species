@@ -12,7 +12,7 @@ import pooch
 
 from astropy.io import fits
 
-from species.util import data_util
+from species.util.data_util import update_sptype
 
 
 def add_vlm_plx(input_path, database):
@@ -41,11 +41,13 @@ def add_vlm_plx(input_path, database):
     )
 
     if not os.path.isfile(data_file):
-        pooch.retrieve(url=url,
-                       known_hash="d31bb3162d7de890c09ebf9f0497d51159889b5f5e7c4da1ddf01f24d0c2b36f",
-                       fname="vlm-plx-all.fits",
-                       path=input_path,
-                       progressbar=True)
+        pooch.retrieve(
+            url=url,
+            known_hash="d31bb3162d7de890c09ebf9f0497d51159889b5f5e7c4da1ddf01f24d0c2b36f",
+            fname="vlm-plx-all.fits",
+            path=input_path,
+            progressbar=True,
+        )
 
     print("Adding Database of Ultracool Parallaxes...", end="", flush=True)
 
@@ -73,7 +75,7 @@ def add_vlm_plx(input_path, database):
     flag = phot_data["FLAG"]
     flag = np.core.defchararray.strip(flag)
 
-    sptype = data_util.update_sptype(sptype)
+    sptype = update_sptype(sptype)
 
     dtype = h5py.special_dtype(vlen=str)
 

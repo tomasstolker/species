@@ -4,6 +4,14 @@ species.util package
 Submodules
 ----------
 
+species.util.convert\_util module
+---------------------------------
+
+.. automodule:: species.util.convert_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.util.data\_util module
 ------------------------------
 
@@ -16,6 +24,14 @@ species.util.dust\_util module
 ------------------------------
 
 .. automodule:: species.util.dust_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.util.model\_util module
+-------------------------------
+
+.. automodule:: species.util.model_util
    :members:
    :undoc-members:
    :show-inheritance:
@@ -44,6 +60,14 @@ species.util.query\_util module
    :undoc-members:
    :show-inheritance:
 
+species.util.radtrans\_util module
+----------------------------------
+
+.. automodule:: species.util.radtrans_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.util.read\_util module
 ------------------------------
 
@@ -56,6 +80,14 @@ species.util.retrieval\_util module
 -----------------------------------
 
 .. automodule:: species.util.retrieval_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.util.spec\_util module
+------------------------------
+
+.. automodule:: species.util.spec_util
    :members:
    :undoc-members:
    :show-inheritance:

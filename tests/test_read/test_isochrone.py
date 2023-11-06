@@ -5,7 +5,9 @@ import urllib.request
 import pytest
 import numpy as np
 
-import species
+from species import SpeciesInit
+from species.data.database import Database
+from species.read.read_isochrone import ReadIsochrone
 from species.util import test_util
 
 
@@ -21,19 +23,19 @@ class TestIsochrone:
 
     def test_species_init(self):
         test_util.create_config("./")
-        species.SpeciesInit()
+        SpeciesInit()
 
     def test_read_isochrone(self):
-        database = species.Database()
+        database = Database()
         database.add_isochrones("ames")
 
         database.add_model("ames-cond", teff_range=(2000.0, 2500.0))
 
-        read_isochrone = species.ReadIsochrone("ames-cond")
+        read_isochrone = ReadIsochrone("ames-cond")
         assert read_isochrone.tag == "ames-cond"
 
     def test_get_isochrone(self):
-        read_isochrone = species.ReadIsochrone("ames-cond")
+        read_isochrone = ReadIsochrone("ames-cond")
 
         isochrone_box = read_isochrone.get_isochrone(
             age=100.0,
@@ -70,7 +72,7 @@ class TestIsochrone:
         )
 
     def test_get_color_magnitude(self):
-        read_isochrone = species.ReadIsochrone("ames-cond")
+        read_isochrone = ReadIsochrone("ames-cond")
 
         colormag_box = read_isochrone.get_color_magnitude(
             age=100.0,
@@ -96,7 +98,7 @@ class TestIsochrone:
         )
 
     def test_get_color_color(self):
-        read_isochrone = species.ReadIsochrone("ames-cond")
+        read_isochrone = ReadIsochrone("ames-cond")
 
         colorcolor_box = read_isochrone.get_color_color(
             age=100.0,

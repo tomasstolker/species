@@ -31,9 +31,9 @@ from specutils.fitting import fit_generic_continuum
 from typeguard import typechecked
 
 from species.core import constants
-from species.data import database
-from species.read import read_object
-from species.util import read_util
+from species.read.read_object import ReadObject
+from species.util.model_util import gaussian_spectrum
+from species.util.spec_util import create_wavelengths
 
 
 class EmissionLine:
@@ -63,7 +63,7 @@ class EmissionLine:
         hydrogen_line : str, None
             Name of the hydrogen line that will be analyzed. The
             names available lines can be checked with the
-            :func:`~species.analysis.emission_line.EmissionLine.
+            :func:`~species.fit.emission_line.EmissionLine.
             list_hydrogen_lines` method. If the argument is set
             to ``None`` then provide the rest wavelength as
             argument of ``lambda_rest``.
@@ -87,7 +87,7 @@ class EmissionLine:
         self.spec_name = spec_name
         self.hydrogen_line = hydrogen_line
 
-        self.object = read_object.ReadObject(object_name)
+        self.object = ReadObject(object_name)
         self.parallax = self.object.get_parallax()[0]
         self.spectrum = self.object.get_spectrum()[spec_name][0]
 
@@ -102,9 +102,7 @@ class EmissionLine:
                 & (self.spectrum[:, 0] <= wavel_range[1])
             )[0]
 
-            self.spectrum = self.spectrum[
-                indices,
-            ]
+            self.spectrum = self.spectrum[indices,]
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -117,7 +115,9 @@ class EmissionLine:
 
         if "accretion" not in h5_database:
             h5_database.close()
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
             species_db.add_accretion()
 
         if self.hydrogen_line is None and lambda_rest is not None:
@@ -134,8 +134,9 @@ class EmissionLine:
                     "arguments should be set to None."
                 )
 
-                self.hydrogen_line = input("Please provide the name "
-                                           "of the hydrogen line: ")
+                self.hydrogen_line = input(
+                    "Please provide the name " "of the hydrogen line: "
+                )
 
             h5_database = h5py.File(self.database, "r")
 
@@ -179,7 +180,7 @@ class EmissionLine:
         <https://ui.adsabs.harvard.edu/abs/2022RNAAS...6..262M/
         abstract>`_ [MA22]. These names can be set as argument
         ``hydrogen_line``. In that case, the measured line luminosity
-        from :func:`~species.analysis.emission_line.EmissionLine.
+        from :func:`~species.fit.emission_line.EmissionLine.
         fit_gaussian` will be automatically converted to an accretion
         luminosity with the relation from [Ao21] and [MA22].
 
@@ -515,7 +516,7 @@ class EmissionLine:
 
         n_samples = 1000
 
-        wavel_high_res = read_util.create_wavelengths(wavel_int, 1e5)
+        wavel_high_res = create_wavelengths(wavel_int, 1e5)
 
         # Creating plot
 
@@ -822,7 +823,6 @@ class EmissionLine:
         def gaussian_function(
             amplitude: float, mean: float, sigma: float, wavel: np.ndarray
         ):
-
             return amplitude * np.exp(-0.5 * (wavel - mean) ** 2 / sigma**2)
 
         # Model parameters
@@ -1006,7 +1006,7 @@ class EmissionLine:
             model_param["gauss_mean_2"] = np.median(samples[:, 4])
             model_param["gauss_sigma_2"] = np.median(samples[:, 5])
 
-        best_model = read_util.gaussian_spectrum(
+        best_model = gaussian_spectrum(
             self.wavel_range,
             model_param,
             spec_res=high_spec_res,
@@ -1065,7 +1065,7 @@ class EmissionLine:
                 model_param["gauss_mean_2"] = samples[i, 4]
                 model_param["gauss_sigma_2"] = samples[i, 5]
 
-            model_box = read_util.gaussian_spectrum(
+            model_box = gaussian_spectrum(
                 self.wavel_range,
                 model_param,
                 spec_res=high_spec_res,
@@ -1175,7 +1175,9 @@ class EmissionLine:
             # Writing the samples to the database is only
             # possible when using a single process
 
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
 
             species_db.add_samples(
                 sampler="ultranest",
@@ -1420,11 +1422,9 @@ class EmissionLine:
             coefficients = np.array(h5_file["accretion/coefficients"])
 
             line_idx = np.argwhere(line_names == self.hydrogen_line)[0][0]
-            a_coeff, b_coeff = coefficients[
-                line_idx,
-            ]
+            a_coeff, b_coeff = coefficients[line_idx,]
 
             # Equation C1 in Aoymama et al. (2021)
             log_acc_lum = a_coeff * np.log10(line_lum) + b_coeff
 
-        return 10.**log_acc_lum
+        return 10.0**log_acc_lum

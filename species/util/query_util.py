@@ -16,8 +16,6 @@ import numpy as np
 from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
 
-# from species.data import database
-
 
 class NoStdStreams:
     """
@@ -239,7 +237,8 @@ def get_parallax(target):
 
 
 # def get_parallax():
-#     species_db = database.Database()
+#     from species.data.database import Database
+#     species_db = Database()
 #     species_db.add_photometry("vlm-plx")
 #
 #     with h5py.File(species_db.database, "a") as hdf_file:

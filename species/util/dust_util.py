@@ -14,20 +14,20 @@ from typeguard import typechecked
 from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.stats import lognorm
 
-from species.data import database
-from species.read import read_filter
+from species.read.read_filter import ReadFilter
+from species.data.dust import add_cross_sections, add_optical_constants
 
 
 @typechecked
-def check_dust_database() -> str:
+def check_dust_database():
     """
-    Function to check if the dust data is present in the database and
-    add the data if needed.
+    Function to check if the dust data is present in the
+    database and add the data if needed.
 
     Returns
     -------
-    str
-        The database path from the configuration file.
+    NoneType
+        None
     """
 
     config_file = os.path.join(os.getcwd(), "species_config.ini")
@@ -36,12 +36,12 @@ def check_dust_database() -> str:
     config.read(config_file)
 
     database_path = config["species"]["database"]
+    data_folder = config["species"]["data_folder"]
 
-    if "dust" not in h5py.File(database_path, "r"):
-        species_db = database.Database()
-        species_db.add_dust()
-
-    return database_path
+    with h5py.File(database_path, "a") as hdf5_file:
+        if "dust" not in hdf5_file:
+            add_optical_constants(data_folder, hdf5_file)
+            add_cross_sections(data_folder, hdf5_file)
 
 
 @typechecked
@@ -271,7 +271,7 @@ def calc_reddening(
     for item in filters:
         h5_file.close()
 
-        read_filt = read_filter.ReadFilter(item)
+        read_filt = ReadFilter(item)
         filter_wavel = read_filt.mean_wavelength()
 
         h5_file = h5py.File(database_path, "r")
@@ -392,7 +392,7 @@ def interp_lognorm(
     cross_sections = {}
 
     for phot_item in inc_phot:
-        read_filt = read_filter.ReadFilter(phot_item)
+        read_filt = ReadFilter(phot_item)
         filt_trans = read_filt.get_filter()
 
         cross_phot = np.zeros((radius_g.shape[0], sigma_g.shape[0]))
@@ -485,7 +485,7 @@ def interp_powerlaw(
     cross_sections = {}
 
     for phot_item in inc_phot:
-        read_filt = read_filter.ReadFilter(phot_item)
+        read_filt = ReadFilter(phot_item)
         filt_trans = read_filt.get_filter()
 
         cross_phot = np.zeros((radius_max.shape[0], exponent.shape[0]))
@@ -652,7 +652,7 @@ def convert_to_av(
     av_test = 1.0
 
     # Mean wavelength for filter_name
-    read_filt = read_filter.ReadFilter(filter_name)
+    read_filt = ReadFilter(filter_name)
     filt_wavel = np.array([read_filt.mean_wavelength()])
 
     # Calculate test extinction for A_V = 1.0

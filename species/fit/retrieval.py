@@ -33,11 +33,25 @@ from scipy.integrate import simps
 from scipy.stats import invgamma, norm
 from typeguard import typechecked
 
-from species.analysis import photometry
 from species.core import constants
-from species.data import database
-from species.read import read_filter, read_object
-from species.util import dust_util, read_util, retrieval_util
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.read.read_object import ReadObject
+from species.util.dust_util import apply_ism_ext
+from species.util.convert_util import logg_to_mass
+from species.util.retrieval_util import (
+    calc_metal_ratio,
+    calc_spectrum_clear,
+    calc_spectrum_clouds,
+    convective_flux,
+    convolve_spectrum,
+    create_pt_profile,
+    cube_to_dict,
+    log_x_cloud_base,
+    potassium_abundance,
+    quench_pressure,
+    scale_cloud_abund,
+)
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -148,7 +162,7 @@ class AtmosphericRetrieval:
             calculating line-by-line spectra for the list of
             high-resolution spectra that are provided as argument of
             ``cross_corr`` when starting the retrieval with
-            :func:`species.analysis.retrieval.AtmosphericRetrieval.run_multinest`.
+            :func:`species.fit.retrieval.AtmosphericRetrieval.run_multinest`.
             The argument can be set to ``None`` when ``cross_corr=None``.
             The ``ccf_species`` and ``cross_corr`` parameters should
             only be used if the log-likelihood component should be
@@ -188,7 +202,7 @@ class AtmosphericRetrieval:
 
         # Get object data
 
-        self.object = read_object.ReadObject(self.object_name)
+        self.object = ReadObject(self.object_name)
         self.parallax = self.object.get_parallax()  # (mas)
 
         print(f"Object: {self.object_name}")
@@ -244,10 +258,12 @@ class AtmosphericRetrieval:
             print(f"Opacity mode: line-by-line (lambda/Dlambda = 1,000,000)")
 
         else:
-            raise ValueError("The argument of 'res_mode' is set to "
-                             f"an incorrect value, '{self.res_mode}'. "
-                             "Please set the argument to either "
-                             "'c-k' or 'lbl'.")
+            raise ValueError(
+                "The argument of 'res_mode' is set to "
+                f"an incorrect value, '{self.res_mode}'. "
+                "Please set the argument to either "
+                "'c-k' or 'lbl'."
+            )
 
         # Downsampling of line-by-line opacities
 
@@ -255,7 +271,9 @@ class AtmosphericRetrieval:
 
         # Get ObjectBox
 
-        species_db = database.Database()
+        from species.data.database import Database
+
+        species_db = Database()
 
         objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=True)
 
@@ -271,7 +289,9 @@ class AtmosphericRetrieval:
         if isinstance(inc_phot, bool):
             if inc_phot:
                 # Select all filters if True
-                species_db = database.Database()
+                from species.data.database import Database
+
+                species_db = Database()
                 inc_phot = objectbox.filters
 
             else:
@@ -286,15 +306,16 @@ class AtmosphericRetrieval:
 
             print(f"   - {item} (W m-2 um-1) = {obj_phot[2]:.2e} +/- {obj_phot[3]:.2e}")
 
-            sphot = photometry.SyntheticPhotometry(item)
-            self.synphot.append(sphot)
+            self.synphot.append(SyntheticPhotometry(item))
 
         # Get spectroscopic data
 
         if isinstance(inc_spec, bool):
             if inc_spec:
                 # Select all filters if True
-                species_db = database.Database()
+                from species.data.database import Database
+
+                species_db = Database()
                 inc_spec = list(objectbox.spectrum.keys())
 
             else:
@@ -954,7 +975,7 @@ class AtmosphericRetrieval:
             ``mix_length`` parameter (relative to the pressure scale
             height) is included in the ``bounds`` dictionary. To use
             ``check_flux``, the opacities should be recreated with
-            :func:`~species.analysis.retrieval.AtmosphericRetrieval.rebin_opacities`
+            :func:`~species.fit.retrieval.AtmosphericRetrieval.rebin_opacities`
             at $R = 10$ (i.e. ``spec_res=10``) and placed in the
             folder of ``pRT_input_data_path``. This parameter is
             experimental and has not been fully tested.
@@ -1114,36 +1135,40 @@ class AtmosphericRetrieval:
 
         max_spec_res = max(data_spec_res)
 
-        if max_spec_res > 1000. and self.res_mode == "c-k":
-            warnings.warn("The maximum spectral resolution of "
-                          f"the input data is R = {max_spec_res} "
-                          "whereas the 'res_mode' argument has been "
-                          "set to 'c-k' (i.e. correlated-k mode). It "
-                          "is recommended to set the 'res_mode' "
-                          "argument to 'lbl' (i.e. line-by-line mode) "
-                          "instead.")
+        if max_spec_res > 1000.0 and self.res_mode == "c-k":
+            warnings.warn(
+                "The maximum spectral resolution of "
+                f"the input data is R = {max_spec_res} "
+                "whereas the 'res_mode' argument has been "
+                "set to 'c-k' (i.e. correlated-k mode). It "
+                "is recommended to set the 'res_mode' "
+                "argument to 'lbl' (i.e. line-by-line mode) "
+                "instead."
+            )
 
         # Adjust lbl_opacity_sampling is needed
 
         if self.lbl_opacity_sampling is None and self.res_mode == "lbl":
-            new_sampling = int(np.ceil(1e6/(4.*max_spec_res)))
+            new_sampling = int(np.ceil(1e6 / (4.0 * max_spec_res)))
 
             if new_sampling < 1e6:
                 self.lbl_opacity_sampling = new_sampling
 
-                warnings.warn("The argument of 'lbl_opacity_sampling' is "
-                              "set to None but the maximum spectral "
-                              f"resolution of the data is {max_spec_res}. "
-                              "The value of 'lbl_opacity_sampling' is "
-                              "therefore adjusted to "
-                              f"{self.lbl_opacity_sampling} (i.e. "
-                              "downsampling to 4 times the resolution "
-                              "of the data) to speed up the computation. "
-                              "If setting 'lbl_opacity_sampling' to None "
-                              "was intentional (i.e. opacity sampling at "
-                              "lambda/Dlambda=10^6) then please set "
-                              "the argument to 1 such that the line-by-"
-                              "line species will not be downsampled.")
+                warnings.warn(
+                    "The argument of 'lbl_opacity_sampling' is "
+                    "set to None but the maximum spectral "
+                    f"resolution of the data is {max_spec_res}. "
+                    "The value of 'lbl_opacity_sampling' is "
+                    "therefore adjusted to "
+                    f"{self.lbl_opacity_sampling} (i.e. "
+                    "downsampling to 4 times the resolution "
+                    "of the data) to speed up the computation. "
+                    "If setting 'lbl_opacity_sampling' to None "
+                    "was intentional (i.e. opacity sampling at "
+                    "lambda/Dlambda=10^6) then please set "
+                    "the argument to 1 such that the line-by-"
+                    "line species will not be downsampled."
+                )
 
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
@@ -1492,7 +1517,7 @@ class AtmosphericRetrieval:
 
                 for i in range(self.temp_nodes - 2, -1, -1):
                     # Sample a temperature that is smaller
-                    # than the previous/deeper point 
+                    # than the previous/deeper point
 
                     cube[cube_index[f"t{i}"]] = cube[cube_index[f"t{i+1}"]] * (
                         1.0 - cube[cube_index[f"t{i}"]]
@@ -1662,7 +1687,7 @@ class AtmosphericRetrieval:
                     or "Na_allard" in self.line_species
                 ):
                     if self.abund_nodes is None:
-                        log_x_k_abund = retrieval_util.potassium_abundance(
+                        log_x_k_abund = potassium_abundance(
                             log_x_abund, self.line_species, abund_nodes
                         )
 
@@ -1679,7 +1704,7 @@ class AtmosphericRetrieval:
                             cube[cube_index["K_allard"]] = log_x_k_abund
 
                     else:
-                        log_x_k_abund = retrieval_util.potassium_abundance(
+                        log_x_k_abund = potassium_abundance(
                             log_x_abund, self.line_species, abund_nodes
                         )
 
@@ -2273,7 +2298,7 @@ class AtmosphericRetrieval:
             if prior is not None:
                 for key, value in prior.items():
                     if key == "mass":
-                        mass = read_util.get_mass(
+                        mass = logg_to_mass(
                             cube[cube_index["logg"]],
                             cube[cube_index["radius"]],
                         )
@@ -2346,7 +2371,7 @@ class AtmosphericRetrieval:
                 # Check if the C/H and O/H ratios are within the prior boundaries
 
                 if self.abund_nodes is None:
-                    c_h_ratio, o_h_ratio, c_o_ratio = retrieval_util.calc_metal_ratio(
+                    c_h_ratio, o_h_ratio, c_o_ratio = calc_metal_ratio(
                         log_x_abund, self.line_species
                     )
 
@@ -2373,7 +2398,7 @@ class AtmosphericRetrieval:
 
             # Create the P-T profile
 
-            temp, knot_temp, phot_press, conv_press = retrieval_util.create_pt_profile(
+            temp, knot_temp, phot_press, conv_press = create_pt_profile(
                 cube,
                 cube_index,
                 pt_profile,
@@ -2538,7 +2563,7 @@ class AtmosphericRetrieval:
 
             elif quenching == "diffusion":
                 # Calculate the quenching pressure from timescales
-                p_quench = retrieval_util.quench_pressure(
+                p_quench = quench_pressure(
                     self.pressure,
                     temp,
                     cube[cube_index["metallicity"]],
@@ -2582,9 +2607,9 @@ class AtmosphericRetrieval:
                             ]
 
                         elif f"{item[:-3].lower()}_tau" in self.parameters:
-                            params = retrieval_util.cube_to_dict(cube, cube_index)
+                            params = cube_to_dict(cube, cube_index)
 
-                            cloud_fractions[item] = retrieval_util.scale_cloud_abund(
+                            cloud_fractions[item] = scale_cloud_abund(
                                 params,
                                 rt_object,
                                 self.pressure,
@@ -2617,7 +2642,7 @@ class AtmosphericRetrieval:
                                     cube_index[f"{cloud_1}_{cloud_2}_ratio"]
                                 ]
 
-                    log_x_base = retrieval_util.log_x_cloud_base(
+                    log_x_base = log_x_cloud_base(
                         cube[cube_index["c_o_ratio"]],
                         cube[cube_index["metallicity"]],
                         cloud_fractions,
@@ -2735,7 +2760,7 @@ class AtmosphericRetrieval:
                         flux_lowres,
                         _,
                         mmw,
-                    ) = retrieval_util.calc_spectrum_clouds(
+                    ) = calc_spectrum_clouds(
                         lowres_radtrans,
                         self.pressure,
                         temp,
@@ -2858,7 +2883,7 @@ class AtmosphericRetrieval:
 
                             # Calculate the convective flux
 
-                            f_conv = retrieval_util.convective_flux(
+                            f_conv = convective_flux(
                                 press_pa,  # (Pa)
                                 lowres_radtrans.temp,  # (K)
                                 mmw,
@@ -2932,7 +2957,7 @@ class AtmosphericRetrieval:
                         flux_lambda_1,
                         _,
                         _,
-                    ) = retrieval_util.calc_spectrum_clouds(
+                    ) = calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -2957,7 +2982,7 @@ class AtmosphericRetrieval:
                         flux_lambda_2,
                         _,
                         _,
-                    ) = retrieval_util.calc_spectrum_clouds(
+                    ) = calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -2988,7 +3013,7 @@ class AtmosphericRetrieval:
                         flux_lambda,
                         _,
                         _,
-                    ) = retrieval_util.calc_spectrum_clouds(
+                    ) = calc_spectrum_clouds(
                         rt_object,
                         self.pressure,
                         temp,
@@ -3101,7 +3126,7 @@ class AtmosphericRetrieval:
                         ccf_flux[item],
                         _,
                         _,
-                    ) = retrieval_util.calc_spectrum_clouds(
+                    ) = calc_spectrum_clouds(
                         ccf_radtrans[item],
                         self.pressure,
                         temp,
@@ -3129,7 +3154,7 @@ class AtmosphericRetrieval:
 
                 if chemistry == "equilibrium":
                     # Calculate a clear spectrum for low- and medium-resolution data (i.e. corr-k)
-                    wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
+                    wlen_micron, flux_lambda, _ = calc_spectrum_clear(
                         rt_object,
                         self.pressure,
                         temp,
@@ -3155,7 +3180,7 @@ class AtmosphericRetrieval:
                             ccf_wavel[item],
                             ccf_flux[item],
                             _,
-                        ) = retrieval_util.calc_spectrum_clear(
+                        ) = calc_spectrum_clear(
                             ccf_radtrans[item],
                             self.pressure,
                             temp,
@@ -3174,7 +3199,7 @@ class AtmosphericRetrieval:
                 elif chemistry == "free":
                     # Calculate a clear spectrum for low- and medium-resolution data (i.e. corr-k)
 
-                    wlen_micron, flux_lambda, _ = retrieval_util.calc_spectrum_clear(
+                    wlen_micron, flux_lambda, _ = calc_spectrum_clear(
                         rt_object,
                         self.pressure,
                         temp,
@@ -3211,7 +3236,7 @@ class AtmosphericRetrieval:
                             ccf_wavel[item],
                             ccf_flux[item],
                             _,
-                        ) = retrieval_util.calc_spectrum_clear(
+                        ) = calc_spectrum_clear(
                             ccf_radtrans[item],
                             self.pressure,
                             temp,
@@ -3303,7 +3328,7 @@ class AtmosphericRetrieval:
                         # Use default interstellar reddening (R_V = 3.1)
                         ism_reddening = 3.1
 
-                    flux_ext = dust_util.apply_ism_ext(
+                    flux_ext = apply_ism_ext(
                         model_wavel,
                         model_flux,
                         cube[cube_index["ism_ext"]],
@@ -3315,9 +3340,7 @@ class AtmosphericRetrieval:
 
                 # Convolve with Gaussian LSF
 
-                flux_smooth = retrieval_util.convolve(
-                    model_wavel, flux_ext, self.spectrum[item][3]
-                )
+                flux_smooth = convolve_spectrum(model_wavel, flux_ext, self.spectrum[item][3])
 
                 # Resample to the observation
 
@@ -3478,7 +3501,7 @@ class AtmosphericRetrieval:
                 weight = self.weights[self.synphot[i].filter_name]
 
                 if plotting:
-                    read_filt = read_filter.ReadFilter(self.synphot[i].filter_name)
+                    read_filt = ReadFilter(self.synphot[i].filter_name)
 
                     plt.errorbar(
                         read_filt.mean_wavelength(),

@@ -4,7 +4,10 @@ import shutil
 import pytest
 import numpy as np
 
-import species
+from species import SpeciesInit
+# from species.data.database import Database
+# from species.read.read_spectrum import ReadSpectrum
+# from species.plot.plot_spectrum import plot_spectrum
 from species.util import test_util
 
 
@@ -21,10 +24,10 @@ class TestSpectrum:
 
     def test_species_init(self):
         test_util.create_config("./")
-        species.SpeciesInit()
+        SpeciesInit()
 
     # def test_read_spectrum(self):
-    #     database = species.Database()
+    #     database = Database()
     #
     #     with pytest.warns(UserWarning):
     #         database.add_spectrum(
@@ -34,13 +37,13 @@ class TestSpectrum:
     #             ],
     #         )
     #
-    #     read_spectrum = species.ReadSpectrum("irtf", filter_name="MKO/NSFCam.H")
+    #     read_spectrum = ReadSpectrum("irtf", filter_name="MKO/NSFCam.H")
     #     assert read_spectrum.wavel_range == pytest.approx(
     #         (1.382, 1.8656), rel=1e-6, abs=0.0
     #     )
     #
     # def test_get_spectrum(self):
-    #     read_spectrum = species.ReadSpectrum("irtf", filter_name="MKO/NSFCam.H")
+    #     read_spectrum = ReadSpectrum("irtf", filter_name="MKO/NSFCam.H")
     #     spec_box = read_spectrum.get_spectrum(
     #         sptypes=[
     #             "L0",
@@ -58,7 +61,7 @@ class TestSpectrum:
     #         4.5681937e-11, rel=1e-7, abs=0.0
     #     )
     #
-    #     species.plot_spectrum(
+    #     plot_spectrum(
     #         boxes=[
     #             spec_box,
     #         ],

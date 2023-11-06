@@ -19,10 +19,23 @@ from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.core import box, constants
-from species.read import read_filter
-from species.util import dust_util, read_util, retrieval_util
+from species.core import constants
+from species.core.box import ModelBox, create_box
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.util.convert_util import logg_to_mass
+from species.util.dust_util import apply_ism_ext
+from species.util.retrieval_util import (
+    calc_metal_ratio,
+    calc_spectrum_clear,
+    calc_spectrum_clouds,
+    convolve_spectrum,
+    log_x_cloud_base,
+    pt_ret_model,
+    pt_spline_interp,
+    quench_pressure,
+    scale_cloud_abund,
+)
 
 
 class ReadRadtrans:
@@ -139,7 +152,7 @@ class ReadRadtrans:
         # Set the wavelength range
 
         if self.filter_name is not None:
-            transmission = read_filter.ReadFilter(self.filter_name)
+            transmission = ReadFilter(self.filter_name)
             self.wavel_range = transmission.wavelength_range()
             self.wavel_range = (0.9 * self.wavel_range[0], 1.2 * self.wavel_range[1])
 
@@ -246,7 +259,7 @@ class ReadRadtrans:
         wavel_resample: Optional[np.ndarray] = None,
         plot_contribution: Optional[Union[bool, str]] = False,
         temp_nodes: Optional[Union[int, np.integer]] = None,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for calculating a model spectrum with
         radiative transfer code of ``petitRADTRANS``.
@@ -582,9 +595,7 @@ class ReadRadtrans:
                 for line_item in self.line_species:
                     log_x_abund[line_item] = model_param[line_item]
 
-                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(
-                    log_x_abund, self.line_species
-                )
+                _, _, c_o_ratio = calc_metal_ratio(log_x_abund, self.line_species)
 
             else:
                 log_x_abund = {}
@@ -608,7 +619,7 @@ class ReadRadtrans:
             and "log_delta" in model_param
             and "alpha" in model_param
         ):
-            temp, _, _ = retrieval_util.pt_ret_model(
+            temp, _, _ = pt_ret_model(
                 np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
                 10.0 ** model_param["log_delta"],
                 model_param["alpha"],
@@ -648,7 +659,7 @@ class ReadRadtrans:
             else:
                 pt_smooth = None
 
-            temp = retrieval_util.pt_spline_interp(
+            temp = pt_spline_interp(
                 knot_press,
                 knot_temp,
                 self.pressure,
@@ -661,7 +672,7 @@ class ReadRadtrans:
             p_quench = 10.0 ** model_param["log_p_quench"]
 
         elif self.quenching == "diffusion":
-            p_quench = retrieval_util.quench_pressure(
+            p_quench = quench_pressure(
                 self.pressure,
                 temp,
                 model_param["metallicity"],
@@ -737,7 +748,7 @@ class ReadRadtrans:
 
                         # Calculate the scaled mass fraction of the clouds
 
-                        cloud_fractions[item] = retrieval_util.scale_cloud_abund(
+                        cloud_fractions[item] = scale_cloud_abund(
                             model_param,
                             self.rt_object,
                             self.pressure,
@@ -779,9 +790,7 @@ class ReadRadtrans:
 
                 # Create a dictionary with the log mass fractions at the cloud base
 
-                log_x_base = retrieval_util.log_x_cloud_base(
-                    c_o_ratio, metallicity, cloud_fractions
-                )
+                log_x_base = log_x_cloud_base(c_o_ratio, metallicity, cloud_fractions)
 
             elif chemistry == "free":
                 # Add the log10 mass fractions of the clouds to the dictionary
@@ -838,7 +847,7 @@ class ReadRadtrans:
                     flux_1,
                     emission_contr_1,
                     _,
-                ) = retrieval_util.calc_spectrum_clouds(
+                ) = calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -867,7 +876,7 @@ class ReadRadtrans:
                     flux_2,
                     emission_contr_2,
                     _,
-                ) = retrieval_util.calc_spectrum_clouds(
+                ) = calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -904,7 +913,7 @@ class ReadRadtrans:
                     flux,
                     emission_contr,
                     _,
-                ) = retrieval_util.calc_spectrum_clouds(
+                ) = calc_spectrum_clouds(
                     self.rt_object,
                     self.pressure,
                     temp,
@@ -928,7 +937,7 @@ class ReadRadtrans:
         elif chemistry == "equilibrium":
             # Calculate the petitRADTRANS spectrum for a clear atmosphere
 
-            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
+            wavelength, flux, emission_contr = calc_spectrum_clear(
                 self.rt_object,
                 self.pressure,
                 temp,
@@ -958,7 +967,7 @@ class ReadRadtrans:
                             f"{line_item}_{node_idx}"
                         ]
 
-            wavelength, flux, emission_contr = retrieval_util.calc_spectrum_clear(
+            wavelength, flux, emission_contr = calc_spectrum_clear(
                 self.rt_object,
                 self.pressure,
                 temp,
@@ -977,7 +986,7 @@ class ReadRadtrans:
         if "radius" in model_param:
             # Calculate the planet mass from log(g) and radius
 
-            model_param["mass"] = read_util.get_mass(
+            model_param["mass"] = logg_to_mass(
                 model_param["logg"], model_param["radius"]
             )
 
@@ -1007,7 +1016,7 @@ class ReadRadtrans:
                 # Use default ISM reddening (R_V = 3.1) if ism_red is not provided
                 ism_reddening = 3.1
 
-            flux = dust_util.apply_ism_ext(
+            flux = apply_ism_ext(
                 wavelength, flux, model_param["ism_ext"], ism_reddening
             )
 
@@ -1167,7 +1176,7 @@ class ReadRadtrans:
         # Convolve the spectrum with a Gaussian LSF
 
         if spec_res is not None:
-            flux = retrieval_util.convolve(wavelength, flux, spec_res)
+            flux = convolve_spectrum(wavelength, flux, spec_res)
 
         # Apply a radial velocity shift to the wavelengths
 
@@ -1198,7 +1207,7 @@ class ReadRadtrans:
         else:
             bol_flux = None
 
-        return box.create_box(
+        return create_box(
             boxtype="model",
             model="petitradtrans",
             wavelength=wavelength,
@@ -1235,7 +1244,7 @@ class ReadRadtrans:
 
         spectrum = self.get_model(model_param, quenching=quenching)
 
-        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        synphot = SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
@@ -1264,7 +1273,7 @@ class ReadRadtrans:
 
         spectrum = self.get_model(model_param, quenching=quenching)
 
-        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        synphot = SyntheticPhotometry(self.filter_name)
         app_mag, _ = synphot.spectrum_to_magnitude(spectrum.wavelength, spectrum.flux)
 
         return app_mag

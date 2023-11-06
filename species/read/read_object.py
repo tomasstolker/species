@@ -12,7 +12,7 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.util import phot_util
+from species.util.convert_util import apparent_to_absolute
 
 
 class ReadObject:
@@ -252,12 +252,12 @@ class ReadObject:
                 )
 
         if obj_phot.ndim == 1:
-            abs_mag = phot_util.apparent_to_absolute(
+            abs_mag = apparent_to_absolute(
                 (obj_phot[0], obj_phot[1]), (obj_distance[0], obj_distance[1])
             )
 
         elif obj_phot.ndim == 2:
-            abs_mag = phot_util.apparent_to_absolute(
+            abs_mag = apparent_to_absolute(
                 (obj_phot[0, :], obj_phot[1, :]), (obj_distance[0], obj_distance[1])
             )
 

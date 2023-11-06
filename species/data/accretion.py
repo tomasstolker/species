@@ -112,8 +112,17 @@ def add_accretion_relation(input_path: str, database: h5py._hl.files.File) -> No
     # https://www.nist.gov/system/files/documents/srd/jpcrd382009565p.pdf
     wavelengths = 1e6 / (constants.RYDBERG * (1.0 / n_final**2 - 1.0 / n_init**2))
 
-    # data = np.column_stack([line_names, wavelengths, n_init, n_final, coefficients[:, 0], coefficients[:, 1]])
-    # np.savetxt('acc_lines.dat', data, delimiter=" ", fmt="%s")
+    # data = np.column_stack(
+    #     [
+    #         line_names,
+    #         wavelengths,
+    #         n_init,
+    #         n_final,
+    #         coefficients[:, 0],
+    #         coefficients[:, 1],
+    #     ]
+    # )
+    # np.savetxt("acc_lines.dat", data, delimiter=" ", fmt="%s")
 
     database.create_dataset("accretion/wavelengths", data=wavelengths)
     database.create_dataset("accretion/coefficients", data=coefficients)

@@ -12,7 +12,8 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.util import data_util, read_util
+from species.util.data_util import sort_data, write_data, add_missing
+from species.util.spec_util import create_wavelengths
 
 
 @typechecked
@@ -121,7 +122,7 @@ def add_custom_model_grid(
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
 
         if spec_res is not None:
-            wavelength = read_util.create_wavelengths(wavel_range, spec_res)
+            wavelength = create_wavelengths(wavel_range, spec_res)
             print(f"Spectral resolution = {spec_res}")
 
     if wavel_range is None or spec_res is None:
@@ -250,13 +251,15 @@ def add_custom_model_grid(
         ad_index = np.asarray(ad_index)
 
     if wavelength is None:
-        raise ValueError("No files have been found. Please check "
-                         "the arguments of \'model\', \'data_path\', "
-                         "and \'parameters\' of the add_custom_model "
-                         "method to make sure that the correct folder "
-                         "and files names are selected.")
+        raise ValueError(
+            "No files have been found. Please check "
+            "the arguments of 'model', 'data_path', "
+            "and 'parameters' of the add_custom_model "
+            "method to make sure that the correct folder "
+            "and files names are selected."
+        )
 
-    data_sorted = data_util.sort_data(
+    data_sorted = sort_data(
         np.asarray(teff),
         logg,
         feh,
@@ -268,6 +271,6 @@ def add_custom_model_grid(
         np.asarray(flux),
     )
 
-    data_util.write_data(model_name, parameters, database, data_sorted)
+    write_data(model_name, parameters, database, data_sorted)
 
-    data_util.add_missing(model_name, parameters, database)
+    add_missing(model_name, parameters, database)

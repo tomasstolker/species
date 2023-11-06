@@ -36,24 +36,32 @@ def add_vega(input_path, database):
 
     if not os.path.isfile(data_file):
         try:
-            url = "https://archive.stsci.edu/hlsps/reference-atlases" \
-                  "/cdbs/current_calspec/alpha_lyr_stis_011.fits"
+            url = (
+                "https://archive.stsci.edu/hlsps/reference-atlases"
+                "/cdbs/current_calspec/alpha_lyr_stis_011.fits"
+            )
 
-            pooch.retrieve(url=url,
-                           known_hash='60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa',
-                           fname="alpha_lyr_stis_011.fits",
-                           path=input_path,
-                           progressbar=True)
+            pooch.retrieve(
+                url=url,
+                known_hash="60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa",
+                fname="alpha_lyr_stis_011.fits",
+                path=input_path,
+                progressbar=True,
+            )
 
         except requests.exceptions.HTTPError:
-            url = "https://home.strw.leidenuniv.nl/~stolker/" \
-                  "species/alpha_lyr_stis_011.fits"
+            url = (
+                "https://home.strw.leidenuniv.nl/~stolker/"
+                "species/alpha_lyr_stis_011.fits"
+            )
 
-            pooch.retrieve(url=url,
-                           known_hash='60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa',
-                           fname="alpha_lyr_stis_011.fits",
-                           path=input_path,
-                           progressbar=True)
+            pooch.retrieve(
+                url=url,
+                known_hash="60aebf5c193223f69061cd176d6309730c3210051fffad0dd6ad44475199ceaa",
+                fname="alpha_lyr_stis_011.fits",
+                path=input_path,
+                progressbar=True,
+            )
 
     if "spectra/calibration/vega" in database:
         del database["spectra/calibration/vega"]

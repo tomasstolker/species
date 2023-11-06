@@ -9,7 +9,7 @@ import h5py
 import numpy as np
 import pandas as pd
 
-from species.util import data_util
+from species.util.data_util import update_sptype
 
 
 def add_leggett(input_path, database):
@@ -66,7 +66,7 @@ def add_leggett(input_path, database):
 
     # Near-infrared spectral type
     sptype = np.asarray(dataframe["Type"])
-    sptype = data_util.update_sptype(sptype)
+    sptype = update_sptype(sptype)
     sptype = np.asarray(sptype)
 
     mag_y = np.asarray(dataframe["Y"])

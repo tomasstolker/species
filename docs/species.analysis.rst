@@ -4,6 +4,14 @@ species.analysis package
 Submodules
 ----------
 
+species.analysis.atmo\_retrieval module
+---------------------------------------
+
+.. automodule:: species.analysis.atmo_retrieval
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.analysis.compare\_spectra module
 ----------------------------------------
 
@@ -40,22 +48,6 @@ species.analysis.fit\_spectrum module
 -------------------------------------
 
 .. automodule:: species.analysis.fit_spectrum
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.analysis.photometry module
-----------------------------------
-
-.. automodule:: species.analysis.photometry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.analysis.retrieval module
----------------------------------
-
-.. automodule:: species.analysis.retrieval
    :members:
    :undoc-members:
    :show-inheritance:

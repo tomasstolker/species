@@ -1552,14 +1552,18 @@ def calc_spectrum_clouds(
         else:
             contr_em = None
 
-    # if (
-    #     plotting
-    #     and Kzz_use is None
-    #     and hasattr(rt_object, "continuum_opa")
-    # ):
+    # if plotting and Kzz_use is None and hasattr(rt_object, "continuum_opa"):
     #     plt.plot(wavel, rt_object.continuum_opa[:, 0], label="Total continuum opacity")
-    #     # plt.plot(wavel, rt_object.continuum_opa[:, 0] - rt_object.continuum_opa_scat[:, 0], label="Absorption continuum opacity")
-    #     # plt.plot(wavel, rt_object.continuum_opa_scat[:, 0], label="Scattering continuum opacity")
+    #     plt.plot(
+    #         wavel,
+    #         rt_object.continuum_opa[:, 0] - rt_object.continuum_opa_scat[:, 0],
+    #         label="Absorption continuum opacity",
+    #     )
+    #     plt.plot(
+    #         wavel,
+    #         rt_object.continuum_opa_scat[:, 0],
+    #         label="Scattering continuum opacity",
+    #     )
     #     plt.xlabel(r"Wavelength ($\mu$m)")
     #     plt.ylabel("Opacity at smallest pressure")
     #     plt.yscale("log")
@@ -2791,7 +2795,7 @@ def return_T_cond_KCl(
 
 
 @typechecked
-def convolve(
+def convolve_spectrum(
     input_wavel: np.ndarray, input_flux: np.ndarray, spec_res: float
 ) -> np.ndarray:
     """

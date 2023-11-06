@@ -7,10 +7,9 @@ from typing import List, Union
 import numpy as np
 import spectres
 
-import species
-
-from species.analysis import photometry
-from species.read import read_filter
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.util.spec_util import smooth_spectrum
 
 
 def create_box(boxtype, **kwargs):
@@ -76,7 +75,6 @@ def create_box(boxtype, **kwargs):
         box.magnitude = kwargs["magnitude"]
         box.filters_color = kwargs["filters_color"]
         box.color = kwargs["color"]
-
 
     elif boxtype == "isochrone":
         box = IsochroneBox()
@@ -389,9 +387,7 @@ class ModelBox(Box):
             None
         """
 
-        self.flux = species.util.read_util.smooth_spectrum(
-            self.wavelength, self.flux, spec_res
-        )
+        self.flux = smooth_spectrum(self.wavelength, self.flux, spec_res)
 
     def resample_spectrum(self, wavel_resample: np.ndarray) -> None:
         """
@@ -447,13 +443,13 @@ class ModelBox(Box):
         list_abs_mag = []
 
         for item in filter_name:
-            syn_phot = photometry.SyntheticPhotometry(filter_name=item)
+            synphot = SyntheticPhotometry(filter_name=item)
 
-            syn_flux = syn_phot.spectrum_to_flux(
+            syn_flux = synphot.spectrum_to_flux(
                 wavelength=self.wavelength, flux=self.flux
             )
 
-            syn_mag = syn_phot.spectrum_to_magnitude(
+            syn_mag = synphot.spectrum_to_magnitude(
                 wavelength=self.wavelength, flux=self.flux
             )
 
@@ -461,7 +457,7 @@ class ModelBox(Box):
             list_app_mag.append(syn_mag[0])
             list_abs_mag.append(syn_mag[1])
 
-            filter_profile = read_filter.ReadFilter(filter_name=item)
+            filter_profile = ReadFilter(filter_name=item)
             list_wavel.append(filter_profile.mean_wavelength())
 
         phot_box = create_box(
@@ -588,4 +584,4 @@ class SynphotBox(Box):
         self.wavelength = None
         self.flux = None
         self.app_mag = None
-        self.abs_mag = None        
+        self.abs_mag = None

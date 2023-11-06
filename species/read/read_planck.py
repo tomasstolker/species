@@ -3,7 +3,6 @@ Module with reading functionalities for Planck spectra.
 """
 
 import configparser
-import math
 import os
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -13,10 +12,11 @@ import spectres
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.core import box, constants
-from species.read import read_filter
-from species.util import read_util
+from species.core import constants
+from species.core.box import ColorMagBox, ColorColorBox, ModelBox, create_box
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
 class ReadPlanck:
@@ -57,7 +57,7 @@ class ReadPlanck:
         self.wavel_range = wavel_range
 
         if self.filter_name is not None:
-            transmission = read_filter.ReadFilter(self.filter_name)
+            transmission = ReadFilter(self.filter_name)
             self.wavel_range = transmission.wavelength_range()
 
         elif self.wavel_range is None:
@@ -106,7 +106,7 @@ class ReadPlanck:
             - 1.0
         )
 
-        return 1e-6 * math.pi * scaling * planck_1 / planck_2  # (W m-2 um-1)
+        return 1e-6 * np.pi * scaling * planck_1 / planck_2  # (W m-2 um-1)
 
     @staticmethod
     @typechecked
@@ -153,7 +153,7 @@ class ReadPlanck:
         spec_res: float,
         smooth: bool = False,
         wavel_resample: Optional[np.ndarray] = None,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for calculating a Planck spectrum or a combination of
         multiple Planck spectra. The spectrum is calculated at
@@ -189,7 +189,7 @@ class ReadPlanck:
         if "teff" in model_param and isinstance(model_param["teff"], list):
             model_param = self.update_parameters(model_param)
 
-        wavel_points = read_util.create_wavelengths(self.wavel_range, 500.0)
+        wavel_points = create_wavelengths(self.wavel_range, 500.0)
 
         n_planck = 0
 
@@ -241,9 +241,9 @@ class ReadPlanck:
                 )  # (W m-2 um-1)
 
         if smooth:
-            flux = read_util.smooth_spectrum(wavel_points, flux, spec_res)
+            flux = smooth_spectrum(wavel_points, flux, spec_res)
 
-        model_box = box.create_box(
+        model_box = create_box(
             boxtype="model",
             model="planck",
             wavelength=wavel_points,
@@ -312,7 +312,7 @@ class ReadPlanck:
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
             'parallax' (mas) or 'distance' (pc).
-        synphot : species.analysis.photometry.SyntheticPhotometry, None
+        synphot : SyntheticPhotometry, None
             Synthetic photometry object. The object is created if the
             argument is set to ``None``.
 
@@ -330,7 +330,7 @@ class ReadPlanck:
         spectrum = self.get_spectrum(model_param, 100.0)
 
         if synphot is None:
-            synphot = photometry.SyntheticPhotometry(self.filter_name)
+            synphot = SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
@@ -346,7 +346,7 @@ class ReadPlanck:
         model_param : dict
             Dictionary with the 'teff' (K), 'radius' (Rjup), and
             'parallax' (mas) or 'distance' (pc).
-        synphot : species.analysis.photometry.SyntheticPhotometry, None
+        synphot : SyntheticPhotometry, None
             Synthetic photometry object. The object is created if the
             argument is set to ``None``.
 
@@ -364,7 +364,7 @@ class ReadPlanck:
         spectrum = self.get_spectrum(model_param, 100.0)
 
         if synphot is None:
-            synphot = photometry.SyntheticPhotometry(self.filter_name)
+            synphot = SyntheticPhotometry(self.filter_name)
 
         if "parallax" in model_param:
             distance = 1e3 / model_param["parallax"]
@@ -382,7 +382,7 @@ class ReadPlanck:
         radius: float,
         filters_color: Tuple[str, str],
         filter_mag: str,
-    ) -> box.ColorMagBox:
+    ) -> ColorMagBox:
         """
         Function for calculating the colors and magnitudes in the range of 100-10000 K.
 
@@ -421,7 +421,7 @@ class ReadPlanck:
             list_color.append(app_mag_0[0] - app_mag_1[0])
             list_mag.append(app_mag_2[0])
 
-        return box.create_box(
+        return create_box(
             boxtype="colormag",
             library="planck",
             object_type=None,
@@ -439,7 +439,7 @@ class ReadPlanck:
         temperatures: np.ndarray,
         radius: float,
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
-    ) -> box.ColorColorBox:
+    ) -> ColorColorBox:
         """
         Function for calculating two colors in the range of
         100-10000 K.
@@ -478,7 +478,7 @@ class ReadPlanck:
             list_color_1.append(app_mag_0[0] - app_mag_1[0])
             list_color_2.append(app_mag_2[0] - app_mag_3[0])
 
-        return box.create_box(
+        return create_box(
             boxtype="colorcolor",
             library="planck",
             object_type=None,

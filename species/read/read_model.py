@@ -2,16 +2,13 @@
 Module with reading functionalities for atmospheric model spectra.
 """
 
-import os
-import math
-import warnings
 import configparser
+import os
+import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
-
-# import spectres
 import numpy as np
 
 from PyAstronomy.pyasl import rotBroad, fastRotBroad
@@ -19,11 +16,23 @@ from typeguard import typechecked
 from scipy.integrate import simps
 from scipy.interpolate import interp1d, RegularGridInterpolator
 
-from species.analysis import photometry
-from species.core import box, constants
-from species.data import database
-from species.read import read_calibration, read_filter, read_planck
-from species.util import dust_util, read_util
+from species.core import constants
+from species.data.model_spectra import add_model_grid
+from species.data.vega import add_vega
+from species.core.box import (
+    ColorColorBox,
+    ColorMagBox,
+    ModelBox,
+    PhotometryBox,
+    create_box,
+)
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.read.read_planck import ReadPlanck
+from species.util.convert_util import logg_to_mass
+from species.util.dust_util import check_dust_database, ism_extinction, convert_to_av
+from species.util.model_util import binary_to_single
+from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
 class ReadModel:
@@ -75,7 +84,7 @@ class ReadModel:
         self.wavel_range = wavel_range
 
         if self.filter_name is not None:
-            transmission = read_filter.ReadFilter(self.filter_name)
+            transmission = ReadFilter(self.filter_name)
 
             self.wavel_range = transmission.wavelength_range()
             self.mean_wavelength = transmission.mean_wavelength()
@@ -89,6 +98,7 @@ class ReadModel:
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.data_folder = config["species"]["data_folder"]
         self.interp_method = config["species"]["interp_method"]
 
         self.extra_param = [
@@ -114,7 +124,8 @@ class ReadModel:
         ]
 
         # Test if the spectra are present in the database
-        self.open_database()
+        hdf5_file = self.open_database()
+        hdf5_file.close()
 
     @typechecked
     def open_database(self) -> h5py._hl.files.File:
@@ -127,49 +138,26 @@ class ReadModel:
             The HDF5 database.
         """
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if f"models/{self.model}" not in hdf5_file:
+                warnings.warn(
+                    f"The '{self.model}' model spectra are not present "
+                    "in the database. Will try to add the model grid. "
+                    "If this does not work (e.g. currently without an "
+                    "internet connection) then please use the "
+                    "'add_model' method of 'Database' to add the "
+                    "grid of spectra at a later moment."
+                )
 
-        config = configparser.ConfigParser()
-        config.read(config_file)
+                add_model_grid(self.model, self.data_folder, hdf5_file)
 
-        database_path = config["species"]["database"]
-
-        h5_file = h5py.File(database_path, "r")
-
-        try:
-            h5_file[f"models/{self.model}"]
-
-        except KeyError:
-            h5_file.close()
-
-            warnings.warn(
-                f"The '{self.model}' model spectra are not present "
-                "in the database. Will try to add the model grid. "
-                "If this does not work (e.g. currently without an "
-                "internet connection) then please use the "
-                "'add_model' method of 'Database' to add the "
-                "grid of spectra at a later moment."
-            )
-
-            species_db = database.Database()
-            species_db.add_model(self.model)
-
-            h5_file = h5py.File(database_path, "r")
-
-        return h5_file
+        return h5py.File(self.database, "r")
 
     @typechecked
-    def wavelength_points(
-        self, hdf5_file: h5py._hl.files.File
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def wavelength_points(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Internal function for extracting the wavelength points and
         indices that are used.
-
-        Parameters
-        ----------
-        hdf5_file : h5py._hl.files.File
-            The HDF5 database.
 
         Returns
         -------
@@ -180,7 +168,8 @@ class ReadModel:
             booleans indicate if a wavelength point was used.
         """
 
-        wl_points = np.asarray(hdf5_file[f"models/{self.model}/wavelength"])
+        with self.open_database() as hdf5_file:
+            wl_points = np.array(hdf5_file[f"models/{self.model}/wavelength"])
 
         if self.wavel_range is None:
             wl_index = np.ones(wl_points.shape[0], dtype=bool)
@@ -202,8 +191,8 @@ class ReadModel:
     @typechecked
     def interpolate_model(self) -> None:
         """
-        Internal function for linearly interpolating the full grid of
-        model spectra.
+        Internal function for linearly interpolating the
+        full grid of model spectra.
 
         Returns
         -------
@@ -211,21 +200,18 @@ class ReadModel:
             None
         """
 
-        h5_file = self.open_database()
-
-        points = []
-        for item in self.get_points().values():
-            points.append(item)
+        grid_points = list(self.get_points().values())
 
         if self.wl_points is None:
-            self.wl_points, self.wl_index = self.wavelength_points(h5_file)
+            self.wl_points, self.wl_index = self.wavelength_points()
 
-        flux = np.asarray(h5_file[f"models/{self.model}/flux"])
-        flux = flux[..., self.wl_index]
+        with self.open_database() as hdf5_file:
+            grid_flux = np.array(hdf5_file[f"models/{self.model}/flux"])
+            grid_flux = grid_flux[..., self.wl_index]
 
         self.spectrum_interp = RegularGridInterpolator(
-            points,
-            flux,
+            grid_points,
+            grid_flux,
             method=self.interp_method,
             bounds_error=False,
             fill_value=np.nan,
@@ -272,8 +258,8 @@ class ReadModel:
         for item in self.get_points().values():
             points.append(list(item))
 
-        param = self.get_parameters()
-        n_param = len(param)
+        param_list = self.get_parameters()
+        n_param = len(param_list)
 
         dim_size = []
         for item in points:
@@ -290,7 +276,7 @@ class ReadModel:
             model_param = {}
 
             for i, item_0 in enumerate(points[0]):
-                model_param[param[0]] = item_0
+                model_param[param_list[0]] = item_0
 
                 if self.filter_name is not None:
                     flux_new[i] = self.get_flux(model_param)[0]
@@ -308,8 +294,8 @@ class ReadModel:
 
             for i, item_0 in enumerate(points[0]):
                 for j, item_1 in enumerate(points[1]):
-                    model_param[param[0]] = item_0
-                    model_param[param[1]] = item_1
+                    model_param[param_list[0]] = item_0
+                    model_param[param_list[1]] = item_1
 
                     if self.filter_name is not None:
                         flux_new[i, j] = self.get_flux(model_param)[0]
@@ -328,9 +314,9 @@ class ReadModel:
             for i, item_0 in enumerate(points[0]):
                 for j, item_1 in enumerate(points[1]):
                     for k, item_2 in enumerate(points[2]):
-                        model_param[param[0]] = item_0
-                        model_param[param[1]] = item_1
-                        model_param[param[2]] = item_2
+                        model_param[param_list[0]] = item_0
+                        model_param[param_list[1]] = item_1
+                        model_param[param_list[2]] = item_2
 
                         if self.filter_name is not None:
                             flux_new[i, j, k] = self.get_flux(model_param)[0]
@@ -350,10 +336,10 @@ class ReadModel:
                 for j, item_1 in enumerate(points[1]):
                     for k, item_2 in enumerate(points[2]):
                         for m, item_3 in enumerate(points[3]):
-                            model_param[param[0]] = item_0
-                            model_param[param[1]] = item_1
-                            model_param[param[2]] = item_2
-                            model_param[param[3]] = item_3
+                            model_param[param_list[0]] = item_0
+                            model_param[param_list[1]] = item_1
+                            model_param[param_list[2]] = item_2
+                            model_param[param_list[3]] = item_3
 
                             if self.filter_name is not None:
                                 flux_new[i, j, k, m] = self.get_flux(model_param)[0]
@@ -374,11 +360,11 @@ class ReadModel:
                     for k, item_2 in enumerate(points[2]):
                         for m, item_3 in enumerate(points[3]):
                             for n, item_4 in enumerate(points[4]):
-                                model_param[param[0]] = item_0
-                                model_param[param[1]] = item_1
-                                model_param[param[2]] = item_2
-                                model_param[param[3]] = item_3
-                                model_param[param[4]] = item_4
+                                model_param[param_list[0]] = item_0
+                                model_param[param_list[1]] = item_1
+                                model_param[param_list[2]] = item_2
+                                model_param[param_list[3]] = item_3
+                                model_param[param_list[4]] = item_4
 
                                 if self.filter_name is not None:
                                     flux_new[i, j, k, m, n] = self.get_flux(
@@ -394,7 +380,7 @@ class ReadModel:
                                     ).flux
 
         if self.filter_name is not None:
-            transmission = read_filter.ReadFilter(self.filter_name)
+            transmission = ReadFilter(self.filter_name)
             self.wl_points = [transmission.mean_wavelength()]
 
         else:
@@ -408,9 +394,9 @@ class ReadModel:
             fill_value=np.nan,
         )
 
-    @staticmethod
     @typechecked
     def apply_lognorm_ext(
+        self,
         wavelength: np.ndarray,
         flux: np.ndarray,
         radius_interp: float,
@@ -440,26 +426,26 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        database_path = dust_util.check_dust_database()
+        check_dust_database()
 
-        with h5py.File(database_path, "r") as h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
             # Read array with cross sections
-            dust_cross = np.asarray(
-                h5_file["dust/lognorm/mgsio3/crystalline/cross_section"]
+            dust_cross = np.array(
+                hdf5_file["dust/lognorm/mgsio3/crystalline/cross_section"]
             )
 
             # Read array with wavelengths
-            dust_wavel = np.asarray(
-                h5_file["dust/lognorm/mgsio3/crystalline/wavelength"]
+            dust_wavel = np.array(
+                hdf5_file["dust/lognorm/mgsio3/crystalline/wavelength"]
             )
 
             # Read array with geometric radius
-            dust_radius = np.asarray(
-                h5_file["dust/lognorm/mgsio3/crystalline/radius_g"]
+            dust_radius = np.array(
+                hdf5_file["dust/lognorm/mgsio3/crystalline/radius_g"]
             )
 
             # Read array with geometric standard deviation
-            dust_sigma = np.asarray(h5_file["dust/lognorm/mgsio3/crystalline/sigma_g"])
+            dust_sigma = np.array(hdf5_file["dust/lognorm/mgsio3/crystalline/sigma_g"])
 
         if wavelength[0] < dust_wavel[0]:
             raise ValueError(
@@ -488,7 +474,7 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = read_filter.ReadFilter("Generic/Bessell.V")
+        read_filt = ReadFilter("Generic/Bessell.V")
         filt_trans = read_filt.get_filter()
 
         # Create empty array for V-band extinction
@@ -535,9 +521,9 @@ class ReadModel:
 
         return flux * np.exp(-cross_new * n_grains)
 
-    @staticmethod
     @typechecked
     def apply_powerlaw_ext(
+        self,
         wavelength: np.ndarray,
         flux: np.ndarray,
         r_max_interp: float,
@@ -565,29 +551,29 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        database_path = dust_util.check_dust_database()
+        check_dust_database()
 
-        with h5py.File(database_path, "r") as h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
             # Read array with cross sections
-            dust_cross = np.asarray(
-                h5_file["dust/powerlaw/mgsio3/crystalline/cross_section"]
+            dust_cross = np.array(
+                hdf5_file["dust/powerlaw/mgsio3/crystalline/cross_section"]
             )
 
             # Read array with wavelengths
 
-            dust_wavel = np.asarray(
-                h5_file["dust/powerlaw/mgsio3/crystalline/wavelength"]
+            dust_wavel = np.array(
+                hdf5_file["dust/powerlaw/mgsio3/crystalline/wavelength"]
             )
 
             # Read array with maximum particle radii
 
-            dust_r_max = np.asarray(
-                h5_file["dust/powerlaw/mgsio3/crystalline/radius_max"]
+            dust_r_max = np.array(
+                hdf5_file["dust/powerlaw/mgsio3/crystalline/radius_max"]
             )
 
             # Read array with power-law exponents
 
-            dust_exp = np.asarray(h5_file["dust/powerlaw/mgsio3/crystalline/exponent"])
+            dust_exp = np.array(hdf5_file["dust/powerlaw/mgsio3/crystalline/exponent"])
 
         # Interpolate cross sections as function of wavelength,
         # geometric radius, and geometric standard deviation
@@ -616,7 +602,7 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = read_filter.ReadFilter("Generic/Bessell.V")
+        read_filt = ReadFilter("Generic/Bessell.V")
         filt_trans = read_filt.get_filter()
 
         # Create empty array for V-band extinction
@@ -688,7 +674,7 @@ class ReadModel:
             Extinction (mag) as function of wavelength.
         """
 
-        ext_mag = dust_util.ism_extinction(v_band_ext, v_band_red, wavelengths)
+        ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
 
         return flux * 10.0 ** (-0.4 * ext_mag), ext_mag
 
@@ -702,7 +688,7 @@ class ReadModel:
         smooth: bool = False,
         fast_rot_broad: bool = True,
         ext_filter: Optional[str] = None,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for extracting a model spectrum by linearly
         interpolating the model grid.
@@ -755,7 +741,7 @@ class ReadModel:
 
         Returns
         -------
-        species.core.box.ModelBox
+        ModelBox
             Box with the model spectrum.
         """
 
@@ -765,11 +751,13 @@ class ReadModel:
 
         # Check if all parameters are present and within the grid boundaries
 
-        for key in self.get_parameters():
+        param_list = self.get_parameters()
+
+        for key in param_list:
             if key not in model_param.keys():
                 raise ValueError(
                     f"The '{key}' parameter is required by '{self.model}'. "
-                    f"The mandatory parameters are {self.get_parameters()}."
+                    f"The mandatory parameters are {param_list}."
                 )
 
             if model_param[key] < grid_bounds[key][0]:
@@ -790,9 +778,11 @@ class ReadModel:
 
         ignore_param = []
 
+        param_list = self.get_parameters()
+
         for key in model_param.keys():
             if (
-                key not in self.get_parameters()
+                key not in param_list
                 and key not in self.extra_param
                 and not key.startswith("phot_ext_")
             ):
@@ -800,7 +790,7 @@ class ReadModel:
                     f"The '{key}' parameter is not required by "
                     f"'{self.model}' so the parameter will be "
                     f"ignored. The mandatory parameters are "
-                    f"{self.get_parameters()}."
+                    f"{param_list}."
                 )
 
                 ignore_param.append(key)
@@ -850,7 +840,7 @@ class ReadModel:
 
         if "mass" in model_param and "radius" not in model_param:
             mass = 1e3 * model_param["mass"] * constants.M_JUP  # (g)
-            radius = math.sqrt(
+            radius = np.sqrt(
                 1e3 * constants.GRAVITY * mass / (10.0 ** model_param["logg"])
             )  # (cm)
             model_param["radius"] = 1e-2 * radius / constants.R_JUP  # (Rjup)
@@ -885,7 +875,7 @@ class ReadModel:
             elif "distance" in model_param:
                 disk_param["distance"] = model_param["distance"]
 
-            readplanck = read_planck.ReadPlanck(
+            readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
 
@@ -906,7 +896,7 @@ class ReadModel:
 
         # Create ModelBox with the spectrum
 
-        model_box = box.create_box(
+        model_box = create_box(
             boxtype="model",
             model=self.model,
             wavelength=self.wl_points,
@@ -996,7 +986,7 @@ class ReadModel:
             ism_reddening = model_param.get("ism_red", 3.1)
 
             if ext_filter is not None:
-                ism_ext_av = dust_util.convert_to_av(
+                ism_ext_av = convert_to_av(
                     filter_name=ext_filter,
                     filter_ext=model_param[f"phot_ext_{ext_filter}"],
                     v_band_red=ism_reddening,
@@ -1019,7 +1009,7 @@ class ReadModel:
         # Smooth the spectrum
 
         if smooth and spec_res is not None:
-            model_box.flux = read_util.smooth_spectrum(
+            model_box.flux = smooth_spectrum(
                 model_box.wavelength, model_box.flux, spec_res
             )
 
@@ -1058,7 +1048,7 @@ class ReadModel:
                     "the grid boundaries as stored in the database."
                 )
 
-            wavel_resample = read_util.create_wavelengths(
+            wavel_resample = create_wavelengths(
                 (self.wl_points[0], self.wl_points[-1]), spec_res
             )
 
@@ -1088,20 +1078,14 @@ class ReadModel:
         # Convert flux to magnitude
 
         if magnitude:
-            h5_file = h5py.File(self.database, "r")
+            with h5py.File(self.database, "a") as hdf5_file:
+                if "spectra/calibration/vega" not in hdf5_file:
+                    add_vega(self.data_folder, hdf5_file)
 
-            if "spectra/calibration/vega" not in h5_file:
-                h5_file.close()
-                species_db = database.Database()
-                species_db.add_spectra("vega")
+                vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
-            else:
-                h5_file.close()
+            flux_interp = interp1d(vega_spec[0,], vega_spec[1,])
 
-            read_calib = read_calibration.ReadCalibration("vega", filter_name=None)
-            calib_box = read_calib.get_spectrum()
-
-            flux_interp = interp1d(calib_box.wavelength, calib_box.flux)
             flux_vega = flux_interp(model_box.wavelength)
 
             # flux_vega, _ = spectres.spectres(
@@ -1156,7 +1140,7 @@ class ReadModel:
         # Add the planet mass to the parameter dictionary
 
         if "radius" in model_param and "logg" in model_param:
-            model_param["mass"] = read_util.get_mass(
+            model_param["mass"] = logg_to_mass(
                 model_param["logg"], model_param["radius"]
             )
 
@@ -1169,7 +1153,7 @@ class ReadModel:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         ext_filter: Optional[str] = None,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for selecting a model spectrum (without interpolation)
         for a set of parameter values that coincide with the grid
@@ -1204,17 +1188,19 @@ class ReadModel:
 
         Returns
         -------
-        species.core.box.ModelBox
+        ModelBox
             Box with the model spectrum.
         """
 
         # Check if all parameters are present
 
-        for key in self.get_parameters():
+        param_list = self.get_parameters()
+
+        for key in param_list:
             if key not in model_param.keys():
                 raise ValueError(
                     f"The '{key}' parameter is required by '{self.model}'. "
-                    f"The mandatory parameters are {self.get_parameters()}."
+                    f"The mandatory parameters are {param_list}."
                 )
 
         # Print a warning if redundant parameters are included in the dictionary
@@ -1222,19 +1208,15 @@ class ReadModel:
         ignore_param = []
 
         for key in model_param.keys():
-            if key not in self.get_parameters() and key not in self.extra_param:
+            if key not in param_list and key not in self.extra_param:
                 warnings.warn(
                     f"The '{key}' parameter is not required by "
                     f"'{self.model}' so the parameter will be "
                     f"ignored. The mandatory parameters are "
-                    f"{self.get_parameters()}."
+                    f"{param_list}."
                 )
 
                 ignore_param.append(key)
-
-        # Open de HDF5 database
-
-        h5_file = self.open_database()
 
         # Set the wavelength range
 
@@ -1242,7 +1224,7 @@ class ReadModel:
             wl_points = self.get_wavelengths()
             self.wavel_range = (wl_points[0], wl_points[-1])
 
-        # Create lists with the parameter names and values
+        # Model parameters to check
 
         check_param = [
             "teff",
@@ -1254,13 +1236,15 @@ class ReadModel:
             "ad_index",
         ]
 
+        # Create lists with the parameter names and values
+
         param_key = []
         param_val = []
 
-        for item in check_param:
-            if item in model_param and item not in ignore_param:
-                param_key.append(item)
-                param_val.append(model_param[item])
+        for param_item in check_param:
+            if param_item in model_param and param_item not in ignore_param:
+                param_key.append(param_item)
+                param_val.append(model_param[param_item])
 
         # Check if the ext_filter should be adjusted
         # to the name that is extracted from the
@@ -1271,31 +1255,36 @@ class ReadModel:
                 if param_item.startswith("phot_ext_"):
                     ext_filter = param_item[9:]
 
-        # Read the grid of fluxes from the database
+        # Read the wavelength grid and the indices that will
+        # be used for the wavelength range
 
-        flux = np.asarray(h5_file[f"models/{self.model}/flux"])
+        wl_points, wl_index = self.wavelength_points()
 
-        # Find the indices of the grid points for which the spectrum will be extracted
+        # Open de HDF5 database
 
-        indices = []
+        with self.open_database() as hdf5_file:
+            # Read the grid of fluxes from the database
 
-        for i, item in enumerate(param_key):
-            data = np.asarray(h5_file[f"models/{self.model}/{item}"])
-            data_index = np.argwhere(
-                np.round(data, 4) == np.round(model_param[item], 4)
-            )
+            flux = np.array(hdf5_file[f"models/{self.model}/flux"])
 
-            if len(data_index) == 0:
-                raise ValueError(f"The parameter {item}={param_val[i]} is not found.")
+            # Find the indices of the grid points for which the spectrum will be extracted
 
-            data_index = data_index[0]
+            indices = []
 
-            indices.append(data_index[0])
+            for i, item in enumerate(param_key):
+                data = np.array(hdf5_file[f"models/{self.model}/{item}"])
+                data_index = np.argwhere(
+                    np.round(data, 4) == np.round(model_param[item], 4)
+                )
 
-        # Read the wavelength grid and the indices that will be used
-        # for the wavelength range
+                if len(data_index) == 0:
+                    raise ValueError(
+                        f"The parameter {item}={param_val[i]} is not found."
+                    )
 
-        wl_points, wl_index = self.wavelength_points(h5_file)
+                data_index = data_index[0]
+
+                indices.append(data_index[0])
 
         # Append the wavelength indices to the list of grid indices
 
@@ -1305,10 +1294,6 @@ class ReadModel:
         # wavelength range
 
         flux = flux[tuple(indices)]
-
-        # Close the HDF5 database
-
-        h5_file.close()
 
         # Apply (radius/distance)^2 scaling
 
@@ -1340,7 +1325,7 @@ class ReadModel:
             elif "distance" in model_param:
                 disk_param["distance"] = model_param["distance"]
 
-            readplanck = read_planck.ReadPlanck(
+            readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
 
@@ -1359,7 +1344,7 @@ class ReadModel:
 
         # Create ModelBox with the spectrum
 
-        model_box = box.create_box(
+        model_box = create_box(
             boxtype="model",
             model=self.model,
             wavelength=wl_points,
@@ -1400,7 +1385,7 @@ class ReadModel:
             ism_reddening = model_param.get("ism_red", 3.1)
 
             if ext_filter is not None:
-                ism_ext_av = dust_util.convert_to_av(
+                ism_ext_av = convert_to_av(
                     filter_name=ext_filter,
                     filter_ext=model_param[f"phot_ext_{ext_filter}"],
                     v_band_red=ism_reddening,
@@ -1423,7 +1408,7 @@ class ReadModel:
         # Smooth the spectrum
 
         if spec_res is not None:
-            model_box.flux = read_util.smooth_spectrum(
+            model_box.flux = smooth_spectrum(
                 model_box.wavelength, model_box.flux, spec_res
             )
 
@@ -1449,7 +1434,7 @@ class ReadModel:
         # Add the planet mass to the parameter dictionary
 
         if "radius" in model_param and "logg" in model_param:
-            model_param["mass"] = read_util.get_mass(
+            model_param["mass"] = logg_to_mass(
                 model_param["logg"], model_param["radius"]
             )
 
@@ -1485,7 +1470,7 @@ class ReadModel:
     @typechecked
     def get_flux(
         self, model_param: Dict[str, float], synphot=None, return_box: bool = False
-    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
+    ) -> Union[Tuple[Optional[float], Optional[float]], PhotometryBox]:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -1494,7 +1479,7 @@ class ReadModel:
         ----------
         model_param : dict
             Model parameters and values.
-        synphot : species.analysis.photometry.SyntheticPhotometry, None
+        synphot : SyntheticPhotometry, None
             Synthetic photometry object. The object is created if set
             to ``None``.
         return_box : bool
@@ -1515,11 +1500,13 @@ class ReadModel:
             Uncertainty (W m-2 um-1), which is set to ``None``.
         """
 
-        for key in self.get_parameters():
+        param_list = self.get_parameters()
+
+        for key in param_list:
             if key not in model_param.keys():
                 raise ValueError(
                     f"The '{key}' parameter is required by '{self.model}'. "
-                    f"The mandatory parameters are {self.get_parameters()}."
+                    f"The mandatory parameters are {param_list}."
                 )
 
         if self.spectrum_interp is None:
@@ -1528,14 +1515,14 @@ class ReadModel:
         spectrum = self.get_model(model_param)
 
         if synphot is None:
-            synphot = photometry.SyntheticPhotometry(self.filter_name)
+            synphot = SyntheticPhotometry(self.filter_name)
 
         model_flux = synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
 
         if return_box:
             model_mag = self.get_magnitude(model_param)
 
-            phot_box = box.create_box(
+            phot_box = create_box(
                 boxtype="photometry",
                 name=self.model,
                 wavelength=[self.mean_wavelength],
@@ -1554,7 +1541,7 @@ class ReadModel:
         self,
         model_param: Dict[str, float],
         return_box: bool = False,
-    ) -> Union[Tuple[Optional[float], Optional[float]], box.PhotometryBox]:
+    ) -> Union[Tuple[Optional[float], Optional[float]], PhotometryBox]:
         """
         Function for calculating the apparent and absolute magnitudes
         for the ``filter_name``.
@@ -1589,11 +1576,13 @@ class ReadModel:
             ``radius``.
         """
 
-        for key in self.get_parameters():
+        param_list = self.get_parameters()
+
+        for key in param_list:
             if key not in model_param.keys():
                 raise ValueError(
                     f"The '{key}' parameter is required by '{self.model}'. "
-                    f"The mandatory parameters are {self.get_parameters()}."
+                    f"The mandatory parameters are {param_list}."
                 )
 
         if self.spectrum_interp is None:
@@ -1604,8 +1593,8 @@ class ReadModel:
 
         except ValueError:
             warnings.warn(
-                f"The set of model parameters {model_param} is outside the grid range "
-                f"{self.get_bounds()} so returning a NaN."
+                f"The set of model parameters {model_param} is outside "
+                f"the grid range {self.get_bounds()} so returning a NaN."
             )
 
             return np.nan, np.nan
@@ -1615,7 +1604,7 @@ class ReadModel:
             abs_mag = (np.nan, None)
 
         else:
-            synphot = photometry.SyntheticPhotometry(self.filter_name)
+            synphot = SyntheticPhotometry(self.filter_name)
 
             if "radius" in model_param and "parallax" in model_param:
                 app_mag, abs_mag = synphot.spectrum_to_magnitude(
@@ -1648,7 +1637,7 @@ class ReadModel:
         if return_box:
             model_flux = self.get_flux(model_param)
 
-            phot_box = box.create_box(
+            phot_box = create_box(
                 boxtype="photometry",
                 name=self.model,
                 wavelength=[self.mean_wavelength],
@@ -1673,17 +1662,14 @@ class ReadModel:
             Boundaries of parameter grid.
         """
 
-        h5_file = self.open_database()
+        param_list = self.get_parameters()
 
-        parameters = self.get_parameters()
+        with self.open_database() as hdf5_file:
+            bounds = {}
 
-        bounds = {}
-
-        for item in parameters:
-            data = h5_file[f"models/{self.model}/{item}"]
-            bounds[item] = (data[0], data[-1])
-
-        h5_file.close()
+            for param_item in param_list:
+                data = hdf5_file[f"models/{self.model}/{param_item}"]
+                bounds[param_item] = (data[0], data[-1])
 
         return bounds
 
@@ -1698,8 +1684,8 @@ class ReadModel:
             Wavelength points (um).
         """
 
-        with self.open_database() as h5_file:
-            wavelength = np.asarray(h5_file[f"models/{self.model}/wavelength"])
+        with self.open_database() as hdf5_file:
+            wavelength = np.array(hdf5_file[f"models/{self.model}/wavelength"])
 
         return wavelength
 
@@ -1714,19 +1700,16 @@ class ReadModel:
             Parameter points of the model grid.
         """
 
-        points = {}
-
-        h5_file = self.open_database()
-
-        parameters = self.get_parameters()
+        param_list = self.get_parameters()
 
         points = {}
 
-        for item in parameters:
-            data = h5_file[f"models/{self.model}/{item}"]
-            points[item] = np.asarray(data)
+        with self.open_database() as hdf5_file:
+            points = {}
 
-        h5_file.close()
+            for param_item in param_list:
+                data = hdf5_file[f"models/{self.model}/{param_item}"]
+                points[param_item] = np.array(data)
 
         return points
 
@@ -1741,21 +1724,18 @@ class ReadModel:
             Model parameters.
         """
 
-        h5_file = self.open_database()
+        with self.open_database() as hdf5_file:
+            dset = hdf5_file[f"models/{self.model}"]
 
-        dset = h5_file[f"models/{self.model}"]
+            if "n_param" in dset.attrs:
+                n_param = dset.attrs["n_param"]
 
-        if "n_param" in dset.attrs:
-            n_param = dset.attrs["n_param"]
+            elif "nparam" in dset.attrs:
+                n_param = dset.attrs["nparam"]
 
-        elif "nparam" in dset.attrs:
-            n_param = dset.attrs["nparam"]
-
-        param = []
-        for i in range(n_param):
-            param.append(dset.attrs[f"parameter{i}"])
-
-        h5_file.close()
+            param = []
+            for i in range(n_param):
+                param.append(dset.attrs[f"parameter{i}"])
 
         return param
 
@@ -1792,7 +1772,7 @@ class ReadModel:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         smooth: bool = False,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for extracting a model spectrum of a binary system.
         A weighted combination of two spectra will be returned. The
@@ -1829,13 +1809,13 @@ class ReadModel:
 
         Returns
         -------
-        species.core.box.ModelBox
+        ModelBox
             Box with the model spectrum.
         """
 
         # Get grid boundaries
 
-        param_0 = read_util.binary_to_single(model_param, 0)
+        param_0 = binary_to_single(model_param, 0)
 
         model_box_0 = self.get_model(
             param_0,
@@ -1844,7 +1824,7 @@ class ReadModel:
             smooth=smooth,
         )
 
-        param_1 = read_util.binary_to_single(model_param, 1)
+        param_1 = binary_to_single(model_param, 1)
 
         model_box_1 = self.get_model(
             param_1,
@@ -1858,7 +1838,7 @@ class ReadModel:
             + (1.0 - model_param["spec_weight"]) * model_box_1.flux
         )
 
-        model_box = box.create_box(
+        model_box = create_box(
             boxtype="model",
             model=self.model,
             wavelength=model_box_0.wavelength,
@@ -1942,7 +1922,7 @@ class ReadModel:
         model_param: Dict[str, float],
         filters_color: Tuple[str, str],
         filter_mag: str,
-    ) -> box.ColorMagBox:
+    ) -> ColorMagBox:
         """
         Function for creating a :class:`~species.core.box.
         ColorMagBox` for a given set of filter names and model
@@ -1978,7 +1958,7 @@ class ReadModel:
 
         Returns
         -------
-        species.core.box.ColorMagBox
+        ColorMagBox
             Box with the colors and magnitudes.
         """
 
@@ -2012,7 +1992,7 @@ class ReadModel:
             color_list.append(mag_1[0] - mag_2[0])
             mag_list.append(mag_3[0])
 
-        return box.create_box(
+        return create_box(
             "colormag",
             library=self.model,
             object_type="spectra",
@@ -2028,7 +2008,7 @@ class ReadModel:
         self,
         model_param: Dict[str, float],
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
-    ) -> box.ColorColorBox:
+    ) -> ColorColorBox:
         """
         Function for creating a :class:`~species.core.box.
         ColorColorBox` for a given set of filter names and model
@@ -2059,7 +2039,7 @@ class ReadModel:
 
         Returns
         -------
-        species.core.box.ColorColorBox
+        ColorColorBox
             Box with the colors.
         """
 
@@ -2095,7 +2075,7 @@ class ReadModel:
             color_1_list.append(mag_1[0] - mag_2[0])
             color_2_list.append(mag_3[0] - mag_4[0])
 
-        return box.create_box(
+        return create_box(
             "colorcolor",
             library=self.model,
             object_type="spectra",

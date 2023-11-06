@@ -4,7 +4,9 @@ import shutil
 import pytest
 import numpy as np
 
-import species
+from species import SpeciesInit
+from species.data.database import Database
+from species.read.read_calibration import ReadCalibration
 from species.util import test_util
 
 
@@ -21,17 +23,17 @@ class TestCalibration:
 
     def test_species_init(self):
         test_util.create_config("./")
-        species.SpeciesInit()
+        SpeciesInit()
 
     def test_read_calibration(self):
-        database = species.Database()
+        database = Database()
         database.add_spectra("vega")
 
-        read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
+        read_calib = ReadCalibration("vega", filter_name="Paranal/NACO.H")
         assert read_calib.wavel_range == pytest.approx((1.44, 1.88), rel=1e-7, abs=0.0)
 
     def test_resample_spectrum(self):
-        read_calib = species.ReadCalibration("vega")
+        read_calib = ReadCalibration("vega")
         spec_box = read_calib.resample_spectrum(
             np.linspace(1.0, 2.0, 10), apply_mask=True
         )
@@ -42,7 +44,7 @@ class TestCalibration:
         )
 
     def test_get_spectrum(self):
-        read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.Lp")
+        read_calib = ReadCalibration("vega", filter_name="Paranal/NACO.Lp")
         spec_box = read_calib.get_spectrum(
             self.model_param, apply_mask=True, spec_res=100.0
         )
@@ -55,13 +57,13 @@ class TestCalibration:
         )
 
     def test_get_flux(self):
-        read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
+        read_calib = ReadCalibration("vega", filter_name="Paranal/NACO.H")
         flux = read_calib.get_flux(model_param=self.model_param)
 
         assert flux[0] == pytest.approx(1.1149293297882683e-09, rel=self.limit, abs=0.0)
 
     def test_get_magnitude(self):
-        read_calib = species.ReadCalibration("vega", filter_name="Paranal/NACO.H")
+        read_calib = ReadCalibration("vega", filter_name="Paranal/NACO.H")
         app_mag, abs_mag = read_calib.get_magnitude(model_param=self.model_param)
 
         assert app_mag[0] == 0.03

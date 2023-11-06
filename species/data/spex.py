@@ -12,8 +12,9 @@ import pandas as pd
 from astropy.io.votable import parse_single_table
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.util import data_util, query_util
+from species.phot.syn_phot import SyntheticPhotometry
+from species.util.data_util import update_sptype
+from species.util.query_util import get_simbad
 
 
 @typechecked
@@ -56,8 +57,10 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     if not os.path.exists(data_path):
         os.makedirs(data_path)
 
-    url_all = "http://svo2.cab.inta-csic.es/vocats/v2/spex/cs.php?" \
-              "RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2"
+    url_all = (
+        "http://svo2.cab.inta-csic.es/vocats/v2/spex/cs.php?"
+        "RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2"
+    )
 
     xml_file_spex = os.path.join(data_path, "spex.xml")
 
@@ -75,7 +78,6 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
     for i, item in enumerate(url):
         if twomass[i] not in unique_id:
-
             if isinstance(twomass[i], str):
                 xml_file_1 = os.path.join(data_path, twomass[i] + ".xml")
             else:
@@ -124,7 +126,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
     zp_hband = 1.133e-9  # (W m-2 um-1)
 
-    h_twomass = photometry.SyntheticPhotometry("2MASS/2MASS.H", zero_point=zp_hband)
+    h_twomass = SyntheticPhotometry("2MASS/2MASS.H", zero_point=zp_hband)
 
     for votable in os.listdir(data_path):
         if votable.startswith("spex_") and votable.endswith(".xml"):
@@ -187,7 +189,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
                 if not isinstance(sptype_opt, str):
                     sptype_opt = sptype_opt.decode("utf-8")
 
-                sptype_opt = data_util.update_sptype(np.array([sptype_opt]))[0]
+                sptype_opt = update_sptype(np.array([sptype_opt]))[0]
 
             except KeyError:
                 sptype_opt = None
@@ -200,7 +202,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
                 if not isinstance(sptype_nir, str):
                     sptype_nir = sptype_nir.decode("utf-8")
 
-                sptype_nir = data_util.update_sptype(np.array([sptype_nir]))[0]
+                sptype_nir = update_sptype(np.array([sptype_nir]))[0]
 
             except KeyError:
                 sptype_nir = None
@@ -212,7 +214,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
             spdata = np.column_stack([wavelength, flux, error])
 
-            simbad_id = query_util.get_simbad(f"2MASS {twomass_id}")
+            simbad_id = get_simbad(f"2MASS {twomass_id}")
 
             if simbad_id is not None:
                 if not isinstance(simbad_id, str):

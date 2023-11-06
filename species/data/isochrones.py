@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 
 from species.core import constants
-from species.util import data_util
+from species.util.data_util import extract_tarfile
 
 
 def add_manual(database, tag, file_name, model_name="manual"):
@@ -231,7 +231,7 @@ def add_atmo(database, input_path):
         print(" [DONE]")
 
     print(f"Unpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     iso_files = [
@@ -378,9 +378,10 @@ def add_baraffe2015(database, input_path):
         f"isochrones/{db_tag}/radius", data=iso_data[:, 5]
     )  # (Rjup)
 
-    dset.attrs["model"] = "baraffe2015"
+    dset.attrs["model"] = db_tag
 
     print(" [DONE]")
+    print(f"Database tag: {db_tag}")
 
 
 def add_btsettl(database, input_path):
@@ -561,7 +562,7 @@ def add_saumon(database, input_path):
         print(" [DONE]")
 
     print(f"Unpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     iso_files = [
@@ -681,7 +682,7 @@ def add_sonora(database, input_path):
         print(" [DONE]")
 
     print("Unpacking Sonora Bobcat evolution (929 kB)...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     iso_files = [
@@ -836,7 +837,7 @@ def add_linder2019(database, input_path):
         print(" [DONE]")
 
     print("Unpacking Linder et al. (2019) isochrones (536 kB)...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     iso_folder = os.path.join(data_folder, "isochrones")

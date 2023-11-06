@@ -15,12 +15,10 @@ from scipy import interpolate, optimize
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.core import box
-from species.read import read_filter
-from species.util import read_util
-
-import matplotlib.pyplot as plt
+from species.core.box import SpectrumBox, create_box
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
 class ReadCalibration:
@@ -52,7 +50,7 @@ class ReadCalibration:
             self.wavel_range = None
 
         else:
-            transmission = read_filter.ReadFilter(filter_name)
+            transmission = ReadFilter(filter_name)
             self.wavel_range = transmission.wavelength_range()
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
@@ -70,7 +68,7 @@ class ReadCalibration:
         spec_res: Optional[float] = None,
         apply_mask: bool = False,
         interp_highres: bool = False,
-    ) -> box.SpectrumBox:
+    ) -> SpectrumBox:
         """
         Function for resampling the spectrum and optional
         uncertainties onto a new wavelength grid.
@@ -102,7 +100,7 @@ class ReadCalibration:
 
         Returns
         -------
-        species.core.box.SpectrumBox
+        SpectrumBox
             Box with the resampled spectrum.
         """
 
@@ -124,14 +122,14 @@ class ReadCalibration:
             )
 
             wavel_range = (calib_box.wavelength[0], calib_box.wavelength[-1])
-            wavel_highres = read_util.create_wavelengths(wavel_range, 10000.0)
+            wavel_highres = create_wavelengths(wavel_range, 10000.0)
 
             calib_box.wavelength = wavel_highres
             calib_box.flux = flux_interp(wavel_highres)
             calib_box.error = sigma_interp(wavel_highres)
 
             if spec_res is not None:
-                calib_box.flux = read_util.smooth_spectrum(
+                calib_box.flux = smooth_spectrum(
                     wavelength=calib_box.wavelength,
                     flux=calib_box.flux,
                     spec_res=spec_res,
@@ -156,7 +154,7 @@ class ReadCalibration:
 
         else:
             if spec_res is not None:
-                calib_box.flux = read_util.smooth_spectrum(
+                calib_box.flux = smooth_spectrum(
                     wavelength=calib_box.wavelength,
                     flux=calib_box.flux,
                     spec_res=spec_res,
@@ -175,7 +173,7 @@ class ReadCalibration:
             flux_new = model_param["scaling"] * flux_new
             error_new = model_param["scaling"] * error_new
 
-        return box.create_box(
+        return create_box(
             boxtype="spectrum",
             spectrum="calibration",
             wavelength=wavel_points,
@@ -192,7 +190,7 @@ class ReadCalibration:
         spec_res: Optional[float] = None,
         extrapolate: bool = False,
         min_wavelength: Optional[float] = None,
-    ) -> box.SpectrumBox:
+    ) -> SpectrumBox:
         """
         Function for selecting the calibration spectrum.
 
@@ -214,28 +212,16 @@ class ReadCalibration:
 
         Returns
         -------
-        species.core.box.SpectrumBox
+        SpectrumBox
             Box with the spectrum.
         """
 
         with h5py.File(self.database, "r") as h5_file:
-            data = np.asarray(h5_file[f"spectra/calibration/{self.tag}"])
+            cal_spec = np.array(h5_file[f"spectra/calibration/{self.tag}"])
 
-            wavelength = np.asarray(
-                data[
-                    0,
-                ]
-            )
-            flux = np.asarray(
-                data[
-                    1,
-                ]
-            )
-            error = np.asarray(
-                data[
-                    2,
-                ]
-            )
+            wavelength = cal_spec[0,]
+            flux = cal_spec[1,]
+            error = cal_spec[2,]
 
         if apply_mask:
             indices = np.where(flux > 0.0)[0]
@@ -305,7 +291,7 @@ class ReadCalibration:
                 error = np.append(error, 0.0)
 
         if spec_res is not None:
-            wavelength_new = read_util.create_wavelengths(
+            wavelength_new = create_wavelengths(
                 (wavelength[0], wavelength[-1]), spec_res
             )
 
@@ -322,7 +308,7 @@ class ReadCalibration:
             flux = flux_new
             error = error_new
 
-        return box.create_box(
+        return create_box(
             boxtype="spectrum",
             spectrum="calibration",
             wavelength=wavelength,
@@ -357,7 +343,7 @@ class ReadCalibration:
 
         specbox = self.get_spectrum(model_param=model_param, apply_mask=True)
 
-        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        synphot = SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_flux(
             specbox.wavelength, specbox.flux, error=specbox.flux
@@ -398,7 +384,7 @@ class ReadCalibration:
         else:
             error = specbox.error
 
-        synphot = photometry.SyntheticPhotometry(self.filter_name)
+        synphot = SyntheticPhotometry(self.filter_name)
 
         return synphot.spectrum_to_magnitude(
             specbox.wavelength, specbox.flux, error=error, distance=distance

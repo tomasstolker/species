@@ -2,7 +2,6 @@
 Module for plotting atmospheric retrieval results.
 """
 
-# import copy
 import sys
 import warnings
 
@@ -19,9 +18,15 @@ from scipy.interpolate import interp1d
 from scipy.stats import lognorm
 from typeguard import typechecked
 
-from species.data import database
-from species.read import read_radtrans
-from species.util import retrieval_util
+from species.read.read_radtrans import ReadRadtrans
+from species.util.retrieval_util import (
+    calc_metal_ratio,
+    get_condensation_curve,
+    pt_ret_model,
+    pt_spline_interp,
+    quench_pressure,
+    scale_cloud_abund,
+)
 
 
 @typechecked
@@ -33,7 +38,7 @@ def plot_pt_profile(
     ylim: Optional[Tuple[float, float]] = None,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+    radtrans: Optional[ReadRadtrans] = None,
     extra_axis: Optional[str] = None,
     rad_conv_bound: bool = False,
 ) -> mpl.figure.Figure:
@@ -64,7 +69,7 @@ def plot_pt_profile(
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
-    radtrans : read_radtrans.ReadRadtrans, None
+    radtrans : ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         Not used if set to ``None``.
     extra_axis : str, None
@@ -101,7 +106,9 @@ def plot_pt_profile(
 
     color_iter = iter(cloud_colors)
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
 
     parameters = np.asarray(box.parameters)
@@ -251,9 +258,7 @@ def plot_pt_profile(
 
                 # Check if the C/H and O/H ratios are within the prior boundaries
 
-                _, _, c_o_ratio = retrieval_util.calc_metal_ratio(
-                    log_x_abund, line_species
-                )
+                _, _, c_o_ratio = calc_metal_ratio(log_x_abund, line_species)
 
             else:
                 log_x_abund = {}
@@ -277,7 +282,7 @@ def plot_pt_profile(
                 ]
             )
 
-            temp, _, conv_press[i] = retrieval_util.pt_ret_model(
+            temp, _, conv_press[i] = pt_ret_model(
                 t3_param,
                 10.0 ** item[param_index["log_delta"]],
                 item[param_index["alpha"]],
@@ -317,7 +322,7 @@ def plot_pt_profile(
             else:
                 pt_smooth = box.attributes["pt_smooth"]
 
-            temp = retrieval_util.pt_spline_interp(
+            temp = pt_spline_interp(
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
 
@@ -357,9 +362,9 @@ def plot_pt_profile(
         #
         #     for i in range(10):
         #         if i == 0:
-        #             t_take = copy.copy(temp)
+        #             t_take = copy(temp)
         #         else:
-        #             t_take = copy.copy(tfinal)
+        #             t_take = copy(tfinal)
         #
         #         ab = interpol_abundances(
         #             np.full(t_take.shape[0], c_o_ratio),
@@ -386,13 +391,13 @@ def plot_pt_profile(
         #
         #         # Add upper radiative and lower covective
         #         # part into one single array
-        #         tfinal = copy.copy(t_take)
+        #         tfinal = copy(t_take)
         #         tfinal[conv_index] = tnew
         #
         #         if np.max(np.abs(t_take - tfinal) / t_take) < 0.01:
         #             break
         #
-        #     temp = copy.copy(tfinal)
+        #     temp = copy(tfinal)
 
         if envelope:
             temp_list[i] = temp
@@ -405,7 +410,7 @@ def plot_pt_profile(
         model_param["c_o_ratio"] = c_o_ratio
 
     if pt_profile == "molliere":
-        temp, _, conv_press_median = retrieval_util.pt_ret_model(
+        temp, _, conv_press_median = pt_ret_model(
             np.array([model_param["t1"], model_param["t2"], model_param["t3"]]),
             10.0 ** model_param["log_delta"],
             model_param["alpha"],
@@ -462,9 +467,7 @@ def plot_pt_profile(
         else:
             pt_smooth = box.attributes["pt_smooth"]
 
-        temp = retrieval_util.pt_spline_interp(
-            knot_press, knot_temp, pressure, pt_smooth=pt_smooth
-        )
+        temp = pt_spline_interp(knot_press, knot_temp, pressure, pt_smooth=pt_smooth)
 
     if envelope:
         temp_percent = np.percentile(temp_list, [0.3, 16.0, 84.0, 99.7], axis=0)
@@ -505,7 +508,7 @@ def plot_pt_profile(
             p_quench = 10.0 ** model_param["log_p_quench"]
 
         elif box.attributes["quenching"] == "diffusion":
-            p_quench = retrieval_util.quench_pressure(
+            p_quench = quench_pressure(
                 radtrans.rt_object.press,
                 radtrans.rt_object.temp,
                 model_param["metallicity"],
@@ -537,9 +540,7 @@ def plot_pt_profile(
         for item in cloud_species:
             if f"{item[:-3].lower()}_tau" in model_param:
                 # Calculate the scaled mass fraction of the clouds
-                model_param[
-                    f"{item[:-3].lower()}_fraction"
-                ] = retrieval_util.scale_cloud_abund(
+                model_param[f"{item[:-3].lower()}_fraction"] = scale_cloud_abund(
                     model_param,
                     radtrans.rt_object,
                     pressure,
@@ -554,7 +555,7 @@ def plot_pt_profile(
 
         for cloud_item in cloud_species:
             if cloud_item in radtrans.cloud_species:
-                cond_temp = retrieval_util.get_condensation_curve(
+                cond_temp = get_condensation_curve(
                     composition=cloud_item[:-3],
                     press=pressure,
                     metallicity=model_param["metallicity"],
@@ -797,7 +798,7 @@ def plot_pt_profile(
 @typechecked
 def plot_opacities(
     tag: str,
-    radtrans: read_radtrans.ReadRadtrans,
+    radtrans: ReadRadtrans,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
@@ -809,7 +810,7 @@ def plot_opacities(
     ----------
     tag : str
         Database tag with the posterior samples.
-    radtrans : read_radtrans.ReadRadtrans
+    radtrans : ReadRadtrans
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         The parameter is not used if the argument is set to ``None``.
     offset : tuple(float, float), None
@@ -831,7 +832,9 @@ def plot_opacities(
     else:
         print(f"Plotting opacities: {output}...", end="", flush=True)
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
     model_param = box.prob_sample
 
@@ -1286,7 +1289,7 @@ def plot_clouds(
     tag: str,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
-    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+    radtrans: Optional[ReadRadtrans] = None,
     composition: str = "MgSiO3",
 ) -> mpl.figure.Figure:
     """
@@ -1305,7 +1308,7 @@ def plot_clouds(
     output : str, None
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
-    radtrans : read_radtrans.ReadRadtrans, None
+    radtrans : ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         The parameter is not used if the argument is set to ``None``.
     composition : str
@@ -1318,7 +1321,9 @@ def plot_clouds(
         further customization of the plot.
     """
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
     model_param = box.prob_sample
 
@@ -1495,7 +1500,7 @@ def plot_abundances(
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
     legend: Optional[dict] = None,
-    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
+    radtrans: Optional[ReadRadtrans] = None,
 ) -> mpl.figure.Figure:
     """
     Function to plotting the retrieved abundance profiles.
@@ -1519,7 +1524,7 @@ def plot_abundances(
     legend : dict, None
         Dictionary with legend properties. Default values will
         be used if the argument is set to ``None``.
-    radtrans : read_radtrans.ReadRadtrans, None
+    radtrans : ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         The parameter is not used if the argument is set to ``None``.
 
@@ -1530,7 +1535,9 @@ def plot_abundances(
         further customization of the plot.
     """
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     box = species_db.get_samples(tag)
     model_param = box.prob_sample
 

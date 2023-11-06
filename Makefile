@@ -20,6 +20,7 @@ docs:
 	rm -f docs/species.analysis.rst
 	rm -f docs/species.core.rst
 	rm -f docs/species.data.rst
+	rm -f docs/species.phot.rst
 	rm -f docs/species.plot.rst
 	rm -f docs/species.read.rst
 	rm -f docs/species.util.rst

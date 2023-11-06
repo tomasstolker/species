@@ -17,11 +17,13 @@ import numpy as np
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
-from species.analysis import photometry
 from species.core import constants
-from species.data import database
-from species.read import read_filter, read_model, read_object
-from species.util import dust_util, read_util
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
+from species.read.read_model import ReadModel
+from species.read.read_object import ReadObject
+from species.util.dust_util import ism_extinction
+from species.util.spec_util import smooth_spectrum
 
 
 class CompareSpectra:
@@ -45,9 +47,9 @@ class CompareSpectra:
             :func:`~species.data.database.Database.add_companion`.
         spec_name : str, list(str)
             Name of the spectrum or a list with the names of the
-            spectra that will be used for the analysis. The spectrum
-            names should have been stored at the object data of
-            ``object_name``.
+            spectra that will be used for the comparison. The
+            spectrum names should have been stored at the object
+            data of ``object_name``.
 
         Returns
         -------
@@ -61,7 +63,7 @@ class CompareSpectra:
         if isinstance(self.spec_name, str):
             self.spec_name = [self.spec_name]
 
-        self.object = read_object.ReadObject(object_name)
+        self.object = ReadObject(object_name)
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -139,7 +141,9 @@ class CompareSpectra:
 
         except KeyError:
             h5_file.close()
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
             species_db.add_spectra(spec_library)
             h5_file = h5py.File(self.database, "r")
 
@@ -222,19 +226,16 @@ class CompareSpectra:
                     for rv_item in rad_vel:
                         for j, spec_item in enumerate(obj_spec):
                             # Dust extinction
-                            ism_ext = dust_util.ism_extinction(
-                                av_item, 3.1, spectrum[:, 0]
-                            )
+                            ism_ext = ism_extinction(av_item, 3.1, spectrum[:, 0])
                             flux_scaling = 10.0 ** (-0.4 * ism_ext)
 
                             # Shift wavelengths by RV
                             wavel_shifted = (
-                                spectrum[:, 0]
-                                + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
+                                spectrum[:, 0] + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
                             )
 
                             # Smooth spectrum
-                            flux_smooth = read_util.smooth_spectrum(
+                            flux_smooth = smooth_spectrum(
                                 wavel_shifted,
                                 spectrum[:, 1] * flux_scaling,
                                 spec_res=obj_res[j],
@@ -353,7 +354,9 @@ class CompareSpectra:
                     f"                      scalings = {ck_select[i]}"
                 )
 
-        species_db = database.Database()
+        from species.data.database import Database
+
+        species_db = Database()
 
         species_db.add_empirical(
             tag=tag,
@@ -445,13 +448,17 @@ class CompareSpectra:
                 w_i[spec_item] = np.ones(obj_wavel.shape[0])
 
         # Open the HDF5 databse
-        species_db = database.Database()
+        from species.data.database import Database
+
+        species_db = Database()
 
         if isinstance(inc_phot, bool):
             # The argument of inc_phot is a boolean
             if inc_phot:
                 # Select all filters if inc_phot=True
-                species_db = database.Database()
+                from species.data.database import Database
+
+                species_db = Database()
                 object_box = species_db.get_object(self.object_name)
                 inc_phot = object_box.filters
 
@@ -467,7 +474,7 @@ class CompareSpectra:
 
         phot_wavel = {}
         for phot_item in inc_phot:
-            read_filt = read_filter.ReadFilter(phot_item)
+            read_filt = ReadFilter(phot_item)
             phot_wavel[phot_item] = read_filt.mean_wavelength()
 
             if weights:
@@ -477,7 +484,7 @@ class CompareSpectra:
             else:
                 w_i[phot_item] = 1.0
 
-        model_reader = read_model.ReadModel(model)
+        model_reader = ReadModel(model)
         model_param = model_reader.get_parameters()
         grid_points = model_reader.get_points()
 
@@ -570,7 +577,7 @@ class CompareSpectra:
 
                                     # Smooth model spectrum
 
-                                    model_flux = read_util.smooth_spectrum(
+                                    model_flux = smooth_spectrum(
                                         model_box_full.wavelength,
                                         model_box_full.flux,
                                         obj_res,
@@ -615,7 +622,7 @@ class CompareSpectra:
                                 model_phot = {}
 
                                 for phot_item in inc_phot:
-                                    syn_phot = photometry.SyntheticPhotometry(phot_item)
+                                    syn_phot = SyntheticPhotometry(phot_item)
                                     model_phot[phot_item] = syn_phot.spectrum_to_flux(
                                         model_box_full.wavelength, model_box_full.flux
                                     )[0]
@@ -778,7 +785,9 @@ class CompareSpectra:
                 if extra_scaling is not None:
                     extra_scaling = extra_scaling[..., 0, :]
 
-        species_db = database.Database()
+        from species.data.database import Database
+
+        species_db = Database()
 
         species_db.add_comparison(
             tag=tag,

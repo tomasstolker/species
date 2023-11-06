@@ -13,9 +13,9 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.core import box
-from species.read import read_spectrum
-from species.util import phot_util
+from species.core.box import ColorColorBox, ColorMagBox, create_box
+from species.read.read_spectrum import ReadSpectrum
+from species.util.convert_util import apparent_to_absolute, parallax_to_distance
 
 
 class ReadColorMagnitude:
@@ -73,7 +73,7 @@ class ReadColorMagnitude:
                 )
 
     @typechecked
-    def get_color_magnitude(self, object_type: Optional[str] = None) -> box.ColorMagBox:
+    def get_color_magnitude(self, object_type: Optional[str] = None) -> ColorMagBox:
         """
         Function for extracting color-magnitude data from the selected
         library.
@@ -145,27 +145,35 @@ class ReadColorMagnitude:
 
                     if f"photometry/{self.library}/{self.filters_color[0]}" in h5_file:
                         mag1 = np.asarray(
-                            h5_file[f"photometry/{self.library}/{self.filters_color[0]}"]
+                            h5_file[
+                                f"photometry/{self.library}/{self.filters_color[0]}"
+                            ]
                         )
 
                     else:
-                        raise ValueError(f"The \'{self.filters_color[0]}\' "
-                                         "filter is not available in the "
-                                         f"\'{self.library}\' library. Please "
-                                         "select any of the following "
-                                         f"filters: {filter_list}")
+                        raise ValueError(
+                            f"The '{self.filters_color[0]}' "
+                            "filter is not available in the "
+                            f"'{self.library}' library. Please "
+                            "select any of the following "
+                            f"filters: {filter_list}"
+                        )
 
                     if f"photometry/{self.library}/{self.filters_color[1]}" in h5_file:
                         mag2 = np.asarray(
-                            h5_file[f"photometry/{self.library}/{self.filters_color[1]}"]
+                            h5_file[
+                                f"photometry/{self.library}/{self.filters_color[1]}"
+                            ]
                         )
 
                     else:
-                        raise ValueError(f"The \'{self.filters_color[1]}\' "
-                                         "filter is not available in the "
-                                         f"\'{self.library}\' library. Please "
-                                         "select any of the following "
-                                         f"filters: {filter_list}")
+                        raise ValueError(
+                            f"The '{self.filters_color[1]}' "
+                            "filter is not available in the "
+                            f"'{self.library}' library. Please "
+                            "select any of the following "
+                            f"filters: {filter_list}"
+                        )
 
             else:
                 raise ValueError(
@@ -175,23 +183,21 @@ class ReadColorMagnitude:
 
             color = mag1 - mag2
 
-            distance = phot_util.parallax_to_distance((parallax, parallax_error))
+            distance = parallax_to_distance((parallax, parallax_error))
 
             if self.filter_mag == self.filters_color[0]:
-                mag, _ = phot_util.apparent_to_absolute(
-                    (mag1, None), (distance[0], distance[1])
-                )
+                mag, _ = apparent_to_absolute((mag1, None), (distance[0], distance[1]))
 
             elif self.filter_mag == self.filters_color[1]:
-                mag, _ = phot_util.apparent_to_absolute(
-                    (mag2, None), (distance[0], distance[1])
-                )
+                mag, _ = apparent_to_absolute((mag2, None), (distance[0], distance[1]))
 
             else:
-                raise ValueError("The argument of filter_mag is set "
-                                 f"to {self.filter_mag} but should be "
-                                 "the same as one of the two values of "
-                                 "filters_color.")
+                raise ValueError(
+                    "The argument of filter_mag is set "
+                    f"to {self.filter_mag} but should be "
+                    "the same as one of the two values of "
+                    "filters_color."
+                )
 
             color = color[indices]
             mag = mag[indices]
@@ -203,7 +209,7 @@ class ReadColorMagnitude:
                 if not np.isnan(color[i]) and not np.isnan(mag[i]):
                     indices.append(i)
 
-            colormag_box = box.create_box(
+            colormag_box = create_box(
                 boxtype="colormag",
                 library=self.library,
                 object_type=object_type,
@@ -216,15 +222,15 @@ class ReadColorMagnitude:
             )
 
         elif self.lib_type == "spec_lib":
-            read_spec_0 = read_spectrum.ReadSpectrum(
+            read_spec_0 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_color[0]
             )
 
-            read_spec_1 = read_spectrum.ReadSpectrum(
+            read_spec_1 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_color[1]
             )
 
-            read_spec_2 = read_spectrum.ReadSpectrum(
+            read_spec_2 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filter_mag
             )
 
@@ -232,7 +238,7 @@ class ReadColorMagnitude:
             phot_box_1 = read_spec_1.get_magnitude(sptypes=None)
             phot_box_2 = read_spec_2.get_magnitude(sptypes=None)
 
-            colormag_box = box.create_box(
+            colormag_box = create_box(
                 boxtype="colormag",
                 library=self.library,
                 object_type=object_type,
@@ -298,7 +304,7 @@ class ReadColorColor:
                 )
 
     @typechecked
-    def get_color_color(self, object_type: Optional[str] = None) -> box.ColorColorBox:
+    def get_color_color(self, object_type: Optional[str] = None) -> ColorColorBox:
         """
         Function for extracting color-color data from the selected
         library.
@@ -368,7 +374,7 @@ class ReadColorColor:
                 if not np.isnan(color1[i]) and not np.isnan(color2[i]):
                     indices.append(i)
 
-            colorbox = box.create_box(
+            colorbox = create_box(
                 boxtype="colorcolor",
                 library=self.library,
                 object_type=object_type,
@@ -382,19 +388,19 @@ class ReadColorColor:
             h5_file.close()
 
         elif self.lib_type == "spec_lib":
-            read_spec_0 = read_spectrum.ReadSpectrum(
+            read_spec_0 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_colors[0][0]
             )
 
-            read_spec_1 = read_spectrum.ReadSpectrum(
+            read_spec_1 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_colors[0][1]
             )
 
-            read_spec_2 = read_spectrum.ReadSpectrum(
+            read_spec_2 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_colors[1][0]
             )
 
-            read_spec_3 = read_spectrum.ReadSpectrum(
+            read_spec_3 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_colors[1][1]
             )
 
@@ -403,7 +409,7 @@ class ReadColorColor:
             phot_box_2 = read_spec_2.get_magnitude(sptypes=None)
             phot_box_3 = read_spec_3.get_magnitude(sptypes=None)
 
-            colorbox = box.create_box(
+            colorbox = create_box(
                 boxtype="colorcolor",
                 library=self.library,
                 object_type=object_type,

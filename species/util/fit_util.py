@@ -1,27 +1,25 @@
 """
-Utility functions for photometry.
+Utility functions for fit results.
 """
 
-import math
 import warnings
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import spectres
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.core import box
-from species.read import (
-    read_calibration,
-    read_filter,
-    read_model,
-    read_planck,
-    read_radtrans,
-)
-from species.util import read_util, retrieval_util
+from species.core.box import ObjectBox, ResidualsBox, SynphotBox, create_box
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_calibration import ReadCalibration
+from species.read.read_filter import ReadFilter
+from species.read.read_model import ReadModel
+from species.read.read_planck import ReadPlanck
+from species.read.read_radtrans import ReadRadtrans
+from species.util.model_util import binary_to_single, powerlaw_spectrum
+from species.util.retrieval_util import convolve_spectrum
 
 
 @typechecked
@@ -30,8 +28,8 @@ def multi_photometry(
     spectrum: str,
     filters: List[str],
     parameters: Dict[str, float],
-    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
-) -> box.SynphotBox:
+    radtrans: Optional[ReadRadtrans] = None,
+) -> SynphotBox:
     """
     Function for calculating synthetic photometry for a list of
     filters and a specified atmosphere model and related parameters.
@@ -51,7 +49,7 @@ def multi_photometry(
         List with the filter names.
     parameters : dict
         Dictionary with the model parameters.
-    radtrans : read_radtrans.ReadRadtrans, None
+    radtrans : ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         Only required with ``spectrum='petitradtrans'`. Make sure that
         the ``wavel_range`` of the ``ReadRadtrans`` instance is
@@ -69,7 +67,7 @@ def multi_photometry(
     mean_wavel = {}
 
     for filter_item in filters:
-        read_filt = read_filter.ReadFilter(filter_item)
+        read_filt = ReadFilter(filter_item)
         mean_wavel[filter_item] = read_filt.mean_wavelength()
 
     flux = {}
@@ -84,40 +82,38 @@ def multi_photometry(
                 # Use an instance of SyntheticPhotometry instead
                 # of get_flux from ReadRadtrans in order to not
                 # recalculate the spectrum
-                syn_phot = photometry.SyntheticPhotometry(item)
+                syn_phot = SyntheticPhotometry(item)
 
                 flux[item], _ = syn_phot.spectrum_to_flux(
                     radtrans_box.wavelength, radtrans_box.flux
                 )
 
             elif spectrum == "powerlaw":
-                synphot = photometry.SyntheticPhotometry(item)
+                synphot = SyntheticPhotometry(item)
 
                 # Set the wavel_range attribute
                 synphot.zero_point()
 
-                powerl_box = read_util.powerlaw_spectrum(
-                    synphot.wavel_range, parameters
-                )
+                powerl_box = powerlaw_spectrum(synphot.wavel_range, parameters)
                 flux[item] = synphot.spectrum_to_flux(
                     powerl_box.wavelength, powerl_box.flux
                 )[0]
 
             else:
                 if spectrum == "planck":
-                    readmodel = read_planck.ReadPlanck(filter_name=item)
+                    readmodel = ReadPlanck(filter_name=item)
 
                 else:
-                    readmodel = read_model.ReadModel(spectrum, filter_name=item)
+                    readmodel = ReadModel(spectrum, filter_name=item)
 
                 try:
                     if "teff_0" in parameters and "teff_1" in parameters:
                         # Binary system
 
-                        param_0 = read_util.binary_to_single(parameters, 0)
+                        param_0 = binary_to_single(parameters, 0)
                         model_flux_0 = readmodel.get_flux(param_0)[0]
 
-                        param_1 = read_util.binary_to_single(parameters, 1)
+                        param_1 = binary_to_single(parameters, 1)
                         model_flux_1 = readmodel.get_flux(param_1)[0]
 
                         flux[item] = (
@@ -141,14 +137,14 @@ def multi_photometry(
 
     elif datatype == "calibration":
         for item in filters:
-            readcalib = read_calibration.ReadCalibration(spectrum, filter_name=item)
+            readcalib = ReadCalibration(spectrum, filter_name=item)
             flux[item] = readcalib.get_flux(parameters)[0]
 
     app_mag = {}
     abs_mag = {}
 
     for key, value in flux.items():
-        syn_phot = photometry.SyntheticPhotometry(key)
+        syn_phot = SyntheticPhotometry(key)
         if "parallax" in parameters:
             app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
                 flux=value, error=None, parallax=(parameters["parallax"], None)
@@ -166,7 +162,7 @@ def multi_photometry(
 
     print(" [DONE]")
 
-    return box.create_box(
+    return create_box(
         "synphot",
         name="synphot",
         flux=flux,
@@ -177,104 +173,15 @@ def multi_photometry(
 
 
 @typechecked
-def apparent_to_absolute(
-    app_mag: Union[
-        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
-    ],
-    distance: Union[
-        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
-    ],
-) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
-    """
-    Function for converting an apparent magnitude into an absolute
-    magnitude. The uncertainty on the distance is propagated into the
-    uncertainty on the absolute magnitude.
-
-    Parameters
-    ----------
-    app_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Apparent magnitude and uncertainty (mag). The returned error
-        on the absolute magnitude is set to None if the error on the
-        apparent magnitude is set to None, for example
-        ``app_mag=(15., None)``.
-    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Distance and uncertainty (pc). The error is not propagated
-        into the error on the absolute magnitude if set to None, for
-        example ``distance=(20., None)``.
-
-    Returns
-    -------
-    float, np.ndarray
-        Absolute magnitude (mag).
-    float, np.ndarray, None
-        Uncertainty (mag).
-    """
-
-    abs_mag = app_mag[0] - 5.0 * np.log10(distance[0]) + 5.0
-
-    if app_mag[1] is not None and distance[1] is not None:
-        dist_err = distance[1] * (5.0 / (distance[0] * math.log(10.0)))
-        abs_err = np.sqrt(app_mag[1] ** 2 + dist_err**2)
-
-    elif app_mag[1] is not None and distance[1] is None:
-        abs_err = app_mag[1]
-
-    else:
-        abs_err = None
-
-    return abs_mag, abs_err
-
-
-@typechecked
-def absolute_to_apparent(
-    abs_mag: Union[
-        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
-    ],
-    distance: Union[
-        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
-    ],
-) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
-    """
-    Function for converting an absolute magnitude
-    into an apparent magnitude.
-
-    Parameters
-    ----------
-    abs_mag : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Tuple with the absolute magnitude and uncertainty (mag).
-        The uncertainty on the returned apparent magnitude is
-        simply adopted from the absolute magnitude. Providing the
-        uncertainty is optional and can be set to ``None``.
-    distance : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Tuple with the distance and uncertainty (pc). The uncertainty
-        is optional and can be set to ``None``. The distance
-        uncertainty is currently not used by this function but
-        included so it can be implemented at some point into the
-        error budget.
-
-    Returns
-    -------
-    float, np.ndarray
-        Apparent magnitude (mag).
-    float, np.ndarray, None
-        Uncertainty (mag).
-    """
-
-    app_mag = abs_mag[0] + 5.0 * np.log10(distance[0]) - 5.0
-
-    return app_mag, abs_mag[1]
-
-
-@typechecked
 def get_residuals(
     datatype: str,
     spectrum: str,
     parameters: Dict[str, float],
-    objectbox: box.ObjectBox,
+    objectbox: ObjectBox,
     inc_phot: Union[bool, List[str]] = True,
     inc_spec: Union[bool, List[str]] = True,
-    radtrans: Optional[read_radtrans.ReadRadtrans] = None,
-) -> box.ResidualsBox:
+    radtrans: Optional[ReadRadtrans] = None,
+) -> ResidualsBox:
     """
     Function for calculating the residuals from fitting model or
     calibration spectra to a set of spectra and/or photometry.
@@ -302,7 +209,7 @@ def get_residuals(
         list, a subset of spectrum names (as stored in the database
         with :func:`~species.data.database.Database.add_object`) can be
         provided.
-    radtrans : read_radtrans.ReadRadtrans, None
+    radtrans : ReadRadtrans, None
         Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         Only required with ``spectrum='petitradtrans'`. Make sure that
         the ``wavel_range`` of the ``ReadRadtrans`` instance is
@@ -331,7 +238,7 @@ def get_residuals(
         res_phot = {}
 
         for item in inc_phot:
-            transmission = read_filter.ReadFilter(item)
+            transmission = ReadFilter(item)
             res_phot[item] = np.zeros(objectbox.flux[item].shape)
 
             if objectbox.flux[item].ndim == 1:
@@ -369,7 +276,7 @@ def get_residuals(
                 spec_res = objectbox.spectrum[key][3]
 
                 if spectrum == "planck":
-                    readmodel = read_planck.ReadPlanck(wavel_range=wavel_range)
+                    readmodel = ReadPlanck(wavel_range=wavel_range)
 
                     model = readmodel.get_spectrum(
                         model_param=parameters, spec_res=1000.0
@@ -388,9 +295,7 @@ def get_residuals(
 
                 elif spectrum == "petitradtrans":
                     # Smoothing to the instrument resolution
-                    flux_smooth = retrieval_util.convolve(
-                        model.wavelength, model.flux, spec_res
-                    )
+                    flux_smooth = convolve_spectrum(model.wavelength, model.flux, spec_res)
 
                     # Resampling to the new wavelength points
                     flux_new = spectres.spectres(
@@ -406,12 +311,12 @@ def get_residuals(
                     # Resampling to the new wavelength points
                     # is done by the get_model method
 
-                    readmodel = read_model.ReadModel(spectrum, wavel_range=wavel_range)
+                    readmodel = ReadModel(spectrum, wavel_range=wavel_range)
 
                     if "teff_0" in parameters and "teff_1" in parameters:
                         # Binary system
 
-                        param_0 = read_util.binary_to_single(parameters, 0)
+                        param_0 = binary_to_single(parameters, 0)
 
                         model_spec_0 = readmodel.get_model(
                             param_0,
@@ -420,7 +325,7 @@ def get_residuals(
                             smooth=True,
                         )
 
-                        param_1 = read_util.binary_to_single(parameters, 1)
+                        param_1 = binary_to_single(parameters, 1)
 
                         model_spec_1 = readmodel.get_model(
                             param_1,
@@ -434,7 +339,7 @@ def get_residuals(
                             + (1.0 - parameters["spec_weight"]) * model_spec_1.flux
                         )
 
-                        model_spec = box.create_box(
+                        model_spec = create_box(
                             boxtype="model",
                             model=spectrum,
                             wavelength=wl_new,
@@ -515,48 +420,10 @@ def get_residuals(
     print(f"Reduced chi2 = {chi2_red:.2f}")
     print(f"Number of degrees of freedom = {n_dof}")
 
-    return box.create_box(
+    return create_box(
         boxtype="residuals",
         name=objectbox.name,
         photometry=res_phot,
         spectrum=res_spec,
         chi2_red=chi2_red,
     )
-
-
-@typechecked
-def parallax_to_distance(
-    parallax: Union[
-        Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]
-    ],
-) -> Union[Tuple[float, Optional[float]], Tuple[np.ndarray, Optional[np.ndarray]]]:
-    """
-    Function for converting from parallax to distance.
-
-    Parameters
-    ----------
-    parallax : tuple(float, float), tuple(np.ndarray, np.ndarray)
-        Parallax and optional uncertainty (mas). The
-        uncertainty is not used if set to ``None``,
-        for example, ``parallax=(2., None)``.
-
-    Returns
-    -------
-    float, np.ndarray
-        Distance (pc).
-    float, np.ndarray, None
-        Uncertainty (pc).
-    """
-
-    # From parallax (mas) to distance (pc)
-    distance = 1e3 / parallax[0]
-
-    if parallax[1] is None:
-        distance_error = None
-
-    else:
-        distance_minus = distance - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
-        distance_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - distance
-        distance_error = (distance_plus + distance_minus) / 2.0
-
-    return distance, distance_error

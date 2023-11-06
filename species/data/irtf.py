@@ -14,7 +14,8 @@ import pandas as pd
 from astropy.io import fits
 from typeguard import typechecked
 
-from species.util import data_util, query_util
+from species.util.data_util import extract_tarfile, update_sptype
+from species.util.query_util import get_parallax, get_simbad
 
 
 @typechecked
@@ -115,7 +116,7 @@ def add_irtf(
     print("Unpacking IRTF Spectral Library...", end="", flush=True)
 
     for item in sptypes:
-        data_util.extract_tarfile(data_file[item], main_folder)
+        extract_tarfile(data_file[item], main_folder)
 
     print(" [DONE]")
 
@@ -125,7 +126,6 @@ def add_irtf(
 
     for item in sptypes:
         for root, _, files in os.walk(data_folder[item]):
-
             for _, filename in enumerate(files):
                 if filename[-9:] != "_ext.fits":
                     fitsfile = os.path.join(root, filename)
@@ -150,7 +150,7 @@ def add_irtf(
                         print_message = f"Adding spectra... {name}"
                         print(f"\r{print_message}", end="")
 
-                        simbad_id = query_util.get_simbad(name)
+                        simbad_id = get_simbad(name)
 
                         if simbad_id is not None:
                             # For backward compatibility
@@ -167,12 +167,12 @@ def add_irtf(
                                     par_select["parallax_error"],
                                 )
                             else:
-                                simbad_id, parallax = query_util.get_parallax(name)
+                                simbad_id, parallax = get_parallax(name)
 
                         else:
                             parallax = (np.nan, np.nan)
 
-                        sptype = data_util.update_sptype(np.array([sptype]))[0]
+                        sptype = update_sptype(np.array([sptype]))[0]
 
                         dset = database.create_dataset(
                             f"spectra/irtf/{name}", data=spdata

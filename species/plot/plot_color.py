@@ -19,9 +19,16 @@ from matplotlib.ticker import MultipleLocator
 from scipy.interpolate import interp1d
 from typeguard import typechecked
 
-from species.core import box
-from species.read import read_filter, read_object
-from species.util import dust_util, plot_util
+from species.core.box import IsochroneBox, ColorMagBox, ColorColorBox
+from species.read.read_filter import ReadFilter
+from species.read.read_object import ReadObject
+from species.util.dust_util import calc_reddening, ism_extinction
+from species.util.plot_util import (
+    convert_model_name,
+    field_bounds_ticks,
+    sptype_to_index,
+    remove_color_duplicates,
+)
 
 
 @typechecked
@@ -204,10 +211,10 @@ def plot_color_magnitude(
     empirical = []
 
     for item in boxes:
-        if isinstance(item, box.IsochroneBox):
+        if isinstance(item, IsochroneBox):
             isochrones.append(item)
 
-        elif isinstance(item, box.ColorMagBox):
+        elif isinstance(item, ColorMagBox):
             if item.object_type == "model":
                 models.append(item)
 
@@ -317,7 +324,7 @@ def plot_color_magnitude(
             model_count = model_dict[model_key]
 
             if model_count[1] == 0:
-                label = plot_util.convert_model_name(item.library)
+                label = convert_model_name(item.library)
 
                 if item.library == "sonora-bobcat":
                     metal = float(item.iso_tag[-4:])
@@ -444,7 +451,7 @@ def plot_color_magnitude(
 
         for j, item in enumerate(planck):
             if planck_count == 0:
-                label = plot_util.convert_model_name(item.library)
+                label = convert_model_name(item.library)
             else:
                 label = None
 
@@ -518,9 +525,7 @@ def plot_color_magnitude(
     if empirical:
         cmap = plt.cm.viridis
 
-        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(
-            field_range, check_subclass
-        )
+        bounds, ticks, ticklabels = field_bounds_ticks(field_range, check_subclass)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in empirical:
@@ -539,9 +544,7 @@ def plot_color_magnitude(
                 color = color[indices]
                 magnitude = magnitude[indices]
 
-                spt_disc = plot_util.sptype_to_index(
-                    field_range, sptype, check_subclass
-                )
+                spt_disc = sptype_to_index(field_range, sptype, check_subclass)
 
                 _, unique = np.unique(color, return_index=True)
 
@@ -585,7 +588,7 @@ def plot_color_magnitude(
                     for obj_item in objects:
                         object_names.append(obj_item[0])
 
-                    indices = plot_util.remove_color_duplicates(object_names, names)
+                    indices = remove_color_duplicates(object_names, names)
 
                     color = color[indices]
                     magnitude = magnitude[indices]
@@ -622,7 +625,7 @@ def plot_color_magnitude(
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = dust_util.calc_reddening(
+            ext_1, ext_2 = calc_reddening(
                 item[0],
                 item[1],
                 composition=item[2],
@@ -683,11 +686,11 @@ def plot_color_magnitude(
     if ism_red is not None:
         for item in ism_red:
             # Color filters
-            read_filt_0 = read_filter.ReadFilter(item[0][0])
-            read_filt_1 = read_filter.ReadFilter(item[0][1])
+            read_filt_0 = ReadFilter(item[0][0])
+            read_filt_1 = ReadFilter(item[0][1])
 
             # Magnitude filter
-            read_filt_2 = read_filter.ReadFilter(item[1])
+            read_filt_2 = ReadFilter(item[1])
 
             mean_wavel = np.array(
                 [
@@ -697,7 +700,7 @@ def plot_color_magnitude(
                 ]
             )
 
-            ext_mag = dust_util.ism_extinction(item[2], 3.1, mean_wavel)
+            ext_mag = ism_extinction(item[2], 3.1, mean_wavel)
 
             delta_x = ext_mag[0] - ext_mag[1]
             delta_y = ext_mag[2]
@@ -746,7 +749,7 @@ def plot_color_magnitude(
 
     if objects is not None:
         for i, item in enumerate(objects):
-            objdata = read_object.ReadObject(item[0])
+            objdata = ReadObject(item[0])
 
             objcolor1 = objdata.get_photometry(item[1])
             objcolor2 = objdata.get_photometry(item[2])
@@ -1037,10 +1040,10 @@ def plot_color_color(
     spectra = []
 
     for item in boxes:
-        if isinstance(item, box.IsochroneBox):
+        if isinstance(item, IsochroneBox):
             isochrones.append(item)
 
-        elif isinstance(item, box.ColorColorBox):
+        elif isinstance(item, ColorColorBox):
             if item.object_type == "model":
                 models.append(item)
 
@@ -1151,7 +1154,7 @@ def plot_color_color(
             model_count = model_dict[model_key]
 
             if model_count[1] == 0:
-                label = plot_util.convert_model_name(item.library)
+                label = convert_model_name(item.library)
 
                 if item.library == "sonora-bobcat":
                     metal = float(item.iso_tag[-4:])
@@ -1277,7 +1280,7 @@ def plot_color_color(
 
         for j, item in enumerate(planck):
             if planck_count == 0:
-                label = plot_util.convert_model_name(item.library)
+                label = convert_model_name(item.library)
 
                 ax1.plot(
                     item.color1,
@@ -1360,7 +1363,7 @@ def plot_color_color(
 
         for j, item in enumerate(spectra):
             if spectra_count == 0:
-                label = plot_util.convert_model_name(item.library)
+                label = convert_model_name(item.library)
 
                 ax1.plot(
                     item.color1,
@@ -1441,9 +1444,7 @@ def plot_color_color(
     if empirical:
         cmap = plt.cm.viridis
 
-        bounds, ticks, ticklabels = plot_util.field_bounds_ticks(
-            field_range, check_subclass
-        )
+        bounds, ticks, ticklabels = field_bounds_ticks(field_range, check_subclass)
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         for item in empirical:
@@ -1462,9 +1463,7 @@ def plot_color_color(
                 color1 = color1[indices]
                 color2 = color2[indices]
 
-                spt_disc = plot_util.sptype_to_index(
-                    field_range, sptype, check_subclass
-                )
+                spt_disc = sptype_to_index(field_range, sptype, check_subclass)
                 _, unique = np.unique(color1, return_index=True)
 
                 sptype = sptype[unique]
@@ -1507,7 +1506,7 @@ def plot_color_color(
                     for obj_item in objects:
                         object_names.append(obj_item[0])
 
-                    indices = plot_util.remove_color_duplicates(object_names, names)
+                    indices = remove_color_duplicates(object_names, names)
 
                     color1 = color1[indices]
                     color2 = color2[indices]
@@ -1537,7 +1536,7 @@ def plot_color_color(
 
     if reddening is not None:
         for item in reddening:
-            ext_1, ext_2 = dust_util.calc_reddening(
+            ext_1, ext_2 = calc_reddening(
                 item[0],
                 item[2],
                 composition=item[3],
@@ -1545,7 +1544,7 @@ def plot_color_color(
                 radius_g=item[4],
             )
 
-            ext_3, ext_4 = dust_util.calc_reddening(
+            ext_3, ext_4 = calc_reddening(
                 item[1],
                 item[2],
                 composition=item[3],
@@ -1607,7 +1606,7 @@ def plot_color_color(
 
     if objects is not None:
         for i, item in enumerate(objects):
-            objdata = read_object.ReadObject(item[0])
+            objdata = ReadObject(item[0])
 
             objphot1 = objdata.get_photometry(item[1][0])
             objphot2 = objdata.get_photometry(item[1][1])

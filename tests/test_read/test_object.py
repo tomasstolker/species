@@ -4,7 +4,9 @@ import shutil
 import pytest
 import numpy as np
 
-import species
+from species import SpeciesInit
+from species.data.database import Database
+from species.read.read_object import ReadObject
 from species.util import test_util
 
 
@@ -20,19 +22,19 @@ class TestObject:
 
     def test_species_init(self):
         test_util.create_config("./")
-        species.SpeciesInit()
+        SpeciesInit()
 
     def test_read_object(self):
-        database = species.Database()
+        database = Database()
 
         with pytest.warns(UserWarning):
             database.add_companion(name="beta Pic b")
 
-        read_object = species.ReadObject("beta Pic b")
+        read_object = ReadObject("beta Pic b")
         assert read_object.object_name == "beta Pic b"
 
         with pytest.raises(ValueError) as error:
-            species.ReadObject("wrong name")
+            ReadObject("wrong name")
 
         assert (
             str(error.value)
@@ -40,7 +42,7 @@ class TestObject:
         )
 
     def test_get_photometry(self):
-        read_object = species.ReadObject("beta Pic b")
+        read_object = ReadObject("beta Pic b")
         photometry = read_object.get_photometry("Paranal/NACO.Lp")
 
         assert isinstance(photometry, np.ndarray)
@@ -55,19 +57,19 @@ class TestObject:
         )
 
     def test_get_parallax(self):
-        read_object = species.ReadObject("beta Pic b")
+        read_object = ReadObject("beta Pic b")
         parallax = read_object.get_parallax()
 
         assert parallax == (50.9307, 0.1482)
 
     def test_get_distance(self):
-        read_object = species.ReadObject("beta Pic b")
+        read_object = ReadObject("beta Pic b")
         distance = read_object.get_distance()
 
         assert distance == (19.63452298908124, 0.05713373162362245)
 
     def test_get_absmag(self):
-        read_object = species.ReadObject("beta Pic b")
+        read_object = ReadObject("beta Pic b")
         abs_mag = read_object.get_absmag("Paranal/NACO.Lp")
 
         assert abs_mag[0] == pytest.approx(9.834898226163453, rel=self.limit, abs=0.0)

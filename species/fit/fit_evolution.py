@@ -27,8 +27,7 @@ from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.core import constants
-from species.data import database
-from species.read import read_isochrone
+from species.read.read_isochrone import ReadIsochrone
 
 
 class FitEvolution:
@@ -214,7 +213,7 @@ class FitEvolution:
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
 
-        read_iso = read_isochrone.ReadIsochrone(
+        read_iso = ReadIsochrone(
             tag=self.evolution_model,
             create_regular_grid=False,
         )
@@ -772,7 +771,9 @@ class FitEvolution:
         if mpi_rank == 0:
             # Writing the samples to the database is only
             # possible when using a single process
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
 
             species_db.add_samples(
                 sampler="multinest",

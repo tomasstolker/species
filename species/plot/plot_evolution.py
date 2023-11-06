@@ -1,6 +1,6 @@
 """
 Module with functions for plotting the results obtained with the
-:class:`~species.analysis.fit_evolution.FitEvolution` class.
+:class:`~species.fit.fit_evolution.FitEvolution` class.
 """
 
 from typing import List, Optional, Tuple
@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from matplotlib.ticker import AutoMinorLocator
 
-from species.data import database
-from species.read import read_isochrone
+from species.read.read_isochrone import ReadIsochrone
 
 
 @typechecked
@@ -34,7 +33,7 @@ def plot_cooling(
     Function for plotting samples of cooling curves that are
     randomly drawn from the posterior distributions of the
     age and mass parameters that have been estimated with
-    :class:`~species.analysis.fit_evolution.FitEvolution`.
+    :class:`~species.fit.fit_evolution.FitEvolution`.
 
     Parameters
     ----------
@@ -91,7 +90,9 @@ def plot_cooling(
             "'luminosity' or 'radius'."
         )
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     samples_box = species_db.get_samples(tag)
 
     samples = samples_box.samples
@@ -102,7 +103,7 @@ def plot_cooling(
     object_radius = attr["object_radius"]
     object_age = (np.mean(samples[:, 0]), np.std(samples[:, 0]))
 
-    read_iso = read_isochrone.ReadIsochrone(evolution_model)
+    read_iso = ReadIsochrone(evolution_model)
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -267,7 +268,7 @@ def plot_isochrones(
     Function for plotting samples of isochrones that are
     randomly drawn from the posterior distributions of the
     age and mass parameters that have been estimated with
-    :class:`~species.analysis.fit_evolution.FitEvolution`.
+    :class:`~species.fit.fit_evolution.FitEvolution`.
     For each isochrone, the parameters from a single
     posterior sample are used.
 
@@ -315,7 +316,9 @@ def plot_isochrones(
 
     plt.close()
 
-    species_db = database.Database()
+    from species.data.database import Database
+
+    species_db = Database()
     samples_box = species_db.get_samples(tag)
 
     samples = samples_box.samples
@@ -325,7 +328,7 @@ def plot_isochrones(
     object_lbol = attr["object_lbol"]
     object_mass = attr["object_mass"]
 
-    read_iso = read_isochrone.ReadIsochrone(evolution_model)
+    read_iso = ReadIsochrone(evolution_model)
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"

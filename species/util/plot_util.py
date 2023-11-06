@@ -15,7 +15,7 @@ import numpy as np
 from typeguard import typechecked
 
 from species.core import constants
-from species.read import read_model
+from species.read.read_model import ReadModel
 
 
 @typechecked
@@ -1399,9 +1399,9 @@ def create_model_label(
         model_list = list(model_data.keys())
 
     if model_name in model_list:
-        read_mod = read_model.ReadModel(model_name)
+        read_mod = ReadModel(model_name)
         check_param = read_mod.get_parameters()
-        check_param += ['radius', 'mass', 'luminosity']
+        check_param += ["radius", "mass", "luminosity"]
 
     else:
         check_param = None

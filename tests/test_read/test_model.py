@@ -4,7 +4,9 @@ import shutil
 import pytest
 import numpy as np
 
-import species
+from species import SpeciesInit
+from species.data.database import Database
+from species.read.read_model import ReadModel
 from species.util import test_util
 
 
@@ -26,10 +28,10 @@ class TestModel:
 
     def test_species_init(self):
         test_util.create_config("./")
-        species.SpeciesInit()
+        SpeciesInit()
 
     def test_read_model(self):
-        database = species.Database()
+        database = Database()
 
         database.add_model(
             "ames-cond",
@@ -38,11 +40,11 @@ class TestModel:
             teff_range=(2000.0, 2500.0),
         )
 
-        read_model = species.ReadModel("ames-cond")
+        read_model = ReadModel("ames-cond")
         assert read_model.model == "ames-cond"
 
     def test_get_model(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
 
         model_box = read_model.get_model(
             self.model_param, spec_res=100.0, magnitude=False, smooth=True
@@ -67,7 +69,7 @@ class TestModel:
         )
 
     def test_get_data(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         model_box = read_model.get_data(self.model_param)
 
         assert np.sum(model_box.wavelength) == pytest.approx(
@@ -78,13 +80,13 @@ class TestModel:
         )
 
     def test_get_flux(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         flux = read_model.get_flux(self.model_param)
 
         assert flux[0] == pytest.approx(3.489491094733077e-14, rel=self.limit, abs=0.0)
 
     def test_get_magnitude(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         magnitude = read_model.get_magnitude(self.model_param)
 
         assert magnitude[0] == pytest.approx(
@@ -95,14 +97,14 @@ class TestModel:
         )
 
     def test_get_bounds(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         bounds = read_model.get_bounds()
 
         assert bounds["teff"] == (2000.0, 2500.0)
         assert bounds["logg"] == (2.5, 5.5)
 
     def test_get_wavelengths(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         wavelengths = read_model.get_wavelengths()
 
         assert np.sum(wavelengths) == pytest.approx(
@@ -110,14 +112,14 @@ class TestModel:
         )
 
     def test_get_points(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         points = read_model.get_points()
 
         assert np.sum(points["teff"]) == 13500.0
         assert np.sum(points["logg"]) == 28.0
 
     def test_get_parameters(self):
-        read_model = species.ReadModel("ames-cond", filter_name="Paranal/NACO.H")
+        read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
         parameters = read_model.get_parameters()
 
         assert parameters == ["teff", "logg"]

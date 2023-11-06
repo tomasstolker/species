@@ -15,16 +15,23 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from matplotlib.ticker import AutoMinorLocator, ScalarFormatter
 
-from species.core import box
-from species.read import read_filter
-from species.util import plot_util
+from species.core.box import (
+    ModelBox,
+    ObjectBox,
+    PhotometryBox,
+    ResidualsBox,
+    SpectrumBox,
+    SynphotBox,
+)
+from species.read.read_filter import ReadFilter
+from species.util.plot_util import create_model_label
 
 
 @typechecked
 def plot_spectrum(
     boxes: list,
     filters: Optional[List[str]] = None,
-    residuals: Optional[box.ResidualsBox] = None,
+    residuals: Optional[ResidualsBox] = None,
     plot_kwargs: Optional[List[Optional[dict]]] = None,
     envelope: bool = False,
     xlim: Optional[Tuple[float, float]] = None,
@@ -480,7 +487,7 @@ def plot_spectrum(
         if j < len(boxes):
             plot_kwargs.append(None)
 
-        if isinstance(box_item, (box.SpectrumBox, box.ModelBox)):
+        if isinstance(box_item, (SpectrumBox, ModelBox)):
             wavelength = box_item.wavelength
             flux = box_item.flux
 
@@ -488,10 +495,10 @@ def plot_spectrum(
                 data = np.array(flux, dtype=np.float64)
                 masked = np.ma.array(data, mask=np.isnan(data))
 
-                if isinstance(box_item, box.ModelBox):
+                if isinstance(box_item, ModelBox):
                     param = box_item.parameters.copy()
 
-                    label = plot_util.create_model_label(
+                    label = create_model_label(
                         model_param=param,
                         model_name=box_item.model,
                         inc_model_name=inc_model_name,
@@ -640,11 +647,11 @@ def plot_spectrum(
                         linewidth=0.0,
                     )
 
-        elif isinstance(box_item, box.PhotometryBox):
+        elif isinstance(box_item, PhotometryBox):
             label_check = []
 
             for i, item in enumerate(box_item.wavelength):
-                transmission = read_filter.ReadFilter(box_item.filter_name[i])
+                transmission = ReadFilter(box_item.filter_name[i])
                 fwhm = transmission.filter_fwhm()
 
                 if quantity == "flux":
@@ -712,7 +719,7 @@ def plot_spectrum(
                             zorder=3,
                         )
 
-        elif isinstance(box_item, box.ObjectBox):
+        elif isinstance(box_item, ObjectBox):
             if box_item.spectrum is not None:
                 spec_list = []
                 wavel_list = []
@@ -782,7 +789,7 @@ def plot_spectrum(
                 wavel_list = []
 
                 for item in box_item.flux:
-                    read_filt = read_filter.ReadFilter(item)
+                    read_filt = ReadFilter(item)
                     filter_list.append(item)
                     wavel_list.append(read_filt.mean_wavelength())
 
@@ -793,7 +800,7 @@ def plot_spectrum(
                     filter_sort.append(filter_list[sort_index[i]])
 
                 for item in filter_sort:
-                    transmission = read_filter.ReadFilter(item)
+                    transmission = ReadFilter(item)
                     wavelength = transmission.mean_wavelength()
                     fwhm = transmission.filter_fwhm()
 
@@ -897,16 +904,16 @@ def plot_spectrum(
                                     **plot_kwargs[j][item],
                                 )
 
-        elif isinstance(box_item, box.SynphotBox):
+        elif isinstance(box_item, SynphotBox):
             obj_index = None
 
             for i, find_item in enumerate(boxes):
-                if isinstance(find_item, box.ObjectBox):
+                if isinstance(find_item, ObjectBox):
                     obj_index = i
                     break
 
             for item in box_item.flux:
-                transmission = read_filter.ReadFilter(item)
+                transmission = ReadFilter(item)
                 wavelength = transmission.mean_wavelength()
                 fwhm = transmission.filter_fwhm()
 
@@ -989,7 +996,7 @@ def plot_spectrum(
 
     if filters is not None:
         for i, item in enumerate(filters):
-            transmission = read_filter.ReadFilter(item)
+            transmission = ReadFilter(item)
             data = transmission.get_filter()
 
             ax2.plot(data[:, 0], data[:, 1], "-", lw=0.7, color="tab:gray", zorder=1)
@@ -998,7 +1005,7 @@ def plot_spectrum(
         obj_index = None
 
         for i, find_item in enumerate(boxes):
-            if isinstance(find_item, box.ObjectBox):
+            if isinstance(find_item, ObjectBox):
                 obj_index = i
                 break
 
@@ -1205,7 +1212,7 @@ def plot_spectrum(
     #            'Paranal/NACO.Mp']
     #
     # for i, item in enumerate(filters):
-    #     readfilter = read_filter.ReadFilter(item)
+    #     readfilter = ReadFilter(item)
     #     filter_wavelength = readfilter.mean_wavelength()
     #     filter_width = readfilter.filter_fwhm()
     #

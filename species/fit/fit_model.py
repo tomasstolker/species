@@ -33,11 +33,20 @@ except:
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.data import database
 from species.core import constants
-from species.read import read_model, read_object, read_planck, read_filter
-from species.util import read_util, dust_util
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_model import ReadModel
+from species.read.read_object import ReadObject
+from species.read.read_planck import ReadPlanck
+from species.read.read_filter import ReadFilter
+from species.util.convert_util import logg_to_mass
+from species.util.dust_util import (
+    convert_to_av,
+    interp_lognorm,
+    interp_powerlaw,
+    ism_extinction,
+)
+from species.util.model_util import binary_to_single, powerlaw_spectrum
 
 
 warnings.filterwarnings("always", category=DeprecationWarning)
@@ -401,7 +410,7 @@ class FitModel:
                 "The 'bounds' dictionary should contain 'teff' and 'radius'."
             )
 
-        self.object = read_object.ReadObject(object_name)
+        self.object = ReadObject(object_name)
         self.parallax = self.object.get_parallax()
         self.binary = False
         self.ext_filter = ext_filter
@@ -456,7 +465,7 @@ class FitModel:
         else:
             # Fitting self-consistent atmospheric models
             if self.bounds is not None:
-                readmodel = read_model.ReadModel(self.model)
+                readmodel = ReadModel(self.model)
                 bounds_grid = readmodel.get_bounds()
 
                 for key, value in bounds_grid.items():
@@ -549,7 +558,7 @@ class FitModel:
 
             else:
                 # Set all parameter boundaries to the grid boundaries
-                readmodel = read_model.ReadModel(self.model, None, None)
+                readmodel = ReadModel(self.model, None, None)
                 self.bounds = readmodel.get_bounds()
 
             self.modelpar = readmodel.get_parameters()
@@ -601,7 +610,9 @@ class FitModel:
         if isinstance(inc_phot, bool):
             if inc_phot:
                 # Select all filters if inc_phot=True
-                species_db = database.Database()
+                from species.data.database import Database
+
+                species_db = Database()
                 object_box = species_db.get_object(object_name)
                 inc_phot = object_box.filters
 
@@ -611,7 +622,9 @@ class FitModel:
         if isinstance(inc_spec, bool):
             if inc_spec:
                 # Select all spectra if inc_spec=True
-                species_db = database.Database()
+                from species.data.database import Database
+
+                species_db = Database()
                 object_box = species_db.get_object(object_name)
                 inc_spec = list(object_box.spectrum.keys())
 
@@ -638,12 +651,12 @@ class FitModel:
             if self.model == "planck":
                 # Create SyntheticPhotometry objects when fitting a Planck function
                 print(f"Creating synthetic photometry: {item}...", end="", flush=True)
-                self.modelphot.append(photometry.SyntheticPhotometry(item))
+                self.modelphot.append(SyntheticPhotometry(item))
                 print(" [DONE]")
 
             elif self.model == "powerlaw":
                 # Or create SyntheticPhotometry objects when fitting a power-law function
-                synphot = photometry.SyntheticPhotometry(item)
+                synphot = SyntheticPhotometry(item)
 
                 # Set the wavelength range of the filter as attribute
                 synphot.zero_point()
@@ -653,7 +666,7 @@ class FitModel:
             else:
                 # Or interpolate the model grid for each filter
                 print(f"Interpolating {item}...", end="", flush=True)
-                readmodel = read_model.ReadModel(self.model, filter_name=item)
+                readmodel = ReadModel(self.model, filter_name=item)
                 readmodel.interpolate_grid(
                     wavel_resample=None, smooth=False, spec_res=None
                 )
@@ -738,9 +751,7 @@ class FitModel:
 
                     wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
 
-                    readmodel = read_model.ReadModel(
-                        self.model, wavel_range=wavel_range
-                    )
+                    readmodel = ReadModel(self.model, wavel_range=wavel_range)
 
                     readmodel.interpolate_grid(
                         wavel_resample=self.spectrum[key][0][:, 0],
@@ -760,7 +771,7 @@ class FitModel:
         # Get the parameter order if interpolate_grid is used
 
         if self.model not in ["planck", "powerlaw"]:
-            readmodel = read_model.ReadModel(self.model)
+            readmodel = ReadModel(self.model)
             self.param_interp = readmodel.get_parameters()
 
             if self.binary:
@@ -786,7 +797,7 @@ class FitModel:
         if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
             for item in inc_phot:
                 print(f"Interpolating {item}...", end="", flush=True)
-                readmodel = read_model.ReadModel("blackbody", filter_name=item)
+                readmodel = ReadModel("blackbody", filter_name=item)
                 readmodel.interpolate_grid(
                     wavel_resample=None, smooth=False, spec_res=None
                 )
@@ -798,7 +809,7 @@ class FitModel:
 
                 wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
 
-                readmodel = read_model.ReadModel("blackbody", wavel_range=wavel_range)
+                readmodel = ReadModel("blackbody", wavel_range=wavel_range)
 
                 readmodel.interpolate_grid(
                     wavel_resample=self.spectrum[key][0][:, 0],
@@ -872,7 +883,7 @@ class FitModel:
             and "lognorm_sigma" in self.bounds
             and "lognorm_ext" in self.bounds
         ):
-            self.cross_sections, _, _ = dust_util.interp_lognorm(inc_phot, inc_spec)
+            self.cross_sections, _, _ = interp_lognorm(inc_phot, inc_spec)
 
             self.modelpar.append("lognorm_radius")
             self.modelpar.append("lognorm_sigma")
@@ -888,7 +899,7 @@ class FitModel:
             and "powerlaw_exp" in self.bounds
             and "powerlaw_ext" in self.bounds
         ):
-            self.cross_sections, _, _ = dust_util.interp_powerlaw(inc_phot, inc_spec)
+            self.cross_sections, _, _ = interp_powerlaw(inc_phot, inc_spec)
 
             self.modelpar.append("powerlaw_max")
             self.modelpar.append("powerlaw_exp")
@@ -989,7 +1000,7 @@ class FitModel:
                 for phot_item in inc_phot:
                     if phot_item not in self.weights:
                         # Set weight for photometry to FWHM of filter
-                        read_filt = read_filter.ReadFilter(phot_item)
+                        read_filt = ReadFilter(phot_item)
                         self.weights[phot_item] = read_filt.filter_fwhm()
                         print(f"   - {phot_item} = {self.weights[phot_item]:.2e}")
 
@@ -1032,7 +1043,7 @@ class FitModel:
             for phot_item in inc_phot:
                 if phot_item not in self.weights:
                     # Set weight for photometry to FWHM of filter
-                    read_filt = read_filter.ReadFilter(phot_item)
+                    read_filt = ReadFilter(phot_item)
                     self.weights[phot_item] = read_filt.filter_fwhm()
 
                 print(f"   - {phot_item} = {self.weights[phot_item]:.2e}")
@@ -1253,7 +1264,7 @@ class FitModel:
         for key, value in prior.items():
             if key == "mass":
                 if "logg" in self.modelpar:
-                    mass = read_util.get_mass(
+                    mass = logg_to_mass(
                         params[self.cube_index["logg"]],
                         params[self.cube_index["radius"]],
                     )
@@ -1300,13 +1311,13 @@ class FitModel:
             weight = self.weights[phot_filter]
 
             if self.model == "planck":
-                readplanck = read_planck.ReadPlanck(filter_name=phot_filter)
+                readplanck = ReadPlanck(filter_name=phot_filter)
                 phot_flux = readplanck.get_flux(param_dict, synphot=self.modelphot[i])[
                     0
                 ]
 
             elif self.model == "powerlaw":
-                powerl_box = read_util.powerlaw_spectrum(
+                powerl_box = powerlaw_spectrum(
                     self.modelphot[i].wavel_range, param_dict
                 )
 
@@ -1318,7 +1329,7 @@ class FitModel:
                 if self.binary:
                     # Star 0
 
-                    param_0 = read_util.binary_to_single(param_dict, 0)
+                    param_0 = binary_to_single(param_dict, 0)
 
                     phot_flux_0 = self.modelphot[i].spectrum_interp(
                         list(param_0.values())
@@ -1334,7 +1345,7 @@ class FitModel:
 
                     # Star 1
 
-                    param_1 = read_util.binary_to_single(param_dict, 1)
+                    param_1 = binary_to_single(param_dict, 1)
 
                     phot_flux_1 = self.modelphot[i].spectrum_interp(
                         list(param_1.values())
@@ -1386,19 +1397,19 @@ class FitModel:
                 phot_flux *= np.exp(-cross_tmp * n_grains)
 
             elif "ism_ext" in dust_param:
-                read_filt = read_filter.ReadFilter(phot_filter)
+                read_filt = ReadFilter(phot_filter)
                 phot_wavel = np.array([read_filt.mean_wavelength()])
 
                 ism_reddening = dust_param.get("ism_red", 3.1)
 
-                ext_filt = dust_util.ism_extinction(
+                ext_filt = ism_extinction(
                     dust_param["ism_ext"], ism_reddening, phot_wavel
                 )
 
                 phot_flux *= 10.0 ** (-0.4 * ext_filt[0])
 
             elif self.ext_filter is not None:
-                readmodel = read_model.ReadModel(self.model, filter_name=phot_filter)
+                readmodel = ReadModel(self.model, filter_name=phot_filter)
 
                 param_dict[f"phot_ext_{self.ext_filter}"] = dust_param[
                     f"phot_ext_{self.ext_filter}"
@@ -1468,7 +1479,7 @@ class FitModel:
 
             if self.model == "planck":
                 # Calculate a blackbody spectrum
-                readplanck = read_planck.ReadPlanck(
+                readplanck = ReadPlanck(
                     (
                         0.9 * self.spectrum[item][0][0, 0],
                         1.1 * self.spectrum[item][0][-1, 0],
@@ -1488,7 +1499,7 @@ class FitModel:
                 if self.binary:
                     # Star 1
 
-                    param_0 = read_util.binary_to_single(param_dict, 0)
+                    param_0 = binary_to_single(param_dict, 0)
 
                     model_flux_0 = self.modelspec[i].spectrum_interp(
                         list(param_0.values())
@@ -1504,7 +1515,7 @@ class FitModel:
 
                     # Star 2
 
-                    param_1 = read_util.binary_to_single(param_dict, 1)
+                    param_1 = binary_to_single(param_dict, 1)
 
                     model_flux_1 = self.modelspec[i].spectrum_interp(
                         list(param_1.values())
@@ -1651,7 +1662,7 @@ class FitModel:
             elif "ism_ext" in dust_param:
                 ism_reddening = dust_param.get("ism_red", 3.1)
 
-                ext_spec = dust_util.ism_extinction(
+                ext_spec = ism_extinction(
                     dust_param["ism_ext"], ism_reddening, self.spectrum[item][0][:, 0]
                 )
 
@@ -1660,13 +1671,13 @@ class FitModel:
             elif self.ext_filter is not None:
                 ism_reddening = dust_param.get("ism_red", 3.1)
 
-                av_required = dust_util.convert_to_av(
+                av_required = convert_to_av(
                     filter_name=self.ext_filter,
                     filter_ext=dust_param[f"phot_ext_{self.ext_filter}"],
                     v_band_red=ism_reddening,
                 )
 
-                ext_spec = dust_util.ism_extinction(
+                ext_spec = ism_extinction(
                     av_required, ism_reddening, self.spectrum[item][0][:, 0]
                 )
 
@@ -1943,7 +1954,9 @@ class FitModel:
 
         if mpi_rank == 0:
             # Writing the samples to the database is only possible when using a single process
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
 
             species_db.add_samples(
                 sampler="multinest",
@@ -2172,7 +2185,9 @@ class FitModel:
         if mpi_rank == 0:
             # Writing the samples to the database is only
             # possible when using a single process
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
 
             species_db.add_samples(
                 sampler="ultranest",

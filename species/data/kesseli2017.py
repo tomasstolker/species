@@ -13,7 +13,7 @@ import numpy as np
 from astropy.io import fits
 from typeguard import typechecked
 
-from species.util import data_util
+from species.util.data_util import extract_tarfile
 
 
 @typechecked
@@ -56,7 +56,7 @@ def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
         end="",
         flush=True,
     )
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     database.create_group("spectra/kesseli+2017")

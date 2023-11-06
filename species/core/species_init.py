@@ -6,10 +6,13 @@ import configparser
 import json
 import os
 import socket
+import sys
 import urllib.request
 
 import h5py
 import species
+
+from typeguard import typechecked
 
 
 class SpeciesInit:
@@ -19,7 +22,8 @@ class SpeciesInit:
     folder, and creating the data folder for storage of input data.
     """
 
-    def __init__(self):
+    @typechecked
+    def __init__(self) -> None:
         """
         Returns
         -------
@@ -27,7 +31,9 @@ class SpeciesInit:
             None
         """
 
-        species_msg = f"species v{species.__version__}"
+        species_version = species.__version__
+        species_msg = f"species v{species_version}"
+
         print(len(species_msg) * "=")
         print(species_msg)
         print(len(species_msg) * "=")
@@ -48,7 +54,7 @@ class SpeciesInit:
         except (urllib.error.URLError, socket.timeout):
             latest_version = None
 
-        if latest_version is not None and species.__version__ != latest_version:
+        if latest_version is not None and species_version != latest_version:
             print(f" -> A new version ({latest_version}) is available!")
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")

@@ -20,8 +20,11 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from typeguard import typechecked
 
 from species.core import constants
-from species.read import read_model, read_object
-from species.util import dust_util, plot_util, read_util
+from species.read.read_model import ReadModel
+from species.read.read_object import ReadObject
+from species.util.dust_util import ism_extinction
+from species.util.plot_util import create_model_label, update_labels
+from species.util.spec_util import smooth_spectrum
 
 
 @typechecked
@@ -37,14 +40,14 @@ def plot_statistic(
     """
     Function for plotting the goodness-of-fit statistic from a
     comparison with an empirical spectral library with
-    :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
+    :class:`~species.fit.compare_spectra.CompareSpectra.spectral_type`
     that enables a determination of the spectral type
 
     Parameters
     ----------
     tag : str
         Database tag where the results from the empirical comparison with
-        :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
+        :class:`~species.fit.compare_spectra.CompareSpectra.spectral_type`
         are stored.
     xlim : tuple(float, float)
         Limits of the spectral type axis in numbers (i.e.
@@ -215,7 +218,7 @@ def plot_empirical_spectra(
     tag : str
         Database tag where the results from the empirical
         comparison with
-        :class:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`
+        :class:`~species.fit.compare_spectra.CompareSpectra.spectral_type`
         are stored.
     n_spectra : int, None
         The number of spectra with the lowest goodness-of-fit
@@ -363,7 +366,7 @@ def plot_empirical_spectra(
     if title is not None:
         ax.set_title(title, y=1.02, fontsize=13)
 
-    read_obj = read_object.ReadObject(object_name)
+    read_obj = ReadObject(object_name)
 
     obj_spec = []
     obj_res = []
@@ -397,14 +400,14 @@ def plot_empirical_spectra(
                 )
 
         for j, spec_item in enumerate(obj_spec):
-            ism_ext = dust_util.ism_extinction(av_ext[i], 3.1, spectrum[:, 0])
+            ism_ext = ism_extinction(av_ext[i], 3.1, spectrum[:, 0])
             ext_scaling = 10.0 ** (-0.4 * ism_ext)
 
             wavel_shifted = (
                 spectrum[:, 0] + spectrum[:, 0] * rad_vel[i] / constants.LIGHT
             )
 
-            flux_smooth = read_util.smooth_spectrum(
+            flux_smooth = smooth_spectrum(
                 wavel_shifted,
                 spectrum[:, 1] * ext_scaling,
                 spec_res=obj_res[j],
@@ -477,7 +480,7 @@ def plot_grid_statistic(
     ----------
     tag : str
         Database tag where the results from the comparison with
-        :class:`~species.analysis.compare_spectra.CompareSpectra` are stored.
+        :class:`~species.fit.compare_spectra.CompareSpectra` are stored.
     upsample : bool
         Upsample the goodness-of-fit grid to a higher resolution
         for a smoother appearance.
@@ -500,7 +503,7 @@ def plot_grid_statistic(
         for the comparison, for example, 'teff', 'logg', 'feh', or
         'radius'. Optionally, the argument can be set to 'ism_ext' in
         case the ``av_points`` parameter of the
-        :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        :func:`~species.fit.compare_spectra.CompareSpectra.compare_model`
         method was used. Extra contours are not plotted if the
         argument is set to ``None``.
     nlevels_main : int
@@ -547,7 +550,7 @@ def plot_grid_statistic(
     # else:
     #     extra_scaling = None
 
-    read_obj = read_object.ReadObject(dset.attrs["object_name"])
+    read_obj = ReadObject(dset.attrs["object_name"])
 
     n_wavel = 0
     for item in read_obj.get_spectrum().values():
@@ -904,7 +907,7 @@ def plot_grid_statistic(
 
         # best_param = (coord_x[best_index[0]], coord_y[best_index[1]])
         #
-        # par_key, par_unit, par_label = plot_util.quantity_unit(model_param, object_type='planet')
+        # par_key, par_unit, par_label = quantity_unit(model_param, object_type='planet')
         #
         # par_text = f'{par_label[0]} = {best_param[0]:.0f} {par_unit[0]}\n' \
         #            f'{par_label[1]} = {best_param[1]:.1f}'
@@ -913,7 +916,7 @@ def plot_grid_statistic(
         #             color='white', fontsize=12.)
 
     if extra_param is not None:
-        extra_label = plot_util.update_labels([extra_param])[0]
+        extra_label = update_labels([extra_param])[0]
         ax.plot([], [], ls="-", lw=1.2, color="white", label=extra_label)
         ax.legend(loc="best", frameon=False, labelcolor="linecolor", fontsize=12.0)
 
@@ -952,7 +955,7 @@ def plot_model_spectra(
     tag : str
         Database tag where the results from the model
         comparison with
-        :func:`~species.analysis.compare_spectra.CompareSpectra.compare_model`
+        :func:`~species.fit.compare_spectra.CompareSpectra.compare_model`
         are stored.
     n_spectra : int, None
         The number of spectra with the lowest goodness-of-fit
@@ -1139,7 +1142,7 @@ def plot_model_spectra(
     if title is not None:
         ax.set_title(title, y=1.02, fontsize=13)
 
-    read_obj = read_object.ReadObject(object_name)
+    read_obj = ReadObject(object_name)
     obj_spec = read_obj.get_spectrum()
 
     if flux_offset == 0.0:
@@ -1149,7 +1152,7 @@ def plot_model_spectra(
 
             ax.plot(spec_item[0][:, 0], spec_item[0][:, 1], "-", lw=0.5, color="black")
 
-    model_reader = read_model.ReadModel(model_name)
+    model_reader = ReadModel(model_name)
 
     for i in range(n_spectra):
         param_select = {"parallax": parallax}
@@ -1186,7 +1189,7 @@ def plot_model_spectra(
         if n_inc_phot > 0 and n_spec_name == 0:
             model_box = model_reader.get_data(
                 model_param=param_select,
-                spec_res=100.,
+                spec_res=100.0,
             )
 
             ax.plot(
@@ -1218,7 +1221,7 @@ def plot_model_spectra(
                 leg_param = model_param.copy()
                 leg_param.append("radius")
 
-            label_text = plot_util.create_model_label(
+            label_text = create_model_label(
                 model_param=param_select,
                 model_name=model_name,
                 inc_model_name=False,

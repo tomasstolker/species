@@ -12,10 +12,9 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.analysis import photometry
-from species.core import box
-from species.data import database
-from species.read import read_filter
+from species.core.box import PhotometryBox, SpectrumBox, create_box
+from species.phot.syn_phot import SyntheticPhotometry
+from species.read.read_filter import ReadFilter
 
 
 class ReadSpectrum:
@@ -48,7 +47,7 @@ class ReadSpectrum:
             self.wavel_range = None
 
         else:
-            transmission = read_filter.ReadFilter(filter_name)
+            transmission = ReadFilter(filter_name)
             self.wavel_range = transmission.wavelength_range()
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
@@ -61,7 +60,7 @@ class ReadSpectrum:
     @typechecked
     def get_spectrum(
         self, sptypes: Optional[List[str]] = None, exclude_nan: bool = True
-    ) -> box.SpectrumBox:
+    ) -> SpectrumBox:
         """
         Function for selecting spectra from the database.
 
@@ -88,7 +87,9 @@ class ReadSpectrum:
 
         if self.spec_library not in h5_file[f"spectra"]:
             h5_file.close()
-            species_db = database.Database()
+            from species.data.database import Database
+
+            species_db = Database()
             species_db.add_spectra(self.spec_library, sptypes)
             h5_file = h5py.File(self.database, "r")
 
@@ -188,7 +189,7 @@ class ReadSpectrum:
                 list_parallax.append((np.nan, np.nan))
                 list_spec_res.append(np.nan)
 
-        spec_box = box.SpectrumBox()
+        spec_box = SpectrumBox()
         spec_box.spec_library = self.spec_library
 
         if sptypes is not None:
@@ -202,7 +203,6 @@ class ReadSpectrum:
             spec_box.spec_res = []
 
             for item in sptypes:
-
                 for i, spec_item in enumerate(list_sptype):
                     if item == spec_item[:2]:
                         spec_box.wavelength.append(list_wavelength[i])
@@ -227,7 +227,7 @@ class ReadSpectrum:
         return spec_box
 
     @typechecked
-    def get_flux(self, sptypes: Optional[List[str]] = None) -> box.PhotometryBox:
+    def get_flux(self, sptypes: Optional[List[str]] = None) -> PhotometryBox:
         """
         Function for calculating the average flux density for the
         ``filter_name``.
@@ -249,13 +249,13 @@ class ReadSpectrum:
 
         n_spectra = len(spec_box.wavelength)
 
-        filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
+        filter_profile = ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
 
         wavelengths = np.full(n_spectra, mean_wavel)
         filters = np.full(n_spectra, self.filter_name)
 
-        synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
+        synphot = SyntheticPhotometry(filter_name=self.filter_name)
 
         phot_flux = []
 
@@ -270,7 +270,7 @@ class ReadSpectrum:
 
         phot_flux = np.asarray(phot_flux)
 
-        return box.create_box(
+        return create_box(
             boxtype="photometry",
             name=spec_box.name,
             sptype=spec_box.sptype,
@@ -282,7 +282,7 @@ class ReadSpectrum:
         )
 
     @typechecked
-    def get_magnitude(self, sptypes: Optional[List[str]] = None) -> box.PhotometryBox:
+    def get_magnitude(self, sptypes: Optional[List[str]] = None) -> PhotometryBox:
         """
         Function for calculating the apparent magnitude for the
         specified ``filter_name``.
@@ -304,25 +304,23 @@ class ReadSpectrum:
 
         n_spectra = len(spec_box.wavelength)
 
-        filter_profile = read_filter.ReadFilter(filter_name=self.filter_name)
+        filter_profile = ReadFilter(filter_name=self.filter_name)
         mean_wavel = filter_profile.mean_wavelength()
 
         wavelengths = np.full(n_spectra, mean_wavel)
         filters = np.full(n_spectra, self.filter_name)
 
-        synphot = photometry.SyntheticPhotometry(filter_name=self.filter_name)
+        synphot = SyntheticPhotometry(filter_name=self.filter_name)
 
         app_mag = []
         abs_mag = []
 
         for i in range(n_spectra):
-
             if np.isnan(spec_box.parallax[i][0]):
                 app_tmp = (np.nan, np.nan)
                 abs_tmp = (np.nan, np.nan)
 
             else:
-
                 app_tmp, abs_tmp = synphot.spectrum_to_magnitude(
                     spec_box.wavelength[i],
                     spec_box.flux[i],
@@ -336,7 +334,7 @@ class ReadSpectrum:
             app_mag.append(app_tmp)
             abs_mag.append(abs_tmp)
 
-        return box.create_box(
+        return create_box(
             boxtype="photometry",
             name=spec_box.name,
             sptype=spec_box.sptype,

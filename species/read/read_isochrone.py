@@ -14,9 +14,18 @@ import numpy as np
 from scipy import interpolate
 from typeguard import typechecked
 
-from species.core import box
-from species.read import read_model
-from species.util import phot_util, plot_util
+from species.core.box import (
+    ColorMagBox,
+    ColorColorBox,
+    CoolingBox,
+    IsochroneBox,
+    ModelBox,
+    PhotometryBox,
+    create_box,
+)
+from species.read.read_model import ReadModel
+from species.util.convert_util import apparent_to_absolute
+from species.util.plot_util import update_labels
 
 
 class ReadIsochrone:
@@ -44,12 +53,12 @@ class ReadIsochrone:
         """
         Parameters
         ----------
-        tag : str
+        tag : str, None
             Database tag of the isochrone data (e.g. 'ames-cond',
-            'sonora+0.0', 'atmo-ceq'). When using an incorrect
-            argument, and error message is printed that includes
-            a list with the isochrone models that are available
-            in the current ``species`` database.
+            'sonora+0.0', 'atmo-ceq'). A list with the isochrone
+            data that are stored in the current ``species``
+            database is printed if the argument of ``tag`` is
+            set to ``None``.
         create_regular_grid : bool
             Evolutionary grids can be irregular in the (age, mass)
             space. By setting ``create_regular_grid=True``, the
@@ -436,7 +445,7 @@ class ReadIsochrone:
                     model_param[key] = extra_param[key]
 
                 else:
-                    param_name = plot_util.update_labels([key])[0]
+                    param_name = update_labels([key])[0]
 
                     input_value = input(
                         f"The '{atmospheric_model}' atmospheric model "
@@ -495,7 +504,7 @@ class ReadIsochrone:
         masses: Optional[np.ndarray] = None,
         filter_mag: Optional[str] = None,
         filters_color: Optional[Tuple[str, str]] = None,
-    ) -> box.IsochroneBox:
+    ) -> IsochroneBox:
         """
         Function for interpolating an isochrone.
 
@@ -675,7 +684,7 @@ class ReadIsochrone:
 
             filters_color = None
 
-        return box.create_box(
+        return create_box(
             boxtype="isochrone",
             model=self.tag,
             age=age,
@@ -697,7 +706,7 @@ class ReadIsochrone:
         ages: Optional[np.ndarray] = None,
         filter_mag: Optional[str] = None,
         filters_color: Optional[Tuple[str, str]] = None,
-    ) -> box.CoolingBox:
+    ) -> CoolingBox:
         """
         Function for interpolating a cooling curve.
 
@@ -845,7 +854,7 @@ class ReadIsochrone:
 
             filters_color = None
 
-        return box.create_box(
+        return create_box(
             boxtype="cooling",
             model=self.tag,
             mass=mass,
@@ -870,7 +879,7 @@ class ReadIsochrone:
         adapt_logg: bool = False,
         atmospheric_model: Optional[str] = None,
         extra_param: Optional[Dict[str, float]] = None,
-    ) -> box.ColorMagBox:
+    ) -> ColorMagBox:
         """
         Function for calculating color-magnitude pairs
         from a selected isochrone. The function selects the
@@ -940,12 +949,8 @@ class ReadIsochrone:
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        model_1 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_color[0]
-        )
-        model_2 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_color[1]
-        )
+        model_1 = ReadModel(model=atmospheric_model, filter_name=filters_color[0])
+        model_2 = ReadModel(model=atmospheric_model, filter_name=filters_color[1])
 
         param_bounds = model_1.get_bounds()
 
@@ -1047,7 +1052,7 @@ class ReadIsochrone:
                 "one of the two filter values of filters_color."
             )
 
-        return box.create_box(
+        return create_box(
             boxtype="colormag",
             library=atmospheric_model,
             object_type="model",
@@ -1068,7 +1073,7 @@ class ReadIsochrone:
         filters_colors: Tuple[Tuple[str, str], Tuple[str, str]],
         atmospheric_model: Optional[str] = None,
         extra_param: Optional[Dict[str, float]] = None,
-    ) -> box.ColorColorBox:
+    ) -> ColorColorBox:
         """
         Function for calculating color-color pairs
         from a selected isochrone. The function selects the
@@ -1127,18 +1132,10 @@ class ReadIsochrone:
             age=age, masses=masses, filters_color=None, filter_mag=None
         )
 
-        model_1 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_colors[0][0]
-        )
-        model_2 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_colors[0][1]
-        )
-        model_3 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_colors[1][0]
-        )
-        model_4 = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filters_colors[1][1]
-        )
+        model_1 = ReadModel(model=atmospheric_model, filter_name=filters_colors[0][0])
+        model_2 = ReadModel(model=atmospheric_model, filter_name=filters_colors[0][1])
+        model_3 = ReadModel(model=atmospheric_model, filter_name=filters_colors[1][0])
+        model_4 = ReadModel(model=atmospheric_model, filter_name=filters_colors[1][1])
 
         mag1 = np.zeros(isochrone.mass.shape[0])
         mag2 = np.zeros(isochrone.mass.shape[0])
@@ -1219,7 +1216,7 @@ class ReadIsochrone:
                     mag3[i], _ = model_3.get_magnitude(model_param)
                     mag4[i], _ = model_4.get_magnitude(model_param)
 
-        return box.create_box(
+        return create_box(
             boxtype="colorcolor",
             library=atmospheric_model,
             object_type="model",
@@ -1378,7 +1375,7 @@ class ReadIsochrone:
         filter_name: str,
         atmospheric_model: Optional[str] = None,
         extra_param: Optional[Dict[str, float]] = None,
-    ) -> box.PhotometryBox:
+    ) -> PhotometryBox:
         """
         Function for computing synthetic photometry by interpolating
         and integrating the associated spectra. Bulk and atmosphere
@@ -1453,9 +1450,7 @@ class ReadIsochrone:
             "distance": distance,
         }
 
-        model_reader = read_model.ReadModel(
-            model=atmospheric_model, filter_name=filter_name
-        )
+        model_reader = ReadModel(model=atmospheric_model, filter_name=filter_name)
 
         model_param, _ = self._update_param(
             atmospheric_model, model_param, model_reader.get_bounds(), extra_param
@@ -1475,7 +1470,7 @@ class ReadIsochrone:
         spec_res: Optional[float] = None,
         atmospheric_model: Optional[str] = None,
         extra_param: Optional[Dict[str, float]] = None,
-    ) -> box.ModelBox:
+    ) -> ModelBox:
         """
         Function for interpolating the model spectrum at a specified
         age and mass. Bulk and atmosphere parameters are interpolated
@@ -1547,9 +1542,7 @@ class ReadIsochrone:
             "distance": distance,
         }
 
-        model_reader = read_model.ReadModel(
-            model=atmospheric_model, wavel_range=wavel_range
-        )
+        model_reader = ReadModel(model=atmospheric_model, wavel_range=wavel_range)
 
         model_param, _ = self._update_param(
             atmospheric_model, model_param, model_reader.get_bounds(), extra_param
@@ -1685,7 +1678,7 @@ class ReadIsochrone:
         atmospheric_model = self._check_model(atmospheric_model)
 
         app_mag = star_mag + contrast
-        abs_mag = phot_util.apparent_to_absolute((app_mag, None), (distance, None))[0]
+        abs_mag = apparent_to_absolute((app_mag, None), (distance, None))[0]
 
         filter_list = self.get_filters()
 
@@ -1716,9 +1709,7 @@ class ReadIsochrone:
                 "for calculating synthetic photometry."
             )
 
-            model_reader = read_model.ReadModel(
-                model=atmospheric_model, filter_name=filter_name
-            )
+            model_reader = ReadModel(model=atmospheric_model, filter_name=filter_name)
 
             iso_box = self.get_isochrone(age=age, masses=None, filter_mag=None)
 

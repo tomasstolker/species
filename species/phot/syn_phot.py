@@ -14,9 +14,9 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.data import database
-from species.read import read_filter, read_calibration
-from species.util import phot_util
+from species.data.vega import add_vega
+from species.read.read_filter import ReadFilter
+from species.util.convert_util import apparent_to_absolute, parallax_to_distance
 
 
 class SyntheticPhotometry:
@@ -56,7 +56,7 @@ class SyntheticPhotometry:
             ``None``, in which case the zero point is calculated
             internally. The zero point can be accessed through
             ``zero_point`` attribute from instance of
-            :class:`~species.analysis.photometry.SyntheticPhotometry`.
+            :class:`~species.phot.syn_phot.SyntheticPhotometry`.
 
         Returns
         -------
@@ -75,9 +75,10 @@ class SyntheticPhotometry:
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.data_folder = config["species"]["data_folder"]
         self.vega_mag = float(config["species"]["vega_mag"])
 
-        read_filt = read_filter.ReadFilter(self.filter_name)
+        read_filt = ReadFilter(self.filter_name)
         self.det_type = read_filt.detector_type()
 
         if self.zero_point is None:
@@ -110,22 +111,18 @@ class SyntheticPhotometry:
         """
 
         if self.wavel_range is None:
-            transmission = read_filter.ReadFilter(self.filter_name)
-            self.wavel_range = transmission.wavelength_range()
+            read_filt = ReadFilter(self.filter_name)
+            self.wavel_range = read_filt.wavelength_range()
 
-        h5_file = h5py.File(self.database, "r")
+        with h5py.File(self.database, "a") as h5_file:
 
-        if "spectra/calibration/vega" not in h5_file:
-            h5_file.close()
-            species_db = database.Database()
-            species_db.add_spectra("vega")
-            h5_file = h5py.File(self.database, "r")
+            if "spectra/calibration/vega" not in h5_file:
+                add_vega(self.data_folder, h5_file)
 
-        read_calib = read_calibration.ReadCalibration("vega", None)
-        calib_box = read_calib.get_spectrum()
+            vega_spec = np.array(h5_file["spectra/calibration/vega"])
 
-        wavelength = calib_box.wavelength
-        flux = calib_box.flux
+        wavelength = vega_spec[0, ]
+        flux = vega_spec[1, ]
 
         wavelength_crop = wavelength[
             (wavelength > self.wavel_range[0]) & (wavelength < self.wavel_range[1])
@@ -134,8 +131,6 @@ class SyntheticPhotometry:
         flux_crop = flux[
             (wavelength > self.wavel_range[0]) & (wavelength < self.wavel_range[1])
         ]
-
-        h5_file.close()
 
         return self.spectrum_to_flux(wavelength_crop, flux_crop)[0]
 
@@ -206,11 +201,11 @@ class SyntheticPhotometry:
             flux_error = flux.copy()
 
         if self.filter_interp is None:
-            transmission = read_filter.ReadFilter(self.filter_name)
-            self.filter_interp = transmission.interpolate_filter()
+            read_filt = ReadFilter(self.filter_name)
+            self.filter_interp = read_filt.interpolate_filter()
 
             if self.wavel_range is None:
-                self.wavel_range = transmission.wavelength_range()
+                self.wavel_range = read_filt.wavelength_range()
 
         if wavelength.size == 0:
             syn_flux = np.nan
@@ -230,7 +225,8 @@ class SyntheticPhotometry:
 
         else:
             indices = np.where(
-                (self.wavel_range[0] <= wavelength) & (wavelength <= self.wavel_range[1])
+                (self.wavel_range[0] <= wavelength)
+                & (wavelength <= self.wavel_range[1])
             )[0]
 
         if indices is not None and indices.size < 2:
@@ -417,7 +413,7 @@ class SyntheticPhotometry:
                 error = error[~nan_idx]
 
         if parallax is not None:
-            distance = phot_util.parallax_to_distance(parallax)
+            distance = parallax_to_distance(parallax)
 
         syn_flux = self.spectrum_to_flux(
             wavelength, flux, error=error, threshold=threshold
@@ -504,12 +500,12 @@ class SyntheticPhotometry:
             :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`).
             This parameter is deprecated and will be removed in a
             future release. Please use the zero_point parameter
-            of the constructor of 
-            :class:`~species.analysis.photometry.SyntheticPhotometry`
+            of the constructor of
+            :class:`~species.phot.syn_phot.SyntheticPhotometry`
             instead. By default, the zero point is calculated
             internally and stored as the ``zero_point`` attribute
             of an instance from
-            :class:`~species.analysis.photometry.SyntheticPhotometry`.
+            :class:`~species.phot.syn_phot.SyntheticPhotometry`.
 
         Returns
         -------
@@ -605,7 +601,7 @@ class SyntheticPhotometry:
         """
 
         if parallax is not None:
-            distance = phot_util.parallax_to_distance(parallax)
+            distance = parallax_to_distance(parallax)
 
         if flux <= 0.0:
             raise ValueError(
@@ -653,7 +649,7 @@ class SyntheticPhotometry:
             error_abs_mag = None
 
         else:
-            abs_mag, error_abs_mag = phot_util.apparent_to_absolute(
+            abs_mag, error_abs_mag = apparent_to_absolute(
                 (app_mag, error_app_mag), distance
             )
 

@@ -18,7 +18,8 @@ from astropy.io import fits
 from astroquery.simbad import Simbad
 from typeguard import typechecked
 
-from species.util import data_util, query_util
+from species.util.data_util import extract_tarfile
+from species.util.query_util import get_simbad
 
 
 @typechecked
@@ -72,7 +73,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
         shutil.rmtree(data_folder)
 
     print(f"Unpacking {print_text} (173 kB)...", end="", flush=True)
-    data_util.extract_tarfile(data_file, data_folder)
+    extract_tarfile(data_file, data_folder)
     print(" [DONE]")
 
     sources = np.genfromtxt(
@@ -111,7 +112,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
             elif "RP" in header:
                 spec_res = header["RP"]
 
-            simbad_id = query_util.get_simbad(name)
+            simbad_id = get_simbad(name)
 
             if simbad_id is not None:
                 if not isinstance(simbad_id, str):
