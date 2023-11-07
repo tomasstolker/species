@@ -17,9 +17,9 @@ pypi-test:
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 docs:
-	rm -f docs/species.analysis.rst
 	rm -f docs/species.core.rst
 	rm -f docs/species.data.rst
+	rm -f docs/species.fit.rst
 	rm -f docs/species.phot.rst
 	rm -f docs/species.plot.rst
 	rm -f docs/species.read.rst

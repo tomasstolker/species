@@ -4,6 +4,14 @@ species.util package
 Submodules
 ----------
 
+species.util.box\_util module
+-----------------------------
+
+.. automodule:: species.util.box_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.util.convert\_util module
 ---------------------------------
 
@@ -28,18 +36,18 @@ species.util.dust\_util module
    :undoc-members:
    :show-inheritance:
 
-species.util.model\_util module
--------------------------------
+species.util.fit\_util module
+-----------------------------
 
-.. automodule:: species.util.model_util
+.. automodule:: species.util.fit_util
    :members:
    :undoc-members:
    :show-inheritance:
 
-species.util.phot\_util module
-------------------------------
+species.util.model\_util module
+-------------------------------
 
-.. automodule:: species.util.phot_util
+.. automodule:: species.util.model_util
    :members:
    :undoc-members:
    :show-inheritance:
@@ -64,14 +72,6 @@ species.util.radtrans\_util module
 ----------------------------------
 
 .. automodule:: species.util.radtrans_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-species.util.read\_util module
-------------------------------
-
-.. automodule:: species.util.read_util
    :members:
    :undoc-members:
    :show-inheritance:

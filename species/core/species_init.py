@@ -8,6 +8,7 @@ import os
 import socket
 import sys
 import urllib.request
+import warnings
 
 import h5py
 import species
@@ -141,3 +142,11 @@ class SpeciesInit:
             print("Creating data folder...", end="", flush=True)
             os.makedirs(data_folder)
             print(" [DONE]")
+
+        warnings.warn("Importing the species package had become slow "
+                      "because of the many classes and functions that "
+                      "were implicitly imported. The initialization of "
+                      "the packages has therefore been adjusted. In "
+                      "the latest version, any functionalities should "
+                      "be explicitly imported from the modules that "
+                      "they are part of.")

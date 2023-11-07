@@ -82,13 +82,12 @@ def plot_statistic(
 
     db_path = config["species"]["database"]
 
-    h5_file = h5py.File(db_path, "r")
+    with h5py.File(db_path, "r") as hdf5_file:
+        dset = hdf5_file[f"results/empirical/{tag}/names"]
 
-    dset = h5_file[f"results/empirical/{tag}/names"]
-
-    names = np.array(dset)
-    sptypes = np.array(h5_file[f"results/empirical/{tag}/sptypes"])
-    g_fit = np.array(h5_file[f"results/empirical/{tag}/goodness_of_fit"])
+        names = np.array(dset)
+        sptypes = np.array(hdf5_file[f"results/empirical/{tag}/sptypes"])
+        g_fit = np.array(hdf5_file[f"results/empirical/{tag}/goodness_of_fit"])
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -189,8 +188,6 @@ def plot_statistic(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    h5_file.close()
-
     print(" [DONE]")
 
     return fig
@@ -269,24 +266,23 @@ def plot_empirical_spectra(
 
     db_path = config["species"]["database"]
 
-    h5_file = h5py.File(db_path, "r")
+    with h5py.File(db_path, "r") as hdf5_file:
+        dset = hdf5_file[f"results/empirical/{tag}/names"]
 
-    dset = h5_file[f"results/empirical/{tag}/names"]
+        object_name = dset.attrs["object_name"]
+        spec_library = dset.attrs["spec_library"]
+        n_spec_name = dset.attrs["n_spec_name"]
 
-    object_name = dset.attrs["object_name"]
-    spec_library = dset.attrs["spec_library"]
-    n_spec_name = dset.attrs["n_spec_name"]
+        spec_name = []
+        for i in range(n_spec_name):
+            spec_name.append(dset.attrs[f"spec_name{i}"])
 
-    spec_name = []
-    for i in range(n_spec_name):
-        spec_name.append(dset.attrs[f"spec_name{i}"])
+        names = np.array(dset)
+        flux_scaling = np.array(hdf5_file[f"results/empirical/{tag}/flux_scaling"])
+        av_ext = np.array(hdf5_file[f"results/empirical/{tag}/av_ext"])
 
-    names = np.array(dset)
-    flux_scaling = np.array(h5_file[f"results/empirical/{tag}/flux_scaling"])
-    av_ext = np.array(h5_file[f"results/empirical/{tag}/av_ext"])
-
-    rad_vel = np.array(h5_file[f"results/empirical/{tag}/rad_vel"])
-    rad_vel *= 1e3  # (m s-1)
+        rad_vel = np.array(hdf5_file[f"results/empirical/{tag}/rad_vel"])
+        rad_vel *= 1e3  # (m s-1)
 
     if n_spectra is None:
         n_spectra = names.size
@@ -385,9 +381,10 @@ def plot_empirical_spectra(
         else:
             name_item = names[i].decode("utf-8")
 
-        dset = h5_file[f"spectra/{spec_library}/{name_item}"]
-        sptype = dset.attrs["sptype"]
-        spectrum = np.asarray(dset)
+        with h5py.File(db_path, "r") as hdf5_file:
+            dset = hdf5_file[f"spectra/{spec_library}/{name_item}"]
+            sptype = dset.attrs["sptype"]
+            spectrum = np.asarray(dset)
 
         if flux_offset != 0.0:
             for spec_item in obj_spec:
@@ -450,8 +447,6 @@ def plot_empirical_spectra(
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    h5_file.close()
 
     print(" [DONE]")
 
@@ -530,40 +525,41 @@ def plot_grid_statistic(
 
     db_path = config["species"]["database"]
 
-    h5_file = h5py.File(db_path, "r")
+    with h5py.File(db_path, "r") as hdf5_file:
+        dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
+        goodness_fit = np.array(dset)
 
-    dset = h5_file[f"results/comparison/{tag}/goodness_of_fit"]
-    goodness_fit = np.array(dset)
+        n_param = dset.attrs["n_param"]
+        parallax = dset.attrs["parallax"]
 
-    n_param = dset.attrs["n_param"]
-    parallax = dset.attrs["parallax"]
+        flux_scaling = np.array(hdf5_file[f"results/comparison/{tag}/flux_scaling"])
 
-    flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
+        radius = (
+            np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
+            / constants.R_JUP
+        )
 
-    radius = (
-        np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
-        / constants.R_JUP
-    )
+        # if 'extra_scaling' in hdf5_file[f'results/comparison/{tag}']:
+        #     extra_scaling = np.array(hdf5_file[f'results/comparison/{tag}/extra_scaling'])
+        # else:
+        #     extra_scaling = None
 
-    # if 'extra_scaling' in h5_file[f'results/comparison/{tag}']:
-    #     extra_scaling = np.array(h5_file[f'results/comparison/{tag}/extra_scaling'])
-    # else:
-    #     extra_scaling = None
+        model_param = []
+        coord_points = []
 
-    read_obj = ReadObject(dset.attrs["object_name"])
+        for i in range(n_param):
+            model_param.append(dset.attrs[f"parameter{i}"])
+            coord_points.append(
+                np.array(hdf5_file[f"results/comparison/{tag}/coord_points{i}"])
+            )
+
+        object_name = dset.attrs["object_name"]
+
+    read_obj = ReadObject(object_name)
 
     n_wavel = 0
     for item in read_obj.get_spectrum().values():
         n_wavel += item[0].shape[0]
-
-    model_param = []
-    coord_points = []
-
-    for i in range(n_param):
-        model_param.append(dset.attrs[f"parameter{i}"])
-        coord_points.append(
-            np.array(h5_file[f"results/comparison/{tag}/coord_points{i}"])
-        )
 
     # Set the coordinate for the x-axis to Teff
     coord_x = coord_points[0]
@@ -925,8 +921,6 @@ def plot_grid_statistic(
     else:
         plt.savefig(output, bbox_inches="tight")
 
-    h5_file.close()
-
     print(" [DONE]")
 
     return fig
@@ -1013,59 +1007,58 @@ def plot_model_spectra(
 
     db_path = config["species"]["database"]
 
-    h5_file = h5py.File(db_path, "r")
+    with h5py.File(db_path, "r") as hdf5_file:
+        dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
 
-    dset = h5_file[f"results/comparison/{tag}/goodness_of_fit"]
+        object_name = dset.attrs["object_name"]
+        n_spec_name = dset.attrs["n_spec_name"]
+        model_name = dset.attrs["model"]
+        n_param = dset.attrs["n_param"]
+        n_scale_spec = dset.attrs["n_scale_spec"]
+        parallax = dset.attrs["parallax"]
+        n_inc_phot = dset.attrs["n_inc_phot"]
 
-    object_name = dset.attrs["object_name"]
-    n_spec_name = dset.attrs["n_spec_name"]
-    model_name = dset.attrs["model"]
-    n_param = dset.attrs["n_param"]
-    n_scale_spec = dset.attrs["n_scale_spec"]
-    parallax = dset.attrs["parallax"]
-    n_inc_phot = dset.attrs["n_inc_phot"]
+        spec_name = []
+        for i in range(n_spec_name):
+            spec_name.append(dset.attrs[f"spec_name{i}"])
 
-    spec_name = []
-    for i in range(n_spec_name):
-        spec_name.append(dset.attrs[f"spec_name{i}"])
+        inc_phot = []
+        for i in range(n_inc_phot):
+            inc_phot.append(dset.attrs[f"inc_phot{i}"])
 
-    inc_phot = []
-    for i in range(n_inc_phot):
-        inc_phot.append(dset.attrs[f"inc_phot{i}"])
+        model_param = []
+        coord_points = []
+        for i in range(n_param):
+            model_param.append(dset.attrs[f"parameter{i}"])
+            coord_points.append(
+                np.array(hdf5_file[f"results/comparison/{tag}/coord_points{i}"])
+            )
 
-    model_param = []
-    coord_points = []
-    for i in range(n_param):
-        model_param.append(dset.attrs[f"parameter{i}"])
-        coord_points.append(
-            np.array(h5_file[f"results/comparison/{tag}/coord_points{i}"])
+        scale_spec = []
+        for i in range(n_scale_spec):
+            scale_spec.append(dset.attrs[f"scale_spec{i}"])
+
+        goodness_fit = np.array(dset)
+        goodness_fit = np.log10(goodness_fit)
+        goodness_fit -= np.nanmin(goodness_fit)
+
+        sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
+        sort_idx = list(sort_idx)
+
+        for i, item in enumerate(sort_idx):
+            sort_idx[i] = item[:n_spectra]
+
+        flux_scaling = np.array(hdf5_file[f"results/comparison/{tag}/flux_scaling"])
+
+        if n_scale_spec > 0:
+            extra_scaling = np.array(hdf5_file[f"results/comparison/{tag}/extra_scaling"])
+        else:
+            extra_scaling = None
+
+        radius = (
+            np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
+            / constants.R_JUP
         )
-
-    scale_spec = []
-    for i in range(n_scale_spec):
-        scale_spec.append(dset.attrs[f"scale_spec{i}"])
-
-    goodness_fit = np.array(dset)
-    goodness_fit = np.log10(goodness_fit)
-    goodness_fit -= np.nanmin(goodness_fit)
-
-    sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
-    sort_idx = list(sort_idx)
-
-    for i, item in enumerate(sort_idx):
-        sort_idx[i] = item[:n_spectra]
-
-    flux_scaling = np.array(h5_file[f"results/comparison/{tag}/flux_scaling"])
-
-    if n_scale_spec > 0:
-        extra_scaling = np.array(h5_file[f"results/comparison/{tag}/extra_scaling"])
-    else:
-        extra_scaling = None
-
-    radius = (
-        np.sqrt(flux_scaling * (constants.PARSEC / (1e-3 * parallax)) ** 2)
-        / constants.R_JUP
-    )
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -1246,8 +1239,6 @@ def plot_model_spectra(
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    h5_file.close()
 
     print(" [DONE]")
 

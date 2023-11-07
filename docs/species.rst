@@ -6,9 +6,9 @@ Subpackages
 
 .. toctree::
 
-    species.analysis
     species.core
     species.data
+    species.fit
     species.phot
     species.plot
     species.read
