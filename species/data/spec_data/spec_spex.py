@@ -264,5 +264,3 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
     print_message = "Adding spectra... [DONE]"
     print(f"\r{print_message}")
-
-    database.close()

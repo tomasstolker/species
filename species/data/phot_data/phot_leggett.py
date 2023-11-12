@@ -87,63 +87,61 @@ def add_leggett(input_path, database):
     print(" [DONE]")
     print("Adding Leggett T6+ and Y Dwarf Data...", end="", flush=True)
 
-    file_open = open(data_file2, "r", encoding="utf-8")
-    lines = file_open.readlines()[69:]
+    with open(data_file2, "r", encoding="utf-8") as open_file:
+        lines = open_file.readlines()[69:]
 
-    for item in lines:
-        name = np.append(name, item[0:16])
+        for item in lines:
+            name = np.append(name, item[0:16])
 
-        spt_tmp = item[62:66]
-        if spt_tmp[0] == "2":
-            spt_tmp = "T" + spt_tmp[1]
-        elif spt_tmp[0] == "3":
-            spt_tmp = "Y" + spt_tmp[1]
+            spt_tmp = item[62:66]
+            if spt_tmp[0] == "2":
+                spt_tmp = "T" + spt_tmp[1]
+            elif spt_tmp[0] == "3":
+                spt_tmp = "Y" + spt_tmp[1]
 
-        sptype = np.append(sptype, spt_tmp)
+            sptype = np.append(sptype, spt_tmp)
 
-        modulus = float(item[67:73])  # M-m (mag)
-        if modulus == 999.0:
-            modulus = np.nan
+            modulus = float(item[67:73])  # M-m (mag)
+            if modulus == 999.0:
+                modulus = np.nan
 
-        distance = np.append(distance, 10.0 ** (-modulus / 5.0 + 1.0))  # (pc)
+            distance = np.append(distance, 10.0 ** (-modulus / 5.0 + 1.0))  # (pc)
 
-        mag = np.zeros(14)
+            mag = np.zeros(14)
 
-        mag[0] = float(item[95:101])  # MKO Y
-        mag[1] = float(item[102:107])  # MKO J
-        mag[2] = float(item[108:114])  # MKO H
-        mag[3] = float(item[115:121])  # MKO K
-        mag[4] = float(item[122:128])  # MKO L'
-        mag[5] = float(item[129:135])  # MKO M'
-        mag[6] = float(item[136:142])  # Spitzer/IRAC 3.6 um
-        mag[7] = float(item[143:149])  # Spitzer/IRAC 4.5 um
-        mag[8] = float(item[150:156])  # Spitzer/IRAC 5.8 um
-        mag[9] = float(item[157:163])  # Spitzer/IRAC 8.0 um
-        mag[10] = float(item[164:170])  # WISE W1
-        mag[11] = float(item[171:176])  # WISE W2
-        mag[12] = float(item[177:183])  # WISE W3
-        mag[13] = float(item[184:190])  # WISE W4
+            mag[0] = float(item[95:101])  # MKO Y
+            mag[1] = float(item[102:107])  # MKO J
+            mag[2] = float(item[108:114])  # MKO H
+            mag[3] = float(item[115:121])  # MKO K
+            mag[4] = float(item[122:128])  # MKO L'
+            mag[5] = float(item[129:135])  # MKO M'
+            mag[6] = float(item[136:142])  # Spitzer/IRAC 3.6 um
+            mag[7] = float(item[143:149])  # Spitzer/IRAC 4.5 um
+            mag[8] = float(item[150:156])  # Spitzer/IRAC 5.8 um
+            mag[9] = float(item[157:163])  # Spitzer/IRAC 8.0 um
+            mag[10] = float(item[164:170])  # WISE W1
+            mag[11] = float(item[171:176])  # WISE W2
+            mag[12] = float(item[177:183])  # WISE W3
+            mag[13] = float(item[184:190])  # WISE W4
 
-        for j, mag_item in enumerate(mag):
-            if mag_item == 999.0:
-                mag[j] = np.nan
+            for j, mag_item in enumerate(mag):
+                if mag_item == 999.0:
+                    mag[j] = np.nan
 
-        mag_y = np.append(mag_y, mag[0])
-        mag_j = np.append(mag_j, mag[1])
-        mag_h = np.append(mag_h, mag[2])
-        mag_k = np.append(mag_k, mag[3])
-        mag_lp = np.append(mag_lp, mag[4])
-        mag_mp = np.append(mag_mp, mag[5])
-        mag_ch1 = np.append(mag_ch1, mag[6])
-        mag_ch2 = np.append(mag_ch2, mag[7])
-        mag_ch3 = np.append(mag_ch3, mag[8])
-        mag_ch4 = np.append(mag_ch4, mag[9])
-        mag_w1 = np.append(mag_w1, mag[10])
-        mag_w2 = np.append(mag_w2, mag[11])
-        mag_w3 = np.append(mag_w3, mag[12])
-        mag_w4 = np.append(mag_w4, mag[13])
-
-    file_open.close()
+            mag_y = np.append(mag_y, mag[0])
+            mag_j = np.append(mag_j, mag[1])
+            mag_h = np.append(mag_h, mag[2])
+            mag_k = np.append(mag_k, mag[3])
+            mag_lp = np.append(mag_lp, mag[4])
+            mag_mp = np.append(mag_mp, mag[5])
+            mag_ch1 = np.append(mag_ch1, mag[6])
+            mag_ch2 = np.append(mag_ch2, mag[7])
+            mag_ch3 = np.append(mag_ch3, mag[8])
+            mag_ch4 = np.append(mag_ch4, mag[9])
+            mag_w1 = np.append(mag_w1, mag[10])
+            mag_w2 = np.append(mag_w2, mag[11])
+            mag_w3 = np.append(mag_w3, mag[12])
+            mag_w4 = np.append(mag_w4, mag[13])
 
     dtype = h5py.special_dtype(vlen=str)
 

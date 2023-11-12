@@ -2,9 +2,9 @@
 Module with reading functionalities for Planck spectra.
 """
 
-import configparser
 import os
 
+from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -65,7 +65,7 @@ class ReadPlanck:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]

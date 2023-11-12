@@ -82,7 +82,7 @@ def retrieval_spectrum(
 
     Returns
     -------
-    ModelBox
+    species.core.box.ModelBox
         Box with the petitRADTRANS spectrum.
     """
 

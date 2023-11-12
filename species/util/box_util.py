@@ -21,12 +21,12 @@ def update_objectbox(
 ) -> ObjectBox:
     """
     Function for updating the spectra and/or photometric fluxes in
-    an :class:`~species.core.box.ObjectBox`, for example by applying
-    a flux scaling and/or error inflation.
+    an :class:`~species.core.box_types.ObjectBox`, for example by
+    applying a flux scaling and/or error inflation.
 
     Parameters
     ----------
-    objectbox : ObjectBox
+    objectbox : species.core.box.ObjectBox
         Box with the object's data, including the spectra
         and/or photometric fluxes.
     model_param : dict
@@ -41,7 +41,7 @@ def update_objectbox(
 
     Returns
     -------
-    ObjectBox
+    species.core.box.ObjectBox
         The input box which includes the spectra with the
         scaled fluxes and/or inflated errors.
     """

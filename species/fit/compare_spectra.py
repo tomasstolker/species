@@ -18,6 +18,7 @@ from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.core import constants
+from species.data.spec_data.add_spec_data import add_spec_library
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.read.read_model import ReadModel
@@ -71,6 +72,7 @@ class CompareSpectra:
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.data_folder = config["species"]["data_folder"]
 
     @typechecked
     def spectral_type(
@@ -134,18 +136,9 @@ class CompareSpectra:
         if rad_vel is None:
             rad_vel = [0.0]
 
-        h5_file = h5py.File(self.database, "r")
-
-        try:
-            h5_file[f"spectra/{spec_library}"]
-
-        except KeyError:
-            h5_file.close()
-            from species.data.database import Database
-
-            species_db = Database()
-            species_db.add_spectra(spec_library)
-            h5_file = h5py.File(self.database, "r")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if f"spectra/{spec_library}" not in hdf5_file:
+                add_spec_library(self.data_folder, hdf5_file, spec_library)
 
         # Read object spectra and resolution
 
@@ -172,9 +165,9 @@ class CompareSpectra:
 
         # Start looping over library spectra
 
-        for i, item in enumerate(h5_file[f"spectra/{spec_library}"]):
+        for i, item in enumerate(hdf5_file[f"spectra/{spec_library}"]):
             # Read spectrum spectral type from library
-            dset = h5_file[f"spectra/{spec_library}/{item}"]
+            dset = hdf5_file[f"spectra/{spec_library}/{item}"]
 
             if isinstance(dset.attrs["sptype"], str):
                 item_sptype = dset.attrs["sptype"]
@@ -231,7 +224,8 @@ class CompareSpectra:
 
                             # Shift wavelengths by RV
                             wavel_shifted = (
-                                spectrum[:, 0] + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
+                                spectrum[:, 0]
+                                + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
                             )
 
                             # Smooth spectrum
@@ -302,7 +296,7 @@ class CompareSpectra:
 
         print("\rProcessing spectra... [DONE]")
 
-        h5_file.close()
+        hdf5_file.close()
 
         name_list = np.asarray(name_list)
         spt_list = np.asarray(spt_list)
@@ -447,27 +441,20 @@ class CompareSpectra:
             else:
                 w_i[spec_item] = np.ones(obj_wavel.shape[0])
 
-        # Open the HDF5 databse
-        from species.data.database import Database
-
-        species_db = Database()
+        read_object = ReadObject(self.object_name)
 
         if isinstance(inc_phot, bool):
             # The argument of inc_phot is a boolean
             if inc_phot:
                 # Select all filters if inc_phot=True
-                from species.data.database import Database
-
-                species_db = Database()
-                object_box = species_db.get_object(self.object_name)
-                inc_phot = object_box.filters
+                inc_phot = read_object.list_filters()
 
             else:
                 inc_phot = []
 
-        else:
-            # The argument of inc_phot is a list with filters
-            object_box = species_db.get_object(self.object_name, inc_phot=inc_phot)
+        object_flux = {}
+        for filter_item in inc_phot:
+            object_flux[filter_item] = read_object.get_photometry(filter_item)[2:]
 
         if scale_spec is None:
             scale_spec = []
@@ -628,7 +615,7 @@ class CompareSpectra:
                                     )[0]
                                     model_list.append(np.array([model_phot[phot_item]]))
 
-                                    phot_flux = object_box.flux[phot_item]
+                                    phot_flux = object_flux[phot_item]
                                     phot_data = np.array(
                                         [
                                             [
@@ -711,7 +698,7 @@ class CompareSpectra:
                                     ] = spec_scaling
 
                                 for phot_item in inc_phot:
-                                    phot_flux = object_box.flux[phot_item]
+                                    phot_flux = object_flux[phot_item]
 
                                     g_fit += np.nansum(
                                         w_i[phot_item]

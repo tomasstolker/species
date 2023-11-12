@@ -3340,7 +3340,9 @@ class AtmosphericRetrieval:
 
                 # Convolve with Gaussian LSF
 
-                flux_smooth = convolve_spectrum(model_wavel, flux_ext, self.spectrum[item][3])
+                flux_smooth = convolve_spectrum(
+                    model_wavel, flux_ext, self.spectrum[item][3]
+                )
 
                 # Resample to the observation
 

@@ -4,8 +4,8 @@ Module with reading functionalities for filter profiles.
 
 import os
 import warnings
-import configparser
 
+from configparser import ConfigParser
 from typing import Union, Tuple
 
 import h5py
@@ -14,7 +14,8 @@ import numpy as np
 from typeguard import typechecked
 from scipy import interpolate
 
-from species.data.vega import add_vega
+from species.data.filter_data.filter_data import add_filter_profile
+from species.data.spec_data.spec_vega import add_vega
 
 
 class ReadFilter:
@@ -43,22 +44,15 @@ class ReadFilter:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.data_folder = config["species"]["data_folder"]
 
-        h5_file = h5py.File(self.database, "r")
-
-        if "filters" not in h5_file or self.filter_name not in h5_file["filters"]:
-            h5_file.close()
-            from species.data.database import Database
-
-            species_db = Database()
-            species_db.add_filter(self.filter_name)
-
-        else:
-            h5_file.close()
+        with h5py.File(self.database, "a") as hdf5_file:
+            if f"filters/{self.filter_name}" not in hdf5_file:
+                add_filter_profile(self.data_folder, hdf5_file, self.filter_name)
 
     @typechecked
     def get_filter(self) -> np.ndarray:
@@ -72,8 +66,8 @@ class ReadFilter:
             array has 2 dimensions with the shape (n_wavelengths, 2).
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            data = np.asarray(h5_file[f"filters/{self.filter_name}"])
+        with h5py.File(self.database, "r") as hdf5_file:
+            data = np.asarray(hdf5_file[f"filters/{self.filter_name}"])
 
             if data.shape[0] == 2 and data.shape[1] > data.shape[0]:
                 # Required for backward compatibility
@@ -156,11 +150,11 @@ class ReadFilter:
 
         filter_profile = self.get_filter()
 
-        with h5py.File(self.database, "a") as h5_file:
-            if "spectra/calibration/vega" not in h5_file:
-                add_vega(self.data_folder, h5_file)
+        with h5py.File(self.database, "a") as hdf5_file:
+            if "spectra/calibration/vega" not in hdf5_file:
+                add_vega(self.data_folder, hdf5_file)
 
-            vega_spec = np.array(h5_file["spectra/calibration/vega"])
+            vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
         flux_interp = interpolate.interp1d(
             vega_spec[0,],
@@ -231,8 +225,8 @@ class ReadFilter:
             Detector type ('energy' or 'photon').
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            dset = h5_file[f"filters/{self.filter_name}"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"filters/{self.filter_name}"]
 
             if "det_type" in dset.attrs:
                 det_type = dset.attrs["det_type"]

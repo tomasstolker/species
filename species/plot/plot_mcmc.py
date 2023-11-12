@@ -1035,8 +1035,8 @@ def plot_size_distributions(
 
     if "lognorm_radius" not in box.parameters and "powerlaw_max" not in box.parameters:
         raise ValueError(
-            "The SamplesBox does not contain extinction parameter for a log-normal "
-            "or power-law size distribution."
+            "The SamplesBox does not contain extinction parameter "
+            "for a log-normal or power-law size distribution."
         )
 
     samples = box.samples

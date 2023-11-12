@@ -1042,7 +1042,9 @@ def plot_model_spectra(
         goodness_fit = np.log10(goodness_fit)
         goodness_fit -= np.nanmin(goodness_fit)
 
-        sort_idx = np.unravel_index(np.argsort(goodness_fit, axis=None), goodness_fit.shape)
+        sort_idx = np.unravel_index(
+            np.argsort(goodness_fit, axis=None), goodness_fit.shape
+        )
         sort_idx = list(sort_idx)
 
         for i, item in enumerate(sort_idx):
@@ -1051,7 +1053,9 @@ def plot_model_spectra(
         flux_scaling = np.array(hdf5_file[f"results/comparison/{tag}/flux_scaling"])
 
         if n_scale_spec > 0:
-            extra_scaling = np.array(hdf5_file[f"results/comparison/{tag}/extra_scaling"])
+            extra_scaling = np.array(
+                hdf5_file[f"results/comparison/{tag}/extra_scaling"]
+            )
         else:
             extra_scaling = None
 

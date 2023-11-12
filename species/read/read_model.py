@@ -2,10 +2,10 @@
 Module with reading functionalities for atmospheric model spectra.
 """
 
-import configparser
 import os
 import warnings
 
+from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
@@ -17,8 +17,6 @@ from scipy.integrate import simps
 from scipy.interpolate import interp1d, RegularGridInterpolator
 
 from species.core import constants
-from species.data.model_spectra import add_model_grid
-from species.data.vega import add_vega
 from species.core.box import (
     ColorColorBox,
     ColorMagBox,
@@ -26,6 +24,8 @@ from species.core.box import (
     PhotometryBox,
     create_box,
 )
+from species.data.model_data.model_spectra import add_model_grid
+from species.data.spec_data.spec_vega import add_vega
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.read.read_planck import ReadPlanck
@@ -94,7 +94,7 @@ class ReadModel:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]
@@ -741,7 +741,7 @@ class ReadModel:
 
         Returns
         -------
-        ModelBox
+        species.core.box.ModelBox
             Box with the model spectrum.
         """
 
@@ -1188,7 +1188,7 @@ class ReadModel:
 
         Returns
         -------
-        ModelBox
+        species.core.box.ModelBox
             Box with the model spectrum.
         """
 
@@ -1809,7 +1809,7 @@ class ReadModel:
 
         Returns
         -------
-        ModelBox
+        species.core.box.ModelBox
             Box with the model spectrum.
         """
 
@@ -1958,7 +1958,7 @@ class ReadModel:
 
         Returns
         -------
-        ColorMagBox
+        species.core.box.ColorMagBox
             Box with the colors and magnitudes.
         """
 
@@ -2039,7 +2039,7 @@ class ReadModel:
 
         Returns
         -------
-        ColorColorBox
+        species.core.box.ColorColorBox
             Box with the colors.
         """
 

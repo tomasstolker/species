@@ -11,9 +11,8 @@ import warnings
 
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import emcee
 import h5py
 import numpy as np
 
@@ -25,59 +24,7 @@ from tqdm.auto import tqdm
 from typeguard import typechecked
 
 from species.core import constants
-from species.core.box import (
-    ModelBox,
-    ObjectBox,
-    SamplesBox,
-    SpectrumBox,
-    create_box,
-)
-from species.data.accretion import add_accretion_relation
-from species.data.allers2013 import add_allers2013
-from species.data.bonnefoy2014 import add_bonnefoy2014
-from species.data.companion_spectra import companion_spectra
-from species.data.custom_model import add_custom_model_grid
-from species.data.dust import add_cross_sections, add_optical_constants
-from species.data.filters import download_filter
-from species.data.irtf import add_irtf
-from species.data.isochrones import (
-    add_ames,
-    add_atmo,
-    add_baraffe2015,
-    add_btsettl,
-    add_linder2019,
-    add_manual,
-    add_marleau,
-    add_nextgen,
-    add_saumon,
-    add_sonora,
-)
-from species.data.kesseli2017 import add_kesseli2017
-from species.data.leggett import add_leggett
-from species.data.model_spectra import add_model_grid
-from species.data.spex import add_spex
-from species.data.vega import add_vega
-from species.data.vlm_plx import add_vlm_plx
-from species.phot.syn_phot import SyntheticPhotometry
-from species.read.read_calibration import ReadCalibration
-from species.read.read_filter import ReadFilter
-from species.read.read_model import ReadModel
-from species.read.read_object import ReadObject
-from species.read.read_planck import ReadPlanck
-from species.read.read_radtrans import ReadRadtrans
-from species.util.data_util import convert_units, correlation_to_covariance
-from species.util.dust_util import ism_extinction
-from species.util.model_util import binary_to_single, powerlaw_spectrum
-from species.util.radtrans_util import retrieval_spectrum
-from species.util.retrieval_util import (
-    find_cloud_deck,
-    list_to_dict,
-    log_x_cloud_base,
-    pt_ret_model,
-    pt_spline_interp,
-    quench_pressure,
-    scale_cloud_abund,
-)
+from species.core.box import ObjectBox, ModelBox, SamplesBox, SpectrumBox, create_box
 
 
 class Database:
@@ -100,7 +47,7 @@ class Database:
         config.read(config_file)
 
         self.database = config["species"]["database"]
-        self.input_path = config["species"]["data_folder"]
+        self.data_folder = config["species"]["data_folder"]
 
     @typechecked
     def list_content(self) -> None:
@@ -169,7 +116,9 @@ class Database:
             List with the object names that are stored in the database.
         """
 
-        data_file = Path(__file__).parent.resolve() / "companion_data.json"
+        data_file = (
+            Path(__file__).parent.resolve() / "companion_data/companion_data.json"
+        )
 
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
@@ -312,8 +261,8 @@ class Database:
         """
         Function for adding the magnitudes and spectra of
         directly imaged planets and brown dwarfs from
-        `data/companion_data.json` and
-        :func:`~species.data.companion_spectra` to the database.
+        `data/companion_data/companion_data.json` and
+        :func:`~species.data.companion_data.companion_spectra` to the database.
 
         Parameters
         ----------
@@ -332,10 +281,14 @@ class Database:
             None
         """
 
+        from species.data.companion_data.companion_spectra import companion_spectra
+
         if isinstance(name, str):
             name = list((name,))
 
-        data_file = Path(__file__).parent.resolve() / "companion_data.json"
+        data_file = (
+            Path(__file__).parent.resolve() / "companion_data/companion_data.json"
+        )
 
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
@@ -344,7 +297,7 @@ class Database:
             name = list(comp_data.keys())
 
         for item in name:
-            spec_dict = companion_spectra(self.input_path, item, verbose=verbose)
+            spec_dict = companion_spectra(self.data_folder, item, verbose=verbose)
 
             parallax = None
 
@@ -420,12 +373,17 @@ class Database:
             None
         """
 
+        from species.data.misc_data.dust_data import (
+            add_cross_sections,
+            add_optical_constants,
+        )
+
         with h5py.File(self.database, "a") as hdf5_file:
             if "dust" in hdf5_file:
                 del hdf5_file["dust"]
 
-            add_optical_constants(self.input_path, hdf5_file)
-            add_cross_sections(self.input_path, hdf5_file)
+            add_optical_constants(self.data_folder, hdf5_file)
+            add_cross_sections(self.data_folder, hdf5_file)
 
     @typechecked
     def add_accretion(self) -> None:
@@ -446,11 +404,13 @@ class Database:
             None
         """
 
+        from species.data.misc_data.accretion_data import add_accretion_relation
+
         with h5py.File(self.database, "a") as hdf5_file:
             if "accretion" in hdf5_file:
                 del hdf5_file["accretion"]
 
-            add_accretion_relation(self.input_path, hdf5_file)
+            add_accretion_relation(self.data_folder, hdf5_file)
 
     @typechecked
     def add_filter(
@@ -473,7 +433,7 @@ class Database:
             Filter name from the SVO Filter Profile Service (e.g.,
             'Paranal/NACO.Lp') or a user-defined name if a ``filename``
             is specified.
-        filename : str
+        filename : str, None
             Filename of the filter profile. The first column should
             contain the wavelength (um) and the second column the
             fractional transmission. The profile is downloaded from
@@ -499,41 +459,36 @@ class Database:
         if verbose:
             print(f"Adding filter: {filter_name}...", end="", flush=True)
 
-        filter_split = filter_name.split("/")
-
-        hdf5_file = h5py.File(self.database, "a")
-
-        if f"filters/{filter_name}" in hdf5_file:
-            del hdf5_file[f"filters/{filter_name}"]
-
-        if f"filters/{filter_split[0]}" not in hdf5_file:
-            hdf5_file.create_group(f"filters/{filter_split[0]}")
+        # filter_split = filter_name.split("/")
 
         if filename is not None:
-            data = np.loadtxt(filename)
-            wavelength = data[:, 0]
-            transmission = data[:, 1]
+            filter_profile = np.loadtxt(filename)
+
+            wavelength = filter_profile[:, 0]
+            transmission = filter_profile[:, 1]
+
+            with h5py.File(self.database, "a") as hdf5_file:
+                if f"filters/{filter_name}" in hdf5_file:
+                    del hdf5_file[f"filters/{filter_name}"]
+
+                dset = hdf5_file.create_dataset(
+                    f"filters/{filter_name}",
+                    data=np.column_stack((wavelength, transmission)),
+                )
+
+                dset.attrs["det_type"] = str(detector_type)
 
         else:
-            wavelength, transmission, detector_type = download_filter(filter_name)
+            from species.data.filter_data.filter_data import add_filter_profile
 
-        if wavelength is not None and transmission is not None:
-            wavel_new = [wavelength[0]]
-            transm_new = [transmission[0]]
+            with h5py.File(self.database, "a") as hdf5_file:
+                if f"filters/{filter_name}" in hdf5_file:
+                    del hdf5_file[f"filters/{filter_name}"]
 
-            for i in range(wavelength.size - 1):
-                if wavelength[i + 1] > wavel_new[-1]:
-                    # Required for the issue with the Keck/NIRC2.J filter on SVO
-                    wavel_new.append(wavelength[i + 1])
-                    transm_new.append(transmission[i + 1])
+                # if f"filters/{filter_split[0]}" not in hdf5_file:
+                #     hdf5_file.create_group(f"filters/{filter_split[0]}")
 
-            dset = hdf5_file.create_dataset(
-                f"filters/{filter_name}", data=np.column_stack((wavel_new, transm_new))
-            )
-
-            dset.attrs["det_type"] = str(detector_type)
-
-        hdf5_file.close()
+                add_filter_profile(self.data_folder, hdf5_file, filter_name)
 
         if verbose:
             print(" [DONE]")
@@ -564,7 +519,7 @@ class Database:
             Filename with the isochrone data. Setting the argument
             is only required when ``model='manual'``. Otherwise,
             the argument can be set to ``None``.
-        tag : str
+        tag : str, None
             Database tag name where the isochrone that will be
             stored. Setting the argument is only required when
             ``model='manual'``. Otherwise, the argument can be
@@ -576,6 +531,8 @@ class Database:
             None
         """
 
+        from species.data.isochrone_data.add_isochrone import add_isochrone_grid
+
         if model == "phoenix":
             warnings.warn(
                 "Please set model='manual' instead of "
@@ -584,107 +541,69 @@ class Database:
                 DeprecationWarning,
             )
 
-        hdf5_file = h5py.File(self.database, "a")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if "isochrones" not in hdf5_file:
+                hdf5_file.create_group("isochrones")
 
-        if "isochrones" not in hdf5_file:
-            hdf5_file.create_group("isochrones")
+            if model in ["manual", "marleau", "phoenix"]:
+                if f"isochrones/{tag}" in hdf5_file:
+                    del hdf5_file[f"isochrones/{tag}"]
 
-        if model in ["manual", "marleau", "phoenix"]:
-            if f"isochrones/{tag}" in hdf5_file:
-                del hdf5_file[f"isochrones/{tag}"]
+            elif model == "ames":
+                if "isochrones/ames-cond" in hdf5_file:
+                    del hdf5_file["isochrones/ames-cond"]
+                if "isochrones/ames-dusty" in hdf5_file:
+                    del hdf5_file["isochrones/ames-dusty"]
 
-        elif model == "ames":
-            if "isochrones/ames-cond" in hdf5_file:
-                del hdf5_file["isochrones/ames-cond"]
-            if "isochrones/ames-dusty" in hdf5_file:
-                del hdf5_file["isochrones/ames-dusty"]
+            elif model == "atmo":
+                if "isochrones/atmo-ceq" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-ceq"]
+                if "isochrones/atmo-neq-weak" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-neq-weak"]
+                if "isochrones/atmo-neq-strong" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-neq-strong"]
 
-        elif model == "atmo":
-            if "isochrones/atmo-ceq" in hdf5_file:
-                del hdf5_file["isochrones/atmo-ceq"]
-            if "isochrones/atmo-neq-weak" in hdf5_file:
-                del hdf5_file["isochrones/atmo-neq-weak"]
-            if "isochrones/atmo-neq-strong" in hdf5_file:
-                del hdf5_file["isochrones/atmo-neq-strong"]
+            elif model == "baraffe2015":
+                if "isochrones/baraffe2015" in hdf5_file:
+                    del hdf5_file["isochrones/baraffe2015"]
 
-        elif model == "baraffe2015":
-            if "isochrones/baraffe2015" in hdf5_file:
-                del hdf5_file["isochrones/baraffe2015"]
+            elif model == "bt-settl":
+                if "isochrones/bt-settl" in hdf5_file:
+                    del hdf5_file["isochrones/bt-settl"]
 
-        elif model == "bt-settl":
-            if "isochrones/bt-settl" in hdf5_file:
-                del hdf5_file["isochrones/bt-settl"]
+            elif model == "linder2019":
+                if "isochrones" in hdf5_file:
+                    for iso_item in list(hdf5_file["isochrones"]):
+                        if iso_item[:10] == "linder2019":
+                            del hdf5_file[f"isochrones/{iso_item}"]
 
-        elif model == "linder2019":
-            if "isochrones" in hdf5_file:
-                for iso_item in list(hdf5_file["isochrones"]):
-                    if iso_item[:10] == "linder2019":
-                        del hdf5_file[f"isochrones/{iso_item}"]
+            elif model == "nextgen":
+                if "isochrones/nextgen" in hdf5_file:
+                    del hdf5_file["isochrones/nextgen"]
 
-        elif model == "nextgen":
-            if "isochrones/nextgen" in hdf5_file:
-                del hdf5_file["isochrones/nextgen"]
+            elif model == "saumon2008":
+                if "isochrones/saumon2008-nc_solar" in hdf5_file:
+                    del hdf5_file["isochrones/saumon2008-nc_solar"]
+                if "isochrones/saumon2008-nc_-0.3" in hdf5_file:
+                    del hdf5_file["isochrones/saumon2008-nc_-0.3"]
+                if "isochrones/saumon2008-nc_+0.3" in hdf5_file:
+                    del hdf5_file["isochrones/saumon2008-nc_+0.3"]
+                if "isochrones/saumon2008-f2_solar" in hdf5_file:
+                    del hdf5_file["isochrones/saumon2008-f2_solar"]
+                if "isochrones/saumon2008-hybrid_solar" in hdf5_file:
+                    del hdf5_file["isochrones/saumon2008-hybrid_solar"]
 
-        elif model == "saumon2008":
-            if "isochrones/saumon2008-nc_solar" in hdf5_file:
-                del hdf5_file["isochrones/saumon2008-nc_solar"]
-            if "isochrones/saumon2008-nc_-0.3" in hdf5_file:
-                del hdf5_file["isochrones/saumon2008-nc_-0.3"]
-            if "isochrones/saumon2008-nc_+0.3" in hdf5_file:
-                del hdf5_file["isochrones/saumon2008-nc_+0.3"]
-            if "isochrones/saumon2008-f2_solar" in hdf5_file:
-                del hdf5_file["isochrones/saumon2008-f2_solar"]
-            if "isochrones/saumon2008-hybrid_solar" in hdf5_file:
-                del hdf5_file["isochrones/saumon2008-hybrid_solar"]
+            elif model == "sonora":
+                if "isochrones/sonora+0.0" in hdf5_file:
+                    del hdf5_file["isochrones/sonora+0.0"]
+                if "isochrones/sonora+0.5" in hdf5_file:
+                    del hdf5_file["isochrones/sonora+0.5"]
+                if "isochrones/sonora-0.5" in hdf5_file:
+                    del hdf5_file["isochrones/sonora-0.5"]
 
-        elif model == "sonora":
-            if "isochrones/sonora+0.0" in hdf5_file:
-                del hdf5_file["isochrones/sonora+0.0"]
-            if "isochrones/sonora+0.5" in hdf5_file:
-                del hdf5_file["isochrones/sonora+0.5"]
-            if "isochrones/sonora-0.5" in hdf5_file:
-                del hdf5_file["isochrones/sonora-0.5"]
-
-        if model == "ames":
-            add_ames(hdf5_file, self.input_path)
-
-        elif model == "atmo":
-            add_atmo(hdf5_file, self.input_path)
-
-        elif model == "baraffe2015":
-            add_baraffe2015(hdf5_file, self.input_path)
-
-        elif model == "bt-settl":
-            add_btsettl(hdf5_file, self.input_path)
-
-        elif model == "linder2019":
-            add_linder2019(hdf5_file, self.input_path)
-
-        elif model == "manual":
-            add_manual(hdf5_file, tag, filename)
-
-        elif model == "marleau":
-            add_marleau(hdf5_file, tag, filename)
-
-        elif model == "nextgen":
-            add_nextgen(hdf5_file, self.input_path)
-
-        elif model == "saumon2008":
-            add_saumon(hdf5_file, self.input_path)
-
-        elif model == "sonora":
-            add_sonora(hdf5_file, self.input_path)
-
-        else:
-            raise ValueError(
-                f"The evolutionary model '{model}' is "
-                "not supported. Please choose another "
-                "argument for 'model'. Have a look "
-                "at the documentation of add_isochrones "
-                "for details on the supported models."
+            add_isochrone_grid(
+                self.data_folder, hdf5_file, model, filename=filename, tag=tag
             )
-
-        hdf5_file.close()
 
     @typechecked
     def add_model(
@@ -739,12 +658,14 @@ class Database:
             None
         """
 
+        from species.data.model_data.model_spectra import add_model_grid
+
         with h5py.File(self.database, "a") as hdf5_file:
             if "models" not in hdf5_file:
                 hdf5_file.create_group("models")
 
             add_model_grid(
-                model, self.input_path, hdf5_file, wavel_range, teff_range, spec_res
+                model, self.data_folder, hdf5_file, wavel_range, teff_range, spec_res
             )
 
     @typechecked
@@ -814,6 +735,8 @@ class Database:
         NoneType
             None
         """
+
+        from species.data.model_data.custom_model import add_custom_model_grid
 
         with h5py.File(self.database, "a") as hdf5_file:
             if "models" not in hdf5_file:
@@ -940,25 +863,31 @@ class Database:
         # will also open the HDF5 database
 
         if app_mag is not None:
+            from species.read.read_filter import ReadFilter
+
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
-
-        hdf5_file = h5py.File(self.database, "a")
 
         if deredden is None:
             deredden = {}
 
         if app_mag is not None:
-            if "spectra/calibration/vega" not in hdf5_file:
-                self.add_spectra("vega")
+            from species.data.spec_data.spec_vega import add_vega
 
-            for item in app_mag:
-                if f"filters/{item}" not in hdf5_file:
-                    self.add_filter(item, verbose=verbose)
+            with h5py.File(self.database, "a") as hdf5_file:
+                if "spectra/calibration/vega" not in hdf5_file:
+                    add_vega(self.data_folder, hdf5_file)
+
+                for item in app_mag:
+                    if f"filters/{item}" not in hdf5_file:
+                        self.add_filter(item, verbose=verbose)
 
         if flux_density is not None:
-            if "spectra/calibration/vega" not in hdf5_file:
-                self.add_spectra("vega")
+            from species.data.spec_data.spec_vega import add_vega
+
+            with h5py.File(self.database, "a") as hdf5_file:
+                if "spectra/calibration/vega" not in hdf5_file:
+                    add_vega(self.data_folder, hdf5_file)
 
             for item in flux_density:
                 if f"filters/{item}" not in hdf5_file:
@@ -968,6 +897,8 @@ class Database:
             print(f"Adding object: {object_name}")
         else:
             print(f"Adding object: {object_name}", end="", flush=True)
+
+        hdf5_file = h5py.File(self.database, "a")
 
         if "objects" not in hdf5_file:
             hdf5_file.create_group("objects")
@@ -1002,11 +933,15 @@ class Database:
         dered_phot = {}
 
         if app_mag is not None:
+            from species.read.read_filter import ReadFilter
+
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
                 mean_wavel = read_filt.mean_wavelength()
 
                 if isinstance(deredden, float) or mag_item in deredden:
+                    from species.util.dust_util import ism_extinction
+
                     filter_profile = read_filt.get_filter()
 
                     if isinstance(deredden, float):
@@ -1016,6 +951,8 @@ class Database:
                         ext_mag = ism_extinction(
                             deredden[mag_item], 3.1, filter_profile[:, 0]
                         )
+
+                    from species.phot.syn_phot import SyntheticPhotometry
 
                     synphot = SyntheticPhotometry(mag_item)
 
@@ -1028,6 +965,8 @@ class Database:
 
                 if isinstance(app_mag[mag_item], tuple):
                     try:
+                        from species.phot.syn_phot import SyntheticPhotometry
+
                         synphot = SyntheticPhotometry(mag_item)
 
                         flux[mag_item], error[mag_item] = synphot.magnitude_to_flux(
@@ -1054,6 +993,8 @@ class Database:
 
                     for i, dupl_item in enumerate(app_mag[mag_item]):
                         try:
+                            from species.phot.syn_phot import SyntheticPhotometry
+
                             synphot = SyntheticPhotometry(mag_item)
 
                             flux_dupl, error_dupl = synphot.magnitude_to_flux(
@@ -1179,6 +1120,8 @@ class Database:
                 dset.attrs["n_phot"] = n_phot
 
         if flux_density is not None:
+            from species.read.read_filter import ReadFilter
+
             for flux_item in flux_density:
                 read_filt = ReadFilter(flux_item)
                 mean_wavel = read_filt.mean_wavelength()
@@ -1205,6 +1148,8 @@ class Database:
                     )
 
                     if flux_item in units:
+                        from species.util.data_util import convert_units
+
                         flux_in = np.array([[mean_wavel, data[2], data[3]]])
                         flux_out = convert_units(flux_in, ("um", units[flux_item]))
 
@@ -1272,6 +1217,8 @@ class Database:
                                     and spec_item not in read_spec
                                 ):
                                     if spec_item in units:
+                                        from species.util.data_util import convert_units
+
                                         data = convert_units(data, units[spec_item])
 
                                     read_spec[spec_item] = data
@@ -1304,15 +1251,21 @@ class Database:
                         print("   - Spectrum:")
 
                     if spec_item in units:
+                        from species.util.data_util import convert_units
+
                         data = convert_units(data, units[spec_item])
 
                     read_spec[spec_item] = data
 
                 if isinstance(deredden, float):
+                    from species.util.dust_util import ism_extinction
+
                     ext_mag = ism_extinction(deredden, 3.1, read_spec[spec_item][:, 0])
                     read_spec[spec_item][:, 1] *= 10.0 ** (0.4 * ext_mag)
 
                 elif spec_item in deredden:
+                    from species.util.dust_util import ism_extinction
+
                     ext_mag = ism_extinction(
                         deredden[spec_item], 3.1, read_spec[spec_item][:, 0]
                     )
@@ -1412,6 +1365,10 @@ class Database:
                                     f"correlation matrix into a covariance matrix."
                                 )
 
+                                from species.util.data_util import (
+                                    correlation_to_covariance,
+                                )
+
                                 if data.ndim == 2 and data.shape[0] == data.shape[1]:
                                     if spec_item not in read_cov:
                                         if (
@@ -1466,6 +1423,8 @@ class Database:
                             f" correlation matrix into a covariance "
                             f"matrix."
                         )
+
+                        from species.util.data_util import correlation_to_covariance
 
                         read_cov[spec_item] = correlation_to_covariance(
                             data, read_spec[spec_item][:, 2]
@@ -1535,21 +1494,22 @@ class Database:
             None
         """
 
-        hdf5_file = h5py.File(self.database, "a")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if "photometry" not in hdf5_file:
+                hdf5_file.create_group("photometry")
 
-        if "photometry" not in hdf5_file:
-            hdf5_file.create_group("photometry")
+            if f"photometry/{phot_library}" in hdf5_file:
+                del hdf5_file[f"photometry/{phot_library}"]
 
-        if "photometry/" + phot_library in hdf5_file:
-            del hdf5_file["photometry/" + phot_library]
+            if phot_library[0:7] == "vlm-plx":
+                from species.data.phot_data.phot_vlm_plx import add_vlm_plx
 
-        if phot_library[0:7] == "vlm-plx":
-            add_vlm_plx(self.input_path, hdf5_file)
+                add_vlm_plx(self.data_folder, hdf5_file)
 
-        elif phot_library[0:7] == "leggett":
-            add_leggett(self.input_path, hdf5_file)
+            elif phot_library[0:7] == "leggett":
+                from species.data.phot_data.phot_leggett import add_leggett
 
-        hdf5_file.close()
+                add_leggett(self.data_folder, hdf5_file)
 
     @typechecked
     def add_calibration(
@@ -1706,64 +1666,6 @@ class Database:
         print(" [DONE]")
 
     @typechecked
-    def add_spectrum(
-        self, spec_library: str, sptypes: Optional[List[str]] = None
-    ) -> None:
-        """
-        DEPRECATION: This method is deprecated and will be
-        removed in a future release. Please use the
-        :func:`~species.data.database.Database.add_spectra`
-        method instead.
-
-        Parameters
-        ----------
-        spec_library : str
-            Spectral library ('irtf', 'spex', 'kesseli+2017',
-            'bonnefoy+2014', 'allers+2013').
-        sptypes : list(str)
-            Spectral types ('F', 'G', 'K', 'M', 'L', 'T').
-            Currently only implemented for 'irtf'.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        warnings.warn(
-            "This method is deprecated and will be removed in a future release. Please "
-            "use the add_spectra method instead."
-        )
-
-        hdf5_file = h5py.File(self.database, "a")
-
-        if "spectra" not in hdf5_file:
-            hdf5_file.create_group("spectra")
-
-        if "spectra/" + spec_library in hdf5_file:
-            del hdf5_file["spectra/" + spec_library]
-
-        if spec_library[0:5] == "vega":
-            add_vega(self.input_path, hdf5_file)
-
-        elif spec_library[0:5] == "irtf":
-            add_irtf(self.input_path, hdf5_file, sptypes)
-
-        elif spec_library[0:5] == "spex":
-            add_spex(self.input_path, hdf5_file)
-
-        elif spec_library[0:12] == "kesseli+2017":
-            add_kesseli2017(self.input_path, hdf5_file)
-
-        elif spec_library[0:13] == "bonnefoy+2014":
-            add_bonnefoy2014(self.input_path, hdf5_file)
-
-        elif spec_library[0:11] == "allers+2013":
-            add_allers2013(self.input_path, hdf5_file)
-
-        hdf5_file.close()
-
-    @typechecked
     def add_spectra(
         self, spec_library: str, sptypes: Optional[List[str]] = None
     ) -> None:
@@ -1789,33 +1691,13 @@ class Database:
             None
         """
 
-        hdf5_file = h5py.File(self.database, "a")
+        from species.data.spec_data.add_spec_data import add_spec_library
 
-        if "spectra" not in hdf5_file:
-            hdf5_file.create_group("spectra")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if f"spectra/{spec_library}" in hdf5_file:
+                del hdf5_file["spectra/" + spec_library]
 
-        if f"spectra/{spec_library}" in hdf5_file:
-            del hdf5_file["spectra/" + spec_library]
-
-        if spec_library[0:5] == "vega":
-            add_vega(self.input_path, hdf5_file)
-
-        elif spec_library[0:5] == "irtf":
-            add_irtf(self.input_path, hdf5_file, sptypes)
-
-        elif spec_library[0:5] == "spex":
-            add_spex(self.input_path, hdf5_file)
-
-        elif spec_library[0:12] == "kesseli+2017":
-            add_kesseli2017(self.input_path, hdf5_file)
-
-        elif spec_library[0:13] == "bonnefoy+2014":
-            add_bonnefoy2014(self.input_path, hdf5_file)
-
-        elif spec_library[0:11] == "allers+2013":
-            add_allers2013(self.input_path, hdf5_file)
-
-        hdf5_file.close()
+            add_spec_library(self.data_folder, hdf5_file, spec_library, sptypes)
 
     @typechecked
     def add_samples(
@@ -1936,8 +1818,10 @@ class Database:
 
             print("Integrated autocorrelation time:")
 
+            from emcee.autocorr import integrated_time
+
             for i, item in enumerate(modelpar):
-                auto_corr = emcee.autocorr.integrated_time(samples[:, i], quiet=True)[0]
+                auto_corr = integrated_time(samples[:, i], quiet=True)[0]
 
                 if np.allclose(samples[:, i], np.mean(samples[:, i])):
                     print(f"   - {item}: fixed")
@@ -2289,15 +2173,21 @@ class Database:
 
         if spectrum_type == "model":
             if spectrum_name == "planck":
+                from species.read.read_planck import ReadPlanck
+
                 readmodel = ReadPlanck(wavel_range)
 
             elif spectrum_name == "powerlaw":
                 pass
 
             else:
+                from species.read.read_model import ReadModel
+
                 readmodel = ReadModel(spectrum_name, wavel_range=wavel_range)
 
         elif spectrum_type == "calibration":
+            from species.read.read_calibration import ReadCalibration
+
             readcalib = ReadCalibration(spectrum_name, filter_name=None)
 
         boxes = []
@@ -2330,9 +2220,13 @@ class Database:
                             "'powerlaw' model so the argument will be ignored."
                         )
 
+                    from species.util.model_util import powerlaw_spectrum
+
                     specbox = powerlaw_spectrum(wavel_range, model_param)
 
                 else:
+                    from species.util.model_util import binary_to_single
+
                     if binary:
                         param_0 = binary_to_single(model_param, 0)
 
@@ -2472,13 +2366,19 @@ class Database:
 
         if spectrum_type == "model":
             if spectrum_name == "powerlaw":
+                from species.phot.syn_phot import SyntheticPhotometry
+
                 synphot = SyntheticPhotometry(filter_name)
                 synphot.zero_point()  # Set the wavel_range attribute
 
             else:
+                from species.read.read_model import ReadModel
+
                 readmodel = ReadModel(spectrum_name, filter_name=filter_name)
 
         elif spectrum_type == "calibration":
+            from species.read.read_calibration import ReadCalibration
+
             readcalib = ReadCalibration(spectrum_name, filter_name=filter_name)
 
         mcmc_phot = np.zeros((samples.shape[0]))
@@ -2497,6 +2397,8 @@ class Database:
 
             if spectrum_type == "model":
                 if spectrum_name == "powerlaw":
+                    from species.util.model_util import powerlaw_spectrum
+
                     pl_box = powerlaw_spectrum(synphot.wavel_range, model_param)
 
                     if phot_type == "magnitude":
@@ -2513,6 +2415,8 @@ class Database:
                 else:
                     if phot_type == "magnitude":
                         if binary:
+                            from species.util.model_util import binary_to_single
+
                             param_0 = binary_to_single(model_param, 0)
                             mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
 
@@ -2529,6 +2433,8 @@ class Database:
 
                     elif phot_type == "flux":
                         if binary:
+                            from species.util.model_util import binary_to_single
+
                             param_0 = binary_to_single(model_param, 0)
                             mcmc_phot_0, _ = readmodel.get_flux(param_0)
 
@@ -2608,6 +2514,8 @@ class Database:
             flux = {}
             mean_wavel = {}
 
+            from species.read.read_filter import ReadFilter
+
             for observatory in dset.keys():
                 if observatory not in ["parallax", "distance", "spectrum"]:
                     for filter_name in dset[observatory]:
@@ -2616,9 +2524,6 @@ class Database:
                         if isinstance(inc_phot, bool) or name in inc_phot:
                             magnitude[name] = dset[name][0:2]
                             flux[name] = dset[name][2:4]
-
-                            read_filt = ReadFilter(name)
-                            mean_wavel[name] = read_filt.mean_wavelength()
 
             phot_filters = list(magnitude.keys())
 
@@ -2655,6 +2560,11 @@ class Database:
             spectrum = None
 
         hdf5_file.close()
+
+        if magnitude is not None:
+            for filter_name in magnitude.keys():
+                read_filt = ReadFilter(filter_name)
+                mean_wavel[filter_name] = read_filt.mean_wavelength()
 
         print(" [DONE]")
 
@@ -2760,7 +2670,7 @@ class Database:
             for i, item in enumerate(param):
                 samples_dict[item] = list(samples[:, i])
 
-            with open(json_file, "w") as out_file:
+            with open(json_file, "w", encoding="utf-8") as out_file:
                 json.dump(samples_dict, out_file, indent=4)
 
         return create_box(
@@ -2844,6 +2754,11 @@ class Database:
             Array (2D) with the temperature profiles (K). The shape
             of the array is (n_pressures, n_samples).
         """
+
+        from species.util.retrieval_util import (
+            pt_ret_model,
+            pt_spline_interp,
+        )
 
         hdf5_file = h5py.File(self.database, "r")
         dset = hdf5_file[f"results/fit/{tag}/samples"]
@@ -3108,6 +3023,8 @@ class Database:
             None
         """
 
+        from species.read.read_object import ReadObject
+
         read_obj = ReadObject(object_name)
         parallax = read_obj.get_parallax()[0]  # (mas)
 
@@ -3220,6 +3137,14 @@ class Database:
         NoneType
             None
         """
+
+        from species.util.retrieval_util import (
+            list_to_dict,
+            pt_ret_model,
+            pt_spline_interp,
+            quench_pressure,
+            scale_cloud_abund,
+        )
 
         print("Storing samples in the database...", end="", flush=True)
 
@@ -3643,7 +3568,7 @@ class Database:
         random: Optional[int],
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
-    ) -> Tuple[List[ModelBox], Union[ReadRadtrans]]:
+    ) -> Tuple[List[ModelBox], Union[Any]]:
         """
         Function for extracting random spectra from the
         posterior distribution that was sampled with
@@ -3677,9 +3602,12 @@ class Database:
         -------
         list(ModelBox)
             Boxes with the randomly sampled spectra.
-        ReadRadtrans
+        species.read.read_radtrans.ReadRadtrans
             Instance of :class:`~species.read.read_radtrans.ReadRadtrans`.
         """
+
+        from species.read.read_radtrans import ReadRadtrans
+        from species.util.radtrans_util import retrieval_spectrum
 
         # Open configuration file
 
@@ -4073,6 +4001,15 @@ class Database:
         dict
             Dictionary with parameters for ``petitCODE``.
         """
+
+        from species.read.read_radtrans import ReadRadtrans
+
+        from species.util.retrieval_util import (
+            find_cloud_deck,
+            log_x_cloud_base,
+            pt_ret_model,
+            pt_spline_interp,
+        )
 
         if sample_type == "median":
             model_param = self.get_median_sample(tag)

@@ -19,6 +19,7 @@ pypi-test:
 docs:
 	rm -f docs/species.core.rst
 	rm -f docs/species.data.rst
+	rm -f docs/species.data.*.rst
 	rm -f docs/species.fit.rst
 	rm -f docs/species.phot.rst
 	rm -f docs/species.plot.rst
@@ -28,6 +29,8 @@ docs:
 	cd docs/
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
+	rm -f docs/species_config.ini
+	rm -f docs/species_database.hdf5
 
 coverage:
 	coverage run --source=species -m pytest

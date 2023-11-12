@@ -6,11 +6,9 @@ from typing import Dict, Tuple, Union
 
 import numpy as np
 
-from scipy.integrate import simps
 from typeguard import typechecked
 
-from species.core import constants
-from species.core.box import create_box
+from species.core.box import ModelBox, create_box
 from species.util.spec_util import create_wavelengths
 
 
@@ -19,7 +17,7 @@ def powerlaw_spectrum(
     wavel_range: Union[Tuple[float, float], Tuple[np.float32, np.float32]],
     model_param: Dict[str, float],
     spec_res: float = 100.0,
-):
+) -> ModelBox:
     """
     Function for calculating a power-law spectrum. The power-law
     function is calculated in log(wavelength)-log(flux) space but
@@ -70,7 +68,7 @@ def gaussian_spectrum(
     model_param: Dict[str, float],
     spec_res: float = 100.0,
     double_gaussian: bool = False,
-):
+) -> ModelBox:
     """
     Function for calculating a Gaussian spectrum (i.e. for an emission
     line).
@@ -131,7 +129,8 @@ def gaussian_spectrum(
     return model_box
 
 
-# def add_luminosity(modelbox):
+# @typechecked
+# def add_luminosity(modelbox: ModelBox) -> ModelBox:
 #     """
 #     Function to add the luminosity of a model spectrum to the parameter
 #     dictionary of the box.

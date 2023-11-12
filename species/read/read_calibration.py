@@ -100,7 +100,7 @@ class ReadCalibration:
 
         Returns
         -------
-        SpectrumBox
+        species.core.box.SpectrumBox
             Box with the resampled spectrum.
         """
 
@@ -212,7 +212,7 @@ class ReadCalibration:
 
         Returns
         -------
-        SpectrumBox
+        species.core.box.SpectrumBox
             Box with the spectrum.
         """
 

@@ -3,8 +3,8 @@ Module with reading functionalities for data from individual objects.
 """
 
 import os
-import configparser
 
+from configparser import ConfigParser
 from typing import List, Optional, Union, Tuple
 
 import h5py
@@ -39,7 +39,7 @@ class ReadObject:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]

@@ -1,5 +1,5 @@
 """
-Module with classes for storing data in ``Box`` objects.
+Module with the  ``Box`` classes and ``create_box`` function.
 """
 
 from typing import List, Union
@@ -10,180 +10,6 @@ import spectres
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.util.spec_util import smooth_spectrum
-
-
-def create_box(boxtype, **kwargs):
-    """
-    Function for creating a :class:`~species.core.box.Box`.
-
-    Returns
-    -------
-    species.core.box
-        Box with the data and parameters.
-    """
-
-    if boxtype == "colormag":
-        box = ColorMagBox()
-        box.library = kwargs["library"]
-        box.object_type = kwargs["object_type"]
-        box.filters_color = kwargs["filters_color"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.color = kwargs["color"]
-        box.magnitude = kwargs["magnitude"]
-        if "names" in kwargs:
-            box.names = kwargs["names"]
-        if "sptype" in kwargs:
-            box.sptype = kwargs["sptype"]
-        if "mass" in kwargs:
-            box.mass = kwargs["mass"]
-        if "radius" in kwargs:
-            box.radius = kwargs["radius"]
-        if "iso_tag" in kwargs:
-            box.iso_tag = kwargs["iso_tag"]
-
-    if boxtype == "colorcolor":
-        box = ColorColorBox()
-        box.library = kwargs["library"]
-        box.object_type = kwargs["object_type"]
-        box.filters = kwargs["filters"]
-        box.color1 = kwargs["color1"]
-        box.color2 = kwargs["color2"]
-        if "names" in kwargs:
-            box.names = kwargs["names"]
-        if "sptype" in kwargs:
-            box.sptype = kwargs["sptype"]
-        if "mass" in kwargs:
-            box.mass = kwargs["mass"]
-        if "radius" in kwargs:
-            box.radius = kwargs["radius"]
-        if "iso_tag" in kwargs:
-            box.iso_tag = kwargs["iso_tag"]
-
-    elif boxtype == "cooling":
-        box = CoolingBox()
-        box.model = kwargs["model"]
-        box.mass = kwargs["mass"]
-        if "age" in kwargs:
-            box.age = kwargs["age"]
-        else:
-            box.age = kwargs["ages"]
-        box.teff = kwargs["teff"]
-        box.log_lum = kwargs["log_lum"]
-        box.logg = kwargs["logg"]
-        box.radius = kwargs["radius"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.magnitude = kwargs["magnitude"]
-        box.filters_color = kwargs["filters_color"]
-        box.color = kwargs["color"]
-
-    elif boxtype == "isochrone":
-        box = IsochroneBox()
-        box.model = kwargs["model"]
-        box.age = kwargs["age"]
-        if "mass" in kwargs:
-            box.mass = kwargs["mass"]
-        else:
-            box.mass = kwargs["masses"]
-        box.teff = kwargs["teff"]
-        box.log_lum = kwargs["log_lum"]
-        box.logg = kwargs["logg"]
-        box.radius = kwargs["radius"]
-        box.filter_mag = kwargs["filter_mag"]
-        box.magnitude = kwargs["magnitude"]
-        box.filters_color = kwargs["filters_color"]
-        box.color = kwargs["color"]
-
-    elif boxtype == "model":
-        box = ModelBox()
-        box.model = kwargs["model"]
-        box.wavelength = kwargs["wavelength"]
-        box.flux = kwargs["flux"]
-        box.parameters = kwargs["parameters"]
-        box.quantity = kwargs["quantity"]
-        if "contribution" in kwargs:
-            box.contribution = kwargs["contribution"]
-        if "bol_flux" in kwargs:
-            box.bol_flux = kwargs["bol_flux"]
-
-    elif boxtype == "object":
-        box = ObjectBox()
-        box.name = kwargs["name"]
-        box.filters = kwargs["filters"]
-        box.mean_wavel = kwargs["mean_wavel"]
-        box.magnitude = kwargs["magnitude"]
-        box.flux = kwargs["flux"]
-        box.spectrum = kwargs["spectrum"]
-        if "parallax" in kwargs:
-            box.parallax = kwargs["parallax"]
-        if "distance" in kwargs:
-            box.distance = kwargs["distance"]
-
-    elif boxtype == "photometry":
-        box = PhotometryBox()
-        if "name" in kwargs:
-            box.name = kwargs["name"]
-        if "sptype" in kwargs:
-            box.sptype = kwargs["sptype"]
-        if "wavelength" in kwargs:
-            box.wavelength = kwargs["wavelength"]
-        if "flux" in kwargs:
-            box.flux = kwargs["flux"]
-        if "app_mag" in kwargs:
-            box.app_mag = kwargs["app_mag"]
-        if "abs_mag" in kwargs:
-            box.abs_mag = kwargs["abs_mag"]
-        if "filter_name" in kwargs:
-            box.filter_name = kwargs["filter_name"]
-
-    elif boxtype == "residuals":
-        box = ResidualsBox()
-        box.name = kwargs["name"]
-        box.photometry = kwargs["photometry"]
-        box.spectrum = kwargs["spectrum"]
-        if "chi2_red" in kwargs:
-            box.chi2_red = kwargs["chi2_red"]
-
-    elif boxtype == "samples":
-        box = SamplesBox()
-        box.spectrum = kwargs["spectrum"]
-        box.parameters = kwargs["parameters"]
-        box.samples = kwargs["samples"]
-        box.ln_prob = kwargs["ln_prob"]
-        box.ln_evidence = kwargs["ln_evidence"]
-        box.prob_sample = kwargs["prob_sample"]
-        box.median_sample = kwargs["median_sample"]
-        box.attributes = kwargs["attributes"]
-
-    elif boxtype == "spectrum":
-        box = SpectrumBox()
-        box.spectrum = kwargs["spectrum"]
-        box.wavelength = kwargs["wavelength"]
-        box.flux = kwargs["flux"]
-        if "error" in kwargs:
-            box.error = kwargs["error"]
-        if "name" in kwargs:
-            box.name = kwargs["name"]
-        if "simbad" in kwargs:
-            box.simbad = kwargs["simbad"]
-        if "sptype" in kwargs:
-            box.sptype = kwargs["sptype"]
-        if "distance" in kwargs:
-            box.distance = kwargs["distance"]
-        if "spec_res" in kwargs:
-            box.spec_res = kwargs["spec_res"]
-
-    elif boxtype == "synphot":
-        box = SynphotBox()
-        box.name = kwargs["name"]
-        box.flux = kwargs["flux"]
-        if "wavelength" in kwargs:
-            box.wavelength = kwargs["wavelength"]
-        if "app_mag" in kwargs:
-            box.app_mag = kwargs["app_mag"]
-        if "abs_mag" in kwargs:
-            box.abs_mag = kwargs["abs_mag"]
-
-    return box
 
 
 class Box:
@@ -585,3 +411,177 @@ class SynphotBox(Box):
         self.flux = None
         self.app_mag = None
         self.abs_mag = None
+
+
+def create_box(boxtype, **kwargs):
+    """
+    Function for creating a :class:`~species.core.box.Box`.
+
+    Returns
+    -------
+    species.core.box
+        Box with the data and parameters.
+    """
+
+    if boxtype == "colormag":
+        box = ColorMagBox()
+        box.library = kwargs["library"]
+        box.object_type = kwargs["object_type"]
+        box.filters_color = kwargs["filters_color"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.color = kwargs["color"]
+        box.magnitude = kwargs["magnitude"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        if "radius" in kwargs:
+            box.radius = kwargs["radius"]
+        if "iso_tag" in kwargs:
+            box.iso_tag = kwargs["iso_tag"]
+
+    if boxtype == "colorcolor":
+        box = ColorColorBox()
+        box.library = kwargs["library"]
+        box.object_type = kwargs["object_type"]
+        box.filters = kwargs["filters"]
+        box.color1 = kwargs["color1"]
+        box.color2 = kwargs["color2"]
+        if "names" in kwargs:
+            box.names = kwargs["names"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        if "radius" in kwargs:
+            box.radius = kwargs["radius"]
+        if "iso_tag" in kwargs:
+            box.iso_tag = kwargs["iso_tag"]
+
+    elif boxtype == "cooling":
+        box = CoolingBox()
+        box.model = kwargs["model"]
+        box.mass = kwargs["mass"]
+        if "age" in kwargs:
+            box.age = kwargs["age"]
+        else:
+            box.age = kwargs["ages"]
+        box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
+        box.logg = kwargs["logg"]
+        box.radius = kwargs["radius"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
+
+    elif boxtype == "isochrone":
+        box = IsochroneBox()
+        box.model = kwargs["model"]
+        box.age = kwargs["age"]
+        if "mass" in kwargs:
+            box.mass = kwargs["mass"]
+        else:
+            box.mass = kwargs["masses"]
+        box.teff = kwargs["teff"]
+        box.log_lum = kwargs["log_lum"]
+        box.logg = kwargs["logg"]
+        box.radius = kwargs["radius"]
+        box.filter_mag = kwargs["filter_mag"]
+        box.magnitude = kwargs["magnitude"]
+        box.filters_color = kwargs["filters_color"]
+        box.color = kwargs["color"]
+
+    elif boxtype == "model":
+        box = ModelBox()
+        box.model = kwargs["model"]
+        box.wavelength = kwargs["wavelength"]
+        box.flux = kwargs["flux"]
+        box.parameters = kwargs["parameters"]
+        box.quantity = kwargs["quantity"]
+        if "contribution" in kwargs:
+            box.contribution = kwargs["contribution"]
+        if "bol_flux" in kwargs:
+            box.bol_flux = kwargs["bol_flux"]
+
+    elif boxtype == "object":
+        box = ObjectBox()
+        box.name = kwargs["name"]
+        box.filters = kwargs["filters"]
+        box.mean_wavel = kwargs["mean_wavel"]
+        box.magnitude = kwargs["magnitude"]
+        box.flux = kwargs["flux"]
+        box.spectrum = kwargs["spectrum"]
+        if "parallax" in kwargs:
+            box.parallax = kwargs["parallax"]
+        if "distance" in kwargs:
+            box.distance = kwargs["distance"]
+
+    elif boxtype == "photometry":
+        box = PhotometryBox()
+        if "name" in kwargs:
+            box.name = kwargs["name"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "wavelength" in kwargs:
+            box.wavelength = kwargs["wavelength"]
+        if "flux" in kwargs:
+            box.flux = kwargs["flux"]
+        if "app_mag" in kwargs:
+            box.app_mag = kwargs["app_mag"]
+        if "abs_mag" in kwargs:
+            box.abs_mag = kwargs["abs_mag"]
+        if "filter_name" in kwargs:
+            box.filter_name = kwargs["filter_name"]
+
+    elif boxtype == "residuals":
+        box = ResidualsBox()
+        box.name = kwargs["name"]
+        box.photometry = kwargs["photometry"]
+        box.spectrum = kwargs["spectrum"]
+        if "chi2_red" in kwargs:
+            box.chi2_red = kwargs["chi2_red"]
+
+    elif boxtype == "samples":
+        box = SamplesBox()
+        box.spectrum = kwargs["spectrum"]
+        box.parameters = kwargs["parameters"]
+        box.samples = kwargs["samples"]
+        box.ln_prob = kwargs["ln_prob"]
+        box.ln_evidence = kwargs["ln_evidence"]
+        box.prob_sample = kwargs["prob_sample"]
+        box.median_sample = kwargs["median_sample"]
+        box.attributes = kwargs["attributes"]
+
+    elif boxtype == "spectrum":
+        box = SpectrumBox()
+        box.spectrum = kwargs["spectrum"]
+        box.wavelength = kwargs["wavelength"]
+        box.flux = kwargs["flux"]
+        if "error" in kwargs:
+            box.error = kwargs["error"]
+        if "name" in kwargs:
+            box.name = kwargs["name"]
+        if "simbad" in kwargs:
+            box.simbad = kwargs["simbad"]
+        if "sptype" in kwargs:
+            box.sptype = kwargs["sptype"]
+        if "distance" in kwargs:
+            box.distance = kwargs["distance"]
+        if "spec_res" in kwargs:
+            box.spec_res = kwargs["spec_res"]
+
+    elif boxtype == "synphot":
+        box = SynphotBox()
+        box.name = kwargs["name"]
+        box.flux = kwargs["flux"]
+        if "wavelength" in kwargs:
+            box.wavelength = kwargs["wavelength"]
+        if "app_mag" in kwargs:
+            box.app_mag = kwargs["app_mag"]
+        if "abs_mag" in kwargs:
+            box.abs_mag = kwargs["abs_mag"]
+
+    return box

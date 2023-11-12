@@ -1392,7 +1392,7 @@ def create_model_label(
         List with selected indices of the young/low-gravity objects.
     """
 
-    data_file = Path(__file__).parents[1].resolve() / "data/model_data.json"
+    data_file = Path(__file__).parents[1].resolve() / "data/model_data/model_data.json"
 
     with open(data_file, "r", encoding="utf-8") as json_file:
         model_data = json.load(json_file)

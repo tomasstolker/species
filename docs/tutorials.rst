@@ -9,7 +9,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
    Details on the various classes, functions, and parameters can be found in the `API documentation <https://species.readthedocs.io/en/latest/modules.html>`_.
 
 .. important::
-   Importing the ``species`` package had become slow because of the many classes and functions that were implicitly imported. The initialization of the package has therefore been adjusted. In the latest version, any functionalities should be explicitly imported from the modules that they are part of.
+   Importing the ``species`` package had become slow because of the many classes and functions that were implicitly imported. The initialization of the package has therefore been adjusted. Any functionalities should now be explicitly imported from the modules that they are part of.
 
 **Spectral retrievals**
 

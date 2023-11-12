@@ -2,9 +2,9 @@
 Module with reading functionalities for spectral libraries.
 """
 
-import configparser
 import os
 
+from configparser import ConfigParser
 from typing import List, Optional
 
 import h5py
@@ -13,6 +13,7 @@ import numpy as np
 from typeguard import typechecked
 
 from species.core.box import PhotometryBox, SpectrumBox, create_box
+from species.data.spec_data.add_spec_data import add_spec_library
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 
@@ -52,10 +53,11 @@ class ReadSpectrum:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]
+        self.data_folder = config["species"]["data_folder"]
 
     @typechecked
     def get_spectrum(
@@ -83,15 +85,11 @@ class ReadSpectrum:
             Box with the spectra.
         """
 
-        h5_file = h5py.File(self.database, "r")
-
-        if self.spec_library not in h5_file[f"spectra"]:
-            h5_file.close()
-            from species.data.database import Database
-
-            species_db = Database()
-            species_db.add_spectra(self.spec_library, sptypes)
-            h5_file = h5py.File(self.database, "r")
+        with h5py.File(self.database, "a") as hdf5_file:
+            if f"spectra/{self.spec_library}" not in hdf5_file:
+                add_spec_library(
+                    self.data_folder, hdf5_file, self.spec_library, sptypes
+                )
 
         list_wavelength = []
         list_flux = []
@@ -102,92 +100,93 @@ class ReadSpectrum:
         list_parallax = []
         list_spec_res = []
 
-        for item in h5_file[f"spectra/{self.spec_library}"]:
-            dset = h5_file[f"spectra/{self.spec_library}/{item}"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            for item in hdf5_file[f"spectra/{self.spec_library}"]:
+                dset = hdf5_file[f"spectra/{self.spec_library}/{item}"]
 
-            wavelength = dset[:, 0]  # (um)
-            flux = dset[:, 1]  # (W m-2 um-1)
-            error = dset[:, 2]  # (W m-2 um-1)
+                wavelength = dset[:, 0]  # (um)
+                flux = dset[:, 1]  # (W m-2 um-1)
+                error = dset[:, 2]  # (W m-2 um-1)
 
-            if exclude_nan:
-                nan_index = np.isnan(flux)
+                if exclude_nan:
+                    nan_index = np.isnan(flux)
 
-                wavelength = wavelength[~nan_index]
-                flux = flux[~nan_index]
-                error = error[~nan_index]
+                    wavelength = wavelength[~nan_index]
+                    flux = flux[~nan_index]
+                    error = error[~nan_index]
 
-            if self.wavel_range is None:
-                wl_index = np.arange(0, len(wavelength), 1)
+                if self.wavel_range is None:
+                    wl_index = np.arange(0, len(wavelength), 1)
 
-            else:
-                wl_index = (
-                    (flux > 0.0)
-                    & (wavelength > self.wavel_range[0])
-                    & (wavelength < self.wavel_range[1])
-                )
-
-            count = np.count_nonzero(wl_index)
-
-            if count > 0:
-                index = np.where(wl_index)[0]
-
-                if index[0] > 0:
-                    wl_index[index[0] - 1] = True
-
-                if index[-1] < len(wl_index) - 1:
-                    wl_index[index[-1] + 1] = True
-
-                list_wavelength.append(wavelength[wl_index])
-                list_flux.append(flux[wl_index])
-                list_error.append(error[wl_index])
-
-                attrs = dset.attrs
-
-                if "name" in attrs:
-                    if isinstance(dset.attrs["name"], str):
-                        list_name.append(dset.attrs["name"])
-                    else:
-                        list_name.append(dset.attrs["name"].decode("utf-8"))
                 else:
-                    list_name.append("")
-
-                if "simbad" in attrs:
-                    if isinstance(dset.attrs["simbad"], str):
-                        list_simbad.append(dset.attrs["simbad"])
-                    else:
-                        list_simbad.append(dset.attrs["simbad"].decode("utf-8"))
-                else:
-                    list_simbad.append("")
-
-                if "sptype" in attrs:
-                    if isinstance(dset.attrs["sptype"], str):
-                        list_sptype.append(dset.attrs["sptype"])
-                    else:
-                        list_sptype.append(dset.attrs["sptype"].decode("utf-8"))
-                else:
-                    list_sptype.append("None")
-
-                if "parallax" in attrs:
-                    list_parallax.append(
-                        (dset.attrs["parallax"], dset.attrs["parallax_error"])
+                    wl_index = (
+                        (flux > 0.0)
+                        & (wavelength > self.wavel_range[0])
+                        & (wavelength < self.wavel_range[1])
                     )
+
+                count = np.count_nonzero(wl_index)
+
+                if count > 0:
+                    index = np.where(wl_index)[0]
+
+                    if index[0] > 0:
+                        wl_index[index[0] - 1] = True
+
+                    if index[-1] < len(wl_index) - 1:
+                        wl_index[index[-1] + 1] = True
+
+                    list_wavelength.append(wavelength[wl_index])
+                    list_flux.append(flux[wl_index])
+                    list_error.append(error[wl_index])
+
+                    attrs = dset.attrs
+
+                    if "name" in attrs:
+                        if isinstance(dset.attrs["name"], str):
+                            list_name.append(dset.attrs["name"])
+                        else:
+                            list_name.append(dset.attrs["name"].decode("utf-8"))
+                    else:
+                        list_name.append("")
+
+                    if "simbad" in attrs:
+                        if isinstance(dset.attrs["simbad"], str):
+                            list_simbad.append(dset.attrs["simbad"])
+                        else:
+                            list_simbad.append(dset.attrs["simbad"].decode("utf-8"))
+                    else:
+                        list_simbad.append("")
+
+                    if "sptype" in attrs:
+                        if isinstance(dset.attrs["sptype"], str):
+                            list_sptype.append(dset.attrs["sptype"])
+                        else:
+                            list_sptype.append(dset.attrs["sptype"].decode("utf-8"))
+                    else:
+                        list_sptype.append("None")
+
+                    if "parallax" in attrs:
+                        list_parallax.append(
+                            (dset.attrs["parallax"], dset.attrs["parallax_error"])
+                        )
+                    else:
+                        list_parallax.append((np.nan, np.nan))
+
+                    if "spec_res" in attrs:
+                        list_spec_res.append(dset.attrs["spec_res"])
+                    else:
+                        list_spec_res.append(np.nan)
+
                 else:
+                    list_wavelength.append(np.array([]))
+                    list_flux.append(np.array([]))
+                    list_error.append(np.array([]))
+                    list_name.append("")
+                    list_simbad.append("")
+                    list_sptype.append("None")
                     list_parallax.append((np.nan, np.nan))
-
-                if "spec_res" in attrs:
-                    list_spec_res.append(dset.attrs["spec_res"])
-                else:
                     list_spec_res.append(np.nan)
-
-            else:
-                list_wavelength.append(np.array([]))
-                list_flux.append(np.array([]))
-                list_error.append(np.array([]))
-                list_name.append("")
-                list_simbad.append("")
-                list_sptype.append("None")
-                list_parallax.append((np.nan, np.nan))
-                list_spec_res.append(np.nan)
 
         spec_box = SpectrumBox()
         spec_box.spec_library = self.spec_library

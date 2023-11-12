@@ -189,5 +189,3 @@ def add_irtf(
 
     print_message = "Adding spectra... [DONE]"
     print(f"\r{print_message}")
-
-    database.close()

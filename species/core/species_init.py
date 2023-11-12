@@ -2,18 +2,17 @@
 Module for setting up species in the working folder.
 """
 
-import configparser
 import json
 import os
 import socket
-import sys
 import urllib.request
 import warnings
 
+from configparser import ConfigParser
+from typeguard import typechecked
+
 import h5py
 import species
-
-from typeguard import typechecked
 
 
 class SpeciesInit:
@@ -40,7 +39,7 @@ class SpeciesInit:
         print(len(species_msg) * "=")
 
         working_folder = os.path.abspath(os.getcwd())
-        print(f"Working folder: {working_folder}")
+        print(f"\nWorking folder: {working_folder}")
 
         config_file = os.path.join(working_folder, "species_config.ini")
 
@@ -63,7 +62,7 @@ class SpeciesInit:
         if not os.path.isfile(config_file):
             print("Creating species_config.ini...", end="", flush=True)
 
-            with open(config_file, "w") as file_obj:
+            with open(config_file, "w", encoding="utf-8") as file_obj:
                 file_obj.write("[species]\n\n")
 
                 file_obj.write("; File with the HDF5 database\n")
@@ -80,7 +79,7 @@ class SpeciesInit:
 
             print(" [DONE]")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         if "database" in config["species"]:
@@ -89,7 +88,7 @@ class SpeciesInit:
         else:
             database_file = "species_database.hdf5"
 
-            with open(config_file, "a") as file_obj:
+            with open(config_file, "a", encoding="utf-8") as file_obj:
                 file_obj.write("\n; File with the HDF5 database\n")
                 file_obj.write("database = species_database.hdf5\n")
 
@@ -99,7 +98,7 @@ class SpeciesInit:
         else:
             data_folder = "./data/"
 
-            with open(config_file, "a") as file_obj:
+            with open(config_file, "a", encoding="utf-8") as file_obj:
                 file_obj.write("\n; Folder where data will be downloaded\n")
                 file_obj.write("data_folder = ./data/\n")
 
@@ -109,7 +108,7 @@ class SpeciesInit:
         else:
             interp_method = "linear"
 
-            with open(config_file, "a") as file_obj:
+            with open(config_file, "a", encoding="utf-8") as file_obj:
                 file_obj.write("\n; Method for the grid interpolation\n")
                 file_obj.write(
                     "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
@@ -122,7 +121,7 @@ class SpeciesInit:
         else:
             vega_mag = 0.03
 
-            with open(config_file, "a") as file_obj:
+            with open(config_file, "a", encoding="utf-8") as file_obj:
                 file_obj.write("\n; Magnitude of Vega for all filters\n")
                 file_obj.write("vega_mag = 0.03\n")
 
@@ -143,10 +142,12 @@ class SpeciesInit:
             os.makedirs(data_folder)
             print(" [DONE]")
 
-        warnings.warn("Importing the species package had become slow "
-                      "because of the many classes and functions that "
-                      "were implicitly imported. The initialization of "
-                      "the packages has therefore been adjusted. In "
-                      "the latest version, any functionalities should "
-                      "be explicitly imported from the modules that "
-                      "they are part of.")
+        warnings.warn(
+            "Importing the species package had become slow "
+            "because of the many classes and functions that "
+            "were implicitly imported. The initialization of "
+            "the packages has therefore been adjusted. In "
+            "the latest version, any functionalities should "
+            "be explicitly imported from the modules that "
+            "they are part of."
+        )

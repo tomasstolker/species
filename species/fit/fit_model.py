@@ -610,11 +610,7 @@ class FitModel:
         if isinstance(inc_phot, bool):
             if inc_phot:
                 # Select all filters if inc_phot=True
-                from species.data.database import Database
-
-                species_db = Database()
-                object_box = species_db.get_object(object_name)
-                inc_phot = object_box.filters
+                inc_phot = self.object.list_filters()
 
             else:
                 inc_phot = []
@@ -622,11 +618,7 @@ class FitModel:
         if isinstance(inc_spec, bool):
             if inc_spec:
                 # Select all spectra if inc_spec=True
-                from species.data.database import Database
-
-                species_db = Database()
-                object_box = species_db.get_object(object_name)
-                inc_spec = list(object_box.spectrum.keys())
+                inc_spec = list(self.object.get_spectrum().keys())
 
             else:
                 inc_spec = []

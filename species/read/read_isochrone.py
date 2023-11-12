@@ -2,10 +2,10 @@
 Module with reading functionalities for isochrones and cooling curves.
 """
 
-import configparser
 import os
 import warnings
 
+from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
@@ -108,15 +108,15 @@ class ReadIsochrone:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]
         self.interp_method = config["species"]["interp_method"]
 
         if self.tag is None:
-            with h5py.File(self.database, "r") as h5_file:
-                tag_list = list(h5_file["isochrones"])
+            with h5py.File(self.database, "r") as hdf5_file:
+                tag_list = list(hdf5_file["isochrones"])
 
             self.tag = input(
                 "Please select one of the following "
@@ -126,9 +126,9 @@ class ReadIsochrone:
                 f"\n{tag_list}:\n"
             )
 
-        with h5py.File(self.database, "r") as h5_file:
-            if f"isochrones/{self.tag}" not in h5_file:
-                tag_list = list(h5_file["isochrones"])
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"isochrones/{self.tag}" not in hdf5_file:
+                tag_list = list(hdf5_file["isochrones"])
 
                 raise ValueError(
                     f"There is no isochrone data stored with the "
@@ -229,18 +229,18 @@ class ReadIsochrone:
             there are magnitudes available.
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            model_name = h5_file[f"isochrones/{self.tag}/age"].attrs["model"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            model_name = hdf5_file[f"isochrones/{self.tag}/age"].attrs["model"]
 
-            iso_age = np.asarray(h5_file[f"isochrones/{self.tag}/age"])
-            iso_mass = np.asarray(h5_file[f"isochrones/{self.tag}/mass"])
-            iso_teff = np.asarray(h5_file[f"isochrones/{self.tag}/teff"])
-            iso_loglum = np.asarray(h5_file[f"isochrones/{self.tag}/log_lum"])
-            iso_logg = np.asarray(h5_file[f"isochrones/{self.tag}/log_g"])
-            iso_radius = np.asarray(h5_file[f"isochrones/{self.tag}/radius"])
+            iso_age = np.asarray(hdf5_file[f"isochrones/{self.tag}/age"])
+            iso_mass = np.asarray(hdf5_file[f"isochrones/{self.tag}/mass"])
+            iso_teff = np.asarray(hdf5_file[f"isochrones/{self.tag}/teff"])
+            iso_loglum = np.asarray(hdf5_file[f"isochrones/{self.tag}/log_lum"])
+            iso_logg = np.asarray(hdf5_file[f"isochrones/{self.tag}/log_g"])
+            iso_radius = np.asarray(hdf5_file[f"isochrones/{self.tag}/radius"])
 
-            if f"isochrones/{self.tag}/magnitudes" in h5_file:
-                iso_mag = np.asarray(h5_file[f"isochrones/{self.tag}/magnitudes"])
+            if f"isochrones/{self.tag}/magnitudes" in hdf5_file:
+                iso_mag = np.asarray(hdf5_file[f"isochrones/{self.tag}/magnitudes"])
             else:
                 iso_mag = None
 
@@ -1352,9 +1352,9 @@ class ReadIsochrone:
             the isochrone data.
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            if "filters" in h5_file[f"isochrones/{self.tag}"]:
-                filters = list(h5_file[f"isochrones/{self.tag}/filters/"])
+        with h5py.File(self.database, "r") as hdf5_file:
+            if "filters" in hdf5_file[f"isochrones/{self.tag}"]:
+                filters = list(hdf5_file[f"isochrones/{self.tag}/filters/"])
 
                 # Convert from bytes to strings
                 for i, item in enumerate(filters):

@@ -14,7 +14,7 @@ import numpy as np
 
 from typeguard import typechecked
 
-from species.data.vega import add_vega
+from species.data.spec_data.spec_vega import add_vega
 from species.read.read_filter import ReadFilter
 from species.util.convert_util import apparent_to_absolute, parallax_to_distance
 
@@ -115,14 +115,13 @@ class SyntheticPhotometry:
             self.wavel_range = read_filt.wavelength_range()
 
         with h5py.File(self.database, "a") as h5_file:
-
             if "spectra/calibration/vega" not in h5_file:
                 add_vega(self.data_folder, h5_file)
 
             vega_spec = np.array(h5_file["spectra/calibration/vega"])
 
-        wavelength = vega_spec[0, ]
-        flux = vega_spec[1, ]
+        wavelength = vega_spec[0,]
+        flux = vega_spec[1,]
 
         wavelength_crop = wavelength[
             (wavelength > self.wavel_range[0]) & (wavelength < self.wavel_range[1])

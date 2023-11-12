@@ -35,7 +35,7 @@ def multi_photometry(
     filters and a specified atmosphere model and related parameters.
     This function can for example be used for calculating the
     synthetic photometry from a best-fit model spectrum. It returns
-    a :class:`~species.core.box.SynphotBox` that can be provided
+    a :class:`~species.core.box_types.SynphotBox` that can be provided
     as input to :func:`~species.plot.plot_spectrum.plot_spectrum`.
 
     Parameters
@@ -295,7 +295,9 @@ def get_residuals(
 
                 elif spectrum == "petitradtrans":
                     # Smoothing to the instrument resolution
-                    flux_smooth = convolve_spectrum(model.wavelength, model.flux, spec_res)
+                    flux_smooth = convolve_spectrum(
+                        model.wavelength, model.flux, spec_res
+                    )
 
                     # Resampling to the new wavelength points
                     flux_new = spectres.spectres(

@@ -28,4 +28,5 @@ def create_config(test_path):
         config.write("[species]\n")
         config.write(f"database = {database_file}\n")
         config.write(f"data_folder = {data_folder}\n")
-        config.write("interp_method = linear")
+        config.write("interp_method = linear\n")
+        config.write("vega_mag = 0.03")

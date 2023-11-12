@@ -1,11 +1,11 @@
 """
-Module with reading functionalities of color and magnitude data from
-photometric and libraries.
+Module with reading functionalities of color and magnitude
+data from photometric and libraries.
 """
 
 import os
-import configparser
 
+from configparser import ConfigParser
 from typing import Optional, Tuple
 
 import h5py
@@ -55,7 +55,7 @@ class ReadColorMagnitude:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]
@@ -286,7 +286,7 @@ class ReadColorColor:
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file)
 
         self.database = config["species"]["database"]

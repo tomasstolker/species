@@ -5,7 +5,7 @@ Utility functions for dust cross sections and extinction.
 import os
 import configparser
 
-from typing import Optional, Union, Tuple, List, Dict
+from typing import Dict, List, Tuple, Union
 
 import h5py
 import numpy as np
@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d, RegularGridInterpolator
 from scipy.stats import lognorm
 
 from species.read.read_filter import ReadFilter
-from species.data.dust import add_cross_sections, add_optical_constants
+from species.data.misc_data.dust_data import add_cross_sections, add_optical_constants
 
 
 @typechecked

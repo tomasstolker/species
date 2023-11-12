@@ -28,7 +28,7 @@
 
 There are tools available for grid and free retrievals using Bayesian inference, synthetic photometry, interpolating a variety atmospheric and evolutionary model grids (including the possibility to add a custom grid), color-magnitude and color-color diagrams, empirical spectral analysis, spectral and photometric calibration, and analysis of emission lines. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
 
-**Important:** Importing the *species* package had become slow because of the many classes and functions that were implicitly imported. The initialization of the package has therefore been adjusted. In the latest version, any functionalities should be explicitly imported from the modules that they are part of.
+**Important:** Importing the *species* package had become slow because of the many classes and functions that were implicitly imported. The initialization of the package has therefore been adjusted. Any functionalities should now be explicitly imported from the modules that they are part of.
 
 Documentation
 -------------

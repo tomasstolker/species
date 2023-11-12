@@ -226,8 +226,8 @@ def plot_color_magnitude(
 
         else:
             raise ValueError(
-                f"Found a {type(item)} while only ColorMagBox and IsochroneBox "
-                f"objects can be provided to 'boxes'."
+                f"Found a {type(item)} while only ColorMagBox and "
+                "IsochroneBox objects can be provided to 'boxes'."
             )
 
     if empirical:
@@ -1059,7 +1059,7 @@ def plot_color_color(
         else:
             raise ValueError(
                 f"Found a {type(item)} while only ColorColorBox and "
-                f"IsochroneBox objects can be provided to 'boxes'."
+                "IsochroneBox objects can be provided to 'boxes'."
             )
 
     fig = plt.figure(figsize=figsize)
