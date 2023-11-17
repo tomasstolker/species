@@ -123,7 +123,7 @@ class Database:
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
 
-        spec_file = Path(__file__).parent.resolve() / "companion_spectra.json"
+        spec_file = Path(__file__).parent.resolve() / "companion_data/companion_spectra.json"
 
         with open(spec_file, "r", encoding="utf-8") as json_file:
             comp_spec = json.load(json_file)
@@ -180,7 +180,7 @@ class Database:
             file in the ``species.data`` folder.
         """
 
-        data_file = Path(__file__).parent.resolve() / "model_data.json"
+        data_file = Path(__file__).parent.resolve() / "model_data/model_data.json"
 
         with open(data_file, "r", encoding="utf-8") as json_file:
             model_data = json.load(json_file)
