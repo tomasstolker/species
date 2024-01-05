@@ -5,7 +5,8 @@ Module with the  ``Box`` classes and ``create_box`` function.
 from typing import List, Union
 
 import numpy as np
-import spectres
+
+from spectres import spectres
 
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
@@ -232,7 +233,7 @@ class ModelBox(Box):
             None
         """
 
-        self.flux = spectres.spectres(
+        self.flux = spectres(
             wavel_resample,
             self.wavelength,
             self.flux,
