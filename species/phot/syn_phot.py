@@ -96,7 +96,7 @@ class SyntheticPhotometry:
             )
 
     @typechecked
-    def calc_zero_point(self) -> np.float64:
+    def calc_zero_point(self) -> Union[float, np.float64]:
         """
         Internal function for calculating the zero point of the
         provided ``filter_name``. The zero point is here defined
@@ -139,7 +139,7 @@ class SyntheticPhotometry:
         wavelength: np.ndarray,
         flux: np.ndarray,
         error: Optional[np.ndarray] = None,
-        threshold: Optional[float] = 0.05,
+        threshold: Optional[float] = 0.01,
     ) -> Tuple[
         Union[float, np.float32, np.float64],
         Union[Optional[float], Optional[np.float32], Optional[np.float64]],
@@ -164,7 +164,8 @@ class SyntheticPhotometry:
             minimum transmission value is larger than the threshold,
             a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter
-            profile. The parameter is not used if set to ``None``.
+            profile. The parameter is not used if set to ``None``
+            (default: 0.01).
 
         Returns
         -------
@@ -200,10 +201,13 @@ class SyntheticPhotometry:
             flux_error = flux.copy()
 
         if self.filter_interp is None:
+            # Interpolate filter profile
             read_filt = ReadFilter(self.filter_name)
             self.filter_interp = read_filt.interpolate_filter()
 
             if self.wavel_range is None:
+                # Set the wavel_range attribute to the
+                # wavelength range of the filter profile
                 self.wavel_range = read_filt.wavelength_range()
 
         if wavelength.size == 0:
@@ -248,10 +252,12 @@ class SyntheticPhotometry:
             ):
                 warnings.warn(
                     f"The filter profile of {self.filter_name} "
-                    f"({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) extends "
-                    f"beyond the wavelength range of the spectrum ({wavelength[0]:.4f} "
-                    f"-{wavelength[-1]:.4f}). The flux is set to NaN. Setting the "
-                    f"'threshold' parameter will loosen the wavelength constraints."
+                    f"({self.wavel_range[0]:.4f}-"
+                    f"{self.wavel_range[1]:.4f}) extends beyond "
+                    f"the wavelength range of the spectrum "
+                    f"({wavelength[0]:.4f}-{wavelength[-1]:.4f}). "
+                    "The flux is set to NaN. Setting the 'threshold' "
+                    "parameter will loosen the wavelength constraints."
                 )
 
                 syn_flux = np.nan
@@ -348,7 +354,7 @@ class SyntheticPhotometry:
         error: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
         parallax: Optional[Tuple[float, Optional[float]]] = None,
         distance: Optional[Tuple[float, Optional[float]]] = None,
-        threshold: Optional[float] = 0.05,
+        threshold: Optional[float] = 0.01,
     ) -> Tuple[
         Tuple[float, Optional[float]], Optional[Tuple[Optional[float], Optional[float]]]
     ]:
@@ -384,7 +390,8 @@ class SyntheticPhotometry:
             minimum transmission value is larger than the threshold,
             a NaN is returned. This will happen if the input spectrum
             does not cover the full wavelength range of the filter
-            profile. The parameter is not used if set to ``None``.
+            profile. The parameter is not used if set to ``None``
+            (default: 0.01).
 
         Returns
         -------

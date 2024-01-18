@@ -105,6 +105,15 @@
         "resolution": 4000,
         "teff range": [2600, 30000]
     },
+    "bt-nextgen-subsolar": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-NextGen subsolar",
+        "file size": "1.5 GB",
+        "wavelength range": [0.1, 50],
+        "resolution": 4000,
+        "teff range": [2600, 30000],
+        "information": "[alpha/Fe] = 0.4"
+    },
     "bt-settl": {
         "parameters": ["teff", "logg"],
         "name": "BT-Settl",

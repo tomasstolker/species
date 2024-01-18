@@ -897,6 +897,9 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "bt-nextgen":
         out_name = "BT-NextGen"
 
+    elif in_name == "bt-nextgen-subsolar":
+        out_name = "BT-NextGen"
+
     elif in_name == "koester-wd":
         out_name = "Koester (2010)"
 
