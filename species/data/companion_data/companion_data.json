@@ -1333,6 +1333,36 @@
             "Skemer et al. 2016"
         ]
     },
+    "GJ 758 B": {
+            "simbad": "GJ 758",
+            "distance": [15.61, 0.005],
+            "parallax": [64.04, 0.02],
+            "app_mag": {
+                "Paranal/SPHERE.IRDIS_D_Y23_2": [20.15, 0.20],  
+                "Paranal/SPHERE.IRDIS_D_Y23_3": [19.39, 0.10], 
+                "Paranal/SPHERE.IRDIS_D_J23_2": [20.02, 0.25],
+                "Paranal/SPHERE.IRDIS_D_J23_3": [17.79, 0.18],
+                "Paranal/SPHERE.IRDIS_D_H23_2": [17.55, 0.12],
+                "Paranal/SPHERE.IRDIS_D_H23_3": [19.84, 0.42], 
+                "Paranal/SPHERE.IRDIS_D_K12_1": [17.99, 0.21],
+                "Paranal/SPHERE.IRDIS_D_K12_2": [18.74, 0.35],
+                "Subaru/CIAO.J": [17.58, 0.20],  
+                "Gemini/NIRI.H-G0203w": [18.16, 0.2], 
+                "Gemini/NIRI.Kcont209-G0217": [17.12, 0.2], 
+                "Keck/NIRC2.Lp": [15.0, 0.1],  
+                "Gemini/NIRI.CH4short-G0228": [17.74, 0.2] 
+            },
+            "mass_star": [0.96, 0.03], 
+            "mass_companion": [38.0, 0.8],
+            "semi_major": [29.7, 5.3],
+            "accretion": false,
+            "references": [
+                "Gaia Early Data Release 3",
+                "Vigan et al. 2016",
+                "Janson et al. 2011",
+                "Brandt, G. M. et al. 2021"
+            ]
+    },
     "GU Psc b": {
         "simbad": "GU Psc",
         "parallax": [
