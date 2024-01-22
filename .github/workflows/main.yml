@@ -31,8 +31,8 @@ jobs:
           sudo apt-get install pandoc
           sudo apt-get install gcc
           pip install --upgrade pip wheel
-          pip install -r docs/requirements.txt
           pip install flake8 pytest pytest-cov cython
+          pip install -r docs/requirements.txt
           pip install -r requirements.txt
           pip install .
 

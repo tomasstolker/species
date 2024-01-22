@@ -53,6 +53,6 @@ Contributions are welcome so please consider `forking <https://help.github.com/e
 License
 -------
 
-Copyright 2018-2023 Tomas Stolker
+Copyright 2018-2024 Tomas Stolker
 
 *species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/species/blob/main/LICENSE>`_ for the terms and conditions.
