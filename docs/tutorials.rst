@@ -41,7 +41,14 @@ This page contains a list of tutorials which highlight some of the functionaliti
 
    tutorials/flux_magnitude.ipynb
    tutorials/synthetic_photometry.ipynb
+
+**Companion data**
+
+.. toctree::
+   :maxdepth: 1
+
    tutorials/companion_data.ipynb
+   tutorials/mass_ratio.ipynb
 
 **Color and magnitude diagrams**
 
