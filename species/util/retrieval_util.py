@@ -428,7 +428,7 @@ def create_pt_profile(
         Dictionary with the index of each parameter in the ``cube``.
     pt_profile : str
         The parametrization for the pressure-temperature profile
-        ('molliere', 'free', 'monotonic', 'eddington').
+        ('molliere', 'free', 'monotonic', 'eddington', 'gradient').
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
@@ -486,6 +486,21 @@ def create_pt_profile(
             metallicity,
             c_o_ratio,
         )
+
+    elif pt_profile == "gradient":
+        num_layer = 6 # could make a variable in the future
+        layer_pt_slopes = np.ones(num_layer) * np.nan
+        for index in range(num_layer):
+            layer_pt_slopes[index] = cube[cube_index[f'PTslope_{num_layer - index}']]
+
+        temp = dTdP_temperature_profile(pressure,
+                                        num_layer, # could change in the future
+                                        layer_pt_slopes,
+                                        cube[cube_index["T_bottom"]])
+        
+        phot_press = None
+        conv_press = None
+
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
@@ -3030,3 +3045,47 @@ def convective_flux(
     f_conv[np.isnan(f_conv)] = 0.0
 
     return f_conv  # (W m-2)
+
+
+def dTdP_temperature_profile(press,num_layer,layer_pt_slopes,T_bottom):
+    """
+    DIRECTLY COPIED FROM petitRADTRANS.physics
+    This function takes the temperature gradient at a set number of spline points and interpolates a temperature profile as a function of pressure.
+
+    Args:
+        press : array_like
+            The pressure array.
+        num_layer : int
+            The number of layers.
+        layer_pt_slopes : array_like
+            The temperature gradient at the spline points.
+        T_bottom : float
+            The temperature at the bottom of the atmosphere.
+
+    Returns:
+        temperatures : array_like
+            The temperature profile.
+    """
+    id_sub = np.where(press >= 1.0e-3)
+    p_use_sub = press[id_sub]
+    num_sub = len(p_use_sub)
+    ## 1.3 pressures of layers
+    layer_pressures = np.logspace(-3, 3, int(num_layer))
+    ## 1.4 assemble the P-T slopes for these layers
+    #for index in range(num_layer):
+    #    layer_pt_slopes[index] = parameters['PTslope_%d'%(num_layer - index)].value
+    ## 1.5 interpolate the P-T slopes to compute slopes for all layers
+    interp_func = interp1d(np.log10(layer_pressures),
+                           layer_pt_slopes,
+                           'quadratic')
+    pt_slopes_sub = interp_func( np.log10(p_use_sub) )
+    ## 1.6 compute temperatures
+    temperatures_sub = np.ones(num_sub) * np.nan
+    temperatures_sub[-1] = T_bottom
+    for index in range(1, num_sub):
+        temperatures_sub[-1-index] = np.exp( np.log(temperatures_sub[-index]) - pt_slopes_sub[-index] *\
+                                             (np.log(p_use_sub[-index]) - np.log(p_use_sub[-1-index])) )
+    ## 1.7 isothermal in the remaining region, i.e., upper atmosphere
+    temperatures = np.ones_like(press) * temperatures_sub[0]
+    temperatures[id_sub] = np.copy(temperatures_sub)
+    return temperatures
