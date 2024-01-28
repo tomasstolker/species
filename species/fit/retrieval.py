@@ -1550,8 +1550,8 @@ class AtmosphericRetrieval:
                             * cube[cube_index["PTslope_"+str(i)]]
                         )
                     else:
-                        t_i = 0.0 + 1.0 * cube[cube_index["T_bottom"]]
-                    cube[self.cube_index["PTslope_"+str(i)]] = t_i
+                        t_i = 0.0 + 1.0 * cube[cube_index["PTslope_"+str(i)]]
+                    cube[cube_index["PTslope_"+str(i)]] = t_i
 
             elif pt_profile == "monotonic":
                 # Free temperature node (K) between 300 and
