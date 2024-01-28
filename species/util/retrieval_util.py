@@ -3083,7 +3083,7 @@ def dTdP_temperature_profile(press,num_layer,layer_pt_slopes,T_bottom):
     temperatures_sub = np.ones(num_sub) * np.nan
     temperatures_sub[-1] = T_bottom
     for index in range(1, num_sub):
-        temperatures_sub[-1-index] = np.exp( np.log(temperatures_sub[-index]) - pt_slopes_sub[-index] *\
+        temperatures_sub[-1-index] = np.exp( np.log(temperatures_sub[-index]) - pt_slopes_sub[-index] *
                                              (np.log(p_use_sub[-index]) - np.log(p_use_sub[-1-index])) )
     ## 1.7 isothermal in the remaining region, i.e., upper atmosphere
     temperatures = np.ones_like(press) * temperatures_sub[0]
