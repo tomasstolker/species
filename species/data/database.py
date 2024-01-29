@@ -2496,70 +2496,73 @@ class Database:
 
         print(f"Getting object: {object_name}...", end="", flush=True)
 
-        hdf5_file = h5py.File(self.database, "r")
-        dset = hdf5_file[f"objects/{object_name}"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{object_name}" not in hdf5_file:
+                raise ValueError("The argument of  'object_name' is "
+                                 f"set to '{object_name}' but the "
+                                 "data is not found in the database.")
 
-        if "parallax" in dset:
-            parallax = np.asarray(dset["parallax"])
-        else:
-            parallax = None
+            dset = hdf5_file[f"objects/{object_name}"]
 
-        if "distance" in dset:
-            distance = np.asarray(dset["distance"])
-        else:
-            distance = None
+            if "parallax" in dset:
+                parallax = np.asarray(dset["parallax"])
+            else:
+                parallax = None
 
-        if inc_phot:
-            magnitude = {}
-            flux = {}
-            mean_wavel = {}
+            if "distance" in dset:
+                distance = np.asarray(dset["distance"])
+            else:
+                distance = None
 
-            from species.read.read_filter import ReadFilter
+            if inc_phot:
+                magnitude = {}
+                flux = {}
+                mean_wavel = {}
 
-            for observatory in dset.keys():
-                if observatory not in ["parallax", "distance", "spectrum"]:
-                    for filter_name in dset[observatory]:
-                        name = f"{observatory}/{filter_name}"
+                from species.read.read_filter import ReadFilter
 
-                        if isinstance(inc_phot, bool) or name in inc_phot:
-                            magnitude[name] = dset[name][0:2]
-                            flux[name] = dset[name][2:4]
+                for observatory in dset.keys():
+                    if observatory not in ["parallax", "distance", "spectrum"]:
+                        for filter_name in dset[observatory]:
+                            name = f"{observatory}/{filter_name}"
 
-            phot_filters = list(magnitude.keys())
+                            if isinstance(inc_phot, bool) or name in inc_phot:
+                                magnitude[name] = dset[name][0:2]
+                                flux[name] = dset[name][2:4]
 
-        else:
-            magnitude = None
-            flux = None
-            phot_filters = None
-            mean_wavel = None
+                phot_filters = list(magnitude.keys())
 
-        if inc_spec and f"objects/{object_name}/spectrum" in hdf5_file:
-            spectrum = {}
+            else:
+                magnitude = None
+                flux = None
+                phot_filters = None
+                mean_wavel = None
 
-            for item in hdf5_file[f"objects/{object_name}/spectrum"]:
-                data_group = f"objects/{object_name}/spectrum/{item}"
+            if inc_spec and f"objects/{object_name}/spectrum" in hdf5_file:
+                spectrum = {}
 
-                if isinstance(inc_spec, bool) or item in inc_spec:
-                    if f"{data_group}/covariance" not in hdf5_file:
-                        spectrum[item] = (
-                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
-                            None,
-                            None,
-                            hdf5_file[f"{data_group}"].attrs["specres"],
-                        )
+                for item in hdf5_file[f"objects/{object_name}/spectrum"]:
+                    data_group = f"objects/{object_name}/spectrum/{item}"
 
-                    else:
-                        spectrum[item] = (
-                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
-                            np.asarray(hdf5_file[f"{data_group}/covariance"]),
-                            np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
-                            hdf5_file[f"{data_group}"].attrs["specres"],
-                        )
+                    if isinstance(inc_spec, bool) or item in inc_spec:
+                        if f"{data_group}/covariance" not in hdf5_file:
+                            spectrum[item] = (
+                                np.asarray(hdf5_file[f"{data_group}/spectrum"]),
+                                None,
+                                None,
+                                hdf5_file[f"{data_group}"].attrs["specres"],
+                            )
 
-        else:
-            spectrum = None
+                        else:
+                            spectrum[item] = (
+                                np.asarray(hdf5_file[f"{data_group}/spectrum"]),
+                                np.asarray(hdf5_file[f"{data_group}/covariance"]),
+                                np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
+                                hdf5_file[f"{data_group}"].attrs["specres"],
+                            )
 
-        hdf5_file.close()
+            else:
+                spectrum = None
 
         if magnitude is not None:
             for filter_name in magnitude.keys():
