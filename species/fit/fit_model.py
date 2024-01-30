@@ -173,7 +173,8 @@ class FitModel:
                  linearly sampled (``flux_scaling``) or logarithmically
                  sampled (``log_flux_scaling``). Additionally, it is
                  also possible to fit a flux offset (``flux_offset``),
-                 which adds a constant flux to the model spectrum.
+                 which adds a constant flux (in W m-2 um-1) to the
+                 model spectrum.
 
             Blackbody parameters (with ``model='planck'``):
 
