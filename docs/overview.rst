@@ -68,13 +68,13 @@ The following data and models are currently supported:
 - `SDSS spectra by Kesseli et al. (2017) <https://ui.adsabs.harvard.edu/abs/2017ApJS..230...16K/abstract>`_
 - NIR spectra of young M/L dwarfs by `Allers & Liu (2013) <https://ui.adsabs.harvard.edu/abs/2013ApJ...772...79A/abstract>`_
 - NIR spectra of young M/L dwarfs by `Bonnefoy et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014A%26A...562A.127B/abstract>`_
-- `Spectra of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_spectra.json>`_
+- `Spectra of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data/companion_spectra.json>`_
 
 **Photometric libraries**
 
 - `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `S. Leggett <http://www.gemini.edu/staff/sleggett>`_
-- `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data.json>`_
+- `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data/companion_data.json>`_
 
 **Calibration**
 
@@ -94,16 +94,16 @@ Analysis tools
 
 After adding the relevant data to the database, the user can take advantage of the suite of tools that have been implemented for spectral and photometric analysis. Here is an incomplete list of available features and tools:
 
-- Converting between fluxes and magnitudes (see :class:`~species.analysis.photometry.SyntheticPhotometry`).
-- Calculating synthetic photometry spectra (see :class:`~species.analysis.photometry.SyntheticPhotometry`).
+- Converting between fluxes and magnitudes (see :class:`~species.phot.syn_phot.SyntheticPhotometry`).
+- Calculating synthetic photometry spectra (see :class:`~species.phot.syn_phot.SyntheticPhotometry`).
 - Interpolating and plotting model spectra (see :class:`~species.read.read_model.ReadModel` and :func:`~species.plot.plot_spectrum.plot_spectrum`).
 - Wrapper for generating spectra with `petitRADTRANS <https://petitradtrans.readthedocs.io>`_ using various parameterizations for P-T structures, abundances, and clouds (see :class:`~species.read.read_radtrans.ReadRadtrans`).
-- Grid retrievals with Bayesian inference (see :class:`~species.analysis.fit_model.FitModel` and :mod:`~species.plot.plot_mcmc`).
-- Comparing a spectrum with a full grid of model spectra (see :meth:`~species.analysis.compare_spectra.CompareSpectra.compare_model`).
-- Free retrievals with a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see :class:`~species.analysis.retrieval.AtmosphericRetrieval`).
+- Grid retrievals with Bayesian inference (see :class:`~species.fit.fit_model.FitModel` and :mod:`~species.plot.plot_mcmc`).
+- Comparing a spectrum with a full grid of model spectra (see :meth:`~species.fit.compare_spectra.CompareSpectra.compare_model`).
+- Free retrievals with a frontend for `petitRADTRANS <https://petitradtrans.readthedocs.io>`_  (see :class:`~species.fit.retrieval.AtmosphericRetrieval`).
 - Creating color-magnitude diagrams (see :class:`~species.read.read_color.ReadColorMagnitude` and :class:`~species.plot.plot_color.plot_color_magnitude`).
 - Creating color-color diagrams (see :class:`~species.read.read_color.ReadColorColor` and :class:`~species.plot.plot_color.plot_color_color`).
 - Computing synthetic fluxes from isochrones and model spectra (see :class:`~species.read.read_isochrone.ReadIsochrone`)
-- Flux calibration of photometric and spectroscopic data (see :class:`~species.read.read_calibration.ReadCalibration`, :class:`~species.analysis.fit_model.FitModel`, and :class:`~species.analysis.fit_spectrum.FitSpectrum`).
-- Empirical comparison of spectra to infer the spectral type (see :meth:`~species.analysis.compare_spectra.CompareSpectra.spectral_type`).
-- Analyzing emission lines from accreting planets (see :class:`~species.analysis.emission_line.EmissionLine`).
+- Flux calibration of photometric and spectroscopic data (see :class:`~species.read.read_calibration.ReadCalibration`, :class:`~species.fit.fit_model.FitModel`, and :class:`~species.fit.fit_spectrum.FitSpectrum`).
+- Empirical comparison of spectra to infer the spectral type (see :meth:`~species.fit.compare_spectra.CompareSpectra.spectral_type`).
+- Analyzing emission lines from accreting planets (see :class:`~species.fit.emission_line.EmissionLine`).

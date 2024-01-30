@@ -123,7 +123,9 @@ class Database:
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
 
-        spec_file = Path(__file__).parent.resolve() / "companion_data/companion_spectra.json"
+        spec_file = (
+            Path(__file__).parent.resolve() / "companion_data/companion_spectra.json"
+        )
 
         with open(spec_file, "r", encoding="utf-8") as json_file:
             comp_spec = json.load(json_file)
@@ -612,6 +614,7 @@ class Database:
         wavel_range: Optional[Tuple[float, float]] = None,
         spec_res: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
+        unpack_tar: bool = True,
     ) -> None:
         """
         Function for adding a grid of model spectra to the database.
@@ -652,6 +655,15 @@ class Database:
             are extracted from the TAR file and added to the HDF5
             database. The full grid of spectra will be added if the
             argument is set to ``None``.
+        unpack_tar : bool
+            Unpack the TAR file with the model spectra in the
+            ``data_folder``. By default, the argument is set to
+            ``True`` such the TAR file with the model spectra
+            will be unpacked after downloading. In case the TAR
+            file had already been unpacked previously, the
+            argument can be set to ``False`` such that the
+            unpacking will be skipped. This can safe some time
+            with unpacking large TAR files.
 
         Returns
         -------
@@ -666,7 +678,13 @@ class Database:
                 hdf5_file.create_group("models")
 
             add_model_grid(
-                model, self.data_folder, hdf5_file, wavel_range, teff_range, spec_res
+                model,
+                self.data_folder,
+                hdf5_file,
+                wavel_range,
+                teff_range,
+                spec_res,
+                unpack_tar,
             )
 
     @typechecked
@@ -2499,9 +2517,11 @@ class Database:
 
         with h5py.File(self.database, "r") as hdf5_file:
             if f"objects/{object_name}" not in hdf5_file:
-                raise ValueError("The argument of  'object_name' is "
-                                 f"set to '{object_name}' but the "
-                                 "data is not found in the database.")
+                raise ValueError(
+                    "The argument of  'object_name' is "
+                    f"set to '{object_name}' but the "
+                    "data is not found in the database."
+                )
 
             dset = hdf5_file[f"objects/{object_name}"]
 

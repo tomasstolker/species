@@ -29,6 +29,7 @@ def add_model_grid(
     wavel_range: Optional[Tuple[float, float]] = None,
     teff_range: Optional[Tuple[float, float]] = None,
     spec_res: Optional[float] = None,
+    unpack_tar: bool = True,
 ) -> None:
     """
     Function for adding a grid of model spectra to the database.
@@ -57,6 +58,10 @@ def add_model_grid(
         Spectral resolution for resampling. Not used if
         ``wavel_range`` is set to ``None`` and/or
         ``spec_res`` is set to ``None``
+    unpack_tar : bool
+        Unpack the TAR file with the model spectra in the
+        ``data_folder``. The argument can be set to ``False`` if the
+        TAR file had already been unpacked previously.
 
     Returns
     -------
@@ -135,39 +140,40 @@ def add_model_grid(
             progressbar=True,
         )
 
-    with tarfile.open(data_file) as tar_open:
-        # Get a list of all TAR members
-        tar_members = tar_open.getmembers()
+    if unpack_tar:
+        with tarfile.open(data_file) as tar_open:
+            # Get a list of all TAR members
+            tar_members = tar_open.getmembers()
 
-    if teff_range is None:
-        member_list = None
-        n_members = len(tar_members)
+        if teff_range is None:
+            member_list = None
+            n_members = len(tar_members)
 
-    else:
-        # Only include and extract TAR members
-        # within the specified Teff range
-        member_list = []
+        else:
+            # Only include and extract TAR members
+            # within the specified Teff range
+            member_list = []
 
-        for tar_item in tar_members:
-            file_split = tar_item.name.split("_")
-            param_index = file_split.index("teff") + 1
-            teff_val = float(file_split[param_index])
+            for tar_item in tar_members:
+                file_split = tar_item.name.split("_")
+                param_index = file_split.index("teff") + 1
+                teff_val = float(file_split[param_index])
 
-            if teff_val >= teff_range[0] and teff_val <= teff_range[1]:
-                member_list.append(tar_item)
+                if teff_val >= teff_range[0] and teff_val <= teff_range[1]:
+                    member_list.append(tar_item)
 
-        n_members = len(member_list)
+            n_members = len(member_list)
 
-    print(
-        f"Unpacking {n_members}/{len(tar_members)} model spectra "
-        f"from {model_info['name']} ({model_info['file size']})...",
-        end="",
-        flush=True,
-    )
+        print(
+            f"Unpacking {n_members}/{len(tar_members)} model spectra "
+            f"from {model_info['name']} ({model_info['file size']})...",
+            end="",
+            flush=True,
+        )
 
-    extract_tarfile(data_file, data_folder, member_list=member_list)
+        extract_tarfile(data_file, data_folder, member_list=member_list)
 
-    print(" [DONE]")
+        print(" [DONE]")
 
     if "information" in model_info:
         print(f"Model information: {model_info['information']}")

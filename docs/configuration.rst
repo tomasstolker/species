@@ -22,7 +22,7 @@ In this case, the database is stored in the working folder and an absolute path 
          >>> import os
          >>> os.getcwd()
 
-The workflow with *species* can now be initiated with the :class:`~species.core.setup.SpeciesInit` class:
+The workflow with *species* can now be initiated with the :class:`~species.core.species_init.SpeciesInit` class:
 
 .. code-block:: python
 
@@ -32,7 +32,7 @@ The workflow with *species* can now be initiated with the :class:`~species.core.
 A configuration file with default values is automatically created when `species` is initiated and the file is not present in the working folder.
 
 .. tip::
-   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.setup.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
+   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.species_init.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
 
 .. important::
    A flux-calibrated spectrum of Vega is used for the conversion between a flux density and magnitude. The magnitude of Vega is set to 0.03 for all filters by default. If needed, the magnitude of Vega can be adjusted with the ``vega_mag`` parameter in the configuration file.
