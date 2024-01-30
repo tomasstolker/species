@@ -49,6 +49,39 @@ class Database:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
+    @staticmethod
+    @typechecked
+    def _print_section(
+        sect_title: str,
+        bound_char: str = "-",
+        extra_line: bool = True,
+    ) -> None:
+        """
+        Internal method for printing a section title.
+
+        Parameters
+        ----------
+        sect_title : str
+            Section title.
+        bound_char : str
+            Boundary character for around the section title.
+        extra_line : bool
+            Extra new line at the beginning.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        if extra_line:
+            print("\n" + len(sect_title) * bound_char)
+        else:
+            print(len(sect_title) * bound_char)
+
+        print(sect_title)
+        print(len(sect_title) * bound_char + "\n")
+
     @typechecked
     def list_content(self) -> None:
         """
@@ -63,7 +96,7 @@ class Database:
             None
         """
 
-        print("Database content:")
+        self._print_section("List database content")
 
         @typechecked
         def _descend(
@@ -73,8 +106,8 @@ class Database:
             seperator: str = "",
         ) -> None:
             """
-            Internal function for descending into an HDF5 dataset and
-            printing its content.
+            Internal function for descending into an HDF5
+            dataset and printing its content.
 
             Parameters
             ----------
@@ -101,14 +134,19 @@ class Database:
         with h5py.File(self.database, "r") as hdf_file:
             _descend(hdf_file)
 
-    @staticmethod
     @typechecked
-    def list_companions() -> List[str]:
+    def list_companions(self, verbose: bool = False) -> List[str]:
         """
         Function for printing an overview of the companion data that
         are stored in the database. It will return a list with all
         the companion names. Each name can be used as input for
         :class:`~species.read.read_object.ReadObject`.
+
+        Parameters
+        ----------
+        verbose : bool
+            Print details on the companion data or list only the names
+            of the companions for which data are available.
 
         Returns
         -------
@@ -130,49 +168,62 @@ class Database:
         with open(spec_file, "r", encoding="utf-8") as json_file:
             comp_spec = json.load(json_file)
 
+        self._print_section("Companions with available data")
+
         comp_names = []
 
         for planet_name, planet_dict in comp_data.items():
             comp_names.append(planet_name)
 
-            print(f"Object name = {planet_name}")
+            if verbose:
+                print(f"Object name = {planet_name}")
 
-            if "parallax" in planet_dict:
-                parallax = planet_dict["parallax"]
-                print(f"Parallax (pc) = {parallax[0]} +/- {parallax[1]}")
+                if "parallax" in planet_dict:
+                    parallax = planet_dict["parallax"]
+                    print(f"Parallax (pc) = {parallax[0]} +/- {parallax[1]}")
 
-            if "distance" in planet_dict:
-                distance = planet_dict["distance"]
-                print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
+                if "distance" in planet_dict:
+                    distance = planet_dict["distance"]
+                    print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
 
-            app_mag = planet_dict["app_mag"]
+                app_mag = planet_dict["app_mag"]
 
-            for mag_key, mag_value in app_mag.items():
-                if isinstance(mag_value[0], list) or isinstance(mag_value[0], tuple):
-                    for item in mag_value:
-                        print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
-                else:
-                    print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
+                for mag_key, mag_value in app_mag.items():
+                    if isinstance(mag_value[0], list) or isinstance(
+                        mag_value[0], tuple
+                    ):
+                        for item in mag_value:
+                            print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
+                    else:
+                        print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
 
-            print("References:")
-            for ref_item in planet_dict["references"]:
-                print(f"   - {ref_item}")
+                print("References:")
+                for ref_item in planet_dict["references"]:
+                    print(f"   - {ref_item}")
 
-            if planet_name in comp_spec:
-                for key, value in comp_spec[planet_name].items():
-                    print(f"{key} spectrum from {value[3]}")
+                if planet_name in comp_spec:
+                    for key, value in comp_spec[planet_name].items():
+                        print(f"{key} spectrum from {value[3]}")
 
-            print()
+                print()
+
+            else:
+                print(planet_name)
 
         return comp_names
 
-    @staticmethod
     @typechecked
-    def available_models() -> Dict:
+    def available_models(self, verbose: bool = False) -> Dict:
         """
         Function for printing an overview of the available model grids
         that can be downloaded and added to the database with
         :class:`~species.data.database.Database.add_model`.
+
+        Parameters
+        ----------
+        verbose : bool
+            Print details on the grids of model spectra or list only
+            the names of the available model spectra.
 
         Returns
         -------
@@ -182,42 +233,48 @@ class Database:
             file in the ``species.data`` folder.
         """
 
+        self._print_section("Available model spectra")
+
         data_file = Path(__file__).parent.resolve() / "model_data/model_data.json"
 
         with open(data_file, "r", encoding="utf-8") as json_file:
             model_data = json.load(json_file)
 
-        print("Available model grids:", end="")
-
         for model_name, model_dict in model_data.items():
-            print(f"\n   - {model_dict['name']}:")
-            print(f"      - Label = {model_name}")
+            if verbose:
+                print(f"   - {model_dict['name']}:")
+                print(f"      - Label = {model_name}")
 
-            if "parameters" in model_dict:
-                print(f"      - Model parameters: {model_dict['parameters']}")
+                if "parameters" in model_dict:
+                    print(f"      - Model parameters: {model_dict['parameters']}")
 
-            if "teff range" in model_dict:
-                print(f"      - Teff range (K): {model_dict['teff range']}")
+                if "teff range" in model_dict:
+                    print(f"      - Teff range (K): {model_dict['teff range']}")
 
-            if "wavelength range" in model_dict:
-                print(
-                    f"      - Wavelength range (um): {model_dict['wavelength range']}"
-                )
+                if "wavelength range" in model_dict:
+                    print(
+                        f"      - Wavelength range (um): {model_dict['wavelength range']}"
+                    )
 
-            if "resolution" in model_dict:
-                print(f"      - Resolution lambda/Dlambda: {model_dict['resolution']}")
+                if "resolution" in model_dict:
+                    print(
+                        f"      - Resolution lambda/Dlambda: {model_dict['resolution']}"
+                    )
 
-            if "information" in model_dict:
-                print(f"      - Extra details: {model_dict['information']}")
+                if "information" in model_dict:
+                    print(f"      - Extra details: {model_dict['information']}")
 
-            if "file size" in model_dict:
-                print(f"      - File size: {model_dict['file size']}")
+                if "file size" in model_dict:
+                    print(f"      - File size: {model_dict['file size']}")
 
-            if "reference" in model_dict:
-                print(f"      - Reference: {model_dict['reference']}")
+                if "reference" in model_dict:
+                    print(f"      - Reference: {model_dict['reference']}")
 
-            if "url" in model_dict:
-                print(f"      - URL: {model_dict['url']}")
+                if "url" in model_dict:
+                    print(f"      - URL: {model_dict['url']}\n")
+
+            else:
+                print(f"{model_dict['name']} -> label: {model_name}")
 
         return model_data
 
@@ -285,8 +342,12 @@ class Database:
 
         from species.data.companion_data.companion_spectra import companion_spectra
 
+        self._print_section("Add companion data")
+
         if isinstance(name, str):
-            name = list((name,))
+            name = [
+                name,
+            ]
 
         data_file = (
             Path(__file__).parent.resolve() / "companion_data/companion_data.json"
@@ -872,6 +933,8 @@ class Database:
         NoneType
             None
         """
+
+        self._print_section("Add object data")
 
         # Set default units
 
