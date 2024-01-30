@@ -5,6 +5,7 @@ Module for adding a grid of model spectra to the database.
 import json
 import os
 import pathlib
+import tarfile
 import warnings
 
 from typing import Optional, Tuple
@@ -44,13 +45,14 @@ def add_model_grid(
     input_path : str
         Folder where the data is located.
     database : h5py._hl.files.File
-        Database.
+        HDF5 database.
     wavel_range : tuple(float, float), None
         Wavelength range (um). The original wavelength
         points are used if set to ``None``.
     teff_range : tuple(float, float), None
-        Effective temperature range (K). All temperatures
-        are selected if set to ``None``.
+        Range of effective temperatures (K) for which the spectra will
+        be extracted from the TAR file and added to the database. All
+        spectra are selected if the argument is set to ``None``.
     spec_res : float, None
         Spectral resolution for resampling. Not used if
         ``wavel_range`` is set to ``None`` and/or
@@ -133,13 +135,38 @@ def add_model_grid(
             progressbar=True,
         )
 
+    with tarfile.open(data_file) as tar_open:
+        # Get a list of all TAR members
+        tar_members = tar_open.getmembers()
+
+    if teff_range is None:
+        member_list = None
+        n_members = len(tar_members)
+
+    else:
+        # Only include and extract TAR members
+        # within the specified Teff range
+        member_list = []
+
+        for tar_item in tar_members:
+            file_split = tar_item.name.split("_")
+            param_index = file_split.index("teff") + 1
+            teff_val = float(file_split[param_index])
+
+            if teff_val >= teff_range[0] and teff_val <= teff_range[1]:
+                member_list.append(tar_item)
+
+        n_members = len(member_list)
+
     print(
-        f"Unpacking {model_info['name']} model "
-        f"spectra ({model_info['file size']})...",
+        f"Unpacking {n_members}/{len(tar_members)} model spectra "
+        f"from {model_info['name']} ({model_info['file size']})...",
         end="",
         flush=True,
     )
-    extract_tarfile(data_file, data_folder)
+
+    extract_tarfile(data_file, data_folder, member_list=member_list)
+
     print(" [DONE]")
 
     if "information" in model_info:

@@ -168,6 +168,13 @@ class FitModel:
                  automatically included in the fit, as it sets the
                  weight of the two components.
 
+               - Instead of fitting the radius and parallax, it is also
+                 possible to fit a scaling parameter directly, either
+                 linearly sampled (``flux_scaling``) or logarithmically
+                 sampled (``log_flux_scaling``). Additionally, it is
+                 also possible to fit a flux offset (``flux_offset``),
+                 which adds a constant flux to the model spectrum.
+
             Blackbody parameters (with ``model='planck'``):
 
                - Parameter boundaries have to be provided for 'teff'
@@ -562,8 +569,23 @@ class FitModel:
                 self.bounds = readmodel.get_bounds()
 
             self.modelpar = readmodel.get_parameters()
-            self.modelpar.append("radius")
-            self.modelpar.append("parallax")
+
+            if "flux_scaling" in self.bounds:
+                # Fit arbitrary flux scaling
+                # Instead of using radius and parallax
+                self.modelpar.append("flux_scaling")
+
+            elif "log_flux_scaling" in self.bounds:
+                # Fit arbitrary log flux scaling
+                # Instead of using radius and parallax
+                self.modelpar.append("log_flux_scaling")
+
+            else:
+                self.modelpar.append("radius")
+                self.modelpar.append("parallax")
+
+            if "flux_offset" in self.bounds:
+                self.modelpar.append("flux_offset")
 
             # Optional rotational broading
 
@@ -582,7 +604,7 @@ class FitModel:
                 else:
                     self.bounds["radius"] = (0.5, 5.0)
 
-            elif "radius" not in self.bounds:
+            elif "radius" not in self.bounds and "radius" in self.modelpar:
                 self.bounds["radius"] = (0.5, 5.0)
 
             self.n_planck = 0
@@ -1141,7 +1163,10 @@ class FitModel:
         # not be provided in the bounds dictionary
 
         if self.model != "powerlaw":
-            parallax = params[self.cube_index["parallax"]]
+            if "parallax" in self.cube_index:
+                parallax = params[self.cube_index["parallax"]]
+            else:
+                parallax = None
 
         for item in self.fix_param:
             # Add the fixed parameters to their dictionaries
@@ -1215,24 +1240,36 @@ class FitModel:
                 del param_dict["radius_1"]
 
             else:
-                try:
-                    flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
-                        1e3 * constants.PARSEC / parallax
-                    ) ** 2
+                if parallax is None:
+                    if "flux_scaling" in self.cube_index:
+                        flux_scaling = params[self.cube_index["flux_scaling"]]
+                    else:
+                        flux_scaling = 10.**params[self.cube_index["log_flux_scaling"]]
 
-                except ZeroDivisionError:
-                    warnings.warn(
-                        f"Encountered a ZeroDivisionError when"
-                        f"calculating the flux scaling with "
-                        f"parallax = {parallax}. This error "
-                        f"should not have happened. Setting "
-                        f"the scaling to 1e100."
-                    )
+                else:
+                    try:
+                        flux_scaling = (param_dict["radius"] * constants.R_JUP) ** 2 / (
+                            1e3 * constants.PARSEC / parallax
+                        ) ** 2
 
-                    flux_scaling = 1e100
+                    except ZeroDivisionError:
+                        warnings.warn(
+                            f"Encountered a ZeroDivisionError when"
+                            f"calculating the flux scaling with "
+                            f"parallax = {parallax}. This error "
+                            f"should not have happened. Setting "
+                            f"the scaling to 1e100."
+                        )
 
-                # The scaling is applied manually because of the interpolation
-                del param_dict["radius"]
+                        flux_scaling = 1e100
+
+                    # The scaling is applied manually because of the interpolation
+                    del param_dict["radius"]
+
+                if "flux_offset" in self.cube_index:
+                    flux_offset = params[self.cube_index["flux_offset"]]
+                else:
+                    flux_offset = 0.0
 
         for item in self.spectrum:
             if item not in spec_scaling:
@@ -1331,9 +1368,11 @@ class FitModel:
 
                     if "radius" in self.modelpar:
                         phot_flux_0 *= flux_scaling
+                        phot_flux_0 += flux_offset
 
                     elif "radius_0" in self.modelpar:
                         phot_flux_0 *= flux_scaling_0
+                        phot_flux_0 += flux_offset
 
                     # Star 1
 
@@ -1347,9 +1386,11 @@ class FitModel:
 
                     if "radius" in self.modelpar:
                         phot_flux_1 *= flux_scaling
+                        phot_flux_1 += flux_offset
 
                     elif "radius_1" in self.modelpar:
                         phot_flux_1 *= flux_scaling_1
+                        phot_flux_1 += flux_offset
 
                     # Weighted flux of two stars
 
@@ -1364,6 +1405,7 @@ class FitModel:
                     )[0][0]
 
                     phot_flux *= flux_scaling
+                    phot_flux += flux_offset
 
             if disk_param:
                 phot_tmp = self.diskphot[i].spectrum_interp([disk_param["teff"]])[0][0]
@@ -1410,6 +1452,7 @@ class FitModel:
 
                 phot_flux = readmodel.get_flux(param_dict)[0]
                 phot_flux *= flux_scaling
+                phot_flux += flux_offset
 
                 del param_dict[f"phot_ext_{self.ext_filter}"]
                 del param_dict["ism_red"]
@@ -1501,9 +1544,11 @@ class FitModel:
 
                     if "radius" in self.modelpar:
                         model_flux_0 *= flux_scaling
+                        model_flux_0 += flux_offset
 
                     elif "radius_1" in self.modelpar:
                         model_flux_0 *= flux_scaling_0
+                        model_flux_0 += flux_offset
 
                     # Star 2
 
@@ -1517,9 +1562,11 @@ class FitModel:
 
                     if "radius" in self.modelpar:
                         model_flux_1 *= flux_scaling
+                        model_flux_1 += flux_offset
 
                     elif "radius_1" in self.modelpar:
                         model_flux_1 *= flux_scaling_1
+                        model_flux_1 += flux_offset
 
                     # Weighted flux of two stars
 
@@ -1535,6 +1582,7 @@ class FitModel:
 
                     # Scale the spectrum by (radius/distance)^2
                     model_flux *= flux_scaling
+                    model_flux += flux_offset
 
             # Veiling
             if (

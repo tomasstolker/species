@@ -836,6 +836,18 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("log_cloud_top")
         param[index] = r"$\log\,P_\mathrm{top}$"
 
+    if "flux_scaling" in param:
+        index = param.index("flux_scaling")
+        param[index] = r"$a_\mathrm{flux}$"
+
+    if "log_flux_scaling" in param:
+        index = param.index("log_flux_scaling")
+        param[index] = r"$\log\,a_\mathrm{flux}$"
+
+    if "flux_offset" in param:
+        index = param.index("flux_offset")
+        param[index] = r"$b_\mathrm{flux}$"
+
     return param
 
 

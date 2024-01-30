@@ -861,6 +861,17 @@ class ReadModel:
 
             flux *= scaling
 
+        elif "flux_scaling" in model_param:
+            flux *= model_param["flux_scaling"]
+
+        elif "log_flux_scaling" in model_param:
+            flux *= 10.0**model_param["log_flux_scaling"]
+
+        # Add optional offset to the flux
+
+        if "flux_offset" in model_param:
+            flux += model_param["flux_offset"]
+
         # Add blackbody disk component to the spectrum
 
         if "disk_teff" in model_param and "disk_radius" in model_param:
@@ -1310,6 +1321,17 @@ class ReadModel:
             ) ** 2
 
             flux *= scaling
+
+        elif "flux_scaling" in model_param:
+            flux *= model_param["flux_scaling"]
+
+        elif "log_flux_scaling" in model_param:
+            flux *= 10.0**model_param["log_flux_scaling"]
+
+        # Add optional offset to the flux
+
+        if "flux_offset" in model_param:
+            flux += model_param["flux_offset"]
 
         # Add blackbody disk component to the spectrum
 

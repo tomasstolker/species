@@ -648,8 +648,9 @@ class Database:
             :math:`R = 5000`). The argument is only used if
             ``wavel_range`` is not ``None``.
         teff_range : tuple(float, float), None
-            Effective temperature range (K) for adding a subset of the
-            model grid. The full parameter grid will be added if the
+            Range of effective temperatures (K) of which the spectra
+            are extracted from the TAR file and added to the HDF5
+            database. The full grid of spectra will be added if the
             argument is set to ``None``.
 
         Returns
