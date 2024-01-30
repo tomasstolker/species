@@ -1006,7 +1006,7 @@ class AtmosphericRetrieval:
             of 13 Mjup with an uncertainty of 3 Mjup. The
             parameter is not used if set to ``None``.
         multinest_kwargs : dict(str, any), None
-            Dictionary with any combination of outputfiles_basename, 
+            Dictionary with any combination of outputfiles_basename,
             resume, const_efficiency_mode, sampling_efficiency,
             n_live_points, evidence_tolerance.
         check_phot_press : float, None
@@ -1071,16 +1071,22 @@ class AtmosphericRetrieval:
             self.abund_nodes = None
 
         # set default gradient priors if applicable
-        default_grad_priors = {'1':(0.25,0.025),'2':(0.25,0.045),'3':(0.26,0.05),
-                               '4':(0.2,0.05),'5':(0.12,0.045),'6':(0.07,0.07)}
+        default_grad_priors = {
+            "1": (0.25, 0.025),
+            "2": (0.25, 0.045),
+            "3": (0.26, 0.05),
+            "4": (0.2, 0.05),
+            "5": (0.12, 0.045),
+            "6": (0.07, 0.07),
+        }
 
         if pt_profile == "gradient":
             if prior is None:
                 prior = {}
-            for i in range(1,7):
+            for i in range(1, 7):
                 if f"PTslope_{i}" not in prior:
                     prior[f"PTslope_{i}"] = default_grad_priors[str(i)]
-                
+
         # Get the MPI rank of the process
 
         try:
@@ -1547,7 +1553,7 @@ class AtmosphericRetrieval:
 
                 cube[cube_index["T_bottom"]] = tbottom
 
-                for i in range(1,7):
+                for i in range(1, 7):
                     if f"PTslope_{i}" in bounds:
                         t_i = (
                             bounds[f"PTslope_{i}"][0]
@@ -1765,19 +1771,19 @@ class AtmosphericRetrieval:
                                 ]
 
                             elif "K_lor_cut" in self.line_species:
-                                cube[
-                                    cube_index[f"K_lor_cut_{node_idx}"]
-                                ] = log_x_k_abund[node_idx]
+                                cube[cube_index[f"K_lor_cut_{node_idx}"]] = (
+                                    log_x_k_abund[node_idx]
+                                )
 
                             elif "K_burrows" in self.line_species:
-                                cube[
-                                    cube_index[f"K_burrows_{node_idx}"]
-                                ] = log_x_k_abund[node_idx]
+                                cube[cube_index[f"K_burrows_{node_idx}"]] = (
+                                    log_x_k_abund[node_idx]
+                                )
 
                             elif "K_allard" in self.line_species:
-                                cube[
-                                    cube_index[f"K_allard_{node_idx}"]
-                                ] = log_x_k_abund[node_idx]
+                                cube[cube_index[f"K_allard_{node_idx}"]] = (
+                                    log_x_k_abund[node_idx]
+                                )
 
                 # log10 abundances of the cloud species
 
@@ -3644,17 +3650,20 @@ class AtmosphericRetrieval:
         with open(radtrans_filename, "w", encoding="utf-8") as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
-
         # Set MultiNest optional arguments
-        
+
         if hasattr(self, "resume"):
-            raise DeprecationWarning("Setting the 'resume' keyword in `run_multinest`\
+            raise DeprecationWarning(
+                "Setting the 'resume' keyword in `run_multinest`\
                                      is deprecated in favor of including 'resume' in\
-                                     'multinest_kwargs' and will be removed in the future")
+                                     'multinest_kwargs' and will be removed in the future"
+            )
         if hasattr(self, "n_live_points"):
-            raise DeprecationWarning("Setting the 'n_live_points' keyword in `run_multinest`\
+            raise DeprecationWarning(
+                "Setting the 'n_live_points' keyword in `run_multinest`\
                                      is deprecated in favor of including 'n_live_points' in\
-                                     'multinest_kwargs' and will be removed in the future")
+                                     'multinest_kwargs' and will be removed in the future"
+            )
 
         if multinest_kwargs is None:
             multinest_kwargs = {}
@@ -3679,7 +3688,9 @@ class AtmosphericRetrieval:
             else:
                 sampling_efficiency = 0.8
         if const_efficiency_mode and sampling_efficiency > 0.075:
-            raise UserWarning("Sampling efficiency should be ~0.05 when using constant efficiency mode")
+            raise UserWarning(
+                "Sampling efficiency should be ~0.05 when using constant efficiency mode"
+            )
         if "evidence_tolerance" in multinest_kwargs:
             evidence_tolerance = multinest_kwargs["evidence_tolerance"]
         else:
@@ -3692,7 +3703,7 @@ class AtmosphericRetrieval:
 
         # Run the nested sampling with MultiNest
 
-        print("Sampling the posterior distribution with MultiNest...")        
+        print("Sampling the posterior distribution with MultiNest...")
 
         pymultinest.run(
             loglike_func,
