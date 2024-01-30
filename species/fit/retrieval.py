@@ -796,9 +796,6 @@ class AtmosphericRetrieval:
         fit_corr: Optional[List[str]] = None,
         cross_corr: Optional[List[str]] = None,
         n_live_points: int = 2000,
-        const_efficiency_mode: Optional[bool] = True,
-        sampling_efficiency: Optional[float] = 0.05,
-        evidence_tolerance: Optional[float] = 0.5,
         resume: bool = False,
         plotting: bool = False,
         check_isothermal: bool = False,
@@ -808,6 +805,7 @@ class AtmosphericRetrieval:
         temp_nodes: Optional[int] = None,
         abund_nodes: Optional[int] = None,
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        multinest_kwargs: Optional[Dict[str, any]] = None,
         check_phot_press: Optional[float] = None,
     ) -> None:
         """
@@ -1007,6 +1005,10 @@ class AtmosphericRetrieval:
             ``prior={'mass': (13., 3.)}`` for an expected mass
             of 13 Mjup with an uncertainty of 3 Mjup. The
             parameter is not used if set to ``None``.
+        multinest_kwargs : dict(str, any), None
+            Dictionary with any combination of outputfiles_basename, 
+            resume, const_efficiency_mode, sampling_efficiency,
+            n_live_points, evidence_tolerance.
         check_phot_press : float, None
             Remove the sample if the photospheric pressure that is
             calculated for the P-T profile is more than a factor
@@ -1076,8 +1078,8 @@ class AtmosphericRetrieval:
             if prior is None:
                 prior = {}
             for i in range(1,7):
-                if "PTslope_"+str(i) not in prior.keys():
-                    prior["PTslope_"+str(i)] = default_grad_priors[str(i)]
+                if f"PTslope_{i}" not in prior:
+                    prior[f"PTslope_{i}"] = default_grad_priors[str(i)]
                 
         # Get the MPI rank of the process
 
@@ -1540,21 +1542,21 @@ class AtmosphericRetrieval:
                         * cube[cube_index["T_bottom"]]
                     )
                 else:
-                    # Default: 2000 - 12000 K
-                    tbottom = 2000.0 + 10000.0 * cube[cube_index["T_bottom"]]
+                    # Default: 500 - 15000 K
+                    tbottom = 500.0 + 15000.0 * cube[cube_index["T_bottom"]]
 
                 cube[cube_index["T_bottom"]] = tbottom
 
                 for i in range(1,7):
-                    if "PTslope_"+str(i) in bounds:
+                    if f"PTslope_{i}" in bounds:
                         t_i = (
-                            bounds["PTslope_"+str(i)][0]
-                            + (bounds["PTslope_"+str(i)][1] - bounds["PTslope_"+str(i)][0])
-                            * cube[cube_index["PTslope_"+str(i)]]
+                            bounds[f"PTslope_{i}"][0]
+                            + (bounds[f"PTslope_{i}"][1] - bounds[f"PTslope_{i}"][0])
+                            * cube[cube_index[f"PTslope_{i}"]]
                         )
                     else:
-                        t_i = 0.0 + 1.0 * cube[cube_index["PTslope_"+str(i)]]
-                    cube[cube_index["PTslope_"+str(i)]] = t_i
+                        t_i = 0.0 + 1.0 * cube[cube_index[f"PTslope_{i}"]]
+                    cube[cube_index[f"PTslope_{i}"]] = t_i
 
             elif pt_profile == "monotonic":
                 # Free temperature node (K) between 300 and
@@ -3642,11 +3644,55 @@ class AtmosphericRetrieval:
         with open(radtrans_filename, "w", encoding="utf-8") as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
+
+        # Set MultiNest optional arguments
+        
+        if hasattr(self, "resume"):
+            raise DeprecationWarning("Setting the 'resume' keyword in `run_multinest`\
+                                     is deprecated in favor of including 'resume' in\
+                                     'multinest_kwargs' and will be removed in the future")
+        if hasattr(self, "n_live_points"):
+            raise DeprecationWarning("Setting the 'n_live_points' keyword in `run_multinest`\
+                                     is deprecated in favor of including 'n_live_points' in\
+                                     'multinest_kwargs' and will be removed in the future")
+
+        if multinest_kwargs is None:
+            multinest_kwargs = {}
+        if "out_basename" in multinest_kwargs:
+            out_basename = multinest_kwargs["out_basename"]
+        else:
+            out_basename = os.path.join(self.output_folder, "retrieval_")
+        if "resume" in multinest_kwargs:
+            resume = multinest_kwargs["resume"]
+        else:
+            if not hasattr(self, "resume"):
+                resume = False
+        if "const_efficiency_mode" in multinest_kwargs:
+            const_efficiency_mode = multinest_kwargs["const_efficiency_mode"]
+        else:
+            const_efficiency_mode = True
+        if "sampling_efficiency" in multinest_kwargs:
+            sampling_efficiency = multinest_kwargs["sampling_efficiency"]
+        else:
+            if const_efficiency_mode:
+                sampling_efficiency = 0.05
+            else:
+                sampling_efficiency = 0.8
+        if const_efficiency_mode and sampling_efficiency > 0.075:
+            raise UserWarning("Sampling efficiency should be ~0.05 when using constant efficiency mode")
+        if "evidence_tolerance" in multinest_kwargs:
+            evidence_tolerance = multinest_kwargs["evidence_tolerance"]
+        else:
+            evidence_tolerance = 0.5
+        if "n_live_points" in multinest_kwargs:
+            n_live_points = multinest_kwargs["n_live_points"]
+        else:
+            if not hasattr(self, "n_live_points"):
+                n_live_points = 2000
+
         # Run the nested sampling with MultiNest
 
-        print("Sampling the posterior distribution with MultiNest...")
-
-        out_basename = os.path.join(self.output_folder, "retrieval_")
+        print("Sampling the posterior distribution with MultiNest...")        
 
         pymultinest.run(
             loglike_func,
