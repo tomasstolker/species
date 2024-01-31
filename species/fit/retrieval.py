@@ -421,6 +421,10 @@ class AtmosphericRetrieval:
         self.pt_profile = None
         self.quenching = None
         self.prior = None
+        self.bounds = None
+        self.cube_index = None
+        self.rt_object = None
+        self.lowres_radtrans = None
 
         # Weighting of the photometric and spectroscopic data
 
@@ -444,7 +448,85 @@ class AtmosphericRetrieval:
             print(f"   - {item} = {self.weights[item]:.2e}")
 
     @typechecked
-    def set_parameters(
+    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
+        """
+        Function for downsampling the ``c-k`` opacities from
+        :math:`\\lambda/\\Delta\\lambda = 1000` to a smaller wavelength
+        binning. The downsampled opacities should be stored in the
+        `opacities/lines/corr_k/` folder of ``pRT_input_data_path``.
+
+        Parameters
+        ----------
+        spec_res : float
+            Spectral resolution, :math:`\\lambda/\\Delta\\lambda`, to
+            which the opacities will be downsampled.
+        out_folder : str
+            Path of the output folder where the downsampled opacities
+            will be stored.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        from petitRADTRANS.radtrans import Radtrans
+
+        # https://petitradtrans.readthedocs.io/en/latest/content/notebooks/Rebinning_opacities.html
+
+        rt_object = Radtrans(
+            line_species=self.line_species,
+            rayleigh_species=["H2", "He"],
+            cloud_species=self.cloud_species_full.copy(),
+            continuum_opacities=["H2-H2", "H2-He"],
+            wlen_bords_micron=(0.1, 251.0),
+            mode="c-k",
+            test_ck_shuffle_comp=self.scattering,
+            do_scat_emis=self.scattering,
+        )
+
+        mol_masses = {}
+
+        for item in self.line_species:
+            if item[-8:] == "_all_iso":
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            elif item[-14:] == "_all_iso_Chubb":
+                mol_masses[item[:-14]] = Formula(item[:-14]).isotope.massnumber
+
+            elif item[-15:] == "_all_iso_HITEMP":
+                mol_masses[item[:-15]] = Formula(item[:-15]).isotope.massnumber
+
+            elif item[-7:] == "_HITEMP":
+                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
+
+            elif item[-7:] == "_allard":
+                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
+
+            elif item[-8:] == "_burrows":
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            elif item[-8:] == "_lor_cut":
+                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
+
+            elif item[-11:] == "_all_Exomol":
+                mol_masses[item[:-11]] = Formula(item[:-11]).isotope.massnumber
+
+            elif item[-9:] == "_all_Plez":
+                mol_masses[item[:-9]] = Formula(item[:-9]).isotope.massnumber
+
+            elif item[-5:] == "_Plez":
+                mol_masses[item[:-5]] = Formula(item[:-5]).isotope.massnumber
+
+            else:
+                mol_masses[item] = Formula(item).isotope.massnumber
+
+        rt_object.write_out_rebin(
+            spec_res, path=out_folder, species=self.line_species, masses=mol_masses
+        )
+
+    @typechecked
+    def _set_parameters(
         self,
         bounds: dict,
         rt_object,
@@ -682,85 +764,7 @@ class AtmosphericRetrieval:
             print(f"   - {item}")
 
     @typechecked
-    def rebin_opacities(self, spec_res: float, out_folder: str = "rebin_out") -> None:
-        """
-        Function for downsampling the ``c-k`` opacities from
-        :math:`\\lambda/\\Delta\\lambda = 1000` to a smaller wavelength
-        binning. The downsampled opacities should be stored in the
-        `opacities/lines/corr_k/` folder of ``pRT_input_data_path``.
-
-        Parameters
-        ----------
-        spec_res : float
-            Spectral resolution, :math:`\\lambda/\\Delta\\lambda`, to
-            which the opacities will be downsampled.
-        out_folder : str
-            Path of the output folder where the downsampled opacities
-            will be stored.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        from petitRADTRANS.radtrans import Radtrans
-
-        # https://petitradtrans.readthedocs.io/en/latest/content/notebooks/Rebinning_opacities.html
-
-        rt_object = Radtrans(
-            line_species=self.line_species,
-            rayleigh_species=["H2", "He"],
-            cloud_species=self.cloud_species_full.copy(),
-            continuum_opacities=["H2-H2", "H2-He"],
-            wlen_bords_micron=(0.1, 251.0),
-            mode="c-k",
-            test_ck_shuffle_comp=self.scattering,
-            do_scat_emis=self.scattering,
-        )
-
-        mol_masses = {}
-
-        for item in self.line_species:
-            if item[-8:] == "_all_iso":
-                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
-
-            elif item[-14:] == "_all_iso_Chubb":
-                mol_masses[item[:-14]] = Formula(item[:-14]).isotope.massnumber
-
-            elif item[-15:] == "_all_iso_HITEMP":
-                mol_masses[item[:-15]] = Formula(item[:-15]).isotope.massnumber
-
-            elif item[-7:] == "_HITEMP":
-                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
-
-            elif item[-7:] == "_allard":
-                mol_masses[item[:-7]] = Formula(item[:-7]).isotope.massnumber
-
-            elif item[-8:] == "_burrows":
-                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
-
-            elif item[-8:] == "_lor_cut":
-                mol_masses[item[:-8]] = Formula(item[:-8]).isotope.massnumber
-
-            elif item[-11:] == "_all_Exomol":
-                mol_masses[item[:-11]] = Formula(item[:-11]).isotope.massnumber
-
-            elif item[-9:] == "_all_Plez":
-                mol_masses[item[:-9]] = Formula(item[:-9]).isotope.massnumber
-
-            elif item[-5:] == "_Plez":
-                mol_masses[item[:-5]] = Formula(item[:-5]).isotope.massnumber
-
-            else:
-                mol_masses[item] = Formula(item).isotope.massnumber
-
-        rt_object.write_out_rebin(
-            spec_res, path=out_folder, species=self.line_species, masses=mol_masses
-        )
-
-    @typechecked
-    def prior_transform(
+    def _prior_transform(
         self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
     ):
         """
@@ -1611,7 +1615,7 @@ class AtmosphericRetrieval:
         return cube
 
     @typechecked
-    def lnlike_func(
+    def _lnlike_func(
         self,
         cube,
         bounds: Dict[str, Tuple[float, float]],
@@ -2958,7 +2962,7 @@ class AtmosphericRetrieval:
         return ln_prior + ln_like
 
     @typechecked
-    def lnprior_dynesty(
+    def _lnprior_dynesty(
         self,
         cube: np.ndarray,
         bounds: Dict[str, Tuple[float, float]],
@@ -2984,10 +2988,10 @@ class AtmosphericRetrieval:
             Cube with the sampled model parameters.
         """
 
-        return self.prior_transform(cube, bounds, cube_index)
+        return self._prior_transform(cube, bounds, cube_index)
 
     @typechecked
-    def lnlike_dynesty(
+    def _lnlike_dynesty(
         self,
         params,
         bounds: Dict[str, Tuple[float, float]],
@@ -3022,10 +3026,10 @@ class AtmosphericRetrieval:
             Log-likelihood.
         """
 
-        return self.lnlike_func(params, bounds, cube_index, rt_object, lowres_radtrans)
+        return self._lnlike_func(params, bounds, cube_index, rt_object, lowres_radtrans)
 
     @typechecked
-    def run_retrieval(
+    def setup_retrieval(
         self,
         bounds: dict,
         chemistry: str = "equilibrium",
@@ -3033,9 +3037,6 @@ class AtmosphericRetrieval:
         pt_profile: str = "molliere",
         fit_corr: Optional[List[str]] = None,
         cross_corr: Optional[List[str]] = None,
-        n_live_points: int = 2000,
-        resume: bool = False,
-        plotting: bool = False,
         check_isothermal: bool = False,
         pt_smooth: Optional[float] = 0.3,
         abund_smooth: Optional[float] = 0.3,
@@ -3044,7 +3045,6 @@ class AtmosphericRetrieval:
         abund_nodes: Optional[int] = None,
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
         check_phot_press: Optional[float] = None,
-        sampler: str = "multinest",
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -3181,13 +3181,6 @@ class AtmosphericRetrieval:
             only be used for high-resolution spectra. Currently, it
             only supports spectra that have been shifted to the
             planet's rest frame.
-        n_live_points : int
-            Number of live points used for the nested sampling.
-        resume : bool
-            Resume from a previous run.
-        plotting : bool
-            Plot sample results for testing purpose. Not recommended to
-            use when running the full retrieval.
         check_isothermal : bool
             Check if there is an isothermal region below 1 bar. If so,
             discard the sample. This parameter is experimental and has
@@ -3273,7 +3266,6 @@ class AtmosphericRetrieval:
         self.quenching = quenching
         self.fit_corr = fit_corr
         self.prior = prior
-        self.plotting = plotting
         self.check_isothermal = check_isothermal
         self.check_flux = check_flux
         self.check_phot_press = check_phot_press
@@ -3338,9 +3330,6 @@ class AtmosphericRetrieval:
         if mpi_rank == 0 and not os.path.exists(self.output_folder):
             print(f"Creating output folder: {self.output_folder}")
             os.mkdir(self.output_folder)
-
-        # if not os.path.exists(self.output_folder):
-        #     raise ValueError(f'The output folder (\'{self.output_folder}\') does not exist.')
 
         # Import petitRADTRANS here because it is slow
 
@@ -3439,7 +3428,7 @@ class AtmosphericRetrieval:
 
         # Create list with parameters for MultiNest
 
-        self.set_parameters(bounds, rt_object)
+        self._set_parameters(bounds, rt_object)
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -3650,108 +3639,21 @@ class AtmosphericRetrieval:
         with open(radtrans_filename, "w", encoding="utf-8") as json_file:
             json.dump(radtrans_dict, json_file, ensure_ascii=False, indent=4)
 
-        # Run the actual parameter retrieval
+        # TODO This should be implemented differently
+        # Start out with attributes when initializing
 
-        if sampler == "multinest":
-            # Nested sampling with MultiNest
-
-            @typechecked
-            def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
-                """
-                Function to transform the unit cube into the parameter
-                cube. It is not clear how to pass additional arguments
-                to the function, therefore it is placed here. Used when
-                the ``sampler`` is set to ``"multinest"``.
-
-                Parameters
-                ----------
-                cube : pymultinest.run.LP_c_double
-                    Unit cube.
-                n_dim : int
-                    Number of dimensions.
-                n_param : int
-                    Number of parameters.
-
-                Returns
-                -------
-                NoneType
-                    None
-                """
-
-                self.prior_transform(cube, bounds, cube_index)
-
-            @typechecked
-            def lnlike_multinest(
-                params, n_dim: int, n_param: int
-            ) -> Union[float, np.float64]:
-                """
-                Function to calculate the log-likelihood for the
-                sampled parameter cube. Used when the ``sampler`` is
-                set to ``"multinest"``.
-
-                Parameters
-                ----------
-                params : pymultinest.run.LP_c_double
-                    Cube with sampled model parameters.
-                n_dim : int
-                    Number of dimensions. This parameter is mandatory but not used by the function.
-                n_param : int
-                    Number of parameters. This parameter is mandatory but not used by the function.
-
-                Returns
-                -------
-                float
-                    Log-likelihood.
-                """
-
-                return self.lnlike_func(params, bounds, cube_index, rt_object, lowres_radtrans)
-
-            print("Sampling the posterior distribution with MultiNest...")
-
-            out_basename = os.path.join(self.output_folder, "retrieval_")
-
-            pymultinest.run(
-                lnlike_multinest,
-                lnprior_multinest,
-                len(self.parameters),
-                outputfiles_basename=out_basename,
-                resume=resume,
-                verbose=True,
-                const_efficiency_mode=True,
-                sampling_efficiency=0.05,
-                n_live_points=n_live_points,
-                evidence_tolerance=0.5,
-            )
-
-        elif sampler == "dynesty":
-            # Nested sampling with Dynesty
-
-            print("Sampling the posterior distribution with Dynesty...")
-
-            # TODO
-            # self.lnprior_dynesty(cube, bounds, cube_index)
-            # self.lnlike_dynesty(bounds, cube_index, rt_object, lowres_radtrans)
+        self.bounds = bounds
+        self.cube_index = cube_index
+        self.rt_object = rt_object
+        self.lowres_radtrans = lowres_radtrans
 
     @typechecked
     def run_multinest(
         self,
-        bounds: dict,
-        chemistry: str = "equilibrium",
-        quenching: Optional[str] = "pressure",
-        pt_profile: str = "molliere",
-        fit_corr: Optional[List[str]] = None,
-        cross_corr: Optional[List[str]] = None,
         n_live_points: int = 2000,
         resume: bool = False,
         plotting: bool = False,
-        check_isothermal: bool = False,
-        pt_smooth: Optional[float] = 0.3,
-        abund_smooth: Optional[float] = 0.3,
-        check_flux: Optional[float] = None,
-        temp_nodes: Optional[int] = None,
-        abund_nodes: Optional[int] = None,
-        prior: Optional[Dict[str, Tuple[float, float]]] = None,
-        check_phot_press: Optional[float] = None,
+        **kwargs,
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -3779,193 +3681,15 @@ class AtmosphericRetrieval:
 
         Parameters
         ----------
-        bounds : dict
-            The boundaries that are used for the uniform or
-            log-uniform priors. The dictionary contains the
-            parameters as key and the boundaries as value. The
-            boundaries are provided as a tuple with two values
-            (lower and upper boundary). Fixing a parameter is
-            possible by providing the same value as lower and
-            upper boundary of the parameter (e.g.
-            ``bounds={'logg': (4., 4.)``. An explanation of the
-            mandatory and optional parameters can be found in
-            the description of the ``model_param`` parameter of
-            :func:`species.read.read_radtrans.ReadRadtrans.get_model`.
-            Additional parameters that can specifically be used
-            for a retrieval are listed below.
 
-            Scaling parameters (mandatory):
-
-                - The radius (:math:`R_\\mathrm{J}`), ``radius``,
-                  is a mandatory parameter to include. It is used
-                  for scaling the flux from the planet surface to
-                  the observer.
-
-                - The parallax (mas), ``parallax``, is also used
-                  for scaling the flux. However, this parameter
-                  is automatically included in the retrieval with
-                  a Gaussian prior (based on the object data of
-                  ``object_name``). So this parameter does not
-                  need to be included in ``bounds``).
-
-            Calibration parameters (optional):
-
-                - For each spectrum/instrument, three optional
-                  parameters can be fitted to account for biases in
-                  the calibration: a scaling of the flux, a
-                  constant inflation of the uncertainties, and a
-                  constant offset in the wavelength solution.
-
-                - For example, ``bounds={'SPHERE': ((0.8, 1.2),
-                  (-16., -14.), (-0.01, 0.01))}`` if the scaling is
-                  fitted between 0.8 and 1.2, each uncertainty is
-                  inflated with a constant value between
-                  :math:`10^{-16}` and :math:`10^{-14}` W
-                  :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`,
-                  and a constant wavelength offset between
-                  -0.01 and 0.01 :math:`\\mu\\mathrm{m}`
-
-                - The dictionary key should be the same as to the
-                  database tag of the spectrum. For example,
-                  ``{'SPHERE': ((0.8, 1.2), (-16., -14.),
-                  (-0.01, 0.01))}`` if the spectrum is stored as
-                  ``'SPHERE'`` with
-                  :func:`~species.data.database.Database.add_object`.
-
-                - Each of the three calibration parameters can be set
-                  to ``None`` in which case the parameter is not used.
-                  For example, ``bounds={'SPHERE': ((0.8, 1.2), None,
-                  None)}``.
-
-                - No calibration parameters are fitted if the
-                  spectrum name is not included in ``bounds``.
-
-            Prior parameters (optional):
-
-                - The ``log_sigma_alpha`` parameter can be used when
-                  ``pt_profile='molliere'``. This prior penalizes
-                  samples if the parametrized, pressure-dependent
-                  opacity is not consistent with the atmosphere's
-                  non-gray opacity structure (see
-                  `GRAVITY Collaboration et al. 2020
-                  <https://ui.adsabs.harvard.edu/abs/2020A%26A...633A
-                  .110G/abstract>`_ for details).
-
-                - The ``log_gamma_r`` and ``log_beta_r`` parameters
-                  can be included when ``pt_profile='monotonic'`` or
-                  ``pt_profile='free'``. A prior will be applied
-                  that penalizes wiggles in the P-T profile through
-                  the second derivative of the temperature structure
-                  (see `Line et al. (2015)
-                  <https://ui.adsabs.harvard.edu/abs/2015ApJ...807
-                  ..183L/abstract>`_ for details).
-
-        sampler : str
-            Sampler used for the Bayesian inference. Currently, only
-            ``'multinest'`` is supported.
-        chemistry : str
-            The chemistry type: 'equilibrium' for equilibrium
-            chemistry or 'free' for retrieval of free abundances.
-        quenching : str, None
-            Quenching type for CO/CH4/H2O abundances. Either the
-            quenching pressure (bar) is a free parameter
-            (``quenching='pressure'``) or the quenching pressure is
-            calculated from the mixing and chemical timescales
-            (``quenching='diffusion'``). The quenching is not
-            applied if the argument is set to ``None``.
-        pt_profile : str
-            The parametrization for the pressure-temperature profile
-            ('molliere', 'free', 'monotonic', 'eddington').
-        fit_corr : list(str), None
-            List with spectrum names for which the correlation lengths
-            and fractional amplitudes are fitted (see `Wang et al. 2020
-            <https://ui.adsabs.harvard.edu/abs/2020AJ....159..263W/
-            abstract>`_) to model the covariances in case these are
-            not available.
-        cross_corr : list(str), None
-            List with spectrum names for which a cross-correlation to
-            log-likelihood mapping is used (see `Brogi & Line 2019
-            <https://ui.adsabs.harvard.edu/abs/2019AJ....157..114B/
-            abstract>`_) instead of a direct comparison of model an
-            data with a least-squares approach. This parameter should
-            only be used for high-resolution spectra. Currently, it
-            only supports spectra that have been shifted to the
-            planet's rest frame.
         n_live_points : int
-            Number of live points used for the nested sampling.
+            Number of live points used by the nested sampling
+            with ``MultiNest``.
         resume : bool
-            Resume from a previous run.
+            Resume the posterior sampling from a previous run.
         plotting : bool
-            Plot sample results for testing purpose. Not recommended to
-            use when running the full retrieval.
-        check_isothermal : bool
-            Check if there is an isothermal region below 1 bar. If so,
-            discard the sample. This parameter is experimental and has
-            not been properly implemented.
-        pt_smooth : float, None
-            Standard deviation of the Gaussian kernel that is used for
-            smoothing the P-T profile, after the temperature nodes
-            have been interpolated to a higher pressure resolution.
-            Only required with ```pt_profile='free'``` or
-            ```pt_profile='monotonic'```. The argument should be given
-            as :math:`\\log10{P/\\mathrm{bar}}`, with the default value
-            set to 0.3 dex. No smoothing is applied if the argument
-            if set to 0 or ``None``. The ``pt_smooth`` parameter can
-            also be included in ``bounds``, in which case the value
-            is fitted and the ``pt_smooth`` argument is ignored.
-        abund_smooth : float, None
-            Standard deviation of the Gaussian kernel that is used for
-            smoothing the abundance profiles, after the abundance nodes
-            have been interpolated to a higher pressure resolution.
-            Only required with ```chemistry='free'``` and
-            ``abund_nodes`` is not set to ``None``. The argument should
-            be given as :math:`\\log10{P/\\mathrm{bar}}`, with the
-            default value set to 0.3 dex. No smoothing is applied if
-            the argument if set to 0 or ``None``. The ``pt_smooth``
-            parameter can also be included in ``bounds``, in which
-            case the value is fitted and the ``abund_smooth`` argument
-            is ignored.
-        check_flux : float, None
-            Relative tolerance for enforcing a constant bolometric
-            flux at all pressures layers. By default, only the
-            radiative flux is used for the bolometric flux. The
-            convective flux component is also included if the
-            ``mix_length`` parameter (relative to the pressure scale
-            height) is included in the ``bounds`` dictionary. To use
-            ``check_flux``, the opacities should be recreated with
-            :func:`~species.fit.retrieval.AtmosphericRetrieval.rebin_opacities`
-            at $R = 10$ (i.e. ``spec_res=10``) and placed in the
-            folder of ``pRT_input_data_path``. This parameter is
-            experimental and has not been fully tested.
-        temp_nodes : int, None
-            Number of free temperature nodes that are used with
-            ``pt_profile='monotonic'`` or ``pt_profile='free'``.
-        abund_nodes : int, None
-            Number of free abundances nodes that are used with
-            ``chemistry='free'``. Constant abundances with
-            altitude are used if the argument is set to ``None``.
-        prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple
-            parameters. The prior can be set for any of the
-            atmosphere or calibration parameters, for example
-            ``prior={'logg': (4.2, 0.1)}``. Additionally, a
-            prior can be set for the mass, for example
-            ``prior={'mass': (13., 3.)}`` for an expected mass
-            of 13 Mjup with an uncertainty of 3 Mjup. The
-            parameter is not used if set to ``None``.
-        check_phot_press : float, None
-            Remove the sample if the photospheric pressure that is
-            calculated for the P-T profile is more than a factor
-            ``check_phot_press`` larger or smaller than the
-            photospheric pressure that is calculated from the
-            Rosseland mean opacity of the non-gray opacities of
-            the atmospheric structure (see Eq. 7 in GRAVITY
-            Collaboration et al. 2020, where a factor of 5 was
-            used). This parameter can only in combination with
-            ``pt_profile='molliere'``. The parameter is not used
-            used if set to ``None``. Finally, since samples are
-            removed when not full-filling this requirement, the
-            runtime of the retrieval may increase significantly.
+            Plot sample results for testing purpose. It is recommended
+            to only set the argument to ``True`` for testing purposes.
 
         Returns
         -------
@@ -3973,23 +3697,156 @@ class AtmosphericRetrieval:
             None
         """
 
-        self.run_retrieval(
-            bounds=bounds,
-            chemistry=chemistry,
-            quenching=quenching,
-            pt_profile=pt_profile,
-            fit_corr=fit_corr,
-            cross_corr=cross_corr,
-            n_live_points=n_live_points,
+        self.plotting = plotting
+
+        if not hasattr(self, "bounds"):
+            # For backward compatibility
+            # setup_retrieval was not called so the retrieval
+            # parameters were passed to run_retrieval instead
+
+            chemistry = kwargs.get("chemistry", "equilibrium")
+            quenching = kwargs.get("quenching", "pressure")
+            pt_profile = kwargs.get("pt_profile", "molliere")
+            fit_corr = kwargs.get("fit_corr", None)
+            cross_corr = kwargs.get("cross_corr", None)
+            check_isothermal = kwargs.get("check_isothermal", False)
+            pt_smooth = kwargs.get("pt_smooth", 0.3)
+            abund_smooth = kwargs.get("abund_smooth", 0.3)
+            check_flux = kwargs.get("check_flux", None)
+            temp_nodes = kwargs.get("temp_nodes", None)
+            abund_nodes = kwargs.get("abund_nodes", None)
+            prior = kwargs.get("prior", None)
+            check_phot_press = kwargs.get("check_phot_press", None)
+
+            self.setup_retrieval(
+                bounds=kwargs["bounds"],
+                chemistry=chemistry,
+                quenching=quenching,
+                pt_profile=pt_profile,
+                fit_corr=fit_corr,
+                cross_corr=cross_corr,
+                check_isothermal=check_isothermal,
+                pt_smooth=pt_smooth,
+                abund_smooth=abund_smooth,
+                check_flux=check_flux,
+                temp_nodes=temp_nodes,
+                abund_nodes=abund_nodes,
+                prior=prior,
+                check_phot_press=check_phot_press,
+            )
+
+        @typechecked
+        def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
+            """
+            Function to transform the unit cube into the parameter
+            cube. It is not clear how to pass additional arguments
+            to the function, therefore it is placed here. Used when
+            the ``sampler`` is set to ``"multinest"``.
+
+            Parameters
+            ----------
+            cube : pymultinest.run.LP_c_double
+                Unit cube.
+            n_dim : int
+                Number of dimensions.
+            n_param : int
+                Number of parameters.
+
+            Returns
+            -------
+            NoneType
+                None
+            """
+
+            self._prior_transform(cube, self.bounds, self.cube_index)
+
+        @typechecked
+        def _lnlike_multinest(
+            params, n_dim: int, n_param: int
+        ) -> Union[float, np.float64]:
+            """
+            Function to calculate the log-likelihood for the
+            sampled parameter cube. Used when the ``sampler`` is
+            set to ``"multinest"``.
+
+            Parameters
+            ----------
+            params : pymultinest.run.LP_c_double
+                Cube with sampled model parameters.
+            n_dim : int
+                Number of dimensions. This parameter is mandatory but not used by the function.
+            n_param : int
+                Number of parameters. This parameter is mandatory but not used by the function.
+
+            Returns
+            -------
+            float
+                Log-likelihood.
+            """
+
+            return self._lnlike_func(
+                params,
+                self.bounds,
+                self.cube_index,
+                self.rt_object,
+                self.lowres_radtrans,
+            )
+
+        print("Sampling the posterior distribution with MultiNest...")
+
+        out_basename = os.path.join(self.output_folder, "retrieval_")
+
+        pymultinest.run(
+            _lnlike_multinest,
+            _lnprior_multinest,
+            len(self.parameters),
+            outputfiles_basename=out_basename,
             resume=resume,
-            plotting=plotting,
-            check_isothermal=check_isothermal,
-            pt_smooth=pt_smooth,
-            abund_smooth=abund_smooth,
-            check_flux=check_flux,
-            temp_nodes=temp_nodes,
-            abund_nodes=abund_nodes,
-            prior=prior,
-            check_phot_press=check_phot_press,
-            sampler="multinest",
+            verbose=True,
+            const_efficiency_mode=True,
+            sampling_efficiency=0.05,
+            n_live_points=n_live_points,
+            evidence_tolerance=0.5,
         )
+
+    @typechecked
+    def run_dynesty(
+        self,
+        n_live_points: int = 2000,
+        resume: bool = False,
+        plotting: bool = False,
+    ) -> None:
+        """
+        Function for running the atmospheric retrieval. The parameter
+        estimation and computation of the marginalized likelihood (i.e.
+        model evidence), is done with ``Dynesty``.
+
+        When using MPI, it is also required to install ``mpi4py`` (e.g.
+        ``pip install mpi4py``), otherwise an error may occur when the
+        ``output_folder`` is created by multiple processes.
+
+        Parameters
+        ----------
+
+        n_live_points : int
+            Number of live points used by the nested sampling
+            with ``MultiNest``.
+        resume : bool
+            Resume the posterior sampling from a previous run.
+        plotting : bool
+            Plot sample results for testing purpose. It is recommended
+            to only set the argument to ``True`` for testing purposes.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        self.plotting = plotting
+
+        print("Sampling the posterior distribution with Dynesty...")
+
+        # TODO
+        # self.lnprior_dynesty(cube, bounds, cube_index)
+        # self.lnlike_dynesty(bounds, cube_index, rt_object, lowres_radtrans)
