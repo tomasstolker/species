@@ -1074,7 +1074,7 @@ class FitModel:
         Parameters
         ----------
         params : np.ndarray, pymultinest.run.LP_c_double
-            Cube with physical parameters.
+            Cube with sampled model parameters.
         prior : dict(str, tuple(float, float))
             Dictionary with Gaussian priors for one or multiple
             parameters. The prior can be set for any of the atmosphere
@@ -1891,7 +1891,7 @@ class FitModel:
             Parameters
             ----------
             params : pymultinest.run.LP_c_double
-                Cube with physical parameters.
+                Cube with sampled model parameters.
             n_dim : int
                 Number of dimensions. This parameter is mandatory but not used by the function.
             n_param : int
@@ -2094,7 +2094,7 @@ class FitModel:
             Returns
             -------
             np.ndarray
-                Array with physical parameters.
+                Array with sampled model parameters.
             """
 
             params = cube.copy()
@@ -2126,7 +2126,7 @@ class FitModel:
             Parameters
             ----------
             params : np.ndarray
-                Array with physical parameters.
+                Array with sampled model parameters.
 
             Returns
             -------

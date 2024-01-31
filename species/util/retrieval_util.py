@@ -912,7 +912,7 @@ def calc_spectrum_clear(
                         f"Found {nan_count} NaN values in sampled abundance nodes."
                     )
 
-                    return None, None, None, np.zeros(1)
+                    return None, None, None
 
                 abund_in[abund_item] = pt_spline_interp(
                     knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
