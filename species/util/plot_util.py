@@ -550,6 +550,16 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("log_delta")
         param[index] = r"$\log\,\delta$"
 
+    if "T_bottom" in param:
+        index = param.index("T_bottom")
+        param[index] = r"$T_\mathrm{bottom}$ (K)"
+    
+    num_layer = 6 # could make a variable in the future
+    for i in range(num_layer):
+        if f"PTslope_{num_layer - i}" in param:
+            index = param.index(f"PTslope_{num_layer - i}")
+            param[index] = rf"$(dlnT/dlnP)_\mathrm{{P={i}bar}}$ (K)"
+
     if "log_p_quench" in param:
         index = param.index("log_p_quench")
         param[index] = r"$\log\,P_\mathrm{quench}$"
