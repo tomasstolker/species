@@ -18,7 +18,11 @@ from species.core import constants
 
 
 @typechecked
-def extract_tarfile(data_file: str, data_folder: str) -> None:
+def extract_tarfile(
+    data_file: str,
+    data_folder: str,
+    member_list: Optional[List[tarfile.TarInfo]] = None,
+) -> None:
     """
     Function for safely unpacking a TAR file (`see details
     <https://github.com/advisories/GHSA-gw9q-c7gh-j9vm>`_.
@@ -29,6 +33,9 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
         Path of the TAR file.
     data_folder : str
         Path of the data folder where the TAR file will be extracted.
+    member_list : list(tarfile.TarInfo), None
+        List with filenames that should be extracted from the TAR file.
+        All files are extracted if the argument is set to ``None``.
 
     Returns
     -------
@@ -37,6 +44,8 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
     """
 
     with tarfile.open(data_file) as tar:
+        if member_list is None:
+            member_list = tar.getmembers()
 
         @typechecked
         def is_within_directory(directory: str, target: str) -> bool:
@@ -51,18 +60,19 @@ def extract_tarfile(data_file: str, data_folder: str) -> None:
         def safe_extract(
             tar: tarfile.TarFile,
             path: str = ".",
-            members: Optional[List] = None,
+            member_list: Optional[List] = None,
             numeric_owner: bool = False,
         ) -> None:
-            for member in tar.getmembers():
+
+            for member in member_list:
                 member_path = Path(path) / Path(member.name)
 
                 if not is_within_directory(path, str(member_path)):
                     raise Exception("Attempted path traversal in TAR file")
 
-            tar.extractall(path, members, numeric_owner=numeric_owner)
+            tar.extractall(path, members=member_list, numeric_owner=numeric_owner)
 
-        safe_extract(tar, data_folder)
+        safe_extract(tar, data_folder, member_list=member_list)
 
 
 @typechecked

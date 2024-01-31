@@ -49,6 +49,39 @@ class Database:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
+    @staticmethod
+    @typechecked
+    def _print_section(
+        sect_title: str,
+        bound_char: str = "-",
+        extra_line: bool = True,
+    ) -> None:
+        """
+        Internal method for printing a section title.
+
+        Parameters
+        ----------
+        sect_title : str
+            Section title.
+        bound_char : str
+            Boundary character for around the section title.
+        extra_line : bool
+            Extra new line at the beginning.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        if extra_line:
+            print("\n" + len(sect_title) * bound_char)
+        else:
+            print(len(sect_title) * bound_char)
+
+        print(sect_title)
+        print(len(sect_title) * bound_char + "\n")
+
     @typechecked
     def list_content(self) -> None:
         """
@@ -63,7 +96,7 @@ class Database:
             None
         """
 
-        print("Database content:")
+        self._print_section("List database content")
 
         @typechecked
         def _descend(
@@ -73,8 +106,8 @@ class Database:
             seperator: str = "",
         ) -> None:
             """
-            Internal function for descending into an HDF5 dataset and
-            printing its content.
+            Internal function for descending into an HDF5
+            dataset and printing its content.
 
             Parameters
             ----------
@@ -101,14 +134,19 @@ class Database:
         with h5py.File(self.database, "r") as hdf_file:
             _descend(hdf_file)
 
-    @staticmethod
     @typechecked
-    def list_companions() -> List[str]:
+    def list_companions(self, verbose: bool = False) -> List[str]:
         """
         Function for printing an overview of the companion data that
         are stored in the database. It will return a list with all
         the companion names. Each name can be used as input for
         :class:`~species.read.read_object.ReadObject`.
+
+        Parameters
+        ----------
+        verbose : bool
+            Print details on the companion data or list only the names
+            of the companions for which data are available.
 
         Returns
         -------
@@ -123,54 +161,69 @@ class Database:
         with open(data_file, "r", encoding="utf-8") as json_file:
             comp_data = json.load(json_file)
 
-        spec_file = Path(__file__).parent.resolve() / "companion_data/companion_spectra.json"
+        spec_file = (
+            Path(__file__).parent.resolve() / "companion_data/companion_spectra.json"
+        )
 
         with open(spec_file, "r", encoding="utf-8") as json_file:
             comp_spec = json.load(json_file)
+
+        self._print_section("Companions with available data")
 
         comp_names = []
 
         for planet_name, planet_dict in comp_data.items():
             comp_names.append(planet_name)
 
-            print(f"Object name = {planet_name}")
+            if verbose:
+                print(f"Object name = {planet_name}")
 
-            if "parallax" in planet_dict:
-                parallax = planet_dict["parallax"]
-                print(f"Parallax (pc) = {parallax[0]} +/- {parallax[1]}")
+                if "parallax" in planet_dict:
+                    parallax = planet_dict["parallax"]
+                    print(f"Parallax (pc) = {parallax[0]} +/- {parallax[1]}")
 
-            if "distance" in planet_dict:
-                distance = planet_dict["distance"]
-                print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
+                if "distance" in planet_dict:
+                    distance = planet_dict["distance"]
+                    print(f"Distance (pc) = {distance[0]} +/- {distance[1]}")
 
-            app_mag = planet_dict["app_mag"]
+                app_mag = planet_dict["app_mag"]
 
-            for mag_key, mag_value in app_mag.items():
-                if isinstance(mag_value[0], list) or isinstance(mag_value[0], tuple):
-                    for item in mag_value:
-                        print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
-                else:
-                    print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
+                for mag_key, mag_value in app_mag.items():
+                    if isinstance(mag_value[0], list) or isinstance(
+                        mag_value[0], tuple
+                    ):
+                        for item in mag_value:
+                            print(f"{mag_key} (mag) = {item[0]} +/- {item[1]}")
+                    else:
+                        print(f"{mag_key} (mag) = {mag_value[0]} +/- {mag_value[1]}")
 
-            print("References:")
-            for ref_item in planet_dict["references"]:
-                print(f"   - {ref_item}")
+                print("References:")
+                for ref_item in planet_dict["references"]:
+                    print(f"   - {ref_item}")
 
-            if planet_name in comp_spec:
-                for key, value in comp_spec[planet_name].items():
-                    print(f"{key} spectrum from {value[3]}")
+                if planet_name in comp_spec:
+                    for key, value in comp_spec[planet_name].items():
+                        print(f"{key} spectrum from {value[3]}")
 
-            print()
+                print()
+
+            else:
+                print(planet_name)
 
         return comp_names
 
-    @staticmethod
     @typechecked
-    def available_models() -> Dict:
+    def available_models(self, verbose: bool = False) -> Dict:
         """
         Function for printing an overview of the available model grids
         that can be downloaded and added to the database with
         :class:`~species.data.database.Database.add_model`.
+
+        Parameters
+        ----------
+        verbose : bool
+            Print details on the grids of model spectra or list only
+            the names of the available model spectra.
 
         Returns
         -------
@@ -180,42 +233,50 @@ class Database:
             file in the ``species.data`` folder.
         """
 
+        self._print_section("Available model spectra")
+
         data_file = Path(__file__).parent.resolve() / "model_data/model_data.json"
 
         with open(data_file, "r", encoding="utf-8") as json_file:
             model_data = json.load(json_file)
 
-        print("Available model grids:", end="")
-
         for model_name, model_dict in model_data.items():
-            print(f"\n   - {model_dict['name']}:")
-            print(f"      - Label = {model_name}")
+            if verbose:
+                print(f"   - {model_dict['name']}:")
+                print(f"      - Label = {model_name}")
 
-            if "parameters" in model_dict:
-                print(f"      - Model parameters: {model_dict['parameters']}")
+                if "parameters" in model_dict:
+                    print(f"      - Model parameters: {model_dict['parameters']}")
 
-            if "teff range" in model_dict:
-                print(f"      - Teff range (K): {model_dict['teff range']}")
+                if "teff range" in model_dict:
+                    print(f"      - Teff range (K): {model_dict['teff range']}")
 
-            if "wavelength range" in model_dict:
-                print(
-                    f"      - Wavelength range (um): {model_dict['wavelength range']}"
-                )
+                if "wavelength range" in model_dict:
+                    print(
+                        f"      - Wavelength range (um): {model_dict['wavelength range']}"
+                    )
 
-            if "resolution" in model_dict:
-                print(f"      - Resolution lambda/Dlambda: {model_dict['resolution']}")
+                if "resolution" in model_dict:
+                    print(
+                        f"      - Resolution lambda/Dlambda: {model_dict['resolution']}"
+                    )
 
-            if "information" in model_dict:
-                print(f"      - Extra details: {model_dict['information']}")
+                if "information" in model_dict:
+                    print(f"      - Extra details: {model_dict['information']}")
 
-            if "file size" in model_dict:
-                print(f"      - File size: {model_dict['file size']}")
+                if "file size" in model_dict:
+                    print(f"      - File size: {model_dict['file size']}")
 
-            if "reference" in model_dict:
-                print(f"      - Reference: {model_dict['reference']}")
+                if "reference" in model_dict:
+                    print(f"      - Reference: {model_dict['reference']}")
 
-            if "url" in model_dict:
-                print(f"      - URL: {model_dict['url']}")
+                if "url" in model_dict:
+                    print(f"      - URL: {model_dict['url']}")
+
+                print()
+
+            else:
+                print(f"{model_dict['name']} -> label: {model_name}")
 
         return model_data
 
@@ -283,8 +344,12 @@ class Database:
 
         from species.data.companion_data.companion_spectra import companion_spectra
 
+        self._print_section("Add companion data")
+
         if isinstance(name, str):
-            name = list((name,))
+            name = [
+                name,
+            ]
 
         data_file = (
             Path(__file__).parent.resolve() / "companion_data/companion_data.json"
@@ -612,6 +677,7 @@ class Database:
         wavel_range: Optional[Tuple[float, float]] = None,
         spec_res: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
+        unpack_tar: bool = True,
     ) -> None:
         """
         Function for adding a grid of model spectra to the database.
@@ -648,9 +714,19 @@ class Database:
             :math:`R = 5000`). The argument is only used if
             ``wavel_range`` is not ``None``.
         teff_range : tuple(float, float), None
-            Effective temperature range (K) for adding a subset of the
-            model grid. The full parameter grid will be added if the
+            Range of effective temperatures (K) of which the spectra
+            are extracted from the TAR file and added to the HDF5
+            database. The full grid of spectra will be added if the
             argument is set to ``None``.
+        unpack_tar : bool
+            Unpack the TAR file with the model spectra in the
+            ``data_folder``. By default, the argument is set to
+            ``True`` such the TAR file with the model spectra
+            will be unpacked after downloading. In case the TAR
+            file had already been unpacked previously, the
+            argument can be set to ``False`` such that the
+            unpacking will be skipped. This can safe some time
+            with unpacking large TAR files.
 
         Returns
         -------
@@ -665,7 +741,13 @@ class Database:
                 hdf5_file.create_group("models")
 
             add_model_grid(
-                model, self.data_folder, hdf5_file, wavel_range, teff_range, spec_res
+                model,
+                self.data_folder,
+                hdf5_file,
+                wavel_range,
+                teff_range,
+                spec_res,
+                unpack_tar,
             )
 
     @typechecked
@@ -853,6 +935,8 @@ class Database:
         NoneType
             None
         """
+
+        self._print_section("Add object data")
 
         # Set default units
 
@@ -2496,70 +2580,75 @@ class Database:
 
         print(f"Getting object: {object_name}...", end="", flush=True)
 
-        hdf5_file = h5py.File(self.database, "r")
-        dset = hdf5_file[f"objects/{object_name}"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{object_name}" not in hdf5_file:
+                raise ValueError(
+                    "The argument of  'object_name' is "
+                    f"set to '{object_name}' but the "
+                    "data is not found in the database."
+                )
 
-        if "parallax" in dset:
-            parallax = np.asarray(dset["parallax"])
-        else:
-            parallax = None
+            dset = hdf5_file[f"objects/{object_name}"]
 
-        if "distance" in dset:
-            distance = np.asarray(dset["distance"])
-        else:
-            distance = None
+            if "parallax" in dset:
+                parallax = np.asarray(dset["parallax"])
+            else:
+                parallax = None
 
-        if inc_phot:
-            magnitude = {}
-            flux = {}
-            mean_wavel = {}
+            if "distance" in dset:
+                distance = np.asarray(dset["distance"])
+            else:
+                distance = None
 
-            from species.read.read_filter import ReadFilter
+            if inc_phot:
+                magnitude = {}
+                flux = {}
+                mean_wavel = {}
 
-            for observatory in dset.keys():
-                if observatory not in ["parallax", "distance", "spectrum"]:
-                    for filter_name in dset[observatory]:
-                        name = f"{observatory}/{filter_name}"
+                from species.read.read_filter import ReadFilter
 
-                        if isinstance(inc_phot, bool) or name in inc_phot:
-                            magnitude[name] = dset[name][0:2]
-                            flux[name] = dset[name][2:4]
+                for observatory in dset.keys():
+                    if observatory not in ["parallax", "distance", "spectrum"]:
+                        for filter_name in dset[observatory]:
+                            name = f"{observatory}/{filter_name}"
 
-            phot_filters = list(magnitude.keys())
+                            if isinstance(inc_phot, bool) or name in inc_phot:
+                                magnitude[name] = dset[name][0:2]
+                                flux[name] = dset[name][2:4]
 
-        else:
-            magnitude = None
-            flux = None
-            phot_filters = None
-            mean_wavel = None
+                phot_filters = list(magnitude.keys())
 
-        if inc_spec and f"objects/{object_name}/spectrum" in hdf5_file:
-            spectrum = {}
+            else:
+                magnitude = None
+                flux = None
+                phot_filters = None
+                mean_wavel = None
 
-            for item in hdf5_file[f"objects/{object_name}/spectrum"]:
-                data_group = f"objects/{object_name}/spectrum/{item}"
+            if inc_spec and f"objects/{object_name}/spectrum" in hdf5_file:
+                spectrum = {}
 
-                if isinstance(inc_spec, bool) or item in inc_spec:
-                    if f"{data_group}/covariance" not in hdf5_file:
-                        spectrum[item] = (
-                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
-                            None,
-                            None,
-                            hdf5_file[f"{data_group}"].attrs["specres"],
-                        )
+                for item in hdf5_file[f"objects/{object_name}/spectrum"]:
+                    data_group = f"objects/{object_name}/spectrum/{item}"
 
-                    else:
-                        spectrum[item] = (
-                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
-                            np.asarray(hdf5_file[f"{data_group}/covariance"]),
-                            np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
-                            hdf5_file[f"{data_group}"].attrs["specres"],
-                        )
+                    if isinstance(inc_spec, bool) or item in inc_spec:
+                        if f"{data_group}/covariance" not in hdf5_file:
+                            spectrum[item] = (
+                                np.asarray(hdf5_file[f"{data_group}/spectrum"]),
+                                None,
+                                None,
+                                hdf5_file[f"{data_group}"].attrs["specres"],
+                            )
 
-        else:
-            spectrum = None
+                        else:
+                            spectrum[item] = (
+                                np.asarray(hdf5_file[f"{data_group}/spectrum"]),
+                                np.asarray(hdf5_file[f"{data_group}/covariance"]),
+                                np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
+                                hdf5_file[f"{data_group}"].attrs["specres"],
+                            )
 
-        hdf5_file.close()
+            else:
+                spectrum = None
 
         if magnitude is not None:
             for filter_name in magnitude.keys():
