@@ -23,7 +23,7 @@
         "resolution": 10000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
     },
     "atmo-ceq": {
         "parameters": ["teff", "logg"],
@@ -33,7 +33,7 @@
         "resolution": 10000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
     },
     "atmo-neq-weak": {
         "parameters": ["teff", "logg"],
@@ -43,7 +43,7 @@
         "resolution": 10000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
     },
     "atmo-neq-strong": {
         "parameters": ["teff", "logg"],
@@ -53,7 +53,7 @@
         "resolution": 10000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
     },
     "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
@@ -63,7 +63,7 @@
         "resolution": 3000,
         "teff range": [800, 3000],
         "reference": "Petrus et al. (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P"
     },
     "blackbody": {
         "parameters": ["teff"],
@@ -138,7 +138,7 @@
         "resolution": 4000,
         "teff range": [1000, 3000],
         "reference": "Helling et al. (2008)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H"
     },
     "exo-rem": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -148,7 +148,7 @@
         "resolution": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
     },
     "exo-rem-highres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -158,7 +158,7 @@
         "resolution": 20000,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
     },
     "koester-wd": {
         "parameters": ["teff", "logg"],
@@ -168,7 +168,7 @@
         "resolution": 2000,
         "teff range": [5000, 80000],
         "reference": "Koester (2010)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K"
     },
     "morley-2012": {
         "parameters": ["teff", "logg", "fsed"],
@@ -178,7 +178,7 @@
         "resolution": 10000,
         "teff range": [400, 1300],
         "reference": "Morley et al. (2012)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M"
     },
     "petitcode-cool-clear": {
         "parameters": ["teff", "logg", "feh"],
@@ -188,7 +188,7 @@
         "resolution": 1000,
         "teff range": [500, 1000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
     },
     "petitcode-cool-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
@@ -199,7 +199,7 @@
         "teff range": [500, 850],
         "information": "log(Kzz) = 7.5",
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
     },
     "petitcode-hot-clear": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -209,7 +209,7 @@
         "resolution": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
     },
     "petitcode-hot-cloudy": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "fsed"],
@@ -219,7 +219,7 @@
         "resolution": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
     },
     "petitcode-linder2019-clear": {
         "parameters": ["teff", "logg", "feh"],
@@ -229,7 +229,7 @@
         "resolution": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L"
     },
     "petitcode-linder2019-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
@@ -239,7 +239,7 @@
         "resolution": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L"
     },
     "saumon2008-clear": {
         "parameters": ["teff", "logg"],

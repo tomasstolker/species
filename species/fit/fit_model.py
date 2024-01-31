@@ -1884,7 +1884,7 @@ class FitModel:
                     )
 
         @typechecked
-        def lnlike_multinest(params, n_dim: int, n_param: int) -> np.float64:
+        def lnlike_multinest(params, n_dim: int, n_param: int) -> Union[float, np.float64]:
             """
             Function for return the log-likelihood for the sampled parameter cube.
 
@@ -2119,7 +2119,7 @@ class FitModel:
             return params
 
         @typechecked
-        def lnlike_ultranest(params: np.ndarray) -> np.float64:
+        def lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
             """
             Function for returning the log-likelihood for the sampled parameter cube.
 
@@ -2134,7 +2134,13 @@ class FitModel:
                 Log-likelihood.
             """
 
-            return self.lnlike_func(params, prior=prior)
+            ln_like = self.lnlike_func(params, prior=prior)
+
+            if not np.isfinite(ln_like):
+                # UltraNest can not handle np.inf in the likelihood
+                ln_like = -1e100
+
+            return ln_like
 
         sampler = ultranest.ReactiveNestedSampler(
             self.modelpar,

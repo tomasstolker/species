@@ -271,7 +271,9 @@ class Database:
                     print(f"      - Reference: {model_dict['reference']}")
 
                 if "url" in model_dict:
-                    print(f"      - URL: {model_dict['url']}\n")
+                    print(f"      - URL: {model_dict['url']}")
+
+                print()
 
             else:
                 print(f"{model_dict['name']} -> label: {model_name}")
