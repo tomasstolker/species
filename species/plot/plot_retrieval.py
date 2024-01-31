@@ -307,10 +307,12 @@ def plot_pt_profile(
 
             try:
                 from petitRADTRANS.physics import dTdP_temperature_profile
-            except ImportError:
-                print("""Can\'t import the dTdP profile function from petitRADTRANS,
+            except ImportError as e:
+                raise ImportError(
+                    """Can\'t import the dTdP profile function from petitRADTRANS,
                     check that your version of pRT includes this function in   
-                    petitRADTRANS.physics""")
+                    petitRADTRANS.physics""", e
+                )
 
             temp = dTdP_temperature_profile(pressure,
                                             num_layer, # could change in the future
