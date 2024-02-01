@@ -38,14 +38,14 @@ except:
         "not be available."
     )
 
-try:
-    from schwimmbad import MPIPool
-except:
-    warnings.warn(
-        "schwimmbad could not be imported."
-        "multiprocessing run_dynesty on clusters"
-        "will not be available."
-    )
+# try:
+#     from schwimmbad import MPIPool
+# except:
+#     warnings.warn(
+#         "schwimmbad could not be imported."
+#         "multiprocessing run_dynesty on clusters"
+#         "will not be available."
+#     )
 
 from molmass import Formula
 from scipy.integrate import simps
@@ -3950,7 +3950,7 @@ class AtmosphericRetrieval:
         sample_method: str = 'auto',
         bound: str = 'multi',
         n_pool: Optional[int] = None, 
-        mpi_pool: bool = False, 
+        mpi_pool: Optional[any] = None, 
         resume: bool = False,
         plotting: bool = False
     ) -> None:
@@ -3983,8 +3983,8 @@ class AtmosphericRetrieval:
             See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
         n_pool : int
             If set, specifies the number of processors for multiprocessing
-        mpi_pool : bool
-            Are you distributing workers to an MPI pool on a cluster?
+        mpi_pool : MPIPool
+            Are you distributing workers to a schwimmbad.MPIPool object?
         resume : bool
             Resume the posterior sampling from a previous run.
         plotting : bool
@@ -4007,7 +4007,7 @@ class AtmosphericRetrieval:
         # self.lnprior_dynesty(cube, bounds, cube_index)
         # self.lnlike_dynesty(bounds, cube_index, rt_object, lowres_radtrans)
 
-        if not mpi_pool:
+        if mpi_pool is not None:
             if n_pool is not None:
                 with dynesty.pool.Pool(n_pool, self._lnlike_dynesty, self._lnprior_dynesty) as pool:
                     print(f"Initialized a dynesty.pool with {n_pool} workers")
@@ -4107,12 +4107,12 @@ class AtmosphericRetrieval:
                         resume=resume,
                     )
 
-        else:
-            pool = MPIPool()
+        elif mpi_pool is not None:
+            # pool = MPIPool()
 
-            if not pool.is_master():
-                pool.wait()
-                sys.exit(0)
+            # if not pool.is_master():
+            #     pool.wait()
+            #     sys.exit(0)
 
             if dynamic:
                 if resume:
