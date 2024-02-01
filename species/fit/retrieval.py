@@ -4161,3 +4161,11 @@ class AtmosphericRetrieval:
                     checkpoint_file=self.out_basename+'dynesty.save',
                     resume=resume,
                 )
+
+        results = dsampler.results
+
+        new_samples = results.samples_equal()
+
+        new_samples_filename = out_basename+'post_equal_weights.dat'
+        
+        np.savetxt(new_samples_filename, np.c_[new_samples, results.logl])
