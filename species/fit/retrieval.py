@@ -28,6 +28,25 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+try:
+    import dynesty
+except:
+    warnings.warn(
+        "dynesty/schwimmbad could not be imported."
+        "Perhaps because it was not installed?"
+        "AtmosphericRetrieval.run_dynesty will"
+        "not be available."
+    )
+
+try:
+    from schwimmbad import MPIPool
+except:
+    warnings.warn(
+        "schwimmbad could not be imported."
+        "multiprocessing run_dynesty on clusters"
+        "will not be available."
+    )
+
 from molmass import Formula
 from scipy.integrate import simps
 from scipy.stats import invgamma, norm
@@ -2670,7 +2689,7 @@ class AtmosphericRetrieval:
 
         end = time.time()
 
-        print(f"\rRadiative transfer time: {end-start:.2e} s", end="", flush=True)
+        # print(f"\rRadiative transfer time: {end-start:.2e} s", end="", flush=True)
 
         # Return zero probability if the spectrum contains NaN values
 
@@ -2965,8 +2984,8 @@ class AtmosphericRetrieval:
     def _lnprior_dynesty(
         self,
         cube: np.ndarray,
-        bounds: Dict[str, Tuple[float, float]],
-        cube_index: Dict[str, int],
+        # bounds: Dict[str, Tuple[float, float]],
+        # cube_index: Dict[str, int],
     ) -> np.ndarray:
         """
         Function to transform the unit cube into the parameter cube.
@@ -2988,16 +3007,16 @@ class AtmosphericRetrieval:
             Cube with the sampled model parameters.
         """
 
-        return self._prior_transform(cube, bounds, cube_index)
+        return self._prior_transform(cube, self.bounds, self.cube_index)
 
     @typechecked
     def _lnlike_dynesty(
         self,
         params,
-        bounds: Dict[str, Tuple[float, float]],
-        cube_index: Dict[str, int],
-        rt_object,
-        lowres_radtrans,
+        # bounds: Dict[str, Tuple[float, float]],
+        # cube_index: Dict[str, int],
+        # rt_object,
+        # lowres_radtrans,
     ) -> Union[float, np.float64]:
         """
         Function to calculate the log-likelihood for the
@@ -3026,7 +3045,7 @@ class AtmosphericRetrieval:
             Log-likelihood.
         """
 
-        return self._lnlike_func(params, bounds, cube_index, rt_object, lowres_radtrans)
+        return self._lnlike_func(params, self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans)
 
     @typechecked
     def setup_retrieval(
@@ -3813,8 +3832,14 @@ class AtmosphericRetrieval:
     def run_dynesty(
         self,
         n_live_points: int = 2000,
+        evidence_tolerance: float = 0.5, 
+        dynamic: bool = False,
+        sample_method: str = 'auto',
+        bound: str = 'multi',
+        n_pool: Optional[int] = None, 
+        mpi_pool: bool = False, 
         resume: bool = False,
-        plotting: bool = False,
+        plotting: bool = False
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -3830,7 +3855,23 @@ class AtmosphericRetrieval:
 
         n_live_points : int
             Number of live points used by the nested sampling
-            with ``MultiNest``.
+            with ``Dynesty``.
+        evidence_tolerance : float
+            The dlogZ value used to terminate a nested sampling run, or
+            the initial dlogZ value passed to a dynamic nested sampling run.
+        dynamic : bool
+            Whether to use static or dynamic nested sampling. 
+            See https://dynesty.readthedocs.io/en/stable/dynamic.html
+        sample_method : str
+            A choice of 'auto', 'unif', 'rwalk', 'slice', 'rslice'
+            See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
+        bound : str
+            A choice of 'none', 'single', 'multi', 'balls', 'cubes'
+            See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
+        n_pool : int
+            If set, specifies the number of processors for multiprocessing
+        mpi_pool : bool
+            Are you distributing workers to an MPI pool on a cluster?
         resume : bool
             Resume the posterior sampling from a previous run.
         plotting : bool
@@ -3845,8 +3886,165 @@ class AtmosphericRetrieval:
 
         self.plotting = plotting
 
+        self.out_basename = os.path.join(self.output_folder, "retrieval_")
+
         print("Sampling the posterior distribution with Dynesty...")
 
         # TODO
         # self.lnprior_dynesty(cube, bounds, cube_index)
         # self.lnlike_dynesty(bounds, cube_index, rt_object, lowres_radtrans)
+
+        if not mpi_pool:
+            if n_pool is not None:
+                with dynesty.pool.Pool(n_pool, self._lnlike_dynesty, self._lnprior_dynesty) as pool:
+                    print(f"Initialized a dynesty.pool with {n_pool} workers")
+                    if dynamic:
+                        if resume:
+                            dsampler = dynesty.DynamicNestedSampler.restore(
+                                fname=self.out_basename+'dynesty.save',
+                                pool=pool, 
+                            )
+                            print(f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}")
+
+                        else:
+                            dsampler = dynesty.DynamicNestedSampler(
+                                loglikelihood=pool.loglike,
+                                prior_transform=pool.prior_transform,
+                                ndim=len(self.parameters),
+                                pool=pool,
+                                sample=sample_method,
+                                bound=bound
+                            )
+
+                        dsampler.run_nested(
+                            dlogz_init=evidence_tolerance,
+                            nlive_init=n_live_points,
+                            checkpoint_file=self.out_basename+'dynesty.save',
+                            resume=resume,
+                        )
+
+                    else:
+                        if resume:
+                            dsampler = dynesty.NestedSampler.restore(
+                                fname=self.out_basename+'dynesty.save',
+                                pool=pool,
+                            )
+                            print(f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}")
+
+                        else:
+                            dsampler = dynesty.NestedSampler(
+                                loglikelihood=pool.loglike,
+                                prior_transform=pool.prior_transform,
+                                ndim=len(self.parameters),
+                                pool=pool,
+                                nlive=n_live_points,
+                                sample=sample_method,
+                                bound=bound
+                            )
+
+                        dsampler.run_nested(
+                            dlogz=evidence_tolerance,
+                            checkpoint_file=self.out_basename+'dynesty.save',
+                            resume=resume,
+                        )
+            else:
+                if dynamic:
+                    if resume:
+                        dsampler = dynesty.DynamicNestedSampler.restore(
+                            fname=self.out_basename+'dynesty.save'
+                        )
+                        print(f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}")
+
+                    else:
+                        dsampler = dynesty.DynamicNestedSampler(
+                            loglikelihood=self._lnlike_dynesty,
+                            prior_transform=self._lnprior_dynesty,
+                            ndim=len(self.parameters),
+                            sample=sample_method,
+                            bound=bound
+                        )
+
+                    dsampler.run_nested(
+                        dlogz_init=evidence_tolerance,
+                        nlive_init=n_live_points,
+                        checkpoint_file=self.out_basename+'dynesty.save',
+                        resume=resume,
+                    )
+
+                else:
+                    if resume:
+                        dsampler = dynesty.NestedSampler.restore(
+                            fname=self.out_basename+'dynesty.save'
+                        )
+                        print(f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}")
+
+                    else:
+                        dsampler = dynesty.NestedSampler(
+                            loglikelihood=self._lnlike_dynesty,
+                            prior_transform=self._lnprior_dynesty,
+                            ndim=len(self.parameters),
+                            nlive=n_live_points,
+                            sample=sample_method,
+                            bound=bound
+                        )
+
+                    dsampler.run_nested(
+                        dlogz=evidence_tolerance,
+                        checkpoint_file=self.out_basename+'dynesty.save',
+                        resume=resume,
+                    )
+
+        else:
+            pool = MPIPool()
+
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+
+            if dynamic:
+                if resume:
+                    dsampler = dynesty.DynamicNestedSampler.restore(
+                        fname=self.out_basename+'dynesty.save',
+                        pool=pool,
+                    )
+
+                else:
+                    dsampler = dynesty.DynamicNestedSampler(
+                        loglikelihood=self._lnlike_dynesty,
+                        prior_transform=self._lnprior_dynesty,
+                        ndim=len(self.parameters),
+                        pool=pool,
+                        sample=sample_method,
+                        bound=bound
+                    )
+
+                dsampler.run_nested(
+                    dlogz_init=evidence_tolerance,
+                    nlive_init=n_live_points,
+                    checkpoint_file=self.out_basename+'dynesty.save',
+                    resume=resume,
+                )
+
+            else:
+                if resume:
+                    dsampler = dynesty.NestedSampler.restore(
+                        fname=self.out_basename+'dynesty.save',
+                        pool=pool,
+                    )
+
+                else:
+                    dsampler = dynesty.NestedSampler(
+                        loglikelihood=self._lnlike_dynesty,
+                        prior_transform=self._lnprior_dynesty,
+                        ndim=len(self.parameters),
+                        pool=pool,
+                        nlive=n_live_points,
+                        sample=sample_method,
+                        bound=bound
+                    )
+
+                dsampler.run_nested(
+                    dlogz=evidence_tolerance,
+                    checkpoint_file=self.out_basename+'dynesty.save',
+                    resume=resume,
+                )
