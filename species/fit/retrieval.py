@@ -38,14 +38,14 @@ except:
         "not be available."
     )
 
-# try:
-#     from schwimmbad import MPIPool
-# except:
-#     warnings.warn(
-#         "schwimmbad could not be imported."
-#         "multiprocessing run_dynesty on clusters"
-#         "will not be available."
-#     )
+try:
+    from schwimmbad import MPIPool
+except:
+    warnings.warn(
+        "schwimmbad could not be imported."
+        "multiprocessing run_dynesty on clusters"
+        "will not be available."
+    )
 
 from molmass import Formula
 from scipy.integrate import simps
@@ -3950,7 +3950,7 @@ class AtmosphericRetrieval:
         sample_method: str = 'auto',
         bound: str = 'multi',
         n_pool: Optional[int] = None, 
-        mpi_pool: Optional[any] = None, 
+        mpi_pool: bool = False, 
         resume: bool = False,
         plotting: bool = False
     ) -> None:
@@ -3982,9 +3982,9 @@ class AtmosphericRetrieval:
             A choice of 'none', 'single', 'multi', 'balls', 'cubes'
             See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
         n_pool : int
-            If set, specifies the number of processors for local python based `multiprocessing`
-        mpi_pool : MPIPool
-            A `schwimmbad.MPIPool` object to pass to `dynesty` for multiprocessing on a cluster with MPI 
+            If set, specifies the number of processors for local multiprocessing
+        mpi_pool : bool
+            Are you distributing workers to a schwimmbad.MPIPool on a cluster?
         resume : bool
             Resume the posterior sampling from a previous run.
         plotting : bool
@@ -4003,7 +4003,7 @@ class AtmosphericRetrieval:
 
         print("Sampling the posterior distribution with Dynesty...")
 
-        if mpi_pool is not None:
+        if not mpi_pool:
             if n_pool is not None:
                 with dynesty.pool.Pool(n_pool, self._lnlike_dynesty, self._lnprior_dynesty) as pool:
                     print(f"Initialized a dynesty.pool with {n_pool} workers")
@@ -4103,7 +4103,9 @@ class AtmosphericRetrieval:
                         resume=resume,
                     )
 
-        elif mpi_pool is not None:
+        else:
+            pool = MPIPool()
+
             if not pool.is_master():
                 pool.wait()
                 sys.exit(0)
@@ -4155,11 +4157,6 @@ class AtmosphericRetrieval:
                     checkpoint_file=self.out_basename+'dynesty.save',
                     resume=resume,
                 )
-        else:
-            raise Exception("To use an MPI pool with run_dynesty you must pass"
-                            "a schwimmbad.MPIPool object to mpi_pool, not a "
-                            f"{type(mpi_pool)} object"
-            )
 
         results = dsampler.results
 
