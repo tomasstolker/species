@@ -214,6 +214,9 @@ def plot_pt_profile(
 
     elif "tint" in parameters and "log_delta" in parameters:
         pt_profile = "eddington"
+    
+    elif "T_bottom" in parameters and "PTslope_1" in parameters:
+        pt_profile = "gradient"
 
     else:
         pt_profile = "free"
@@ -295,6 +298,26 @@ def plot_pt_profile(
         elif pt_profile == "eddington":
             tau = pressure * 1e6 * 10.0 ** item[param_index["log_delta"]]
             temp = (0.75 * item[param_index["tint"]] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
+
+        elif pt_profile == "gradient":
+            num_layer = 6 # could make a variable in the future
+            layer_pt_slopes = np.ones(num_layer) * np.nan
+            for index in range(num_layer):
+                layer_pt_slopes[index] = item[param_index[f'PTslope_{num_layer - index}']]
+
+            try:
+                from petitRADTRANS.physics import dTdP_temperature_profile
+            except ImportError as e:
+                raise ImportError(
+                    """Can\'t import the dTdP profile function from petitRADTRANS,
+                    check that your version of pRT includes this function in   
+                    petitRADTRANS.physics""", e
+                )
+
+            temp = dTdP_temperature_profile(pressure,
+                                            num_layer, # could change in the future
+                                            layer_pt_slopes,
+                                            item[param_index["T_bottom"]])
 
         elif pt_profile == "free":
             knot_temp = []

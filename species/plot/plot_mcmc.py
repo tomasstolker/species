@@ -319,7 +319,21 @@ def plot_posterior(
     ndim = len(box.parameters)
 
     if not inc_pt_param and box.spectrum == "petitradtrans":
-        pt_param = ["tint", "t1", "t2", "t3", "alpha", "log_delta"]
+        pt_param = [
+            "tint",
+            "t1",
+            "t2",
+            "t3",
+            "alpha",
+            "log_delta",
+            "T_bottom",
+            "PTslope_1",
+            "PTslope_2",
+            "PTslope_3",
+            "PTslope_4",
+            "PTslope_5",
+            "PTslope_6",
+        ]
 
         index_del = []
         item_del = []
