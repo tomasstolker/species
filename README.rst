@@ -26,7 +26,7 @@
 
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources.
 
-There are tools available for grid and free retrievals using Bayesian inference, synthetic photometry, interpolating a variety atmospheric and evolutionary model grids (including the possibility to add a custom grid), color-magnitude and color-color diagrams, empirical spectral analysis, spectral and photometric calibration, and analysis of emission lines. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on Github.
+There are tools available for grid and free retrievals using Bayesian inference, synthetic photometry, interpolating a variety atmospheric and evolutionary model grids (including the possibility to add a custom grid), color-magnitude and color-color diagrams, empirical spectral analysis, spectral and photometric calibration, and analysis of emission lines. The package has been released on `PyPI <https://pypi.org/project/species/>`_ and is actively developed and maintained on `Github <https://github.com/tomasstolker/species>`_.
 
 **Important:** Importing the *species* package had become slow because of the many classes and functions that were implicitly imported. The initialization of the package has therefore been adjusted. Any functionalities should now be explicitly imported from the modules that they are part of.
 
