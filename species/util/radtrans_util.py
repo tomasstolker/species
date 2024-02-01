@@ -110,6 +110,12 @@ def retrieval_spectrum(
         model_param["alpha"] = sample[indices["alpha"]]
         model_param["tint"] = sample[indices["tint"]]
 
+    elif pt_profile == "gradient":
+        num_layer = 6 # could make a variable in the future
+        for index in range(num_layer):
+            model_param[f'PTslope_{num_layer - index}'] = sample[indices[f'PTslope_{num_layer - index}']]
+        model_param['T_bottom'] = sample[indices['T_bottom']]
+
     elif pt_profile == "eddington":
         model_param["log_delta"] = sample[indices["log_delta"]]
         model_param["tint"] = sample[indices["tint"]]

@@ -601,6 +601,15 @@ class AtmosphericRetrieval:
             self.parameters.append("log_delta")
             self.parameters.append("tint")
 
+        if self.pt_profile == "gradient":
+            self.parameters.append("T_bottom")
+            self.parameters.append("PTslope_1")
+            self.parameters.append("PTslope_2")
+            self.parameters.append("PTslope_3")
+            self.parameters.append("PTslope_4")
+            self.parameters.append("PTslope_5")
+            self.parameters.append("PTslope_6")
+
         # Abundance parameters
 
         if self.chemistry == "equilibrium":
@@ -974,7 +983,7 @@ class AtmosphericRetrieval:
                 #         - cube[cube_index[f"t{i}"]] * temp_diff
                 #     )
 
-        if self.pt_profile == "eddington":
+        elif self.pt_profile == "eddington":
             # Internal temperature (K) for the
             # Eddington approximation
             if "tint" in bounds:
@@ -1003,6 +1012,31 @@ class AtmosphericRetrieval:
             # delta: proportionality factor in tau = delta * press_cgs**alpha
             # see Eq. 1 in Mollière et al. (2020)
             cube[cube_index["log_delta"]] = log_delta
+
+        elif self.pt_profile == "gradient":
+            # Temperature at 1000 Bar
+            if "T_bottom" in bounds:
+                t_bottom = (
+                    bounds["T_bottom"][0]
+                    + (bounds["T_bottom"][1] - bounds["T_bottom"][0])
+                    * cube[cube_index["T_bottom"]]
+                )
+            else:
+                # Default: 500 - 15500 K
+                t_bottom = 500.0 + 15000.0 * cube[cube_index["T_bottom"]]
+
+            cube[cube_index["T_bottom"]] = t_bottom
+
+            for i in range(1, 7):
+                if f"PTslope_{i}" in bounds:
+                    t_i = (
+                        bounds[f"PTslope_{i}"][0]
+                        + (bounds[f"PTslope_{i}"][1] - bounds[f"PTslope_{i}"][0])
+                        * cube[cube_index[f"PTslope_{i}"]]
+                    )
+                else:
+                    t_i = 0.0 + 1.0 * cube[cube_index[f"PTslope_{i}"]]
+                cube[cube_index[f"PTslope_{i}"]] = t_i
 
         # Penalization of wiggles in the P-T profile
         # Inverse gamma distribution
@@ -3184,7 +3218,7 @@ class AtmosphericRetrieval:
             applied if the argument is set to ``None``.
         pt_profile : str
             The parametrization for the pressure-temperature profile
-            ('molliere', 'free', 'monotonic', 'eddington').
+            ('molliere', 'free', 'monotonic', 'eddington', 'gradient').
         fit_corr : list(str), None
             List with spectrum names for which the correlation lengths
             and fractional amplitudes are fitted (see `Wang et al. 2020
@@ -3290,6 +3324,9 @@ class AtmosphericRetrieval:
         self.check_phot_press = check_phot_press
         self.cross_corr = cross_corr
 
+        if self.prior is None:
+            self.prior = {}
+
         # Check if quenching parameter is used with equilibrium chemistry
 
         if self.quenching is not None and self.chemistry != "equilibrium":
@@ -3333,6 +3370,22 @@ class AtmosphericRetrieval:
 
         else:
             self.abund_nodes = None
+
+        # Set default gradient priors if applicable
+
+        default_grad_priors = {
+            "1": (0.25, 0.025),
+            "2": (0.25, 0.045),
+            "3": (0.26, 0.05),
+            "4": (0.2, 0.05),
+            "5": (0.12, 0.045),
+            "6": (0.07, 0.07),
+        }
+
+        if self.pt_profile == "gradient":
+            for i in range(1, 7):
+                if f"PTslope_{i}" not in self.prior:
+                    self.prior[f"PTslope_{i}"] = default_grad_priors[str(i)]
 
         # Get the MPI rank of the process
 
@@ -3671,7 +3724,12 @@ class AtmosphericRetrieval:
         self,
         n_live_points: int = 2000,
         resume: bool = False,
+        const_efficiency_mode: Optional[bool] = True,
+        sampling_efficiency: Optional[float] = 0.05,
+        evidence_tolerance: Optional[float] = 0.5,
+        out_basename: Optional[str] = None,
         plotting: bool = False,
+        # multinest_kwargs: Optional[Dict[str, any]] = None,
         **kwargs,
     ) -> None:
         """
@@ -3716,9 +3774,66 @@ class AtmosphericRetrieval:
             None
         """
 
+        # Set attributes
+
         self.plotting = plotting
 
-        if not hasattr(self, "bounds"):
+        # Set MultiNest optional arguments
+
+        # if multinest_kwargs is None:
+        #     multinest_kwargs = {}
+        #
+        # evidence_tolerance = multinest_kwargs.get"evidence_tolerance", 0.5)
+        # const_efficiency_mode = multinest_kwargs.get("const_efficiency_mode", True)
+        #
+        # if const_efficiency_mode:
+        #     sampling_efficiency = multinest_kwargs.get("sampling_efficiency", 0.05)
+        # else:
+        #     sampling_efficiency = multinest_kwargs.get("sampling_efficiency", 0.8)
+
+        # if hasattr(self, "resume"):
+        #     raise DeprecationWarning(
+        #         "Setting the 'resume' keyword in `run_multinest` "
+        #         "is deprecated in favor of including 'resume' in "
+        #         "'multinest_kwargs' and will be removed in a "
+        #         "future release."
+        #     )
+        #
+        # if hasattr(self, "n_live_points"):
+        #     raise DeprecationWarning(
+        #         "Setting the 'n_live_points' keyword in `run_multinest` "
+        #         "is deprecated in favor of including 'n_live_points' in "
+        #         "'multinest_kwargs' and will be removed in a "
+        #         "future release."
+        #     )
+
+        if out_basename is None:
+            out_basename = os.path.join(self.output_folder, "retrieval_")
+
+        if const_efficiency_mode and sampling_efficiency > 0.075:
+            warnings.warn(
+                "It is recommended to use a sampling efficiency of "
+                "~0.05 when using the constant efficiency mode."
+            )
+
+        # if "n_live_points" in multinest_kwargs:
+        #     n_live_points = multinest_kwargs["n_live_points"]
+        # else:
+        #     if not hasattr(self, "n_live_points"):
+        #         n_live_points = 2000
+
+        # if "out_basename" in multinest_kwargs:
+        #     out_basename = multinest_kwargs["out_basename"]
+        # else:
+        #     out_basename = os.path.join(self.output_folder, "retrieval_")
+
+        # if "resume" in multinest_kwargs:
+        #     resume = multinest_kwargs["resume"]
+        # else:
+        #     if not hasattr(self, "resume"):
+        #         resume = False
+
+        if self.bounds is None:
             # For backward compatibility
             # setup_retrieval was not called so the retrieval
             # parameters were passed to run_retrieval instead
@@ -3813,8 +3928,6 @@ class AtmosphericRetrieval:
 
         print("Sampling the posterior distribution with MultiNest...")
 
-        out_basename = os.path.join(self.output_folder, "retrieval_")
-
         pymultinest.run(
             _lnlike_multinest,
             _lnprior_multinest,
@@ -3822,10 +3935,10 @@ class AtmosphericRetrieval:
             outputfiles_basename=out_basename,
             resume=resume,
             verbose=True,
-            const_efficiency_mode=True,
-            sampling_efficiency=0.05,
+            const_efficiency_mode=const_efficiency_mode,
+            sampling_efficiency=sampling_efficiency,
             n_live_points=n_live_points,
-            evidence_tolerance=0.5,
+            evidence_tolerance=evidence_tolerance,
         )
 
     @typechecked

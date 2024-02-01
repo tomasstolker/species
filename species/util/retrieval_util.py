@@ -428,7 +428,7 @@ def create_pt_profile(
         Dictionary with the index of each parameter in the ``cube``.
     pt_profile : str
         The parametrization for the pressure-temperature profile
-        ('molliere', 'free', 'monotonic', 'eddington').
+        ('molliere', 'free', 'monotonic', 'eddington', 'gradient').
     pressure : np.ndarray
         Pressure points (bar) at which the temperatures is
         interpolated.
@@ -486,6 +486,30 @@ def create_pt_profile(
             metallicity,
             c_o_ratio,
         )
+
+    elif pt_profile == "gradient":
+        num_layer = 6 # could make a variable in the future
+        layer_pt_slopes = np.ones(num_layer) * np.nan
+        for index in range(num_layer):
+            layer_pt_slopes[index] = cube[cube_index[f'PTslope_{num_layer - index}']]
+
+        try:
+            from petitRADTRANS.physics import dTdP_temperature_profile
+        except ImportError as e:
+            raise ImportError(
+                """Can\'t import the dTdP profile function from petitRADTRANS,
+                check that your version of pRT includes this function in   
+                petitRADTRANS.physics""", e
+            )
+
+        temp = dTdP_temperature_profile(pressure,
+                                        num_layer, # could change in the future
+                                        layer_pt_slopes,
+                                        cube[cube_index["T_bottom"]])
+        
+        phot_press = None
+        conv_press = None
+
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
