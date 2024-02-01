@@ -3982,9 +3982,9 @@ class AtmosphericRetrieval:
             A choice of 'none', 'single', 'multi', 'balls', 'cubes'
             See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
         n_pool : int
-            If set, specifies the number of processors for multiprocessing
+            If set, specifies the number of processors for local python based `multiprocessing`
         mpi_pool : MPIPool
-            Are you distributing workers to a schwimmbad.MPIPool object?
+            A `schwimmbad.MPIPool` object to pass to `dynesty` for multiprocessing on a cluster with MPI 
         resume : bool
             Resume the posterior sampling from a previous run.
         plotting : bool
@@ -4002,10 +4002,6 @@ class AtmosphericRetrieval:
         self.out_basename = os.path.join(self.output_folder, "retrieval_")
 
         print("Sampling the posterior distribution with Dynesty...")
-
-        # TODO
-        # self.lnprior_dynesty(cube, bounds, cube_index)
-        # self.lnlike_dynesty(bounds, cube_index, rt_object, lowres_radtrans)
 
         if mpi_pool is not None:
             if n_pool is not None:
@@ -4108,11 +4104,9 @@ class AtmosphericRetrieval:
                     )
 
         elif mpi_pool is not None:
-            # pool = MPIPool()
-
-            # if not pool.is_master():
-            #     pool.wait()
-            #     sys.exit(0)
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
 
             if dynamic:
                 if resume:
@@ -4161,6 +4155,11 @@ class AtmosphericRetrieval:
                     checkpoint_file=self.out_basename+'dynesty.save',
                     resume=resume,
                 )
+        else:
+            raise Exception("To use an MPI pool with run_dynesty you must pass"
+                            "a schwimmbad.MPIPool object to mpi_pool, not a "
+                            f"{type(mpi_pool)} object"
+            )
 
         results = dsampler.results
 
