@@ -28,6 +28,9 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+import dynesty
+from schwimmbad import MPIPool
+
 from molmass import Formula
 from scipy.integrate import simps
 from scipy.stats import invgamma, norm
