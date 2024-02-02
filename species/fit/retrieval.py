@@ -28,25 +28,6 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
-try:
-    import dynesty
-except:
-    warnings.warn(
-        "dynesty/schwimmbad could not be imported."
-        "Perhaps because it was not installed?"
-        "AtmosphericRetrieval.run_dynesty will"
-        "not be available."
-    )
-
-try:
-    from schwimmbad import MPIPool
-except:
-    warnings.warn(
-        "schwimmbad could not be imported."
-        "multiprocessing run_dynesty on clusters"
-        "will not be available."
-    )
-
 from molmass import Formula
 from scipy.integrate import simps
 from scipy.stats import invgamma, norm
@@ -3014,72 +2995,6 @@ class AtmosphericRetrieval:
 
         return ln_prior + ln_like
 
-    @typechecked
-    def _lnprior_dynesty(
-        self,
-        cube: np.ndarray,
-        # bounds: Dict[str, Tuple[float, float]],
-        # cube_index: Dict[str, int],
-    ) -> np.ndarray:
-        """
-        Function to transform the unit cube into the parameter cube.
-        Used when the ``sampler`` is set to ``"dynesty"``.
-
-        Parameters
-        ----------
-        cube : np.ndarray
-            Unit cube.
-        bounds : dict(str, tuple(float, float))
-            Dictionary with the prior boundaries.
-        cube_index : dict(str, int)
-            Dictionary with the indices for selecting the model
-            parameters in the ``cube``.
-
-        Returns
-        -------
-        np.ndarray
-            Cube with the sampled model parameters.
-        """
-
-        return self._prior_transform(cube, self.bounds, self.cube_index)
-
-    @typechecked
-    def _lnlike_dynesty(
-        self,
-        params,
-        # bounds: Dict[str, Tuple[float, float]],
-        # cube_index: Dict[str, int],
-        # rt_object,
-        # lowres_radtrans,
-    ) -> Union[float, np.float64]:
-        """
-        Function to calculate the log-likelihood for the
-        sampled parameter cube. Used when the ``sampler`` is
-        set to ``"dynesty"``.
-
-        Parameters
-        ----------
-        params : np.ndarray
-            Cube with sampled model parameters.
-        bounds : dict(str, tuple(float, float))
-            Dictionary with the prior boundaries.
-        cube_index : dict(str, int)
-            Dictionary with the indices for selecting the model
-            parameters in the ``cube``.
-        rt_object : petitRADTRANS.radtrans.Radtrans
-            Instance of ``Radtrans`` from ``petitRADTRANS``.
-        lowres_radtrans : petitRADTRANS.radtrans.Radtrans, None
-            Instance of ``Radtrans`` for low resolution spectra. This
-            was implemented for trying to retrieve self-consistent
-            temperature profiles, but is typically not used.
-
-        Returns
-        -------
-        float
-            Log-likelihood.
-        """
-
-        return self._lnlike_func(params, self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans)
 
     @typechecked
     def setup_retrieval(
@@ -4005,7 +3920,12 @@ class AtmosphericRetrieval:
 
         if not mpi_pool:
             if n_pool is not None:
-                with dynesty.pool.Pool(n_pool, self._lnlike_dynesty, self._lnprior_dynesty) as pool:
+                with dynesty.pool.Pool(n_pool, 
+                                       self._lnlike, 
+                                       self._prior_transform,
+                                       logl_args=[self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans],
+                                       ptform_args=[self.bounds, self.cube_index],
+                                       ) as pool:
                     print(f"Initialized a dynesty.pool with {n_pool} workers")
                     if dynamic:
                         if resume:
@@ -4066,9 +3986,11 @@ class AtmosphericRetrieval:
 
                     else:
                         dsampler = dynesty.DynamicNestedSampler(
-                            loglikelihood=self._lnlike_dynesty,
-                            prior_transform=self._lnprior_dynesty,
+                            loglikelihood=self._lnlike,
+                            prior_transform=self._prior_transform,
                             ndim=len(self.parameters),
+                            logl_args=[self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans],
+                            ptform_args=[self.bounds, self.cube_index],                                       
                             sample=sample_method,
                             bound=bound
                         )
@@ -4089,10 +4011,11 @@ class AtmosphericRetrieval:
 
                     else:
                         dsampler = dynesty.NestedSampler(
-                            loglikelihood=self._lnlike_dynesty,
-                            prior_transform=self._lnprior_dynesty,
+                            loglikelihood=self._lnlike,
+                            prior_transform=self._prior_transform,
                             ndim=len(self.parameters),
-                            nlive=n_live_points,
+                            logl_args=[self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans],
+                            ptform_args=[self.bounds, self.cube_index], 
                             sample=sample_method,
                             bound=bound
                         )
@@ -4119,9 +4042,11 @@ class AtmosphericRetrieval:
 
                 else:
                     dsampler = dynesty.DynamicNestedSampler(
-                        loglikelihood=self._lnlike_dynesty,
-                        prior_transform=self._lnprior_dynesty,
+                        loglikelihood=self._lnlike,
+                        prior_transform=self._prior_transform,
                         ndim=len(self.parameters),
+                        logl_args=[self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans],
+                        ptform_args=[self.bounds, self.cube_index], 
                         pool=pool,
                         sample=sample_method,
                         bound=bound
@@ -4143,9 +4068,11 @@ class AtmosphericRetrieval:
 
                 else:
                     dsampler = dynesty.NestedSampler(
-                        loglikelihood=self._lnlike_dynesty,
-                        prior_transform=self._lnprior_dynesty,
+                        loglikelihood=self._lnlike,
+                        prior_transform=self._prior_transform,
                         ndim=len(self.parameters),
+                        logl_args=[self.bounds, self.cube_index, self.rt_object, self.lowres_radtrans],
+                        ptform_args=[self.bounds, self.cube_index], 
                         pool=pool,
                         nlive=n_live_points,
                         sample=sample_method,
