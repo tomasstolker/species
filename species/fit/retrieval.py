@@ -1652,7 +1652,7 @@ class AtmosphericRetrieval:
         return cube
 
     @typechecked
-    def _lnlike_func(
+    def _lnlike(
         self,
         cube,
         bounds: Dict[str, Tuple[float, float]],
@@ -3836,7 +3836,7 @@ class AtmosphericRetrieval:
                 Log-likelihood.
             """
 
-            return self._lnlike_func(
+            return self._lnlike(
                 params,
                 self.bounds,
                 self.cube_index,
@@ -4035,6 +4035,8 @@ class AtmosphericRetrieval:
             if not pool.is_master():
                 pool.wait()
                 sys.exit(0)
+            
+            print("Created an MPIPool object.")
 
             if dynamic:
                 if resume:
