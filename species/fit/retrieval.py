@@ -1,7 +1,10 @@
 """
 Module with a frontend for atmospheric retrieval with the
-radiative transfer and retrieval code ``petitRADTRANS``
-(see https://petitradtrans.readthedocs.io).
+radiative transfer and retrieval code
+`petitRADTRANS <https://petitradtrans.readthedocs.io>`_. The
+Bayesian inference can be done with
+`PyMultiNest <https://johannesbuchner.github.io/PyMultiNest/>`_
+or with `Dynesty <https://dynesty.readthedocs.io>`_.
 """
 
 # import copy
@@ -15,6 +18,7 @@ import warnings
 # from math import isclose
 from typing import Dict, List, Optional, Tuple, Union
 
+import dynesty
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -28,10 +32,8 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
-import dynesty
-from schwimmbad import MPIPool
-
 from molmass import Formula
+from schwimmbad import MPIPool
 from scipy.integrate import simps
 from scipy.stats import invgamma, norm
 from typeguard import typechecked
@@ -66,6 +68,8 @@ class AtmosphericRetrieval:
     of giant planets and brown dwarfs within a Bayesian framework.
     This class provides a frontend for ``petitRADTRANS``, with a
     variety of P-T profiles, cloud models, priors, and more.
+    The Bayesian inference is done with the nested sampling
+    implementation of ``PyMultiNest`` or ``Dynesty``.
     """
 
     @typechecked
@@ -2362,9 +2366,13 @@ class AtmosphericRetrieval:
                     # that is calculated from the spectrum and the
                     # bolometric flux at each pressure
 
-                    ln_prior += np.sum(-0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol**2)
+                    ln_prior += np.sum(
+                        -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol**2
+                    )
 
-                    ln_prior += -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
+                    ln_prior += (
+                        -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
+                    )
 
                     # for i in range(i_conv):
                     # for i in range(lowres_radtrans.press.shape[0]):
@@ -2703,7 +2711,8 @@ class AtmosphericRetrieval:
 
         end = time.time()
 
-        # print(f"\rRadiative transfer time: {end-start:.2e} s", end="", flush=True)
+        if self.plotting:
+            print(f"\rRadiative transfer time: {end-start:.2e} s", end="", flush=True)
 
         # Return zero probability if the spectrum contains NaN values
 
@@ -2863,7 +2872,8 @@ class AtmosphericRetrieval:
                             -0.5
                             * weight
                             * np.sum(
-                                flux_diff**2 / data_var + np.log(2.0 * np.pi * data_var)
+                                flux_diff**2 / data_var
+                                + np.log(2.0 * np.pi * data_var)
                             )
                         )
 
@@ -3634,14 +3644,13 @@ class AtmosphericRetrieval:
     @typechecked
     def run_multinest(
         self,
-        n_live_points: int = 2000,
+        n_live_points: int = 1000,
         resume: bool = False,
         const_efficiency_mode: Optional[bool] = True,
         sampling_efficiency: Optional[float] = 0.05,
         evidence_tolerance: Optional[float] = 0.5,
         out_basename: Optional[str] = None,
         plotting: bool = False,
-        # multinest_kwargs: Optional[Dict[str, any]] = None,
         **kwargs,
     ) -> None:
         """
@@ -3650,11 +3659,12 @@ class AtmosphericRetrieval:
         model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
         with ``pip`` from the PyPI repository, ``MultiNest`` has to to
-        be compiled manually. See the ``PyMultiNest`` documentation:
-        http://johannesbuchner.github.io/PyMultiNest/install.html.
-        Note that the library path of ``MultiNest`` should be set to
-        the environment variable ``LD_LIBRARY_PATH`` on a Linux
-        machine and ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the
+        be compiled manually. See the `PyMultiNest documentation
+        <http://johannesbuchner.github.io/PyMultiNest/install.html>`_
+        for further details. Note that the library path of
+        ``MultiNest`` should be set to the environment variable
+        ``LD_LIBRARY_PATH`` on a Linux machine and
+        ``DYLD_LIBRARY_PATH`` on a Mac. Alternatively, the
         variable can be set before importing the ``species`` toolkit,
         for example:
 
@@ -3670,12 +3680,35 @@ class AtmosphericRetrieval:
 
         Parameters
         ----------
-
         n_live_points : int
             Number of live points used by the nested sampling
-            with ``MultiNest``.
+            with ``MultiNest`` (default: 1000).
         resume : bool
-            Resume the posterior sampling from a previous run.
+            Resume the posterior sampling from a previous run
+            (default: False).
+        const_efficiency_mode : bool
+            Use the constant efficiency mode (default: True). It is
+            recommended to use this mode when the model includes a
+            large number of parameter, as is typically the case with
+            atmospheric retrievals.
+        sampling_efficiency : float
+            Sampling efficiency (default: 0.05). A value of 0.8 is
+            recommended for parameter estimation and a value of 0.3
+            for evidence evaluation. However, in case of a large
+            number of model parameters, the sampling efficiency
+            will be low, so it is recommended to set the argument of
+            ``const_efficiency_mode`` to ``True`` and the argument
+            of ``sampling_efficiency`` to 0.05 (see `MultiNest
+            documentation <https://github.com/farhanferoz/
+            MultiNest>`_).
+        evidence_tolerance : float
+            Tolerance for the evidence. A value of 0.5 should
+            provide sufficient accuracy. (default: 0.5).
+        out_basename : str, None
+            Set the path and basename for the output files from
+            ``MultiNest``. This will overwrite the use of the
+            ``output_folder`` parameter. By setting the argument
+            to ``None``, the ``output_folder`` will be used.
         plotting : bool
             Plot sample results for testing purpose. It is recommended
             to only set the argument to ``True`` for testing purposes.
@@ -3690,60 +3723,20 @@ class AtmosphericRetrieval:
 
         self.plotting = plotting
 
-        # Set MultiNest optional arguments
-
-        # if multinest_kwargs is None:
-        #     multinest_kwargs = {}
-        #
-        # evidence_tolerance = multinest_kwargs.get"evidence_tolerance", 0.5)
-        # const_efficiency_mode = multinest_kwargs.get("const_efficiency_mode", True)
-        #
-        # if const_efficiency_mode:
-        #     sampling_efficiency = multinest_kwargs.get("sampling_efficiency", 0.05)
-        # else:
-        #     sampling_efficiency = multinest_kwargs.get("sampling_efficiency", 0.8)
-
-        # if hasattr(self, "resume"):
-        #     raise DeprecationWarning(
-        #         "Setting the 'resume' keyword in `run_multinest` "
-        #         "is deprecated in favor of including 'resume' in "
-        #         "'multinest_kwargs' and will be removed in a "
-        #         "future release."
-        #     )
-        #
-        # if hasattr(self, "n_live_points"):
-        #     raise DeprecationWarning(
-        #         "Setting the 'n_live_points' keyword in `run_multinest` "
-        #         "is deprecated in favor of including 'n_live_points' in "
-        #         "'multinest_kwargs' and will be removed in a "
-        #         "future release."
-        #     )
+        # Set the output basename for PyMultiNest
 
         if out_basename is None:
             out_basename = os.path.join(self.output_folder, "retrieval_")
 
+        # Check if the sampling efficiency is not too high
+        # when using the constant efficiency mode
+
         if const_efficiency_mode and sampling_efficiency > 0.075:
             warnings.warn(
-                "It is recommended to use a sampling efficiency of "
-                "~0.05 when using the constant efficiency mode."
+                "It is recommended to use a sampling efficiency "
+                "of 0.05 when using MultiNest in constant "
+                "efficiency mode."
             )
-
-        # if "n_live_points" in multinest_kwargs:
-        #     n_live_points = multinest_kwargs["n_live_points"]
-        # else:
-        #     if not hasattr(self, "n_live_points"):
-        #         n_live_points = 2000
-
-        # if "out_basename" in multinest_kwargs:
-        #     out_basename = multinest_kwargs["out_basename"]
-        # else:
-        #     out_basename = os.path.join(self.output_folder, "retrieval_")
-
-        # if "resume" in multinest_kwargs:
-        #     resume = multinest_kwargs["resume"]
-        # else:
-        #     if not hasattr(self, "resume"):
-        #         resume = False
 
         if self.bounds is None:
             # For backward compatibility
@@ -3820,9 +3813,11 @@ class AtmosphericRetrieval:
             params : pymultinest.run.LP_c_double
                 Cube with sampled model parameters.
             n_dim : int
-                Number of dimensions. This parameter is mandatory but not used by the function.
+                Number of dimensions. This parameter is mandatory
+                but not used by the function.
             n_param : int
-                Number of parameters. This parameter is mandatory but not used by the function.
+                Number of parameters. This parameter is mandatory
+                but not used by the function.
 
             Returns
             -------
@@ -3877,26 +3872,35 @@ class AtmosphericRetrieval:
 
         Parameters
         ----------
-
         n_live_points : int
             Number of live points used by the nested sampling
             with ``Dynesty``.
         evidence_tolerance : float
-            The dlogZ value used to terminate a nested sampling run, or
-            the initial dlogZ value passed to a dynamic nested sampling run.
+            The dlogZ value used to terminate a nested sampling run,
+            or the initial dlogZ value passed to a dynamic nested
+            sampling run.
         dynamic : bool
-            Whether to use static or dynamic nested sampling.
-            See https://dynesty.readthedocs.io/en/stable/dynamic.html
+            Whether to use static or dynamic nested sampling (see
+            `Dynesty documentation <https://dynesty.readthedocs.io/
+            en/stable/dynamic.html>`_).
         sample_method : str
-            A choice of 'auto', 'unif', 'rwalk', 'slice', 'rslice'
-            See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
+            The sampling method that should be used ('auto', 'unif',
+            'rwalk', 'slice', 'rslice' (see `sampling documentation
+            <https://dynesty.readthedocs.io/en/stable/
+            quickstart.html#nested-sampling-with-dynesty>`_).
         bound : str
-            A choice of 'none', 'single', 'multi', 'balls', 'cubes'
-            See https://dynesty.readthedocs.io/en/stable/quickstart.html#nested-sampling-with-dynesty
+            Method used to approximately bound the prior using the
+            current set of live points ('none', 'single', 'multi',
+            'balls', 'cubes'). `Conditions the sampling methods
+            <https://dynesty.readthedocs.io/en/stable/
+            quickstart.html#nested-sampling-with-dynesty>`_ used
+            to propose new live points
         n_pool : int
-            If set, specifies the number of processors for local multiprocessing
+            The number of processes for the local multiprocessing. The
+            parameter is not used when the argument is set to ``None``.
         mpi_pool : bool
-            Are you distributing workers to a schwimmbad.MPIPool on a cluster?
+            Distribute the workers to an ``MPIPool`` on a cluster,
+            using ``schwimmbad``.
         resume : bool
             Resume the posterior sampling from a previous run.
         plotting : bool
@@ -3929,15 +3933,19 @@ class AtmosphericRetrieval:
                     ],
                     ptform_args=[self.bounds, self.cube_index],
                 ) as pool:
+
                     print(f"Initialized a dynesty.pool with {n_pool} workers")
+
                     if dynamic:
                         if resume:
                             dsampler = dynesty.DynamicNestedSampler.restore(
                                 fname=self.out_basename + "dynesty.save",
                                 pool=pool,
                             )
+
                             print(
-                                f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}"
+                                "Resumed a dynesty run from "
+                                f"{self.out_basename}dynesty.save"
                             )
 
                         else:
@@ -3963,8 +3971,10 @@ class AtmosphericRetrieval:
                                 fname=self.out_basename + "dynesty.save",
                                 pool=pool,
                             )
+
                             print(
-                                f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}"
+                                "Resumed a dynesty run from "
+                                f"{self.out_basename}dynesty.save"
                             )
 
                         else:
@@ -3989,8 +3999,10 @@ class AtmosphericRetrieval:
                         dsampler = dynesty.DynamicNestedSampler.restore(
                             fname=self.out_basename + "dynesty.save"
                         )
+
                         print(
-                            f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}"
+                            "Resumed a dynesty run from "
+                            f"{self.out_basename}dynesty.save"
                         )
 
                     else:
@@ -4021,8 +4033,10 @@ class AtmosphericRetrieval:
                         dsampler = dynesty.NestedSampler.restore(
                             fname=self.out_basename + "dynesty.save"
                         )
+
                         print(
-                            f"Resumed a dynesty run from {self.out_basename+'dynesty.save'}"
+                            "Resumed a dynesty run from "
+                            f"{self.out_basename}dynesty.save"
                         )
 
                     else:

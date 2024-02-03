@@ -1,7 +1,7 @@
 astropy ~= 5.2.0
 astroquery ~= 0.4.0
 corner ~= 2.2.0
-dynesty ~=2.1.0
+dynesty ~= 2.1.0
 emcee ~= 3.1.0
 exo-k ~= 1.2.0
 h5py ~= 3.9.0

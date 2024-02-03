@@ -5,6 +5,8 @@ Installation
 
 ``species`` is compatible with `Python <https://www.python.org>`_ versions 3.9/3.10/3.11 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
 
+It is recommended to install ``species`` within a `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ such that the required dependency versions will not cause any conflicts with other installed packages. 
+
 Installation from PyPI
 ----------------------
 
@@ -21,7 +23,7 @@ Or, to update ``species`` to the most recent version:
 
    $ pip install --upgrade species
 
-It is also required to separately install ``petitRADTRANS``, although this step can also be skipped:
+It is also required to separately install ``petitRADTRANS``, although this step can be skipped:
 
 .. code-block:: console
 
@@ -74,5 +76,5 @@ The installation can now be tested, for example by starting Python in interactiv
 
 .. code-block:: python
 
-    >>> import species
-    >>> species.SpeciesInit()
+    >>> from species import SpeciesInit
+    >>> SpeciesInit()
