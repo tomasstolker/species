@@ -3779,8 +3779,7 @@ class AtmosphericRetrieval:
             """
             Function to transform the unit cube into the parameter
             cube. It is not clear how to pass additional arguments
-            to the function, therefore it is placed here. Used when
-            the ``sampler`` is set to ``"multinest"``.
+            to the function, therefore it is placed here.
 
             Parameters
             ----------
@@ -3805,8 +3804,7 @@ class AtmosphericRetrieval:
         ) -> Union[float, np.float64]:
             """
             Function to calculate the log-likelihood for the
-            sampled parameter cube. Used when the ``sampler`` is
-            set to ``"multinest"``.
+            sampled parameter cube.
 
             Parameters
             ----------

@@ -1,6 +1,7 @@
 """
-Module with functionalities for retrieving the age and bulk parameters
-of one or multiple planets and/or brown dwarfs in a system.
+Module with functionalities for retrieving the age and
+bulk parameters of one or multiple planets and/or brown
+dwarfs in a system.
 """
 
 import configparser

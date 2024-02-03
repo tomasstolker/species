@@ -1064,8 +1064,64 @@ class FitModel:
                 print(f"   - {phot_item} = {self.weights[phot_item]:.2e}")
 
     @typechecked
-    def lnlike_func(
-        self, params, prior: Optional[Dict[str, Tuple[float, float]]]
+    def _prior_transform(
+        self, cube, bounds: Dict[str, Tuple[float, float]], cube_index: Dict[str, int]
+    ):
+        """
+        Function to transform the sampled unit cube into a
+        cube with sampled model parameters.
+
+        Parameters
+        ----------
+        cube : LP_c_double, np.ndarray
+            Unit cube.
+        bounds : dict(str, tuple(float, float))
+            Dictionary with the prior boundaries.
+        cube_index : dict(str, int)
+            Dictionary with the indices for selecting the model
+            parameters in the ``cube``.
+
+        Returns
+        -------
+        np.ndarray
+            Cube with the sampled model parameters.
+        """
+
+        n_modelpar = len(self.modelpar)
+
+        if isinstance(cube, np.ndarray):
+            # Create new array for UltraNest
+            param_out = cube.copy()
+        else:
+            # Convert from ctypes.c_double to np.ndarray
+            # Only required with MultiNest
+            # cube = np.ctypeslib.as_array(cube, shape=(n_modelpar,))
+
+            # Use the same object with MultiNest
+            param_out = cube
+
+        for item in cube_index:
+            if item in self.prior:
+                # Gaussian prior
+                param_out[cube_index[item]] = stats.norm.ppf(
+                    param_out[cube_index[item]],
+                    loc=self.prior[item][0],
+                    scale=self.prior[item][1],
+                )
+
+            else:
+                # Uniform prior
+                param_out[cube_index[item]] = (
+                    bounds[item][0]
+                    + (bounds[item][1] - bounds[item][0]) * param_out[cube_index[item]]
+                )
+
+        return param_out
+
+    @typechecked
+    def _lnlike_func(
+        self,
+        params,
     ) -> Union[np.float64, float]:
         """
         Function for calculating the log-likelihood for the sampled
@@ -1073,16 +1129,8 @@ class FitModel:
 
         Parameters
         ----------
-        params : np.ndarray, pymultinest.run.LP_c_double
+        params : LP_c_double, np.ndarray
             Cube with sampled model parameters.
-        prior : dict(str, tuple(float, float))
-            Dictionary with Gaussian priors for one or multiple
-            parameters. The prior can be set for any of the atmosphere
-            or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
-            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
-            for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup.
 
         Returns
         -------
@@ -1245,7 +1293,9 @@ class FitModel:
                     if "flux_scaling" in self.cube_index:
                         flux_scaling = params[self.cube_index["flux_scaling"]]
                     else:
-                        flux_scaling = 10.**params[self.cube_index["log_flux_scaling"]]
+                        flux_scaling = (
+                            10.0 ** params[self.cube_index["log_flux_scaling"]]
+                        )
 
                 else:
                     try:
@@ -1291,7 +1341,7 @@ class FitModel:
 
         ln_like = 0.0
 
-        for key, value in prior.items():
+        for key, value in self.prior.items():
             if key == "mass":
                 if "logg" in self.modelpar:
                     mass = logg_to_mass(
@@ -1784,13 +1834,13 @@ class FitModel:
         ``MultiNest`` sampler. While ``PyMultiNest`` can be
         installed with ``pip`` from the PyPI repository,
         ``MultiNest`` has to to be build manually. See the
-        ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html.
-        Note that the library path of ``MultiNest`` should be set
-        to the environmental variable ``LD_LIBRARY_PATH`` on a
+        `PyMultiNest documentation <http://johannesbuchner.
+        github.io/PyMultiNest/install.html>`_. The library
+        path of ``MultiNest`` should be set to the
+        environmental variable ``LD_LIBRARY_PATH`` on a
         Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac.
-        Alternatively, the variable can be set before importing
-        the ``species`` package, for example:
+        Alternatively, the variable can be set before
+        importing the ``species`` package, for example:
 
         .. code-block:: python
 
@@ -1809,12 +1859,11 @@ class FitModel:
         prior : dict(str, tuple(float, float)), None
             Dictionary with Gaussian priors for one or multiple
             parameters. The prior can be set for any of the
-            atmosphere or calibration parameters, for example
-            ``prior={'teff': (1200., 100.)}``. Additionally, a
-            prior can be set for the mass, for example
-            ``prior={'mass': (13., 3.)}`` for an expected mass
-            of 13 Mjup with an uncertainty of 3 Mjup. The
-            parameter is not used if set to ``None``.
+            atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
+            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
+            for an expected mass of 13 Mjup with an uncertainty of
+            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -1823,6 +1872,13 @@ class FitModel:
         """
 
         print("Running nested sampling with MultiNest...")
+
+        # Set attributes
+
+        if prior is None:
+            self.prior = {}
+        else:
+            self.prior = prior
 
         # Get the MPI rank of the process
 
@@ -1841,11 +1897,11 @@ class FitModel:
 
         # Add parallax to dictionary with Gaussian priors
 
-        if prior is None:
-            prior = {}
+        if "parallax" in self.modelpar:
+            self.prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
-        def lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
+        def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
             """
             Function to transform the unit cube into the parameter
             cube. It is not clear how to pass additional arguments
@@ -1853,7 +1909,7 @@ class FitModel:
 
             Parameters
             ----------
-            cube : pymultinest.run.LP_c_double
+            cube : LP_c_double
                 Unit cube.
             n_dim : int
                 Number of dimensions.
@@ -1866,36 +1922,26 @@ class FitModel:
                 None
             """
 
-            for item in self.cube_index:
-                if item == "parallax":
-                    # Gaussian prior for the parallax
-                    cube[self.cube_index[item]] = stats.norm.ppf(
-                        cube[self.cube_index[item]],
-                        loc=self.parallax[0],
-                        scale=self.parallax[1],
-                    )
-
-                else:
-                    # Uniform priors for all parameters
-                    cube[self.cube_index[item]] = (
-                        self.bounds[item][0]
-                        + (self.bounds[item][1] - self.bounds[item][0])
-                        * cube[self.cube_index[item]]
-                    )
+            self._prior_transform(cube, self.bounds, self.cube_index)
 
         @typechecked
-        def lnlike_multinest(params, n_dim: int, n_param: int) -> Union[float, np.float64]:
+        def _lnlike_multinest(
+            params, n_dim: int, n_param: int
+        ) -> Union[float, np.float64]:
             """
-            Function for return the log-likelihood for the sampled parameter cube.
+            Function for return the log-likelihood for the
+            sampled parameter cube.
 
             Parameters
             ----------
-            params : pymultinest.run.LP_c_double
+            params : LP_c_double
                 Cube with sampled model parameters.
             n_dim : int
-                Number of dimensions. This parameter is mandatory but not used by the function.
+                Number of dimensions. This parameter is mandatory
+                but not used by the function.
             n_param : int
-                Number of parameters. This parameter is mandatory but not used by the function.
+                Number of parameters. This parameter is mandatory
+                but not used by the function.
 
             Returns
             -------
@@ -1903,11 +1949,11 @@ class FitModel:
                 Log-likelihood.
             """
 
-            return self.lnlike_func(params, prior=prior)
+            return self._lnlike_func(params)
 
         pymultinest.run(
-            lnlike_multinest,
-            lnprior_multinest,
+            _lnlike_multinest,
+            _lnprior_multinest,
             len(self.modelpar),
             outputfiles_basename=output,
             resume=False,
@@ -2027,19 +2073,23 @@ class FitModel:
         tag : str
             Database tag where the samples will be stored.
         min_num_live_points : int
-            Minimum number of live points. The default of 400 is a reasonable number (see
-            https://johannesbuchner.github.io/UltraNest/issues.html). In principle, choosing a very
-            low number allows nested sampling to make very few iterations and go to the peak
-            quickly. However, the space will be poorly sampled, giving a large region and thus low
-            efficiency, and potentially not seeing interesting modes. Therefore, a value above 100
-            is typically useful.
+            Minimum number of live points. The default of 400 is a
+            `reasonable number <https://johannesbuchner.github.io/
+            UltraNest/issues.html>`_. In principle, choosing a very
+            low number allows nested sampling to make very few
+            iterations and go to the peak quickly. However, the space
+            will be poorly sampled, giving a large region and thus low
+            efficiency, and potentially not seeing interesting modes.
+            Therefore, a value above 100 is typically useful.
         output : str
             Path that is used for the output files from ``UltraNest``.
         prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple parameters. The prior can be set
-            for any of the atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior can be set for the mass, e.g.
-            ``prior={'mass': (13., 3.)}`` for an expected mass of 13 Mjup with an uncertainty of
+            Dictionary with Gaussian priors for one or multiple
+            parameters. The prior can be set for any of the
+            atmosphere or calibration parameters, e.g.
+            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
+            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
+            for an expected mass of 13 Mjup with an uncertainty of
             3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
@@ -2050,14 +2100,12 @@ class FitModel:
 
         print("Running nested sampling with UltraNest...")
 
-        # Print warning if n_live_points from PyMultiNest is used
+        # Set attributes
 
-        # if n_live_points is not None:
-        #     warnings.warn('The \'n_live_points\' parameter has been deprecated because UltraNest '
-        #                   'is used instead of PyMultiNest. UltraNest can be executed with the '
-        #                   '\'run_ultranest\' method of \'FitModel\' and uses the '
-        #                   '\'min_num_live_points\' parameter (see documentation for details).',
-        #                   DeprecationWarning)
+        if prior is None:
+            self.prior = {}
+        else:
+            self.prior = prior
 
         # Get the MPI rank of the process
 
@@ -2076,11 +2124,11 @@ class FitModel:
 
         # Add parallax to dictionary with Gaussian priors
 
-        if prior is None:
-            prior = {}
+        if "parallax" in self.modelpar:
+            self.prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
-        def lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
+        def _lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
             """
             Function to transform the unit cube into the parameter
             cube. It is not clear how to pass additional arguments
@@ -2089,37 +2137,18 @@ class FitModel:
             Parameters
             ----------
             cube : np.ndarray
-                Array with unit parameters.
+                Unit cube.
 
             Returns
             -------
             np.ndarray
-                Array with sampled model parameters.
+                Cube with the sampled model parameters.
             """
 
-            params = cube.copy()
-
-            for item in self.cube_index:
-                if item == "parallax":
-                    # Gaussian prior for the parallax
-                    params[self.cube_index[item]] = stats.norm.ppf(
-                        cube[self.cube_index[item]],
-                        loc=self.parallax[0],
-                        scale=self.parallax[1],
-                    )
-
-                else:
-                    # Uniform priors for all parameters
-                    params[self.cube_index[item]] = (
-                        self.bounds[item][0]
-                        + (self.bounds[item][1] - self.bounds[item][0])
-                        * params[self.cube_index[item]]
-                    )
-
-            return params
+            return self._prior_transform(cube, self.bounds, self.cube_index)
 
         @typechecked
-        def lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
+        def _lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
             """
             Function for returning the log-likelihood for the sampled parameter cube.
 
@@ -2134,7 +2163,7 @@ class FitModel:
                 Log-likelihood.
             """
 
-            ln_like = self.lnlike_func(params, prior=prior)
+            ln_like = self._lnlike_func(params)
 
             if not np.isfinite(ln_like):
                 # UltraNest can not handle np.inf in the likelihood
@@ -2144,8 +2173,8 @@ class FitModel:
 
         sampler = ultranest.ReactiveNestedSampler(
             self.modelpar,
-            lnlike_ultranest,
-            transform=lnprior_ultranest,
+            _lnlike_ultranest,
+            transform=_lnprior_ultranest,
             resume="subfolder",
             log_dir=output,
         )
