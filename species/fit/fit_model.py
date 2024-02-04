@@ -10,9 +10,6 @@ from typing import Optional, Union, List, Tuple, Dict
 import numpy as np
 import spectres
 
-from PyAstronomy.pyasl import fastRotBroad
-from scipy import interpolate, stats
-
 try:
     import ultranest
 except:
@@ -31,6 +28,8 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
+from PyAstronomy.pyasl import fastRotBroad
+from scipy import interpolate, stats
 from typeguard import typechecked
 
 from species.core import constants
@@ -92,6 +91,7 @@ class FitModel:
         fit_corr: Optional[List[str]] = None,
         apply_weights: Union[bool, Dict[str, Union[float, np.ndarray]]] = False,
         ext_filter: Optional[str] = None,
+        normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
     ) -> None:
         """
         Parameters
@@ -403,6 +403,17 @@ class FitModel:
             svo/theory/fps/>`_ as argument then the extinction
             ``ism_ext`` is fitted in that filter instead of the
             $V$ band.
+        normal_prior : dict(str, tuple(float, float)), None
+            Dictionary with normal priors for one or multiple
+            parameters. The prior can be set for any of the
+            atmosphere or calibration parameters, e.g.
+            ``normal_prior={'teff': (1200., 100.)}``, for a prior
+            distribution with a mean of 1200 K and a standard
+            deviation of 100 K. Additionally, a prior can be set for
+            the mass, e.g. ``normal_prior={'mass': (13., 3.)}`` for
+            an expected mass of 13 Mjup with an uncertainty of 3
+            Mjup. The parameter is not used if the argument is set
+            to ``None``.
 
         Returns
         -------
@@ -418,6 +429,17 @@ class FitModel:
                 "The 'bounds' dictionary should contain 'teff' and 'radius'."
             )
 
+        if model == "bt-settl":
+            warnings.warn(
+                "It is recommended to use the CIFIST "
+                "grid of the BT-Settl, because it is "
+                "a newer version. In that case, set "
+                "model='bt-settl-cifist' when using "
+                "add_model of Database."
+            )
+
+        # Set attributes
+
         self.object = ReadObject(object_name)
         self.parallax = self.object.get_parallax()
         self.binary = False
@@ -431,14 +453,12 @@ class FitModel:
         self.model = model
         self.bounds = bounds
 
-        if self.model == "bt-settl":
-            warnings.warn(
-                "It is recommended to use the CIFIST "
-                "grid of the BT-Settl, because it is "
-                "a newer version. In that case, set "
-                "model='bt-settl-cifist' when using "
-                "add_model of Database."
-            )
+        if normal_prior is None:
+            self.normal_prior = {}
+        else:
+            self.normal_prior = normal_prior
+
+        # Set model parameters and boundaries
 
         if self.model == "planck":
             # Fitting blackbody radiation
@@ -761,17 +781,17 @@ class FitModel:
             self.modelspec = []
 
             if self.model != "planck":
-                for key, value in self.spectrum.items():
-                    print(f"\rInterpolating {key}...", end="", flush=True)
+                for spec_key, spec_value in self.spectrum.items():
+                    print(f"\rInterpolating {spec_key}...", end="", flush=True)
 
-                    wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
+                    wavel_range = (0.9 * spec_value[0][0, 0], 1.1 * spec_value[0][-1, 0])
 
                     readmodel = ReadModel(self.model, wavel_range=wavel_range)
 
                     readmodel.interpolate_grid(
-                        wavel_resample=self.spectrum[key][0][:, 0],
+                        wavel_resample=spec_value[0][:, 0],
                         smooth=True,
-                        spec_res=self.spectrum[key][3],
+                        spec_res=spec_value[3],
                     )
 
                     self.modelspec.append(readmodel)
@@ -819,17 +839,17 @@ class FitModel:
                 self.diskphot.append(readmodel)
                 print(" [DONE]")
 
-            for key, value in self.spectrum.items():
-                print(f"\rInterpolating {key}...", end="", flush=True)
+            for spec_key, spec_value in self.spectrum.items():
+                print(f"\rInterpolating {spec_key}...", end="", flush=True)
 
-                wavel_range = (0.9 * value[0][0, 0], 1.1 * value[0][-1, 0])
+                wavel_range = (0.9 * spec_value[0][0, 0], 1.1 * spec_value[0][-1, 0])
 
                 readmodel = ReadModel("blackbody", wavel_range=wavel_range)
 
                 readmodel.interpolate_grid(
-                    wavel_resample=self.spectrum[key][0][:, 0],
+                    wavel_resample=spec_value[0][:, 0],
                     smooth=True,
-                    spec_res=self.spectrum[key][3],
+                    spec_res=spec_value[3],
                 )
 
                 self.diskspec.append(readmodel)
@@ -1087,26 +1107,25 @@ class FitModel:
             Cube with the sampled model parameters.
         """
 
-        n_modelpar = len(self.modelpar)
-
         if isinstance(cube, np.ndarray):
             # Create new array for UltraNest
             param_out = cube.copy()
         else:
             # Convert from ctypes.c_double to np.ndarray
             # Only required with MultiNest
+            # n_modelpar = len(self.modelpar)
             # cube = np.ctypeslib.as_array(cube, shape=(n_modelpar,))
 
             # Use the same object with MultiNest
             param_out = cube
 
         for item in cube_index:
-            if item in self.prior:
+            if item in self.normal_prior:
                 # Gaussian prior
                 param_out[cube_index[item]] = stats.norm.ppf(
                     param_out[cube_index[item]],
-                    loc=self.prior[item][0],
-                    scale=self.prior[item][1],
+                    loc=self.normal_prior[item][0],
+                    scale=self.normal_prior[item][1],
                 )
 
             else:
@@ -1341,7 +1360,7 @@ class FitModel:
 
         ln_like = 0.0
 
-        for key, value in self.prior.items():
+        for key, value in self.normal_prior.items():
             if key == "mass":
                 if "logg" in self.modelpar:
                     mass = logg_to_mass(
@@ -1827,7 +1846,7 @@ class FitModel:
         tag: str,
         n_live_points: int = 1000,
         output: str = "multinest/",
-        prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        **kwargs,
     ) -> None:
         """
         Function to run the ``PyMultiNest`` wrapper of the
@@ -1856,14 +1875,6 @@ class FitModel:
             Number of live points.
         output : str
             Path that is used for the output files from MultiNest.
-        prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple
-            parameters. The prior can be set for any of the
-            atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
-            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
-            for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -1875,10 +1886,17 @@ class FitModel:
 
         # Set attributes
 
-        if prior is None:
-            self.prior = {}
-        else:
-            self.prior = prior
+        if "prior" in kwargs:
+            warnings.warn(
+                "The 'prior' parameter has been deprecated "
+                "and will be removed in a future release. "
+                "Please use the 'normal_prior' of FitModel "
+                "instead.",
+                DeprecationWarning,
+            )
+
+            if kwargs["prior"] is not None:
+                self.normal_prior = kwargs["prior"]
 
         # Get the MPI rank of the process
 
@@ -1898,7 +1916,7 @@ class FitModel:
         # Add parallax to dictionary with Gaussian priors
 
         if "parallax" in self.modelpar:
-            self.prior["parallax"] = (self.parallax[0], self.parallax[1])
+            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
         def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
@@ -2040,7 +2058,8 @@ class FitModel:
         # Add samples to the database
 
         if mpi_rank == 0:
-            # Writing the samples to the database is only possible when using a single process
+            # Writing the samples to the database is only
+            # possible when using a single process
             from species.data.database import Database
 
             species_db = Database()
@@ -2057,16 +2076,12 @@ class FitModel:
 
     @typechecked
     def run_ultranest(
-        self,
-        tag: str,
-        min_num_live_points=400,
-        output: str = "ultranest/",
-        prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        self, tag: str, min_num_live_points=400, output: str = "ultranest/", **kwargs
     ) -> None:
         """
-        Function to run ``UltraNest`` for constructing the posterior
-        probability distributions on model parameters and computing
-        the marginal likelihood (i.e. "evidence").
+        Function to run ``UltraNest`` for estimating the posterior
+        distributions of model parameters and computing the
+        marginalized likelihood (i.e. "evidence").
 
         Parameters
         ----------
@@ -2083,14 +2098,6 @@ class FitModel:
             Therefore, a value above 100 is typically useful.
         output : str
             Path that is used for the output files from ``UltraNest``.
-        prior : dict(str, tuple(float, float)), None
-            Dictionary with Gaussian priors for one or multiple
-            parameters. The prior can be set for any of the
-            atmosphere or calibration parameters, e.g.
-            ``prior={'teff': (1200., 100.)}``. Additionally, a prior
-            can be set for the mass, e.g. ``prior={'mass': (13., 3.)}``
-            for an expected mass of 13 Mjup with an uncertainty of
-            3 Mjup. The parameter is not used if set to ``None``.
 
         Returns
         -------
@@ -2102,10 +2109,17 @@ class FitModel:
 
         # Set attributes
 
-        if prior is None:
-            self.prior = {}
-        else:
-            self.prior = prior
+        if "prior" in kwargs:
+            warnings.warn(
+                "The 'prior' parameter has been deprecated "
+                "and will be removed in a future release. "
+                "Please use the 'normal_prior' of FitModel "
+                "instead.",
+                DeprecationWarning,
+            )
+
+            if kwargs["prior"] is not None:
+                self.normal_prior = kwargs["prior"]
 
         # Get the MPI rank of the process
 
@@ -2125,7 +2139,7 @@ class FitModel:
         # Add parallax to dictionary with Gaussian priors
 
         if "parallax" in self.modelpar:
-            self.prior["parallax"] = (self.parallax[0], self.parallax[1])
+            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
         def _lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
@@ -2150,7 +2164,8 @@ class FitModel:
         @typechecked
         def _lnlike_ultranest(params: np.ndarray) -> Union[float, np.float64]:
             """
-            Function for returning the log-likelihood for the sampled parameter cube.
+            Function for returning the log-likelihood for the
+            sampled parameter cube.
 
             Parameters
             ----------
