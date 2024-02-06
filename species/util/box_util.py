@@ -33,11 +33,11 @@ def update_objectbox(
         Dictionary with the model parameters. Should contain the
         value(s) of the flux scaling and/or the error inflation.
     model : str, None
-        Name of the atmospheric model. Only required for inflating the
-        errors of spectra. Otherwise, the argument can be set to
-        ``None``. Not required when ``model='petitradtrans'`` because
-        the error inflation is differently implemented with
-        :class:`~species.fit.retrieval.AtmosphericRetrieval`.
+        Name of the atmospheric model. Only required for inflating
+        the errors of spectra. Otherwise, the argument can be set
+        to ``None``. Not required when ``model='petitradtrans'``
+        because the error inflation is implemented differently
+        with :class:`~species.fit.retrieval.AtmosphericRetrieval`.
 
     Returns
     -------
@@ -107,7 +107,7 @@ def update_objectbox(
                     warnings.warn(
                         "The dictionary with model parameters "
                         f"contains the error inflation for {key} "
-                        " but the argument of 'model' is set to "
+                        "but the argument of 'model' is set to "
                         "'None'. Inflation of the errors is "
                         "therefore not possible."
                     )

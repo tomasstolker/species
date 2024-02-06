@@ -412,8 +412,10 @@ class FitModel:
             deviation of 100 K. Additionally, a prior can be set for
             the mass, e.g. ``normal_prior={'mass': (13., 3.)}`` for
             an expected mass of 13 Mjup with an uncertainty of 3
-            Mjup. The parameter is not used if the argument is set
-            to ``None``.
+            Mjup. A normal prior for the parallax is automatically
+            included so does not need to be set with
+            ``normal_prior``. The parameter is not used if the
+            argument is set to ``None``.
 
         Returns
         -------
@@ -668,9 +670,9 @@ class FitModel:
 
         if inc_spec and self.model == "powerlaw":
             warnings.warn(
-                "The 'inc_spec' parameter is not supported when fitting a "
-                "power-law spectrum to photometric data. The argument of "
-                "'inc_spec' is therefore ignored."
+                "The 'inc_spec' parameter is not supported when "
+                "fitting a power-law spectrum to photometric data. "
+                "The argument of 'inc_spec' is therefore ignored."
             )
 
             inc_spec = []
@@ -784,7 +786,10 @@ class FitModel:
                 for spec_key, spec_value in self.spectrum.items():
                     print(f"\rInterpolating {spec_key}...", end="", flush=True)
 
-                    wavel_range = (0.9 * spec_value[0][0, 0], 1.1 * spec_value[0][-1, 0])
+                    wavel_range = (
+                        0.9 * spec_value[0][0, 0],
+                        1.1 * spec_value[0][-1, 0],
+                    )
 
                     readmodel = ReadModel(self.model, wavel_range=wavel_range)
 
@@ -874,32 +879,22 @@ class FitModel:
                         bounds[item][1][1],
                     )
 
-                    if self.bounds[f"error_{item}"][0] < 0.0:
+                    if self.bounds[f"error_{item}"][1] < 0.0:
                         warnings.warn(
-                            f"The lower bound of 'error_{item}' is smaller than 0. "
-                            f"The error inflation should be given relative to the model "
-                            f"fluxes  so the boundaries are typically between 0 and 1."
+                            f"The lower bound of 'error_{item}' is "
+                            "smaller than 0. The error inflation "
+                            "should be given relative to the model "
+                            "fluxes so the boundaries should be "
+                            "larger than 0."
                         )
 
                     if self.bounds[f"error_{item}"][1] < 0.0:
                         warnings.warn(
-                            f"The upper bound of 'error_{item}' is smaller than 0. "
-                            f"The error inflation should be given relative to the model "
-                            f"fluxes so the boundaries are typically between 0 and 1."
-                        )
-
-                    if self.bounds[f"error_{item}"][0] > 1.0:
-                        warnings.warn(
-                            f"The lower bound of 'error_{item}' is larger than 1. The "
-                            f"error inflation should be given relative to the model "
-                            f"fluxes so the boundaries are typically between 0 and 1."
-                        )
-
-                    if self.bounds[f"error_{item}"][1] > 1.0:
-                        warnings.warn(
-                            f"The upper bound of 'error_{item}' is larger than 1. The "
-                            f"error inflation should be given relative to the model "
-                            f"fluxes so the boundaries are typically between 0 and 1."
+                            f"The upper bound of 'error_{item}' is "
+                            "smaller than 0. The error inflation "
+                            "should be given relative to the model "
+                            "fluxes so the boundaries should be "
+                            "larger than 0."
                         )
 
                 if len(bounds[item]) > 2 and bounds[item][2] is not None:
@@ -991,10 +986,22 @@ class FitModel:
         for item in self.modelpar:
             print(f"   - {item}")
 
-        print("Prior boundaries:")
+        # Add parallax to dictionary with Gaussian priors
+
+        if "parallax" in self.modelpar:
+            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
+
+        # Printing uniform and normal priors
+
+        print("Uniform priors (min, max):")
 
         for key, value in self.bounds.items():
             print(f"   - {key} = {value}")
+
+        if len(self.normal_prior) > 0:
+            print("Normal priors (mean, sigma):")
+            for key, value in self.normal_prior.items():
+                print(f"   - {key} = {value}")
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -1845,7 +1852,9 @@ class FitModel:
         self,
         tag: str,
         n_live_points: int = 1000,
+        resume: bool = False,
         output: str = "multinest/",
+        kwargs_multinest: Optional[dict] = None,
         **kwargs,
     ) -> None:
         """
@@ -1873,8 +1882,17 @@ class FitModel:
             Database tag where the samples will be stored.
         n_live_points : int
             Number of live points.
+        resume : bool
+            Resume the posterior sampling from a previous run.
         output : str
             Path that is used for the output files from MultiNest.
+        kwargs_multinest : dict, None
+            Dictionary with keyword arguments that can be used to
+            adjust the parameters of the `run() function
+            <https://github.com/JohannesBuchner/PyMultiNest/blob/
+            master/pymultinest/run.py>`_ of the ``PyMultiNest``
+            sampler. See also the `documentation of MultiNest
+            <https://github.com/JohannesBuchner/MultiNest>`_.
 
         Returns
         -------
@@ -1898,6 +1916,41 @@ class FitModel:
             if kwargs["prior"] is not None:
                 self.normal_prior = kwargs["prior"]
 
+        # Create empty dictionary if needed
+
+        if kwargs_multinest is None:
+            kwargs_multinest = {}
+
+        # Check kwargs_multinest keywords
+
+        if "n_live_points" in kwargs_multinest:
+            warnings.warn(
+                "Please specify the number of live points "
+                "as argument of 'n_live_points' instead "
+                "of using 'kwargs_multinest'."
+            )
+
+            del kwargs_multinest["n_live_points"]
+
+        if "resume" in kwargs_multinest:
+            warnings.warn(
+                "Please use the 'resume' parameter "
+                "instead of setting the value with "
+                "'kwargs_multinest'."
+            )
+
+            del kwargs_multinest["resume"]
+
+        if "outputfiles_basename" in kwargs_multinest:
+            warnings.warn(
+                "Please use the 'output' parameter "
+                "instead of setting the value of "
+                "'outputfiles_basename' in "
+                "'kwargs_multinest'."
+            )
+
+            del kwargs_multinest["outputfiles_basename"]
+
         # Get the MPI rank of the process
 
         try:
@@ -1912,11 +1965,6 @@ class FitModel:
 
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
-
-        # Add parallax to dictionary with Gaussian priors
-
-        if "parallax" in self.modelpar:
-            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
         def _lnprior_multinest(cube, n_dim: int, n_param: int) -> None:
@@ -1974,8 +2022,9 @@ class FitModel:
             _lnprior_multinest,
             len(self.modelpar),
             outputfiles_basename=output,
-            resume=False,
+            resume=resume,
             n_live_points=n_live_points,
+            **kwargs_multinest,
         )
 
         # Create the Analyzer object
@@ -2076,7 +2125,13 @@ class FitModel:
 
     @typechecked
     def run_ultranest(
-        self, tag: str, min_num_live_points=400, output: str = "ultranest/", **kwargs
+        self,
+        tag: str,
+        min_num_live_points: int = 400,
+        resume: Union[bool, str] = "subfolder",
+        output: str = "ultranest/",
+        kwargs_ultranest: Optional[dict] = None,
+        **kwargs,
     ) -> None:
         """
         Function to run ``UltraNest`` for estimating the posterior
@@ -2096,6 +2151,19 @@ class FitModel:
             will be poorly sampled, giving a large region and thus low
             efficiency, and potentially not seeing interesting modes.
             Therefore, a value above 100 is typically useful.
+        resume : bool
+            Resume the posterior sampling from a previous run. The
+            ``UltraNest`` documentation provides a description of the
+            `possible arguments <https://johannesbuchner.github.io/
+            UltraNest/ultranest.html#ultranest.integrator.
+            ReactiveNestedSampler>`_ (``True``, 'resume',
+            'resume-similar', 'overwrite', 'subfolder').
+        kwargs_ultranest : dict, None
+            Dictionary with keyword arguments that can be used to
+            adjust the parameters of the `run() method
+            <https://johannesbuchner.github.io/UltraNest/ultranest
+            .html#ultranest.integrator.ReactiveNestedSampler.run>`_
+            of the ``UltraNest`` sampler.
         output : str
             Path that is used for the output files from ``UltraNest``.
 
@@ -2121,6 +2189,11 @@ class FitModel:
             if kwargs["prior"] is not None:
                 self.normal_prior = kwargs["prior"]
 
+        # Create empty dictionary if needed
+
+        if kwargs_ultranest is None:
+            kwargs_ultranest = {}
+
         # Get the MPI rank of the process
 
         try:
@@ -2135,11 +2208,6 @@ class FitModel:
 
         if mpi_rank == 0 and not os.path.exists(output):
             os.mkdir(output)
-
-        # Add parallax to dictionary with Gaussian priors
-
-        if "parallax" in self.modelpar:
-            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         @typechecked
         def _lnprior_ultranest(cube: np.ndarray) -> np.ndarray:
@@ -2190,14 +2258,27 @@ class FitModel:
             self.modelpar,
             _lnlike_ultranest,
             transform=_lnprior_ultranest,
-            resume="subfolder",
+            resume=resume,
             log_dir=output,
         )
 
+        if "show_status" not in kwargs_ultranest:
+            kwargs_ultranest["show_status"] = True
+
+        if "viz_callback" not in kwargs_ultranest:
+            kwargs_ultranest["viz_callback"] = False
+
+        if "min_num_live_points" in kwargs_ultranest:
+            warnings.warn(
+                "Please specify the minimum number of live "
+                "points as argument of 'min_num_live_points' "
+                "instead of using 'kwargs_ultranest'."
+            )
+
+            del kwargs_ultranest["min_num_live_points"]
+
         result = sampler.run(
-            show_status=True,
-            viz_callback=False,
-            min_num_live_points=min_num_live_points,
+            min_num_live_points=min_num_live_points, **kwargs_ultranest
         )
 
         # Log-evidence

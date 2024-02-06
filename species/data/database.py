@@ -1257,14 +1257,14 @@ class Database:
             read_spec = {}
             read_cov = {}
 
-            if f"objects/{object_name}/spectrum" in hdf5_file:
-                del hdf5_file[f"objects/{object_name}/spectrum"]
-
             # Read spectra
 
             spec_nan = {}
 
             for spec_item, spec_value in spectrum.items():
+                if f"objects/{object_name}/spectrum/{spec_item}" in hdf5_file:
+                    del hdf5_file[f"objects/{object_name}/spectrum/{spec_item}"]
+
                 if spec_value[0].endswith(".fits") or spec_value[0].endswith(".fit"):
                     with fits.open(spec_value[0]) as hdulist:
                         if (

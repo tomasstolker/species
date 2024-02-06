@@ -19,7 +19,7 @@ from species.data.misc_data.dust_data import add_cross_sections, add_optical_con
 
 
 @typechecked
-def check_dust_database():
+def check_dust_database() -> None:
     """
     Function to check if the dust data is present in the
     database and add the data if needed.
