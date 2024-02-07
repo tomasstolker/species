@@ -1565,6 +1565,7 @@ class ReadIsochrone:
         use_mag: bool = True,
         atmospheric_model: Optional[str] = None,
         extra_param: Optional[Dict[str, float]] = None,
+        calc_phot: bool = False,
     ) -> np.ndarray:
         """
         Function for converting contrast values into masses. This
@@ -1647,6 +1648,13 @@ class ReadIsochrone:
             that is, the calculation of synthetic photometry from an
             atmospheric model that is not associated with the
             evolutionary model.
+        calc_phot : bool
+            Calculate synthetic photometry from the model spectra
+            regardless if pre-calculated magnitudes for the
+            ``filter_name`` are already available with the isochrone
+            data. Typically the argument can be set to ``False``,
+            but to force the calculation of synthetic photometry the
+            argument can be set to ``True``.
 
         Returns
         -------
@@ -1682,7 +1690,7 @@ class ReadIsochrone:
 
         filter_list = self.get_filters()
 
-        if filter_name in filter_list:
+        if filter_name in filter_list and not calc_phot:
             print(
                 f"The '{filter_name}' filter is found in the list "
                 "of available filters from the isochrone data of "
@@ -1693,21 +1701,25 @@ class ReadIsochrone:
 
             iso_box = self.get_isochrone(age=age, masses=None, filter_mag=filter_name)
 
-            mass_interp = interpolate.interp1d(
-                iso_box.magnitude, iso_box.mass, bounds_error=False, fill_value=np.nan
+            # x (=iso_box.magnitude) must be increasing in np.interp
+            mass_array = np.interp(
+                abs_mag,
+                iso_box.magnitude[::-1],
+                iso_box.mass[::-1],
+                left=np.nan,
+                right=np.nan,
             )
-
-            mass_array = mass_interp(abs_mag)
 
         else:
-            print(
-                f"The '{filter_name}' filter is not found in the "
-                "list of available filters from the isochrone "
-                f"data of '{self.tag}'.\nIt will be tried to "
-                "download the filter profile (if needed) and to "
-                "use the associated atmospheric model spectra "
-                "for calculating synthetic photometry."
-            )
+            if not filter_name in filter_list:
+                print(
+                    f"The '{filter_name}' filter is not found in the "
+                    "list of available filters from the isochrone "
+                    f"data of '{self.tag}'.\nIt will be tried to "
+                    "download the filter profile (if needed) and to "
+                    "use the associated atmospheric model spectra "
+                    "for calculating synthetic photometry."
+                )
 
             model_reader = ReadModel(model=atmospheric_model, filter_name=filter_name)
 
@@ -1736,10 +1748,13 @@ class ReadIsochrone:
                     model_param=model_param, return_box=False
                 )
 
-            mass_interp = interpolate.interp1d(
-                model_abs_mag, iso_box.mass, bounds_error=False, fill_value=np.nan
+            # x (=model_abs_mag) must be increasing in np.interp
+            mass_array = np.interp(
+                abs_mag,
+                model_abs_mag[::-1],
+                iso_box.mass[::-1],
+                left=np.nan,
+                right=np.nan,
             )
-
-            mass_array = mass_interp(abs_mag)
 
         return mass_array

@@ -142,7 +142,7 @@ class SyntheticPhotometry:
         threshold: Optional[float] = 0.01,
     ) -> Tuple[
         Union[float, np.float32, np.float64],
-        Union[Optional[float], Optional[np.float32], Optional[np.float64]],
+        Optional[Union[float, np.float32, np.float64]],
     ]:
         """
         Function for calculating the average flux from a spectrum and

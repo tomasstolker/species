@@ -553,8 +553,8 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "T_bottom" in param:
         index = param.index("T_bottom")
         param[index] = r"$T_\mathrm{bottom}$ (K)"
-    
-    num_layer = 6 # could make a variable in the future
+
+    num_layer = 6  # could make a variable in the future
     for i in range(num_layer):
         if f"PTslope_{num_layer - i}" in param:
             index = param.index(f"PTslope_{num_layer - i}")
@@ -1513,7 +1513,14 @@ def create_model_label(
 
         elif item == "mass" and leg_param is not None and item in leg_param:
             if object_type == "planet":
-                value = f"{model_param[item]:.0f}"
+                if model_param[item] > 2.0:
+                    value = f"{model_param[item]:.0f}"
+                elif model_param[item] > 1.0:
+                    value = f"{model_param[item]:.1f}"
+                elif model_param[item] > 0.1:
+                    value = f"{model_param[item]:.2f}"
+                else:
+                    value = f"{model_param[item]:.3f}"
 
             elif object_type == "star":
                 value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:.1f}"
