@@ -690,6 +690,9 @@ class AtmosphericRetrieval:
             self.parameters.append("sigma_lnorm")
 
             for item in self.cloud_species:
+                if "log_p_base" in bounds:
+                    self.parameters.append(f"log_p_base_{item}")
+
                 cloud_lower = item[:-3].lower()
 
                 if f"{cloud_lower}_tau" in bounds:
@@ -1495,6 +1498,18 @@ class AtmosphericRetrieval:
 
             cube[cube_index["sigma_lnorm"]] = sigma_lnorm
 
+            if "log_p_base" in bounds:
+                for item in self.cloud_species:
+                    # Use the same cloud base pressure range
+                    # for the different cloud species
+                    log_p_base = (
+                        bounds["log_p_base"][0]
+                        + (bounds["log_p_base"][1] - bounds["log_p_base"][0])
+                        * cube[cube_index[f"log_p_base_{item}"]]
+                    )
+
+                    cube[cube_index[f"log_p_base_{item}"]] = log_p_base
+
             if "log_tau_cloud" in bounds:
                 log_tau_cloud = (
                     bounds["log_tau_cloud"][0]
@@ -2154,8 +2169,15 @@ class AtmosphericRetrieval:
                 for item in cloud_param:
                     if item in self.parameters:
                         cloud_dict[item] = cube[cube_index[item]]
+
                     # elif item in ['log_kzz', 'sigma_lnorm']:
                     #     cloud_dict[item] = None
+
+                for item in self.cloud_species:
+                    if f"log_p_base_{item}" in self.parameters:
+                        cloud_dict[f"log_p_base_{item}"] = cube[
+                            cube_index[f"log_p_base_{item}"]
+                        ]
 
             elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
                 cloud_param_1 = [
@@ -3931,7 +3953,6 @@ class AtmosphericRetrieval:
                     ],
                     ptform_args=[self.bounds, self.cube_index],
                 ) as pool:
-
                     print(f"Initialized a dynesty.pool with {n_pool} workers")
 
                     if dynamic:

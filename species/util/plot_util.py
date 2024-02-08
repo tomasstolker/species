@@ -581,12 +581,16 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if f"{item}_fraction" in param:
             index = param.index(f"{item}_fraction")
             param[index] = (
-                rf"$\log\,\tilde{{\mathrm{{X}}}}" rf"_\mathrm{{{cloud_labels[i]}}}$"
+                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
             )
 
         if f"{item}_tau" in param:
             index = param.index(f"{item}_tau")
             param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_labels[i]}}}$"
+
+        if f"log_p_base_{item}" in param:
+            index = param.index(f"log_p_base_{item}")
+            param[index] = rf"$\log\,P_\mathrm{{{cloud_labels[i]}}}$"
 
     for i, item_i in enumerate(cloud_species):
         for j, item_j in enumerate(cloud_species):

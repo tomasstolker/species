@@ -488,10 +488,10 @@ def create_pt_profile(
         )
 
     elif pt_profile == "gradient":
-        num_layer = 6 # could make a variable in the future
+        num_layer = 6  # could make a variable in the future
         layer_pt_slopes = np.ones(num_layer) * np.nan
         for index in range(num_layer):
-            layer_pt_slopes[index] = cube[cube_index[f'PTslope_{num_layer - index}']]
+            layer_pt_slopes[index] = cube[cube_index[f"PTslope_{num_layer - index}"]]
 
         try:
             from petitRADTRANS.physics import dTdP_temperature_profile
@@ -499,17 +499,19 @@ def create_pt_profile(
             raise ImportError(
                 """Can\'t import the dTdP profile function from petitRADTRANS,
                 check that your version of pRT includes this function in   
-                petitRADTRANS.physics""", e
+                petitRADTRANS.physics""",
+                e,
             )
 
-        temp = dTdP_temperature_profile(pressure,
-                                        num_layer, # could change in the future
-                                        layer_pt_slopes,
-                                        cube[cube_index["T_bottom"]])
-        
+        temp = dTdP_temperature_profile(
+            pressure,
+            num_layer,  # could change in the future
+            layer_pt_slopes,
+            cube[cube_index["T_bottom"]],
+        )
+
         phot_press = None
         conv_press = None
-
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
@@ -1188,15 +1190,22 @@ def calc_spectrum_clouds(
         p_base = {}
 
         for cloud_item in log_x_base:
-            p_base_item = find_cloud_deck(
-                cloud_item,
-                pressure,
-                temperature,
-                metallicity,
-                c_o_ratio,
-                mmw=np.mean(mmw),
-                plotting=plotting,
-            )
+            if f"log_p_base_{cloud_item}(c)" in cloud_dict:
+                p_base_item = 10.0 ** cloud_dict[f"log_p_base_{cloud_item}(c)"]
+                p_base[f"{cloud_item}(c)"] = p_base_item
+
+            else:
+                p_base_item = find_cloud_deck(
+                    cloud_item,
+                    pressure,
+                    temperature,
+                    metallicity,
+                    c_o_ratio,
+                    mmw=np.mean(mmw),
+                    plotting=plotting,
+                )
+
+                p_base[f"{cloud_item}(c)"] = p_base_item
 
             abund_in[f"{cloud_item}(c)"] = np.zeros_like(temperature)
 
@@ -1205,8 +1214,6 @@ def calc_spectrum_clouds(
                 * (pressure[pressure <= p_base_item] / p_base_item)
                 ** cloud_dict["fsed"]
             )
-
-            p_base[f"{cloud_item}(c)"] = p_base_item
 
     # Adaptive pressure refinement around the cloud base
 
