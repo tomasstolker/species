@@ -6,7 +6,7 @@ that includes photometric and/or spectral data and/or models.
 import math
 import warnings
 
-from typing import Optional, Union, Tuple, List
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import matplotlib as mpl
@@ -53,6 +53,7 @@ def plot_spectrum(
     quantity: str = "flux density",
     output: Optional[str] = None,
     leg_param: Optional[List[str]] = None,
+    param_fmt: Optional[Dict[str, str]] = None,
     grid_hspace: float = 0.1,
     inc_model_name: bool = False,
     units: Tuple[str, str] = ("um", "W m-2 um-1"),
@@ -151,6 +152,13 @@ def plot_spectrum(
         and 'luminosity' can be included. The default atmospheric
         parameters are included in the legend if the argument is
         set to ``None``.
+    param_fmt : dict(str, str), None
+        Dictionary with formats that will be used for the model
+        parameter. The parameters are included in the ``legend``
+        when plotting the model spectra. Default formats are
+        used if the argument of ``param_fmt`` is set to ``None``.
+        Formats should provided for example as '.2f' for two
+        decimals and '.0f' for zero decimals.
     grid_hspace : float
         The relative height spacing between subplots, expressed
         as a fraction of the average axis height. The default
@@ -180,6 +188,44 @@ def plot_spectrum(
             f"The number of 'boxes' ({len(boxes)}) should be equal to the "
             f"number of items in 'plot_kwargs' ({len(plot_kwargs)})."
         )
+
+    if leg_param is None:
+        leg_param = []
+
+    if param_fmt is None:
+        param_fmt = {}
+
+    # Add missing parameter formats
+
+    param_add = ["teff", "disk_teff", "disk_radius"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".0f"
+
+    param_add = [
+        "radius",
+        "logg",
+        "feh",
+        "metallicity",
+        "fsed",
+        "distance",
+        "parallax",
+        "mass",
+        "ism_ext",
+        "lognorm_ext",
+        "powerlaw_ext",
+    ]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".1f"
+
+    param_add = ["co", "c_o_ratio", "ad_index", "luminosity"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2f"
 
     if residuals is not None and filters is not None:
         fig = plt.figure(figsize=figsize)
@@ -500,10 +546,11 @@ def plot_spectrum(
 
                     label = create_model_label(
                         model_param=param,
+                        object_type=object_type,
                         model_name=box_item.model,
                         inc_model_name=inc_model_name,
-                        object_type=object_type,
                         leg_param=leg_param,
+                        param_fmt=param_fmt,
                     )
 
                 else:

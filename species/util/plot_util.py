@@ -580,9 +580,9 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     for i, item in enumerate(cloud_species):
         if f"{item}_fraction" in param:
             index = param.index(f"{item}_fraction")
-            param[index] = (
-                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
-            )
+            param[
+                index
+            ] = rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
 
         if f"{item}_tau" in param:
             index = param.index(f"{item}_tau")
@@ -1097,6 +1097,11 @@ def quantity_unit(
             unit.append("pc")
             label.append(r"$d$")
 
+        if item == "parallax":
+            quantity.append("parallax")
+            unit.append("mas")
+            label.append(r"$\varpi$")
+
         if item == "mass":
             quantity.append("mass")
 
@@ -1143,6 +1148,16 @@ def quantity_unit(
             quantity.append("abund_smooth")
             unit.append(None)
             label.append(r"$\sigma_\mathrm{abund}$")
+
+        if item == "disk_teff":
+            quantity.append("disk_teff")
+            unit.append("K")
+            label.append(r"$T_\mathrm{disk}$")
+
+        if item == "disk_radius":
+            quantity.append("disk_radius")
+            unit.append(r"$R_\mathrm{J}$")
+            label.append(r"$R_\mathrm{disk}$")
 
     return quantity, unit, label
 
@@ -1394,11 +1409,12 @@ def create_model_label(
     object_type: str,
     model_name: str,
     inc_model_name: bool,
-    leg_param: Optional[List[str]] = None,
+    leg_param: List[str],
+    param_fmt: Dict[str, str],
 ) -> str:
     """ "
     Function for creating a label that includes the parameters of a
-    model spectrum that can be used for a legend of a plot.
+    model spectrum. The label is used in the legend of a SED plot.
 
     Parameters
     ----------
@@ -1411,17 +1427,23 @@ def create_model_label(
     object_type : str
         Object type ('planet' or 'star') that determines if
         Jupiter or solar units are used.
-    leg_param : list(str), None
+    leg_param : list(str)
         List with the parameters to include. Apart from atmospheric
         parameters (e.g. 'teff', 'logg', 'radius') also parameters
         such as 'mass' and 'luminosity' can be included. The default
         atmospheric parameters are included in the legend if the
-        argument is set to ``None``.
+        argument is an empty list.
+    param_fmt : dict(str, str)
+        Dictionary with formats that will be used for the model
+        parameter. The parameters are included in the ``legend``
+        when plotting the model spectra. Default formats are
+        used if the argument of ``param_fmt`` is set to ``None``.
 
     Returns
     -------
     str
-        List with selected indices of the young/low-gravity objects.
+        Text label that includes the selected parameter names,
+        the model values, and the parameter units.
     """
 
     data_file = Path(__file__).parents[1].resolve() / "data/model_data/model_data.json"
@@ -1430,53 +1452,79 @@ def create_model_label(
         model_data = json.load(json_file)
         model_list = list(model_data.keys())
 
-    if model_name in model_list:
+    # if model_name in model_list:
+    #     read_mod = ReadModel(model_name)
+    #     check_param = read_mod.get_parameters()
+    #
+    #     check_param += [
+    #         "radius",
+    #         "mass",
+    #         "luminosity",
+    #         "parallax",
+    #         "disk_teff",
+    #         "disk_radius",
+    #     ]
+    #
+    # else:
+    #     check_param = None
+
+    # if len(leg_param) > 0:
+    #     for item in list(model_param.keys()):
+    #         if item not in leg_param:
+    #             del model_param[item]
+    #
+    #     del_param = []
+    #     for item in leg_param:
+    #         if item not in model_param.keys():
+    #             warnings.warn(
+    #                 f"The '{item}' parameter in "
+    #                 "'leg_param' is not a parameter of "
+    #                 f"'{model_name}' so it will not be "
+    #                 "included with the legend."
+    #             )
+    #
+    #             del_param.append(item)
+    #
+    #     if check_param is not None:
+    #         for item in leg_param:
+    #             if item not in check_param and item not in del_param:
+    #                 warnings.warn(
+    #                     f"The '{item}' parameter in "
+    #                     "'leg_param' is not a parameter of "
+    #                     f"'{model_name}' so it will not be "
+    #                     "included with the legend."
+    #                 )
+    #
+    #                 del_param.append(item)
+    #
+    #     new_leg_param = []
+    #     for item in leg_param:
+    #         if item not in del_param:
+    #             new_leg_param.append(item)
+    #
+    #     leg_param = new_leg_param.copy()
+
+    if len(leg_param) == 0:
         read_mod = ReadModel(model_name)
-        check_param = read_mod.get_parameters()
-        check_param += ["radius", "mass", "luminosity"]
+        leg_param = read_mod.get_parameters()
+        check_param = list(model_param.keys())
+
+        if "radius" in check_param:
+            leg_param.append("radius")
 
     else:
-        check_param = None
+        param_new = {}
+        for param_item in leg_param.keys():
+            if param_item not in model_param:
+                raise ValueError("The parameter '{param_item}'")
 
-    if leg_param is not None:
-        for item in list(model_param.keys()):
-            if item not in leg_param:
-                del model_param[item]
+    del_keys = []
+    for param_item in model_param.keys():
+        if param_item not in leg_param:
+            del_keys.append(param_item)
 
-        del_param = []
-        for item in leg_param:
-            if item not in model_param.keys():
-                warnings.warn(
-                    f"The '{item}' parameter in "
-                    "'leg_param' is not a parameter of "
-                    f"'{model_name}' so it will not be "
-                    "included with the legend."
-                )
-
-                del_param.append(item)
-
-        if check_param is not None:
-            for item in leg_param:
-                if item not in check_param and item not in del_param:
-                    warnings.warn(
-                        f"The '{item}' parameter in "
-                        "'leg_param' is not a parameter of "
-                        f"'{model_name}' so it will not be "
-                        "included with the legend."
-                    )
-
-                    del_param.append(item)
-
-        new_leg_param = []
-        for item in leg_param:
-            if item not in del_param:
-                new_leg_param.append(item)
-
-        leg_param = new_leg_param.copy()
-
-    if leg_param is not None:
-        param_new = {k: model_param[k] for k in leg_param}
-        model_param = param_new.copy()
+    for param_item in del_keys:
+        del model_param[param_item]
 
     par_key, par_unit, par_label = quantity_unit(
         param=list(model_param.keys()), object_type=object_type
@@ -1487,50 +1535,25 @@ def create_model_label(
 
     for i, item in enumerate(par_key):
         if item[:4] == "teff":
-            value = f"{model_param[item]:.0f}"
-
-        elif item in [
-            "logg",
-            "feh",
-            "metallicity",
-            "fsed",
-            "lognorm_ext",
-            "powerlaw_ext",
-            "ism_ext",
-        ]:
-            value = f"{model_param[item]:.1f}"
-
-        elif item in ["co", "c_o_ratio", "ad_index"]:
-            value = f"{model_param[item]:.2f}"
+            value = f"{model_param[item]:{param_fmt['teff']}}"
 
         elif item[:6] == "radius":
             if object_type == "planet":
-                value = f"{model_param[item]:.1f}"
-
-                # if item == 'radius_1':
-                #     value = f'{model_param[item]:.0f}'
-                # else:
-                #     value = f'{model_param[item]:.1f}'
-
+                value = f"{model_param[item]:{param_fmt['radius']}}"
             elif object_type == "star":
-                value = f"{model_param[item]*constants.R_JUP/constants.R_SUN:.1f}"
+                value = f"{model_param[item]*constants.R_JUP/constants.R_SUN:{param_fmt['radius']}}"
 
-        elif item == "mass" and leg_param is not None and item in leg_param:
+        elif item == "mass" and item in leg_param:
             if object_type == "planet":
-                if model_param[item] > 2.0:
-                    value = f"{model_param[item]:.0f}"
-                elif model_param[item] > 1.0:
-                    value = f"{model_param[item]:.1f}"
-                elif model_param[item] > 0.1:
-                    value = f"{model_param[item]:.2f}"
-                else:
-                    value = f"{model_param[item]:.3f}"
-
+                value = f"{model_param[item]:{param_fmt['mass']}}"
             elif object_type == "star":
-                value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:.1f}"
+                value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
 
         elif item == "luminosity" and leg_param is not None and item in leg_param:
-            value = f"{np.log10(model_param[item]):.2f}"
+            value = f"{np.log10(model_param[item]):{param_fmt['luminosity']}}"
+
+        elif item in leg_param:
+            value = f"{model_param[item]:{param_fmt[item]}}"
 
         else:
             continue

@@ -1192,7 +1192,6 @@ def calc_spectrum_clouds(
         for cloud_item in log_x_base:
             if f"log_p_base_{cloud_item}(c)" in cloud_dict:
                 p_base_item = 10.0 ** cloud_dict[f"log_p_base_{cloud_item}(c)"]
-                p_base[f"{cloud_item}(c)"] = p_base_item
 
             else:
                 p_base_item = find_cloud_deck(
@@ -1205,7 +1204,7 @@ def calc_spectrum_clouds(
                     plotting=plotting,
                 )
 
-                p_base[f"{cloud_item}(c)"] = p_base_item
+            p_base[f"{cloud_item}(c)"] = p_base_item
 
             abund_in[f"{cloud_item}(c)"] = np.zeros_like(temperature)
 

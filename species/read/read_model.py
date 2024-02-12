@@ -138,17 +138,27 @@ class ReadModel:
             The HDF5 database.
         """
 
-        with h5py.File(self.database, "a") as hdf5_file:
-            if f"models/{self.model}" not in hdf5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"models/{self.model}" in hdf5_file:
+                model_found = True
+
+            else:
+                model_found = False
+
                 warnings.warn(
                     f"The '{self.model}' model spectra are not present "
                     "in the database. Will try to add the model grid. "
                     "If this does not work (e.g. currently without an "
-                    "internet connection) then please use the "
+                    "internet connection), then please use the "
                     "'add_model' method of 'Database' to add the "
                     "grid of spectra at a later moment."
                 )
 
+        if not model_found:
+            # This will not work when using multiprocessing.
+            # Model spectra should be added to the database
+            # before running FitModel with MPI
+            with h5py.File(self.database, "a") as hdf5_file:
                 add_model_grid(self.model, self.data_folder, hdf5_file)
 
         return h5py.File(self.database, "r")
@@ -865,7 +875,7 @@ class ReadModel:
             flux *= model_param["flux_scaling"]
 
         elif "log_flux_scaling" in model_param:
-            flux *= 10.0**model_param["log_flux_scaling"]
+            flux *= 10.0 ** model_param["log_flux_scaling"]
 
         # Add optional offset to the flux
 
@@ -1326,7 +1336,7 @@ class ReadModel:
             flux *= model_param["flux_scaling"]
 
         elif "log_flux_scaling" in model_param:
-            flux *= 10.0**model_param["log_flux_scaling"]
+            flux *= 10.0 ** model_param["log_flux_scaling"]
 
         # Add optional offset to the flux
 
