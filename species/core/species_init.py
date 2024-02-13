@@ -8,6 +8,7 @@ import socket
 import urllib.request
 
 from configparser import ConfigParser
+from importlib.util import find_spec
 from typeguard import typechecked
 
 import h5py
@@ -124,7 +125,7 @@ class SpeciesInit:
                 file_obj.write("\n; Magnitude of Vega for all filters\n")
                 file_obj.write("vega_mag = 0.03\n")
 
-        print("Configuration settings:")
+        print("\nConfiguration settings:")
         print(f"   - Database: {database_file}")
         print(f"   - Data folder: {data_folder}")
         print(f"   - Interpolation method: {interp_method}")
@@ -141,12 +142,17 @@ class SpeciesInit:
             os.makedirs(data_folder)
             print(" [DONE]")
 
-        # warnings.warn(
-        #     "Importing the species package had become slow "
-        #     "because of the many classes and functions that "
-        #     "were implicitly imported. The initialization of "
-        #     "the packages has therefore been adjusted. In "
-        #     "the latest version, any functionalities should "
-        #     "be explicitly imported from the modules that "
-        #     "they are part of."
-        # )
+        if find_spec("mpi4py") is None:
+            print("\nMultiprocessing: mpi4py not installed")
+
+        else:
+            from mpi4py import MPI
+
+            # Rank of this process in a communicator
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+            # Number of processes in a communicator
+            mpi_size = MPI.COMM_WORLD.Get_size()
+
+            print("\nMultiprocessing: mpi4py installed")
+            print(f"Process number {mpi_rank+1:d} out of {mpi_size:d}...")

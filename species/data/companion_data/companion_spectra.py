@@ -11,6 +11,8 @@ from typing import Dict, Optional, Tuple
 
 from typeguard import typechecked
 
+from species.util.core_util import print_section
+
 
 @typechecked
 def companion_spectra(
@@ -48,6 +50,8 @@ def companion_spectra(
         comp_spec = json.load(json_file)
 
     if comp_name in comp_spec:
+        print_section("Get companion spectra")
+
         data_folder = os.path.join(input_path, "companion_data/")
 
         if not os.path.exists(data_folder):

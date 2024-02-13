@@ -25,6 +25,7 @@ from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ObjectBox, ModelBox, SamplesBox, SpectrumBox, create_box
+from species.util.core_util import print_section
 
 
 class Database:
@@ -49,39 +50,6 @@ class Database:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
-    @staticmethod
-    @typechecked
-    def _print_section(
-        sect_title: str,
-        bound_char: str = "-",
-        extra_line: bool = True,
-    ) -> None:
-        """
-        Internal method for printing a section title.
-
-        Parameters
-        ----------
-        sect_title : str
-            Section title.
-        bound_char : str
-            Boundary character for around the section title.
-        extra_line : bool
-            Extra new line at the beginning.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        if extra_line:
-            print("\n" + len(sect_title) * bound_char)
-        else:
-            print(len(sect_title) * bound_char)
-
-        print(sect_title)
-        print(len(sect_title) * bound_char + "\n")
-
     @typechecked
     def list_content(self) -> None:
         """
@@ -96,7 +64,7 @@ class Database:
             None
         """
 
-        self._print_section("List database content")
+        print_section("List database content")
 
         @typechecked
         def _descend(
@@ -168,7 +136,7 @@ class Database:
         with open(spec_file, "r", encoding="utf-8") as json_file:
             comp_spec = json.load(json_file)
 
-        self._print_section("Companions with available data")
+        print_section("Companions with available data")
 
         comp_names = []
 
@@ -233,7 +201,7 @@ class Database:
             file in the ``species.data`` folder.
         """
 
-        self._print_section("Available model spectra")
+        print_section("Available model spectra")
 
         data_file = Path(__file__).parent.resolve() / "model_data/model_data.json"
 
@@ -343,8 +311,6 @@ class Database:
         """
 
         from species.data.companion_data.companion_spectra import companion_spectra
-
-        self._print_section("Add companion data")
 
         if isinstance(name, str):
             name = [
@@ -936,7 +902,13 @@ class Database:
             None
         """
 
-        self._print_section("Add object data")
+        print_section("Add object data")
+
+        print(f"Object name: {object_name}")
+
+        if verbose:
+            print(f"Units: {units}")
+            print(f"Deredden: {deredden}")
 
         # Set default units
 
@@ -977,11 +949,6 @@ class Database:
                 if f"filters/{item}" not in hdf5_file:
                     self.add_filter(item, verbose=verbose)
 
-        if verbose:
-            print(f"Adding object: {object_name}")
-        else:
-            print(f"Adding object: {object_name}", end="", flush=True)
-
         hdf5_file = h5py.File(self.database, "a")
 
         if "objects" not in hdf5_file:
@@ -992,7 +959,7 @@ class Database:
 
         if parallax is not None:
             if verbose:
-                print(f"   - Parallax (mas) = {parallax[0]:.2f} +/- {parallax[1]:.2f}")
+                print(f"Parallax (mas) = {parallax[0]:.2f} +/- {parallax[1]:.2f}")
 
             if f"objects/{object_name}/parallax" in hdf5_file:
                 del hdf5_file[f"objects/{object_name}/parallax"]
@@ -1003,7 +970,7 @@ class Database:
 
         if distance is not None:
             if verbose:
-                print(f"   - Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
+                print(f"Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
 
             if f"objects/{object_name}/distance" in hdf5_file:
                 del hdf5_file[f"objects/{object_name}/distance"]
@@ -1017,6 +984,9 @@ class Database:
         dered_phot = {}
 
         if app_mag is not None:
+            if verbose:
+                print("\nMagnitudes:")
+
             from species.read.read_filter import ReadFilter
 
             for mag_item in app_mag:
@@ -1204,6 +1174,9 @@ class Database:
                 dset.attrs["n_phot"] = n_phot
 
         if flux_density is not None:
+            if verbose:
+                print("\nFlux densities:")
+
             from species.read.read_filter import ReadFilter
 
             for flux_item in flux_density:
@@ -1254,6 +1227,9 @@ class Database:
                     dset.attrs["n_phot"] = 1
 
         if spectrum is not None:
+            if verbose:
+                print("\nSpectra:")
+
             read_spec = {}
             read_cov = {}
 
@@ -1840,6 +1816,12 @@ class Database:
             None
         """
 
+        print_section("Add posterior samples")
+
+        print(f"Database tag: {tag}")
+        print(f"Sampler: {sampler}")
+        print(f"Array shape: {samples.shape}")
+
         if spec_labels is None:
             spec_labels = []
 
@@ -1900,7 +1882,7 @@ class Database:
             else:
                 dset.attrs["binary"] = False
 
-            print("Integrated autocorrelation time:")
+            print("\nIntegrated autocorrelation time:")
 
             from emcee.autocorr import integrated_time
 
@@ -1919,7 +1901,10 @@ class Database:
 
     @typechecked
     def get_probable_sample(
-        self, tag: str, burnin: Optional[int] = None
+        self,
+        tag: str,
+        burnin: Optional[int] = None,
+        verbose: bool = True,
     ) -> Dict[str, float]:
         """
         Function for extracting the sample parameters
@@ -1934,6 +1919,8 @@ class Database:
             removed if the argument is set to ``None``. Is
             only applied on posterior distributions that
             have been sampled with ``emcee``.
+        verbose : bool
+            Print output, including the parameter values.
 
         Returns
         -------
@@ -1942,62 +1929,75 @@ class Database:
             maximum posterior probability.
         """
 
+        if verbose:
+            print_section("Get sample with highest probability")
+            print(f"Database tag: {tag}")
+
         if burnin is None:
             burnin = 0
 
-        hdf5_file = h5py.File(self.database, "r")
-        dset = hdf5_file[f"results/fit/{tag}/samples"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"results/fit/{tag}/samples"]
 
-        samples = np.asarray(dset)
-        ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
+            samples = np.asarray(dset)
+            ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
 
-        if "n_param" in dset.attrs:
-            n_param = dset.attrs["n_param"]
-        elif "nparam" in dset.attrs:
-            n_param = dset.attrs["nparam"]
+            if "n_param" in dset.attrs:
+                n_param = dset.attrs["n_param"]
+            elif "nparam" in dset.attrs:
+                n_param = dset.attrs["nparam"]
 
-        if samples.ndim == 3:
-            if burnin > samples.shape[0]:
-                raise ValueError(
-                    f"The 'burnin' value is larger than the number of steps "
-                    f"({samples.shape[1]}) that are made by the walkers."
-                )
+            if samples.ndim == 3:
+                if burnin > samples.shape[0]:
+                    raise ValueError(
+                        f"The 'burnin' value is larger than the number of steps "
+                        f"({samples.shape[1]}) that are made by the walkers."
+                    )
 
-            samples = samples[burnin:, :, :]
-            ln_prob = ln_prob[burnin:, :]
+                samples = samples[burnin:, :, :]
+                ln_prob = ln_prob[burnin:, :]
 
-            samples = np.reshape(samples, (-1, n_param))
-            ln_prob = np.reshape(ln_prob, -1)
+                samples = np.reshape(samples, (-1, n_param))
+                ln_prob = np.reshape(ln_prob, -1)
 
-        index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
+            index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
 
-        # max_prob = ln_prob[index_max]
-        max_sample = samples[index_max]
+            # max_prob = ln_prob[index_max]
+            max_sample = samples[index_max]
 
-        prob_sample = {}
+            prob_sample = {}
 
-        for i in range(n_param):
-            par_key = dset.attrs[f"parameter{i}"]
-            par_value = max_sample[i]
+            for i in range(n_param):
+                par_key = dset.attrs[f"parameter{i}"]
+                par_value = max_sample[i]
 
-            prob_sample[par_key] = par_value
+                prob_sample[par_key] = par_value
 
-        if "parallax" not in prob_sample and "parallax" in dset.attrs:
-            prob_sample["parallax"] = dset.attrs["parallax"]
+            if "parallax" not in prob_sample and "parallax" in dset.attrs:
+                prob_sample["parallax"] = dset.attrs["parallax"]
 
-        elif "distance" not in prob_sample and "distance" in dset.attrs:
-            prob_sample["distance"] = dset.attrs["distance"]
+            elif "distance" not in prob_sample and "distance" in dset.attrs:
+                prob_sample["distance"] = dset.attrs["distance"]
 
-        if "pt_smooth" in dset.attrs:
-            prob_sample["pt_smooth"] = dset.attrs["pt_smooth"]
+            if "pt_smooth" in dset.attrs:
+                prob_sample["pt_smooth"] = dset.attrs["pt_smooth"]
 
-        hdf5_file.close()
+        if verbose:
+            print("\nParameters:")
+            for key, value in prob_sample.items():
+                if key == "luminosity":
+                    print(f"   - {key} = {value:.2e}")
+                else:
+                    print(f"   - {key} = {value:.2f}")
 
         return prob_sample
 
     @typechecked
     def get_median_sample(
-        self, tag: str, burnin: Optional[int] = None
+        self,
+        tag: str,
+        burnin: Optional[int] = None,
+        verbose: bool = True,
     ) -> Dict[str, float]:
         """
         Function for extracting the median parameter values
@@ -2012,12 +2012,18 @@ class Database:
             removed if the argument is set to ``None``. Is
             only applied on posterior distributions that
             have been sampled with ``emcee``.
+        verbose : bool
+            Print output, including the parameter values.
 
         Returns
         -------
         dict
             Median parameter values of the posterior distribution.
         """
+
+        if verbose:
+            print_section("Get median parameters")
+            print(f"Database tag: {tag}")
 
         if burnin is None:
             burnin = 0
@@ -2037,8 +2043,9 @@ class Database:
             if samples.ndim == 3:
                 if burnin > samples.shape[0]:
                     raise ValueError(
-                        f"The 'burnin' value is larger than the number of steps "
-                        f"({samples.shape[1]}) that are made by the walkers."
+                        "The 'burnin' value is larger than the "
+                        f"number of steps ({samples.shape[1]}) "
+                        "that are made by the walkers."
                     )
 
                 if burnin is not None:
@@ -2062,10 +2069,18 @@ class Database:
             if "pt_smooth" in dset.attrs:
                 median_sample["pt_smooth"] = dset.attrs["pt_smooth"]
 
+        if verbose:
+            print("\nParameters:")
+            for key, value in median_sample.items():
+                if key == "luminosity":
+                    print(f"   - {key} = {value:.2e}")
+                else:
+                    print(f"   - {key} = {value:.2f}")
+
         return median_sample
 
     @typechecked
-    def get_compare_sample(self, tag: str) -> Dict[str, float]:
+    def get_compare_sample(self, tag: str, verbose: bool = True) -> Dict[str, float]:
         """
         Function for extracting the sample parameters for which
         the goodness-of-fit statistic has been minimized when using
@@ -2078,6 +2093,8 @@ class Database:
             Database tag where the results from
             :func:`~species.fit.compare_spectra.CompareSpectra.compare_model`
             are stored.
+        verbose : bool
+            Print output, including the parameter values.
 
         Returns
         -------
@@ -2090,6 +2107,10 @@ class Database:
             :func:`~species.data.database.Database.get_compare_sample`
             as argument.
         """
+
+        if verbose:
+            print_section("Get best comparison parameters")
+            print(f"Database tag: {tag}")
 
         with h5py.File(self.database, "a") as hdf5_file:
             dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
@@ -2115,6 +2136,14 @@ class Database:
                 model_param[f"scaling_{scale_spec}"] = dset.attrs[
                     f"scaling_{scale_spec}"
                 ]
+
+        if verbose:
+            print("\nParameters:")
+            for key, value in model_param.items():
+                if key == "luminosity":
+                    print(f"   - {key} = {value:.2e}")
+                else:
+                    print(f"   - {key} = {value:.2f}")
 
         return model_param
 
@@ -2160,6 +2189,13 @@ class Database:
         list(species.core.box.ModelBox)
             List with ``ModelBox`` objects.
         """
+
+        print_section(f"Get posterior spectra")
+
+        print(f"Database tag: {tag}")
+        print(f"Number of samples: {random}")
+        print(f"Wavelength range (um): {wavel_range}")
+        print(f"Spectral resolution: {spec_res}")
 
         if burnin is None:
             burnin = 0
@@ -2276,7 +2312,9 @@ class Database:
 
         boxes = []
 
-        for i in tqdm(range(samples.shape[0]), desc="Getting MCMC spectra"):
+        print()
+
+        for i in tqdm(range(samples.shape[0])):
             model_param = {}
             for j in range(samples.shape[1]):
                 if param[j] not in ignore_param:
@@ -2578,7 +2616,11 @@ class Database:
             Box with the object's data.
         """
 
-        print(f"Getting object: {object_name}...", end="", flush=True)
+        print_section(f"Get object: {object_name}")
+
+        print(f"Object name: {object_name}")
+        print(f"Include photometry: {inc_phot}")
+        print(f"Include spectra: {inc_spec}")
 
         with h5py.File(self.database, "r") as hdf5_file:
             if f"objects/{object_name}" not in hdf5_file:
@@ -2654,8 +2696,6 @@ class Database:
             for filter_name in magnitude.keys():
                 read_filt = ReadFilter(filter_name)
                 mean_wavel[filter_name] = read_filt.mean_wavelength()
-
-        print(" [DONE]")
 
         return create_box(
             "object",
@@ -2750,8 +2790,8 @@ class Database:
 
         hdf5_file.close()
 
-        median_sample = self.get_median_sample(tag, burnin)
-        prob_sample = self.get_probable_sample(tag, burnin)
+        median_sample = self.get_median_sample(tag, burnin, verbose=False)
+        prob_sample = self.get_probable_sample(tag, burnin, verbose=False)
 
         if json_file is not None:
             samples_dict = {}
@@ -4101,10 +4141,10 @@ class Database:
         )
 
         if sample_type == "median":
-            model_param = self.get_median_sample(tag)
+            model_param = self.get_median_sample(tag, verbose=False)
 
         elif sample_type == "probable":
-            model_param = self.get_probable_sample(tag)
+            model_param = self.get_probable_sample(tag, verbose=False)
 
         else:
             raise ValueError(

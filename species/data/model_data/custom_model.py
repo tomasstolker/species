@@ -12,6 +12,7 @@ import numpy as np
 
 from typeguard import typechecked
 
+from species.util.core_util import print_section
 from species.util.data_util import sort_data, write_data, add_missing
 from species.util.spec_util import create_wavelengths
 
@@ -83,6 +84,8 @@ def add_custom_model_grid(
     NoneType
         None
     """
+
+    print_section("Add custom grid of model spectra")
 
     teff = []
 

@@ -18,6 +18,7 @@ from species.read.read_filter import ReadFilter
 from species.read.read_model import ReadModel
 from species.read.read_planck import ReadPlanck
 from species.read.read_radtrans import ReadRadtrans
+from species.util.core_util import print_section
 from species.util.model_util import binary_to_single, powerlaw_spectrum
 from species.util.retrieval_util import convolve_spectrum
 
@@ -62,7 +63,17 @@ def multi_photometry(
         Box with synthetic photometry.
     """
 
-    print("Calculating synthetic photometry...", end="", flush=True)
+    print_section("Calculate multi-photometry")
+
+    print(f"Data type: {datatype}")
+    print(f"Spectrum name: {spectrum}")
+
+    print("\nParameters:")
+    for key, value in parameters.items():
+        if key == "luminosity":
+            print(f"   - {key} = {value:.2e}")
+        else:
+            print(f"   - {key} = {value:.2f}")
 
     mean_wavel = {}
 
@@ -160,7 +171,16 @@ def multi_photometry(
                 flux=value, error=None
             )
 
-    print(" [DONE]")
+    print("\nMagnitudes:")
+    for key, value in app_mag.items():
+        if value[1] is None:
+            print(f"   - {key} = {value[0]:.2f}")
+        else:
+            print(f"   - {key} = {value[0]:.2f} +/- {value[1]:.2f}")
+
+    print("\nFluxes (W m-2 um-1):")
+    for key, value in flux.items():
+        print(f"   - {key} = {value:.2e}")
 
     return create_box(
         "synphot",
@@ -222,6 +242,21 @@ def get_residuals(
     species.core.box.ResidualsBox
         Box with the residuals.
     """
+
+    print_section("Calculate residuals")
+
+    print(f"Data type: {datatype}")
+    print(f"Spectrum name: {spectrum}")
+    print(f"\nInclude photometry: {inc_phot}")
+    print(f"Include spectra: {inc_spec}")
+
+    print("\nParameters:")
+    for key, value in parameters.items():
+        if key == "luminosity":
+            print(f"   - {key} = {value:.2e}")
+        else:
+            print(f"   - {key} = {value:.2f}")
+
 
     if inc_phot and objectbox.filters is not None:
         if isinstance(inc_phot, bool) and inc_phot:
@@ -370,25 +405,23 @@ def get_residuals(
     else:
         res_spec = None
 
-    print("Calculating residuals... [DONE]")
-
-    print("Residuals (sigma):")
+    print("\nResiduals (sigma):")
 
     if res_phot is not None:
         for item in inc_phot:
             if res_phot[item].ndim == 1:
-                print(f"   - {item}: {res_phot[item][1]:.2f}")
+                print(f"   - {item} = {res_phot[item][1]:.2f}")
 
             elif res_phot[item].ndim == 2:
                 for j in range(res_phot[item].shape[1]):
-                    print(f"   - {item}: {res_phot[item][1, j]:.2f}")
+                    print(f"   - {item} = {res_phot[item][1, j]:.2f}")
 
     if res_spec is not None:
         for key in objectbox.spectrum:
             if isinstance(inc_spec, bool) or key in inc_spec:
                 print(
-                    f"   - {key}: min: {np.nanmin(res_spec[key]):.2f}, "
-                    f"max: {np.nanmax(res_spec[key]):.2f}"
+                    f"   - {key}: min = {np.nanmin(res_spec[key]):.2f}, "
+                    f"max = {np.nanmax(res_spec[key]):.2f}"
                 )
 
     chi2_stat = 0
@@ -419,7 +452,7 @@ def get_residuals(
 
     chi2_red = chi2_stat / n_dof
 
-    print(f"Reduced chi2 = {chi2_red:.2f}")
+    print(f"\nReduced chi2 = {chi2_red:.2f}")
     print(f"Number of degrees of freedom = {n_dof}")
 
     return create_box(

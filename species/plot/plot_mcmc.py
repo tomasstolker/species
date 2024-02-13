@@ -18,6 +18,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from species.core import constants
 from species.util.convert_util import logg_to_mass
+from species.util.core_util import print_section
 from species.util.plot_util import update_labels
 from species.util.dust_util import (
     check_dust_database,
@@ -290,6 +291,8 @@ def plot_posterior(
         customization of the plot.
     """
 
+    print_section("Plot posterior distributions")
+
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -467,7 +470,7 @@ def plot_posterior(
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
 
-        print("Maximum posterior sample:")
+        print("\nMaximum posterior sample:")
         for key, value in box.prob_sample.items():
             print(f"   - {key} = {value:.2e}")
 
@@ -477,11 +480,6 @@ def plot_posterior(
 
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3
-
-    if output is None:
-        print("Plotting the posterior...", end="", flush=True)
-    else:
-        print(f"Plotting the posterior: {output}...", end="", flush=True)
 
     # Include a subset of parameters
 
@@ -874,12 +872,13 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
+    if output is not None:
+        print(f"\nOutput: {output}")
+
     if output is None:
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig
 

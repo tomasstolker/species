@@ -20,6 +20,14 @@ species.util.convert\_util module
    :undoc-members:
    :show-inheritance:
 
+species.util.core\_util module
+------------------------------
+
+.. automodule:: species.util.core_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.util.data\_util module
 ------------------------------
 

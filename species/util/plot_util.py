@@ -1505,18 +1505,25 @@ def create_model_label(
     #     leg_param = new_leg_param.copy()
 
     if len(leg_param) == 0:
-        read_mod = ReadModel(model_name)
-        leg_param = read_mod.get_parameters()
         check_param = list(model_param.keys())
+
+        if model_name == "planck":
+            leg_param = ["teff"]
+        else:
+            read_mod = ReadModel(model_name)
+            leg_param = read_mod.get_parameters()
 
         if "radius" in check_param:
             leg_param.append("radius")
 
-    else:
-        param_new = {}
-        for param_item in leg_param.keys():
-            if param_item not in model_param:
-                raise ValueError("The parameter '{param_item}'")
+        if "disk_teff" in check_param:
+            leg_param.append("disk_teff")
+
+        if "disk_radius" in check_param:
+            leg_param.append("disk_radius")
+
+    # Remove parameters from the model_param dictionary
+    # if they are not included in the leg_param list
 
     del_keys = []
     for param_item in model_param.keys():
@@ -1526,12 +1533,24 @@ def create_model_label(
     for param_item in del_keys:
         del model_param[param_item]
 
+    # Get parameters keys, units, and labels
+
     par_key, par_unit, par_label = quantity_unit(
         param=list(model_param.keys()), object_type=object_type
     )
 
+    # Initiate an empty label that will be returned
+
     label = ""
     # newline = False
+
+    # Optionally include the model name into the label
+
+    if model_name is not None:
+        label += convert_model_name(model_name)
+
+        if len(par_key) > 0:
+            label += f": "
 
     for i, item in enumerate(par_key):
         if item[:4] == "teff":
@@ -1562,22 +1581,15 @@ def create_model_label(
         #     label += '\n'
         #     newline = True
 
-        if model_name is not None:
-            model_name_new = convert_model_name(model_name)
-
         if par_unit[i] is None:
-            if len(label) > 0:
+            if len(label) > 0 and label[-2] != ":":
                 label += ", "
-            elif inc_model_name and model_name is not None:
-                label += f"{model_name_new}: "
 
             label += f"{par_label[i]} = {value}"
 
         else:
-            if len(label) > 0:
+            if len(label) > 0 and label[-2] != ":":
                 label += ", "
-            elif inc_model_name and model_name is not None:
-                label += f"{model_name_new}: "
 
             label += f"{par_label[i]} = {value} {par_unit[i]}"
 

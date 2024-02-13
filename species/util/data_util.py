@@ -205,7 +205,7 @@ def sort_data(
     teff_unique = np.unique(param_teff)
     spec_shape = [teff_unique.shape[0]]
 
-    print("Grid points stored in the database:")
+    print("\nGrid points stored in the database:")
     print(f"   - Teff = {teff_unique}")
 
     if param_logg is not None:
@@ -375,7 +375,7 @@ def add_missing(
         None
     """
 
-    print("Number of grid points per parameter:")
+    print("\nNumber of grid points per parameter:")
 
     grid_shape = []
     param_data = []
@@ -392,6 +392,9 @@ def add_missing(
     count_interp = 0
     count_missing = 0
 
+    if np.isinf(np.sum(flux)):
+        print("\nFix missing grid points with a linear interpolation:")
+
     if len(parameters) == 1:
         # Blackbody spectra
         pass
@@ -403,7 +406,7 @@ def add_missing(
         points = [[], []]
         new_points = [[], []]
 
-        print("Fix missing grid points with a linear interpolation:")
+
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
@@ -486,8 +489,6 @@ def add_missing(
         values = []
         points = [[], [], []]
         new_points = [[], [], []]
-
-        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
@@ -576,8 +577,6 @@ def add_missing(
         values = []
         points = [[], [], [], []]
         new_points = [[], [], [], []]
-
-        print("Fix missing grid points with a linear interpolation:")
 
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
@@ -697,8 +696,6 @@ def add_missing(
         points = [[], [], [], [], []]
         new_points = [[], [], [], [], []]
 
-        print("Fix missing grid points with a linear interpolation:")
-
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 for k in range(grid_shape[2]):
@@ -803,7 +800,7 @@ def add_missing(
             "with more than 5 model parameters."
         )
 
-    print(f"Number of stored grid points: {count_total}")
+    print(f"\nNumber of stored grid points: {count_total}")
     print(f"Number of interpolated grid points: {count_interp}")
     print(f"Number of missing grid points: {count_missing}")
 

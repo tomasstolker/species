@@ -17,6 +17,7 @@ import spectres
 
 from typeguard import typechecked
 
+from species.util.core_util import print_section
 from species.util.data_util import add_missing, extract_tarfile, sort_data, write_data
 from species.util.spec_util import create_wavelengths
 
@@ -69,6 +70,10 @@ def add_model_grid(
         None
     """
 
+    print_section("Add grid of model spectra")
+
+    print(f"Model name: {model_name}")
+
     data_file = pathlib.Path(__file__).parent.resolve() / "model_data.json"
 
     with open(data_file, "r", encoding="utf-8") as json_file:
@@ -79,7 +84,7 @@ def add_model_grid(
 
     else:
         raise ValueError(
-            f"The {model_name} atmospheric model is not available. "
+            f"The '{model_name}' atmospheric model is not available. "
             "Please choose one of the following models: "
             "'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
             "'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
@@ -221,6 +226,8 @@ def add_model_grid(
 
     flux = []
 
+    print()
+
     if wavel_range is not None and spec_res is not None:
         wavelength = create_wavelengths(wavel_range, spec_res)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
@@ -242,6 +249,7 @@ def add_model_grid(
     else:
         print(f"Teff range (K) = {teff_range[0]} - {teff_range[1]}")
 
+    print()
     print_message = ""
 
     for _, _, file_list in os.walk(data_folder):
@@ -328,9 +336,6 @@ def add_model_grid(
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")
-
-    print_message = f"Adding {model_info['name']} model spectra... [DONE]"
-    print(f"\r{print_message}")
 
     if logg is not None:
         logg = np.asarray(logg)

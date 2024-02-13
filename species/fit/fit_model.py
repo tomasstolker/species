@@ -39,6 +39,7 @@ from species.read.read_object import ReadObject
 from species.read.read_planck import ReadPlanck
 from species.read.read_filter import ReadFilter
 from species.util.convert_util import logg_to_mass
+from species.util.core_util import print_section
 from species.util.dust_util import (
     convert_to_av,
     interp_lognorm,
@@ -422,6 +423,8 @@ class FitModel:
         NoneType
             None
         """
+
+        print_section("Fit model spectra")
 
         if not inc_phot and not inc_spec:
             raise ValueError("No photometric or spectroscopic data has been selected.")
@@ -981,7 +984,7 @@ class FitModel:
                 self.modelpar.remove(item)
                 del self.bounds[item]
 
-        print(f"Fitting {len(self.modelpar)} parameters:")
+        print(f"\nFitting {len(self.modelpar)} parameters:")
 
         for item in self.modelpar:
             print(f"   - {item}")
@@ -993,13 +996,13 @@ class FitModel:
 
         # Printing uniform and normal priors
 
-        print("Uniform priors (min, max):")
+        print("\nUniform priors (min, max):")
 
         for key, value in self.bounds.items():
             print(f"   - {key} = {value}")
 
         if len(self.normal_prior) > 0:
-            print("Normal priors (mean, sigma):")
+            print("\nNormal priors (mean, sigma):")
             for key, value in self.normal_prior.items():
                 print(f"   - {key} = {value}")
 
@@ -1011,7 +1014,7 @@ class FitModel:
 
         # Weighting of the photometric and spectroscopic data
 
-        print("Weights for the log-likelihood function:")
+        print("\nWeights for the log-likelihood function:")
 
         if isinstance(apply_weights, bool):
             self.weights = {}
@@ -1900,7 +1903,7 @@ class FitModel:
             None
         """
 
-        print("Running nested sampling with MultiNest...")
+        print_section("Nested sampling with MultiNest")
 
         # Set attributes
 
@@ -2040,7 +2043,7 @@ class FitModel:
         # Nested sampling global log-evidence
         ln_z = sampling_stats["nested sampling global log-evidence"]
         ln_z_error = sampling_stats["nested sampling global log-evidence error"]
-        print(f"Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+        print(f"\nNested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Nested sampling global log-evidence
         ln_z = sampling_stats["nested importance sampling global log-evidence"]
@@ -2052,7 +2055,7 @@ class FitModel:
         )
 
         # Get the best-fit (highest likelihood) point
-        print("Sample with the highest likelihood:")
+        print("\nSample with the highest likelihood:")
         best_params = analyzer.get_best_fit()
 
         max_lnlike = best_params["log_likelihood"]
@@ -2173,7 +2176,7 @@ class FitModel:
             None
         """
 
-        print("Running nested sampling with UltraNest...")
+        print_section("Nested sampling with UltraNest")
 
         # Set attributes
 
@@ -2285,11 +2288,11 @@ class FitModel:
 
         ln_z = result["logz"]
         ln_z_error = result["logzerr"]
-        print(f"Log-evidence = {ln_z:.2f} +/- {ln_z_error:.2f}")
+        print(f"\nLog-evidence = {ln_z:.2f} +/- {ln_z_error:.2f}")
 
         # Best-fit parameters
 
-        print("Best-fit parameters (mean +/- std):")
+        print("\nBest-fit parameters (mean +/- std):")
 
         for i, item in enumerate(self.modelpar):
             mean = np.mean(result["samples"][:, i])
@@ -2299,7 +2302,7 @@ class FitModel:
 
         # Maximum likelihood sample
 
-        print("Maximum likelihood sample:")
+        print("\nMaximum likelihood sample:")
 
         max_lnlike = result["maximum_likelihood"]["logl"]
         print(f"   - Log-likelihood = {max_lnlike:.2f}")

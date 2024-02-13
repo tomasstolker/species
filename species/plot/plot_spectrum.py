@@ -24,6 +24,7 @@ from species.core.box import (
     SynphotBox,
 )
 from species.read.read_filter import ReadFilter
+from species.util.core_util import print_section
 from species.util.plot_util import create_model_label
 
 
@@ -66,9 +67,9 @@ def plot_spectrum(
     Parameters
     ----------
     boxes : list(species.core.box)
-        Boxes with data.
+        Boxes with data that will be included in the plot.
     filters : list(str), None
-        Filter IDs for which the transmission profile is plotted.
+        Filter names for which the transmission profile is plotted.
         Not plotted if set to ``None``.
     residuals : species.core.box.ResidualsBox, None
         Box with residuals of a fit. Not plotted if set to ``None``.
@@ -175,6 +176,24 @@ def plot_spectrum(
         The ``Figure`` object that can be used for further
         customization of the plot.
     """
+
+    print_section("Plot spectrum")
+
+    print("Boxes:")
+    for item in boxes:
+        if isinstance(item, list):
+            item_type = item[0].__class__.__name__
+            print(f"   - List with {len(item)} {item_type}")
+        else:
+            print(f"   - {item.__class__.__name__}")
+
+    print(f"\nObject type: {object_type}")
+    print(f"Quantity: {quantity}")
+    print(f"Filter profiles: {filters}")
+
+    print(f"\nFigure size: {figsize}")
+    print(f"Legend parameters: {leg_param}")
+    print(f"Include model name: {inc_model_name}")
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -1161,10 +1180,8 @@ def plot_spectrum(
     if filters is not None:
         ax2.set_ylim(0.0, 1.1)
 
-    if output is None:
-        print("Plotting spectrum...", end="", flush=True)
-    else:
-        print(f"Plotting spectrum: {output}...", end="", flush=True)
+    if output is not None:
+        print(f"\nOutput: {output}")
 
     if title is not None:
         if filters:
@@ -1301,7 +1318,5 @@ def plot_spectrum(
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig
