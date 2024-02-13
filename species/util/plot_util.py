@@ -2,10 +2,7 @@
 Module with utility functions for plotting data.
 """
 
-import json
 import warnings
-
-from pathlib import Path
 
 from string import ascii_lowercase
 from typing import Dict, List, Optional, Tuple
@@ -15,7 +12,6 @@ import numpy as np
 from typeguard import typechecked
 
 from species.core import constants
-from species.read.read_model import ReadModel
 
 
 @typechecked
@@ -860,7 +856,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "flux_offset" in param:
         index = param.index("flux_offset")
-        param[index] = r"$b_\mathrm{flux}$"
+        param[index] = r"$b_\mathrm{flux}$ (W m$^{-2}$ µm$^{-1}$)"
 
     return param
 
@@ -1159,6 +1155,21 @@ def quantity_unit(
             unit.append(r"$R_\mathrm{J}$")
             label.append(r"$R_\mathrm{disk}$")
 
+        if item == "flux_scaling":
+            quantity.append("flux_scaling")
+            unit.append(None)
+            label.append(r"$a_\mathrm{flux}$")
+
+        if item == "log_flux_scaling":
+            quantity.append("log_flux_scaling")
+            unit.append(None)
+            label.append(r"$\log\,a_\mathrm{flux}$")
+
+        if item == "flux_offset":
+            quantity.append("flux_offset")
+            unit.append(r"W m$^{-2}$ µm$^{-1}$")
+            label.append(r"$b_\mathrm{flux}$")
+
     return quantity, unit, label
 
 
@@ -1446,81 +1457,20 @@ def create_model_label(
         the model values, and the parameter units.
     """
 
-    data_file = Path(__file__).parents[1].resolve() / "data/model_data/model_data.json"
+    # data_file = Path(__file__).parents[1].resolve() / "data/model_data/model_data.json"
 
-    with open(data_file, "r", encoding="utf-8") as json_file:
-        model_data = json.load(json_file)
-        model_list = list(model_data.keys())
-
-    # if model_name in model_list:
-    #     read_mod = ReadModel(model_name)
-    #     check_param = read_mod.get_parameters()
-    #
-    #     check_param += [
-    #         "radius",
-    #         "mass",
-    #         "luminosity",
-    #         "parallax",
-    #         "disk_teff",
-    #         "disk_radius",
-    #     ]
-    #
-    # else:
-    #     check_param = None
-
-    # if len(leg_param) > 0:
-    #     for item in list(model_param.keys()):
-    #         if item not in leg_param:
-    #             del model_param[item]
-    #
-    #     del_param = []
-    #     for item in leg_param:
-    #         if item not in model_param.keys():
-    #             warnings.warn(
-    #                 f"The '{item}' parameter in "
-    #                 "'leg_param' is not a parameter of "
-    #                 f"'{model_name}' so it will not be "
-    #                 "included with the legend."
-    #             )
-    #
-    #             del_param.append(item)
-    #
-    #     if check_param is not None:
-    #         for item in leg_param:
-    #             if item not in check_param and item not in del_param:
-    #                 warnings.warn(
-    #                     f"The '{item}' parameter in "
-    #                     "'leg_param' is not a parameter of "
-    #                     f"'{model_name}' so it will not be "
-    #                     "included with the legend."
-    #                 )
-    #
-    #                 del_param.append(item)
-    #
-    #     new_leg_param = []
-    #     for item in leg_param:
-    #         if item not in del_param:
-    #             new_leg_param.append(item)
-    #
-    #     leg_param = new_leg_param.copy()
+    # with open(data_file, "r", encoding="utf-8") as json_file:
+    #     model_data = json.load(json_file)
+    #     model_list = list(model_data.keys())
 
     if len(leg_param) == 0:
-        check_param = list(model_param.keys())
+        leg_param = list(model_param.keys())
 
-        if model_name == "planck":
-            leg_param = ["teff"]
-        else:
-            read_mod = ReadModel(model_name)
-            leg_param = read_mod.get_parameters()
+        if "distance" in leg_param:
+            leg_param.remove("distance")
 
-        if "radius" in check_param:
-            leg_param.append("radius")
-
-        if "disk_teff" in check_param:
-            leg_param.append("disk_teff")
-
-        if "disk_radius" in check_param:
-            leg_param.append("disk_radius")
+        if "parallax" in leg_param:
+            leg_param.remove("parallax")
 
     # Remove parameters from the model_param dictionary
     # if they are not included in the leg_param list
@@ -1546,11 +1496,11 @@ def create_model_label(
 
     # Optionally include the model name into the label
 
-    if model_name is not None:
+    if model_name is not None and inc_model_name:
         label += convert_model_name(model_name)
 
         if len(par_key) > 0:
-            label += f": "
+            label += ": "
 
     for i, item in enumerate(par_key):
         if item[:4] == "teff":
@@ -1568,11 +1518,19 @@ def create_model_label(
             elif object_type == "star":
                 value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
 
-        elif item == "luminosity" and leg_param is not None and item in leg_param:
+        elif item == "luminosity" and item in leg_param:
             value = f"{np.log10(model_param[item]):{param_fmt['luminosity']}}"
 
-        elif item in leg_param:
+        elif item in leg_param and item in param_fmt:
             value = f"{model_param[item]:{param_fmt[item]}}"
+
+        elif item in leg_param and item not in param_fmt:
+            warnings.warn(
+                f"The '{item}' parameter is not found in "
+                "the dictionary of 'param_fmt'."
+            )
+
+            value = f"{model_param[item]:{param_fmt[item]:.2f}}"
 
         else:
             continue

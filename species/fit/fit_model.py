@@ -1372,7 +1372,7 @@ class FitModel:
 
         for key, value in self.normal_prior.items():
             if key == "mass":
-                if "logg" in self.modelpar:
+                if "logg" in self.modelpar and "radius" in self.modelpar:
                     mass = logg_to_mass(
                         params[self.cube_index["logg"]],
                         params[self.cube_index["radius"]],
@@ -1381,11 +1381,18 @@ class FitModel:
                     ln_like += -0.5 * (mass - value[0]) ** 2 / value[1] ** 2
 
                 else:
-                    warnings.warn(
-                        f"The log(g) parameter is not used "
-                        f"by the {self.model} model so the "
-                        f"mass prior can not be applied."
-                    )
+                    if "logg" not in self.modelpar:
+                        warnings.warn(
+                            "The 'logg' parameter is not used "
+                            f"by the '{self.model}' model so "
+                            "the mass prior can not be applied."
+                        )
+
+                    if "radius" not in self.modelpar:
+                        warnings.warn(
+                            "The 'radius' parameter is not fitted "
+                            "so the mass prior can not be applied."
+                        )
 
             else:
                 ln_like += (
@@ -2131,7 +2138,7 @@ class FitModel:
         self,
         tag: str,
         min_num_live_points: int = 400,
-        resume: Union[bool, str] = "subfolder",
+        resume: Union[bool, str] = False,
         output: str = "ultranest/",
         kwargs_ultranest: Optional[dict] = None,
         **kwargs,
@@ -2154,13 +2161,15 @@ class FitModel:
             will be poorly sampled, giving a large region and thus low
             efficiency, and potentially not seeing interesting modes.
             Therefore, a value above 100 is typically useful.
-        resume : bool
+        resume : bool, str
             Resume the posterior sampling from a previous run. The
             ``UltraNest`` documentation provides a description of the
             `possible arguments <https://johannesbuchner.github.io/
             UltraNest/ultranest.html#ultranest.integrator.
-            ReactiveNestedSampler>`_ (``True``, 'resume',
-            'resume-similar', 'overwrite', 'subfolder').
+            ReactiveNestedSampler>`_ (``True``, ``'resume'``,
+            ``'resume-similar'``, ``'overwrite'``, ``'subfolder'``).
+            Setting the argument to ``False`` is identical to
+            ``'subfolder'``.
         kwargs_ultranest : dict, None
             Dictionary with keyword arguments that can be used to
             adjust the parameters of the `run() method
@@ -2177,6 +2186,11 @@ class FitModel:
         """
 
         print_section("Nested sampling with UltraNest")
+
+        # Check if resume is set to a non-UltraNest value
+
+        if isinstance(resume, bool) and not resume:
+            resume = "subfolder"
 
         # Set attributes
 

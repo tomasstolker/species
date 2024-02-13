@@ -691,7 +691,7 @@ class Database:
             will be unpacked after downloading. In case the TAR
             file had already been unpacked previously, the
             argument can be set to ``False`` such that the
-            unpacking will be skipped. This can safe some time
+            unpacking will be skipped. This can save some time
             with unpacking large TAR files.
 
         Returns
@@ -1985,7 +1985,7 @@ class Database:
         if verbose:
             print("\nParameters:")
             for key, value in prob_sample.items():
-                if key == "luminosity":
+                if key in ["luminosity", "flux_scaling", "flux_offset"]:
                     print(f"   - {key} = {value:.2e}")
                 else:
                     print(f"   - {key} = {value:.2f}")
@@ -2072,7 +2072,7 @@ class Database:
         if verbose:
             print("\nParameters:")
             for key, value in median_sample.items():
-                if key == "luminosity":
+                if key in ["luminosity", "flux_scaling", "flux_offset"]:
                     print(f"   - {key} = {value:.2e}")
                 else:
                     print(f"   - {key} = {value:.2f}")
@@ -2140,7 +2140,7 @@ class Database:
         if verbose:
             print("\nParameters:")
             for key, value in model_param.items():
-                if key == "luminosity":
+                if key in ["luminosity", "flux_scaling", "flux_offset"]:
                     print(f"   - {key} = {value:.2e}")
                 else:
                     print(f"   - {key} = {value:.2f}")

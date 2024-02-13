@@ -159,7 +159,8 @@ def plot_spectrum(
         when plotting the model spectra. Default formats are
         used if the argument of ``param_fmt`` is set to ``None``.
         Formats should provided for example as '.2f' for two
-        decimals and '.0f' for zero decimals.
+        decimals, '.0f' for zero decimals, and '.1f' for
+        exponential notation with one decimal.
     grid_hspace : float
         The relative height spacing between subplots, expressed
         as a fraction of the average axis height. The default
@@ -183,7 +184,7 @@ def plot_spectrum(
     for item in boxes:
         if isinstance(item, list):
             item_type = item[0].__class__.__name__
-            print(f"   - List with {len(item)} {item_type}")
+            print(f"   - List with {len(item)} x {item_type}")
         else:
             print(f"   - {item.__class__.__name__}")
 
@@ -234,6 +235,7 @@ def plot_spectrum(
         "ism_ext",
         "lognorm_ext",
         "powerlaw_ext",
+        "log_flux_scaling",
     ]
 
     for param_item in param_add:
@@ -245,6 +247,12 @@ def plot_spectrum(
     for param_item in param_add:
         if param_item not in param_fmt:
             param_fmt[param_item] = ".2f"
+
+    param_add = ["flux_scaling", "flux_offset"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2e"
 
     if residuals is not None and filters is not None:
         fig = plt.figure(figsize=figsize)
