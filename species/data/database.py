@@ -902,7 +902,7 @@ class Database:
             None
         """
 
-        print_section("Add object data")
+        print_section("Add object")
 
         print(f"Object name: {object_name}")
 
@@ -1767,6 +1767,8 @@ class Database:
         ln_prob: np.ndarray,
         tag: str,
         modelpar: List[str],
+        bounds: Dict,
+        normal_prior: Dict,
         ln_evidence: Optional[Tuple[float, float]] = None,
         mean_accept: Optional[float] = None,
         spectrum: Optional[Tuple[str, str]] = None,
@@ -1791,7 +1793,11 @@ class Database:
             Database tag.
         modelpar : list(str)
             List with the model parameter names.
-        ln_evidence : tuple(float, float)
+        bounds : dict
+            Dictionary with the (log-)uniform priors.
+        normal_prior : dict
+            Dictionary with the normal priors.
+        ln_evidence : tuple(float, float), None
             Log evidence and uncertainty. Set to ``None`` when
             ``sampler`` is 'emcee'.
         mean_accept : float, None
@@ -1838,6 +1844,14 @@ class Database:
             dset = hdf5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
             hdf5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=ln_prob)
 
+            for key, value in bounds.items():
+                group_path = f"results/fit/{tag}/bounds/{key}"
+                hdf5_file.create_dataset(group_path, data=value)
+
+            for key, value in normal_prior.items():
+                group_path = f"results/fit/{tag}/normal_prior/{key}"
+                hdf5_file.create_dataset(group_path, data=value)
+
             if attr_dict is not None and "spec_type" in attr_dict:
                 dset.attrs["type"] = attr_dict["spec_type"]
             else:
@@ -1850,6 +1864,8 @@ class Database:
 
             dset.attrs["n_param"] = int(len(modelpar))
             dset.attrs["sampler"] = str(sampler)
+            dset.attrs["n_bounds"] = int(len(bounds))
+            dset.attrs["n_normal_prior"] = int(len(normal_prior))
 
             if parallax is not None:
                 dset.attrs["parallax"] = float(parallax)
@@ -2616,7 +2632,7 @@ class Database:
             Box with the object's data.
         """
 
-        print_section(f"Get object: {object_name}")
+        print_section(f"Get object")
 
         print(f"Object name: {object_name}")
         print(f"Include photometry: {inc_phot}")
@@ -2740,55 +2756,84 @@ class Database:
             Box with the posterior samples.
         """
 
+        print_section("Get posterior samples")
+
         if burnin is None:
             burnin = 0
 
-        hdf5_file = h5py.File(self.database, "r")
-        dset = hdf5_file[f"results/fit/{tag}/samples"]
-        ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"results/fit/{tag}/samples"]
+            ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
 
-        attributes = {}
-        for item in dset.attrs:
-            attributes[item] = dset.attrs[item]
+            samples = np.asarray(dset)
 
-        spectrum = dset.attrs["spectrum"]
+            if samples.ndim == 3:
+                if burnin > samples.shape[0]:
+                    raise ValueError(
+                        "The 'burnin' value is larger than the number "
+                        f"of steps ({samples.shape[1]}) that are made "
+                        "by the walkers."
+                    )
 
-        if "n_param" in dset.attrs:
-            n_param = dset.attrs["n_param"]
-        elif "nparam" in dset.attrs:
-            n_param = dset.attrs["nparam"]
+                samples = samples[burnin:, :, :]
 
-        if "ln_evidence" in dset.attrs:
-            ln_evidence = dset.attrs["ln_evidence"]
-        else:
-            # For backward compatibility
-            ln_evidence = None
+                if random is not None:
+                    ran_walker = np.random.randint(samples.shape[0], size=random)
+                    ran_step = np.random.randint(samples.shape[1], size=random)
+                    samples = samples[ran_walker, ran_step, :]
 
-        samples = np.asarray(dset)
+            elif samples.ndim == 2 and random is not None:
+                indices = np.random.randint(samples.shape[0], size=random)
+                samples = samples[indices, :]
 
-        if samples.ndim == 3:
-            if burnin > samples.shape[0]:
-                raise ValueError(
-                    f"The 'burnin' value is larger than the number of steps "
-                    f"({samples.shape[1]}) that are made by the walkers."
-                )
+            print(f"Database tag: {tag}")
+            print(f"Random samples: {random}")
+            print(f"Array shape: {samples.shape}")
 
-            samples = samples[burnin:, :, :]
+            attributes = {}
+            for item in dset.attrs:
+                attributes[item] = dset.attrs[item]
 
-            if random is not None:
-                ran_walker = np.random.randint(samples.shape[0], size=random)
-                ran_step = np.random.randint(samples.shape[1], size=random)
-                samples = samples[ran_walker, ran_step, :]
+            spectrum = dset.attrs["spectrum"]
 
-        elif samples.ndim == 2 and random is not None:
-            indices = np.random.randint(samples.shape[0], size=random)
-            samples = samples[indices, :]
+            if "n_param" in dset.attrs:
+                n_param = dset.attrs["n_param"]
+            elif "nparam" in dset.attrs:
+                n_param = dset.attrs["nparam"]
 
-        param = []
-        for i in range(n_param):
-            param.append(dset.attrs[f"parameter{i}"])
+            if "ln_evidence" in dset.attrs:
+                ln_evidence = dset.attrs["ln_evidence"]
+            else:
+                # For backward compatibility
+                ln_evidence = None
 
-        hdf5_file.close()
+            param = []
+            print("\nParameters:")
+            for i in range(n_param):
+                param.append(dset.attrs[f"parameter{i}"])
+                print(f"   - {param[-1]}")
+
+            # Printing uniform and normal priors
+            # Check if attributes are present for
+            # backward compatibility
+
+            if "n_bounds" in attributes and attributes["n_bounds"] > 0:
+                dset_bounds = hdf5_file[f"results/fit/{tag}/bounds"]
+                print("\nUniform priors (min, max):")
+
+                for item in dset_bounds:
+                    group_path = f"results/fit/{tag}/bounds/{item}"
+                    prior_bound = np.array(hdf5_file[group_path])
+                    print(f"   - {item} = ({prior_bound[0]}, {prior_bound[1]})")
+
+            if "n_normal_prior" in attributes and attributes["n_normal_prior"] > 0:
+                dset_prior = hdf5_file[f"results/fit/{tag}/normal_prior"]
+                print("\nNormal priors (mean, sigma):")
+
+                for item in dset_prior:
+                    group_path = f"results/fit/{tag}/normal_prior/{item}"
+                    norm_prior = np.array(hdf5_file[group_path])
+                    print(f"   - {item} = ({norm_prior[0]}, {norm_prior[1]})")
 
         median_sample = self.get_median_sample(tag, burnin, verbose=False)
         prob_sample = self.get_probable_sample(tag, burnin, verbose=False)
@@ -2801,6 +2846,8 @@ class Database:
 
             with open(json_file, "w", encoding="utf-8") as out_file:
                 json.dump(samples_dict, out_file, indent=4)
+
+            print(f"\nOutput: {json_file}")
 
         return create_box(
             "samples",

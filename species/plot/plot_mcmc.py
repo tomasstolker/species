@@ -68,6 +68,11 @@ def plot_walkers(
         customization of the plot.
     """
 
+    from species.data.database import Database
+
+    species_db = Database()
+    box = species_db.get_samples(tag)
+
     if output is None:
         print("Plotting walkers...", end="", flush=True)
     else:
@@ -75,11 +80,6 @@ def plot_walkers(
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    from species.data.database import Database
-
-    species_db = Database()
-    box = species_db.get_samples(tag)
 
     samples = box.samples
     labels = update_labels(box.parameters)
@@ -291,20 +291,24 @@ def plot_posterior(
         customization of the plot.
     """
 
-    print_section("Plot posterior distributions")
-
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    if burnin is None:
-        burnin = 0
-
     from species.data.database import Database
 
     species_db = Database()
 
     box = species_db.get_samples(tag, burnin=burnin)
     samples = box.samples
+
+    print_section("Plot posterior distributions")
+
+    print(f"Database tag: {tag}")
+    print(f"Object type: {object_type}")
+    print(f"Manual parameters: {param_inc}")
+
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
+    if burnin is None:
+        burnin = 0
 
     # index_sel = [0, 1, 8, 9, 14]
     # samples = samples[:, index_sel]
@@ -455,7 +459,7 @@ def plot_posterior(
         # Overwrite the samples in the SamplesBox
         box.samples = updated_samples
 
-    print("Median sample:")
+    print("\nMedian parameters:")
     for key, value in box.median_sample.items():
         print(f"   - {key} = {value:.2e}")
 
@@ -470,7 +474,7 @@ def plot_posterior(
     if box.prob_sample is not None:
         par_val = tuple(box.prob_sample.values())
 
-        print("\nMaximum posterior sample:")
+        print("\nSample with highest probability:")
         for key, value in box.prob_sample.items():
             print(f"   - {key} = {value:.2e}")
 
@@ -1030,6 +1034,11 @@ def plot_size_distributions(
         customization of the plot.
     """
 
+    from species.data.database import Database
+
+    species_db = Database()
+    box = species_db.get_samples(tag)
+
     if output is None:
         print("Plotting size distributions...", end="", flush=True)
     else:
@@ -1040,11 +1049,6 @@ def plot_size_distributions(
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    from species.data.database import Database
-
-    species_db = Database()
-    box = species_db.get_samples(tag)
 
     if "lognorm_radius" not in box.parameters and "powerlaw_max" not in box.parameters:
         raise ValueError(
@@ -1221,6 +1225,11 @@ def plot_extinction(
         customization of the plot.
     """
 
+    from species.data.database import Database
+
+    species_db = Database()
+    box = species_db.get_samples(tag)
+
     if burnin is None:
         burnin = 0
 
@@ -1229,11 +1238,6 @@ def plot_extinction(
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    from species.data.database import Database
-
-    species_db = Database()
-    box = species_db.get_samples(tag)
 
     samples = box.samples
 

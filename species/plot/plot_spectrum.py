@@ -159,7 +159,7 @@ def plot_spectrum(
         when plotting the model spectra. Default formats are
         used if the argument of ``param_fmt`` is set to ``None``.
         Formats should provided for example as '.2f' for two
-        decimals, '.0f' for zero decimals, and '.1f' for
+        decimals, '.0f' for zero decimals, and '.1e' for
         exponential notation with one decimal.
     grid_hspace : float
         The relative height spacing between subplots, expressed

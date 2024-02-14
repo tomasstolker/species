@@ -106,11 +106,14 @@ class FitModel:
             'planck', or 'powerlaw').
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform or
-            log-uniform priors. Fixing a parameter is possible by
+            log-uniform priors. Mandatory parameters are
+            automatically added if not already included in
+            ``bounds``. Fixing a parameter is possible by
             providing the same value as lower and upper boundary
             of the parameter (e.g. ``bounds={'logg': (4., 4.)``.
             An explanation of the various parameters can be found
-            below.
+            below. See also the ``normal_prior`` parameter for
+            using priors with a normal distribution.
 
             Atmospheric model parameters (e.g. with
             ``model='bt-settl-cifist'``; see docstring of
@@ -416,7 +419,9 @@ class FitModel:
             Mjup. A normal prior for the parallax is automatically
             included so does not need to be set with
             ``normal_prior``. The parameter is not used if the
-            argument is set to ``None``.
+            argument is set to ``None``. See also the ``bounds``
+            parameter for including priors with a (log-)uniform
+            distribution.
 
         Returns
         -------
@@ -615,7 +620,7 @@ class FitModel:
 
             # Optional rotational broading
 
-            if "vsini" in bounds:
+            if "vsini" in self.bounds:
                 # Add vsin(i) parameter (km s-1)
                 self.modelpar.append("vsini")
                 self.bounds["vsini"] = (bounds["vsini"][0], bounds["vsini"][1])
@@ -2062,7 +2067,7 @@ class FitModel:
         )
 
         # Get the best-fit (highest likelihood) point
-        print("\nSample with the highest likelihood:")
+        print("\nSample with the highest probability:")
         best_params = analyzer.get_best_fit()
 
         max_lnlike = best_params["log_likelihood"]
@@ -2129,6 +2134,8 @@ class FitModel:
                 ln_prob=ln_prob,
                 tag=tag,
                 modelpar=self.modelpar,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
                 spec_labels=spec_labels,
                 attr_dict=attr_dict,
             )
@@ -2384,6 +2391,8 @@ class FitModel:
                 ln_prob=ln_prob,
                 tag=tag,
                 modelpar=self.modelpar,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
                 spec_labels=spec_labels,
                 attr_dict=attr_dict,
             )
