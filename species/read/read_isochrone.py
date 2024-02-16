@@ -112,7 +112,6 @@ class ReadIsochrone:
         config.read(config_file)
 
         self.database = config["species"]["database"]
-        self.interp_method = config["species"]["interp_method"]
 
         if self.tag is None:
             with h5py.File(self.database, "r") as hdf5_file:
@@ -604,7 +603,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_color_1],
                     xi=np.stack((age_points, masses), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -613,7 +612,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_color_2],
                     xi=np.stack((age_points, masses), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -625,7 +624,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_mag],
                     xi=np.stack((age_points, masses), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -634,7 +633,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_teff,
             xi=np.stack((age_points, masses), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -643,7 +642,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_loglum,
             xi=np.stack((age_points, masses), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -652,7 +651,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_logg,
             xi=np.stack((age_points, masses), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -661,7 +660,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_radius,
             xi=np.stack((age_points, masses), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -774,7 +773,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_color_1],
                     xi=np.stack((ages, mass_points), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -783,7 +782,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_color_2],
                     xi=np.stack((ages, mass_points), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -795,7 +794,7 @@ class ReadIsochrone:
                     points=grid_points,
                     values=iso_mag[:, index_mag],
                     xi=np.stack((ages, mass_points), axis=1),
-                    method=self.interp_method,
+                    method="linear",
                     fill_value="nan",
                     rescale=False,
                 )
@@ -804,7 +803,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_teff,
             xi=np.stack((ages, mass_points), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -813,7 +812,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_loglum,
             xi=np.stack((ages, mass_points), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -822,7 +821,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_logg,
             xi=np.stack((ages, mass_points), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -831,7 +830,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_radius,
             xi=np.stack((ages, mass_points), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -1276,7 +1275,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_mass,
             xi=np.stack((age_points, log_lum), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )
@@ -1331,7 +1330,7 @@ class ReadIsochrone:
             points=grid_points,
             values=iso_radius,
             xi=np.stack((age_points, log_lum), axis=1),
-            method=self.interp_method,
+            method="linear",
             fill_value="nan",
             rescale=False,
         )

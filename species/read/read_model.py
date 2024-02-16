@@ -99,7 +99,6 @@ class ReadModel:
 
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
-        self.interp_method = config["species"]["interp_method"]
 
         self.extra_param = [
             "radius",
@@ -222,7 +221,7 @@ class ReadModel:
         self.spectrum_interp = RegularGridInterpolator(
             grid_points,
             grid_flux,
-            method=self.interp_method,
+            method="linear",
             bounds_error=False,
             fill_value=np.nan,
         )
@@ -399,7 +398,7 @@ class ReadModel:
         self.spectrum_interp = RegularGridInterpolator(
             points,
             flux_new,
-            method=self.interp_method,
+            method="linear",
             bounds_error=False,
             fill_value=np.nan,
         )
@@ -1125,10 +1124,12 @@ class ReadModel:
 
         if np.isnan(np.sum(model_box.flux)):
             warnings.warn(
-                f"The resampled spectrum contains {np.sum(np.isnan(model_box.flux))} "
-                "NaNs, probably because the original wavelength range does not fully "
-                "encompass the new wavelength range. The happened with the "
-                f"following parameters: {model_param}."
+                "The resampled spectrum contains "
+                f"{np.sum(np.isnan(model_box.flux))} "
+                "NaNs, probably because the original "
+                "wavelength range does not fully encompass "
+                "the new wavelength range. This happened with "
+                f"the following parameters: {model_param}."
             )
 
         # Add the luminosity to the parameter dictionary

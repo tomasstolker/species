@@ -33,8 +33,10 @@ except:
     )
 
 from molmass import Formula
+from PyAstronomy.pyasl import fastRotBroad
 from schwimmbad import MPIPool
 from scipy.integrate import simps
+from scipy.interpolate import interp1d
 from scipy.stats import invgamma, norm
 from typeguard import typechecked
 
@@ -42,6 +44,7 @@ from species.core import constants
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.read.read_object import ReadObject
+from species.util.core_util import print_section
 from species.util.dust_util import apply_ism_ext
 from species.util.convert_util import logg_to_mass
 from species.util.retrieval_util import (
@@ -196,6 +199,8 @@ class AtmosphericRetrieval:
             None
         """
 
+        print_section("Atmospheric retrieval")
+
         # Input parameters
 
         self.object_name = object_name
@@ -282,7 +287,7 @@ class AtmosphericRetrieval:
 
         species_db = Database()
 
-        objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=True)
+        objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=True, verbose=False)
 
         # Copy the cloud species into a new list because the values will be adjusted by Radtrans
 
@@ -302,8 +307,8 @@ class AtmosphericRetrieval:
             else:
                 inc_phot = []
 
-        if len(objectbox.filters) != 0:
-            print("Photometric data:")
+        if len(inc_phot) > 0:
+            print("\nPhotometry:")
 
         for item in inc_phot:
             obj_phot = self.object.get_photometry(item)
@@ -346,7 +351,7 @@ class AtmosphericRetrieval:
         self.wavel_min = []
         self.wavel_max = []
 
-        print("Spectroscopic data:")
+        print("\nSpectra:")
 
         for key, value in self.spectrum.items():
             dict_val = list(value)
@@ -401,7 +406,7 @@ class AtmosphericRetrieval:
         self.pressure = np.logspace(-6, np.log10(self.max_pressure), n_pressure)
 
         print(
-            f"Initiating {self.pressure.size} pressure levels (bar): "
+            f"\nInitiating {self.pressure.size} pressure levels (bar): "
             f"{self.pressure[0]:.2e} - {self.pressure[-1]:.2e}"
         )
 
@@ -435,7 +440,7 @@ class AtmosphericRetrieval:
 
         # Weighting of the photometric and spectroscopic data
 
-        print("Weights for the log-likelihood function:")
+        print("\nWeights for the log-likelihood function:")
 
         if weights is None:
             self.weights = {}
@@ -774,6 +779,16 @@ class AtmosphericRetrieval:
 
         if "mix_length" in bounds:
             self.parameters.append("mix_length")
+
+        # Radial veloctiy (km s-1)
+
+        if "rad_vel" in bounds:
+            self.parameters.append("rad_vel")
+
+        # Rotational broadening (km s-1)
+
+        if "vsini" in bounds:
+            self.parameters.append("vsini")
 
         # List all parameters
 
@@ -1666,6 +1681,23 @@ class AtmosphericRetrieval:
                 bounds["mix_length"][0]
                 + (bounds["mix_length"][1] - bounds["mix_length"][0])
                 * cube[cube_index["mix_length"]]
+            )
+
+        # Radial velocity (km s-1)
+
+        if "rad_vel" in bounds:
+            cube[cube_index["rad_vel"]] = (
+                bounds["rad_vel"][0]
+                + (bounds["rad_vel"][1] - bounds["rad_vel"][0])
+                * cube[cube_index["rad_vel"]]
+            )
+
+        # Rotational broadening (km s-1)
+
+        if "vsini" in bounds:
+            cube[cube_index["vsini"]] = (
+                bounds["vsini"][0]
+                + (bounds["vsini"][1] - bounds["vsini"][0]) * cube[cube_index["vsini"]]
             )
 
         return cube
@@ -2772,30 +2804,73 @@ class AtmosphericRetrieval:
 
         # Evaluate the spectra
 
-        for i, item in enumerate(self.spectrum.keys()):
-            # Select model spectrum
+        for i, spec_item in enumerate(self.spectrum.keys()):
+            # Select data wavelength range from the model spectrum 
 
-            if item in self.cross_corr:
-                model_wavel = ccf_wavel[item]
-                model_flux = ccf_flux[item]
+            wlen_min = self.spectrum[spec_item][0][0, 0]
+            wlen_max = self.spectrum[spec_item][0][-1, 0]
+
+            wlen_select = (wlen_micron > wlen_min-0.1*wlen_min) & (wlen_micron < wlen_max+0.1*wlen_max)
+
+            if spec_item in self.cross_corr:
+                model_wavel = ccf_wavel[spec_item]
+                model_flux = ccf_flux[spec_item]
 
             else:
-                model_wavel = wlen_micron
-                model_flux = flux_lambda
+                model_wavel = wlen_micron[wlen_select]
+                model_flux = flux_lambda[wlen_select]
+
+            # Apply optional radial velocity shift
+
+            if "rad_vel" in cube_index and spec_item in self.apply_rad_vel:
+                wavel_shift = (
+                    cube[cube_index["rad_vel"]] * 1e3 * model_wavel / constants.LIGHT
+                )
+
+                spec_interp = interp1d(
+                    model_wavel + wavel_shift,
+                    model_flux,
+                    fill_value="extrapolate",
+                )
+
+                model_flux = spec_interp(model_wavel)
+
+            # Apply optional rotational broadening
+
+            if "vsini" in cube_index and spec_item in self.apply_vsini:
+                spec_interp = interp1d(model_wavel, model_flux)
+
+                wavel_new = np.linspace(
+                    model_wavel[0],
+                    model_wavel[-1],
+                    2 * model_wavel.shape[0],
+                )
+
+                flux_broad = fastRotBroad(
+                    wvl=wavel_new,
+                    flux=spec_interp(wavel_new),
+                    epsilon=0.0,
+                    vsini=cube[cube_index["vsini"]],
+                    effWvl=None,
+                )
+
+                spec_interp = interp1d(wavel_new, flux_broad)
+
+                model_flux = spec_interp(model_wavel)
 
             # Shift the wavelengths of the data with
             # the fitted calibration parameter
-            data_wavel = self.spectrum[item][0][:, 0] + wavel_cal[item]
+            data_wavel = self.spectrum[spec_item][0][:, 0] + wavel_cal[spec_item]
 
             # Flux density
-            data_flux = self.spectrum[item][0][:, 1]
+            data_flux = self.spectrum[spec_item][0][:, 1]
 
             # Variance with optional inflation
-            if err_offset[item] is None:
-                data_var = self.spectrum[item][0][:, 2] ** 2
+            if err_offset[spec_item] is None:
+                data_var = self.spectrum[spec_item][0][:, 2] ** 2
             else:
                 data_var = (
-                    self.spectrum[item][0][:, 2] + 10.0 ** err_offset[item]
+                    self.spectrum[spec_item][0][:, 2] + 10.0 ** err_offset[spec_item]
                 ) ** 2
 
             # Apply ISM extinction to the model spectrum
@@ -2821,36 +2896,36 @@ class AtmosphericRetrieval:
             # Convolve with Gaussian LSF
 
             flux_smooth = convolve_spectrum(
-                model_wavel, flux_ext, self.spectrum[item][3]
+                model_wavel, flux_ext, self.spectrum[spec_item][3]
             )
 
             # Resample to the observation
 
             flux_rebinned = rebin_give_width(
-                model_wavel, flux_smooth, data_wavel, self.spectrum[item][4]
+                model_wavel, flux_smooth, data_wavel, self.spectrum[spec_item][4]
             )
 
-            if item not in self.cross_corr:
+            if spec_item not in self.cross_corr:
                 # Difference between the observed and modeled spectrum
-                flux_diff = flux_rebinned - scaling[item] * data_flux
+                flux_diff = flux_rebinned - scaling[spec_item] * data_flux
 
                 # Shortcut for the weight
-                weight = self.weights[item]
+                weight = self.weights[spec_item]
 
-                if self.spectrum[item][2] is not None:
+                if self.spectrum[spec_item][2] is not None:
                     # Use the inverted covariance matrix
 
-                    if err_offset[item] is None:
-                        data_cov_inv = self.spectrum[item][2]
+                    if err_offset[spec_item] is None:
+                        data_cov_inv = self.spectrum[spec_item][2]
 
                     else:
                         # Ratio of the inflated and original uncertainties
-                        sigma_ratio = np.sqrt(data_var) / self.spectrum[item][0][:, 2]
+                        sigma_ratio = np.sqrt(data_var) / self.spectrum[spec_item][0][:, 2]
                         sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
                         # Calculate the inversion of the infalted covariances
                         data_cov_inv = np.linalg.inv(
-                            self.spectrum[item][1] * sigma_i * sigma_j
+                            self.spectrum[spec_item][1] * sigma_i * sigma_j
                         )
 
                     # Use the inverted covariance matrix
@@ -2860,7 +2935,7 @@ class AtmosphericRetrieval:
                     )
 
                 else:
-                    if item in self.fit_corr:
+                    if spec_item in self.fit_corr:
                         # Covariance model (Wang et al. 2020)
                         wavel_j, wavel_i = np.meshgrid(data_wavel, data_wavel)
 
@@ -2868,14 +2943,14 @@ class AtmosphericRetrieval:
                         error_j, error_i = np.meshgrid(error, error)
 
                         cov_matrix = (
-                            corr_amp[item] ** 2
+                            corr_amp[spec_item] ** 2
                             * error_i
                             * error_j
                             * np.exp(
                                 -((wavel_i - wavel_j) ** 2)
-                                / (2.0 * corr_len[item] ** 2)
+                                / (2.0 * corr_len[spec_item] ** 2)
                             )
-                            + (1.0 - corr_amp[item] ** 2)
+                            + (1.0 - corr_amp[spec_item] ** 2)
                             * np.eye(data_wavel.shape[0])
                             * error_i**2
                         )
@@ -2907,7 +2982,7 @@ class AtmosphericRetrieval:
                 n_wavel = float(data_flux.shape[0])
 
                 # Apply the optional flux scaling to the data
-                data_flux_scaled = scaling[item] * data_flux
+                data_flux_scaled = scaling[spec_item] * data_flux
 
                 # Variance of the data and model
 
@@ -2935,13 +3010,15 @@ class AtmosphericRetrieval:
                     return -np.iff
 
             if self.plotting:
+                plt.plot(model_wavel, model_flux, color="black", zorder=-20)
+
                 if self.check_flux is not None:
                     plt.plot(wlen_lowres, flux_lowres, ls="--", color="tab:gray")
                     plt.xlim(np.amin(data_wavel) - 0.1, np.amax(data_wavel) + 0.1)
 
                 plt.errorbar(
                     data_wavel,
-                    scaling[item] * data_flux,
+                    scaling[spec_item] * data_flux,
                     yerr=np.sqrt(data_var),
                     marker="o",
                     ms=3,
@@ -2958,6 +3035,13 @@ class AtmosphericRetrieval:
                     color="tab:orange",
                     alpha=0.2,
                 )
+
+
+        if self.plotting and len(self.spectrum) > 0:
+            plt.xlabel(r"Wavelength ($\mu$m)")
+            plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
+            plt.savefig("spectrum.png", bbox_inches="tight")
+            plt.clf()
 
         # Evaluate the photometric fluxes
 
@@ -3016,13 +3100,6 @@ class AtmosphericRetrieval:
                         / obj_item[1, j] ** 2
                     )
 
-        if self.plotting and len(self.spectrum) > 0:
-            plt.plot(wlen_micron, flux_smooth, color="black", zorder=-20)
-            plt.xlabel(r"Wavelength ($\mu$m)")
-            plt.ylabel(r"Flux (W m$^{-2}$ $\mu$m$^{-1}$)")
-            plt.savefig("spectrum.png", bbox_inches="tight")
-            plt.clf()
-
         return ln_prior + ln_like
 
     @typechecked
@@ -3042,6 +3119,8 @@ class AtmosphericRetrieval:
         abund_nodes: Optional[int] = None,
         prior: Optional[Dict[str, Tuple[float, float]]] = None,
         check_phot_press: Optional[float] = None,
+        apply_rad_vel: Optional[List[str]] = None,
+        apply_vsini: Optional[List[str]] = None,
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -3097,6 +3176,33 @@ class AtmosphericRetrieval:
                   a Gaussian prior (based on the object data of
                   ``object_name``). So this parameter does not
                   need to be included in ``bounds``).
+
+            Radial velocity and rotational broadening (optional):
+
+               - Radial velocity can be included with the ``rad_vel``
+                 parameter (km/s). This parameter will only be relevant
+                 if the radial velocity shift can be spectrally
+                 resolved given the instrument resolution.
+
+               - Rotational broadening can be fitted by including the
+                 ``vsini`` parameter (km/s). This parameter will only
+                 be relevant if the rotational broadening is stronger
+                 than or comparable to the instrumental broadening,
+                 so typically when the data has a high spectral
+                 resolution. The resolution is set when adding a
+                 spectrum to the database with
+                 :func:`~species.data.database.Database.add_object`.
+                 Note that the broadening is applied with the
+                 `fastRotBroad <https://pyastronomy.readthedocs.io/
+                 en/latest/pyaslDoc/aslDoc/rotBroad.html#PyAstronomy.
+                 pyasl.fastRotBroad>`_ function from ``PyAstronomy``.
+                 The rotational broadening is only accurate if the
+                 wavelength range of the data is somewhat narrow.
+                 For example, when fitting a medium- or
+                 high-resolution spectrum across multiple bands
+                 (e.g. $JHK$ bands) then it is best to split up the
+                 data into the separate bands when adding them with
+                 :func:`~species.data.database.Database.add_object`.
 
             Calibration parameters (optional):
 
@@ -3246,15 +3352,33 @@ class AtmosphericRetrieval:
             used if set to ``None``. Finally, since samples are
             removed when not full-filling this requirement, the
             runtime of the retrieval may increase significantly.
-        sampler : str
-            Sampler used for the Bayesian inference. Currently,
-            only ``'multinest'`` is supported.
+        apply_rad_vel : list(str), None
+            List with the spectrum names for which the radial velocity
+            (RV) will be applied. By including only a subset of the
+            spectra (i.e. excluding low-resolution spectra for which
+            the RV will not matter), the computation will be a bit
+            faster. This parameter is only used when the ``rad_vel``
+            model parameter has been include in ``bounds``. The RV is
+            applied to all spectra by setting the argument of
+            ``apply_rad_vel`` to ``None``.
+        apply_vsini : list(str), None
+            List with the spectrum names for which the rotational
+            broadening will be applied. By including only a subset of
+            the spectra (i.e. excluding low-resolution spectra for
+            which the broadening will not matter), the computation
+            will be a bit faster. This parameter is only used when
+            the ``vsini`` model parameter has been include in
+            ``bounds``. The :math:`v \sin(i)` is applied to all
+            spectra by setting the argument of ``apply_vsini``
+            to ``None``.
 
         Returns
         -------
         NoneType
             None
         """
+
+        print_section("Retrieval setup")
 
         # Set attributes
 
@@ -3267,9 +3391,52 @@ class AtmosphericRetrieval:
         self.check_flux = check_flux
         self.check_phot_press = check_phot_press
         self.cross_corr = cross_corr
+        self.apply_rad_vel = apply_rad_vel
+        self.apply_vsini = apply_vsini
+
+        print(f"P-T profile: {self.pt_profile}")
+        print(f"Chemistry: {self.chemistry}")
+        print(f"Quenching: {self.quenching}")
+
+        print(f"\nFit covariances: {self.fit_corr}")
+
+        # Initiate empty dictionary for normal priors
 
         if self.prior is None:
             self.prior = {}
+
+        # Include all spectra into a list for RV and vsin(i)
+        # if apply_rad_vel and apply_vsini are set to None
+
+        if "rad_vel" in bounds:
+            if self.apply_rad_vel is None:
+                self.apply_rad_vel = list(self.spectrum.keys())
+
+            print(f"Fit RV: {self.apply_rad_vel}")
+
+        else:
+            print(f"Fit RV: None")
+
+        if "vsini" in bounds:
+            if self.apply_vsini is None:
+                self.apply_vsini = list(self.spectrum.keys())
+
+            print(f"Fit vsin(i): {self.apply_vsini}")
+
+        else:
+            print(f"Fit vsin(i): None")
+
+        # Printing uniform and normal priors
+
+        print("\nUniform priors (min, max):")
+
+        for key, value in bounds.items():
+            print(f"   - {key} = {value}")
+
+        if len(self.prior) > 0:
+            print("\nNormal priors (mean, sigma):")
+            for key, value in self.prior.items():
+                print(f"   - {key} = {value}")
 
         # Check if quenching parameter is used with equilibrium chemistry
 
@@ -3349,7 +3516,7 @@ class AtmosphericRetrieval:
 
         # Import petitRADTRANS here because it is slow
 
-        print("Importing petitRADTRANS...", end="", flush=True)
+        print("\nImporting petitRADTRANS...", end="", flush=True)
 
         from petitRADTRANS.radtrans import Radtrans
 
@@ -3545,7 +3712,7 @@ class AtmosphericRetrieval:
 
         if self.pressure_grid == "standard":
             print(
-                f"Number of pressure levels used with the "
+                f"\nNumber of pressure levels used with the "
                 f"radiative transfer: {self.pressure.size}"
             )
 
@@ -3559,7 +3726,7 @@ class AtmosphericRetrieval:
 
         elif self.pressure_grid == "smaller":
             print(
-                f"Number of pressure levels used with the "
+                f"\nNumber of pressure levels used with the "
                 f"radiative transfer: {self.pressure[::3].size}"
             )
 
@@ -3582,7 +3749,7 @@ class AtmosphericRetrieval:
             # refinement around the cloud deck so the current
             # initializiation to 60 pressure points is not used
             print(
-                "Number of pressure levels used with the "
+                "\nNumber of pressure levels used with the "
                 "radiative transfer: adaptive refinement"
             )
 
@@ -3619,7 +3786,7 @@ class AtmosphericRetrieval:
         # Store the model parameters in a JSON file
 
         json_filename = os.path.join(self.output_folder, "params.json")
-        print(f"Storing the model parameters: {json_filename}")
+        print(f"\nStoring the model parameters: {json_filename}")
 
         with open(json_filename, "w", encoding="utf-8") as json_file:
             json.dump(self.parameters, json_file)
@@ -3741,6 +3908,8 @@ class AtmosphericRetrieval:
             None
         """
 
+        print_section("Nested sampling with MultiNest")
+
         # Set attributes
 
         self.plotting = plotting
@@ -3853,8 +4022,6 @@ class AtmosphericRetrieval:
                 self.lowres_radtrans,
             )
 
-        print("Sampling the posterior distribution with MultiNest...")
-
         pymultinest.run(
             _lnlike_multinest,
             _lnprior_multinest,
@@ -3933,11 +4100,11 @@ class AtmosphericRetrieval:
             None
         """
 
+        print_section("Nested sampling with Dynesty")
+
         self.plotting = plotting
 
         self.out_basename = os.path.join(self.output_folder, "retrieval_")
-
-        print("Sampling the posterior distribution with Dynesty...")
 
         if not mpi_pool:
             if n_pool is not None:

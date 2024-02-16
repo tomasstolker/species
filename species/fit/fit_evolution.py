@@ -135,7 +135,6 @@ class FitEvolution:
 
         self.database = config["species"]["database"]
         self.database_path = config["species"]["database"]
-        self.interp_method = config["species"]["interp_method"]
 
         # Add grid with evolution data
 

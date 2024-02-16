@@ -71,11 +71,11 @@ class SpeciesInit:
                 file_obj.write("; Folder where data will be downloaded\n")
                 file_obj.write("data_folder = ./data/\n\n")
 
-                file_obj.write("; Method for the grid interpolation\n")
-                file_obj.write(
-                    "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
-                )
-                file_obj.write("interp_method = linear\n")
+                # file_obj.write("; Method for the grid interpolation\n")
+                # file_obj.write(
+                #     "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
+                # )
+                # file_obj.write("interp_method = linear\n")
 
             print(" [DONE]")
 
@@ -102,18 +102,18 @@ class SpeciesInit:
                 file_obj.write("\n; Folder where data will be downloaded\n")
                 file_obj.write("data_folder = ./data/\n")
 
-        if "interp_method" in config["species"]:
-            interp_method = config["species"]["interp_method"]
-
-        else:
-            interp_method = "linear"
-
-            with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("\n; Method for the grid interpolation\n")
-                file_obj.write(
-                    "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
-                )
-                file_obj.write("interp_method = linear\n")
+        # if "interp_method" in config["species"]:
+        #     interp_method = config["species"]["interp_method"]
+        #
+        # else:
+        #     interp_method = "linear"
+        #
+        #     with open(config_file, "a", encoding="utf-8") as file_obj:
+        #         file_obj.write("\n; Method for the grid interpolation\n")
+        #         file_obj.write(
+        #             "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
+        #         )
+        #         file_obj.write("interp_method = linear\n")
 
         if "vega_mag" in config["species"]:
             vega_mag = config["species"]["vega_mag"]
@@ -128,7 +128,7 @@ class SpeciesInit:
         print("\nConfiguration settings:")
         print(f"   - Database: {database_file}")
         print(f"   - Data folder: {data_folder}")
-        print(f"   - Interpolation method: {interp_method}")
+        # print(f"   - Interpolation method: {interp_method}")
         print(f"   - Magnitude of Vega: {vega_mag}")
 
         if not os.path.isfile(database_file):

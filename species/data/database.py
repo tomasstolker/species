@@ -1504,7 +1504,7 @@ class Database:
                     print(f"      - Data shape: {read_cov[spec_item].shape}")
 
             if verbose:
-                print("   - Spectral resolution:")
+                print("   - Resolution:")
 
             for spec_item, spec_value in spectrum.items():
                 hdf5_file.create_dataset(
@@ -2211,7 +2211,7 @@ class Database:
         print(f"Database tag: {tag}")
         print(f"Number of samples: {random}")
         print(f"Wavelength range (um): {wavel_range}")
-        print(f"Spectral resolution: {spec_res}")
+        print(f"Resolution: {spec_res}")
 
         if burnin is None:
             burnin = 0
@@ -2603,6 +2603,7 @@ class Database:
         object_name: str,
         inc_phot: Union[bool, List[str]] = True,
         inc_spec: Union[bool, List[str]] = True,
+        verbose: bool = True,
     ) -> ObjectBox:
         """
         Function for extracting the photometric and/or spectroscopic
@@ -2625,6 +2626,8 @@ class Database:
             database with
             :func:`~species.data.database.Database.add_object`) can
             be provided.
+        verbose : bool
+            Print output.
 
         Returns
         -------
@@ -2632,11 +2635,12 @@ class Database:
             Box with the object's data.
         """
 
-        print_section(f"Get object")
+        if verbose:
+            print_section(f"Get object")
 
-        print(f"Object name: {object_name}")
-        print(f"Include photometry: {inc_phot}")
-        print(f"Include spectra: {inc_spec}")
+            print(f"Object name: {object_name}")
+            print(f"Include photometry: {inc_phot}")
+            print(f"Include spectra: {inc_spec}")
 
         with h5py.File(self.database, "r") as hdf5_file:
             if f"objects/{object_name}" not in hdf5_file:

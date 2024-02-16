@@ -134,6 +134,11 @@ class FitModel:
                  automatic priors will be set for all mandatory
                  parameters.
 
+               - Radial velocity can be included with the ``rad_vel``
+                 parameter (km/s). This parameter will only be relevant
+                 if the radial velocity shift can be spectrally
+                 resolved given the instrument resolution. 
+
                - Rotational broadening can be fitted by including the
                  ``vsini`` parameter (km/s). This parameter will only
                  be relevant if the rotational broadening is stronger
@@ -1700,11 +1705,13 @@ class FitModel:
                 wavel_shift = (
                     rad_vel[item] * 1e3 * self.spectrum[item][0][:, 0] / constants.LIGHT
                 )
+
                 spec_interp = interpolate.interp1d(
                     self.spectrum[item][0][:, 0] + wavel_shift,
                     model_flux,
                     fill_value="extrapolate",
                 )
+
                 model_flux = spec_interp(self.spectrum[item][0][:, 0])
 
             # Apply rotational broadening
@@ -2313,13 +2320,13 @@ class FitModel:
 
         # Best-fit parameters
 
-        print("\nBest-fit parameters (mean +/- std):")
+        print("\nBest-fit parameters (mean +/- sigma):")
 
         for i, item in enumerate(self.modelpar):
             mean = np.mean(result["samples"][:, i])
-            std = np.std(result["samples"][:, i])
+            sigma = np.std(result["samples"][:, i])
 
-            print(f"   - {item} = {mean:.2e} +/- {std:.2e}")
+            print(f"   - {item} = {mean:.2e} +/- {sigma:.2e}")
 
         # Maximum likelihood sample
 

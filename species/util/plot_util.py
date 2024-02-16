@@ -1463,14 +1463,16 @@ def create_model_label(
     #     model_data = json.load(json_file)
     #     model_list = list(model_data.keys())
 
+    # Do not include these parameters by default in the legend
+
+    not_default = ["distance", "parallax", "mass", "luminosity"]
+
     if len(leg_param) == 0:
         leg_param = list(model_param.keys())
 
-        if "distance" in leg_param:
-            leg_param.remove("distance")
-
-        if "parallax" in leg_param:
-            leg_param.remove("parallax")
+        for param_item in not_default:
+            if param_item in leg_param:
+                leg_param.remove(param_item)
 
     # Remove parameters from the model_param dictionary
     # if they are not included in the leg_param list
