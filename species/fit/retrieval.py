@@ -287,7 +287,9 @@ class AtmosphericRetrieval:
 
         species_db = Database()
 
-        objectbox = species_db.get_object(object_name, inc_phot=True, inc_spec=True, verbose=False)
+        objectbox = species_db.get_object(
+            object_name, inc_phot=True, inc_spec=True, verbose=False
+        )
 
         # Copy the cloud species into a new list because the values will be adjusted by Radtrans
 
@@ -2805,12 +2807,14 @@ class AtmosphericRetrieval:
         # Evaluate the spectra
 
         for i, spec_item in enumerate(self.spectrum.keys()):
-            # Select data wavelength range from the model spectrum 
+            # Select data wavelength range from the model spectrum
 
             wlen_min = self.spectrum[spec_item][0][0, 0]
             wlen_max = self.spectrum[spec_item][0][-1, 0]
 
-            wlen_select = (wlen_micron > wlen_min-0.1*wlen_min) & (wlen_micron < wlen_max+0.1*wlen_max)
+            wlen_select = (wlen_micron > wlen_min - 0.1 * wlen_min) & (
+                wlen_micron < wlen_max + 0.1 * wlen_max
+            )
 
             if spec_item in self.cross_corr:
                 model_wavel = ccf_wavel[spec_item]
@@ -2920,7 +2924,9 @@ class AtmosphericRetrieval:
 
                     else:
                         # Ratio of the inflated and original uncertainties
-                        sigma_ratio = np.sqrt(data_var) / self.spectrum[spec_item][0][:, 2]
+                        sigma_ratio = (
+                            np.sqrt(data_var) / self.spectrum[spec_item][0][:, 2]
+                        )
                         sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
                         # Calculate the inversion of the infalted covariances
@@ -3035,7 +3041,6 @@ class AtmosphericRetrieval:
                     color="tab:orange",
                     alpha=0.2,
                 )
-
 
         if self.plotting and len(self.spectrum) > 0:
             plt.xlabel(r"Wavelength ($\mu$m)")
@@ -3368,7 +3373,7 @@ class AtmosphericRetrieval:
             which the broadening will not matter), the computation
             will be a bit faster. This parameter is only used when
             the ``vsini`` model parameter has been include in
-            ``bounds``. The :math:`v \sin(i)` is applied to all
+            ``bounds``. The :math:`v \\sin(i)` is applied to all
             spectra by setting the argument of ``apply_vsini``
             to ``None``.
 
@@ -4130,7 +4135,7 @@ class AtmosphericRetrieval:
                             )
 
                             print(
-                                "Resumed a dynesty run from "
+                                "Resumed a Dynesty run from "
                                 f"{self.out_basename}dynesty.save"
                             )
 
@@ -4159,7 +4164,7 @@ class AtmosphericRetrieval:
                             )
 
                             print(
-                                "Resumed a dynesty run from "
+                                "Resumed a Dynesty run from "
                                 f"{self.out_basename}dynesty.save"
                             )
 
@@ -4187,7 +4192,7 @@ class AtmosphericRetrieval:
                         )
 
                         print(
-                            "Resumed a dynesty run from "
+                            "Resumed a Dynesty run from "
                             f"{self.out_basename}dynesty.save"
                         )
 
@@ -4221,7 +4226,7 @@ class AtmosphericRetrieval:
                         )
 
                         print(
-                            "Resumed a dynesty run from "
+                            "Resumed a Dynesty run from "
                             f"{self.out_basename}dynesty.save"
                         )
 

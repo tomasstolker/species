@@ -3,10 +3,12 @@ Module with functionalities for fitting atmospheric model spectra.
 """
 
 import os
+import sys
 import warnings
 
 from typing import Optional, Union, List, Tuple, Dict
 
+import dynesty
 import numpy as np
 import spectres
 
@@ -29,6 +31,7 @@ except:
     )
 
 from PyAstronomy.pyasl import fastRotBroad
+from schwimmbad import MPIPool
 from scipy import interpolate, stats
 from typeguard import typechecked
 
@@ -137,7 +140,7 @@ class FitModel:
                - Radial velocity can be included with the ``rad_vel``
                  parameter (km/s). This parameter will only be relevant
                  if the radial velocity shift can be spectrally
-                 resolved given the instrument resolution. 
+                 resolved given the instrument resolution.
 
                - Rotational broadening can be fitted by including the
                  ``vsini`` parameter (km/s). This parameter will only
@@ -1924,6 +1927,12 @@ class FitModel:
 
         print_section("Nested sampling with MultiNest")
 
+        print(f"Database tag: {tag}")
+        print(f"Number of live points: {n_live_points}")
+        print(f"Resume previous fit: {resume}")
+        print(f"Output folder: {output}")
+        print()
+
         # Set attributes
 
         if "prior" in kwargs:
@@ -2074,6 +2083,7 @@ class FitModel:
         )
 
         # Get the best-fit (highest likelihood) point
+
         print("\nSample with the highest probability:")
         best_params = analyzer.get_best_fit()
 
@@ -2081,7 +2091,10 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for i, item in enumerate(best_params["parameters"]):
-            print(f"   - {self.modelpar[i]} = {item:.2f}")
+            if item < 0.1 and item > -0.1:
+                print(f"   - {self.modelpar[i]} = {item:.2e}")
+            else:
+                print(f"   - {self.modelpar[i]} = {item:.2f}")
 
         # Get the posterior samples
         samples = analyzer.get_equal_weighted_posterior()
@@ -2104,16 +2117,6 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
-        # Get the MPI rank of the process
-
-        try:
-            from mpi4py import MPI
-
-            mpi_rank = MPI.COMM_WORLD.Get_rank()
-
-        except ModuleNotFoundError:
-            mpi_rank = 0
-
         # Dictionary with attributes that will be stored
 
         attr_dict = {
@@ -2125,6 +2128,16 @@ class FitModel:
 
         if self.ext_filter is not None:
             attr_dict["ext_filter"] = self.ext_filter
+
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
 
         # Add samples to the database
 
@@ -2200,6 +2213,12 @@ class FitModel:
         """
 
         print_section("Nested sampling with UltraNest")
+
+        print(f"Database tag: {tag}")
+        print(f"Minimum number of live points: {min_num_live_points}")
+        print(f"Resume previous fit: {resume}")
+        print(f"Output folder: {output}")
+        print()
 
         # Check if resume is set to a non-UltraNest value
 
@@ -2328,15 +2347,18 @@ class FitModel:
 
             print(f"   - {item} = {mean:.2e} +/- {sigma:.2e}")
 
-        # Maximum likelihood sample
-
-        print("\nMaximum likelihood sample:")
+        # Get the best-fit (highest likelihood) point
 
         max_lnlike = result["maximum_likelihood"]["logl"]
+
+        print("\nSample with the highest probability:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for i, item in enumerate(result["maximum_likelihood"]["point"]):
-            print(f"   - {self.modelpar[i]} = {item:.2f}")
+            if item < 0.1 and item > 0.1:
+                print(f"   - {self.modelpar[i]} = {item:.2e}")
+            else:
+                print(f"   - {self.modelpar[i]} = {item:.2f}")
 
         # Create a list with scaling labels
 
@@ -2361,6 +2383,18 @@ class FitModel:
 
             samples = np.append(samples, app_param, axis=1)
 
+        # Dictionary with attributes that will be stored
+
+        attr_dict = {
+            "spec_type": "model",
+            "spec_name": self.model,
+            "ln_evidence": (ln_z, ln_z_error),
+            "parallax": self.parallax[0],
+        }
+
+        if self.ext_filter is not None:
+            attr_dict["ext_filter"] = self.ext_filter
+
         # Get the MPI rank of the process
 
         try:
@@ -2370,6 +2404,353 @@ class FitModel:
 
         except ModuleNotFoundError:
             mpi_rank = 0
+
+        # Add samples to the database
+
+        if mpi_rank == 0:
+            # Writing the samples to the database is only
+            # possible when using a single process
+            from species.data.database import Database
+
+            species_db = Database()
+
+            species_db.add_samples(
+                sampler="ultranest",
+                samples=samples,
+                ln_prob=ln_prob,
+                tag=tag,
+                modelpar=self.modelpar,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
+                spec_labels=spec_labels,
+                attr_dict=attr_dict,
+            )
+
+    @typechecked
+    def run_dynesty(
+        self,
+        tag: str,
+        n_live_points: int = 2000,
+        resume: bool = False,
+        output: str = "dynesty/",
+        evidence_tolerance: float = 0.5,
+        dynamic: bool = False,
+        sample_method: str = "auto",
+        bound: str = "multi",
+        n_pool: Optional[int] = None,
+        mpi_pool: bool = False,
+    ) -> None:
+        """
+        Function for running the atmospheric retrieval. The parameter
+        estimation and computation of the marginalized likelihood (i.e.
+        model evidence), is done with ``Dynesty``.
+
+        When using MPI, it is also required to install ``mpi4py`` (e.g.
+        ``pip install mpi4py``), otherwise an error may occur when the
+        ``output_folder`` is created by multiple processes.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the samples will be stored.
+        n_live_points : int
+            Number of live points used by the nested sampling
+            with ``Dynesty``.
+        resume : bool
+            Resume the posterior sampling from a previous run.
+        output : str
+            Path that is used for the output files from ``Dynesty``.
+        evidence_tolerance : float
+            The dlogZ value used to terminate a nested sampling run,
+            or the initial dlogZ value passed to a dynamic nested
+            sampling run.
+        dynamic : bool
+            Whether to use static or dynamic nested sampling (see
+            `Dynesty documentation <https://dynesty.readthedocs.io/
+            en/stable/dynamic.html>`_).
+        sample_method : str
+            The sampling method that should be used ('auto', 'unif',
+            'rwalk', 'slice', 'rslice' (see `sampling documentation
+            <https://dynesty.readthedocs.io/en/stable/
+            quickstart.html#nested-sampling-with-dynesty>`_).
+        bound : str
+            Method used to approximately bound the prior using the
+            current set of live points ('none', 'single', 'multi',
+            'balls', 'cubes'). `Conditions the sampling methods
+            <https://dynesty.readthedocs.io/en/stable/
+            quickstart.html#nested-sampling-with-dynesty>`_ used
+            to propose new live points
+        n_pool : int
+            The number of processes for the local multiprocessing. The
+            parameter is not used when the argument is set to ``None``.
+        mpi_pool : bool
+            Distribute the workers to an ``MPIPool`` on a cluster,
+            using ``schwimmbad``.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print_section("Nested sampling with Dynesty")
+
+        print(f"Database tag: {tag}")
+        print(f"Number of live points: {n_live_points}")
+        print(f"Resume previous fit: {resume}")
+
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Create the output folder if required
+
+        if mpi_rank == 0 and not os.path.exists(output):
+            print(f"Creating output folder: {output}")
+            os.mkdir(output)
+
+        else:
+            print(f"Output folder: {output}")
+
+        print()
+
+        out_basename = os.path.join(output, "retrieval_")
+
+        if not mpi_pool:
+            if n_pool is not None:
+                with dynesty.pool.Pool(
+                    n_pool,
+                    self._lnlike_func,
+                    self._prior_transform,
+                    ptform_args=[self.bounds, self.cube_index],
+                ) as pool:
+                    print(f"Initialized a Dynesty.pool with {n_pool} workers")
+
+                    if dynamic:
+                        if resume:
+                            dsampler = dynesty.DynamicNestedSampler.restore(
+                                fname=out_basename + "dynesty.save",
+                                pool=pool,
+                            )
+
+                            print(
+                                "Resumed a Dynesty run from "
+                                f"{out_basename}dynesty.save"
+                            )
+
+                        else:
+                            dsampler = dynesty.DynamicNestedSampler(
+                                loglikelihood=pool.loglike,
+                                prior_transform=pool.prior_transform,
+                                ndim=len(self.modelpar),
+                                pool=pool,
+                                sample=sample_method,
+                                bound=bound,
+                            )
+
+                        dsampler.run_nested(
+                            dlogz_init=evidence_tolerance,
+                            nlive_init=n_live_points,
+                            checkpoint_file=out_basename + "dynesty.save",
+                            resume=resume,
+                        )
+
+                    else:
+                        if resume:
+                            dsampler = dynesty.NestedSampler.restore(
+                                fname=out_basename + "dynesty.save",
+                                pool=pool,
+                            )
+
+                            print(
+                                "Resumed a Dynesty run from "
+                                f"{out_basename}dynesty.save"
+                            )
+
+                        else:
+                            dsampler = dynesty.NestedSampler(
+                                loglikelihood=pool.loglike,
+                                prior_transform=pool.prior_transform,
+                                ndim=len(self.modelpar),
+                                pool=pool,
+                                nlive=n_live_points,
+                                sample=sample_method,
+                                bound=bound,
+                            )
+
+                        dsampler.run_nested(
+                            dlogz=evidence_tolerance,
+                            checkpoint_file=out_basename + "dynesty.save",
+                            resume=resume,
+                        )
+            else:
+                if dynamic:
+                    if resume:
+                        dsampler = dynesty.DynamicNestedSampler.restore(
+                            fname=out_basename + "dynesty.save"
+                        )
+
+                        print(
+                            "Resumed a Dynesty run from "
+                            f"{out_basename}dynesty.save"
+                        )
+
+                    else:
+                        dsampler = dynesty.DynamicNestedSampler(
+                            loglikelihood=self._lnlike_func,
+                            prior_transform=self._prior_transform,
+                            ndim=len(self.modelpar),
+                            ptform_args=[self.bounds, self.cube_index],
+                            sample=sample_method,
+                            bound=bound,
+                        )
+
+                    dsampler.run_nested(
+                        dlogz_init=evidence_tolerance,
+                        nlive_init=n_live_points,
+                        checkpoint_file=out_basename + "dynesty.save",
+                        resume=resume,
+                    )
+
+                else:
+                    if resume:
+                        dsampler = dynesty.NestedSampler.restore(
+                            fname=out_basename + "dynesty.save"
+                        )
+
+                        print(
+                            "Resumed a Dynesty run from "
+                            f"{out_basename}dynesty.save"
+                        )
+
+                    else:
+                        dsampler = dynesty.NestedSampler(
+                            loglikelihood=self._lnlike_func,
+                            prior_transform=self._prior_transform,
+                            ndim=len(self.modelpar),
+                            ptform_args=[self.bounds, self.cube_index],
+                            sample=sample_method,
+                            bound=bound,
+                        )
+
+                    dsampler.run_nested(
+                        dlogz=evidence_tolerance,
+                        checkpoint_file=out_basename + "dynesty.save",
+                        resume=resume,
+                    )
+
+        else:
+            pool = MPIPool()
+
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+
+            print("Created an MPIPool object.")
+
+            if dynamic:
+                if resume:
+                    dsampler = dynesty.DynamicNestedSampler.restore(
+                        fname=out_basename + "dynesty.save",
+                        pool=pool,
+                    )
+
+                else:
+                    dsampler = dynesty.DynamicNestedSampler(
+                        loglikelihood=self._lnlike_func,
+                        prior_transform=self._prior_transform,
+                        ndim=len(self.modelpar),
+                        ptform_args=[self.bounds, self.cube_index],
+                        pool=pool,
+                        sample=sample_method,
+                        bound=bound,
+                    )
+
+                dsampler.run_nested(
+                    dlogz_init=evidence_tolerance,
+                    nlive_init=n_live_points,
+                    checkpoint_file=out_basename + "dynesty.save",
+                    resume=resume,
+                )
+
+            else:
+                if resume:
+                    dsampler = dynesty.NestedSampler.restore(
+                        fname=out_basename + "dynesty.save",
+                        pool=pool,
+                    )
+
+                else:
+                    dsampler = dynesty.NestedSampler(
+                        loglikelihood=self._lnlike_func,
+                        prior_transform=self._prior_transform,
+                        ndim=len(self.modelpar),
+                        ptform_args=[self.bounds, self.cube_index],
+                        pool=pool,
+                        nlive=n_live_points,
+                        sample=sample_method,
+                        bound=bound,
+                    )
+
+                dsampler.run_nested(
+                    dlogz=evidence_tolerance,
+                    checkpoint_file=out_basename + "dynesty.save",
+                    resume=resume,
+                )
+
+        results = dsampler.results
+        samples = results.samples_equal()
+        ln_prob = results.logl
+
+        print(f"\nSamples shape: {samples.shape}")
+        print(f"Number of iterations: {results.niter}")
+
+        out_file = out_basename + "post_equal_weights.dat"
+        print(f"Storing samples: {out_file}")
+        np.savetxt(out_file, np.c_[samples, ln_prob])
+
+        # Nested sampling global log-evidence
+        # TODO check if selecting the last index is correct
+
+        ln_z = results.logz[-1]
+        ln_z_error = results.logzerr[-1]
+        print(f"\nNested sampling log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+
+        # Get the best-fit (highest likelihood) point
+
+        max_idx = np.argmax(ln_prob)
+        max_lnlike = ln_prob[max_idx]
+        best_params = samples[max_idx]
+
+        print("\nSample with the highest probability:")
+        print(f"   - Log-likelihood = {max_lnlike:.2f}")
+
+        for i, item in enumerate(self.modelpar):
+            if best_params[i] < 0.1 and best_params[i] > 0.1:
+                print(f"   - {self.modelpar[i]} = {best_params[i]:.2e}")
+            else:
+                print(f"   - {self.modelpar[i]} = {best_params[i]:.2f}")
+
+        spec_labels = []
+        for item in self.spectrum:
+            if f"scaling_{item}" in self.bounds:
+                spec_labels.append(f"scaling_{item}")
+
+        # Adding the fixed parameters to the samples
+
+        for key, value in self.fix_param.items():
+            self.modelpar.append(key)
+
+            app_param = np.full(samples.shape[0], value)
+            app_param = app_param[..., np.newaxis]
+
+            samples = np.append(samples, app_param, axis=1)
 
         # Dictionary with attributes that will be stored
 
@@ -2393,7 +2774,7 @@ class FitModel:
             species_db = Database()
 
             species_db.add_samples(
-                sampler="ultranest",
+                sampler="dynesty",
                 samples=samples,
                 ln_prob=ln_prob,
                 tag=tag,

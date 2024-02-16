@@ -1826,7 +1826,7 @@ class Database:
 
         print(f"Database tag: {tag}")
         print(f"Sampler: {sampler}")
-        print(f"Array shape: {samples.shape}")
+        print(f"Samples shape: {samples.shape}")
 
         if spec_labels is None:
             spec_labels = []
@@ -1905,7 +1905,7 @@ class Database:
             for i, item in enumerate(modelpar):
                 auto_corr = integrated_time(samples[:, i], quiet=True)[0]
 
-                if np.allclose(samples[:, i], np.mean(samples[:, i])):
+                if np.allclose(samples[:, i], np.mean(samples[:, i]), atol=0.0):
                     print(f"   - {item}: fixed")
                 else:
                     print(f"   - {item}: {auto_corr:.2f}")
@@ -2792,7 +2792,7 @@ class Database:
 
             print(f"Database tag: {tag}")
             print(f"Random samples: {random}")
-            print(f"Array shape: {samples.shape}")
+            print(f"Samples shape: {samples.shape}")
 
             attributes = {}
             for item in dset.attrs:
