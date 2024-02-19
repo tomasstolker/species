@@ -19,15 +19,15 @@ from species.data.misc_data.dust_data import add_cross_sections, add_optical_con
 
 
 @typechecked
-def check_dust_database() -> None:
+def check_dust_database() -> str:
     """
     Function to check if the dust data is present in the
     database and add the data if needed.
 
     Returns
     -------
-    NoneType
-        None
+    str
+        Path of the HDF5 database.
     """
 
     config_file = os.path.join(os.getcwd(), "species_config.ini")
@@ -43,6 +43,7 @@ def check_dust_database() -> None:
             add_optical_constants(data_folder, hdf5_file)
             add_cross_sections(data_folder, hdf5_file)
 
+    return database_path
 
 @typechecked
 def log_normal_distribution(

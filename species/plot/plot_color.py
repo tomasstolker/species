@@ -22,6 +22,7 @@ from typeguard import typechecked
 from species.core.box import IsochroneBox, ColorMagBox, ColorColorBox
 from species.read.read_filter import ReadFilter
 from species.read.read_object import ReadObject
+from species.util.core_util import print_section
 from species.util.dust_util import calc_reddening, ism_extinction
 from species.util.plot_util import (
     convert_model_name,
@@ -107,8 +108,8 @@ def plot_color_magnitude(
         Plot accreting, directly imaged objects with a different symbol
         than the regular, directly imaged objects. The object names
         from ``objects`` will be compared with the data from
-        `data/companion_data.json` to check if a companion is
-        accreting or not.
+        `data/companion_data/companion_data.json` to check if a
+        companion is accreting or not.
     reddening : list(tuple(tuple(str, str), tuple(str, float),
             str, float, tuple(float, float))), None
         Include reddening arrows by providing a list with tuples. Each
@@ -165,6 +166,41 @@ def plot_color_magnitude(
         The ``Figure`` object that can be used for further
         customization of the plot.
     """
+
+    print_section("Plot color-magnitude diagram")
+
+    print("Boxes:")
+    for item in boxes:
+        if isinstance(item, list):
+            item_type = item[0].__class__.__name__
+            print(f"   - List with {len(item)} x {item_type}")
+        else:
+            print(f"   - {item.__class__.__name__}")
+
+    if objects is None:
+        print(f"\nObjects: {objects}")
+    else:
+        print("\nObjects:")
+        for item in objects:
+            print(f"   - {item[0]}: {item[1:]}")
+
+    print(f"\nSpectral range: {field_range}")
+    print(f"Companion labels: {companion_labels}")
+    print(f"Accretion markers: {accretion}")
+
+    print(f"\nMass labels: {mass_labels}")
+    print(f"Teff labels: {teff_labels}")
+
+    if reddening is None:
+        print(f"\nReddening: {reddening}")
+    else:
+        print("\nReddening:")
+        for item in reddening:
+            print(f"   - {item}")
+
+    print(f"\nFigure size: {figsize}")
+    print(f"Limits x axis: {xlim}")
+    print(f"Limits y axis: {ylim}")
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -782,7 +818,9 @@ def plot_color_magnitude(
             x_color = objcolor1[0] - objcolor2[0]
 
             species_folder = str(pathlib.Path(__file__).parent.resolve())[:-4]
-            data_file = os.path.join(species_folder, "data/companion_data.json")
+            data_file = os.path.join(
+                species_folder, "data/companion_data/companion_data.json"
+            )
 
             with open(data_file, "r", encoding="utf-8") as json_file:
                 comp_data = json.load(json_file)
@@ -834,11 +872,6 @@ def plot_color_magnitude(
                     **kwargs,
                 )
 
-    if output is None:
-        print("Plotting color-magnitude diagram...", end="", flush=True)
-    else:
-        print(f"Plotting color-magnitude diagram: {output}...", end="", flush=True)
-
     if legend is not None:
         handles, labels = ax1.get_legend_handles_labels()
 
@@ -862,9 +895,8 @@ def plot_color_magnitude(
     if output is None:
         plt.show()
     else:
+        print(f"\nOutput: {output}")
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig
 
@@ -993,6 +1025,40 @@ def plot_color_color(
         The ``Figure`` object that can be used for further
         customization of the plot.
     """
+
+    print_section("Plot color-color diagram")
+
+    print("Boxes:")
+    for item in boxes:
+        if isinstance(item, list):
+            item_type = item[0].__class__.__name__
+            print(f"   - List with {len(item)} x {item_type}")
+        else:
+            print(f"   - {item.__class__.__name__}")
+
+    if objects is None:
+        print(f"\nObjects: {objects}")
+    else:
+        print("\nObjects:")
+        for item in objects:
+            print(f"   - {item[0]}: {item[1:]}")
+
+    print(f"\nSpectral range: {field_range}")
+    print(f"Companion labels: {companion_labels}")
+
+    print(f"\nMass labels: {mass_labels}")
+    print(f"Teff labels: {teff_labels}")
+
+    if reddening is None:
+        print(f"\nReddening: {reddening}")
+    else:
+        print("\nReddening:")
+        for item in reddening:
+            print(f"   - {item}")
+
+    print(f"\nFigure size: {figsize}")
+    print(f"Limits x axis: {xlim}")
+    print(f"Limits y axis: {ylim}")
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -1695,11 +1761,6 @@ def plot_color_color(
                     **kwargs,
                 )
 
-    if output is None:
-        print("Plotting color-color diagram...", end="", flush=True)
-    else:
-        print(f"Plotting color-color diagram: {output}...", end="", flush=True)
-
     handles, labels = ax1.get_legend_handles_labels()
 
     if legend is not None:
@@ -1725,8 +1786,7 @@ def plot_color_color(
     if output is None:
         plt.show()
     else:
+        print(f"\nOutput: {output}")
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig

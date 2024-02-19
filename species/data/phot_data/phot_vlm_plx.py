@@ -49,8 +49,6 @@ def add_vlm_plx(input_path, database):
             progressbar=True,
         )
 
-    print("Adding Database of Ultracool Parallaxes...", end="", flush=True)
-
     database.create_group("photometry/vlm-plx")
 
     with fits.open(data_file) as hdu_list:
@@ -109,7 +107,5 @@ def add_vlm_plx(input_path, database):
     database.create_dataset(
         "photometry/vlm-plx/2MASS/2MASS.Ks", data=phot_data["K2MAG"]
     )
-
-    print(" [DONE]")
 
     database.close()

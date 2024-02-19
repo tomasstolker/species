@@ -16,6 +16,7 @@ from typeguard import typechecked
 from species.core.box import ColorColorBox, ColorMagBox, create_box
 from species.read.read_spectrum import ReadSpectrum
 from species.util.convert_util import apparent_to_absolute, parallax_to_distance
+from species.util.core_util import print_section
 
 
 class ReadColorMagnitude:
@@ -49,6 +50,8 @@ class ReadColorMagnitude:
             None
         """
 
+        print_section("Read color-magnitude")
+
         self.library = library
         self.filters_color = filters_color
         self.filter_mag = filter_mag
@@ -72,6 +75,11 @@ class ReadColorMagnitude:
                     f"The '{self.library}' library is not present in the database."
                 )
 
+        print(f"Database tag: {self.library}")
+        print(f"Library type: {self.lib_type}")
+        print(f"Filters color: {self.filters_color}")
+        print(f"Filter magnitude: {self.filter_mag}")
+
     @typechecked
     def get_color_magnitude(self, object_type: Optional[str] = None) -> ColorMagBox:
         """
@@ -91,6 +99,10 @@ class ReadColorMagnitude:
         species.core.box.ColorMagBox
             Box with the colors and magnitudes.
         """
+
+        print_section("Get color-magnitude")
+
+        print(f"Object type: {object_type}")
 
         if self.lib_type == "phot_lib":
             with h5py.File(self.database, "r") as h5_file:
@@ -221,6 +233,8 @@ class ReadColorMagnitude:
                 names=obj_names[indices],
             )
 
+            n_objects = sptype[indices].size 
+
         elif self.lib_type == "spec_lib":
             read_spec_0 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_color[0]
@@ -249,6 +263,9 @@ class ReadColorMagnitude:
                 sptype=phot_box_0.sptype,
                 names=None,
             )
+
+        n_objects = colormag_box.sptype.size
+        print(f"Returning ColorMagBox with {n_objects} objects")
 
         return colormag_box
 
@@ -281,6 +298,8 @@ class ReadColorColor:
             None
         """
 
+        print_section("Read color-magnitude")
+
         self.library = library
         self.filters_colors = filters_colors
 
@@ -303,6 +322,10 @@ class ReadColorColor:
                     f"The '{self.library}' library is not present in the database."
                 )
 
+        print(f"Database tag: {self.library}")
+        print(f"Library type: {self.lib_type}")
+        print(f"Filters colors: {self.filters_colors}")
+
     @typechecked
     def get_color_color(self, object_type: Optional[str] = None) -> ColorColorBox:
         """
@@ -322,6 +345,10 @@ class ReadColorColor:
         species.core.box.ColorColorBox
             Box with the colors.
         """
+
+        print_section("Get color-magnitude")
+
+        print(f"Object type: {object_type}")
 
         if self.lib_type == "phot_lib":
             h5_file = h5py.File(self.database, "r")
@@ -419,5 +446,8 @@ class ReadColorColor:
                 sptype=phot_box_0.sptype,
                 names=None,
             )
+
+        n_objects = colorbox.sptype.size
+        print(f"Returning ColorColorBox with {n_objects} objects")
 
         return colorbox

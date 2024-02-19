@@ -1188,9 +1188,6 @@ def plot_spectrum(
     if filters is not None:
         ax2.set_ylim(0.0, 1.1)
 
-    if output is not None:
-        print(f"\nOutput: {output}")
-
     if title is not None:
         if filters:
             ax2.set_title(title, y=1.02, fontsize=13)
@@ -1325,6 +1322,7 @@ def plot_spectrum(
     if output is None:
         plt.show()
     else:
+        print(f"\nOutput: {output}")
         plt.savefig(output, bbox_inches="tight")
 
     return fig

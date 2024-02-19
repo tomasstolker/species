@@ -327,6 +327,9 @@ class Database:
         if name is None:
             name = list(comp_data.keys())
 
+        if not verbose:
+            print(f"Add companion: {name}")
+
         for item in name:
             spec_dict = companion_spectra(self.data_folder, item, verbose=verbose)
 
@@ -902,11 +905,9 @@ class Database:
             None
         """
 
-        print_section("Add object")
-
-        print(f"Object name: {object_name}")
-
         if verbose:
+            print_section("Add object")
+            print(f"Object name: {object_name}")
             print(f"Units: {units}")
             print(f"Deredden: {deredden}")
 
@@ -1535,9 +1536,6 @@ class Database:
                         print(f"      - {spec_item}: {spec_value[2]:.1f}")
                     dset.attrs["specres"] = spec_value[2]
 
-        if not verbose:
-            print(" [DONE]")
-
         hdf5_file.close()
 
     @typechecked
@@ -1554,16 +1552,18 @@ class Database:
             None
         """
 
-        with h5py.File(self.database, "a") as hdf5_file:
-            if "photometry" not in hdf5_file:
-                hdf5_file.create_group("photometry")
+        print_section("Add photometric library")
 
+        print(f"Database tag: {phot_library}")
+
+        with h5py.File(self.database, "a") as hdf5_file:
             if f"photometry/{phot_library}" in hdf5_file:
                 del hdf5_file[f"photometry/{phot_library}"]
 
             if phot_library[0:7] == "vlm-plx":
                 from species.data.phot_data.phot_vlm_plx import add_vlm_plx
 
+                print("Library: Database of Ultracool Parallaxes")
                 add_vlm_plx(self.data_folder, hdf5_file)
 
             elif phot_library[0:7] == "leggett":

@@ -40,18 +40,18 @@ def add_optical_constants(input_path: str, database: h5py._hl.files.File) -> Non
     data_file = os.path.join(input_path, "optical_constants.zip")
 
     if not os.path.isfile(data_file):
-        print("Downloading optical constants (87 kB)...", end="", flush=True)
+        print("\nDownloading optical constants (87 kB)...", end="", flush=True)
         urllib.request.urlretrieve(url, data_file)
         print(" [DONE]")
 
-    print("Unpacking optical constants...", end="", flush=True)
+    print("\nUnpacking optical constants...", end="", flush=True)
 
     with zipfile.ZipFile(data_file, "r") as zip_ref:
         zip_ref.extractall(input_path)
 
     print(" [DONE]")
 
-    print("Adding optical constants of MgSiO3...", end="")
+    print("\nAdding optical constants of MgSiO3...", end="")
 
     nk_file = os.path.join(
         input_path,
@@ -135,11 +135,11 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
 
     data_file = os.path.join(input_path, "lognorm_mgsio3_c_ext.fits")
 
-    print("Downloading log-normal dust cross sections (231 kB)...", end="", flush=True)
+    print("\nDownloading log-normal dust cross sections (231 kB)...", end="", flush=True)
     urllib.request.urlretrieve(url, data_file)
     print(" [DONE]")
 
-    print("Adding log-normal dust cross sections:")
+    print("\nAdding log-normal dust cross sections:")
 
     with fits.open(os.path.join(input_path, "lognorm_mgsio3_c_ext.fits")) as hdu_list:
         database.create_dataset(
@@ -175,11 +175,11 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
 
     data_file = os.path.join(input_path, "powerlaw_mgsio3_c_ext.fits")
 
-    print("Downloading power-law dust cross sections (231 kB)...", end="", flush=True)
+    print("\nDownloading power-law dust cross sections (231 kB)...", end="", flush=True)
     urllib.request.urlretrieve(url, data_file)
     print(" [DONE]")
 
-    print("Adding power-law dust cross sections")
+    print("\nAdding power-law dust cross sections:")
 
     with fits.open(os.path.join(input_path, "powerlaw_mgsio3_c_ext.fits")) as hdu_list:
         database.create_dataset(

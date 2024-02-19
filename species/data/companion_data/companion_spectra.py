@@ -50,7 +50,8 @@ def companion_spectra(
         comp_spec = json.load(json_file)
 
     if comp_name in comp_spec:
-        print_section("Get companion spectra")
+        if verbose:
+            print_section("Get companion spectra")
 
         data_folder = os.path.join(input_path, "companion_data/")
 
