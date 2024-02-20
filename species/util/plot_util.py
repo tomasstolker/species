@@ -12,6 +12,7 @@ import numpy as np
 from typeguard import typechecked
 
 from species.core import constants
+from species.util.model_util import convert_model_name
 
 
 @typechecked
@@ -859,133 +860,6 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         param[index] = r"$b_\mathrm{flux}$ (W m$^{-2}$ µm$^{-1}$)"
 
     return param
-
-
-@typechecked
-def convert_model_name(in_name: str) -> str:
-    """
-    Function for updating a model name for use in plots.
-
-    Parameters
-    ----------
-    in_name : str
-        Model name as used by species.
-
-    Returns
-    -------
-    str
-        Updated model name for plots.
-    """
-
-    if in_name == "drift-phoenix":
-        out_name = "DRIFT-PHOENIX"
-
-    elif in_name == "ames-cond":
-        out_name = "AMES-Cond"
-
-    elif in_name == "ames-dusty":
-        out_name = "AMES-Dusty"
-
-    elif in_name == "atmo":
-        out_name = "ATMO"
-
-    elif in_name == "atmo-ceq":
-        out_name = "ATMO CEQ"
-
-    elif in_name == "atmo-neq-weak":
-        out_name = "ATMO NEQ weak"
-
-    elif in_name == "atmo-neq-strong":
-        out_name = "ATMO NEQ strong"
-
-    elif in_name == "petrus2023":
-        out_name = "ATMO (Petrus et al. 2023)"
-
-    elif in_name == "atmo-petrus2023":
-        out_name = "ATMO (Petrus et al. 2023)"
-
-    elif in_name == "bt-cond":
-        out_name = "BT-Cond"
-
-    elif in_name == "bt-cond-feh":
-        out_name = "BT-Cond"
-
-    elif in_name == "bt-settl":
-        out_name = "BT-Settl"
-
-    elif in_name == "bt-settl-cifist":
-        out_name = "BT-Settl"
-
-    elif in_name == "bt-nextgen":
-        out_name = "BT-NextGen"
-
-    elif in_name == "bt-nextgen-subsolar":
-        out_name = "BT-NextGen"
-
-    elif in_name == "koester-wd":
-        out_name = "Koester (2010)"
-
-    elif in_name == "petitcode-cool-clear":
-        out_name = "petitCODE clear"
-
-    elif in_name == "petitcode-cool-cloudy":
-        out_name = "petitCODE cloudy"
-
-    elif in_name == "petitcode-hot-clear":
-        out_name = "petitCODE clear"
-
-    elif in_name == "petitcode-hot-cloudy":
-        out_name = "petitCODE cloudy"
-
-    elif in_name == "petitcode-linder2019-clear":
-        out_name = "petitCODE clear (Linder et al. 2019)"
-
-    elif in_name == "petitcode-linder2019-cloudy":
-        out_name = "petitCODE cloudy (Linder et al. 2019)"
-
-    elif in_name == "exo-rem":
-        out_name = "Exo-REM"
-
-    elif in_name == "exo-rem-highres":
-        out_name = "Exo-REM"
-
-    elif in_name == "planck":
-        out_name = "Blackbody"
-
-    elif in_name == "zhu2015":
-        out_name = "Zhu (2015)"
-
-    elif in_name == "saumon2008-clear":
-        out_name = "Saumon & Marley (2008)"
-
-    elif in_name == "saumon2008-cloudy":
-        out_name = "Saumon & Marley (2008)"
-
-    elif in_name == "sonora-cholla":
-        out_name = "Sonora Cholla"
-
-    elif in_name == "sonora-bobcat":
-        out_name = "Sonora Bobcat"
-
-    elif in_name == "sonora-bobcat-co":
-        out_name = "Sonora Bobcat C/O"
-
-    elif in_name == "sphinx":
-        out_name = "SPHINX"
-
-    elif in_name == "petitradtrans":
-        out_name = "petitRADTRANS"
-
-    else:
-        out_name = in_name
-
-        warnings.warn(
-            f"The model name '{in_name}' is not known "
-            "so the output name will not get adjusted "
-            "for plot purposes"
-        )
-
-    return out_name
 
 
 @typechecked

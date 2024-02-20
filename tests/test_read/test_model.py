@@ -36,7 +36,7 @@ class TestModel:
         database.add_model(
             "ames-cond",
             wavel_range=(1.0, 5.0),
-            spec_res=100.0,
+            wavel_sampling=200.0,
             teff_range=(2000.0, 2500.0),
         )
 
@@ -47,7 +47,7 @@ class TestModel:
         read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
 
         model_box = read_model.get_model(
-            self.model_param, spec_res=100.0, magnitude=False, smooth=True
+            self.model_param, spec_res=100.0, magnitude=False,
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(
@@ -58,7 +58,7 @@ class TestModel:
         )
 
         model_box = read_model.get_model(
-            self.model_param, spec_res=100.0, magnitude=True, smooth=True
+            self.model_param, spec_res=100.0, magnitude=True,
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(

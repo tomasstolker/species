@@ -47,8 +47,8 @@ class ReadObject:
         with h5py.File(self.database, "r") as h5_file:
             if f"objects/{self.object_name}" not in h5_file:
                 raise ValueError(
-                    f"The object '{self.object_name}' is not present in the "
-                    f"database."
+                    f"The object '{self.object_name}' is not "
+                    f"present in the database."
                 )
 
     @typechecked

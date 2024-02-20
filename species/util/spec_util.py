@@ -2,9 +2,9 @@
 Utility functions for manipulating spectra.
 """
 
-import math
 import warnings
 
+from math import ceil
 from typing import Tuple, Union
 
 import numpy as np
@@ -16,48 +16,44 @@ from typeguard import typechecked
 @typechecked
 def create_wavelengths(
     wavel_range: Tuple[Union[float, np.float32], Union[float, np.float32]],
-    spec_res: float,
+    wavel_sampling: float,
 ) -> np.ndarray:
     """
-    Function for creating logarithmically-spaced wavelengths at a
-    constant spectral resolution :math:`R`.
+    Function for creating logarithmically-spaced wavelengths,
+    so with a constant :math:`\\lambda/\\Delta\\lambda`.
 
     Parameters
     ----------
     wavel_range : tuple(float, float)
-        Wavelength range (um). Tuple with the minimum and maximum
-        wavelength.
-    spec_res : float
-        Spectral resolution at which the wavelengths are sampled.
+        Wavelength range (:math:`\\mu\\mathrm{m}`). Tuple with the
+        minimum and maximum wavelength.
+    wavel_sampling : float
+        Wavelength sampling :math:`\\lambda/\\Delta\\lambda`.
 
     Returns
     -------
     np.ndarray
-        Array with the wavelength points and a fixed spectral
-        resolution. Since the wavelength boundaries are fixed, the
-        output spectral resolution is slightly different from the
-        ``spec_res`` value.
+        Array with the wavelengths (:math:`\\mu\\mathrm{m}`). Since
+        the wavelength boundaries are fixed, the output sampling
+        is slightly different from the value provided as
+        argument of ``wavel_sampling``.
     """
 
     n_test = 100
 
     wavel_test = np.logspace(np.log10(wavel_range[0]), np.log10(wavel_range[1]), n_test)
-
-    res_test = 0.5 * (wavel_test[1:] + wavel_test[:-1]) / np.diff(wavel_test)
-
-    # R = lambda / delta_lambda / 2, because twice as many points as
-    # R are required to resolve two features that are lambda / R apart
+    sampling_test = 0.5 * (wavel_test[1:] + wavel_test[:-1]) / np.diff(wavel_test)
 
     # math.ceil returns int, but np.ceil returns float
-    wavelength = np.logspace(
+    wavel_array = np.logspace(
         np.log10(wavel_range[0]),
         np.log10(wavel_range[1]),
-        math.ceil(2.0 * n_test * spec_res / np.mean(res_test)) + 1,
+        ceil(n_test * wavel_sampling / np.mean(sampling_test)) + 1,
     )
 
-    # res_out = np.mean(0.5*(wavelength[1:]+wavelength[:-1])/np.diff(wavelength)/2.)
+    # res_out = np.mean(0.5*(wavel_array[1:]+wavel_array[:-1])/np.diff(wavel_array))
 
-    return wavelength
+    return wavel_array
 
 
 @typechecked

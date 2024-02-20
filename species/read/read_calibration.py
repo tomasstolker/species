@@ -187,7 +187,7 @@ class ReadCalibration:
         self,
         model_param: Optional[Dict[str, float]] = None,
         apply_mask: bool = False,
-        spec_res: Optional[float] = None,
+        wavel_sampling: Optional[float] = None,
         extrapolate: bool = False,
         min_wavelength: Optional[float] = None,
     ) -> SpectrumBox:
@@ -201,9 +201,9 @@ class ReadCalibration:
             used if set to ``None``.
         apply_mask : bool
             Exclude negative values and NaN values.
-        spec_res : float, None
-            Spectral resolution. Original wavelength points are used if
-            set to ``None``.
+        wavel_sampling : float, None
+            Wavelength sampling :math:`\\lambda/\\Delta\\lambda`. The
+            original wavelength points are used if set to ``None``.
         extrapolate : bool
             Extrapolate to 6 um by fitting a power law function.
         min_wavelength : float, None
@@ -290,9 +290,9 @@ class ReadCalibration:
                 flux = np.append(flux, _power_law(wl_add, popt[0], popt[1], popt[2]))
                 error = np.append(error, 0.0)
 
-        if spec_res is not None:
+        if wavel_sampling is not None:
             wavelength_new = create_wavelengths(
-                (wavelength[0], wavelength[-1]), spec_res
+                (wavelength[0], wavelength[-1]), wavel_sampling
             )
 
             flux_new, error_new = spectres.spectres(

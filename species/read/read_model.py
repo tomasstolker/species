@@ -32,7 +32,7 @@ from species.read.read_planck import ReadPlanck
 from species.util.convert_util import logg_to_mass
 from species.util.dust_util import check_dust_database, ism_extinction, convert_to_av
 from species.util.model_util import binary_to_single
-from species.util.spec_util import create_wavelengths, smooth_spectrum
+from species.util.spec_util import smooth_spectrum
 
 
 class ReadModel:
@@ -230,8 +230,8 @@ class ReadModel:
     def interpolate_grid(
         self,
         wavel_resample: Optional[np.ndarray] = None,
-        smooth: bool = False,
         spec_res: Optional[float] = None,
+        **kwargs,
     ) -> None:
         """
         Internal function for linearly interpolating the grid of model
@@ -240,13 +240,9 @@ class ReadModel:
         wavel_resample : np.ndarray, None
             Wavelength points for the resampling of the spectrum. The
             ``filter_name`` is used if set to ``None``.
-        smooth : bool
-            Smooth the spectrum with a Gaussian line spread function.
-            Only recommended in case the input wavelength sampling has
-            a uniform spectral resolution.
-        spec_res : float
-            Spectral resolution that is used for the Gaussian filter
-            when ``smooth=True``.
+        spec_res : float, None
+            Spectral resolution that is used for the Gaussian filter.
+            No smoothing is applied if the argument is set to ``None``.
 
         Returns
         -------
@@ -256,12 +252,17 @@ class ReadModel:
 
         self.interpolate_model()
 
-        if smooth and wavel_resample is None:
-            raise ValueError(
-                "Smoothing is only required if the spectra are resampled to a new "
-                "wavelength grid, therefore requiring the 'wavel_resample' "
-                "argument."
+        if "smooth" in kwargs:
+            warnings.warn(
+                "The 'smooth' parameter has been "
+                "deprecated. Please set only the "
+                "'spec_res' argument, which can be set "
+                "to None for not applying a smoothing.",
+                DeprecationWarning,
             )
+
+            if not kwargs["smooth"] and spec_res is not None:
+                spec_res = None
 
         points = []
         for item in self.get_points().values():
@@ -295,7 +296,6 @@ class ReadModel:
                         model_param,
                         spec_res=spec_res,
                         wavel_resample=wavel_resample,
-                        smooth=smooth,
                     ).flux
 
         elif n_param == 2:
@@ -314,7 +314,6 @@ class ReadModel:
                             model_param,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
-                            smooth=smooth,
                         ).flux
 
         elif n_param == 3:
@@ -335,7 +334,6 @@ class ReadModel:
                                 model_param,
                                 spec_res=spec_res,
                                 wavel_resample=wavel_resample,
-                                smooth=smooth,
                             ).flux
 
         elif n_param == 4:
@@ -358,7 +356,6 @@ class ReadModel:
                                     model_param,
                                     spec_res=spec_res,
                                     wavel_resample=wavel_resample,
-                                    smooth=smooth,
                                 ).flux
 
         elif n_param == 5:
@@ -385,7 +382,6 @@ class ReadModel:
                                         model_param,
                                         spec_res=spec_res,
                                         wavel_resample=wavel_resample,
-                                        smooth=smooth,
                                     ).flux
 
         if self.filter_name is not None:
@@ -694,9 +690,9 @@ class ReadModel:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
-        smooth: bool = False,
         fast_rot_broad: bool = True,
         ext_filter: Optional[str] = None,
+        **kwargs,
     ) -> ModelBox:
         """
         Function for extracting a model spectrum by linearly
@@ -712,24 +708,17 @@ class ReadModel:
             :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
             Spectral resolution that is used for smoothing the spectrum
-            with a Gaussian kernel when ``smooth=True``. The
-            wavelengths will be resampled to the argument of
-            ``spec_res`` if ``smooth=False``.
+            with a Gaussian kernel. No smoothing is applied if the
+            argument is set to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum is resampled.
-            In that case, ``spec_res`` can still be used for smoothing
-            the spectrum with a Gaussian kernel. The original
-            wavelength points are used if the argument is set to
-            ``None``.
+            Optional smoothin with ``spec_res`` is applied for
+            resampling with ``wavel_resample``. The wavelength points
+            as stored in the database are used if the argument is set
+            to ``None``.
         magnitude : bool
             Normalize the spectrum with a flux calibrated spectrum of
             Vega and return the magnitude instead of flux density.
-        smooth : bool
-            If ``True``, the spectrum is smoothed with a Gaussian
-            kernel to the spectral resolution of ``spec_res``. This
-            requires either a uniform spectral resolution of the input
-            spectra (fast) or a uniform wavelength spacing of the input
-            spectra (slow).
         fast_rot_broad : bool
             Apply fast algorithm for the rotational broadening if set
             to ``True``, otherwise a slow but more accurate broadening
@@ -753,6 +742,18 @@ class ReadModel:
         species.core.box.ModelBox
             Box with the model spectrum.
         """
+
+        if "smooth" in kwargs:
+            warnings.warn(
+                "The 'smooth' parameter has been "
+                "deprecated. Please set only the "
+                "'spec_res' argument, which can be set "
+                "to None for not applying a smoothing.",
+                DeprecationWarning,
+            )
+
+            if not kwargs["smooth"] and spec_res is not None:
+                spec_res = None
 
         # Get grid boundaries
 
@@ -899,11 +900,7 @@ class ReadModel:
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
 
-            if spec_res is None:
-                planck_box = readplanck.get_spectrum(disk_param, 1000.0, smooth=False)
-
-            else:
-                planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
+            planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
             flux_interp = interp1d(
                 planck_box.wavelength, planck_box.flux, bounds_error=False
@@ -1028,15 +1025,9 @@ class ReadModel:
 
         # Smooth the spectrum
 
-        if smooth and spec_res is not None:
+        if spec_res is not None:
             model_box.flux = smooth_spectrum(
                 model_box.wavelength, model_box.flux, spec_res
-            )
-
-        elif smooth and spec_res is None:
-            warnings.warn(
-                "Smoothing of a spectrum (smooth=True) is only "
-                "possible when setting the argument of 'spec_res'."
             )
 
         # Resample the spectrum
@@ -1058,42 +1049,42 @@ class ReadModel:
 
             model_box.wavelength = wavel_resample
 
-        elif spec_res is not None and not smooth:
-            index = np.where(np.isnan(model_box.flux))[0]
-
-            if index.size > 0:
-                raise ValueError(
-                    "Flux values should not contains NaNs. Please make sure that "
-                    "the parameter values and the wavelength range are within "
-                    "the grid boundaries as stored in the database."
-                )
-
-            wavel_resample = create_wavelengths(
-                (self.wl_points[0], self.wl_points[-1]), spec_res
-            )
-
-            indices = np.where(
-                (wavel_resample > self.wl_points[0])
-                & (wavel_resample < self.wl_points[-2])
-            )[0]
-
-            wavel_resample = wavel_resample[indices]
-
-            flux_interp = interp1d(
-                model_box.wavelength, model_box.flux, bounds_error=False
-            )
-            model_box.flux = flux_interp(wavel_resample)
-
-            # model_box.flux = spectres.spectres(
-            #     wavel_resample,
-            #     model_box.wavelength,
-            #     model_box.flux,
-            #     spec_errs=None,
-            #     fill=np.nan,
-            #     verbose=True,
-            # )
-
-            model_box.wavelength = wavel_resample
+        # elif spec_res is not None and not smooth:
+        #     index = np.where(np.isnan(model_box.flux))[0]
+        #
+        #     if index.size > 0:
+        #         raise ValueError(
+        #             "Flux values should not contains NaNs. Please make sure that "
+        #             "the parameter values and the wavelength range are within "
+        #             "the grid boundaries as stored in the database."
+        #         )
+        #
+        #     wavel_resample = create_wavelengths(
+        #         (self.wl_points[0], self.wl_points[-1]), spec_res
+        #     )
+        #
+        #     indices = np.where(
+        #         (wavel_resample > self.wl_points[0])
+        #         & (wavel_resample < self.wl_points[-2])
+        #     )[0]
+        #
+        #     wavel_resample = wavel_resample[indices]
+        #
+        #     flux_interp = interp1d(
+        #         model_box.wavelength, model_box.flux, bounds_error=False
+        #     )
+        #     model_box.flux = flux_interp(wavel_resample)
+        #
+        #     # model_box.flux = spectres.spectres(
+        #     #     wavel_resample,
+        #     #     model_box.wavelength,
+        #     #     model_box.flux,
+        #     #     spec_errs=None,
+        #     #     fill=np.nan,
+        #     #     verbose=True,
+        #     # )
+        #
+        #     model_box.wavelength = wavel_resample
 
         # Convert flux to magnitude
 
@@ -1362,11 +1353,7 @@ class ReadModel:
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
 
-            if spec_res is None:
-                planck_box = readplanck.get_spectrum(disk_param, 1000.0, smooth=False)
-
-            else:
-                planck_box = readplanck.get_spectrum(disk_param, spec_res, smooth=False)
+            planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
             flux_interp = interp1d(
                 planck_box.wavelength, planck_box.flux, bounds_error=False
@@ -1773,30 +1760,24 @@ class ReadModel:
         return param
 
     @typechecked
-    def get_spec_res(self) -> float:
+    def get_sampling(self) -> float:
         """
-        Function for returning the spectral resolution of the model
-        spectra as stored in the database, that is,
-        :math:`R = \\lambda/\\Delta\\lambda/2`. A minimum of two
-        wavelengths are required to resolve a spectral feature,
-        hence the factor 0.5.
+        Function for returning the wavelength sampling,
+        :math:`\\lambda/\\Delta\\lambda`, of the
+        model spectra as stored in the database.
 
         Returns
         -------
         float
-            Spectral resolution :math:`R`.
+            Wavelength sampling, :math:`\\lambda/\\Delta\\lambda`.
         """
 
         wavel_points = self.get_wavelengths()
 
         wavel_mean = (wavel_points[1:] + wavel_points[:-1]) / 2.0
+        wavel_sampling = wavel_mean / np.diff(wavel_points)
 
-        # R = lambda / delta_lambda / 2, because twice as
-        # many points as R are required to resolve two
-        # features that are lambda / R apart
-        spec_res = wavel_mean / np.diff(wavel_points) / 2.0
-
-        return np.mean(spec_res)
+        return np.mean(wavel_sampling)
 
     @typechecked
     def binary_spectrum(
@@ -1804,7 +1785,7 @@ class ReadModel:
         model_param: Dict[str, float],
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
-        smooth: bool = False,
+        **kwargs,
     ) -> ModelBox:
         """
         Function for extracting a model spectrum of a binary system.
@@ -1823,28 +1804,33 @@ class ReadModel:
             with
             :func:`~species.read.read_model.ReadModel.get_bounds()`.
         spec_res : float, None
-            Spectral resolution that is used for smoothing the spectrum
-            with a Gaussian kernel when ``smooth=True``. The
-            wavelengths will be resampled to the argument of
-            ``spec_res`` if ``smooth=False``.
+            Spectral resolution that is used for smoothing the
+            spectrum with a Gaussian kernel. No smoothing is applied
+            if the argument is set to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum is resampled.
             In that case, ``spec_res`` can still be used for smoothing
             the spectrum with a Gaussian kernel. The original
             wavelength points are used if the argument is set to
             ``None``.
-        smooth : bool
-            If ``True``, the spectrum is smoothed with a Gaussian
-            kernel to the spectral resolution of ``spec_res``. This
-            requires either a uniform spectral resolution of the input
-            spectra (fast) or a uniform wavelength spacing of the input
-            spectra (slow).
 
         Returns
         -------
         species.core.box.ModelBox
             Box with the model spectrum.
         """
+
+        if "smooth" in kwargs:
+            warnings.warn(
+                "The 'smooth' parameter has been "
+                "deprecated. Please set only the "
+                "'spec_res' argument, which can be set "
+                "to None for not applying a smoothing.",
+                DeprecationWarning,
+            )
+
+            if not kwargs["smooth"] and spec_res is not None:
+                spec_res = None
 
         # Get grid boundaries
 
@@ -1854,7 +1840,6 @@ class ReadModel:
             param_0,
             spec_res=spec_res,
             wavel_resample=wavel_resample,
-            smooth=smooth,
         )
 
         param_1 = binary_to_single(model_param, 1)
@@ -1863,7 +1848,6 @@ class ReadModel:
             param_1,
             spec_res=spec_res,
             wavel_resample=wavel_resample,
-            smooth=smooth,
         )
 
         flux_comb = (

@@ -720,9 +720,7 @@ class FitModel:
                 # Or interpolate the model grid for each filter
                 print(f"Interpolating {item}...", end="", flush=True)
                 readmodel = ReadModel(self.model, filter_name=item)
-                readmodel.interpolate_grid(
-                    wavel_resample=None, smooth=False, spec_res=None
-                )
+                readmodel.interpolate_grid(wavel_resample=None, spec_res=None)
                 self.modelphot.append(readmodel)
                 print(" [DONE]")
 
@@ -811,7 +809,6 @@ class FitModel:
 
                     readmodel.interpolate_grid(
                         wavel_resample=spec_value[0][:, 0],
-                        smooth=True,
                         spec_res=spec_value[3],
                     )
 
@@ -854,9 +851,7 @@ class FitModel:
             for item in inc_phot:
                 print(f"Interpolating {item}...", end="", flush=True)
                 readmodel = ReadModel("blackbody", filter_name=item)
-                readmodel.interpolate_grid(
-                    wavel_resample=None, smooth=False, spec_res=None
-                )
+                readmodel.interpolate_grid(wavel_resample=None, spec_res=None)
                 self.diskphot.append(readmodel)
                 print(" [DONE]")
 
@@ -869,7 +864,6 @@ class FitModel:
 
                 readmodel.interpolate_grid(
                     wavel_resample=spec_value[0][:, 0],
-                    smooth=True,
                     spec_res=spec_value[3],
                 )
 
@@ -1621,7 +1615,7 @@ class FitModel:
                     )
                 )
 
-                model_box = readplanck.get_spectrum(param_dict, 1000.0, smooth=True)
+                model_box = readplanck.get_spectrum(param_dict, spec_res=1000.0)
 
                 # Resample the spectrum to the observed wavelengths
                 model_flux = spectres.spectres(
@@ -2091,7 +2085,7 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for i, item in enumerate(best_params["parameters"]):
-            if item < 0.1 and item > -0.1:
+            if -0.1 < item < 0.1:
                 print(f"   - {self.modelpar[i]} = {item:.2e}")
             else:
                 print(f"   - {self.modelpar[i]} = {item:.2f}")
@@ -2355,7 +2349,7 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for i, item in enumerate(result["maximum_likelihood"]["point"]):
-            if item < 0.1 and item > 0.1:
+            if -0.1 < item < 0.1:
                 print(f"   - {self.modelpar[i]} = {item:.2e}")
             else:
                 print(f"   - {self.modelpar[i]} = {item:.2f}")
@@ -2597,8 +2591,7 @@ class FitModel:
                         )
 
                         print(
-                            "Resumed a Dynesty run from "
-                            f"{out_basename}dynesty.save"
+                            f"Resumed a Dynesty run from {out_basename}dynesty.save"
                         )
 
                     else:
@@ -2625,8 +2618,7 @@ class FitModel:
                         )
 
                         print(
-                            "Resumed a Dynesty run from "
-                            f"{out_basename}dynesty.save"
+                            f"Resumed a Dynesty run from {out_basename}dynesty.save"
                         )
 
                     else:
@@ -2732,7 +2724,7 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for i, item in enumerate(self.modelpar):
-            if best_params[i] < 0.1 and best_params[i] > 0.1:
+            if -0.1 < best_params[i] < 0.1:
                 print(f"   - {self.modelpar[i]} = {best_params[i]:.2e}")
             else:
                 print(f"   - {self.modelpar[i]} = {best_params[i]:.2f}")

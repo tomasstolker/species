@@ -48,7 +48,7 @@ class TestPlanck:
             255.37728257033913, rel=self.limit, abs=0.0
         )
         assert np.sum(modelbox.flux) == pytest.approx(
-            4.228433207324114e-12, rel=self.limit, abs=0.0
+            4.228358073212532e-12, rel=self.limit, abs=0.0
         )
 
     def test_get_flux(self):

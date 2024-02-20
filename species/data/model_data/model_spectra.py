@@ -19,31 +19,32 @@ from typeguard import typechecked
 
 from species.util.core_util import print_section
 from species.util.data_util import add_missing, extract_tarfile, sort_data, write_data
+from species.util.model_util import convert_model_name
 from species.util.spec_util import create_wavelengths
 
 
 @typechecked
 def add_model_grid(
-    model_name: str,
+    model_tag: str,
     input_path: str,
     database: h5py._hl.files.File,
     wavel_range: Optional[Tuple[float, float]] = None,
     teff_range: Optional[Tuple[float, float]] = None,
-    spec_res: Optional[float] = None,
+    wavel_sampling: Optional[float] = None,
     unpack_tar: bool = True,
 ) -> None:
     """
     Function for adding a grid of model spectra to the database.
     The original spectra had been resampled to logarithmically-
-    spaced wavelengths, so at a constant resolution,
+    spaced wavelengths, so with at a constant
     :math:`\\lambda/\\Delta\\lambda`. This function downloads
     the model grid, unpacks the tar file, and adds the spectra
     and parameters to the database.
 
     Parameters
     ----------
-    model_name : str
-        Name of the model grid.
+    model_tag : str
+        Tag of the grid of model spectra.
     input_path : str
         Folder where the data is located.
     database : h5py._hl.files.File
@@ -55,14 +56,17 @@ def add_model_grid(
         Range of effective temperatures (K) for which the spectra will
         be extracted from the TAR file and added to the database. All
         spectra are selected if the argument is set to ``None``.
-    spec_res : float, None
-        Spectral resolution for resampling. Not used if
-        ``wavel_range`` is set to ``None`` and/or
-        ``spec_res`` is set to ``None``
+    wavel_sampling : float, None
+        Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
+        the spectra will be resampled. Typically this parameter is
+        not needed so the argument can be set to ``None``. The only
+        benefit of using this parameter is limiting the storage
+        in the HDF5 database. The parameter should be used in
+        combination with setting the ``wavel_range``.
     unpack_tar : bool
         Unpack the TAR file with the model spectra in the
-        ``data_folder``. The argument can be set to ``False`` if the
-        TAR file had already been unpacked previously.
+        ``data_folder``. The argument can be set to ``False`` if
+        the TAR file had already been unpacked previously.
 
     Returns
     -------
@@ -72,6 +76,8 @@ def add_model_grid(
 
     print_section("Add grid of model spectra")
 
+    model_name = convert_model_name(model_tag)
+    print(f"Database tag: {model_tag}")
     print(f"Model name: {model_name}")
 
     data_file = pathlib.Path(__file__).parent.resolve() / "model_data.json"
@@ -79,12 +85,12 @@ def add_model_grid(
     with open(data_file, "r", encoding="utf-8") as json_file:
         model_data = json.load(json_file)
 
-    if model_name in model_data.keys():
-        model_info = model_data[model_name]
+    if model_tag in model_data.keys():
+        model_info = model_data[model_tag]
 
     else:
         raise ValueError(
-            f"The '{model_name}' atmospheric model is not available. "
+            f"The '{model_tag}' atmospheric model is not available. "
             "Please choose one of the following models: "
             "'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
             "'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
@@ -96,7 +102,7 @@ def add_model_grid(
             "'sphinx'"
         )
 
-    if model_name == "bt-settl":
+    if model_tag == "bt-settl":
         warnings.warn(
             "It is recommended to use the CIFIST "
             "grid of the BT-Settl, because it is "
@@ -105,7 +111,7 @@ def add_model_grid(
             "add_model of Database."
         )
 
-    elif model_name == "exo-rem":
+    elif model_tag == "exo-rem":
         warnings.warn(
             "The Exo-Rem grid has been updated to the latest version "
             "from https://lesia.obspm.fr/exorem/YGP_grids/. Please "
@@ -114,7 +120,7 @@ def add_model_grid(
             "be downloaded and added to the HDF5 database."
         )
 
-    elif model_name == "exo-rem-highres" and teff_range is None:
+    elif model_tag == "exo-rem-highres" and teff_range is None:
         warnings.warn(
             "Adding the full high-resolution grid of Exo-Rem to the "
             "HDF5 database may not be feasible since it requires "
@@ -126,15 +132,15 @@ def add_model_grid(
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
-    input_file = f"{model_name}.tgz"
+    input_file = f"{model_tag}.tgz"
 
-    data_folder = os.path.join(input_path, model_name)
+    data_folder = os.path.join(input_path, model_tag)
     data_file = os.path.join(input_path, input_file)
 
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
-    url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_name}.tgz"
+    url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_tag}.tgz"
 
     if not os.path.isfile(data_file):
         pooch.retrieve(
@@ -164,13 +170,13 @@ def add_model_grid(
                 param_index = file_split.index("teff") + 1
                 teff_val = float(file_split[param_index])
 
-                if teff_val >= teff_range[0] and teff_val <= teff_range[1]:
+                if teff_range[0] <= teff_val <= teff_range[1]:
                     member_list.append(tar_item)
 
             n_members = len(member_list)
 
         print(
-            f"Unpacking {n_members}/{len(tar_members)} model spectra "
+            f"\nUnpacking {n_members}/{len(tar_members)} model spectra "
             f"from {model_info['name']} ({model_info['file size']})...",
             end="",
             flush=True,
@@ -180,16 +186,30 @@ def add_model_grid(
 
         print(" [DONE]")
 
+    print_newline = False
+
     if "information" in model_info:
+        if not print_newline:
+            print()
+            print_newline = True
+
         print(f"Model information: {model_info['information']}")
 
     if "reference" in model_info:
+        if not print_newline:
+            print()
+            print_newline = True
+
         print(
             f"Please cite {model_info['reference']} when "
             f"using {model_info['name']} in a publication"
         )
 
     if "url" in model_info:
+        if not print_newline:
+            print()
+            print_newline = True
+
         print(f"Reference URL: {model_info['url']}")
 
     teff = []
@@ -228,10 +248,10 @@ def add_model_grid(
 
     print()
 
-    if wavel_range is not None and spec_res is not None:
-        wavelength = create_wavelengths(wavel_range, spec_res)
+    if wavel_range is not None and wavel_sampling is not None:
+        wavelength = create_wavelengths(wavel_range, wavel_sampling)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
-        print(f"Spectral resolution = {spec_res}")
+        print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
     else:
         wavelength = None
@@ -240,7 +260,7 @@ def add_model_grid(
             f"{model_info['wavelength range'][0]} - "
             f"{model_info['wavelength range'][1]}"
         )
-        print(f"Spectral resolution = {model_info['resolution']}")
+        print(f"Sampling (lambda/d_lambda) = {model_info['lambda/d_lambda']}")
 
     if teff_range is None:
         print(
@@ -254,7 +274,7 @@ def add_model_grid(
 
     for _, _, file_list in os.walk(data_folder):
         for filename in sorted(file_list):
-            if filename[: len(model_name)] == model_name:
+            if filename[: len(model_tag)] == model_tag:
                 file_split = filename.split("_")
 
                 param_index = file_split.index("teff") + 1
@@ -296,13 +316,13 @@ def add_model_grid(
                 print_message = (
                     f"Adding {model_info['name']} model spectra... {filename}"
                 )
-                print(f"\r{print_message}", end="")
+                print(f"\r{print_message}", end="", flush=True)
 
                 data_wavel, data_flux = np.loadtxt(
                     os.path.join(data_folder, filename), unpack=True
                 )
 
-                if wavel_range is None or spec_res is None:
+                if wavel_range is None:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
@@ -334,8 +354,7 @@ def add_model_grid(
 
                     flux.append(flux_resample)  # (W m-2 um-1)
 
-    empty_message = len(print_message) * " "
-    print(f"\r{empty_message}", end="")
+    print()
 
     if logg is not None:
         logg = np.asarray(logg)
@@ -367,6 +386,6 @@ def add_model_grid(
         np.asarray(flux),
     )
 
-    write_data(model_name, model_info["parameters"], database, data_sorted)
+    write_data(model_tag, model_info["parameters"], database, data_sorted)
 
-    add_missing(model_name, model_info["parameters"], database)
+    add_missing(model_tag, model_info["parameters"], database)

@@ -3,6 +3,7 @@ Module with reading functionalities for Planck spectra.
 """
 
 import os
+import warnings
 
 from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
@@ -150,9 +151,9 @@ class ReadPlanck:
     def get_spectrum(
         self,
         model_param: Dict[str, Union[float, List[float]]],
-        spec_res: float,
-        smooth: bool = False,
+        spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> ModelBox:
         """
         Function for calculating a Planck spectrum or a combination of
@@ -169,16 +170,14 @@ class ReadPlanck:
             with floats for a combination of multiple Planck
             functions, e.g. {'teff': [1500., 1000.],
             'radius': [1., 2.], 'distance': 10.}.
-        spec_res : float
-            Spectral resolution that is used for smoothing the spectrum
-            with a Gaussian kernel when ``smooth=True``.
-        smooth : bool
-            If ``True``, the spectrum is smoothed to the spectral
-            resolution of ``spec_res``.
+        spec_res : float, None
+            Spectral resolution that is used for smoothing the
+            spectrum with a Gaussian kernel. No smoothing is
+            applied if the argument is set to ``None``.
         wavel_resample : np.ndarray, None
-            Wavelength points (um) to which the spectrum will be
-            resampled. The resampling is applied after the optional
-            smoothing to ``spec_res`` when ``smooth=True``.
+            Wavelength points (:math:`\\mu`m) to which the spectrum
+            will be resampled. The resampling is applied after the
+            optional smoothing to the value of ``spec_res``.
 
         Returns
         -------
@@ -186,10 +185,22 @@ class ReadPlanck:
             Box with the Planck spectrum.
         """
 
+        if "smooth" in kwargs:
+            warnings.warn(
+                "The 'smooth' parameter has been "
+                "deprecated. Please set only the "
+                "'spec_res' argument, which can be set "
+                "to None for not applying a smoothing.",
+                DeprecationWarning,
+            )
+
+            if not kwargs["smooth"] and spec_res is not None:
+                spec_res = None
+
         if "teff" in model_param and isinstance(model_param["teff"], list):
             model_param = self.update_parameters(model_param)
 
-        wavel_points = create_wavelengths(self.wavel_range, 500.0)
+        wavel_points = create_wavelengths(self.wavel_range, 1000.0)
 
         n_planck = 0
 
@@ -240,7 +251,7 @@ class ReadPlanck:
                     wavel_points, model_param[f"teff_{i}"], scaling
                 )  # (W m-2 um-1)
 
-        if smooth:
+        if spec_res is not None:
             flux = smooth_spectrum(wavel_points, flux, spec_res)
 
         model_box = create_box(

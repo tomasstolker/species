@@ -46,7 +46,7 @@ class TestCalibration:
     def test_get_spectrum(self):
         read_calib = ReadCalibration("vega", filter_name="Paranal/NACO.Lp")
         spec_box = read_calib.get_spectrum(
-            self.model_param, apply_mask=True, spec_res=100.0
+            self.model_param, apply_mask=True, wavel_sampling=200.0
         )
 
         assert np.sum(spec_box.wavelength) == pytest.approx(

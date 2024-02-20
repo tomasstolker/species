@@ -38,11 +38,6 @@ class SpeciesInit:
         print(species_msg)
         print(len(species_msg) * "=")
 
-        working_folder = os.path.abspath(os.getcwd())
-        print(f"\nWorking folder: {working_folder}")
-
-        config_file = os.path.join(working_folder, "species_config.ini")
-
         try:
             pypi_url = "https://pypi.org/pypi/species/json"
 
@@ -55,12 +50,20 @@ class SpeciesInit:
             latest_version = None
 
         if latest_version is not None and species_version != latest_version:
-            print(f" -> A new version ({latest_version}) is available!")
+            print(f"\n -> A new version ({latest_version}) is available!")
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")
 
-        if not os.path.isfile(config_file):
-            print("Creating species_config.ini...", end="", flush=True)
+        working_folder = os.path.abspath(os.getcwd())
+        print(f"\nWorking folder: {working_folder}")
+
+        config_file = os.path.join(working_folder, "species_config.ini")
+
+        if os.path.isfile(config_file):
+            print(f"\nConfiguration file: {config_file}")
+
+        else:
+            print("\nCreating species_config.ini...", end="", flush=True)
 
             with open(config_file, "w", encoding="utf-8") as file_obj:
                 file_obj.write("[species]\n\n")
@@ -102,19 +105,6 @@ class SpeciesInit:
                 file_obj.write("\n; Folder where data will be downloaded\n")
                 file_obj.write("data_folder = ./data/\n")
 
-        # if "interp_method" in config["species"]:
-        #     interp_method = config["species"]["interp_method"]
-        #
-        # else:
-        #     interp_method = "linear"
-        #
-        #     with open(config_file, "a", encoding="utf-8") as file_obj:
-        #         file_obj.write("\n; Method for the grid interpolation\n")
-        #         file_obj.write(
-        #             "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
-        #         )
-        #         file_obj.write("interp_method = linear\n")
-
         if "vega_mag" in config["species"]:
             vega_mag = config["species"]["vega_mag"]
 
@@ -122,25 +112,30 @@ class SpeciesInit:
             vega_mag = 0.03
 
             with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("\n; Magnitude of Vega for all filters\n")
+                file_obj.write("; Magnitude of Vega for all filters\n")
                 file_obj.write("vega_mag = 0.03\n")
 
-        print("\nConfiguration settings:")
-        print(f"   - Database: {database_file}")
-        print(f"   - Data folder: {data_folder}")
-        # print(f"   - Interpolation method: {interp_method}")
-        print(f"   - Magnitude of Vega: {vega_mag}")
+        if os.path.isfile(database_file):
+            print(f"Database file: {database_file}")
 
-        if not os.path.isfile(database_file):
+        else:
             print("Creating species_database.hdf5...", end="", flush=True)
             h5_file = h5py.File(database_file, "w")
             h5_file.close()
             print(" [DONE]")
 
-        if not os.path.exists(data_folder):
+        if os.path.exists(data_folder):
+            print(f"Data folder: {data_folder}")
+
+        else:
             print("Creating data folder...", end="", flush=True)
             os.makedirs(data_folder)
             print(" [DONE]")
+
+        print("\nConfiguration settings:")
+        print(f"   - Database: {database_file}")
+        print(f"   - Data folder: {data_folder}")
+        print(f"   - Magnitude of Vega: {vega_mag}")
 
         if find_spec("mpi4py") is None:
             print("\nMultiprocessing: mpi4py not installed")

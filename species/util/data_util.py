@@ -406,8 +406,6 @@ def add_missing(
         points = [[], []]
         new_points = [[], []]
 
-
-
         for i in range(grid_shape[0]):
             for j in range(grid_shape[1]):
                 if np.isinf(np.sum(flux[i, j, ...])):

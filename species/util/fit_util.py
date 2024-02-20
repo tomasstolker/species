@@ -359,7 +359,6 @@ def get_residuals(
                             param_0,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
-                            smooth=True,
                         )
 
                         param_1 = binary_to_single(parameters, 1)
@@ -368,7 +367,6 @@ def get_residuals(
                             param_1,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
-                            smooth=True,
                         )
 
                         flux_comb = (
@@ -392,7 +390,6 @@ def get_residuals(
                             parameters,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
-                            smooth=True,
                         )
 
                     flux_new = model_spec.flux

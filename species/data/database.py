@@ -224,9 +224,9 @@ class Database:
                         f"      - Wavelength range (um): {model_dict['wavelength range']}"
                     )
 
-                if "resolution" in model_dict:
+                if "lambda/d_lambda" in model_dict:
                     print(
-                        f"      - Resolution lambda/Dlambda: {model_dict['resolution']}"
+                        f"      - Sampling (lambda/d_lambda): {model_dict['lambda/d_lambda']}"
                     )
 
                 if "information" in model_dict:
@@ -644,21 +644,25 @@ class Database:
         self,
         model: str,
         wavel_range: Optional[Tuple[float, float]] = None,
-        spec_res: Optional[float] = None,
+        wavel_sampling: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
         unpack_tar: bool = True,
     ) -> None:
         """
         Function for adding a grid of model spectra to the database.
         All spectra have been resampled to logarithmically-spaced
-        wavelengths. The spectral resolution is returned with the
-        :func:`~species.read.read_model.ReadModel.get_spec_res`
-        method of :class:`~species.read.read_model.ReadModel`, but
-        is typically of the order of several thousand.
-        It should be noted that the original spectra were often
-        calculated with a constant step size in wavenumber,
-        so the original spectral resolution decreased from short
-        to long wavelengths.
+        wavelengths (see
+        :func:`~species.data.database.Database.available_models`),
+        typically at the order of several thousand. It should be
+        noted that the original spectra were typically calculated
+        with a constant step size in wavenumber, so the original
+        wavelength sampling decreased from short to long wavelengths.
+        When fitting medium/high- resolution spectra, it is best to
+        carefully check the result to determine if the sampling of
+        the input grid was sufficient for modeling the spectra at
+        the considered wavelength regime. See also
+        :func:`~species.data.database.Database.add_custom_model`
+        for adding a custom grid to the database.
 
         Parameters
         ----------
@@ -676,12 +680,13 @@ class Database:
             Wavelength range (um) for adding a subset of the spectra.
             The full wavelength range is used if the argument is set
             to ``None``.
-        spec_res : float, None
-            Spectral resolution to which the spectra will be resampled.
-            This parameter is optional since the spectra have already
-            been resampled to a lower, constant resolution (typically
-            :math:`R = 5000`). The argument is only used if
-            ``wavel_range`` is not ``None``.
+        wavel_sampling : float, None
+            Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
+            the spectra will be resampled. Typically this parameter is
+            not needed so the argument can be set to ``None``. The only
+            benefit of using this parameter is limiting the storage
+            in the HDF5 database. The parameter should be used in
+            combination with setting the ``wavel_range``.
         teff_range : tuple(float, float), None
             Range of effective temperatures (K) of which the spectra
             are extracted from the TAR file and added to the HDF5
@@ -706,17 +711,14 @@ class Database:
         from species.data.model_data.model_spectra import add_model_grid
 
         with h5py.File(self.database, "a") as hdf5_file:
-            if "models" not in hdf5_file:
-                hdf5_file.create_group("models")
-
             add_model_grid(
-                model,
-                self.data_folder,
-                hdf5_file,
-                wavel_range,
-                teff_range,
-                spec_res,
-                unpack_tar,
+                model_tag=model,
+                input_path=self.data_folder,
+                database=hdf5_file,
+                wavel_range=wavel_range,
+                teff_range=teff_range,
+                wavel_sampling=wavel_sampling,
+                unpack_tar=unpack_tar,
             )
 
     @typechecked
@@ -726,7 +728,7 @@ class Database:
         data_path: str,
         parameters: List[str],
         wavel_range: Optional[Tuple[float, float]] = None,
-        spec_res: Optional[float] = None,
+        wavel_sampling: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
     ) -> None:
         """
@@ -743,9 +745,9 @@ class Database:
         should contain the same number and values of wavelengths. The
         wavelengths should be logarithmically sampled, so at a constant
         resolution, :math:`\\lambda/\\Delta\\lambda`. If not, then the
-        ``wavel_range`` and ``spec_res`` parameters should be used
-        such that the wavelengths are resampled when reading the data
-        into the ``species`` database.
+        ``wavel_range`` and ``wavel_sampling`` parameters should be
+        used such that the wavelengths are resampled when reading the
+        data into the ``species`` database.
 
         Parameters
         ----------
@@ -768,14 +770,13 @@ class Database:
             Wavelength range (:math:`\\mu\\text{m}`) for adding a
             subset of the spectra. The full wavelength range is
             used if the argument is set to ``None``.
-        spec_res : float, None
-            Spectral resolution to which the spectra will be resampled.
-            This parameter should be used in combination with
-            ``wavel_range`` if the input spectra at ``data_path``
-            are not sampled at a constant
-            :math:`\\lambda/\\Delta\\lambda`. The argument is
-            only used if ``wavel_range`` is not ``None`` and it is
-            not used if set to ``None``.
+        wavel_sampling : float, None
+            Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
+            the spectra will be resampled. Typically this parameter is
+            not needed so the argument can be set to ``None``. The only
+            benefit of using this parameter is limiting the storage
+            in the HDF5 database. The parameter should be used in
+            combination with setting the ``wavel_range``.
         teff_range : tuple(float, float), None
             Effective temperature range (K) for adding a subset of the
             model grid. The full parameter grid will be added if the
@@ -790,9 +791,6 @@ class Database:
         from species.data.model_data.custom_model import add_custom_model_grid
 
         with h5py.File(self.database, "a") as hdf5_file:
-            if "models" not in hdf5_file:
-                hdf5_file.create_group("models")
-
             add_custom_model_grid(
                 model,
                 data_path,
@@ -800,7 +798,7 @@ class Database:
                 hdf5_file,
                 wavel_range,
                 teff_range,
-                spec_res,
+                wavel_sampling,
             )
 
     @typechecked
@@ -2347,7 +2345,6 @@ class Database:
                     specbox = readmodel.get_spectrum(
                         model_param,
                         spec_res,
-                        smooth=True,
                         wavel_resample=wavel_resample,
                     )
 
@@ -2372,7 +2369,6 @@ class Database:
                             param_0,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
-                            smooth=True,
                             ext_filter=ext_filter,
                         )
 
@@ -2382,7 +2378,6 @@ class Database:
                             param_1,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
-                            smooth=True,
                             ext_filter=ext_filter,
                         )
 
@@ -2405,7 +2400,6 @@ class Database:
                             model_param,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
-                            smooth=True,
                             ext_filter=ext_filter,
                         )
 

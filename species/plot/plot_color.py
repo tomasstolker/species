@@ -24,8 +24,8 @@ from species.read.read_filter import ReadFilter
 from species.read.read_object import ReadObject
 from species.util.core_util import print_section
 from species.util.dust_util import calc_reddening, ism_extinction
+from species.util.model_util import convert_model_name
 from species.util.plot_util import (
-    convert_model_name,
     field_bounds_ticks,
     sptype_to_index,
     remove_color_duplicates,

@@ -134,7 +134,6 @@ def update_objectbox(
                         model_param,
                         spec_res=value[3],
                         wavel_resample=spec_tmp[:, 0],
-                        smooth=True,
                     )
 
                     # Inflate the uncertainties relative to

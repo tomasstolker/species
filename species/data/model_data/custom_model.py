@@ -25,7 +25,7 @@ def add_custom_model_grid(
     database: h5py._hl.files.File,
     wavel_range: Optional[Tuple[float, float]],
     teff_range: Optional[Tuple[float, float]],
-    spec_res: Optional[float],
+    wavel_sampling: Optional[float],
 ) -> None:
     """
     Function for adding a custom grid of model spectra to the
@@ -38,9 +38,9 @@ def add_custom_model_grid(
     two columns with the wavelengths in :math:`\\mu\\text{m}` and
     the fluxes in :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
     Each file should contain the same number and values of wavelengths.
-    The wavelengths should be logarithmically sampled, so at a constant
-    resolution, :math:`\\lambda/\\Delta\\lambda`. If not, then the
-    ``wavel_range`` and ``spec_res`` parameters should be used
+    The wavelengths should be logarithmically sampled, so with a
+    constant :math:`\\lambda/\\Delta\\lambda`. If not, then the
+    ``wavel_range`` and ``wavel_sampling`` parameters should be used
     such that the wavelengths are resampled when reading the data
     into the ``species`` database.
 
@@ -70,14 +70,13 @@ def add_custom_model_grid(
         Effective temperature range (K) for adding a subset of the
         model grid. The full parameter grid will be added if the
         argument is set to ``None``.
-    spec_res : float, None
-        Spectral resolution to which the spectra will be resampled.
-        This parameter should be used in combination with
-        ``wavel_range`` if the input spectra at ``data_path``
-        are not sampled at a constant
-        :math:`\\lambda/\\Delta\\lambda`. The argument is
-        only used if ``wavel_range`` is not ``None`` and it is
-        not used if set to ``None``.
+    wavel_sampling : float, None
+        Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
+        the spectra will be resampled. Typically this parameter is
+        not needed so the argument can be set to ``None``. The only
+        benefit of using this parameter is limiting the storage
+        in the HDF5 database. The parameter should be used in
+        combination with setting the ``wavel_range``.
 
     Returns
     -------
@@ -124,11 +123,11 @@ def add_custom_model_grid(
     if wavel_range is not None:
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
 
-        if spec_res is not None:
-            wavelength = create_wavelengths(wavel_range, spec_res)
-            print(f"Spectral resolution = {spec_res}")
+        if wavel_sampling is not None:
+            wavelength = create_wavelengths(wavel_range, wavel_sampling)
+            print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
-    if wavel_range is None or spec_res is None:
+    if wavel_range is None or wavel_sampling is None:
         wavelength = None
         wavel_select = None
 
@@ -186,7 +185,7 @@ def add_custom_model_grid(
                     os.path.join(data_path, filename), unpack=True
                 )
 
-                if wavel_range is not None and spec_res is not None:
+                if wavel_range is not None and wavel_sampling is not None:
                     flux_resample = spectres.spectres(
                         wavelength,
                         data_wavel,
