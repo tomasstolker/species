@@ -91,13 +91,17 @@ class Database:
             """
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
-                for key in h5_object.keys():
-                    print(seperator + "- " + key + ": " + str(h5_object[key]))
-                    _descend(h5_object[key], seperator=seperator + "\t")
+                for group_key in h5_object.keys():
+                    print(seperator + "- " + group_key + ": " + str(h5_object[group_key]))
+
+                    _descend(h5_object[group_key], seperator=seperator + "\t")
+
+                    for attr_key in h5_object[group_key].attrs.keys():
+                        print(seperator + "\t" + "- " + attr_key + " = " + str(h5_object[group_key].attrs[attr_key]))
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
-                for key in h5_object.attrs.keys():
-                    print(seperator + "- " + key + ": " + str(h5_object.attrs[key]))
+                for attr_key in h5_object.attrs.keys():
+                    print(seperator + "- " + attr_key + ": " + str(h5_object.attrs[attr_key]))
 
         with h5py.File(self.database, "r") as hdf_file:
             _descend(hdf_file)

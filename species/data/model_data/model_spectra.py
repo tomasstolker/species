@@ -251,7 +251,6 @@ def add_model_grid(
     if wavel_range is not None and wavel_sampling is not None:
         wavelength = create_wavelengths(wavel_range, wavel_sampling)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
-        print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
     else:
         wavelength = None
@@ -260,7 +259,9 @@ def add_model_grid(
             f"{model_info['wavelength range'][0]} - "
             f"{model_info['wavelength range'][1]}"
         )
-        print(f"Sampling (lambda/d_lambda) = {model_info['lambda/d_lambda']}")
+        wavel_sampling = model_info["lambda/d_lambda"]
+
+    print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
     if teff_range is None:
         print(
@@ -386,6 +387,8 @@ def add_model_grid(
         np.asarray(flux),
     )
 
-    write_data(model_tag, model_info["parameters"], database, data_sorted)
+    write_data(
+        model_tag, model_info["parameters"], wavel_sampling, database, data_sorted
+    )
 
     add_missing(model_tag, model_info["parameters"], database)

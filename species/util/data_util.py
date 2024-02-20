@@ -308,6 +308,7 @@ def sort_data(
 def write_data(
     model: str,
     parameters: List[str],
+    wavel_sampling: float,
     database: h5py._hl.files.File,
     data_sorted: List[np.ndarray],
 ) -> None:
@@ -321,8 +322,10 @@ def write_data(
         Atmosphere model.
     parameters : list(str)
         Model parameters.
+    wavel_sampling : float
+        Wavelength sampling :math:`\\lambda/\\Delta\\lambda`.
     database: h5py._hl.files.File
-        Database.
+        HDF5 database.
     data_sorted : list(np.ndarray)
         Sorted model data with the parameter values, wavelength
         points (um), and flux densities (W m-2 um-1).
@@ -341,6 +344,7 @@ def write_data(
     dset = database.create_group(f"models/{model}")
 
     dset.attrs["n_param"] = n_param
+    dset.attrs["lambda/d_lambda"] = wavel_sampling
 
     for i, item in enumerate(parameters):
         dset.attrs[f"parameter{i}"] = item

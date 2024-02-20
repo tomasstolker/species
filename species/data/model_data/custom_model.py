@@ -273,6 +273,11 @@ def add_custom_model_grid(
         np.asarray(flux),
     )
 
-    write_data(model_name, parameters, database, data_sorted)
+    if wavel_sampling is None:
+        wavel_sampling = np.mean(
+            0.5 * (wavelength[1:] + wavelength[:-1]) / np.diff(wavelength)
+        )
+
+    write_data(model_name, parameters, wavel_sampling, database, data_sorted)
 
     add_missing(model_name, parameters, database)
