@@ -681,9 +681,9 @@ class Database:
             'koester-wd', 'saumon2008-clear', 'saumon2008-cloudy',
             'petrus2023', 'sphinx').
         wavel_range : tuple(float, float), None
-            Wavelength range (um) for adding a subset of the spectra.
-            The full wavelength range is used if the argument is set
-            to ``None``.
+            Wavelength range (:math:`\\mu\\text{m}`) that will be
+            stored in the database. The full wavelength range is
+            used if the argument is set to ``None``.
         wavel_sampling : float, None
             Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
             the spectra will be resampled. Typically this parameter is
@@ -771,9 +771,9 @@ class Database:
             :math:`\\gamma_\\mathrm{ad}`). Please contact the code
             maintainer if support for other parameters should be added.
         wavel_range : tuple(float, float), None
-            Wavelength range (:math:`\\mu\\text{m}`) for adding a
-            subset of the spectra. The full wavelength range is
-            used if the argument is set to ``None``.
+            Wavelength range (:math:`\\mu\\text{m}`) that will be
+            stored in the database. The full wavelength range is used
+            if the argument is set to ``None``.
         wavel_sampling : float, None
             Wavelength spacing :math:`\\lambda/\\Delta\\lambda` to which
             the spectra will be resampled. Typically this parameter is

@@ -50,8 +50,8 @@ def add_model_grid(
     database : h5py._hl.files.File
         HDF5 database.
     wavel_range : tuple(float, float), None
-        Wavelength range (um). The original wavelength
-        points are used if set to ``None``.
+        Wavelength range (:math:`\\mu\\text{m}`). The original
+        wavelength points are used if the argument is set to ``None``.
     teff_range : tuple(float, float), None
         Range of effective temperatures (K) for which the spectra will
         be extracted from the TAR file and added to the database. All
@@ -128,6 +128,16 @@ def add_model_grid(
             "'teff_range' parameter to only add a small "
             "Teff range of model spectra to the database."
         )
+
+    if wavel_sampling is not None and wavel_range is None:
+        warnings.warn(
+            "The 'wavel_sampling' parameter can only be "
+            "used in combination with the 'wavel_range' "
+            "parameter. The model spectra are therefore "
+            "not resampled."
+        )
+
+        wavel_sampling = None
 
     if not os.path.exists(input_path):
         os.makedirs(input_path)
@@ -251,6 +261,7 @@ def add_model_grid(
     if wavel_range is not None and wavel_sampling is not None:
         wavelength = create_wavelengths(wavel_range, wavel_sampling)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
+        resample_spectra = True
 
     else:
         wavelength = None
@@ -260,6 +271,7 @@ def add_model_grid(
             f"{model_info['wavelength range'][1]}"
         )
         wavel_sampling = model_info["lambda/d_lambda"]
+        resample_spectra = False
 
     print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
@@ -335,25 +347,42 @@ def add_model_grid(
                     flux.append(data_flux)  # (W m-2 um-1)
 
                 else:
-                    flux_resample = spectres.spectres(
-                        wavelength,
-                        data_wavel,
-                        data_flux,
-                        spec_errs=None,
-                        fill=np.nan,
-                        verbose=False,
-                    )
+                    if not resample_spectra:
+                        if wavelength is None:
+                            wavelength = np.copy(data_wavel)  # (um)
 
-                    if np.isnan(np.sum(flux_resample)):
-                        raise ValueError(
-                            f"Resampling is only possible if the new wavelength "
-                            f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
-                            f"sufficiently far within the wavelength range "
-                            f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
-                            f"spectra."
+                            if np.all(np.diff(wavelength) < 0):
+                                raise ValueError(
+                                    "The wavelengths are not all sorted by increasing value."
+                                )
+
+                            wavel_select = (wavel_range[0] < wavelength) & (
+                                wavelength < wavel_range[1]
+                            )
+                            wavelength = wavelength[wavel_select]
+
+                        flux.append(data_flux[wavel_select])  # (W m-2 um-1)
+
+                    else:
+                        flux_resample = spectres.spectres(
+                            wavelength,
+                            data_wavel,
+                            data_flux,
+                            spec_errs=None,
+                            fill=np.nan,
+                            verbose=False,
                         )
 
-                    flux.append(flux_resample)  # (W m-2 um-1)
+                        if np.isnan(np.sum(flux_resample)):
+                            raise ValueError(
+                                f"Resampling is only possible if the new wavelength "
+                                f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
+                                f"sufficiently far within the wavelength range "
+                                f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
+                                f"spectra."
+                            )
+
+                        flux.append(flux_resample)  # (W m-2 um-1)
 
     print()
 

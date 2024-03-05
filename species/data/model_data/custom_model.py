@@ -3,6 +3,7 @@ Module for adding a custom grid of model spectra to the database.
 """
 
 import os
+import warnings
 
 from typing import List, Optional, Tuple
 
@@ -63,9 +64,8 @@ def add_custom_model_grid(
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
-        Wavelength range (:math:`\\mu\\text{m}`) for adding a
-        subset of the spectra. The full wavelength range is used
-        if the argument is set to ``None``.
+        Wavelength range (:math:`\\mu\\text{m}`). The original
+        wavelength points are used if the argument is set to ``None``.
     teff_range : tuple(float, float), None
         Effective temperature range (K) for adding a subset of the
         model grid. The full parameter grid will be added if the
@@ -85,6 +85,16 @@ def add_custom_model_grid(
     """
 
     print_section("Add custom grid of model spectra")
+
+    if wavel_sampling is not None and wavel_range is None:
+        warnings.warn(
+            "The 'wavel_sampling' parameter can only be "
+            "used in combination with the 'wavel_range' "
+            "parameter. The model spectra are therefore "
+            "not resampled."
+        )
+
+        wavel_sampling = None
 
     teff = []
 
@@ -120,16 +130,16 @@ def add_custom_model_grid(
 
     flux = []
 
-    if wavel_range is not None:
+    if wavel_range is not None and wavel_sampling is not None:
+        wavelength = create_wavelengths(wavel_range, wavel_sampling)
         print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
+        resample_spectra = True
 
-        if wavel_sampling is not None:
-            wavelength = create_wavelengths(wavel_range, wavel_sampling)
-            print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
-
-    if wavel_range is None or wavel_sampling is None:
+    else:
         wavelength = None
-        wavel_select = None
+        resample_spectra = False
+
+    print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
     if teff_range is not None:
         print(f"Teff range (K) = {teff_range[0]} - {teff_range[1]}")
@@ -185,28 +195,7 @@ def add_custom_model_grid(
                     os.path.join(data_path, filename), unpack=True
                 )
 
-                if wavel_range is not None and wavel_sampling is not None:
-                    flux_resample = spectres.spectres(
-                        wavelength,
-                        data_wavel,
-                        data_flux,
-                        spec_errs=None,
-                        fill=np.nan,
-                        verbose=False,
-                    )
-
-                    if np.isnan(np.sum(flux_resample)):
-                        raise ValueError(
-                            f"Resampling is only possible if the new wavelength "
-                            f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
-                            f"sufficiently far within the wavelength range "
-                            f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
-                            f"spectra."
-                        )
-
-                    flux.append(flux_resample)  # (W m-2 um-1)
-
-                else:
+                if wavel_range is None:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
@@ -215,16 +204,45 @@ def add_custom_model_grid(
                                 "The wavelengths are not all sorted by increasing value."
                             )
 
-                        if wavel_range is not None:
-                            wavel_select = (wavelength >= wavel_range[0]) & (
-                                wavelength <= wavel_range[1]
+                    flux.append(data_flux)  # (W m-2 um-1)
+
+                else:
+                    if not resample_spectra:
+                        if wavelength is None:
+                            wavelength = np.copy(data_wavel)  # (um)
+
+                            if np.all(np.diff(wavelength) < 0):
+                                raise ValueError(
+                                    "The wavelengths are not all sorted by increasing value."
+                                )
+
+                            wavel_select = (wavel_range[0] < wavelength) & (
+                                wavelength < wavel_range[1]
                             )
                             wavelength = wavelength[wavel_select]
 
-                    if wavel_select is not None:
-                        data_flux = data_flux[wavel_select]
+                        flux.append(data_flux[wavel_select])  # (W m-2 um-1)
 
-                    flux.append(data_flux)  # (W m-2 um-1)
+                    else:
+                        flux_resample = spectres.spectres(
+                            wavelength,
+                            data_wavel,
+                            data_flux,
+                            spec_errs=None,
+                            fill=np.nan,
+                            verbose=False,
+                        )
+
+                        if np.isnan(np.sum(flux_resample)):
+                            raise ValueError(
+                                f"Resampling is only possible if the new wavelength "
+                                f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
+                                f"sufficiently far within the wavelength range "
+                                f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
+                                f"spectra."
+                            )
+
+                        flux.append(flux_resample)  # (W m-2 um-1)
 
                 count += 1
 
@@ -257,8 +275,8 @@ def add_custom_model_grid(
             "No files have been found. Please check "
             "the arguments of 'model', 'data_path', "
             "and 'parameters' of the add_custom_model "
-            "method to make sure that the correct folder "
-            "and files names are selected."
+            "method to make sure that the correct "
+            "folder and files names are selected."
         )
 
     data_sorted = sort_data(

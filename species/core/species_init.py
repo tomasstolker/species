@@ -112,7 +112,7 @@ class SpeciesInit:
             vega_mag = 0.03
 
             with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("; Magnitude of Vega for all filters\n")
+                file_obj.write("\n; Magnitude of Vega for all filters\n")
                 file_obj.write("vega_mag = 0.03\n")
 
         if os.path.isfile(database_file):
