@@ -92,16 +92,31 @@ class Database:
 
             if isinstance(h5_object, (h5py._hl.files.File, h5py._hl.group.Group)):
                 for group_key in h5_object.keys():
-                    print(seperator + "- " + group_key + ": " + str(h5_object[group_key]))
+                    print(
+                        seperator + "- " + group_key + ": " + str(h5_object[group_key])
+                    )
 
                     _descend(h5_object[group_key], seperator=seperator + "\t")
 
                     for attr_key in h5_object[group_key].attrs.keys():
-                        print(seperator + "\t" + "- " + attr_key + " = " + str(h5_object[group_key].attrs[attr_key]))
+                        print(
+                            seperator
+                            + "\t"
+                            + "- "
+                            + attr_key
+                            + " = "
+                            + str(h5_object[group_key].attrs[attr_key])
+                        )
 
             elif isinstance(h5_object, h5py._hl.dataset.Dataset):
                 for attr_key in h5_object.attrs.keys():
-                    print(seperator + "- " + attr_key + ": " + str(h5_object.attrs[attr_key]))
+                    print(
+                        seperator
+                        + "- "
+                        + attr_key
+                        + ": "
+                        + str(h5_object.attrs[attr_key])
+                    )
 
         with h5py.File(self.database, "r") as hdf_file:
             _descend(hdf_file)
@@ -2823,19 +2838,36 @@ class Database:
                 dset_bounds = hdf5_file[f"results/fit/{tag}/bounds"]
                 print("\nUniform priors (min, max):")
 
-                for item in dset_bounds:
-                    group_path = f"results/fit/{tag}/bounds/{item}"
-                    prior_bound = np.array(hdf5_file[group_path])
-                    print(f"   - {item} = ({prior_bound[0]}, {prior_bound[1]})")
+                for bound_item in dset_bounds:
+                    group_path = f"results/fit/{tag}/bounds/{bound_item}"
+
+                    if isinstance(hdf5_file[group_path], h5py._hl.group.Group):
+                        for filter_item in hdf5_file[group_path]:
+                            # This is required for the inflation parameter
+                            # of the photometric fluxes. Since the SVO
+                            # filter names contain a slash which introduces
+                            # a subgroup in the HDF5 database
+                            prior_bound = np.array(
+                                hdf5_file[f"{group_path}/{filter_item}"]
+                            )
+                            print(
+                                f"   - {bound_item}/{filter_item} = ({prior_bound[0]}, {prior_bound[1]})"
+                            )
+
+                    else:
+                        prior_bound = np.array(hdf5_file[group_path])
+                        print(
+                            f"   - {bound_item} = ({prior_bound[0]}, {prior_bound[1]})"
+                        )
 
             if "n_normal_prior" in attributes and attributes["n_normal_prior"] > 0:
                 dset_prior = hdf5_file[f"results/fit/{tag}/normal_prior"]
                 print("\nNormal priors (mean, sigma):")
 
-                for item in dset_prior:
-                    group_path = f"results/fit/{tag}/normal_prior/{item}"
+                for prior_item in dset_prior:
+                    group_path = f"results/fit/{tag}/normal_prior/{prior_item}"
                     norm_prior = np.array(hdf5_file[group_path])
-                    print(f"   - {item} = ({norm_prior[0]}, {norm_prior[1]})")
+                    print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
 
         median_sample = self.get_median_sample(tag, burnin, verbose=False)
         prob_sample = self.get_probable_sample(tag, burnin, verbose=False)

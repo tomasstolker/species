@@ -49,6 +49,7 @@ clean:
 	rm -rf docs/tutorials/data/
 	rm -rf docs/tutorials/multinest/
 	rm -rf docs/tutorials/ultranest/
+	rm -rf docs/tutorials/dynesty/
 	rm -rf docs/tutorials/.ipynb_checkpoints
 	rm -f docs/tutorials/species_config.ini
 	rm -f docs/tutorials/species_database.hdf5

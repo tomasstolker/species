@@ -130,9 +130,11 @@ def add_custom_model_grid(
 
     flux = []
 
+    if wavel_range is not None:
+        print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
+
     if wavel_range is not None and wavel_sampling is not None:
         wavelength = create_wavelengths(wavel_range, wavel_sampling)
-        print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
         resample_spectra = True
 
     else:

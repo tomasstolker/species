@@ -10,8 +10,9 @@ docs/tutorials/*.json
 docs/tutorials/*.fits
 docs/tutorials/*.dat
 docs/tutorials/data/*
-docs/tutorials/ultranest/*
 docs/tutorials/multinest/*
+docs/tutorials/ultranest/*
+docs/tutorials/dynesty/*
 docs/tutorials/.ipynb_checkpoints/*
 build/
 dist/

@@ -258,20 +258,24 @@ def add_model_grid(
 
     print()
 
-    if wavel_range is not None and wavel_sampling is not None:
-        wavelength = create_wavelengths(wavel_range, wavel_sampling)
-        print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
-        resample_spectra = True
-
-    else:
-        wavelength = None
+    if wavel_range is None:
         print(
             f"Wavelength range (um) = "
             f"{model_info['wavelength range'][0]} - "
             f"{model_info['wavelength range'][1]}"
         )
-        wavel_sampling = model_info["lambda/d_lambda"]
+
+    else:
+        print(f"Wavelength range (um) = {wavel_range[0]} - {wavel_range[1]}")
+
+    if wavel_range is not None and wavel_sampling is not None:
+        wavelength = create_wavelengths(wavel_range, wavel_sampling)
+        resample_spectra = True
+
+    else:
+        wavelength = None
         resample_spectra = False
+        wavel_sampling = model_info["lambda/d_lambda"]
 
     print(f"Sampling (lambda/d_lambda) = {wavel_sampling}")
 
