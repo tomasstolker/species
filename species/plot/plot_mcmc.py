@@ -472,8 +472,6 @@ def plot_posterior(
         samples[:, param_index] *= 1e3  # (um) -> (nm)
 
     if box.prob_sample is not None:
-        par_val = tuple(box.prob_sample.values())
-
         print("\nSample with highest probability:")
         for key, value in box.prob_sample.items():
             print(f"   - {key} = {value:.2e}")
@@ -700,7 +698,11 @@ def plot_posterior(
 
     # Remove abundances
 
-    if not inc_abund and box.attributes["chemistry"] == "free":
+    if (
+        not inc_abund
+        and "chemistry" in box.attributes
+        and box.attributes["chemistry"] == "free"
+    ):
         index_del = []
         item_del = []
 
@@ -748,6 +750,12 @@ def plot_posterior(
     ndim -= len(index_del)
 
     samples = samples.reshape((-1, ndim))
+
+    # Get parameter values of maximum likelihood
+
+    if max_prob:
+        max_idx = np.argmax(box.ln_prob)
+        max_sample = samples[max_idx, :]
 
     if isinstance(title_fmt, list) and len(title_fmt) != ndim:
         raise ValueError(
@@ -855,12 +863,12 @@ def plot_posterior(
                     ax.set_xlim(limits[j])
 
                 if max_prob:
-                    ax.axvline(par_val[j], color="tomato")
+                    ax.axvline(max_sample[j], color="tomato")
 
                 if i > j:
                     if max_prob:
-                        ax.axhline(par_val[i], color="tomato")
-                        ax.plot(par_val[j], par_val[i], "s", color="tomato")
+                        ax.axhline(max_sample[i], color="tomato")
+                        ax.plot(max_sample[j], max_sample[i], "s", color="tomato")
 
                     if limits is not None:
                         ax.set_ylim(limits[i])
