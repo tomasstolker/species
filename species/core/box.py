@@ -366,6 +366,8 @@ class SamplesBox(Box):
         self.prob_sample = None
         self.median_sample = None
         self.attributes = None
+        self.uniform_priors = None
+        self.normal_priors = None
 
 
 class SpectrumBox(Box):
@@ -555,6 +557,10 @@ def create_box(boxtype, **kwargs):
         box.prob_sample = kwargs["prob_sample"]
         box.median_sample = kwargs["median_sample"]
         box.attributes = kwargs["attributes"]
+        if "uniform_priors" in kwargs:
+            box.uniform_priors = kwargs["uniform_priors"]
+        if "normal_priors" in kwargs:
+            box.normal_priors = kwargs["normal_priors"]
 
     elif boxtype == "spectrum":
         box = SpectrumBox()

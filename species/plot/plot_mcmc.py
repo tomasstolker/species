@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from typeguard import typechecked
 from matplotlib.ticker import ScalarFormatter
 from scipy.interpolate import RegularGridInterpolator
+from scipy.stats import norm
 
 from species.core import constants
 from species.util.convert_util import logg_to_mass
@@ -218,6 +219,7 @@ def plot_posterior(
     output: Optional[str] = None,
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
+    show_priors: bool = False,
 ) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution
@@ -283,6 +285,13 @@ def plot_posterior(
         posterior plot. This parameter can also be used to change the
         order of the parameters in the posterior plot. All parameters
         will be included if the argument is set to ``None``.
+    show_priors : bool
+        Plot the normal priors in the diagonal panels together with the
+        1D marginalized posterior distributions. This will only show
+        the priors that had a normal distribution, so those that were
+        set with the ``normal_prior`` parameter in
+        :class:`~species.fit.fit_model.FitModel` and
+        :class:`~species.fit.retrieval.AtmosphericRetrieval.setup_retrieval`.
 
     Returns
     -------
@@ -729,6 +738,7 @@ def plot_posterior(
 
     # Update axes labels
 
+    box_param = box.parameters.copy()
     labels = update_labels(box.parameters, object_type=object_type)
 
     # Check if parameter values were fixed
@@ -812,9 +822,28 @@ def plot_posterior(
 
     for i in range(ndim):
         for j in range(ndim):
-            if i >= j:
-                ax = axes[i, j]
+            ax = axes[i, j]
 
+            if show_priors and i == j and box_param[i] in box.normal_priors:
+                norm_param = box.normal_priors[box_param[i]]
+
+                x_norm = np.linspace(
+                    norm_param[0] - 5.0 * norm_param[1],
+                    norm_param[0] + 5.0 * norm_param[1],
+                    200,
+                )
+
+                y_norm = norm.pdf(x_norm, norm_param[0], norm_param[1])
+
+                ax.plot(
+                    x_norm,
+                    0.9 * ax.get_ylim()[1] * y_norm / np.amax(y_norm),
+                    ls=":",
+                    lw=2.0,
+                    color="dodgerblue",
+                )
+
+            if i >= j:
                 ax.xaxis.set_major_formatter(ScalarFormatter(useOffset=False))
                 ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
 

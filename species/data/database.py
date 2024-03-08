@@ -2834,6 +2834,9 @@ class Database:
             # Check if attributes are present for
             # backward compatibility
 
+            uniform_priors = {}
+            normal_priors = {}
+
             if "n_bounds" in attributes and attributes["n_bounds"] > 0:
                 dset_bounds = hdf5_file[f"results/fit/{tag}/bounds"]
                 print("\nUniform priors (min, max):")
@@ -2853,12 +2856,17 @@ class Database:
                             print(
                                 f"   - {bound_item}/{filter_item} = ({prior_bound[0]}, {prior_bound[1]})"
                             )
+                            uniform_priors[f"{bound_item}/{filter_item}"] = (
+                                prior_bound[0],
+                                prior_bound[1],
+                            )
 
                     else:
                         prior_bound = np.array(hdf5_file[group_path])
                         print(
                             f"   - {bound_item} = ({prior_bound[0]}, {prior_bound[1]})"
                         )
+                        uniform_priors[bound_item] = (prior_bound[0], prior_bound[1])
 
             if "n_normal_prior" in attributes and attributes["n_normal_prior"] > 0:
                 dset_prior = hdf5_file[f"results/fit/{tag}/normal_prior"]
@@ -2868,6 +2876,7 @@ class Database:
                     group_path = f"results/fit/{tag}/normal_prior/{prior_item}"
                     norm_prior = np.array(hdf5_file[group_path])
                     print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
+                    normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
 
         median_sample = self.get_median_sample(tag, burnin, verbose=False)
         prob_sample = self.get_probable_sample(tag, burnin, verbose=False)
@@ -2893,6 +2902,8 @@ class Database:
             prob_sample=prob_sample,
             median_sample=median_sample,
             attributes=attributes,
+            uniform_priors=uniform_priors,
+            normal_priors=normal_priors,
         )
 
     @typechecked
