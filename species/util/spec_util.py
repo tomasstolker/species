@@ -105,9 +105,15 @@ def smooth_spectrum(
     spacing_std = np.std(2.0 * np.diff(wavelength) / (wavelength[1:] + wavelength[:-1]))
 
     if spacing_std / spacing < 1e-2 or force_smooth:
-        # see retrieval_util.convolve_spectrum
+        # delta_lambda of resolution element is
+        # FWHM of the LSF's standard deviation
         sigma_lsf = 1.0 / spec_res / (2.0 * np.sqrt(2.0 * np.log(2.0)))
-        flux_smooth = gaussian_filter(flux, sigma=sigma_lsf / spacing, mode="nearest")
+
+        # Calculate the sigma to be used with the Gaussian filter
+        # in units of the input wavelength bins
+        sigma_filter = sigma_lsf / spacing
+
+        flux_smooth = gaussian_filter(flux, sigma=sigma_filter, mode="nearest")
 
     else:
         if size % 2 == 0:
@@ -120,9 +126,14 @@ def smooth_spectrum(
 
         if spacing_std / spacing > 1e-2:
             warnings.warn(
-                f"The wavelength spacing is not uniform ({spacing} +/- {spacing_std}). "
-                f"The smoothing with the Gaussian kernel requires either the spectral "
-                f"resolution or the wavelength spacing to be uniformly sampled."
+                "The wavelength spacing is not uniform "
+                f"(lambda/d_lambda = {spacing} +/- {spacing_std}). "
+                "The smoothing with the Gaussian kernel requires "
+                "either the spectral resolution or the wavelength "
+                "spacing to be uniformly sampled. This warning "
+                "should not have occurred with any of the model "
+                "grids provided by species. Please open an issue "
+                "on the Github page if help is needed."
             )
 
         for i, item in enumerate(wavelength):

@@ -120,14 +120,23 @@ def add_model_grid(
             "be downloaded and added to the HDF5 database."
         )
 
-    elif model_tag == "exo-rem-highres" and teff_range is None:
-        warnings.warn(
-            "Adding the full high-resolution grid of Exo-Rem to the "
-            "HDF5 database may not be feasible since it requires "
-            "a large amount of memory. Please consider using the "
-            "'teff_range' parameter to only add a small "
-            "Teff range of model spectra to the database."
-        )
+    elif model_tag == "exo-rem-highres":
+        if teff_range is None:
+            warnings.warn(
+                "Adding the full high-resolution grid of Exo-Rem to the "
+                "HDF5 database may not be feasible since it requires "
+                "a large amount of memory. Please consider using the "
+                "'teff_range' parameter to only add a subset of the "
+                "model spectra to the database."
+            )
+
+        if wavel_range is None:
+            warnings.warn(
+                "Adding the full high-resolution grid of Exo-Rem to the "
+                "HDF5 database may not be feasible since it requires "
+                "a large amount of memory. Please consider using the "
+                "'wavel_range' parameter to reduce the data size."
+            )
 
     if wavel_sampling is not None and wavel_range is None:
         warnings.warn(

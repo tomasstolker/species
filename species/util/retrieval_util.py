@@ -490,17 +490,19 @@ def create_pt_profile(
     elif pt_profile == "gradient":
         num_layer = 6  # could make a variable in the future
         layer_pt_slopes = np.ones(num_layer) * np.nan
+
         for index in range(num_layer):
             layer_pt_slopes[index] = cube[cube_index[f"PTslope_{num_layer - index}"]]
 
         try:
             from petitRADTRANS.physics import dTdP_temperature_profile
-        except ImportError as e:
+
+        except ImportError as import_error:
             raise ImportError(
-                """Can\'t import the dTdP profile function from petitRADTRANS,
-                check that your version of pRT includes this function in   
-                petitRADTRANS.physics""",
-                e,
+                "Can't import the dTdP profile function from "
+                "petitRADTRANS, check that the version of pRT "
+                "includes this function in petitRADTRANS.physics",
+                import_error,
             )
 
         temp = dTdP_temperature_profile(
@@ -2846,8 +2848,8 @@ def convolve_spectrum(
         Convolved spectrum.
     """
 
-    # delta lambda of resolution element is FWHM
-    # of the LSF's standard deviation, hence:
+    # delta_lambda of resolution element is
+    # FWHM of the LSF's standard deviation
     sigma_lsf = 1.0 / spec_res / (2.0 * np.sqrt(2.0 * np.log(2.0)))
 
     # The input spacing of petitRADTRANS is 1e3, but just compute
@@ -2856,11 +2858,11 @@ def convolve_spectrum(
     # as a function of wavelength
     spacing = np.mean(2.0 * np.diff(input_wavel) / (input_wavel[1:] + input_wavel[:-1]))
 
-    # Calculate the sigma to be used in the gauss filter in units
-    # of input wavelength bins
-    sigma_lsf_gauss_filter = sigma_lsf / spacing
+    # Calculate the sigma to be used with the Gaussian filter
+    # in units of the input wavelength bins
+    sigma_filter = sigma_lsf / spacing
 
-    return gaussian_filter(input_flux, sigma=sigma_lsf_gauss_filter, mode="nearest")
+    return gaussian_filter(input_flux, sigma=sigma_filter, mode="nearest")
 
 
 @typechecked

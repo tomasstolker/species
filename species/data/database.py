@@ -200,7 +200,7 @@ class Database:
         return comp_names
 
     @typechecked
-    def available_models(self, verbose: bool = False) -> Dict:
+    def available_models(self, verbose: bool = True) -> Dict:
         """
         Function for printing an overview of the available model grids
         that can be downloaded and added to the database with

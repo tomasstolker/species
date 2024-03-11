@@ -4,6 +4,7 @@ Utility functions for data processing.
 
 import os
 import tarfile
+import warnings
 
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -474,10 +475,12 @@ def add_missing(
                     count += 1
 
             if count_missing > 0:
-                print(
-                    f"Could not interpolate {count_missing} grid points so storing "
-                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                warnings.warn(
+                    f"Could not interpolate {count_missing} grid "
+                    "points so storing zeros instead."
                 )
+
+                print("\nThe following grid points are missing:")
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
@@ -561,10 +564,12 @@ def add_missing(
                         count += 1
 
             if count_missing > 0:
-                print(
-                    f"Could not interpolate {count_missing} grid points so storing "
-                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                warnings.warn(
+                    f"Could not interpolate {count_missing} grid "
+                    "points so storing zeros instead."
                 )
+
+                print("\nThe following grid points are missing:")
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
@@ -654,10 +659,12 @@ def add_missing(
                             count += 1
 
             if count_missing > 0:
-                print(
-                    f"Could not interpolate {count_missing} grid points so storing "
-                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                warnings.warn(
+                    f"Could not interpolate {count_missing} grid "
+                    "points so storing zeros instead."
                 )
+
+                print("\nThe following grid points are missing:")
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
@@ -782,10 +789,12 @@ def add_missing(
                                 count += 1
 
             if count_missing > 0:
-                print(
-                    f"Could not interpolate {count_missing} grid points so storing "
-                    f"zeros instead. [WARNING]\nThe grid points that are missing:"
+                warnings.warn(
+                    f"Could not interpolate {count_missing} grid "
+                    "points so storing zeros instead."
                 )
+
+                print("\nThe following grid points are missing:")
 
                 for i in range(flux_int.shape[0]):
                     if np.isnan(np.sum(flux_int[i, :])):
