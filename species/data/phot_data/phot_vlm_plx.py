@@ -1,6 +1,6 @@
 """
-Module for the photometric data and parallaxes
-from the Database of Ultracool Parallaxes.
+Module for the photometric data and parallaxes from the
+Database of Ultracool Parallaxes.
 """
 
 import os
@@ -17,8 +17,11 @@ from species.util.data_util import update_sptype
 
 def add_vlm_plx(input_path, database):
     """
-    Function for adding the Database of Ultracool
-    Parallaxes to the database.
+    Function for adding the Database of Ultracool Parallaxes to the
+    database. The FITS file with data was originally downloaded from
+    http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes_files/vlm-plx-all.fits
+    but that website has been taken offline, probably because of the
+    new table at http://bit.ly/UltracoolSheet.
 
     Parameters
     ----------
@@ -35,10 +38,7 @@ def add_vlm_plx(input_path, database):
 
     data_file = os.path.join(input_path, "vlm-plx-all.fits")
 
-    url = (
-        "http://www.as.utexas.edu/~tdupuy/plx/"
-        "Database_of_Ultracool_Parallaxes_files/vlm-plx-all.fits"
-    )
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/vlm-plx-all.fits"
 
     if not os.path.isfile(data_file):
         pooch.retrieve(
