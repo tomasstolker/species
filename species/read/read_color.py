@@ -233,8 +233,6 @@ class ReadColorMagnitude:
                 names=obj_names[indices],
             )
 
-            n_objects = sptype[indices].size 
-
         elif self.lib_type == "spec_lib":
             read_spec_0 = ReadSpectrum(
                 spec_library=self.library, filter_name=self.filters_color[0]
@@ -264,7 +262,7 @@ class ReadColorMagnitude:
                 names=None,
             )
 
-        n_objects = colormag_box.sptype.size
+        n_objects = len(colormag_box.sptype)
         print(f"Returning ColorMagBox with {n_objects} objects")
 
         return colormag_box
@@ -447,7 +445,7 @@ class ReadColorColor:
                 names=None,
             )
 
-        n_objects = colorbox.sptype.size
+        n_objects = len(colorbox.sptype)
         print(f"Returning ColorColorBox with {n_objects} objects")
 
         return colorbox
