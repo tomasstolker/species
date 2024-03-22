@@ -52,10 +52,15 @@ class ReadObject:
                 )
 
     @typechecked
-    def list_filters(self) -> List[str]:
+    def list_filters(self, verbose=True) -> List[str]:
         """
         Function for listing and returning the filter profile names for
         which there is photometric data stored in the database.
+
+        Parameters
+        ----------
+        verbose : bool
+            Print the filter names if set to ``True``.
 
         Returns
         -------
@@ -65,14 +70,17 @@ class ReadObject:
 
         filter_list = []
 
-        print(f"Available photometric data for {self.object_name}:")
+        if verbose:
+            print(f"Available photometric data for {self.object_name}:")
 
         with h5py.File(self.database, "r") as h5_file:
             for tel_item in h5_file[f"objects/{self.object_name}"]:
                 if tel_item not in ["parallax", "distance", "spectrum"]:
                     for filt_item in h5_file[f"objects/{self.object_name}/{tel_item}"]:
-                        print(f"   - {tel_item}/{filt_item}")
                         filter_list.append(f"{tel_item}/{filt_item}")
+
+                        if verbose:
+                            print(f"   - {tel_item}/{filt_item}")
 
         return filter_list
 

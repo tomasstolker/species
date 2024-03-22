@@ -671,7 +671,7 @@ class FitModel:
         if isinstance(inc_phot, bool):
             if inc_phot:
                 # Select all filters if inc_phot=True
-                inc_phot = self.object.list_filters()
+                inc_phot = self.object.list_filters(verbose=False)
 
             else:
                 inc_phot = []

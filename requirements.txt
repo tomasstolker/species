@@ -1,4 +1,4 @@
-astropy ~= 5.2.0
+astropy == 5.3.3
 astroquery ~= 0.4.0
 corner ~= 2.2.0
 dynesty ~= 2.1.0
