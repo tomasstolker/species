@@ -100,9 +100,9 @@
     "bt-nextgen": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-NextGen",
-        "file size": "368 MB",
-        "wavelength range": [0.1, 50],
-        "lambda/d_lambda": 4000,
+        "file size": "343 MB",
+        "wavelength range": [0.1, 5000],
+        "lambda/d_lambda": 2000,
         "teff range": [2600, 30000]
     },
     "bt-nextgen-subsolar": {
@@ -296,7 +296,7 @@
         "wavelength range": [0.1, 20],
         "lambda/d_lambda": 250,
         "teff range": [2000, 4000],
-        "reference": "Aishwarya et al. (2022)",
+        "reference": "Iyer et al. (2023)",
         "url": "https://zenodo.org/record/7416042"
     }
 }

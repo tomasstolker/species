@@ -45,6 +45,7 @@ def check_dust_database() -> str:
 
     return database_path
 
+
 @typechecked
 def log_normal_distribution(
     radius_g: float, sigma_g: float, n_bins: int

@@ -492,18 +492,6 @@ def plot_posterior(
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3
 
-    # Include a subset of parameters
-
-    if param_inc is not None:
-        param_new = np.zeros((samples.shape[0], len(param_inc)))
-        for i, item in enumerate(param_inc):
-            param_index = box.parameters.index(item)
-            param_new[:, i] = samples[:, param_index]
-
-        box.parameters = param_inc
-        ndim = len(param_inc)
-        samples = param_new
-
     # Add [C/H], [O/H], and C/O if free abundances were retrieved
 
     if box.attributes["abund_nodes"] == "None":
@@ -547,6 +535,20 @@ def plot_posterior(
 
                 samples = np.append(samples, lum_disk / lum_planet, axis=-1)
                 box.parameters.append("luminosity_disk_planet")
+                ndim += 1
+
+                radius_bb = np.sqrt(
+                    lum_planet
+                    * constants.L_SUN
+                    / (
+                        16.0
+                        * np.pi
+                        * constants.SIGMA_SB
+                        * samples[..., teff_index] ** 4
+                    )
+                )
+                samples = np.append(samples, radius_bb / constants.R_JUP, axis=-1)
+                box.parameters.append("radius_bb")
                 ndim += 1
 
             else:
@@ -683,6 +685,16 @@ def plot_posterior(
                 10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
             )
 
+    if "disk_radius" in box.parameters:
+        radius_index = np.argwhere(np.array(box.parameters) == "disk_radius")[0]
+        if object_type == "star":
+            samples[:, radius_index] *= constants.R_JUP / constants.AU
+
+    if "radius_bb" in box.parameters:
+        radius_index = np.argwhere(np.array(box.parameters) == "radius_bb")[0]
+        if object_type == "star":
+            samples[:, radius_index] *= constants.R_JUP / constants.AU
+
     # Include the log-likelihood
 
     if inc_loglike:
@@ -735,6 +747,19 @@ def plot_posterior(
 
         for item in item_del:
             box.parameters.remove(item)
+
+    # Include a subset of parameters
+
+    if param_inc is not None:
+        param_new = np.zeros((samples.shape[0], len(param_inc)))
+        for i, item in enumerate(param_inc):
+            if item in box.parameters:
+                param_index = box.parameters.index(item)
+                param_new[:, i] = samples[:, param_index]
+
+        box.parameters = param_inc
+        ndim = len(param_inc)
+        samples = param_new
 
     # Update axes labels
 

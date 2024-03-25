@@ -983,7 +983,7 @@ class FitModel:
                 del_param.append(key)
 
         if del_param:
-            print(f"Fixing {len(del_param)} parameters:")
+            print(f"\nFixing {len(del_param)} parameters:")
 
             for item in del_param:
                 print(f"   - {item} = {self.fix_param[item]}")
@@ -998,7 +998,7 @@ class FitModel:
 
         # Add parallax to dictionary with Gaussian priors
 
-        if "parallax" in self.modelpar:
+        if "parallax" in self.modelpar and "parallax" not in self.fix_param:
             self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
 
         # Printing uniform and normal priors
@@ -1250,6 +1250,8 @@ class FitModel:
         if self.model != "powerlaw":
             if "parallax" in self.cube_index:
                 parallax = params[self.cube_index["parallax"]]
+            elif "parallax" in self.fix_param:
+                parallax = self.fix_param["parallax"]
             else:
                 parallax = None
 
@@ -2590,9 +2592,7 @@ class FitModel:
                             fname=out_basename + "dynesty.save"
                         )
 
-                        print(
-                            f"Resumed a Dynesty run from {out_basename}dynesty.save"
-                        )
+                        print(f"Resumed a Dynesty run from {out_basename}dynesty.save")
 
                     else:
                         dsampler = dynesty.DynamicNestedSampler(
@@ -2617,9 +2617,7 @@ class FitModel:
                             fname=out_basename + "dynesty.save"
                         )
 
-                        print(
-                            f"Resumed a Dynesty run from {out_basename}dynesty.save"
-                        )
+                        print(f"Resumed a Dynesty run from {out_basename}dynesty.save")
 
                     else:
                         dsampler = dynesty.NestedSampler(

@@ -1226,7 +1226,9 @@ class Database:
                         from species.util.data_util import convert_units
 
                         flux_in = np.array([[mean_wavel, data[2], data[3]]])
-                        flux_out = convert_units(flux_in, ("um", units[flux_item]))
+                        flux_out = convert_units(
+                            flux_in, ("um", units[flux_item]), convert_from=True
+                        )
 
                         data = [np.nan, np.nan, flux_out[0, 1], flux_out[0, 2]]
 
@@ -1297,7 +1299,9 @@ class Database:
                                     if spec_item in units:
                                         from species.util.data_util import convert_units
 
-                                        data = convert_units(data, units[spec_item])
+                                        data = convert_units(
+                                            data, units[spec_item], convert_from=True
+                                        )
 
                                     read_spec[spec_item] = data
 
@@ -1331,7 +1335,7 @@ class Database:
                     if spec_item in units:
                         from species.util.data_util import convert_units
 
-                        data = convert_units(data, units[spec_item])
+                        data = convert_units(data, units[spec_item], convert_from=True)
 
                     read_spec[spec_item] = data
 

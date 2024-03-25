@@ -481,7 +481,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "luminosity_disk_planet" in param:
         index = param.index("luminosity_disk_planet")
-        param[index] = r"$L_\mathrm{disk}/L_\mathrm{atm}$"
+        if object_type == "planet":
+            param[index] = r"$L_\mathrm{disk}/L_\mathrm{atm}$"
+        elif object_type == "star":
+            param[index] = r"$L_\mathrm{disk}/L_\ast$"
 
     if "lognorm_radius" in param:
         index = param.index("lognorm_radius")
@@ -685,7 +688,17 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "disk_radius" in param:
         index = param.index("disk_radius")
-        param[index] = r"$R_\mathrm{disk}$ ($R_\mathrm{J}$)"
+        if object_type == "planet":
+            param[index] = r"$R_\mathrm{disk}$ ($R_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$R_\mathrm{disk}$ (au)"
+
+    if "radius_bb" in param:
+        index = param.index("radius_bb")
+        if object_type == "planet":
+            param[index] = r"$R_\mathrm{bb}$ ($R_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$R_\mathrm{bb}$ (au)"
 
     if "log_powerlaw_a" in param:
         index = param.index("log_powerlaw_a")
@@ -1026,8 +1039,11 @@ def quantity_unit(
 
         if item == "disk_radius":
             quantity.append("disk_radius")
-            unit.append(r"$R_\mathrm{J}$")
             label.append(r"$R_\mathrm{disk}$")
+            if object_type == "planet":
+                unit.append(r"$R_\mathrm{J}$")
+            elif object_type == "star":
+                unit.append("au")
 
         if item == "flux_scaling":
             quantity.append("flux_scaling")
@@ -1341,11 +1357,14 @@ def create_model_label(
 
     not_default = ["distance", "parallax", "mass", "luminosity"]
 
+    # Use the model parameters if leg_param is empty
+
     if len(leg_param) == 0:
         leg_param = list(model_param.keys())
 
         for param_item in not_default:
             if param_item in leg_param:
+                # Do not include the not_default parameters
                 leg_param.remove(param_item)
 
     # Remove parameters from the model_param dictionary
@@ -1378,7 +1397,12 @@ def create_model_label(
         if len(par_key) > 0:
             label += ": "
 
-    for i, item in enumerate(par_key):
+    for item in leg_param:
+        if item in par_key:
+            param_idx = par_key.index(item)
+        else:
+            continue
+
         if item[:4] == "teff":
             value = f"{model_param[item]:{param_fmt['teff']}}"
 
@@ -1387,6 +1411,13 @@ def create_model_label(
                 value = f"{model_param[item]:{param_fmt['radius']}}"
             elif object_type == "star":
                 value = f"{model_param[item]*constants.R_JUP/constants.R_SUN:{param_fmt['radius']}}"
+
+        elif item[:11] == "disk_radius":
+            if object_type == "planet":
+                value = f"{model_param[item]:{param_fmt['disk_radius']}}"
+            elif object_type == "star":
+                radius_au = model_param[item] * constants.R_JUP / constants.AU
+                value = f"{radius_au:{param_fmt['disk_radius']}}"
 
         elif item == "mass" and item in leg_param:
             if object_type == "planet":
@@ -1415,127 +1446,16 @@ def create_model_label(
         #     label += '\n'
         #     newline = True
 
-        if par_unit[i] is None:
+        if par_unit[param_idx] is None:
             if len(label) > 0 and label[-2] != ":":
                 label += ", "
 
-            label += f"{par_label[i]} = {value}"
+            label += f"{par_label[param_idx]} = {value}"
 
         else:
             if len(label) > 0 and label[-2] != ":":
                 label += ", "
 
-            label += f"{par_label[i]} = {value} {par_unit[i]}"
+            label += f"{par_label[param_idx]} = {value} {par_unit[param_idx]}"
 
     return label
-
-
-@typechecked
-def convert_units_plot(flux_in: np.ndarray, units_out: Tuple[str, str]) -> np.ndarray:
-    """
-    Function for converting the wavelength units from
-    :math:`\\mu\\text{m}^{-1}` and the flux units from
-    :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
-
-    Parameters
-    ----------
-    flux_in : np.ndarray
-        Array with the input wavelengths and fluxes. The shape of the
-        array should be (n_wavelengths, 3) with the columns being
-        the wavelengths, flux densities, and uncertainties. For
-        photometric fluxes, the array should also be 2D but with
-        a single row/wavelength.
-    units_out : tuple(str, str)
-        Tuple with the units of the wavelength ("um", "angstrom", "A",
-        "nm", "mm", "cm", "m", "Hz") and the units of the flux density
-        ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1", "erg s-1 cm-2 Hz-1",
-        "mJy", "Jy", "MJy").
-
-    Returns
-    -------
-    np.ndarray
-        Array with the output in the same shape as ``flux_in``.
-    """
-
-    speed_light = constants.LIGHT * 1e6  # (um s-1)
-
-    flux_out = np.zeros(flux_in.shape)
-
-    # Convert wavelengths from micrometer (um)
-
-    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz"]
-
-    if units_out[0] == "um":
-        flux_out[:, 0] = flux_in[:, 0].copy()
-
-    elif units_out[0] in ["angstrom", "A"]:
-        flux_out[:, 0] = flux_in[:, 0] * 1e4
-
-    elif units_out[0] == "nm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e3
-
-    elif units_out[0] == "mm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e-3
-
-    elif units_out[0] == "cm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e-4
-
-    elif units_out[0] == "m":
-        flux_out[:, 0] = flux_in[:, 0] * 1e-6
-
-    elif units_out[0] == "Hz":
-        flux_out[:, 0] = speed_light / flux_in[:, 0]
-
-    else:
-        raise ValueError(
-            f"The wavelength units '{units_out[0]}' are not supported. "
-            f"Please choose from the following units: {wavel_units}"
-        )
-
-    # Convert flux density from W m-2 um-1
-
-    flux_units = [
-        "W m-2 um-1",
-        "W m-2 m-1",
-        "W m-2 Hz-1",
-        "erg s-1 cm-2 Hz-1",
-        "mJy",
-        "Jy",
-        "MJy",
-    ]
-
-    if units_out[1] == "W m-2 um-1":
-        flux_out[:, 1] = flux_in[:, 1].copy()
-        flux_out[:, 2] = flux_in[:, 2].copy()
-
-    elif units_out[1] == "W m-2 m-1":
-        flux_out[:, 1] = flux_in[:, 1] * 1e6
-        flux_out[:, 2] = flux_in[:, 2] * 1e6
-
-    elif units_out[1] == "W m-2 Hz-1":
-        flux_out[:, 1] = flux_in[:, 1] * flux_out[:, 0] ** 2 / speed_light
-        flux_out[:, 2] = flux_in[:, 2] * flux_out[:, 0] ** 2 / speed_light
-
-    elif units_out[1] == "erg s-1 cm-2 Hz-1":
-        flux_out[:, 1] = flux_in[:, 1] * 1e3 * flux_out[:, 0] ** 2 / speed_light
-        flux_out[:, 2] = flux_in[:, 2] * 1e3 * flux_out[:, 0] ** 2 / speed_light
-
-    elif units_out[1] == "mJy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e29 * flux_out[:, 0] ** 2 / speed_light
-        flux_out[:, 2] = flux_in[:, 2] * 1e29 * flux_out[:, 0] ** 2 / speed_light
-
-    elif units_out[1] == "Jy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e26 * flux_out[:, 0] ** 2 / speed_light
-        flux_out[:, 2] = flux_in[:, 2] * 1e26 * flux_out[:, 0] ** 2 / speed_light
-
-    elif units_out[1] == "MJy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e20 * flux_out[:, 0] ** 2 / speed_light
-        flux_out[:, 2] = flux_in[:, 2] * 1e20 * flux_out[:, 0] ** 2 / speed_light
-
-    else:
-        raise ValueError(
-            f"The flux units '{units_out[1]}' are not supported. "
-            f"Please choose from the following units: {flux_units}"
-        )
-
-    return flux_out

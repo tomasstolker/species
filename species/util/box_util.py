@@ -13,6 +13,7 @@ from typeguard import typechecked
 from species.core import constants
 from species.core.box import ObjectBox
 from species.read.read_model import ReadModel
+from species.util.core_util import print_section
 
 
 @typechecked
@@ -45,6 +46,8 @@ def update_objectbox(
         The input box which includes the spectra with the
         scaled fluxes and/or inflated errors.
     """
+
+    print_section("Update ObjectBox")
 
     if objectbox.flux is not None:
         for key, value in objectbox.flux.items():

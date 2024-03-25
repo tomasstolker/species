@@ -257,7 +257,6 @@ def get_residuals(
         else:
             print(f"   - {key} = {value:.2f}")
 
-
     if inc_phot and objectbox.filters is not None:
         if isinstance(inc_phot, bool) and inc_phot:
             inc_phot = objectbox.filters

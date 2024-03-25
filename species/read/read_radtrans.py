@@ -633,27 +633,28 @@ class ReadRadtrans:
             tau = self.pressure * 1e6 * 10.0 ** model_param["log_delta"]
             temp = (0.75 * model_param["tint"] ** 4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
-        elif (
-            "PTslope_1" in model_param
-        ):
-            num_layer = 6 # could make a variable in the future
+        elif "PTslope_1" in model_param:
+            num_layer = 6  # could make a variable in the future
             layer_pt_slopes = np.ones(num_layer) * np.nan
             for index in range(num_layer):
-                layer_pt_slopes[index] = model_param[f'PTslope_{num_layer - index}']
+                layer_pt_slopes[index] = model_param[f"PTslope_{num_layer - index}"]
 
             try:
                 from petitRADTRANS.physics import dTdP_temperature_profile
-            except ImportError as e:
+            except ImportError as import_error:
                 raise ImportError(
-                    """Can\'t import the dTdP profile function from petitRADTRANS,
-                    check that your version of pRT includes this function in   
-                    petitRADTRANS.physics""", e
+                    "Can't import the dTdP profile function from "
+                    "petitRADTRANS, check that your version of pRT "
+                    "includes this function in petitRADTRANS.physics",
+                    import_error,
                 )
 
-            temp = dTdP_temperature_profile(self.pressure,
-                                            num_layer, # could change in the future
-                                            layer_pt_slopes,
-                                            model_param["T_bottom"])
+            temp = dTdP_temperature_profile(
+                self.pressure,
+                num_layer,  # could change in the future
+                layer_pt_slopes,
+                model_param["T_bottom"],
+            )
 
         else:
             if temp_nodes is None:

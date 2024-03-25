@@ -64,7 +64,6 @@ def extract_tarfile(
             member_list: Optional[List] = None,
             numeric_owner: bool = False,
         ) -> None:
-
             for member in member_list:
                 member_path = Path(path) / Path(member.name)
 
@@ -850,25 +849,31 @@ def correlation_to_covariance(
 
 
 @typechecked
-def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
+def convert_units(
+    flux_in: np.ndarray, units_in: Tuple[str, str], convert_from: bool = True
+) -> np.ndarray:
     """
-    Function for converting the wavelength units to
-    :math:`\\mu\\text{m}^{-1}` and the flux units to
+    Function for converting the wavelength units to or from
+    :math:`\\mu\\text{m}^{-1}` and the flux units to or from
     :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
 
     Parameters
     ----------
     flux_in : np.ndarray
         Array with the input wavelengths and fluxes. The shape of the
-        array should be (n_wavelengths, 3) with the columns being
-        the wavelengths, flux densities, and uncertainties. For
-        photometric fluxes, the array should also be 2D but with
-        a single row/wavelength.
+        array should be (n_wavelengths, 3) or (n_wavelengths, 2) with
+        the columns being the wavelengths, flux densities, and optional
+        the uncertainties. For photometric fluxes, the array should also
+        be 2D but with a single row/wavelength.
     units_in : tuple(str, str)
         Tuple with the units of the wavelength ("um", "angstrom", "A",
-        "nm", "mm", "cm", "m", "Hz") and the units of the flux density
-        ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1", "erg s-1 cm-2 Hz-1",
-        "mJy", "Jy", "MJy").
+        "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the flux
+        density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
+        "erg s-1 cm-2 Hz-1", "mJy", "Jy", "MJy").
+    convert_from : bool
+        Covert from ``units_in`` to :math:`\\mu\\text{m}^{-1}` and
+        :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}` when set to
+        ``True``. Or, convert to ``units_in`` when set to ``False``.
 
     Returns
     -------
@@ -882,34 +887,65 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
 
     # Convert wavelengths to micrometer (um)
 
-    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz"]
+    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz", "GHz"]
 
     if units_in[0] == "um":
         flux_out[:, 0] = flux_in[:, 0].copy()
 
     elif units_in[0] in ["angstrom", "A"]:
-        flux_out[:, 0] = flux_in[:, 0] * 1e-4
+        if convert_from:
+            flux_out[:, 0] = flux_in[:, 0] * 1e-4
+        else:
+            flux_out[:, 0] = flux_in[:, 0] * 1e4
 
     elif units_in[0] == "nm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e-3
+        if convert_from:
+            flux_out[:, 0] = flux_in[:, 0] * 1e-3
+        else:
+            flux_out[:, 0] = flux_in[:, 0] * 1e3
 
     elif units_in[0] == "mm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e3
+        if convert_from:
+            flux_out[:, 0] = flux_in[:, 0] * 1e3
+        else:
+            flux_out[:, 0] = flux_in[:, 0] * 1e-3
 
     elif units_in[0] == "cm":
-        flux_out[:, 0] = flux_in[:, 0] * 1e4
+        if convert_from:
+            flux_out[:, 0] = flux_in[:, 0] * 1e4
+        else:
+            flux_out[:, 0] = flux_in[:, 0] * 1e-4
 
     elif units_in[0] == "m":
-        flux_out[:, 0] = flux_in[:, 0] * 1e6
+        if convert_from:
+            flux_out[:, 0] = flux_in[:, 0] * 1e6
+        else:
+            flux_out[:, 0] = flux_in[:, 0] * 1e-6
 
     elif units_in[0] == "Hz":
-        flux_out[:, 0] = speed_light / flux_in[:, 0]
+        if convert_from:
+            flux_out[:, 0] = speed_light / flux_in[:, 0]
+        else:
+            flux_out[:, 0] = speed_light / flux_in[:, 0]
+
+    elif units_in[0] == "GHz":
+        if convert_from:
+            flux_out[:, 0] = speed_light / (1e9 * flux_in[:, 0])
+        else:
+            flux_out[:, 0] = 1e-9 * speed_light / flux_in[:, 0]
 
     else:
         raise ValueError(
             f"The wavelength units '{units_in[0]}' are not supported. "
             f"Please choose from the following units: {wavel_units}"
         )
+
+    # Set wavelengths in micrometer
+
+    if convert_from:
+        wavel_micron = flux_out[:, 0].copy()
+    else:
+        wavel_micron = flux_in[:, 0].copy()
 
     # Convert flux density to W m-2 um-1
 
@@ -925,31 +961,81 @@ def convert_units(flux_in: np.ndarray, units_in: Tuple[str, str]) -> np.ndarray:
 
     if units_in[1] == "W m-2 um-1":
         flux_out[:, 1] = flux_in[:, 1].copy()
-        flux_out[:, 2] = flux_in[:, 2].copy()
+
+        if flux_out.shape[1] == 3:
+            flux_out[:, 2] = flux_in[:, 2].copy()
 
     elif units_in[1] == "W m-2 m-1":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-6
-        flux_out[:, 2] = flux_in[:, 2] * 1e-6
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-6
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e6
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-6
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e6
 
     elif units_in[1] == "W m-2 Hz-1":
-        flux_out[:, 1] = flux_in[:, 1] * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * speed_light / flux_out[:, 0] ** 2
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * wavel_micron**2 / speed_light
 
     elif units_in[1] == "erg s-1 cm-2 Hz-1":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-3 * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * 1e-3 * speed_light / flux_out[:, 0] ** 2
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-3 * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e3 * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-3 * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e3 * wavel_micron**2 / speed_light
 
     elif units_in[1] == "mJy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-29 * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * 1e-29 * speed_light / flux_out[:, 0] ** 2
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-29 * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e29 * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-29 * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e29 * wavel_micron**2 / speed_light
 
     elif units_in[1] == "Jy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-26 * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * 1e-26 * speed_light / flux_out[:, 0] ** 2
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-26 * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e26 * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-26 * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e26 * wavel_micron**2 / speed_light
 
     elif units_in[1] == "MJy":
-        flux_out[:, 1] = flux_in[:, 1] * 1e-20 * speed_light / flux_out[:, 0] ** 2
-        flux_out[:, 2] = flux_in[:, 2] * 1e-20 * speed_light / flux_out[:, 0] ** 2
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-20 * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e20 * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-20 * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e20 * wavel_micron**2 / speed_light
 
     else:
         raise ValueError(

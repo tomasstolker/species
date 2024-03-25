@@ -102,7 +102,7 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "exo-rem-highres":
         out_name = "Exo-REM"
 
-    elif in_name == "planck":
+    elif in_name in ["planck", "blackbody"]:
         out_name = "Blackbody"
 
     elif in_name == "zhu2015":
