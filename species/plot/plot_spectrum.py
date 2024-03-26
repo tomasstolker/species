@@ -424,9 +424,9 @@ def plot_spectrum(
         if scale[0] == "linear":
             ax3.xaxis.set_minor_locator(AutoMinorLocator(5))
 
-    if units[0] == "um":
-        x_label = "Wavelength (\N{GREEK SMALL LETTER MU}m)"
-    elif units[0] in ["angstrom", "A"]:
+    if units[0] in ["um", "µm"]:
+        x_label = "Wavelength (µm)"
+    elif units[0] in ["angstrom", "A", "AA", "Å"]:
         x_label = r"Wavelength ($\AA$)"
     elif units[0] == "Hz":
         x_label = "Frequency (Hz)"
@@ -435,14 +435,21 @@ def plot_spectrum(
     else:
         x_label = f"Wavelength ({units[0]})"
 
-    if units[1] == "W m-2 um-1":
-        y_unit = "W m$^{-2}$ \N{GREEK SMALL LETTER MU}m$^{-1}$"
+    if units[1] in ["W m-2 um-1", "W m-2 µm-1"]:
+        y_unit = "W m$^{-2}$ µm$^{-1}$"
     elif units[1] == "W m-2 m-1":
-        y_unit = "W m$^{-2}$ m$^{-1}$"
+        y_unit = r"W m$^{-2}$ m$^{-1}$"
     elif units[1] == "W m-2 Hz-1":
-        y_unit = "W m$^{-2}$ Hz$^{-1}$"
+        y_unit = r"W m$^{-2}$ Hz$^{-1}$"
+    elif units[1] in [
+        "erg s-1 cm-2 angstrom-1",
+        "erg s-1 cm-2 A-1",
+        "erg s-1 cm-2 AA-1",
+        "erg s-1 cm-2 Å-1",
+    ]:
+        y_unit = r"erg s$^{-2}$ cm$^{-2}$ $\AA$$^{-1}$"
     elif units[1] == "erg s-1 cm-2 Hz-1":
-        y_unit = "erg s$^{-2}$ cm$^{-2}$ Hz$^{-1}$"
+        y_unit = r"erg s$^{-2}$ cm$^{-2}$ Hz$^{-1}$"
     else:
         y_unit = units[1]
 
