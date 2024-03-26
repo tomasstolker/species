@@ -3981,6 +3981,7 @@ class AtmosphericRetrieval:
             abund_nodes = kwargs.get("abund_nodes", None)
             prior = kwargs.get("prior", None)
             check_phot_press = kwargs.get("check_phot_press", None)
+            global_fsed = kwargs.get("global_fsed", None)
 
             self.setup_retrieval(
                 bounds=kwargs["bounds"],
@@ -3997,6 +3998,7 @@ class AtmosphericRetrieval:
                 abund_nodes=abund_nodes,
                 prior=prior,
                 check_phot_press=check_phot_press,
+                global_fsed=global_fsed,
             )
 
         @typechecked

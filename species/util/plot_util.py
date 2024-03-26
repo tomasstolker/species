@@ -201,7 +201,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         List with parameter labels for plots.
     """
 
-    cloud_species = ["fe", "mgsio3", "al2o3", "na2s", "kcl"]
+    cloud_species = ["Fe", "MgSiO3", "Al2O3", "Na2S", "KCl"]
 
     cloud_labels = ["Fe", r"MgSiO_{3}", r"Al_{2}O_{3}", r"Na_{2}S", "KCl"]
 
@@ -578,24 +578,28 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         param[index] = r"$\log\,K_\mathrm{zz}$"
 
     for i, item in enumerate(cloud_species):
-        if f"{item}_fraction" in param:
-            index = param.index(f"{item}_fraction")
+        if f"{item.lower()}_fraction" in param:
+            index = param.index(f"{item.lower()}_fraction")
             param[
                 index
             ] = rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
 
-        if f"{item}_tau" in param:
-            index = param.index(f"{item}_tau")
+        if f"{item.lower()}_tau" in param:
+            index = param.index(f"{item.lower()}_tau")
             param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_labels[i]}}}$"
 
-        if f"log_p_base_{item}" in param:
-            index = param.index(f"log_p_base_{item}")
+        if f"log_p_base_{item}(c)" in param:
+            index = param.index(f"log_p_base_{item}(c)")
+            param[index] = rf"$\log\,P_\mathrm{{{cloud_labels[i]}}}$"
+
+        if f"fsed_{item}(c)" in param:
+            index = param.index(f"fsed_{item}(c)")
             param[index] = rf"$\log\,P_\mathrm{{{cloud_labels[i]}}}$"
 
     for i, item_i in enumerate(cloud_species):
         for j, item_j in enumerate(cloud_species):
-            if f"{item_i}_{item_j}_ratio" in param:
-                index = param.index(f"{item_i}_{item_j}_ratio")
+            if f"{item_i.lower()}_{item_j.lower()}_ratio" in param:
+                index = param.index(f"{item_i.lower()}_{item_j.lower()}_ratio")
                 param[index] = (
                     rf"$\log\,\tilde{{\mathrm{{X}}}}"
                     rf"_\mathrm{{{cloud_labels[i]}}}/"

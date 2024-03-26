@@ -920,6 +920,7 @@ class ReadModel:
             flux=flux,
             parameters=model_param,
             quantity="flux",
+            spec_res=spec_res,
         )
 
         # Apply rotational broadening vsin(i) in km/s
@@ -1371,6 +1372,7 @@ class ReadModel:
             flux=flux,
             parameters=model_param,
             quantity="flux",
+            spec_res=spec_res,
         )
 
         # Apply extinction
@@ -1862,6 +1864,7 @@ class ReadModel:
             flux=flux_comb,
             parameters=model_param,
             quantity="flux",
+            spec_res=spec_res,
         )
 
         return model_box
