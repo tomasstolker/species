@@ -109,7 +109,7 @@ def update_objectbox(
                 if model is None:
                     warnings.warn(
                         "The dictionary with model parameters "
-                        f"contains the error inflation for {key} "
+                        f"contains the error inflation for '{key}' "
                         "but the argument of 'model' is set to "
                         "'None'. Inflation of the errors is "
                         "therefore not possible."

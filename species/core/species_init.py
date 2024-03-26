@@ -74,11 +74,8 @@ class SpeciesInit:
                 file_obj.write("; Folder where data will be downloaded\n")
                 file_obj.write("data_folder = ./data/\n\n")
 
-                # file_obj.write("; Method for the grid interpolation\n")
-                # file_obj.write(
-                #     "; Options: linear, nearest, slinear, " "cubic, quintic, pchip\n"
-                # )
-                # file_obj.write("interp_method = linear\n")
+                file_obj.write("; Magnitude of Vega for all filters\n")
+                file_obj.write("vega_mag = 0.03\n")
 
             print(" [DONE]")
 

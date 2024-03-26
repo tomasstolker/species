@@ -75,6 +75,7 @@ The following data and models are currently supported:
 - `Database of Ultracool Parallaxes <http://www.as.utexas.edu/~tdupuy/plx/Database_of_Ultracool_Parallaxes.html>`_
 - Photometry from `S. Leggett <http://www.gemini.edu/staff/sleggett>`_
 - `Magnitudes, stellar properties, and other parameters of directly imaged planets and brown dwarfs <https://github.com/tomasstolker/species/blob/main/species/data/companion_data/companion_data.json>`_
+- Parallaxes, photometry, and spectra from the `SIMPLE database <https://simple-bd-archive.org>`_
 
 **Calibration**
 

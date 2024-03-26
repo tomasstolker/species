@@ -13,12 +13,14 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import astropy.units as u
 import h5py
 import numpy as np
+import pooch
 
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
-
-# from astroquery.simbad import Simbad
+from astropy.units.quantity import Quantity
 from scipy.integrate import simps
 from tqdm.auto import tqdm
 from typeguard import typechecked
@@ -831,7 +833,14 @@ class Database:
         ] = None,
         flux_density: Optional[Dict[str, Tuple[float, float]]] = None,
         spectrum: Optional[
-            Dict[str, Tuple[str, Optional[str], Optional[float]]]
+            Dict[
+                str,
+                Tuple[
+                    Union[str, np.ndarray],
+                    Optional[Union[str, np.ndarray]],
+                    Optional[float],
+                ],
+            ]
         ] = None,
         deredden: Optional[Union[Dict[str, float], float]] = None,
         verbose: bool = True,
@@ -843,7 +852,7 @@ class Database:
 
         Parameters
         ----------
-        object_name: str
+        object_name : str
             Object name that will be used as label in the database.
         parallax : tuple(float, float), None
             Parallax and uncertainty (mas). Not stored if the argument
@@ -877,20 +886,24 @@ class Database:
             of ``flux_density`` is ignored if set to ``None``.
         spectrum : dict, None
             Dictionary with the spectrum, optional covariance matrix,
-            and spectral resolution for each instrument. The input data
-            can either have a FITS or ASCII format. The spectra should
-            have 3 columns with wavelength (um), flux (W m-2 um-1), and
-            uncertainty (W m-2 um-1), or setting the ``units``
-            parameter allows for reading in data with different
-            wavelength and/or flux units. The covariance matrix should
-            be 2D with the same number of wavelength points as the
-            spectrum. For example, ``{'SPHERE': ('spectrum.dat',
-            'covariance.fits', 50.)}``. No covariance data is stored
-            if set to ``None``, for example, ``{'SPHERE':
-            ('spectrum.dat', None, 50.)}``. The ``spectrum`` parameter
-            is ignored if set to ``None``. For GRAVITY data, the same
-            FITS file can be provided as spectrum and covariance
-            matrix.
+            and resolving power of the instrument. The input data
+            can either be a FITS or ASCII file, or as NumPy array
+            directly. The spectra should have 3 columns, so the array
+            shape should be (n_wavelengths, 3), with wavelength (um),
+            flux (W m-2 um-1), and uncertainty (W m-2 um-1). The
+            ``units`` parameter can be set for reading in data with
+            different wavelength and/or flux units. The covariance
+            matrix should be 2D with the same number of wavelength
+            points as the spectrum, so the shape is (n_wavelengths,
+            n_wavelengths). Like the spectrum, the covariance matrix
+            can be provided as FITS or ASCII file, or as NumPy array
+            directly. For example, when providing the input as files,
+            ``{'SPHERE': ('spectrum.dat', 'covariance.fits', 50.)}``.
+            No covariance data is stored if set to ``None``, for
+            example, ``{'SPHERE': ('spectrum.dat', None, 50.)}``. The
+            ``spectrum`` parameter is ignored if set to ``None``.
+            For VLTI/GRAVITY data, the same FITS file can be provided
+            as spectrum and covariance matrix.
         deredden : dict, float, None
             Dictionary with ``spectrum`` and ``app_mag`` names that
             will be dereddened with the provided :math:`A_V`. For
@@ -1261,83 +1274,97 @@ class Database:
                 if f"objects/{object_name}/spectrum/{spec_item}" in hdf5_file:
                     del hdf5_file[f"objects/{object_name}/spectrum/{spec_item}"]
 
-                if spec_value[0].endswith(".fits") or spec_value[0].endswith(".fit"):
-                    with fits.open(spec_value[0]) as hdulist:
-                        if (
-                            "INSTRU" in hdulist[0].header
-                            and hdulist[0].header["INSTRU"] == "GRAVITY"
-                        ):
-                            # Read data from a FITS file with the GRAVITY format
-                            gravity_object = hdulist[0].header["OBJECT"]
+                if isinstance(spec_value[0], str):
+                    if spec_value[0].endswith(".fits") or spec_value[0].endswith(
+                        ".fit"
+                    ):
+                        with fits.open(spec_value[0]) as hdulist:
+                            if (
+                                "INSTRU" in hdulist[0].header
+                                and hdulist[0].header["INSTRU"] == "GRAVITY"
+                            ):
+                                # Read data from a FITS file with the GRAVITY format
+                                gravity_object = hdulist[0].header["OBJECT"]
 
-                            if verbose:
-                                print("   - GRAVITY spectrum:")
-                                print(f"      - Object: {gravity_object}")
+                                if verbose:
+                                    print("   - GRAVITY spectrum:")
+                                    print(f"      - Object: {gravity_object}")
 
-                            wavelength = hdulist[1].data["WAVELENGTH"]  # (um)
-                            flux = hdulist[1].data["FLUX"]  # (W m-2 um-1)
-                            covariance = hdulist[1].data["COVARIANCE"]  # (W m-2 um-1)^2
-                            error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
+                                wavelength = hdulist[1].data["WAVELENGTH"]  # (um)
+                                flux = hdulist[1].data["FLUX"]  # (W m-2 um-1)
+                                covariance = hdulist[1].data[
+                                    "COVARIANCE"
+                                ]  # (W m-2 um-1)^2
+                                error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
 
-                            read_spec[spec_item] = np.column_stack(
-                                [wavelength, flux, error]
-                            )
-
-                        else:
-                            # Otherwise try to read a 2D dataset with 3 columns
-                            if verbose:
-                                print("   - Spectrum:")
-
-                            for i, hdu_item in enumerate(hdulist):
-                                data = np.asarray(hdu_item.data)
-
-                                if (
-                                    data.ndim == 2
-                                    and 3 in data.shape
-                                    and spec_item not in read_spec
-                                ):
-                                    if spec_item in units:
-                                        from species.util.data_util import convert_units
-
-                                        data = convert_units(
-                                            data, units[spec_item], convert_from=True
-                                        )
-
-                                    read_spec[spec_item] = data
-
-                            if spec_item not in read_spec:
-                                raise ValueError(
-                                    f"The spectrum data from {spec_value[0]} can not "
-                                    f"be read. The data format should be 2D with "
-                                    f"3 columns."
+                                read_spec[spec_item] = np.column_stack(
+                                    [wavelength, flux, error]
                                 )
 
+                            else:
+                                # Otherwise try to read a 2D dataset with 3 columns
+                                if verbose:
+                                    print("   - Spectrum:")
+
+                                for i, hdu_item in enumerate(hdulist):
+                                    data = np.asarray(hdu_item.data)
+
+                                    if (
+                                        data.ndim == 2
+                                        and 3 in data.shape
+                                        and spec_item not in read_spec
+                                    ):
+                                        if spec_item in units:
+                                            from species.util.data_util import (
+                                                convert_units,
+                                            )
+
+                                            data = convert_units(
+                                                data,
+                                                units[spec_item],
+                                                convert_from=True,
+                                            )
+
+                                        read_spec[spec_item] = data
+
+                                if spec_item not in read_spec:
+                                    raise ValueError(
+                                        f"The spectrum data from {spec_value[0]} can not "
+                                        f"be read. The data format should be 2D with "
+                                        f"3 columns."
+                                    )
+
+                    else:
+                        try:
+                            data = np.loadtxt(spec_value[0])
+
+                        except UnicodeDecodeError:
+                            raise ValueError(
+                                f"The spectrum data from {spec_value[0]} can not "
+                                "be read. Please provide a FITS or ASCII file."
+                            )
+
+                        if data.ndim != 2 or 3 not in data.shape:
+                            raise ValueError(
+                                f"The spectrum data from {spec_value[0]} "
+                                "can not be read. The data format "
+                                "should be 2D with 3 columns."
+                            )
+
+                        if verbose:
+                            print("   - Spectrum:")
+
+                        if spec_item in units:
+                            from species.util.data_util import convert_units
+
+                            data = convert_units(
+                                data, units[spec_item], convert_from=True
+                            )
+
+                        read_spec[spec_item] = data
+
                 else:
-                    try:
-                        data = np.loadtxt(spec_value[0])
-
-                    except UnicodeDecodeError:
-                        raise ValueError(
-                            f"The spectrum data from {spec_value[0]} can not "
-                            "be read. Please provide a FITS or ASCII file."
-                        )
-
-                    if data.ndim != 2 or 3 not in data.shape:
-                        raise ValueError(
-                            f"The spectrum data from {spec_value[0]} "
-                            "can not be read. The data format "
-                            "should be 2D with 3 columns."
-                        )
-
-                    if verbose:
-                        print("   - Spectrum:")
-
-                    if spec_item in units:
-                        from species.util.data_util import convert_units
-
-                        data = convert_units(data, units[spec_item], convert_from=True)
-
-                    read_spec[spec_item] = data
+                    read_spec[spec_item] = spec_value[0]
 
                 if isinstance(deredden, float):
                     from species.util.dust_util import ism_extinction
@@ -1386,7 +1413,8 @@ class Database:
 
                 if verbose:
                     print(f"      - Database tag: {spec_item}")
-                    print(f"      - Filename: {spec_value[0]}")
+                    if isinstance(spec_value[0], str):
+                        print(f"      - Filename: {spec_value[0]}")
                     print(f"      - Data shape: {read_spec[spec_item].shape}")
                     print(
                         f"      - Wavelength range (um): {wavelength[0]:.2f} - {wavelength[-1]:.2f}"
@@ -1406,114 +1434,118 @@ class Database:
                 if spec_value[1] is None:
                     read_cov[spec_item] = None
 
-                elif spec_value[1].endswith(".fits") or spec_value[1].endswith(".fit"):
-                    with fits.open(spec_value[1]) as hdulist:
-                        if (
-                            "INSTRU" in hdulist[0].header
-                            and hdulist[0].header["INSTRU"] == "GRAVITY"
-                        ):
-                            # Read data from a FITS file with the GRAVITY format
-                            gravity_object = hdulist[0].header["OBJECT"]
+                elif isinstance(spec_value[1], str):
+                    if spec_value[1].endswith(".fits") or spec_value[1].endswith(".fit"):
+                        with fits.open(spec_value[1]) as hdulist:
+                            if (
+                                "INSTRU" in hdulist[0].header
+                                and hdulist[0].header["INSTRU"] == "GRAVITY"
+                            ):
+                                # Read data from a FITS file with the GRAVITY format
+                                gravity_object = hdulist[0].header["OBJECT"]
 
-                            if verbose:
-                                print("   - GRAVITY covariance matrix:")
-                                print(f"      - Object: {gravity_object}")
+                                if verbose:
+                                    print("   - GRAVITY covariance matrix:")
+                                    print(f"      - Object: {gravity_object}")
 
-                            read_cov[spec_item] = hdulist[1].data[
-                                "COVARIANCE"
-                            ]  # (W m-2 um-1)^2
+                                read_cov[spec_item] = hdulist[1].data[
+                                    "COVARIANCE"
+                                ]  # (W m-2 um-1)^2
 
-                        else:
-                            if spec_item in units:
-                                warnings.warn(
-                                    "The unit conversion has not been "
-                                    "implemented for covariance matrices. "
-                                    "Please open an issue on the Github "
-                                    "page if such functionality is required "
-                                    "or provide the file with covariances "
-                                    "in (W m-2 um-1)^2."
-                                )
+                            else:
+                                if spec_item in units:
+                                    warnings.warn(
+                                        "The unit conversion has not been "
+                                        "implemented for covariance matrices. "
+                                        "Please open an issue on the Github "
+                                        "page if such functionality is required "
+                                        "or provide the file with covariances "
+                                        "in (W m-2 um-1)^2."
+                                    )
 
-                            # Otherwise try to read a square, 2D dataset
-                            if verbose:
-                                print("   - Covariance matrix:")
+                                # Otherwise try to read a square, 2D dataset
+                                if verbose:
+                                    print("   - Covariance matrix:")
 
-                            for i, hdu_item in enumerate(hdulist):
-                                data = np.asarray(hdu_item.data)
+                                for i, hdu_item in enumerate(hdulist):
+                                    data = np.asarray(hdu_item.data)
 
-                                corr_warn = (
-                                    f"The matrix from {spec_value[1]} contains "
-                                    f"ones along the diagonal. Converting this "
-                                    f"correlation matrix into a covariance matrix."
-                                )
+                                    corr_warn = (
+                                        f"The matrix from {spec_value[1]} contains "
+                                        f"ones along the diagonal. Converting this "
+                                        f"correlation matrix into a covariance matrix."
+                                    )
 
-                                from species.util.data_util import (
-                                    correlation_to_covariance,
-                                )
+                                    from species.util.data_util import (
+                                        correlation_to_covariance,
+                                    )
 
-                                if data.ndim == 2 and data.shape[0] == data.shape[1]:
-                                    if spec_item not in read_cov:
-                                        if (
-                                            data.shape[0]
-                                            == read_spec[spec_item].shape[0]
-                                        ):
-                                            if np.all(np.diag(data) == 1.0):
-                                                warnings.warn(corr_warn)
+                                    if data.ndim == 2 and data.shape[0] == data.shape[1]:
+                                        if spec_item not in read_cov:
+                                            if (
+                                                data.shape[0]
+                                                == read_spec[spec_item].shape[0]
+                                            ):
+                                                if np.all(np.diag(data) == 1.0):
+                                                    warnings.warn(corr_warn)
 
-                                                read_cov[
-                                                    spec_item
-                                                ] = correlation_to_covariance(
-                                                    data, read_spec[spec_item][:, 2]
-                                                )
+                                                    read_cov[
+                                                        spec_item
+                                                    ] = correlation_to_covariance(
+                                                        data, read_spec[spec_item][:, 2]
+                                                    )
 
-                                            else:
-                                                read_cov[spec_item] = data
+                                                else:
+                                                    read_cov[spec_item] = data
 
-                            if spec_item not in read_cov:
-                                raise ValueError(
-                                    f"The covariance matrix from {spec_value[1]} can not "
-                                    f"be read. The data format should be 2D with the "
-                                    f"same number of wavelength points as the "
-                                    f"spectrum."
-                                )
-
-                else:
-                    try:
-                        data = np.loadtxt(spec_value[1])
-                    except UnicodeDecodeError:
-                        raise ValueError(
-                            f"The covariance matrix from {spec_value[1]} "
-                            f"can not be read. Please provide a "
-                            f"FITS or ASCII file."
-                        )
-
-                    if data.ndim != 2 or data.shape[0] != data.shape[1]:
-                        raise ValueError(
-                            f"The covariance matrix from {spec_value[1]} "
-                            f"can not be read. The data format "
-                            f"should be 2D with the same number of "
-                            f"wavelength points as the spectrum."
-                        )
-
-                    if verbose:
-                        print("   - Covariance matrix:")
-
-                    if np.all(np.diag(data) == 1.0):
-                        warnings.warn(
-                            f"The matrix from {spec_value[1]} contains "
-                            f"ones on the diagonal. Converting this "
-                            f" correlation matrix into a covariance "
-                            f"matrix."
-                        )
-
-                        from species.util.data_util import correlation_to_covariance
-
-                        read_cov[spec_item] = correlation_to_covariance(
-                            data, read_spec[spec_item][:, 2]
-                        )
+                                if spec_item not in read_cov:
+                                    raise ValueError(
+                                        f"The covariance matrix from {spec_value[1]} can not "
+                                        f"be read. The data format should be 2D with the "
+                                        f"same number of wavelength points as the "
+                                        f"spectrum."
+                                    )
 
                     else:
-                        read_cov[spec_item] = data
+                        try:
+                            data = np.loadtxt(spec_value[1])
+                        except UnicodeDecodeError:
+                            raise ValueError(
+                                f"The covariance matrix from {spec_value[1]} "
+                                f"can not be read. Please provide a "
+                                f"FITS or ASCII file."
+                            )
+
+                        if data.ndim != 2 or data.shape[0] != data.shape[1]:
+                            raise ValueError(
+                                f"The covariance matrix from {spec_value[1]} "
+                                f"can not be read. The data format "
+                                f"should be 2D with the same number of "
+                                f"wavelength points as the spectrum."
+                            )
+
+                        if verbose:
+                            print("   - Covariance matrix:")
+
+                        if np.all(np.diag(data) == 1.0):
+                            warnings.warn(
+                                f"The matrix from {spec_value[1]} contains "
+                                f"ones on the diagonal. Converting this "
+                                f" correlation matrix into a covariance "
+                                f"matrix."
+                            )
+
+                            from species.util.data_util import correlation_to_covariance
+
+                            read_cov[spec_item] = correlation_to_covariance(
+                                data, read_spec[spec_item][:, 2]
+                            )
+
+                        else:
+                            read_cov[spec_item] = data
+
+                else:
+                    read_cov[spec_item] = spec_value[1]
 
                 if read_cov[spec_item] is not None:
                     # Remove the wavelengths for which the flux is NaN
@@ -1522,11 +1554,12 @@ class Database:
 
                 if verbose and read_cov[spec_item] is not None:
                     print(f"      - Database tag: {spec_item}")
-                    print(f"      - Filename: {spec_value[1]}")
+                    if isinstance(spec_value[1], str):
+                        print(f"      - Filename: {spec_value[1]}")
                     print(f"      - Data shape: {read_cov[spec_item].shape}")
 
             if verbose:
-                print("   - Resolution:")
+                print("   - Instrument resolution:")
 
             for spec_item, spec_value in spectrum.items():
                 hdf5_file.create_dataset(
@@ -1558,6 +1591,293 @@ class Database:
                     dset.attrs["specres"] = spec_value[2]
 
         hdf5_file.close()
+
+    @typechecked
+    def add_simple_object(
+        self,
+        object_name: str,
+        simple_database: Optional[str] = None,
+    ) -> None:
+        """
+        Function for retrieving data of an individual object from
+        the `SIMPLE database <https://simple-bd-archive.org>`_ and
+        adding the data to the ``species`` database. This function
+        includes code that has been adapted from `SEDkitSIMPLE
+        <https://github.com/dr-rodriguez/SEDkitSIMPLE>`_.
+
+        Parameters
+        ----------
+        object_name : str
+            Object name that will be used for the query and also used
+            as label by which the data will be stored in the database.
+        simple_database : str, None
+            Path to the ``SIMPLE`` database file `SIMPLE.db`. The
+            binary file is automatically  downloaded from the `Github
+            page <https://github.com/SIMPLE-AstroDB/SIMPLE-binary>`_
+            of ``SIMPLE`` when the argument is set to ``None``.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print_section("Add SIMPLE object")
+
+        from astrodbkit2.astrodb import Database as astro_db
+        from sqlalchemy import and_
+
+        if simple_database is None:
+            simple_database = os.path.join(self.data_folder, "SIMPLE.db")
+            url = (
+                "https://github.com/SIMPLE-AstroDB/" "SIMPLE-binary/raw/main/SIMPLE.db"
+            )
+
+            if not os.path.isfile(simple_database):
+                pooch.retrieve(
+                    url=url,
+                    known_hash=None,
+                    fname="SIMPLE.db",
+                    path=self.data_folder,
+                    progressbar=True,
+                )
+
+        print(f"SIMPLE database: {simple_database}")
+
+        simple_db = astro_db(f"sqlite:///{simple_database}")
+
+        def _fetch_bibcode(ref: str) -> Optional[str]:
+            """
+            Internal function for fetching a reference
+            from the SIMPLE database
+
+            Parameters
+            ----------
+            ref : str
+                Reference for which the `bibcode` should be retrieved.
+
+            Returns
+            -------
+            NoneType
+                Bibcode of the reference. Returns a ``None`` in
+                case the bibcode is not available.
+            """
+
+            bibcode = None
+
+            if hasattr(simple_db.Publications.c, "bibcode"):
+                if hasattr(simple_db.Publications.c, "reference"):
+                    simple_query = simple_db.query(simple_db.Publications.c.bibcode)
+
+                    simple_result = simple_query.filter(
+                        simple_db.Publications.c.reference == ref
+                    )
+
+                    bibcode = simple_result.table()["bibcode"][0]
+
+            return bibcode
+
+        # Get SIMPLE name of object
+
+        print(f"\nObject name: {object_name}")
+
+        sources = simple_db.search_object(object_name)
+
+        if len(sources) > 0:
+            if len(sources) > 1:
+                warnings.warn(
+                    "Multiple sources found in the SIMPLE "
+                    f"database for {object_name}. The first "
+                    "retrieved source will be selected."
+                )
+
+            simple_id = sources["source"][0]
+
+        else:
+            raise ValueError(
+                f"The requested source, {object_name}, is "
+                "not found in the SIMPLE database."
+            )
+
+        print(f"Retrieved name: {simple_id}")
+
+        # Get inventory of the queried object
+
+        inventory = simple_db.inventory(simple_id, pretty_print=False)
+
+        # Get coordinates
+
+        coordinates = None
+
+        if "Sources" in inventory:
+            if len(inventory["Sources"]) == 1:
+                data = inventory["Sources"][0]
+                coordinates = SkyCoord(ra=data["ra"] * u.deg, dec=data["dec"] * u.deg)
+
+        if coordinates is None:
+            print("Coordinates: None")
+
+        else:
+            coord_str = coordinates.to_string(
+                "hmsdms", alwayssign=True, precision=2, pad=True
+            )
+            print(f"Coordinates: {coord_str}")
+
+        # Get parallax
+
+        parallax = None
+
+        if "Parallaxes" in inventory:
+            for row in inventory["Parallaxes"]:
+                value = Quantity(row["parallax"], unit=u.mas)
+                error = Quantity(row["parallax_error"], unit=u.mas)
+                bibcode = _fetch_bibcode(row["reference"])
+                parallax = (value.value, error.value)
+
+                if row["adopted"]:
+                    break
+
+        if parallax is None:
+            print("Parallax: None")
+
+        else:
+            print(
+                f"Parallax: {(parallax)[0]:.2f} +/- "
+                f"{(parallax)[1]:.2f} mas (bibcode: {bibcode})"
+            )
+
+        # Get spectral type
+
+        spectral_type = None
+
+        if "SpectralTypes" in inventory:
+            for row in inventory["SpectralTypes"]:
+                bibcode = _fetch_bibcode(row["reference"])
+                spectral_type = row["spectral_type_string"]
+
+                if row["adopted"]:
+                    break
+
+        if spectral_type is None:
+            print("Spectral type: None")
+
+        else:
+            print(f"Spectral type: {spectral_type} (bibcode: {bibcode})")
+
+        # Get photometry
+
+        app_mag = None
+
+        if "Photometry" in inventory:
+            app_mag = {}
+            bibcode = {}
+
+            for row in inventory["Photometry"]:
+                filter_name = None
+
+                if row["band"].split(".")[0] == "GAIA3":
+                    filter_name = "GAIA/" + row["band"]
+                elif row["band"].split(".")[0] == "2MASS":
+                    filter_name = "2MASS/" + row["band"]
+                elif row["band"].split(".")[0] == "WISE":
+                    filter_name = "WISE/" + row["band"]
+                elif row["band"].split(".")[0] == "WISE":
+                    filter_name = "WISE/" + row["band"]
+
+                if filter_name is not None and row["magnitude_error"] is not None:
+                    bibcode[filter_name] = _fetch_bibcode(row["reference"])
+                    app_mag[filter_name] = (row["magnitude"], row["magnitude_error"])
+
+        if app_mag is None:
+            print("Magnitudes: None")
+
+        else:
+            print("\nMagnitudes:")
+            for key, value in app_mag.items():
+                if value[1] > 1e-2:
+                    print(
+                        f"   - {key} = {value[0]:.2f} +/- {value[1]:.2f} (bibcode: {bibcode[key]})"
+                    )
+                elif value[1] < 1e-2 and value[1] > 1e-3:
+                    print(
+                        f"   - {key} = {value[0]:.3f} +/- {value[1]:.3f} (bibcode: {bibcode[key]})"
+                    )
+                elif value[1] < 1e-3 and value[1] > 1e-4:
+                    print(
+                        f"   - {key} = {value[0]:.4f} +/- {value[1]:.4f} (bibcode: {bibcode[key]})"
+                    )
+                else:
+                    print(
+                        f"   - {key} = {value[0]:.5f} +/- {value[1]:.5f} (bibcode: {bibcode[key]})"
+                    )
+
+        # Get spectra
+
+        spectrum = None
+
+        if "Spectra" in inventory:
+            spectrum = {}
+            bibcode = {}
+
+            for row in inventory["Spectra"]:
+                spec_tag = f"{row['telescope']} {row['instrument']}"
+                if row["mode"] != "Missing":
+                    spec_tag += f" {row['mode']}"
+
+                simple_query = simple_db.query(simple_db.Spectra)
+
+                spec_table = simple_query.filter(
+                    and_(
+                        simple_db.Spectra.c.source == simple_id,
+                        simple_db.Spectra.c.regime == row["regime"],
+                        simple_db.Spectra.c.reference == row["reference"],
+                        simple_db.Spectra.c.observation_date == row["observation_date"],
+                    )
+                ).astropy(spectra="spectrum", spectra_format=None)
+
+                wavel = spec_table["spectrum"][0].wavelength
+                flux = spec_table["spectrum"][0].flux
+
+                wavel = wavel.to(u.micron).value
+                flux = flux.to(u.W / u.m**2 / u.um).value
+
+                if spec_table["spectrum"][0].uncertainty is not None:
+                    error = spec_table["spectrum"][0].uncertainty.quantity
+                    error = error.to(u.W / u.m**2 / u.um).value
+                else:
+                    error = np.full(wavel.size, np.nan)
+
+                spec_data = np.column_stack([wavel, flux, error])
+
+                spec_res = input(
+                    "Please provide the resolving power, "
+                    f"R = lambda/Delta_lambda, for '{spec_tag}': "
+                )
+
+                bibcode[spec_tag] = _fetch_bibcode(row["reference"])
+                spectrum[spec_tag] = (spec_data, np.diag(spec_data[:, 2]**2), float(spec_res))
+
+        if spectrum is None:
+            if app_mag is not None:
+                print()
+
+            print("Spectra: None")
+
+        else:
+            print("\nSpectra:")
+            for key, value in spectrum.items():
+                print(f"   - {key}")
+                print(f"      - Array shape: {value[0].shape}")
+                print(f"      - lambda/d_lambda: {value[2]}")
+                print(f"      - bibcode: {bibcode[key]}")
+
+        self.add_object(
+            object_name=object_name,
+            parallax=parallax,
+            app_mag=app_mag,
+            spectrum=spectrum,
+            verbose=False,
+        )
 
     @typechecked
     def add_photometry(self, phot_library: str) -> None:
@@ -2858,7 +3178,8 @@ class Database:
                                 hdf5_file[f"{group_path}/{filter_item}"]
                             )
                             print(
-                                f"   - {bound_item}/{filter_item} = ({prior_bound[0]}, {prior_bound[1]})"
+                                f"   - {bound_item}/{filter_item} = "
+                                f"({prior_bound[0]}, {prior_bound[1]})"
                             )
                             uniform_priors[f"{bound_item}/{filter_item}"] = (
                                 prior_bound[0],
