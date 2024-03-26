@@ -866,10 +866,11 @@ def convert_units(
         the uncertainties. For photometric fluxes, the array should also
         be 2D but with a single row/wavelength.
     units_in : tuple(str, str)
-        Tuple with the units of the wavelength ("um", "angstrom", "A",
-        "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the flux
-        density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
-        "erg s-1 cm-2 Hz-1", "mJy", "Jy", "MJy").
+        Tuple with the units of the wavelength ("um", "angstrom",
+        "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the
+        flux density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
+        "erg s-1 cm-2 angstrom-1" "erg s-1 cm-2 Hz-1", "mJy",
+        "Jy", "MJy").
     convert_from : bool
         Covert from ``units_in`` to :math:`\\mu\\text{m}^{-1}` and
         :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}` when set to
@@ -887,12 +888,12 @@ def convert_units(
 
     # Convert wavelengths to micrometer (um)
 
-    wavel_units = ["um", "angstrom", "A", "nm", "mm", "cm", "m", "Hz", "GHz"]
+    wavel_units = ["um", "angstrom", "nm", "mm", "cm", "m", "Hz", "GHz"]
 
-    if units_in[0] == "um":
+    if units_in[0] in ["um", "µm"]:
         flux_out[:, 0] = flux_in[:, 0].copy()
 
-    elif units_in[0] in ["angstrom", "A"]:
+    elif units_in[0] in ["angstrom", "A", "AA", "Å"]:
         if convert_from:
             flux_out[:, 0] = flux_in[:, 0] * 1e-4
         else:
@@ -953,13 +954,14 @@ def convert_units(
         "W m-2 um-1",
         "W m-2 m-1",
         "W m-2 Hz-1",
+        "erg s-1 cm-2 angstrom-1",
         "erg s-1 cm-2 Hz-1",
         "mJy",
         "Jy",
         "MJy",
     ]
 
-    if units_in[1] == "W m-2 um-1":
+    if units_in[1] in ["W m-2 um-1", "W m-2 µm-1"]:
         flux_out[:, 1] = flux_in[:, 1].copy()
 
         if flux_out.shape[1] == 3:
@@ -1000,6 +1002,23 @@ def convert_units(
                 flux_out[:, 2] = flux_in[:, 2] * 1e-3 * speed_light / wavel_micron**2
             else:
                 flux_out[:, 2] = flux_in[:, 2] * 1e3 * wavel_micron**2 / speed_light
+
+    elif units_in[1] in [
+        "erg s-1 cm-2 angstrom-1",
+        "erg s-1 cm-2 A-1",
+        "erg s-1 cm-2 AA-1",
+        "erg s-1 cm-2 Å-1",
+    ]:
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-7
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e7
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-7
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e7
 
     elif units_in[1] == "mJy":
         if convert_from:
