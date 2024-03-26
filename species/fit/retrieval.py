@@ -692,13 +692,18 @@ class AtmosphericRetrieval:
                 self.parameters.append("albedo")
 
         elif len(self.cloud_species) > 0:
-            self.parameters.append("fsed")
+            if self.global_fsed:
+                self.parameters.append("fsed")
+
             self.parameters.append("log_kzz")
             self.parameters.append("sigma_lnorm")
 
             for item in self.cloud_species:
                 if "log_p_base" in bounds:
                     self.parameters.append(f"log_p_base_{item}")
+
+                if not self.global_fsed:
+                    self.parameters.append(f"fsed_{item}")
 
                 cloud_lower = item[:-3].lower()
 
@@ -1475,16 +1480,33 @@ class AtmosphericRetrieval:
             # mixing velocities of the cloud particles
             # (used in Eq. 3 of Mollière et al. 2020)
 
-            if "fsed" in bounds:
-                fsed = (
-                    bounds["fsed"][0]
-                    + (bounds["fsed"][1] - bounds["fsed"][0]) * cube[cube_index["fsed"]]
-                )
-            else:
-                # Default: 0 - 10
-                fsed = 10.0 * cube[cube_index["fsed"]]
+            if self.global_fsed:
+                if "fsed" in bounds:
+                    fsed = (
+                        bounds["fsed"][0]
+                        + (bounds["fsed"][1] - bounds["fsed"][0])
+                        * cube[cube_index["fsed"]]
+                    )
+                else:
+                    # Default: 0 - 10
+                    fsed = 10.0 * cube[cube_index["fsed"]]
 
-            cube[cube_index["fsed"]] = fsed
+                cube[cube_index["fsed"]] = fsed
+
+            else:
+                for item in self.cloud_species:
+                    if "fsed" in bounds:
+                        fsed = (
+                            bounds["fsed"][0]
+                            + (bounds["fsed"][1] - bounds["fsed"][0])
+                            * cube[cube_index[f"fsed_{item}"]]
+                        )
+
+                    else:
+                        # Default: 0 - 10
+                        fsed = 10.0 * cube[cube_index[f"fsed_{item}"]]
+
+                    cube[cube_index[f"fsed_{item}"]] = fsed
 
             # Log10 of the eddy diffusion coefficient (cm2 s-1)
 
@@ -2183,7 +2205,7 @@ class AtmosphericRetrieval:
 
             # Create dictionary with cloud parameters
 
-            if "fsed" in self.parameters:
+            if "log_kzz" in self.parameters:
                 cloud_param = [
                     "fsed",
                     "log_kzz",
@@ -2204,14 +2226,14 @@ class AtmosphericRetrieval:
                     if item in self.parameters:
                         cloud_dict[item] = cube[cube_index[item]]
 
-                    # elif item in ['log_kzz', 'sigma_lnorm']:
-                    #     cloud_dict[item] = None
-
                 for item in self.cloud_species:
                     if f"log_p_base_{item}" in self.parameters:
                         cloud_dict[f"log_p_base_{item}"] = cube[
                             cube_index[f"log_p_base_{item}"]
                         ]
+
+                    if f"fsed_{item}" in self.parameters:
+                        cloud_dict[f"fsed_{item}"] = cube[cube_index[f"fsed_{item}"]]
 
             elif "fsed_1" in self.parameters and "fsed_2" in self.parameters:
                 cloud_param_1 = [
@@ -3126,6 +3148,7 @@ class AtmosphericRetrieval:
         check_phot_press: Optional[float] = None,
         apply_rad_vel: Optional[List[str]] = None,
         apply_vsini: Optional[List[str]] = None,
+        global_fsed: bool = True,
     ) -> None:
         """
         Function for running the atmospheric retrieval. The parameter
@@ -3376,6 +3399,11 @@ class AtmosphericRetrieval:
             ``bounds``. The :math:`v \\sin(i)` is applied to all
             spectra by setting the argument of ``apply_vsini``
             to ``None``.
+        global_fsed : bool
+            Retrieve a global ``fsed`` parameter when set to ``True``
+            or retrieve the ``fsed`` parameter for each cloud species
+            individually in the ``cloud_species`` list when set to
+            ``False``.
 
         Returns
         -------
@@ -3398,6 +3426,7 @@ class AtmosphericRetrieval:
         self.cross_corr = cross_corr
         self.apply_rad_vel = apply_rad_vel
         self.apply_vsini = apply_vsini
+        self.global_fsed = global_fsed
 
         print(f"P-T profile: {self.pt_profile}")
         print(f"Chemistry: {self.chemistry}")

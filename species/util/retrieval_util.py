@@ -1210,10 +1210,14 @@ def calc_spectrum_clouds(
 
             abund_in[f"{cloud_item}(c)"] = np.zeros_like(temperature)
 
+            if "fsed" in cloud_dict:
+                f_sed = cloud_dict["fsed"]
+            else:
+                f_sed = cloud_dict[f"fsed_{cloud_item}(c)"]
+
             abund_in[f"{cloud_item}(c)"][pressure < p_base_item] = (
                 10.0 ** log_x_base[cloud_item]
-                * (pressure[pressure <= p_base_item] / p_base_item)
-                ** cloud_dict["fsed"]
+                * (pressure[pressure <= p_base_item] / p_base_item) ** f_sed
             )
 
     # Adaptive pressure refinement around the cloud base
@@ -1237,12 +1241,14 @@ def calc_spectrum_clouds(
     # Use the same value for all cloud species
 
     fseds = {}
-    for item in rt_object.cloud_species:
-        # The item has the form of e.g. MgSiO3(c)
-        # For parametrized cloud opacities,
-        # then number of cloud_species is zero
-        # so the fseds dictionary remains empty
-        fseds[item] = cloud_dict["fsed"]
+    for cloud_item in rt_object.cloud_species:
+        # The cloud_item has the form of e.g. MgSiO3(c). For
+        # parametrized cloud opacities, then the number of
+        # cloud_species is zero so the fseds dictionary is empty
+        if "fsed" in cloud_dict:
+            fseds[cloud_item] = cloud_dict["fsed"]
+        else:
+            fseds[cloud_item] = cloud_dict[f"fsed_{cloud_item}"]
 
     # Create an array with a constant eddy diffusion coefficient (cm2 s-1)
 
@@ -1337,7 +1343,10 @@ def calc_spectrum_clouds(
             plt.ylim(1e3, 1e-6)
             plt.xlim(1e-10, 1.0)
             log_x_base_item = log_x_base[item]
-            fsed = cloud_dict["fsed"]
+            if "fsed" in cloud_dict:
+                fsed = cloud_dict["fsed"]
+            else:
+                fsed = cloud_dict[f"fsed_{item}(c)"]
             log_kzz = cloud_dict["log_kzz"]
             plt.title(
                 f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, "
