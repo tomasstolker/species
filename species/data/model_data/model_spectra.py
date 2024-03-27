@@ -299,9 +299,9 @@ def add_model_grid(
     print_message = ""
 
     for _, _, file_list in os.walk(data_folder):
-        for filename in sorted(file_list):
-            if filename[: len(model_tag)] == model_tag:
-                file_split = filename.split("_")
+        for file_name in sorted(file_list):
+            if file_name[: len(model_tag)] == model_tag:
+                file_split = file_name.split("_")
 
                 param_index = file_split.index("teff") + 1
                 teff_val = float(file_split[param_index])
@@ -340,13 +340,20 @@ def add_model_grid(
                 print(f"\r{empty_message}", end="")
 
                 print_message = (
-                    f"Adding {model_info['name']} model spectra... {filename}"
+                    f"Adding {model_info['name']} model spectra... {file_name}"
                 )
                 print(f"\r{print_message}", end="", flush=True)
 
-                data_wavel, data_flux = np.loadtxt(
-                    os.path.join(data_folder, filename), unpack=True
-                )
+                spec_file = os.path.join(data_folder, file_name)
+
+                if file_name[-4:] == ".dat":
+                    data_wavel, data_flux = np.loadtxt(spec_file, unpack=True)
+
+                else:
+                    data = np.load(spec_file)
+
+                    data_wavel = data[:, 0]
+                    data_flux = data[:, 1]
 
                 if wavel_range is None:
                     if wavelength is None:

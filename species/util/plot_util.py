@@ -939,6 +939,11 @@ def quantity_unit(
             unit.append(None)
             label.append("C/O")
 
+        if item == "log_kzz":
+            quantity.append("log_kzz")
+            unit.append(None)
+            label.append(r"$\log\,K_\mathrm{zz}$")
+
         if item == "ad_index":
             quantity.append("ad_index")
             unit.append(None)

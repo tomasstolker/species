@@ -233,6 +233,7 @@ def plot_spectrum(
         "feh",
         "metallicity",
         "fsed",
+        "log_kzz",
         "distance",
         "parallax",
         "mass",

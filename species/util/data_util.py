@@ -862,17 +862,18 @@ def convert_units(
     flux_in : np.ndarray
         Array with the input wavelengths and fluxes. The shape of the
         array should be (n_wavelengths, 3) or (n_wavelengths, 2) with
-        the columns being the wavelengths, flux densities, and optional
-        the uncertainties. For photometric fluxes, the array should also
-        be 2D but with a single row/wavelength.
+        the columns being the wavelengths, flux densities, and
+        optionally the uncertainties. For photometric fluxes, the
+        array should also be 2D but with a single row/wavelength.
     units_in : tuple(str, str)
         Tuple with the units of the wavelength ("um", "angstrom",
         "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the
         flux density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
         "erg s-1 cm-2 angstrom-1" "erg s-1 cm-2 Hz-1", "mJy",
-        "Jy", "MJy").
+        "Jy", "MJy"). One can use "um" or "µm" interchangeably,
+        and similarly "AA", "Å", "A", or "angstrom".
     convert_from : bool
-        Covert from ``units_in`` to :math:`\\mu\\text{m}^{-1}` and
+        Convert from ``units_in`` to :math:`\\mu\\text{m}^{-1}` and
         :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}` when set to
         ``True``. Or, convert to ``units_in`` when set to ``False``.
 

@@ -123,6 +123,15 @@ def convert_model_name(in_name: str) -> str:
     elif in_name == "sonora-bobcat-co":
         out_name = "Sonora Bobcat C/O"
 
+    elif in_name == "sonora-elfowl-l":
+        out_name = "Sonora Elf Owl"
+
+    elif in_name == "sonora-elfowl-t":
+        out_name = "Sonora Elf Owl"
+
+    elif in_name == "sonora-elfowl-y":
+        out_name = "Sonora Elf Owl"
+
     elif in_name == "sphinx":
         out_name = "SPHINX"
 
