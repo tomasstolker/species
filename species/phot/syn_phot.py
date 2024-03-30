@@ -114,11 +114,18 @@ class SyntheticPhotometry:
             read_filt = ReadFilter(self.filter_name)
             self.wavel_range = read_filt.wavelength_range()
 
-        with h5py.File(self.database, "a") as h5_file:
-            if "spectra/calibration/vega" not in h5_file:
-                add_vega(self.data_folder, h5_file)
+        with h5py.File(self.database, "r") as hdf5_file:
+            if "spectra/calibration/vega" in hdf5_file:
+                vega_found = True
+            else:
+                vega_found = False
 
-            vega_spec = np.array(h5_file["spectra/calibration/vega"])
+        if not vega_found:
+            with h5py.File(self.database, "a") as hdf5_file:
+                add_vega(self.data_folder, hdf5_file)
+
+        with h5py.File(self.database, "r") as hdf5_file:
+            vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
         wavelength = vega_spec[0,]
         flux = vega_spec[1,]
