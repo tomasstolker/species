@@ -289,6 +289,16 @@
         "reference": "Marley et al. (2021)",
         "url": "https://zenodo.org/record/5063476"
     },
+    "sonora-elfowl-l": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
+        "name": "Sonora Elf Owl",
+        "file size": "36 GB",
+        "wavelength range": [0.6, 15],
+        "lambda/d_lambda": 60000,
+        "teff range": [1300, 2400],
+        "reference": "Mukherjee et al. (2023)",
+        "url": "https://zenodo.org/records/10385987"
+    },
     "sonora-elfowl-t": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
         "name": "Sonora Elf Owl",
@@ -298,6 +308,16 @@
         "teff range": [575, 1200],
         "reference": "Mukherjee et al. (2023)",
         "url": "https://zenodo.org/records/10385821"
+    },
+    "sonora-elfowl-y": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
+        "name": "Sonora Elf Owl",
+        "file size": "36 GB",
+        "wavelength range": [0.6, 15],
+        "lambda/d_lambda": 60000,
+        "teff range": [275, 550],
+        "reference": "Mukherjee et al. (2023)",
+        "url": "https://zenodo.org/records/10381250"
     },
     "sphinx": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],

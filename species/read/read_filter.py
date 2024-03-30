@@ -50,8 +50,17 @@ class ReadFilter:
         self.database = config["species"]["database"]
         self.data_folder = config["species"]["data_folder"]
 
-        with h5py.File(self.database, "a") as hdf5_file:
-            if f"filters/{self.filter_name}" not in hdf5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            # Check if the filter is found in 'r' mode
+            # because the 'a' mode is not possible when
+            # using multiprocessing
+            if f"filters/{self.filter_name}" in hdf5_file:
+                filter_found = True
+            else:
+                filter_found = False
+
+        if not filter_found:
+            with h5py.File(self.database, "a") as hdf5_file:
                 add_filter_profile(self.data_folder, hdf5_file, self.filter_name)
 
     @typechecked

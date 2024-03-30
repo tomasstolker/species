@@ -33,7 +33,9 @@ The following data and models are currently supported:
 - `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_
-- `SPHINX <https://zenodo.org/record/7416042>`_
+- `Sonora Elf Owl L-type <https://zenodo.org/records/10385987>`_
+- `Sonora Elf Owl T-type <https://zenodo.org/records/10385821>`_
+- `Sonora Elf Owl Y-type <https://zenodo.org/records/10381250>`_
 
 .. tip::
   It is also possible to add your own custom grid of model spectra with :func:`~species.data.database.Database.add_custom_model()`. Have a look at the documentation for details on the required file format.
