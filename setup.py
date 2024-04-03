@@ -9,7 +9,7 @@ with open("requirements.txt") as req_txt:
 
 setuptools.setup(
     name="species",
-    version="0.8.2",
+    version="0.8.3",
     description="Toolkit for atmospheric characterization of directly imaged exoplanets",
     long_description=open("README.rst").read(),
     long_description_content_type="text/x-rst",
@@ -19,7 +19,7 @@ setuptools.setup(
     project_urls={"Documentation": "https://species.readthedocs.io"},
     packages=setuptools.find_packages(include=["species", "species.*"]),
     package_dir={"species:": "species"},
-    package_data={"species": ["data/companion_data/*.json"]},
+    package_data={"species": ["data/*/*.json"]},
     install_requires=install_requires,
     tests_require=["pytest"],
     license="MIT",
