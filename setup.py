@@ -18,7 +18,7 @@ setuptools.setup(
     url="https://github.com/tomasstolker/species",
     project_urls={"Documentation": "https://species.readthedocs.io"},
     packages=setuptools.find_packages(include=["species", "species.*"]),
-    package_data={"species": ["data/*.json"]},
+    package_data={"species": ["data/companion_data/*.json"]},
     install_requires=install_requires,
     tests_require=["pytest"],
     license="MIT",
