@@ -3,26 +3,9 @@
 
 **spe**\ctral **c**\ haracterization and **i**\ nference for **e**\ xoplanet **s**\ cience
 
-.. image:: https://img.shields.io/pypi/v/species
-   :target: https://pypi.python.org/pypi/species
+.. container::
 
-.. image:: https://img.shields.io/pypi/pyversions/species
-   :target: https://pypi.python.org/pypi/species
-
-.. image:: https://github.com/tomasstolker/species/workflows/CI/badge.svg?branch=main
-   :target: https://github.com/tomasstolker/species/actions
-
-.. image:: https://img.shields.io/readthedocs/species
-   :target: http://species.readthedocs.io
-
-.. image:: https://codecov.io/gh/tomasstolker/species/branch/main/graph/badge.svg?token=LSSCPMJ5JH
-   :target: https://codecov.io/gh/tomasstolker/species
-
-.. image:: https://img.shields.io/codefactor/grade/github/tomasstolker/species
-   :target: https://www.codefactor.io/repository/github/tomasstolker/species
-
-.. image:: https://img.shields.io/github/license/tomasstolker/species
-   :target: https://github.com/tomasstolker/species/blob/main/LICENSE
+    |PyPI Status| |Python Versions| |CI Status| |Docs Status| |Code Coverage| |Code Quality| |License|
 
 *species* is a toolkit for atmospheric characterization of directly imaged exoplanets. It provides a coherent framework for spectral and photometric analysis which builds on publicly-available data and models from various resources.
 
@@ -56,3 +39,24 @@ License
 Copyright 2018-2024 Tomas Stolker
 
 *species* is distributed under the MIT License. See `LICENSE <https://github.com/tomasstolker/species/blob/main/LICENSE>`_ for the terms and conditions.
+
+.. |PyPI Status| image:: https://img.shields.io/pypi/v/species
+   :target: https://pypi.python.org/pypi/species
+
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/species
+   :target: https://pypi.python.org/pypi/species
+
+.. |CI Status| image:: https://github.com/tomasstolker/species/workflows/CI/badge.svg?branch=main
+   :target: https://github.com/tomasstolker/species/actions
+
+.. |Docs Status| image:: https://img.shields.io/readthedocs/species
+   :target: http://species.readthedocs.io
+
+.. |Code Coverage| image:: https://codecov.io/gh/tomasstolker/species/branch/main/graph/badge.svg?token=LSSCPMJ5JH
+   :target: https://codecov.io/gh/tomasstolker/species
+
+.. |Code Quality| image:: https://img.shields.io/codefactor/grade/github/tomasstolker/species
+   :target: https://www.codefactor.io/repository/github/tomasstolker/species
+
+.. |License| image:: https://img.shields.io/github/license/tomasstolker/species
+   :target: https://github.com/tomasstolker/species/blob/main/LICENSE
