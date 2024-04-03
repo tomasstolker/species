@@ -14,7 +14,7 @@ pypi:
 
 pypi-test:
 	python setup.py sdist bdist_wheel
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+	twine upload --repository testpypi dist/*
 
 docs:
 	rm -f docs/species.core.rst
