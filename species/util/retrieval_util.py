@@ -900,6 +900,8 @@ def calc_spectrum_clear(
             pressure,
             Pquench_carbon=p_quench,
         )
+        # Extract the mean molecular weight
+        mmw = abund_in["MMW"]
 
     elif chemistry == "free":
         # Free abundances
