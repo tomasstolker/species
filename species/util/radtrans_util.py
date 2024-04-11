@@ -195,7 +195,11 @@ def retrieval_spectrum(
             model_param["albedo"] = sample[indices["albedo"]]
 
     elif len(cloud_species) > 0:
-        model_param["fsed"] = sample[indices["fsed"]]
+        if "fsed" in indices:
+            model_param["fsed"] = sample[indices["fsed"]]
+        else:
+            for item in cloud_species:
+                model_param[f"fsed_{item}"] = sample[indices[f"fsed_{item}"]]
         model_param["sigma_lnorm"] = sample[indices["sigma_lnorm"]]
 
         if "kzz" in indices:

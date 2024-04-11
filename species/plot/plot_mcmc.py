@@ -404,7 +404,7 @@ def plot_posterior(
             o_h_ratio = np.zeros(samples.shape[0])
             c_o_ratio = np.zeros(samples.shape[0])
 
-            for sample_item in samples:
+            for i,sample_item in enumerate(samples):
                 abund_dict = {}
                 for line_item in line_species:
                     abund_dict[line_item] = sample_item[abund_index[line_item]]
