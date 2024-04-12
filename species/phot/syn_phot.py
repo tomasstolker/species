@@ -263,8 +263,9 @@ class SyntheticPhotometry:
                     f"{self.wavel_range[1]:.4f}) extends beyond "
                     f"the wavelength range of the spectrum "
                     f"({wavelength[0]:.4f}-{wavelength[-1]:.4f}). "
-                    "The flux is set to NaN. Setting the 'threshold' "
-                    "parameter will loosen the wavelength constraints."
+                    "The synthetic flux is set to NaN. Setting "
+                    "the 'threshold' parameter will loosen the "
+                    "wavelength constraints."
                 )
 
                 syn_flux = np.nan
@@ -275,7 +276,21 @@ class SyntheticPhotometry:
 
                 transmission = self.filter_interp(wavelength)
 
-                if (
+                if np.sum(wavelength) == 0.0:
+                    # The wavelength array looks empty but it is and
+                    # empty array inside another array so the size
+                    # of the wavelength array is 1. The sum however
+                    # is 0 so that is used to check if it is empty
+                    warnings.warn(
+                        f"The filter profile of {self.filter_name} "
+                        f"({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) "
+                        f"lies outside the wavelength range of the spectrum. "
+                        f"The synthetic flux is set to NaN."
+                    )
+
+                    syn_flux = np.nan
+
+                elif (
                     threshold is not None
                     and (transmission[0] > threshold or transmission[-1] > threshold)
                     and (

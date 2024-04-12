@@ -1534,12 +1534,12 @@ class ReadModel:
         if self.spectrum_interp is None:
             self.interpolate_model()
 
-        spectrum = self.get_model(model_param)
+        model_box = self.get_model(model_param)
 
         if synphot is None:
             synphot = SyntheticPhotometry(self.filter_name)
 
-        model_flux = synphot.spectrum_to_flux(spectrum.wavelength, spectrum.flux)
+        model_flux = synphot.spectrum_to_flux(model_box.wavelength, model_box.flux)
 
         if return_box:
             model_mag = self.get_magnitude(model_param)
