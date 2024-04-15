@@ -49,7 +49,7 @@ def add_vega(input_path, database):
                 progressbar=True,
             )
 
-        except requests.exceptions.HTTPError:
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
             url = (
                 "https://home.strw.leidenuniv.nl/~stolker/"
                 "species/alpha_lyr_stis_011.fits"

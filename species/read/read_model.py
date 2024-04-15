@@ -122,6 +122,10 @@ class ReadModel:
             "vsini",
         ]
 
+        for i in range(10):
+            self.extra_param.append(f"disk_teff_{i}")
+            self.extra_param.append(f"disk_radius_{i}")
+
         # Test if the spectra are present in the database
         hdf5_file = self.open_database()
         hdf5_file.close()
@@ -884,7 +888,24 @@ class ReadModel:
 
         # Add blackbody disk component to the spectrum
 
+        n_disk = 0
+
         if "disk_teff" in model_param and "disk_radius" in model_param:
+            n_disk = 1
+
+        else:
+            for disk_idx in range(100):
+                if f"disk_teff_{disk_idx}" in model_param and f"disk_radius_{disk_idx}" in model_param:
+                    n_disk += 1
+                else:
+                    break
+
+        if n_disk == 1:
+
+            readplanck = ReadPlanck(
+                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
+            )
+
             disk_param = {
                 "teff": model_param["disk_teff"],
                 "radius": model_param["disk_radius"],
@@ -896,10 +917,6 @@ class ReadModel:
             elif "distance" in model_param:
                 disk_param["distance"] = model_param["distance"]
 
-            readplanck = ReadPlanck(
-                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
-            )
-
             planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
             flux_interp = interp1d(
@@ -907,9 +924,30 @@ class ReadModel:
             )
             flux += flux_interp(self.wl_points)
 
-            # flux += spectres.spectres(
-            #     self.wl_points, planck_box.wavelength, planck_box.flux
-            # )
+        elif n_disk > 1:
+
+            readplanck = ReadPlanck(
+                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
+            )
+
+            for disk_idx in range(n_disk):
+                disk_param = {
+                    "teff": model_param[f"disk_teff_{disk_idx}"],
+                    "radius": model_param[f"disk_radius_{disk_idx}"],
+                }
+
+                if "parallax" in model_param:
+                    disk_param["parallax"] = model_param["parallax"]
+
+                elif "distance" in model_param:
+                    disk_param["distance"] = model_param["distance"]
+
+                planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
+
+                flux_interp = interp1d(
+                    planck_box.wavelength, planck_box.flux, bounds_error=False
+                )
+                flux += flux_interp(self.wl_points)
 
         # Create ModelBox with the spectrum
 
@@ -1136,12 +1174,10 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
-        # Add the blackbody disk component to the luminosity
+        # Add the blackbody disk components to the luminosity
 
-        if (
-            "disk_teff" in model_box.parameters
-            and "disk_radius" in model_box.parameters
-        ):
+        if n_disk == 1:
+
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1150,6 +1186,18 @@ class ReadModel:
                 * model_box.parameters["disk_teff"] ** 4.0
                 / constants.L_SUN
             )  # (Lsun)
+
+        elif n_disk > 1:
+
+            for disk_idx in range(n_disk):
+                model_box.parameters["luminosity"] += (
+                    4.0
+                    * np.pi
+                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * constants.SIGMA_SB
+                    * model_box.parameters[f"disk_teff_{disk_idx}"] ** 4.0
+                    / constants.L_SUN
+                )  # (Lsun)
 
         # Add the planet mass to the parameter dictionary
 
@@ -1338,7 +1386,26 @@ class ReadModel:
 
         # Add blackbody disk component to the spectrum
 
+        # Add blackbody disk component to the spectrum
+
+        n_disk = 0
+
         if "disk_teff" in model_param and "disk_radius" in model_param:
+            n_disk = 1
+
+        else:
+            for disk_idx in range(100):
+                if "disk_teff_{disk_idx}" in model_param:
+                    n_disk += 1
+                else:
+                    break
+
+        if n_disk == 1:
+
+            readplanck = ReadPlanck(
+                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
+            )
+
             disk_param = {
                 "teff": model_param["disk_teff"],
                 "radius": model_param["disk_radius"],
@@ -1350,10 +1417,6 @@ class ReadModel:
             elif "distance" in model_param:
                 disk_param["distance"] = model_param["distance"]
 
-            readplanck = ReadPlanck(
-                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
-            )
-
             planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
             flux_interp = interp1d(
@@ -1361,7 +1424,30 @@ class ReadModel:
             )
             flux += flux_interp(wl_points)
 
-            # flux += spectres.spectres(wl_points, planck_box.wavelength, planck_box.flux)
+        elif n_disk > 1:
+
+            readplanck = ReadPlanck(
+                (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
+            )
+
+            for disk_idx in range(n_disk):
+                disk_param = {
+                    "teff": model_param[f"disk_teff_{disk_idx}"],
+                    "radius": model_param[f"disk_radius_{disk_idx}"],
+                }
+
+                if "parallax" in model_param:
+                    disk_param["parallax"] = model_param["parallax"]
+
+                elif "distance" in model_param:
+                    disk_param["distance"] = model_param["distance"]
+
+                planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
+
+                flux_interp = interp1d(
+                    planck_box.wavelength, planck_box.flux, bounds_error=False
+                )
+                flux += flux_interp(wl_points)
 
         # Create ModelBox with the spectrum
 
@@ -1472,12 +1558,10 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
-        # Add the blackbody disk component to the luminosity
+        # Add the blackbody disk components to the luminosity
 
-        if (
-            "disk_teff" in model_box.parameters
-            and "disk_radius" in model_box.parameters
-        ):
+        if n_disk == 1:
+
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1486,6 +1570,18 @@ class ReadModel:
                 * model_box.parameters["disk_teff"] ** 4.0
                 / constants.L_SUN
             )  # (Lsun)
+
+        elif n_disk > 1:
+
+            for disk_idx in range(n_disk):
+                model_box.parameters["luminosity"] += (
+                    4.0
+                    * np.pi
+                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * constants.SIGMA_SB
+                    * model_box.parameters[f"disk_teff"] ** 4.0
+                    / constants.L_SUN
+                )  # (Lsun)
 
         return model_box
 

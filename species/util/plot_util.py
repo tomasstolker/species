@@ -690,6 +690,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("disk_teff")
         param[index] = r"$T_\mathrm{disk}$ (K)"
 
+    for i in range(100):
+        if f"disk_teff_{i}" in param:
+            index = param.index(f"disk_teff_{i}")
+            param[index] = r"$T_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$ (K)"
+
+        else:
+            break
+
     if "disk_radius" in param:
         index = param.index("disk_radius")
         if object_type == "planet":
@@ -697,12 +705,38 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$R_\mathrm{disk}$ (au)"
 
+    for i in range(100):
+        if f"disk_radius_{i}" in param:
+            index = param.index(f"disk_radius_{i}")
+            if object_type == "planet":
+                param[index] = (
+                    r"$R_\mathrm{disk,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
+                )
+            elif object_type == "star":
+                param[index] = r"$R_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$ (au)"
+
+        else:
+            break
+
     if "radius_bb" in param:
         index = param.index("radius_bb")
         if object_type == "planet":
             param[index] = r"$R_\mathrm{bb}$ ($R_\mathrm{J}$)"
         elif object_type == "star":
             param[index] = r"$R_\mathrm{bb}$ (au)"
+
+    for i in range(100):
+        if f"radius_bb_{i}" in param:
+            index = param.index(f"radius_bb_{i}")
+            if object_type == "planet":
+                param[index] = (
+                    r"$R_\mathrm{bb,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
+                )
+            elif object_type == "star":
+                param[index] = r"$R_\mathrm{bb,}$" + rf"$_\mathrm{{{i+1}}}$ (au)"
+
+        else:
+            break
 
     if "log_powerlaw_a" in param:
         index = param.index("log_powerlaw_a")
@@ -1046,13 +1080,40 @@ def quantity_unit(
             unit.append("K")
             label.append(r"$T_\mathrm{disk}$")
 
+        for i in range(100):
+            if item == f"disk_teff_{i}":
+                quantity.append(f"disk_teff_{i}")
+                unit.append("K")
+                label.append(r"$T_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$")
+
+            else:
+                break
+
         if item == "disk_radius":
             quantity.append("disk_radius")
-            label.append(r"$R_\mathrm{disk}$")
+
             if object_type == "planet":
                 unit.append(r"$R_\mathrm{J}$")
+
             elif object_type == "star":
                 unit.append("au")
+
+            label.append(r"$R_\mathrm{disk}$")
+
+        for i in range(100):
+            if item == f"disk_radius_{i}":
+                quantity.append(f"disk_radius_{i}")
+
+                if object_type == "planet":
+                    unit.append(r"$R_\mathrm{J}$")
+
+                elif object_type == "star":
+                    unit.append("au")
+
+                label.append(r"$R_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$")
+
+            else:
+                break
 
         if item == "flux_scaling":
             quantity.append("flux_scaling")
