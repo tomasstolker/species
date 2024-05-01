@@ -2339,7 +2339,7 @@ class Database:
 
                 prob_sample[par_key] = par_value
 
-            if "parallax" not in prob_sample and "parallax" in dset.attrs:
+            if "parallax" not in prob_sample and "parallax_0" not in prob_sample and "parallax" in dset.attrs:
                 prob_sample["parallax"] = dset.attrs["parallax"]
 
             elif "distance" not in prob_sample and "distance" in dset.attrs:
@@ -2426,7 +2426,7 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if "parallax" not in median_sample and "parallax" in dset.attrs:
+            if "parallax" not in median_sample and "parallax_0" not in median_sample and "parallax" in dset.attrs:
                 median_sample["parallax"] = dset.attrs["parallax"]
 
             elif "distance" not in median_sample and "distance" in dset.attrs:
@@ -2686,7 +2686,7 @@ class Database:
                 if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
-            if "parallax" not in model_param and parallax is not None:
+            if "parallax" not in model_param and "parallax_0" not in model_param and parallax is not None:
                 model_param["parallax"] = parallax
 
             elif "distance" not in model_param and distance is not None:
@@ -2733,10 +2733,17 @@ class Database:
                             ext_filter=ext_filter,
                         )
 
-                        flux_comb = (
-                            model_param["spec_weight"] * specbox_0.flux
-                            + (1.0 - model_param["spec_weight"]) * specbox_1.flux
-                        )
+                        # Weighted flux of two spectra for atmospheric asymmetries
+                        # Or simply the same in case of an actual binary system
+
+                        if "spec_weight" in model_param:
+                            flux_comb = (
+                                model_param["spec_weight"] * specbox_0.flux
+                                + (1.0 - model_param["spec_weight"]) * specbox_1.flux
+                            )
+
+                        else:
+                            flux_comb = specbox_0.flux + specbox_1.flux
 
                         specbox = create_box(
                             boxtype="model",
@@ -2880,7 +2887,7 @@ class Database:
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
-            if "parallax" not in model_param and parallax is not None:
+            if "parallax" not in model_param and "parallax_0" not in model_param and parallax is not None:
                 model_param["parallax"] = parallax
 
             elif "distance" not in model_param and distance is not None:
@@ -2914,10 +2921,17 @@ class Database:
                             param_1 = binary_to_single(model_param, 1)
                             mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
 
-                            mcmc_phot[i] = (
-                                model_param["spec_weight"] * mcmc_phot_0
-                                + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
-                            )
+                            # Weighted flux of two spectra for atmospheric asymmetries
+                            # Or simply the same in case of an actual binary system
+
+                            if "spec_weight" in model_param:
+                                mcmc_phot[i] = (
+                                    model_param["spec_weight"] * mcmc_phot_0
+                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                )
+
+                            else:
+                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
 
                         else:
                             mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
@@ -2932,10 +2946,17 @@ class Database:
                             param_1 = binary_to_single(model_param, 1)
                             mcmc_phot_1, _ = readmodel.get_flux(param_1)
 
-                            mcmc_phot[i] = (
-                                model_param["spec_weight"] * mcmc_phot_0
-                                + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
-                            )
+                            # Weighted flux of two spectra for atmospheric asymmetries
+                            # Or simply the same in case of an actual binary system
+
+                            if "spec_weight" in model_param:
+                                mcmc_phot[i] = (
+                                    model_param["spec_weight"] * mcmc_phot_0
+                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                )
+
+                            else:
+                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
 
                         else:
                             mcmc_phot[i], _ = readmodel.get_flux(model_param)

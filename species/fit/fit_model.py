@@ -472,7 +472,7 @@ class FitModel:
         # Set attributes
 
         self.object = ReadObject(object_name)
-        self.parallax = self.object.get_parallax()
+        self.obj_parallax = self.object.get_parallax()
         self.binary = False
         self.ext_filter = ext_filter
 
@@ -545,12 +545,6 @@ class FitModel:
                         self.bounds[f"{key}_1"] = bounds_grid[key]
                         del self.bounds[key]
 
-                    elif isinstance(self.bounds[key][0], tuple):
-                        self.binary = True
-                        self.bounds[f"{key}_0"] = self.bounds[key][0]
-                        self.bounds[f"{key}_1"] = self.bounds[key][1]
-                        del self.bounds[key]
-
                     else:
                         if self.bounds[key][0] < bounds_grid[key][0]:
                             warnings.warn(
@@ -620,6 +614,10 @@ class FitModel:
                 readmodel = ReadModel(self.model, None, None)
                 self.bounds = readmodel.get_bounds()
 
+            print(f"Object name: {object_name}")
+            print(f"Model tag: {model}")
+            print(f"Binary star: {self.binary}")
+
             self.modelpar = readmodel.get_parameters()
 
             if "flux_scaling" in self.bounds:
@@ -634,7 +632,22 @@ class FitModel:
 
             else:
                 self.modelpar.append("radius")
-                self.modelpar.append("parallax")
+
+                if self.binary:
+                    if "parallax" in self.bounds:
+                        if isinstance(self.bounds["parallax"][0], tuple):
+                            self.modelpar.append("parallax_0")
+                            self.modelpar.append("parallax_1")
+                            self.bounds["parallax_0"] = self.bounds["parallax"][0]
+                            self.bounds["parallax_1"] = self.bounds["parallax"][1]
+                            del self.bounds["parallax"]
+
+                    if "parallax_0" in self.normal_prior:
+                            self.modelpar.append("parallax_0")
+                            self.modelpar.append("parallax_1")
+
+                if "parallax_0" not in self.modelpar:
+                    self.modelpar.append("parallax")
 
             if "flux_offset" in self.bounds:
                 self.modelpar.append("flux_offset")
@@ -698,10 +711,16 @@ class FitModel:
                         self.modelpar[par_index] = key[:-2] + "_0"
                         self.modelpar.insert(par_index, key[:-2] + "_1")
 
-                self.modelpar.append("spec_weight")
+                        
+                if "radius" in self.modelpar:
+                    # Fit a weighting for the two spectra in case this
+                    # is a single object, so not an actual binary star.
+                    # In that case the combination of two spectra is
+                    # used to account for atmospheric assymetries
+                    self.modelpar.append("spec_weight")
 
-                if "spec_weight" not in self.bounds:
-                    self.bounds["spec_weight"] = (0.0, 1.0)
+                    if "spec_weight" not in self.bounds:
+                        self.bounds["spec_weight"] = (0.0, 1.0)
 
         # Select filters and spectra
 
@@ -736,6 +755,8 @@ class FitModel:
         self.modelphot = []
         self.filter_name = []
         self.instr_name = []
+
+        print()
 
         for item in inc_phot:
             if self.model == "planck":
@@ -1035,8 +1056,8 @@ class FitModel:
 
         # Add parallax to dictionary with Gaussian priors
 
-        if "parallax" in self.modelpar and "parallax" not in self.fix_param:
-            self.normal_prior["parallax"] = (self.parallax[0], self.parallax[1])
+        if "parallax" in self.modelpar and "parallax" not in self.fix_param and "parallax" not in self.bounds:
+            self.normal_prior["parallax"] = (self.obj_parallax[0], self.obj_parallax[1])
 
         # Printing uniform and normal priors
 
@@ -1313,6 +1334,20 @@ class FitModel:
         # not be provided in the bounds dictionary
 
         if self.model != "powerlaw":
+            if "parallax_0" in self.cube_index:
+                parallax_0 = params[self.cube_index["parallax_0"]]
+            elif "parallax_0" in self.fix_param:
+                parallax_0 = self.fix_param["parallax_0"]
+            else:
+                parallax_0 = params[self.cube_index["parallax"]]
+
+            if "parallax_1" in self.cube_index:
+                parallax_1 = params[self.cube_index["parallax_1"]]
+            elif "parallax_0" in self.fix_param:
+                parallax_1 = self.fix_param["parallax_1"]
+            else:
+                parallax_1 = params[self.cube_index["parallax"]]
+
             if "parallax" in self.cube_index:
                 parallax = params[self.cube_index["parallax"]]
             elif "parallax" in self.fix_param:
@@ -1398,16 +1433,18 @@ class FitModel:
         if self.model != "powerlaw":
             if "radius_0" in param_dict and "radius_1" in param_dict:
                 flux_scaling_0 = (param_dict["radius_0"] * constants.R_JUP) ** 2 / (
-                    1e3 * constants.PARSEC / parallax
+                    1e3 * constants.PARSEC / parallax_0
                 ) ** 2
 
                 flux_scaling_1 = (param_dict["radius_1"] * constants.R_JUP) ** 2 / (
-                    1e3 * constants.PARSEC / parallax
+                    1e3 * constants.PARSEC / parallax_1
                 ) ** 2
 
                 # The scaling is applied manually because of the interpolation
                 del param_dict["radius_0"]
                 del param_dict["radius_1"]
+
+                flux_offset = 0.0
 
             else:
                 if parallax is None:
@@ -1571,12 +1608,17 @@ class FitModel:
                         phot_flux_1 *= flux_scaling_1
                         phot_flux_1 += flux_offset
 
-                    # Weighted flux of two stars
+                    # Weighted flux of two spectra for atmospheric asymmetries
+                    # Or simply the same in case of an actual binary system
 
-                    phot_flux = (
-                        params[self.cube_index["spec_weight"]] * phot_flux_0
-                        + (1.0 - params[self.cube_index["spec_weight"]]) * phot_flux_1
-                    )
+                    if "spec_weight" in self.cube_index:
+                        phot_flux = (
+                            params[self.cube_index["spec_weight"]] * phot_flux_0
+                            + (1.0 - params[self.cube_index["spec_weight"]]) * phot_flux_1
+                        )
+
+                    else:
+                        phot_flux = phot_flux_0 + phot_flux_1
 
                 else:
                     phot_flux = self.modelphot[i].spectrum_interp(
@@ -1763,12 +1805,17 @@ class FitModel:
                         model_flux_1 *= flux_scaling_1
                         model_flux_1 += flux_offset
 
-                    # Weighted flux of two stars
+                    # Weighted flux of two spectra for atmospheric asymmetries
+                    # Or simply the same in case of an actual binary system
 
-                    model_flux = (
-                        params[self.cube_index["spec_weight"]] * model_flux_0
-                        + (1.0 - params[self.cube_index["spec_weight"]]) * model_flux_1
-                    )
+                    if "spec_weight" in self.cube_index:
+                        model_flux = (
+                            params[self.cube_index["spec_weight"]] * model_flux_0
+                            + (1.0 - params[self.cube_index["spec_weight"]]) * model_flux_1
+                        )
+                    else:
+                        model_flux = model_flux_0 + model_flux_1
+
 
                 else:
                     model_flux = self.modelspec[i].spectrum_interp(
@@ -2236,7 +2283,7 @@ class FitModel:
             "spec_type": "model",
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
-            "parallax": self.parallax[0],
+            "parallax": self.obj_parallax[0],
         }
 
         if self.ext_filter is not None:
@@ -2502,7 +2549,7 @@ class FitModel:
             "spec_type": "model",
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
-            "parallax": self.parallax[0],
+            "parallax": self.obj_parallax[0],
         }
 
         if self.ext_filter is not None:
@@ -2865,7 +2912,7 @@ class FitModel:
             "spec_type": "model",
             "spec_name": self.model,
             "ln_evidence": (ln_z, ln_z_error),
-            "parallax": self.parallax[0],
+            "parallax": self.obj_parallax[0],
         }
 
         if self.ext_filter is not None:

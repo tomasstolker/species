@@ -725,6 +725,14 @@ def plot_posterior(
         if object_type == "star":
             samples[:, radius_index] *= constants.R_JUP / constants.R_SUN
 
+    for radius_idx in range(100):
+        if f"radius_{radius_idx}" in box.parameters:
+            radius_index = np.argwhere(np.array(box.parameters) == f"radius_{radius_idx}")[0]
+            if object_type == "star":
+                samples[:, radius_index] *= constants.R_JUP / constants.R_SUN
+        else:
+            break
+
     if "mass" in box.parameters:
         mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
         if object_type == "star":

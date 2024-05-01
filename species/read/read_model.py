@@ -1948,10 +1948,17 @@ class ReadModel:
             wavel_resample=wavel_resample,
         )
 
-        flux_comb = (
-            model_param["spec_weight"] * model_box_0.flux
-            + (1.0 - model_param["spec_weight"]) * model_box_1.flux
-        )
+        # Weighted flux of two spectra for atmospheric asymmetries
+        # Or simply the same in case of an actual binary system
+
+        if "spec_weight" in model_param:
+            flux_comb = (
+                model_param["spec_weight"] * model_box_0.flux
+                + (1.0 - model_param["spec_weight"]) * model_box_1.flux
+            )
+
+        else:
+            flux_comb = model_box_0.flux + model_box_1.flux
 
         model_box = create_box(
             boxtype="model",

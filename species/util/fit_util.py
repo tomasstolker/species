@@ -127,10 +127,17 @@ def multi_photometry(
                         param_1 = binary_to_single(parameters, 1)
                         model_flux_1 = readmodel.get_flux(param_1)[0]
 
-                        flux[item] = (
-                            parameters["spec_weight"] * model_flux_0
-                            + (1.0 - parameters["spec_weight"]) * model_flux_1
-                        )
+                        # Weighted flux of two spectra for atmospheric asymmetries
+                        # Or simply the same in case of an actual binary system
+
+                        if "spec_weight" in parameters:
+                            flux[item] = (
+                                parameters["spec_weight"] * model_flux_0
+                                + (1.0 - parameters["spec_weight"]) * model_flux_1
+                            )
+
+                        else:
+                            flux[item] = model_flux_0 + model_flux_1
 
                     else:
                         # Single object
@@ -368,10 +375,17 @@ def get_residuals(
                             wavel_resample=wl_new,
                         )
 
-                        flux_comb = (
-                            parameters["spec_weight"] * model_spec_0.flux
-                            + (1.0 - parameters["spec_weight"]) * model_spec_1.flux
-                        )
+                        # Weighted flux of two spectra for atmospheric asymmetries
+                        # Or simply the same in case of an actual binary system
+
+                        if "spec_weight" in parameters:
+                            flux_comb = (
+                                parameters["spec_weight"] * model_spec_0.flux
+                                + (1.0 - parameters["spec_weight"]) * model_spec_1.flux
+                            )
+
+                        else:
+                            flux_comb = model_spec_0.flux + model_spec_1.flux
 
                         model_spec = create_box(
                             boxtype="model",

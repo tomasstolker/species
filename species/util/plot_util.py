@@ -356,6 +356,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("parallax")
         param[index] = r"$\varpi$ (mas)"
 
+    if "parallax_0" in param:
+        index = param.index("parallax_0")
+        param[index] = r"$\varpi_\mathrm{1}$ (mas)"
+
+    if "parallax_1" in param:
+        index = param.index("parallax_1")
+        param[index] = r"$\varpi_\mathrm{2}$ (mas)"
+
     if "vsini" in param:
         index = param.index("vsini")
         param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
@@ -673,7 +681,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     for i in range(100):
         if f"radius_{i}" in param:
             index = param.index(f"radius_{i}")
-            param[index] = rf"$R_\mathrm{{{i+1}}}$ ($R_\mathrm{{J}}$)"
+            if object_type == "planet":
+                param[index] = rf"$R_\mathrm{{{i+1}}}$ ($R_\mathrm{{J}}$)"
+            elif object_type == "star":
+                param[index] = rf"$R_\mathrm{{{i+1}}}$ ($R_\mathrm{{\odot}}$)"
 
         else:
             break
@@ -994,18 +1005,28 @@ def quantity_unit(
                 unit.append(r"$R_\mathrm{\odot}$")
                 label.append(r"$R_\ast$")
 
-        for i in range(100):
-            if item == f"teff_{i}":
-                quantity.append(f"teff_{i}")
+        item_split = item.split("_")
+
+        if len(item_split) == 2:
+            param_index = int(item_split[1])
+
+            if item_split[0] == "teff":
+                quantity.append(f"teff_{item_split[1]}")
                 unit.append("K")
-                label.append(rf"$T_\mathrm{{{i+1}}}$")
+                label.append(rf"$T_\mathrm{{{param_index+1}}}$")
 
-            else:
-                break
+            elif item_split[0] == "logg":
+                quantity.append(f"logg_{item_split[1]}")
+                unit.append("")
+                label.append(rf"$\log g_\mathrm{{{param_index+1}}}$")
 
-        for i in range(100):
-            if item == f"radius_{i}":
-                quantity.append(f"radius_{i}")
+            elif item_split[0] == "feh":
+                quantity.append(f"feh_{item_split[1]}")
+                unit.append("")
+                label.append(rf"[Fe/H]$_\mathrm{{{param_index+1}}}$")
+
+            elif item_split[0] == "radius":
+                quantity.append(f"radius_{item_split[1]}")
 
                 if object_type == "planet":
                     unit.append(r"$R_\mathrm{J}$")
@@ -1013,10 +1034,7 @@ def quantity_unit(
                 elif object_type == "star":
                     unit.append(r"$R_\mathrm{\odot}$")
 
-                label.append(rf"$R_\mathrm{{{i+1}}}$")
-
-            else:
-                break
+                label.append(rf"$R_\mathrm{{{param_index+1}}}$")
 
         if item == "distance":
             quantity.append("distance")
@@ -1475,6 +1493,12 @@ def create_model_label(
 
         if item[:4] == "teff":
             value = f"{model_param[item]:{param_fmt['teff']}}"
+
+        elif item[:4] == "logg":
+            value = f"{model_param[item]:{param_fmt['logg']}}"
+
+        elif item[:3] == "feh":
+            value = f"{model_param[item]:{param_fmt['feh']}}"
 
         elif item[:6] == "radius":
             if object_type == "planet":
