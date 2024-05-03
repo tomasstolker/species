@@ -44,8 +44,8 @@ class ReadObject:
 
         self.database = config["species"]["database"]
 
-        with h5py.File(self.database, "r") as h5_file:
-            if f"objects/{self.object_name}" not in h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{self.object_name}" not in hdf5_file:
                 raise ValueError(
                     f"The object '{self.object_name}' is not "
                     f"present in the database."
@@ -73,10 +73,12 @@ class ReadObject:
         if verbose:
             print(f"Available photometric data for {self.object_name}:")
 
-        with h5py.File(self.database, "r") as h5_file:
-            for tel_item in h5_file[f"objects/{self.object_name}"]:
+        with h5py.File(self.database, "r") as hdf5_file:
+            for tel_item in hdf5_file[f"objects/{self.object_name}"]:
                 if tel_item not in ["parallax", "distance", "spectrum"]:
-                    for filt_item in h5_file[f"objects/{self.object_name}/{tel_item}"]:
+                    for filt_item in hdf5_file[
+                        f"objects/{self.object_name}/{tel_item}"
+                    ]:
                         filter_list.append(f"{tel_item}/{filt_item}")
 
                         if verbose:
@@ -105,25 +107,24 @@ class ReadObject:
             flux (W m-2 um-1), flux error (W m-2 um-1).
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            if filter_name in h5_file[f"objects/{self.object_name}"]:
-                obj_phot = np.asarray(
-                    h5_file[f"objects/{self.object_name}/{filter_name}"]
-                )
-
-            else:
+        with h5py.File(self.database, "r") as hdf5_file:
+            if filter_name not in hdf5_file[f"objects/{self.object_name}"]:
                 raise ValueError(
                     f"There is no photometric data of {self.object_name} "
                     f"available with the {filter_name} filter."
                 )
+
+            obj_phot = np.asarray(
+                hdf5_file[f"objects/{self.object_name}/{filter_name}"]
+            )
 
         return obj_phot
 
     @typechecked
     def get_spectrum(self) -> dict:
         """
-        Function for reading the spectra and covariance matrices of the
-        object.
+        Function for reading the spectra and covariance matrices
+        of the selected object.
 
         Returns
         -------
@@ -131,27 +132,27 @@ class ReadObject:
             Dictionary with spectra and covariance matrices.
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            if f"objects/{self.object_name}/spectrum" in h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{self.object_name}/spectrum" in hdf5_file:
                 spectrum = {}
 
-                for item in h5_file[f"objects/{self.object_name}/spectrum"]:
-                    data_group = f"objects/{self.object_name}/spectrum/{item}"
+                for spec_item in hdf5_file[f"objects/{self.object_name}/spectrum"]:
+                    data_group = f"objects/{self.object_name}/spectrum/{spec_item}"
 
-                    if f"{data_group}/covariance" not in h5_file:
-                        spectrum[item] = (
-                            np.asarray(h5_file[f"{data_group}/spectrum"]),
+                    if f"{data_group}/covariance" not in hdf5_file:
+                        spectrum[spec_item] = (
+                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
                             None,
                             None,
-                            h5_file[f"{data_group}"].attrs["specres"],
+                            hdf5_file[f"{data_group}"].attrs["specres"],
                         )
 
                     else:
-                        spectrum[item] = (
-                            np.asarray(h5_file[f"{data_group}/spectrum"]),
-                            np.asarray(h5_file[f"{data_group}/covariance"]),
-                            np.asarray(h5_file[f"{data_group}/inv_covariance"]),
-                            h5_file[f"{data_group}"].attrs["specres"],
+                        spectrum[spec_item] = (
+                            np.asarray(hdf5_file[f"{data_group}/spectrum"]),
+                            np.asarray(hdf5_file[f"{data_group}/covariance"]),
+                            np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
+                            hdf5_file[f"{data_group}"].attrs["specres"],
                         )
 
             else:
@@ -172,16 +173,16 @@ class ReadObject:
             Uncertainty (pc).
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            if f"objects/{self.object_name}/parallax" in h5_file:
-                parallax = np.asarray(h5_file[f"objects/{self.object_name}/parallax"])
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{self.object_name}/parallax" in hdf5_file:
+                parallax = np.asarray(hdf5_file[f"objects/{self.object_name}/parallax"])
                 calc_dist = 1.0 / (parallax[0] * 1e-3)  # (pc)
                 dist_plus = 1.0 / ((parallax[0] - parallax[1]) * 1e-3) - calc_dist
                 dist_minus = calc_dist - 1.0 / ((parallax[0] + parallax[1]) * 1e-3)
                 distance = (calc_dist, (dist_plus + dist_minus) / 2.0)
 
-            elif f"objects/{self.object_name}/distance" in h5_file:
-                distance = np.asarray(h5_file[f"objects/{self.object_name}/distance"])
+            elif f"objects/{self.object_name}/distance" in hdf5_file:
+                distance = np.asarray(hdf5_file[f"objects/{self.object_name}/distance"])
 
             else:
                 raise RuntimeError(
@@ -206,10 +207,10 @@ class ReadObject:
             Uncertainty (mas).
         """
 
-        with h5py.File(self.database, "r") as h5_file:
-            if f"objects/{self.object_name}/parallax" in h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            if f"objects/{self.object_name}/parallax" in hdf5_file:
                 obj_parallax = np.asarray(
-                    h5_file[f"objects/{self.object_name}/parallax"]
+                    hdf5_file[f"objects/{self.object_name}/parallax"]
                 )
 
             else:
@@ -245,12 +246,12 @@ class ReadObject:
             Error on the absolute magnitude.
         """
 
-        with h5py.File(self.database, "r") as h5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
             obj_distance = self.get_distance()
 
-            if filter_name in h5_file[f"objects/{self.object_name}"]:
+            if filter_name in hdf5_file[f"objects/{self.object_name}"]:
                 obj_phot = np.asarray(
-                    h5_file[f"objects/{self.object_name}/{filter_name}"]
+                    hdf5_file[f"objects/{self.object_name}/{filter_name}"]
                 )
 
             else:

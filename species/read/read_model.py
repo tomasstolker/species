@@ -894,13 +894,15 @@ class ReadModel:
 
         else:
             for disk_idx in range(100):
-                if f"disk_teff_{disk_idx}" in model_param and f"disk_radius_{disk_idx}" in model_param:
+                if (
+                    f"disk_teff_{disk_idx}" in model_param
+                    and f"disk_radius_{disk_idx}" in model_param
+                ):
                     n_disk += 1
                 else:
                     break
 
         if n_disk == 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -924,7 +926,6 @@ class ReadModel:
             flux += flux_interp(self.wl_points)
 
         elif n_disk > 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1176,7 +1177,6 @@ class ReadModel:
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1187,12 +1187,15 @@ class ReadModel:
             )  # (Lsun)
 
         elif n_disk > 1:
-
             for disk_idx in range(n_disk):
                 model_box.parameters["luminosity"] += (
                     4.0
                     * np.pi
-                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * (
+                        model_box.parameters[f"disk_radius_{disk_idx}"]
+                        * constants.R_JUP
+                    )
+                    ** 2
                     * constants.SIGMA_SB
                     * model_box.parameters[f"disk_teff_{disk_idx}"] ** 4.0
                     / constants.L_SUN
@@ -1400,7 +1403,6 @@ class ReadModel:
                     break
 
         if n_disk == 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1424,7 +1426,6 @@ class ReadModel:
             flux += flux_interp(wl_points)
 
         elif n_disk > 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1560,7 +1561,6 @@ class ReadModel:
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1571,12 +1571,15 @@ class ReadModel:
             )  # (Lsun)
 
         elif n_disk > 1:
-
             for disk_idx in range(n_disk):
                 model_box.parameters["luminosity"] += (
                     4.0
                     * np.pi
-                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * (
+                        model_box.parameters[f"disk_radius_{disk_idx}"]
+                        * constants.R_JUP
+                    )
+                    ** 2
                     * constants.SIGMA_SB
                     * model_box.parameters[f"disk_teff"] ** 4.0
                     / constants.L_SUN

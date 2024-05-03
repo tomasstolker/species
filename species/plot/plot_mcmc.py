@@ -680,6 +680,8 @@ def plot_posterior(
     # Include the derived mass
 
     if inc_mass:
+        check_param = False
+
         if "logg" in box.parameters and "radius" in box.parameters:
             logg_index = np.argwhere(np.array(box.parameters) == "logg")[0]
             radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
@@ -693,12 +695,46 @@ def plot_posterior(
             box.parameters.append("mass")
             ndim += 1
 
-        else:
+            check_param = True
+
+        if "logg_0" in box.parameters and "radius_0" in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == "logg_0")[0]
+            radius_index = np.argwhere(np.array(box.parameters) == "radius_0")[0]
+
+            mass_samples = logg_to_mass(
+                samples[..., logg_index], samples[..., radius_index]
+            )
+
+            samples = np.append(samples, mass_samples, axis=-1)
+
+            box.parameters.append("mass_0")
+            ndim += 1
+
+            check_param = True
+
+        if "logg_1" in box.parameters and "radius_1" in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == "logg_1")[0]
+            radius_index = np.argwhere(np.array(box.parameters) == "radius_1")[0]
+
+            mass_samples = logg_to_mass(
+                samples[..., logg_index], samples[..., radius_index]
+            )
+
+            samples = np.append(samples, mass_samples, axis=-1)
+
+            box.parameters.append("mass_1")
+            ndim += 1
+
+            check_param = True
+
+        if not check_param:
             warnings.warn(
                 "Samples with the log(g) and radius are required for 'inc_mass=True'."
             )
 
     if inc_log_mass:
+        check_param = False
+
         if "logg" in box.parameters and "radius" in box.parameters:
             logg_index = np.argwhere(np.array(box.parameters) == "logg")[0]
             radius_index = np.argwhere(np.array(box.parameters) == "radius")[0]
@@ -712,6 +748,40 @@ def plot_posterior(
 
             box.parameters.append("log_mass")
             ndim += 1
+
+            check_param = True
+
+        if "logg_0" in box.parameters and "radius_0" in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == "logg_0")[0]
+            radius_index = np.argwhere(np.array(box.parameters) == "radius_0")[0]
+
+            mass_samples = logg_to_mass(
+                samples[..., logg_index], samples[..., radius_index]
+            )
+
+            mass_samples = np.log10(mass_samples)
+            samples = np.append(samples, mass_samples, axis=-1)
+
+            box.parameters.append("log_mass_0")
+            ndim += 1
+
+            check_param = True
+
+        if "logg_1" in box.parameters and "radius_1" in box.parameters:
+            logg_index = np.argwhere(np.array(box.parameters) == "logg_1")[0]
+            radius_index = np.argwhere(np.array(box.parameters) == "radius_1")[0]
+
+            mass_samples = logg_to_mass(
+                samples[..., logg_index], samples[..., radius_index]
+            )
+
+            mass_samples = np.log10(mass_samples)
+            samples = np.append(samples, mass_samples, axis=-1)
+
+            box.parameters.append("log_mass_1")
+            ndim += 1
+
+            check_param = True
 
         else:
             warnings.warn(
@@ -735,6 +805,16 @@ def plot_posterior(
 
     if "mass" in box.parameters:
         mass_index = np.argwhere(np.array(box.parameters) == "mass")[0]
+        if object_type == "star":
+            samples[:, mass_index] *= constants.M_JUP / constants.M_SUN
+
+    if "mass_0" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "mass_0")[0]
+        if object_type == "star":
+            samples[:, mass_index] *= constants.M_JUP / constants.M_SUN
+
+    if "mass_1" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "mass_1")[0]
         if object_type == "star":
             samples[:, mass_index] *= constants.M_JUP / constants.M_SUN
 

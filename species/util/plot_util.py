@@ -375,12 +375,26 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$M_\ast$ ($M_\mathrm{\odot}$)"
 
-    for i, item in enumerate(ascii_lowercase[1:]):
-        if f"mass_{i}" in param:
-            index = param.index(f"mass_{i}")
-            param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
-        else:
-            break
+    if "mass_0" in param:
+        index = param.index("mass_0")
+        if object_type == "planet":
+            param[index] = r"$M_\mathrm{1}$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M_\mathrm{1}$ ($M_\mathrm{\odot}$)"
+
+    if "mass_1" in param:
+        index = param.index("mass_1")
+        if object_type == "planet":
+            param[index] = r"$M_\mathrm{2}$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M_\mathrm{2}$ ($M_\mathrm{\odot}$)"
+
+    # for i, item in enumerate(ascii_lowercase[1:]):
+    #     if f"mass_{i}" in param:
+    #         index = param.index(f"mass_{i}")
+    #         param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
+    #     else:
+    #         break
 
     if "log_mass" in param:
         index = param.index("log_mass")
@@ -389,17 +403,31 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$\log\,M_\ast/M_\mathrm{\odot}$"
 
+    if "log_mass_0" in param:
+        index = param.index("log_mass_0")
+        if object_type == "planet":
+            param[index] = r"$\log\,M_\mathrm{1}/M_\mathrm{J}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,M_\mathrm{1}/M_\mathrm{\odot}$"
+
+    if "log_mass_1" in param:
+        index = param.index("log_mass_1")
+        if object_type == "planet":
+            param[index] = r"$\log\,M_\mathrm{2}/M_\mathrm{J}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,M_\mathrm{2}/M_\mathrm{\odot}$"
+
     if "age" in param:
         index = param.index("age")
         param[index] = "Age (Myr)"
 
-    if "mass_1" in param:
-        index = param.index("mass_1")
-        param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
-
-    if "mass_2" in param:
-        index = param.index("mass_2")
-        param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
+    # if "mass_1" in param:
+    #     index = param.index("mass_1")
+    #     param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
+    #
+    # if "mass_2" in param:
+    #     index = param.index("mass_2")
+    #     param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
 
     if "entropy" in param:
         index = param.index("entropy")
