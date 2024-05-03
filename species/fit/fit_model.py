@@ -1143,7 +1143,8 @@ class FitModel:
 
                     else:
                         print(
-                            f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                            f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} "
+                            f"- {np.amax(self.weights[spec_item]):.2e}"
                         )
 
                 for phot_item in inc_phot:
@@ -1186,7 +1187,8 @@ class FitModel:
 
                 else:
                     print(
-                        f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                        f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} "
+                        f"- {np.amax(self.weights[spec_item]):.2e}"
                     )
 
             for phot_item in inc_phot:
@@ -1563,22 +1565,28 @@ class FitModel:
                         )
 
             elif key[:6] == "ratio_":
-                filt_name = key[6:]
+                filter_name = key[6:]
 
                 param_0 = binary_to_single(param_dict, 0)
-                phot_flux_0 = self.flux_ratio[filt_name].spectrum_interp(
+
+                phot_flux_0 = self.flux_ratio[filter_name].spectrum_interp(
                     list(param_0.values())
                 )[0][0]
 
+                phot_flux_0 *= flux_scaling_0
+
                 param_1 = binary_to_single(param_dict, 1)
-                phot_flux_1 = self.flux_ratio[filt_name].spectrum_interp(
+
+                phot_flux_1 = self.flux_ratio[filter_name].spectrum_interp(
                     list(param_1.values())
                 )[0][0]
 
+                phot_flux_1 *= flux_scaling_1
+
                 # Uniform prior for the flux ratio
 
-                if f"ratio_{filt_name}" in self.bounds:
-                    ratio_prior = self.bounds[f"ratio_{filt_name}"]
+                if f"ratio_{filter_name}" in self.bounds:
+                    ratio_prior = self.bounds[f"ratio_{filter_name}"]
 
                     if ratio_prior[0] > phot_flux_1 / phot_flux_0:
                         return -np.inf
@@ -1587,8 +1595,8 @@ class FitModel:
 
                 # Normal prior for the flux ratio
 
-                if f"ratio_{filt_name}" in self.normal_prior:
-                    ratio_prior = self.normal_prior[f"ratio_{filt_name}"]
+                if f"ratio_{filter_name}" in self.normal_prior:
+                    ratio_prior = self.normal_prior[f"ratio_{filter_name}"]
 
                     ln_like += (
                         -0.5
