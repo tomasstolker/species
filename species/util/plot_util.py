@@ -662,6 +662,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$f_\mathrm{{{item_name}}}$"
 
+        elif item[0:6] == "ratio_":
+            item_name = item[6:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+                item_name = item_name.split("/")[1]
+            param[i] = rf"$r_\mathrm{{{item_name}}}$"
+
     if "c_h_ratio" in param:
         index = param.index("c_h_ratio")
         param[index] = r"[C/H]"
@@ -740,9 +747,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if f"radius_bb_{i}" in param:
             index = param.index(f"radius_bb_{i}")
             if object_type == "planet":
-                param[index] = (
-                    r"$R_\mathrm{bb,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
-                )
+                param[index] = r"$R_\mathrm{bb,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
             elif object_type == "star":
                 param[index] = r"$R_\mathrm{bb,}$" + rf"$_\mathrm{{{i+1}}}$ (au)"
 
@@ -1007,7 +1012,7 @@ def quantity_unit(
 
         item_split = item.split("_")
 
-        if len(item_split) == 2:
+        if len(item_split) == 2 and item_split[1].isdigit():
             param_index = int(item_split[1])
 
             if item_split[0] == "teff":

@@ -84,10 +84,9 @@ class ReadModel:
         self.wavel_range = wavel_range
 
         if self.filter_name is not None:
-            transmission = ReadFilter(self.filter_name)
-
-            self.wavel_range = transmission.wavelength_range()
-            self.mean_wavelength = transmission.mean_wavelength()
+            read_filter = ReadFilter(self.filter_name)
+            self.wavel_range = read_filter.wavelength_range()
+            self.mean_wavelength = read_filter.mean_wavelength()
 
         else:
             self.mean_wavelength = None
@@ -389,8 +388,8 @@ class ReadModel:
                                     ).flux
 
         if self.filter_name is not None:
-            transmission = ReadFilter(self.filter_name)
-            self.wl_points = [transmission.mean_wavelength()]
+            read_filter = ReadFilter(self.filter_name)
+            self.wl_points = [read_filter.mean_wavelength()]
 
         else:
             self.wl_points = wavel_resample
@@ -483,8 +482,8 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = ReadFilter("Generic/Bessell.V")
-        filt_trans = read_filt.get_filter()
+        read_filter = ReadFilter("Generic/Bessell.V")
+        filt_trans = read_filter.get_filter()
 
         # Create empty array for V-band extinction
 
@@ -611,8 +610,8 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = ReadFilter("Generic/Bessell.V")
-        filt_trans = read_filt.get_filter()
+        read_filter = ReadFilter("Generic/Bessell.V")
+        filt_trans = read_filter.get_filter()
 
         # Create empty array for V-band extinction
 
