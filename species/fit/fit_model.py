@@ -191,6 +191,9 @@ class FitModel:
                  ``ratio_Paranal/ERIS.H``. For a uniform prior, the
                  ratio parameter should be added to ``bounds`` and
                  for a normal prior it is added to ``normal_prior``.
+                 The flux ratio is defined as the flux of the
+                 secondary star divided by the flux of the primary
+                 star.
 
                - Instead of fitting the radius and parallax, it is also
                  possible to fit a scaling parameter directly, either
@@ -1060,7 +1063,6 @@ class FitModel:
         for param_item in self.normal_prior:
             if param_item[:6] == "ratio_":
                 self.modelpar.append(param_item)
-
                 print(f"Interpolating {param_item[6:]}...", end="", flush=True)
                 read_model = ReadModel(self.model, filter_name=param_item[6:])
                 read_model.interpolate_grid(wavel_resample=None, spec_res=None)
@@ -1602,9 +1604,9 @@ class FitModel:
 
             if f"ratio_{filt_name}" in self.bounds:
                 ratio_prior = self.bounds[f"ratio_{filt_name}"]
-                if ratio_prior[0] > phot_flux_0 / phot_flux_1:
+                if ratio_prior[0] > phot_flux_1 / phot_flux_0:
                     return -np.inf
-                elif ratio_prior[1] < phot_flux_0 / phot_flux_1:
+                elif ratio_prior[1] < phot_flux_1 / phot_flux_0:
                     return -np.inf
 
             # Normal prior for the flux ratio
@@ -1614,7 +1616,7 @@ class FitModel:
 
                 ln_like += (
                     -0.5
-                    * (phot_flux_0 / phot_flux_1 - ratio_prior[0]) ** 2
+                    * (phot_flux_1 / phot_flux_0 - ratio_prior[0]) ** 2
                     / ratio_prior[1] ** 2
                 )
 
