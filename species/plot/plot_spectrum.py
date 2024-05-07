@@ -25,7 +25,7 @@ from species.core.box import (
 from species.read.read_filter import ReadFilter
 from species.util.core_util import print_section
 from species.util.data_util import convert_units
-from species.util.plot_util import create_model_label
+from species.util.plot_util import create_model_label, create_param_format
 
 
 @typechecked
@@ -216,48 +216,7 @@ def plot_spectrum(
     if leg_param is None:
         leg_param = []
 
-    if param_fmt is None:
-        param_fmt = {}
-
-    # Add missing parameter formats
-
-    param_add = ["teff", "disk_teff", "disk_radius"]
-
-    for param_item in param_add:
-        if param_item not in param_fmt:
-            param_fmt[param_item] = ".0f"
-
-    param_add = [
-        "radius",
-        "logg",
-        "feh",
-        "metallicity",
-        "fsed",
-        "log_kzz",
-        "distance",
-        "parallax",
-        "mass",
-        "ism_ext",
-        "lognorm_ext",
-        "powerlaw_ext",
-        "log_flux_scaling",
-    ]
-
-    for param_item in param_add:
-        if param_item not in param_fmt:
-            param_fmt[param_item] = ".1f"
-
-    param_add = ["co", "c_o_ratio", "ad_index", "luminosity"]
-
-    for param_item in param_add:
-        if param_item not in param_fmt:
-            param_fmt[param_item] = ".2f"
-
-    param_add = ["flux_scaling", "flux_offset"]
-
-    for param_item in param_add:
-        if param_item not in param_fmt:
-            param_fmt[param_item] = ".2e"
+    param_fmt = create_param_format(param_fmt)
 
     if residuals is not None and filters is not None:
         fig = plt.figure(figsize=figsize)

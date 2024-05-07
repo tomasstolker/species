@@ -14,6 +14,7 @@ This page contains a list of tutorials which highlight some of the functionaliti
    :maxdepth: 1
 
    tutorials/fitting_model_spectra.ipynb
+   tutorials/grid_comparison.ipynb
    tutorials/atmospheric_retrieval.ipynb
    tutorials/emission_line.ipynb
    tutorials/flux_calibration.ipynb

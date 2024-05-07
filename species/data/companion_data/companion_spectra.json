@@ -29,6 +29,14 @@
             "Delorme et al. 2017, A&A, 608, 79"
         ]
     },
+    "HD 206893 c": {
+        "GRAVITY": [
+            "HD206893C_GRAVITYK_fluxcal_spectrum.fits",
+            "HD206893C_GRAVITYK_fluxcal_spectrum.fits",
+            500.0,
+            "2023A&A...671L...5H"
+        ]
+    },
     "HIP 65426 B": {
         "SPHERE_YJH": [
             "hip65426b_sphere_yjh.dat",

@@ -1434,7 +1434,7 @@ def create_model_label(
     leg_param: List[str],
     param_fmt: Dict[str, str],
 ) -> str:
-    """ "
+    """"
     Function for creating a label that includes the parameters of a
     model spectrum. The label is used in the legend of a SED plot.
 
@@ -1586,3 +1586,68 @@ def create_model_label(
             label += f"{par_label[param_idx]} = {value} {par_unit[param_idx]}"
 
     return label
+
+
+def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
+    """"
+    Function for creating a dictionary with parameter formats
+    that are used in the legend of a plot.
+
+    Parameters
+    ----------
+    param_fmt : dict(str, str), None
+        Dictionary with formats that will be used for the model
+        parameter. The parameters are included in the ``legend``
+        when plotting the model spectra. Default formats are
+        used if the argument of ``param_fmt`` is set to ``None``.
+
+    Returns
+    -------
+    dict(str, str)
+        Output dictionary with parameter formats.
+    """
+
+    if param_fmt is None:
+        param_fmt = {}
+
+    # Add missing parameter formats
+
+    param_add = ["teff", "disk_teff", "disk_radius"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".0f"
+
+    param_add = [
+        "radius",
+        "logg",
+        "feh",
+        "metallicity",
+        "fsed",
+        "log_kzz",
+        "distance",
+        "parallax",
+        "mass",
+        "ism_ext",
+        "lognorm_ext",
+        "powerlaw_ext",
+        "log_flux_scaling",
+    ]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".1f"
+
+    param_add = ["co", "c_o_ratio", "ad_index", "luminosity"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2f"
+
+    param_add = ["flux_scaling", "flux_offset"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2e"
+
+    return param_fmt

@@ -23,7 +23,7 @@ from species.core import constants
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
 from species.util.dust_util import ism_extinction
-from species.util.plot_util import create_model_label, update_labels
+from species.util.plot_util import create_model_label, create_param_format, update_labels
 from species.util.spec_util import smooth_spectrum
 
 
@@ -1218,12 +1218,15 @@ def plot_model_spectra(
                 leg_param = model_param.copy()
                 leg_param.append("radius")
 
+            param_fmt = create_param_format(param_fmt=None)
+
             label_text = create_model_label(
                 model_param=param_select,
                 model_name=model_name,
                 inc_model_name=False,
                 object_type="planet",
                 leg_param=leg_param,
+                param_fmt=param_fmt,
             )
 
             label_text = (
