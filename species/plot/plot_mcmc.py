@@ -859,6 +859,20 @@ def plot_posterior(
                 10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
             )
 
+    if "log_mass_0" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "log_mass_0")[0]
+        if object_type == "star":
+            samples[:, mass_index] = np.log10(
+                10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
+            )
+
+    if "log_mass_1" in box.parameters:
+        mass_index = np.argwhere(np.array(box.parameters) == "log_mass_1")[0]
+        if object_type == "star":
+            samples[:, mass_index] = np.log10(
+                10.0 ** samples[:, mass_index] * constants.M_JUP / constants.M_SUN
+            )
+
     if "disk_radius" in box.parameters:
         radius_index = np.argwhere(np.array(box.parameters) == "disk_radius")[0]
         if object_type == "star":

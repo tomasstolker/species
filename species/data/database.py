@@ -2534,7 +2534,10 @@ class Database:
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
-    ) -> Union[List[ModelBox], List[SpectrumBox]]:
+    ) -> Union[
+        Union[List[ModelBox], List[SpectrumBox]],
+        Tuple[List[ModelBox], List[ModelBox], List[ModelBox]],
+    ]:
         """
         Function for drawing random spectra from the
         sampled posterior distributions.
@@ -2565,7 +2568,17 @@ class Database:
         Returns
         -------
         list(species.core.box.ModelBox)
-            List with ``ModelBox`` objects.
+            List with ``ModelBox`` objects. When fitting an unresolved
+            binary system, this list contains the model spectra of
+            the combined flux. 
+        list(species.core.box.ModelBox)
+            The list of ``ModelBox`` objects is only returned when
+            fitting and unresolved binary system. It contains the
+            model spectra of the first component.
+        list(species.core.box.ModelBox)
+            The list of ``ModelBox`` objects is only returned when
+            fitting and unresolved binary system. It contains the
+            model spectra of the second component.
         """
 
         print_section(f"Get posterior spectra")
@@ -2690,6 +2703,13 @@ class Database:
 
         boxes = []
 
+        if binary:
+            boxes_0 = []
+            boxes_1 = []
+        else:
+            boxes_0 = None
+            boxes_1 = None
+
         print()
 
         for i in tqdm(range(samples.shape[0])):
@@ -2783,7 +2803,14 @@ class Database:
 
             boxes.append(specbox)
 
-        return boxes
+            if binary:
+                boxes_0.append(specbox_0)
+                boxes_1.append(specbox_1)
+
+        if binary:
+            return boxes, boxes_0, boxes_1
+        else:
+            return boxes
 
     @typechecked
     def get_mcmc_photometry(
