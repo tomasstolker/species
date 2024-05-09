@@ -1392,7 +1392,11 @@ class Database:
 
                     read_spec[spec_item] = read_spec[spec_item].transpose()
 
-                nan_idx = np.isnan(read_spec[spec_item][:, 1])
+                # Remove wavelengths with NaN flux and/or error
+
+                nan_idx_flux = np.isnan(read_spec[spec_item][:, 1])
+                nan_idx_error = np.isnan(read_spec[spec_item][:, 2])
+                nan_idx = nan_idx_flux + nan_idx_error
 
                 # Add NaN booleans to dictionary for adjusting
                 # the covariance matrix later on
@@ -2339,7 +2343,11 @@ class Database:
 
                 prob_sample[par_key] = par_value
 
-            if "parallax" not in prob_sample and "parallax_0" not in prob_sample and "parallax" in dset.attrs:
+            if (
+                "parallax" not in prob_sample
+                and "parallax_0" not in prob_sample
+                and "parallax" in dset.attrs
+            ):
                 prob_sample["parallax"] = dset.attrs["parallax"]
 
             elif "distance" not in prob_sample and "distance" in dset.attrs:
@@ -2426,7 +2434,11 @@ class Database:
                 par_value = np.median(samples[:, i])
                 median_sample[par_key] = par_value
 
-            if "parallax" not in median_sample and "parallax_0" not in median_sample and "parallax" in dset.attrs:
+            if (
+                "parallax" not in median_sample
+                and "parallax_0" not in median_sample
+                and "parallax" in dset.attrs
+            ):
                 median_sample["parallax"] = dset.attrs["parallax"]
 
             elif "distance" not in median_sample and "distance" in dset.attrs:
@@ -2522,7 +2534,10 @@ class Database:
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
-    ) -> Union[List[ModelBox], List[SpectrumBox]]:
+    ) -> Union[
+        Union[List[ModelBox], List[SpectrumBox]],
+        Tuple[List[ModelBox], List[ModelBox], List[ModelBox]],
+    ]:
         """
         Function for drawing random spectra from the
         sampled posterior distributions.
@@ -2553,7 +2568,17 @@ class Database:
         Returns
         -------
         list(species.core.box.ModelBox)
-            List with ``ModelBox`` objects.
+            List with ``ModelBox`` objects. When fitting an unresolved
+            binary system, this list contains the model spectra of
+            the combined flux. 
+        list(species.core.box.ModelBox)
+            The list of ``ModelBox`` objects is only returned when
+            fitting and unresolved binary system. It contains the
+            model spectra of the first component.
+        list(species.core.box.ModelBox)
+            The list of ``ModelBox`` objects is only returned when
+            fitting and unresolved binary system. It contains the
+            model spectra of the second component.
         """
 
         print_section(f"Get posterior spectra")
@@ -2678,6 +2703,13 @@ class Database:
 
         boxes = []
 
+        if binary:
+            boxes_0 = []
+            boxes_1 = []
+        else:
+            boxes_0 = None
+            boxes_1 = None
+
         print()
 
         for i in tqdm(range(samples.shape[0])):
@@ -2686,7 +2718,11 @@ class Database:
                 if param[j] not in ignore_param:
                     model_param[param[j]] = samples[i, j]
 
-            if "parallax" not in model_param and "parallax_0" not in model_param and parallax is not None:
+            if (
+                "parallax" not in model_param
+                and "parallax_0" not in model_param
+                and parallax is not None
+            ):
                 model_param["parallax"] = parallax
 
             elif "distance" not in model_param and distance is not None:
@@ -2767,7 +2803,14 @@ class Database:
 
             boxes.append(specbox)
 
-        return boxes
+            if binary:
+                boxes_0.append(specbox_0)
+                boxes_1.append(specbox_1)
+
+        if binary:
+            return boxes, boxes_0, boxes_1
+        else:
+            return boxes
 
     @typechecked
     def get_mcmc_photometry(
@@ -2887,7 +2930,11 @@ class Database:
             for j in range(n_param):
                 model_param[param[j]] = samples[i, j]
 
-            if "parallax" not in model_param and "parallax_0" not in model_param and parallax is not None:
+            if (
+                "parallax" not in model_param
+                and "parallax_0" not in model_param
+                and parallax is not None
+            ):
                 model_param["parallax"] = parallax
 
             elif "distance" not in model_param and distance is not None:
@@ -3250,9 +3297,33 @@ class Database:
 
                 for prior_item in dset_prior:
                     group_path = f"results/fit/{tag}/normal_prior/{prior_item}"
-                    norm_prior = np.array(hdf5_file[group_path])
-                    print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
-                    normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
+
+                    if isinstance(hdf5_file[group_path], h5py._hl.group.Group):
+                        for filter_item in hdf5_file[group_path]:
+                            # This is required for the inflation parameter
+                            # of the photometric fluxes. Since the SVO
+                            # filter names contain a slash which introduces
+                            # a subgroup in the HDF5 database
+                            norm_prior = np.array(
+                                hdf5_file[f"{group_path}/{filter_item}"]
+                            )
+
+                            print(
+                                f"   - {prior_item}/{filter_item} = "
+                                f"({norm_prior[0]}, {norm_prior[1]})"
+                            )
+
+                            normal_priors[f"{bound_item}/{filter_item}"] = (
+                                norm_prior[0],
+                                norm_prior[1],
+                            )
+
+                    else:
+                        norm_prior = np.array(hdf5_file[group_path])
+
+                        print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
+
+                        normal_priors[bound_item] = (norm_prior[0], norm_prior[1])
 
         median_sample = self.get_median_sample(tag, burnin, verbose=False)
         prob_sample = self.get_probable_sample(tag, burnin, verbose=False)

@@ -84,10 +84,9 @@ class ReadModel:
         self.wavel_range = wavel_range
 
         if self.filter_name is not None:
-            transmission = ReadFilter(self.filter_name)
-
-            self.wavel_range = transmission.wavelength_range()
-            self.mean_wavelength = transmission.mean_wavelength()
+            read_filter = ReadFilter(self.filter_name)
+            self.wavel_range = read_filter.wavelength_range()
+            self.mean_wavelength = read_filter.mean_wavelength()
 
         else:
             self.mean_wavelength = None
@@ -389,8 +388,8 @@ class ReadModel:
                                     ).flux
 
         if self.filter_name is not None:
-            transmission = ReadFilter(self.filter_name)
-            self.wl_points = [transmission.mean_wavelength()]
+            read_filter = ReadFilter(self.filter_name)
+            self.wl_points = [read_filter.mean_wavelength()]
 
         else:
             self.wl_points = wavel_resample
@@ -483,8 +482,8 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = ReadFilter("Generic/Bessell.V")
-        filt_trans = read_filt.get_filter()
+        read_filter = ReadFilter("Generic/Bessell.V")
+        filt_trans = read_filter.get_filter()
 
         # Create empty array for V-band extinction
 
@@ -611,8 +610,8 @@ class ReadModel:
 
         # Read Bessell V-band filter profile
 
-        read_filt = ReadFilter("Generic/Bessell.V")
-        filt_trans = read_filt.get_filter()
+        read_filter = ReadFilter("Generic/Bessell.V")
+        filt_trans = read_filter.get_filter()
 
         # Create empty array for V-band extinction
 
@@ -895,13 +894,15 @@ class ReadModel:
 
         else:
             for disk_idx in range(100):
-                if f"disk_teff_{disk_idx}" in model_param and f"disk_radius_{disk_idx}" in model_param:
+                if (
+                    f"disk_teff_{disk_idx}" in model_param
+                    and f"disk_radius_{disk_idx}" in model_param
+                ):
                     n_disk += 1
                 else:
                     break
 
         if n_disk == 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -925,7 +926,6 @@ class ReadModel:
             flux += flux_interp(self.wl_points)
 
         elif n_disk > 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1177,7 +1177,6 @@ class ReadModel:
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1188,12 +1187,15 @@ class ReadModel:
             )  # (Lsun)
 
         elif n_disk > 1:
-
             for disk_idx in range(n_disk):
                 model_box.parameters["luminosity"] += (
                     4.0
                     * np.pi
-                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * (
+                        model_box.parameters[f"disk_radius_{disk_idx}"]
+                        * constants.R_JUP
+                    )
+                    ** 2
                     * constants.SIGMA_SB
                     * model_box.parameters[f"disk_teff_{disk_idx}"] ** 4.0
                     / constants.L_SUN
@@ -1401,7 +1403,6 @@ class ReadModel:
                     break
 
         if n_disk == 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1425,7 +1426,6 @@ class ReadModel:
             flux += flux_interp(wl_points)
 
         elif n_disk > 1:
-
             readplanck = ReadPlanck(
                 (0.9 * self.wavel_range[0], 1.1 * self.wavel_range[-1])
             )
@@ -1561,7 +1561,6 @@ class ReadModel:
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-
             model_box.parameters["luminosity"] += (
                 4.0
                 * np.pi
@@ -1572,12 +1571,15 @@ class ReadModel:
             )  # (Lsun)
 
         elif n_disk > 1:
-
             for disk_idx in range(n_disk):
                 model_box.parameters["luminosity"] += (
                     4.0
                     * np.pi
-                    * (model_box.parameters[f"disk_radius_{disk_idx}"] * constants.R_JUP) ** 2
+                    * (
+                        model_box.parameters[f"disk_radius_{disk_idx}"]
+                        * constants.R_JUP
+                    )
+                    ** 2
                     * constants.SIGMA_SB
                     * model_box.parameters[f"disk_teff"] ** 4.0
                     / constants.L_SUN

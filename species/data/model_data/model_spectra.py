@@ -4,10 +4,10 @@ Module for adding a grid of model spectra to the database.
 
 import json
 import os
-import pathlib
 import tarfile
 import warnings
 
+from pathlib import Path
 from typing import Optional, Tuple
 
 import h5py
@@ -80,7 +80,7 @@ def add_model_grid(
     print(f"Database tag: {model_tag}")
     print(f"Model name: {model_name}")
 
-    data_file = pathlib.Path(__file__).parent.resolve() / "model_data.json"
+    data_file = Path(__file__).parent.resolve() / "model_data.json"
 
     with open(data_file, "r", encoding="utf-8") as json_file:
         model_data = json.load(json_file)
@@ -90,16 +90,9 @@ def add_model_grid(
 
     else:
         raise ValueError(
-            f"The '{model_tag}' atmospheric model is not available. "
-            "Please choose one of the following models: "
-            "'ames-cond', 'ames-dusty', 'atmo', 'bt-settl', "
-            "'bt-nextgen', 'drift-phoexnix', 'petitcode-cool-clear', "
-            "'petitcode-cool-cloudy', 'petitcode-hot-clear', "
-            "'petitcode-hot-cloudy', 'exo-rem', 'bt-settl-cifist', "
-            "'bt-cond', 'bt-cond-feh', 'blackbody', 'sonora-cholla', "
-            "'sonora-bobcat', 'sonora-bobcat-co', 'koester-wd', "
-            "'saumon2008-clear', 'saumon2008-cloudy', 'petrus2023', "
-            "'sphinx'"
+            f"The '{model_tag}' atmospheric model is "
+            "not available. Please choose one of the "
+            f"following models: {list(model_data.keys())}"
         )
 
     if model_tag == "bt-settl":

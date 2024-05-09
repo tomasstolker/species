@@ -178,7 +178,22 @@ class FitModel:
                  and fixes :math:`\\log{g}` to 4.0 and 4.5,
                  respectively. The ``spec_weight`` parameter is
                  automatically included in the fit, as it sets the
-                 weight of the two components.
+                 weight of the two components in case a single radius
+                 is fitted, so when simulating horizontal
+                 inhomogeneities in the atmosphere. When fitting the
+                 combined photometry from two stars, but with known
+                 flux ratios in specific filters, it is possible to
+                 apply a prior for the known flux ratios. The filters
+                 with the known flux ratios can be different from
+                 the filters with (combined) photometric fluxes.
+                 For example, when the flux ratio is known in filter
+                 Paranal/ERIS.H then the parameter to add is
+                 ``ratio_Paranal/ERIS.H``. For a uniform prior, the
+                 ratio parameter should be added to ``bounds`` and
+                 for a normal prior it is added to ``normal_prior``.
+                 The flux ratio is defined as the flux of the
+                 secondary star divided by the flux of the primary
+                 star.
 
                - Instead of fitting the radius and parallax, it is also
                  possible to fit a scaling parameter directly, either
@@ -643,8 +658,8 @@ class FitModel:
                             del self.bounds["parallax"]
 
                     if "parallax_0" in self.normal_prior:
-                            self.modelpar.append("parallax_0")
-                            self.modelpar.append("parallax_1")
+                        self.modelpar.append("parallax_0")
+                        self.modelpar.append("parallax_1")
 
                 if "parallax_0" not in self.modelpar:
                     self.modelpar.append("parallax")
@@ -711,7 +726,6 @@ class FitModel:
                         self.modelpar[par_index] = key[:-2] + "_0"
                         self.modelpar.insert(par_index, key[:-2] + "_1")
 
-                        
                 if "radius" in self.modelpar:
                     # Fit a weighting for the two spectra in case this
                     # is a single object, so not an actual binary star.
@@ -796,6 +810,7 @@ class FitModel:
                 self.modelpar.append(f"{instr_filt}_error")
 
             # Store the flux and uncertainty for each filter
+
             obj_phot = self.object.get_photometry(item)
             self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
@@ -1032,6 +1047,26 @@ class FitModel:
         if "veil_ref" in self.bounds:
             self.modelpar.append("veil_ref")
 
+        # Include prior flux ratio when fitting
+
+        self.flux_ratio = {}
+
+        for param_item in self.bounds:
+            if param_item[:6] == "ratio_":
+                print(f"Interpolating {param_item[6:]}...", end="", flush=True)
+                read_model = ReadModel(self.model, filter_name=param_item[6:])
+                read_model.interpolate_grid(wavel_resample=None, spec_res=None)
+                self.flux_ratio[param_item[6:]] = read_model
+                print(" [DONE]")
+
+        for param_item in self.normal_prior:
+            if param_item[:6] == "ratio_":
+                print(f"Interpolating {param_item[6:]}...", end="", flush=True)
+                read_model = ReadModel(self.model, filter_name=param_item[6:])
+                read_model.interpolate_grid(wavel_resample=None, spec_res=None)
+                self.flux_ratio[param_item[6:]] = read_model
+                print(" [DONE]")
+
         self.fix_param = {}
         del_param = []
 
@@ -1056,7 +1091,11 @@ class FitModel:
 
         # Add parallax to dictionary with Gaussian priors
 
-        if "parallax" in self.modelpar and "parallax" not in self.fix_param and "parallax" not in self.bounds:
+        if (
+            "parallax" in self.modelpar
+            and "parallax" not in self.fix_param
+            and "parallax" not in self.bounds
+        ):
             self.normal_prior["parallax"] = (self.obj_parallax[0], self.obj_parallax[1])
 
         # Printing uniform and normal priors
@@ -1104,7 +1143,8 @@ class FitModel:
 
                     else:
                         print(
-                            f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                            f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} "
+                            f"- {np.amax(self.weights[spec_item]):.2e}"
                         )
 
                 for phot_item in inc_phot:
@@ -1147,7 +1187,8 @@ class FitModel:
 
                 else:
                     print(
-                        f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} - {np.amax(self.weights[spec_item]):.2e}"
+                        f"   - {spec_item} = {np.amin(self.weights[spec_item]):.2e} "
+                        f"- {np.amax(self.weights[spec_item]):.2e}"
                     )
 
             for phot_item in inc_phot:
@@ -1523,6 +1564,46 @@ class FitModel:
                             "so the mass prior can not be applied."
                         )
 
+            elif key[:6] == "ratio_":
+                filter_name = key[6:]
+
+                param_0 = binary_to_single(param_dict, 0)
+
+                phot_flux_0 = self.flux_ratio[filter_name].spectrum_interp(
+                    list(param_0.values())
+                )[0][0]
+
+                phot_flux_0 *= flux_scaling_0
+
+                param_1 = binary_to_single(param_dict, 1)
+
+                phot_flux_1 = self.flux_ratio[filter_name].spectrum_interp(
+                    list(param_1.values())
+                )[0][0]
+
+                phot_flux_1 *= flux_scaling_1
+
+                # Uniform prior for the flux ratio
+
+                if f"ratio_{filter_name}" in self.bounds:
+                    ratio_prior = self.bounds[f"ratio_{filter_name}"]
+
+                    if ratio_prior[0] > phot_flux_1 / phot_flux_0:
+                        return -np.inf
+                    elif ratio_prior[1] < phot_flux_1 / phot_flux_0:
+                        return -np.inf
+
+                # Normal prior for the flux ratio
+
+                if f"ratio_{filter_name}" in self.normal_prior:
+                    ratio_prior = self.normal_prior[f"ratio_{filter_name}"]
+
+                    ln_like += (
+                        -0.5
+                        * (phot_flux_1 / phot_flux_0 - ratio_prior[0]) ** 2
+                        / ratio_prior[1] ** 2
+                    )
+
             else:
                 ln_like += (
                     -0.5
@@ -1614,7 +1695,8 @@ class FitModel:
                     if "spec_weight" in self.cube_index:
                         phot_flux = (
                             params[self.cube_index["spec_weight"]] * phot_flux_0
-                            + (1.0 - params[self.cube_index["spec_weight"]]) * phot_flux_1
+                            + (1.0 - params[self.cube_index["spec_weight"]])
+                            * phot_flux_1
                         )
 
                     else:
@@ -1811,11 +1893,11 @@ class FitModel:
                     if "spec_weight" in self.cube_index:
                         model_flux = (
                             params[self.cube_index["spec_weight"]] * model_flux_0
-                            + (1.0 - params[self.cube_index["spec_weight"]]) * model_flux_1
+                            + (1.0 - params[self.cube_index["spec_weight"]])
+                            * model_flux_1
                         )
                     else:
                         model_flux = model_flux_0 + model_flux_1
-
 
                 else:
                     model_flux = self.modelspec[i].spectrum_interp(

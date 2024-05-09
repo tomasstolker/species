@@ -2,8 +2,10 @@
 Utility functions for model spectra.
 """
 
+import json
 import warnings
 
+from pathlib import Path
 from typing import Dict, Tuple, Union
 
 import numpy as np
@@ -30,113 +32,15 @@ def convert_model_name(in_name: str) -> str:
         Updated model name for plots.
     """
 
-    if in_name == "drift-phoenix":
-        out_name = "DRIFT-PHOENIX"
+    data_file = (
+        Path(__file__).parent.resolve().parents[0] / "data/model_data/model_data.json"
+    )
 
-    elif in_name == "ames-cond":
-        out_name = "AMES-Cond"
+    with open(data_file, "r", encoding="utf-8") as json_file:
+        model_data = json.load(json_file)
 
-    elif in_name == "ames-dusty":
-        out_name = "AMES-Dusty"
-
-    elif in_name == "atmo":
-        out_name = "ATMO"
-
-    elif in_name == "atmo-ceq":
-        out_name = "ATMO CEQ"
-
-    elif in_name == "atmo-neq-weak":
-        out_name = "ATMO NEQ weak"
-
-    elif in_name == "atmo-neq-strong":
-        out_name = "ATMO NEQ strong"
-
-    elif in_name == "petrus2023":
-        out_name = "ATMO (Petrus et al. 2023)"
-
-    elif in_name == "atmo-petrus2023":
-        out_name = "ATMO (Petrus et al. 2023)"
-
-    elif in_name == "bt-cond":
-        out_name = "BT-Cond"
-
-    elif in_name == "bt-cond-feh":
-        out_name = "BT-Cond"
-
-    elif in_name == "bt-settl":
-        out_name = "BT-Settl"
-
-    elif in_name == "bt-settl-cifist":
-        out_name = "BT-Settl"
-
-    elif in_name == "bt-nextgen":
-        out_name = "BT-NextGen"
-
-    elif in_name == "bt-nextgen-subsolar":
-        out_name = "BT-NextGen"
-
-    elif in_name == "koester-wd":
-        out_name = "Koester (2010)"
-
-    elif in_name == "petitcode-cool-clear":
-        out_name = "petitCODE clear"
-
-    elif in_name == "petitcode-cool-cloudy":
-        out_name = "petitCODE cloudy"
-
-    elif in_name == "petitcode-hot-clear":
-        out_name = "petitCODE clear"
-
-    elif in_name == "petitcode-hot-cloudy":
-        out_name = "petitCODE cloudy"
-
-    elif in_name == "petitcode-linder2019-clear":
-        out_name = "petitCODE clear (Linder et al. 2019)"
-
-    elif in_name == "petitcode-linder2019-cloudy":
-        out_name = "petitCODE cloudy (Linder et al. 2019)"
-
-    elif in_name == "exo-rem":
-        out_name = "Exo-REM"
-
-    elif in_name == "exo-rem-highres":
-        out_name = "Exo-REM"
-
-    elif in_name in ["planck", "blackbody"]:
-        out_name = "Blackbody"
-
-    elif in_name == "zhu2015":
-        out_name = "Zhu (2015)"
-
-    elif in_name == "saumon2008-clear":
-        out_name = "Saumon & Marley (2008)"
-
-    elif in_name == "saumon2008-cloudy":
-        out_name = "Saumon & Marley (2008)"
-
-    elif in_name == "sonora-cholla":
-        out_name = "Sonora Cholla"
-
-    elif in_name == "sonora-bobcat":
-        out_name = "Sonora Bobcat"
-
-    elif in_name == "sonora-bobcat-co":
-        out_name = "Sonora Bobcat C/O"
-
-    elif in_name == "sonora-elfowl-l":
-        out_name = "Sonora Elf Owl"
-
-    elif in_name == "sonora-elfowl-t":
-        out_name = "Sonora Elf Owl"
-
-    elif in_name == "sonora-elfowl-y":
-        out_name = "Sonora Elf Owl"
-
-    elif in_name == "sphinx":
-        out_name = "SPHINX"
-
-    elif in_name == "petitradtrans":
-        out_name = "petitRADTRANS"
+    if in_name in model_data.keys():
+        out_name = model_data[in_name]["name"]
 
     else:
         out_name = in_name

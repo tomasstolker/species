@@ -25,6 +25,7 @@ The following data and models are currently supported:
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_
 - `BT-Settl <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl>`_
 - `BT-Settl-CIFIST <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-settl-cifist>`_
+- `coolTLUSTY Y dwarf <https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract>`_
 - `DRIFT-PHOENIX <http://svo2.cab.inta-csic.es/theory/newov2/index.php?models=drift>`_
 - `Exo-REM <https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C/abstract>`_
 - `Morley et al. (2012) T/Y dwarf spectra <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_

@@ -170,6 +170,66 @@
         "reference": "Koester (2010)",
         "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K"
     },
+    "lacy2023-clear-eq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY clear EQ",
+        "file size": "136 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 600],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
+    "lacy2023-clear-neq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY clear NEQ",
+        "file size": "136 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 600],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
+    "lacy2023-cloudy-thin-eq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thin clouds EQ",
+        "file size": "75 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
+    "lacy2023-cloudy-thin-neq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thin clouds NEQ",
+        "file size": "67 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
+    "lacy2023-cloudy-thick-eq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thick clouds EQ",
+        "file size": "73 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
+    "lacy2023-cloudy-thick-neq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thick clouds NEQ",
+        "file size": "67 MB",
+        "wavelength range": [0.45, 299.5],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+    },
     "morley-2012": {
         "parameters": ["teff", "logg", "fsed"],
         "name": "Morley et al. (2012)",

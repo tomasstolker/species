@@ -375,12 +375,26 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$M_\ast$ ($M_\mathrm{\odot}$)"
 
-    for i, item in enumerate(ascii_lowercase[1:]):
-        if f"mass_{i}" in param:
-            index = param.index(f"mass_{i}")
-            param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
-        else:
-            break
+    if "mass_0" in param:
+        index = param.index("mass_0")
+        if object_type == "planet":
+            param[index] = r"$M_\mathrm{1}$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M_\mathrm{1}$ ($M_\mathrm{\odot}$)"
+
+    if "mass_1" in param:
+        index = param.index("mass_1")
+        if object_type == "planet":
+            param[index] = r"$M_\mathrm{2}$ ($M_\mathrm{J}$)"
+        elif object_type == "star":
+            param[index] = r"$M_\mathrm{2}$ ($M_\mathrm{\odot}$)"
+
+    # for i, item in enumerate(ascii_lowercase[1:]):
+    #     if f"mass_{i}" in param:
+    #         index = param.index(f"mass_{i}")
+    #         param[index] = rf"$M_\mathrm{{{item}}}$ ($M_\mathrm{{J}}$)"
+    #     else:
+    #         break
 
     if "log_mass" in param:
         index = param.index("log_mass")
@@ -389,17 +403,31 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$\log\,M_\ast/M_\mathrm{\odot}$"
 
+    if "log_mass_0" in param:
+        index = param.index("log_mass_0")
+        if object_type == "planet":
+            param[index] = r"$\log\,M_\mathrm{1}/M_\mathrm{J}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,M_\mathrm{1}/M_\mathrm{\odot}$"
+
+    if "log_mass_1" in param:
+        index = param.index("log_mass_1")
+        if object_type == "planet":
+            param[index] = r"$\log\,M_\mathrm{2}/M_\mathrm{J}$"
+        elif object_type == "star":
+            param[index] = r"$\log\,M_\mathrm{2}/M_\mathrm{\odot}$"
+
     if "age" in param:
         index = param.index("age")
         param[index] = "Age (Myr)"
 
-    if "mass_1" in param:
-        index = param.index("mass_1")
-        param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
-
-    if "mass_2" in param:
-        index = param.index("mass_2")
-        param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
+    # if "mass_1" in param:
+    #     index = param.index("mass_1")
+    #     param[index] = r"$M_\mathrm{b}$ ($M_\mathrm{J}$)"
+    #
+    # if "mass_2" in param:
+    #     index = param.index("mass_2")
+    #     param[index] = r"$M_\mathrm{c}$ ($M_\mathrm{J}$)"
 
     if "entropy" in param:
         index = param.index("entropy")
@@ -662,6 +690,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$f_\mathrm{{{item_name}}}$"
 
+        elif item[0:6] == "ratio_":
+            item_name = item[6:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+                item_name = item_name.split("/")[1]
+            param[i] = rf"$r_\mathrm{{{item_name}}}$"
+
     if "c_h_ratio" in param:
         index = param.index("c_h_ratio")
         param[index] = r"[C/H]"
@@ -740,9 +775,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if f"radius_bb_{i}" in param:
             index = param.index(f"radius_bb_{i}")
             if object_type == "planet":
-                param[index] = (
-                    r"$R_\mathrm{bb,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
-                )
+                param[index] = r"$R_\mathrm{bb,}$" + rf"$_{{{i+1}}}$ ($R_\mathrm{{J}}$)"
             elif object_type == "star":
                 param[index] = r"$R_\mathrm{bb,}$" + rf"$_\mathrm{{{i+1}}}$ (au)"
 
@@ -1007,7 +1040,7 @@ def quantity_unit(
 
         item_split = item.split("_")
 
-        if len(item_split) == 2:
+        if len(item_split) == 2 and item_split[1].isdigit():
             param_index = int(item_split[1])
 
             if item_split[0] == "teff":
@@ -1401,7 +1434,7 @@ def create_model_label(
     leg_param: List[str],
     param_fmt: Dict[str, str],
 ) -> str:
-    """ "
+    """"
     Function for creating a label that includes the parameters of a
     model spectrum. The label is used in the legend of a SED plot.
 
@@ -1553,3 +1586,68 @@ def create_model_label(
             label += f"{par_label[param_idx]} = {value} {par_unit[param_idx]}"
 
     return label
+
+
+def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
+    """"
+    Function for creating a dictionary with parameter formats
+    that are used in the legend of a plot.
+
+    Parameters
+    ----------
+    param_fmt : dict(str, str), None
+        Dictionary with formats that will be used for the model
+        parameter. The parameters are included in the ``legend``
+        when plotting the model spectra. Default formats are
+        used if the argument of ``param_fmt`` is set to ``None``.
+
+    Returns
+    -------
+    dict(str, str)
+        Output dictionary with parameter formats.
+    """
+
+    if param_fmt is None:
+        param_fmt = {}
+
+    # Add missing parameter formats
+
+    param_add = ["teff", "disk_teff", "disk_radius"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".0f"
+
+    param_add = [
+        "radius",
+        "logg",
+        "feh",
+        "metallicity",
+        "fsed",
+        "log_kzz",
+        "distance",
+        "parallax",
+        "mass",
+        "ism_ext",
+        "lognorm_ext",
+        "powerlaw_ext",
+        "log_flux_scaling",
+    ]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".1f"
+
+    param_add = ["co", "c_o_ratio", "ad_index", "luminosity"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2f"
+
+    param_add = ["flux_scaling", "flux_offset"]
+
+    for param_item in param_add:
+        if param_item not in param_fmt:
+            param_fmt[param_item] = ".2e"
+
+    return param_fmt
