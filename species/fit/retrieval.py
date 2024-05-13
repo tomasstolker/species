@@ -2204,22 +2204,22 @@ class AtmosphericRetrieval:
                         log_x_base[item[:-3]] = cube[cube_index[item]]
 
             # Create dictionary with cloud parameters
+            cloud_param = [
+                "fsed",
+                "log_kzz",
+                "sigma_lnorm",
+                "log_kappa_0",
+                "opa_index",
+                "log_p_base",
+                "albedo",
+                "log_kappa_abs",
+                "log_kappa_sca",
+                "opa_abs_index",
+                "opa_sca_index",
+                "lambda_ray",
+            ]
 
-            if "log_kzz" in self.parameters:
-                cloud_param = [
-                    "fsed",
-                    "log_kzz",
-                    "sigma_lnorm",
-                    "log_kappa_0",
-                    "opa_index",
-                    "log_p_base",
-                    "albedo",
-                    "log_kappa_abs",
-                    "log_kappa_sca",
-                    "opa_abs_index",
-                    "opa_sca_index",
-                    "lambda_ray",
-                ]
+            if any(param_i in self.parameters for param_i in cloud_param):
 
                 cloud_dict = {}
                 for item in cloud_param:
@@ -2444,13 +2444,9 @@ class AtmosphericRetrieval:
                     # that is calculated from the spectrum and the
                     # bolometric flux at each pressure
 
-                    ln_prior += np.sum(
-                        -0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol**2
-                    )
+                    ln_prior += np.sum(-0.5 * (f_bol - f_bol_spec) ** 2 / sigma_fbol**2)
 
-                    ln_prior += (
-                        -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
-                    )
+                    ln_prior += -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
 
                     # for i in range(i_conv):
                     # for i in range(lowres_radtrans.press.shape[0]):
@@ -2997,8 +2993,7 @@ class AtmosphericRetrieval:
                             -0.5
                             * weight
                             * np.sum(
-                                flux_diff**2 / data_var
-                                + np.log(2.0 * np.pi * data_var)
+                                flux_diff**2 / data_var + np.log(2.0 * np.pi * data_var)
                             )
                         )
 
