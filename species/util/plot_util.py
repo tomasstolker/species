@@ -554,6 +554,14 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("ism_ext")
         param[index] = r"$A_V$"
 
+    if "ism_ext_0" in param:
+        index = param.index("ism_ext_0")
+        param[index] = r"$A_{V,\mathrm{1}}$"
+
+    if "ism_ext_1" in param:
+        index = param.index("ism_ext_1")
+        param[index] = r"$A_{V,\mathrm{2}}$"
+
     if "ism_red" in param:
         index = param.index("ism_red")
         param[index] = r"$R_V$"

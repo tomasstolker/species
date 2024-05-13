@@ -284,6 +284,7 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
             "radius",
             "distance",
             "parallax",
+            "ism_ext",
         ]:
             new_dict[key] = value
 
