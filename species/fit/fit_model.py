@@ -661,6 +661,14 @@ class FitModel:
                         self.modelpar.append("parallax_0")
                         self.modelpar.append("parallax_1")
 
+                    if "ism_ext" in self.bounds:
+                        if isinstance(self.bounds["ism_ext"][0], tuple):
+                            self.modelpar.append("ism_ext_0")
+                            self.modelpar.append("ism_ext_1")
+                            self.bounds["ism_ext_0"] = self.bounds["ism_ext"][0]
+                            self.bounds["ism_ext_1"] = self.bounds["ism_ext"][1]
+                            del self.bounds["ism_ext"]
+
                 if "parallax_0" not in self.modelpar:
                     self.modelpar.append("parallax")
 
@@ -1671,6 +1679,20 @@ class FitModel:
                         phot_flux_0 *= flux_scaling_0
                         phot_flux_0 += flux_offset
 
+                    # Optional extinction
+
+                    if "ism_ext_0" in dust_param:
+                        read_filt = ReadFilter(phot_filter)
+                        phot_wavel = np.array([read_filt.mean_wavelength()])
+
+                        ism_reddening = dust_param.get("ism_red_0", 3.1)
+
+                        ext_filt = ism_extinction(
+                            dust_param["ism_ext_0"], ism_reddening, phot_wavel
+                        )
+
+                        phot_flux_0 *= 10.0 ** (-0.4 * ext_filt[0])
+
                     # Star 1
 
                     param_1 = binary_to_single(param_dict, 1)
@@ -1679,7 +1701,7 @@ class FitModel:
                         list(param_1.values())
                     )[0][0]
 
-                    # Scale the spectrum by (radius/distance)^2
+                    # Scale the flux by (radius/distance)^2
 
                     if "radius" in self.modelpar:
                         phot_flux_1 *= flux_scaling
@@ -1688,6 +1710,20 @@ class FitModel:
                     elif "radius_1" in self.modelpar:
                         phot_flux_1 *= flux_scaling_1
                         phot_flux_1 += flux_offset
+
+                    # Optional extinction
+
+                    if "ism_ext_1" in dust_param:
+                        read_filt = ReadFilter(phot_filter)
+                        phot_wavel = np.array([read_filt.mean_wavelength()])
+
+                        ism_reddening = dust_param.get("ism_red_1", 3.1)
+
+                        ext_filt = ism_extinction(
+                            dust_param["ism_ext_0"], ism_reddening, phot_wavel
+                        )
+
+                        phot_flux_1 *= 10.0 ** (-0.4 * ext_filt[0])
 
                     # Weighted flux of two spectra for atmospheric asymmetries
                     # Or simply the same in case of an actual binary system
@@ -1869,6 +1905,19 @@ class FitModel:
                         model_flux_0 *= flux_scaling_0
                         model_flux_0 += flux_offset
 
+                    # Optional extinction
+
+                    if "ism_ext_0" in dust_param:
+                        ism_reddening = dust_param.get("ism_red_0", 3.1)
+
+                        ext_spec = ism_extinction(
+                            dust_param["ism_ext_0"],
+                            ism_reddening,
+                            self.spectrum[item][0][:, 0],
+                        )
+
+                        model_flux_0 *= 10.0 ** (-0.4 * ext_spec)
+
                     # Star 2
 
                     param_1 = binary_to_single(param_dict, 1)
@@ -1886,6 +1935,17 @@ class FitModel:
                     elif "radius_1" in self.modelpar:
                         model_flux_1 *= flux_scaling_1
                         model_flux_1 += flux_offset
+
+                    if "ism_ext_1" in dust_param:
+                        ism_reddening = dust_param.get("ism_red_1", 3.1)
+
+                        ext_spec = ism_extinction(
+                            dust_param["ism_ext_1"],
+                            ism_reddening,
+                            self.spectrum[item][0][:, 0],
+                        )
+
+                        model_flux_1 *= 10.0 ** (-0.4 * ext_spec)
 
                     # Weighted flux of two spectra for atmospheric asymmetries
                     # Or simply the same in case of an actual binary system
