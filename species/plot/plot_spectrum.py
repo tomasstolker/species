@@ -523,7 +523,7 @@ def plot_spectrum(
         ax1.get_xaxis().set_label_coords(0.5, offset[0])
         ax1.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    data_labels = []
+    labels_data = []
 
     for j, box_item in enumerate(boxes):
         flux_scaling = 1.0
@@ -806,7 +806,7 @@ def plot_spectrum(
 
                     if plot_kwargs[j] and spec_key in plot_kwargs[j]:
                         if "label" in plot_kwargs[j][spec_key]:
-                            data_labels.append(plot_kwargs[j][spec_key]["label"])
+                            labels_data.append(plot_kwargs[j][spec_key]["label"])
 
                     if not plot_kwargs[j] or spec_key not in plot_kwargs[j]:
                         plot_obj = ax1.errorbar(
@@ -920,7 +920,7 @@ def plot_spectrum(
 
                     if plot_kwargs[j] and filter_item in plot_kwargs[j]:
                         if "label" in plot_kwargs[j][filter_item]:
-                            data_labels.append(plot_kwargs[j][filter_item]["label"])
+                            labels_data.append(plot_kwargs[j][filter_item]["label"])
 
                     if not plot_kwargs[j] or filter_item not in plot_kwargs[j]:
                         if not plot_kwargs[j]:
@@ -1266,11 +1266,12 @@ def plot_spectrum(
             model_handles = []
             data_handles = []
             model_labels = []
-            # data_labels = []
+            data_labels = []
 
             for handle_idx, handle_item in enumerate(handles):
-                if labels[handle_idx] in data_labels:
+                if labels[handle_idx] in labels_data:
                     data_handles.append(handle_item)
+                    data_labels.append(labels[handle_idx])
                 else:
                     model_handles.append(handle_item)
                     model_labels.append(labels[handle_idx])

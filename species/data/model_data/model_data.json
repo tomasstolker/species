@@ -178,7 +178,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "lacy2023-clear-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -188,7 +188,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "lacy2023-cloudy-thin-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -198,7 +198,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "lacy2023-cloudy-thin-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -208,7 +208,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "lacy2023-cloudy-thick-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -218,7 +218,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "lacy2023-cloudy-thick-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -228,7 +228,7 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L/abstract"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
     },
     "morley-2012": {
         "parameters": ["teff", "logg", "fsed"],

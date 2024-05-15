@@ -1720,7 +1720,7 @@ class FitModel:
                         ism_reddening = dust_param.get("ism_red_1", 3.1)
 
                         ext_filt = ism_extinction(
-                            dust_param["ism_ext_0"], ism_reddening, phot_wavel
+                            dust_param["ism_ext_1"], ism_reddening, phot_wavel
                         )
 
                         phot_flux_1 *= 10.0 ** (-0.4 * ext_filt[0])
