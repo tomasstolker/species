@@ -456,14 +456,23 @@ def get_residuals(
             n_dof += value.shape[0]
             n_dof -= count_nan
 
+    print(f"\nNumber of data points = {n_dof}")
+
+    n_param = 0
+
     for item in parameters:
-        if item not in ["mass", "luminosity", "distance"]:
-            n_dof -= 1
+        if item not in ["mass", "luminosity"]:
+            n_param += 1
+
+    print(f"Number of free parameters = {n_param}")
+
+    n_dof -= n_param
+
+    print(f"Number of degrees of freedom = {n_dof}")
 
     chi2_red = chi2_stat / n_dof
 
     print(f"\nReduced chi2 = {chi2_red:.2f}")
-    print(f"Number of degrees of freedom = {n_dof}")
 
     return create_box(
         boxtype="residuals",

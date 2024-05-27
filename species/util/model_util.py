@@ -42,6 +42,9 @@ def convert_model_name(in_name: str) -> str:
     if in_name in model_data.keys():
         out_name = model_data[in_name]["name"]
 
+    elif in_name == "planck":
+        out_name = "Blackbody"
+
     else:
         out_name = in_name
 

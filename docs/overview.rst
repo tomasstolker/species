@@ -31,6 +31,7 @@ The following data and models are currently supported:
 - `Morley et al. (2012) T/Y dwarf spectra <https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M/abstract>`_
 - `petitCODE <https://www2.mpia-hd.mpg.de/~molliere/grids/>`_
 - `petitRADTRANS <https://petitradtrans.readthedocs.io>`_
+- `PHOENIX Husser et al. (2013) <https://phoenix.astro.physik.uni-goettingen.de>`_
 - `Saumon & Marley (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat <https://zenodo.org/record/5063476>`_
 - `Sonora Cholla <https://zenodo.org/record/4450269>`_

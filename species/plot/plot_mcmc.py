@@ -817,7 +817,7 @@ def plot_posterior(
 
             check_param = True
 
-        else:
+        if not check_param:
             warnings.warn(
                 "Samples with the log(g) and radius are required for 'inc_log_mass=True'."
             )
