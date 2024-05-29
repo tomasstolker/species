@@ -1238,11 +1238,14 @@ def plot_spectrum(
 
         ax3.axhline(0.0, ls="--", lw=0.7, color="gray", dashes=(2, 4), zorder=0.5)
 
-        if res_lim > 5.0 or (
-            ylim_res is not None and ylim_res[0] < -5.0 and ylim_res[1] > 5.0
-        ):
-            ax3.axhline(-5.0, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
-            ax3.axhline(5.0, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
+        sigma_line = [5.0, 10.0, 15.0, 20.0]
+
+        for sigma_item in sigma_line:
+            if res_lim > sigma_item or (
+                ylim_res is not None and ylim_res[0] < -sigma_item and ylim_res[1] > sigma_item
+            ):
+                ax3.axhline(-sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
+                ax3.axhline(sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)

@@ -238,7 +238,8 @@ class ReadModel:
     ) -> None:
         """
         Internal function for linearly interpolating the grid of model
-        spectra for a given filter or wavelength sampling.
+        spectra for a given filter or wavelength sampling. This method
+        is only used by :class:`~species.fit.fit_model.FitModel`.
 
         wavel_resample : np.ndarray, None
             Wavelength points for the resampling of the spectrum. The

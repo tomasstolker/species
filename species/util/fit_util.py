@@ -472,7 +472,8 @@ def get_residuals(
 
     chi2_red = chi2_stat / n_dof
 
-    print(f"\nReduced chi2 = {chi2_red:.2f}")
+    print(f"\nchi2 = {chi2_stat:.2f}")
+    print(f"reduced chi2 = {chi2_red:.2f}")
 
     return create_box(
         boxtype="residuals",

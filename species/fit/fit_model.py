@@ -780,16 +780,16 @@ class FitModel:
 
         print()
 
-        for item in inc_phot:
+        for phot_item in inc_phot:
             if self.model == "planck":
                 # Create SyntheticPhotometry objects when fitting a Planck function
-                print(f"Creating synthetic photometry: {item}...", end="", flush=True)
-                self.modelphot.append(SyntheticPhotometry(item))
+                print(f"Creating synthetic photometry: {phot_item}...", end="", flush=True)
+                self.modelphot.append(SyntheticPhotometry(phot_item))
                 print(" [DONE]")
 
             elif self.model == "powerlaw":
                 # Or create SyntheticPhotometry objects when fitting a power-law function
-                synphot = SyntheticPhotometry(item)
+                synphot = SyntheticPhotometry(phot_item)
 
                 # Set the wavelength range of the filter as attribute
                 synphot.zero_point()
@@ -798,18 +798,18 @@ class FitModel:
 
             else:
                 # Or interpolate the model grid for each filter
-                print(f"Interpolating {item}...", end="", flush=True)
-                readmodel = ReadModel(self.model, filter_name=item)
+                print(f"Interpolating {phot_item}...", end="", flush=True)
+                readmodel = ReadModel(self.model, filter_name=phot_item)
                 readmodel.interpolate_grid(wavel_resample=None, spec_res=None)
                 self.modelphot.append(readmodel)
                 print(" [DONE]")
 
             # Add parameter for error inflation
 
-            instr_filt = item.split(".")[0]
+            instr_filt = phot_item.split(".")[0]
 
-            if f"{item}_error" in self.bounds:
-                self.modelpar.append(f"{item}_error")
+            if f"{phot_item}_error" in self.bounds:
+                self.modelpar.append(f"{phot_item}_error")
 
             elif (
                 f"{instr_filt}_error" in self.bounds
@@ -819,10 +819,10 @@ class FitModel:
 
             # Store the flux and uncertainty for each filter
 
-            obj_phot = self.object.get_photometry(item)
+            obj_phot = self.object.get_photometry(phot_item)
             self.objphot.append(np.array([obj_phot[2], obj_phot[3]]))
 
-            self.filter_name.append(item)
+            self.filter_name.append(phot_item)
             self.instr_name.append(instr_filt)
 
         # Include spectroscopic data
@@ -833,13 +833,13 @@ class FitModel:
 
             # Select the spectrum names that are not in inc_spec
             spec_remove = []
-            for item in self.spectrum:
-                if item not in inc_spec:
-                    spec_remove.append(item)
+            for spec_item in self.spectrum:
+                if spec_item not in inc_spec:
+                    spec_remove.append(spec_item)
 
             # Remove the spectra that are not included in inc_spec
-            for item in spec_remove:
-                del self.spectrum[item]
+            for spec_item in spec_remove:
+                del self.spectrum[spec_item]
 
             self.n_corr_par = 0
 
@@ -1669,16 +1669,6 @@ class FitModel:
                         list(param_0.values())
                     )[0][0]
 
-                    # Scale the spectrum by (radius/distance)^2
-
-                    if "radius" in self.modelpar:
-                        phot_flux_0 *= flux_scaling
-                        phot_flux_0 += flux_offset
-
-                    elif "radius_0" in self.modelpar:
-                        phot_flux_0 *= flux_scaling_0
-                        phot_flux_0 += flux_offset
-
                     # Optional extinction
 
                     if "ism_ext_0" in dust_param:
@@ -1693,6 +1683,16 @@ class FitModel:
 
                         phot_flux_0 *= 10.0 ** (-0.4 * ext_filt[0])
 
+                    # Scale the flux by (radius/distance)^2
+
+                    if "radius" in self.modelpar:
+                        phot_flux_0 *= flux_scaling
+                        phot_flux_0 += flux_offset
+
+                    elif "radius_0" in self.modelpar:
+                        phot_flux_0 *= flux_scaling_0
+                        phot_flux_0 += flux_offset
+
                     # Star 1
 
                     param_1 = binary_to_single(param_dict, 1)
@@ -1700,16 +1700,6 @@ class FitModel:
                     phot_flux_1 = self.modelphot[i].spectrum_interp(
                         list(param_1.values())
                     )[0][0]
-
-                    # Scale the flux by (radius/distance)^2
-
-                    if "radius" in self.modelpar:
-                        phot_flux_1 *= flux_scaling
-                        phot_flux_1 += flux_offset
-
-                    elif "radius_1" in self.modelpar:
-                        phot_flux_1 *= flux_scaling_1
-                        phot_flux_1 += flux_offset
 
                     # Optional extinction
 
@@ -1724,6 +1714,16 @@ class FitModel:
                         )
 
                         phot_flux_1 *= 10.0 ** (-0.4 * ext_filt[0])
+
+                    # Scale the flux by (radius/distance)^2
+
+                    if "radius" in self.modelpar:
+                        phot_flux_1 *= flux_scaling
+                        phot_flux_1 += flux_offset
+
+                    elif "radius_1" in self.modelpar:
+                        phot_flux_1 *= flux_scaling_1
+                        phot_flux_1 += flux_offset
 
                     # Weighted flux of two spectra for atmospheric asymmetries
                     # Or simply the same in case of an actual binary system
