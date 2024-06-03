@@ -527,6 +527,9 @@ class FitModel:
 
         # Teff range for which the grid will be interpolated
 
+        readmodel = ReadModel(self.model)
+        self.teff_range = readmodel.get_bounds()["teff"]
+
         if "teff" in self.bounds:
             # List with tuples for blackbody components or
             # tuple with two tuples for a binary system
@@ -543,12 +546,8 @@ class FitModel:
 
                 self.teff_range = (teff_min, teff_max)
 
-            else:
+            elif self.bounds["teff"][0] != self.bounds["teff"][1]:
                 self.teff_range = self.bounds["teff"]
-
-        else:
-            readmodel = ReadModel(self.model)
-            self.teff_range = readmodel.get_bounds()["teff"]
 
         # Models that do not require a grid interpolation
 
@@ -803,8 +802,8 @@ class FitModel:
         print(f"Binary star: {self.binary}")
 
         if self.model not in self.non_interp_model:
-            print(f"Teff interpolation range: {self.teff_range}")
             print(f"Blackbody components: {self.n_disk}")
+            print(f"Teff interpolation range: {self.teff_range}")
 
         # Select filters and spectra
 
@@ -1089,7 +1088,7 @@ class FitModel:
                 np.log10(self.bounds["powerlaw_max"][1]),
             )
 
-        elif "ism_ext" in self.bounds:
+        elif "ism_ext" in self.bounds or "ism_ext" in self.normal_prior:
             if self.ext_filter is not None:
                 self.modelpar.append(f"phot_ext_{self.ext_filter}")
                 self.bounds[f"phot_ext_{self.ext_filter}"] = self.bounds["ism_ext"]
@@ -1098,7 +1097,7 @@ class FitModel:
             else:
                 self.modelpar.append("ism_ext")
 
-            if "ism_red" in self.bounds:
+            if "ism_red" in self.bounds or "ism_red" in self.normal_prior:
                 self.modelpar.append("ism_red")
 
         # Veiling parameters
@@ -2033,7 +2032,7 @@ class FitModel:
         """
         Internal function for creating a dictionary with attributes
         that will be stored in the database with the results when
-        calling :func:`~species.data.database.Database.add_samplese`.
+        calling :func:`~species.data.database.Database.add_samples`.
 
         Returns
         -------
@@ -2322,13 +2321,14 @@ class FitModel:
             species_db = Database()
 
             species_db.add_samples(
+                tag=tag,
                 sampler="multinest",
                 samples=samples,
                 ln_prob=ln_prob,
-                tag=tag,
                 modelpar=self.modelpar,
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
                 spec_labels=spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
@@ -2576,13 +2576,14 @@ class FitModel:
             species_db = Database()
 
             species_db.add_samples(
+                tag=tag,
                 sampler="ultranest",
                 samples=samples,
                 ln_prob=ln_prob,
-                tag=tag,
                 modelpar=self.modelpar,
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
                 spec_labels=spec_labels,
                 attr_dict=self._create_attr_dict(),
             )
@@ -2919,13 +2920,14 @@ class FitModel:
             species_db = Database()
 
             species_db.add_samples(
+                tag=tag,
                 sampler="dynesty",
                 samples=samples,
                 ln_prob=ln_prob,
-                tag=tag,
                 modelpar=self.modelpar,
                 bounds=self.bounds,
                 normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
                 spec_labels=spec_labels,
                 attr_dict=self._create_attr_dict(),
             )

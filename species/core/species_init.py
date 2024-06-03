@@ -7,6 +7,8 @@ import os
 import socket
 import urllib.request
 
+from typing import Optional
+
 from configparser import ConfigParser
 from importlib.util import find_spec
 from typeguard import typechecked
@@ -23,8 +25,17 @@ class SpeciesInit:
     """
 
     @typechecked
-    def __init__(self) -> None:
+    def __init__(self, database_file: Optional[str] = None) -> None:
         """
+        Parameters
+        ----------
+        database_file : str, None
+            Path to the HDF5 database that is stored as
+            `species_database.hdf5`. Setting the argument will
+            overwrite the database path in the configuration file.
+            The path from the configuration file is used if the
+            argument of ``database_file`` is set to ``None``.
+
         Returns
         -------
         NoneType
@@ -59,58 +70,56 @@ class SpeciesInit:
 
         config_file = os.path.join(working_folder, "species_config.ini")
 
+        config = ConfigParser(allow_no_value=True)
+
         if os.path.isfile(config_file):
             print(f"\nConfiguration file: {config_file}")
 
         else:
             print("\nCreating species_config.ini...", end="", flush=True)
 
-            with open(config_file, "w", encoding="utf-8") as file_obj:
-                file_obj.write("[species]\n\n")
+            config.add_section("species")
+            # config.set('species', '; File with the HDF5 database')
+            config.set("species", "database", "species_database.hdf5")
+            # config.set('species', '; File with the HDF5 database')
+            config.set("species", "data_folder", "./data/")
+            # config.set('species', '; File with the HDF5 database')
+            config.set("species", "vega_mag", "0.03")
 
-                file_obj.write("; File with the HDF5 database\n")
-                file_obj.write("database = species_database.hdf5\n\n")
-
-                file_obj.write("; Folder where data will be downloaded\n")
-                file_obj.write("data_folder = ./data/\n\n")
-
-                file_obj.write("; Magnitude of Vega for all filters\n")
-                file_obj.write("vega_mag = 0.03\n")
+            with open(config_file, "w") as file_obj:
+                config.write(file_obj)
 
             print(" [DONE]")
 
-        config = ConfigParser()
         config.read(config_file)
 
-        if "database" in config["species"]:
-            database_file = os.path.abspath(config["species"]["database"])
+        if database_file is None:
+            if "database" in config["species"]:
+                database_file = os.path.abspath(config["species"]["database"])
+
+            else:
+                database_file = "species_database.hdf5"
+                config.set("species", "database", "species_database.hdf5")
 
         else:
-            database_file = "species_database.hdf5"
-
-            with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("\n; File with the HDF5 database\n")
-                file_obj.write("database = species_database.hdf5\n")
+            config.set("species", "database", database_file)
 
         if "data_folder" in config["species"]:
             data_folder = os.path.abspath(config["species"]["data_folder"])
 
         else:
             data_folder = "./data/"
-
-            with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("\n; Folder where data will be downloaded\n")
-                file_obj.write("data_folder = ./data/\n")
+            config.set("species", "data_folder", "./data/")
 
         if "vega_mag" in config["species"]:
             vega_mag = config["species"]["vega_mag"]
 
         else:
             vega_mag = 0.03
+            config.set("species", "vega_mag", "0.03")
 
-            with open(config_file, "a", encoding="utf-8") as file_obj:
-                file_obj.write("\n; Magnitude of Vega for all filters\n")
-                file_obj.write("vega_mag = 0.03\n")
+        with open(config_file, "w", encoding="utf-8") as file_obj:
+            config.write(file_obj)
 
         if os.path.isfile(database_file):
             print(f"Database file: {database_file}")

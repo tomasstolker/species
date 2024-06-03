@@ -2,10 +2,13 @@
 Utility functions for fit results.
 """
 
+import os
 import warnings
 
+from configparser import ConfigParser
 from typing import Dict, List, Optional, Union
 
+import h5py
 import numpy as np
 import spectres
 
@@ -30,6 +33,7 @@ def multi_photometry(
     filters: List[str],
     parameters: Dict[str, float],
     radtrans: Optional[ReadRadtrans] = None,
+    verbose: bool = True,
 ) -> SynphotBox:
     """
     Function for calculating synthetic photometry for a list of
@@ -56,6 +60,8 @@ def multi_photometry(
         the ``wavel_range`` of the ``ReadRadtrans`` instance is
         sufficiently broad to cover all the ``filters``. The argument
         can be set to ``None`` for any other model than petitRADTRANS.
+    verbose : bool
+        Print output.
 
     Returns
     -------
@@ -63,17 +69,18 @@ def multi_photometry(
         Box with synthetic photometry.
     """
 
-    print_section("Calculate multi-photometry")
+    if verbose:
+        print_section("Calculate multi-photometry")
 
-    print(f"Data type: {datatype}")
-    print(f"Spectrum name: {spectrum}")
+        print(f"Data type: {datatype}")
+        print(f"Spectrum name: {spectrum}")
 
-    print("\nParameters:")
-    for key, value in parameters.items():
-        if key == "luminosity":
-            print(f"   - {key} = {value:.2e}")
-        else:
-            print(f"   - {key} = {value:.2f}")
+        print("\nParameters:")
+        for param_key, param_value in parameters.items():
+            if -0.1 < param_value < 0.1:
+                print(f"   - {param_key} = {param_value:.2e}")
+            else:
+                print(f"   - {param_key} = {param_value:.2f}")
 
     mean_wavel = {}
 
@@ -182,16 +189,17 @@ def multi_photometry(
                 flux=value, error=None
             )
 
-    print("\nMagnitudes:")
-    for key, value in app_mag.items():
-        if value[1] is None:
-            print(f"   - {key} = {value[0]:.2f}")
-        else:
-            print(f"   - {key} = {value[0]:.2f} +/- {value[1]:.2f}")
+    if verbose:
+        print("\nMagnitudes:")
+        for key, value in app_mag.items():
+            if value[1] is None:
+                print(f"   - {key} = {value[0]:.2f}")
+            else:
+                print(f"   - {key} = {value[0]:.2f} +/- {value[1]:.2f}")
 
-    print("\nFluxes (W m-2 um-1):")
-    for key, value in flux.items():
-        print(f"   - {key} = {value:.2e}")
+        print("\nFluxes (W m-2 um-1):")
+        for key, value in flux.items():
+            print(f"   - {key} = {value:.2e}")
 
     return create_box(
         "synphot",
@@ -205,13 +213,14 @@ def multi_photometry(
 
 @typechecked
 def get_residuals(
-    datatype: str,
-    spectrum: str,
+    tag: str,
     parameters: Dict[str, float],
     objectbox: ObjectBox,
     inc_phot: Union[bool, List[str]] = True,
     inc_spec: Union[bool, List[str]] = True,
     radtrans: Optional[ReadRadtrans] = None,
+    datatype: Optional[str] = None,
+    spectrum: Optional[str] = None,
 ) -> ResidualsBox:
     """
     Function for calculating the residuals from fitting model or
@@ -219,13 +228,11 @@ def get_residuals(
 
     Parameters
     ----------
-    datatype : str
-        Data type ('model' or 'calibration').
-    spectrum : str
-        Name of the atmospheric model or calibration spectrum.
+    tag: str
+        Database tag with the sampling results.
     parameters : dict
         Parameters and values for the spectrum
-    objectbox : species.core.box.ObjectBox
+    objectbox : ObjectBox
         Box with the photometry and/or spectra of an object. A scaling
         and/or error inflation of the spectra should be applied with
         :func:`~species.util.read_util.update_objectbox` beforehand.
@@ -246,7 +253,7 @@ def get_residuals(
         the ``wavel_range`` of the ``ReadRadtrans`` instance is
         sufficiently broad to cover all the photometric and
         spectroscopic data of ``inc_phot`` and ``inc_spec``. Not used
-        if set to ``None``.
+        if the argument is set to ``None``.
 
     Returns
     -------
@@ -254,30 +261,78 @@ def get_residuals(
         Box with the residuals.
     """
 
+    # Check deprecated parameters
+
+    if datatype is not None:
+        warnings.warn(
+            "The 'datatype' parameter is no longer "
+            "used by the 'get_residuals' function. "
+            "Instead, the 'tag' parameter should be set.",
+            DeprecationWarning,
+        )
+
+    if spectrum is not None:
+        warnings.warn(
+            "The 'spectrum' parameter is no longer "
+            "used by the 'get_residuals' function. "
+            "Instead, the 'tag' parameter should be set.",
+            DeprecationWarning,
+        )
+
+    # Read sampling results
+
     print_section("Calculate residuals")
 
-    print(f"Data type: {datatype}")
-    print(f"Spectrum name: {spectrum}")
+    config_file = os.path.join(os.getcwd(), "species_config.ini")
+
+    config = ConfigParser()
+    config.read(config_file)
+
+    database_path = config["species"]["database"]
+
+    with h5py.File(database_path, "r") as hdf5_file:
+        dset = hdf5_file[f"results/fit/{tag}/samples"]
+        spectrum = dset.attrs["spectrum"]
+        binary = dset.attrs["binary"]
+        print(f"\nModel: {spectrum}")
+        print(f"Binary: {binary}")
+
+        n_param = dset.attrs["n_param"]
+        n_fixed = dset.attrs["n_fixed"]
+
+        print("\nModel parameters:")
+        for param_idx in range(n_param):
+            param_item = dset.attrs[f"parameter{param_idx}"]
+            print(f"   - {param_item}")
+
+        if n_fixed > 0:
+            dset = hdf5_file[f"results/fit/{tag}/fixed_param"]
+            print("\nFixed parameters:")
+            for param_item in hdf5_file[f"results/fit/{tag}/fixed_param"]:
+                print(f"   - {param_item}")
+
+        else:
+            print("\nFixed parameters: None")
+
     print(f"\nInclude photometry: {inc_phot}")
     print(f"Include spectra: {inc_spec}")
 
-    print("\nParameters:")
-    for key, value in parameters.items():
-        if key == "luminosity":
-            print(f"   - {key} = {value:.2e}")
-        else:
-            print(f"   - {key} = {value:.2f}")
+    res_phot = None
+    res_spec = None
+
+    # Photometry residuals
 
     if inc_phot and objectbox.filters is not None:
         if isinstance(inc_phot, bool) and inc_phot:
             inc_phot = objectbox.filters
 
         model_phot = multi_photometry(
-            datatype=datatype,
+            datatype="model",
             spectrum=spectrum,
             filters=inc_phot,
             parameters=parameters,
             radtrans=radtrans,
+            verbose=False,
         )
 
         res_phot = {}
@@ -299,8 +354,7 @@ def get_residuals(
                         objectbox.flux[item][0, j] - model_phot.flux[item]
                     ) / objectbox.flux[item][1, j]
 
-    else:
-        res_phot = None
+    # Spectra residuals
 
     if inc_spec and objectbox.spectrum is not None:
         res_spec = {}
@@ -416,9 +470,6 @@ def get_residuals(
 
                 res_spec[key] = np.column_stack([wl_new, res_tmp])
 
-    else:
-        res_spec = None
-
     print("\nResiduals (sigma):")
 
     if res_phot is not None:
@@ -461,16 +512,10 @@ def get_residuals(
             n_dof -= count_nan
 
     print(f"\nNumber of data points = {n_dof}")
+    print(f"Number of model parameters = {n_param}")
+    print(f"Number of fixed parameters = {n_fixed}")
 
-    n_param = 0
-
-    for item in parameters:
-        if item not in ["mass", "luminosity"]:
-            n_param += 1
-
-    print(f"Number of free parameters = {n_param}")
-
-    n_dof -= n_param
+    n_dof -= n_param - n_fixed
 
     print(f"Number of degrees of freedom = {n_dof}")
 

@@ -1498,10 +1498,11 @@ class Database:
                                                 if np.all(np.diag(data) == 1.0):
                                                     warnings.warn(corr_warn)
 
-                                                    read_cov[
-                                                        spec_item
-                                                    ] = correlation_to_covariance(
-                                                        data, read_spec[spec_item][:, 2]
+                                                    read_cov[spec_item] = (
+                                                        correlation_to_covariance(
+                                                            data,
+                                                            read_spec[spec_item][:, 2],
+                                                        )
                                                     )
 
                                                 else:
@@ -2116,53 +2117,40 @@ class Database:
     @typechecked
     def add_samples(
         self,
+        tag: str,
         sampler: str,
         samples: np.ndarray,
         ln_prob: np.ndarray,
-        tag: str,
         modelpar: List[str],
-        bounds: Dict,
-        normal_prior: Dict,
-        ln_evidence: Optional[Tuple[float, float]] = None,
-        mean_accept: Optional[float] = None,
-        spectrum: Optional[Tuple[str, str]] = None,
-        parallax: Optional[float] = None,
+        bounds: Dict[str, Tuple[float, float]],
+        normal_prior: Dict[str, Tuple[float, float]],
+        fixed_param: Dict[str, float],
         spec_labels: Optional[List[str]] = None,
         attr_dict: Optional[Dict] = None,
     ):
         """
-        This function stores the posterior samples from classes
-        such as :class:`~species.fit.fit_model.FitModel`
+        This function stores the posterior samples produced
+        by :class:`~species.fit.fit_model.FitModel`
         in the database, including some additional attributes.
 
         Parameters
         ----------
+        tag : str
+            Database tag.
         sampler : str
-            Sampler ('emcee', 'multinest', or 'ultranest').
+            Sampler ('emcee', 'multinest', 'ultranest', 'dynesty').
         samples : np.ndarray
             Samples of the posterior.
         ln_prob : np.ndarray
             Log posterior for each sample.
-        tag : str
-            Database tag.
         modelpar : list(str)
             List with the model parameter names.
         bounds : dict
             Dictionary with the (log-)uniform priors.
         normal_prior : dict
             Dictionary with the normal priors.
-        ln_evidence : tuple(float, float), None
-            Log evidence and uncertainty. Set to ``None`` when
-            ``sampler`` is 'emcee'.
-        mean_accept : float, None
-            Mean acceptance fraction. Set to ``None`` when
-            ``sampler`` is 'multinest' or 'ultranest'.
-        spectrum : tuple(str, str)
-            Tuple with the spectrum type ('model' or 'calibration')
-            and spectrum name (e.g. 'drift-phoenix' or 'evolution').
-        parallax : float, None
-            Parallax (mas) of the object. Not used if the
-            argument is set to ``None``.
+        fixed_param : dict
+            Dictionary with the fixed parameters
         spec_labels : list(str), None
             List with the spectrum labels that are used for fitting an
             additional scaling parameter. Not used if set to ``None``.
@@ -2186,12 +2174,6 @@ class Database:
             spec_labels = []
 
         with h5py.File(self.database, "a") as hdf5_file:
-            if "results" not in hdf5_file:
-                hdf5_file.create_group("results")
-
-            if "results/fit" not in hdf5_file:
-                hdf5_file.create_group("results/fit")
-
             if f"results/fit/{tag}" in hdf5_file:
                 del hdf5_file[f"results/fit/{tag}"]
 
@@ -2206,35 +2188,34 @@ class Database:
                 group_path = f"results/fit/{tag}/normal_prior/{key}"
                 hdf5_file.create_dataset(group_path, data=value)
 
-            if attr_dict is not None and "spec_type" in attr_dict:
-                dset.attrs["type"] = attr_dict["spec_type"]
-            else:
-                dset.attrs["type"] = str(spectrum[0])
+            for key, value in fixed_param.items():
+                group_path = f"results/fit/{tag}/fixed_param/{key}"
+                hdf5_file.create_dataset(group_path, data=value)
 
-            if attr_dict is not None and "spec_name" in attr_dict:
+            if "spec_type" in attr_dict:
+                dset.attrs["type"] = attr_dict["spec_type"]
+
+            if "spec_name" in attr_dict:
                 dset.attrs["spectrum"] = attr_dict["spec_name"]
-            else:
-                dset.attrs["spectrum"] = str(spectrum[1])
 
             dset.attrs["n_param"] = int(len(modelpar))
             dset.attrs["sampler"] = str(sampler)
             dset.attrs["n_bounds"] = int(len(bounds))
             dset.attrs["n_normal_prior"] = int(len(normal_prior))
+            dset.attrs["n_fixed"] = int(len(fixed_param))
 
-            if parallax is not None:
-                dset.attrs["parallax"] = float(parallax)
-
-            if attr_dict is not None and "mean_accept" in attr_dict:
+            if "mean_accept" in attr_dict:
                 mean_accept = float(attr_dict["mean_accept"])
                 dset.attrs["mean_accept"] = mean_accept
                 print(f"Mean acceptance fraction: {mean_accept:.3f}")
 
-            elif mean_accept is not None:
-                dset.attrs["mean_accept"] = float(mean_accept)
-                print(f"Mean acceptance fraction: {mean_accept:.3f}")
-
-            if ln_evidence is not None:
-                dset.attrs["ln_evidence"] = ln_evidence
+            if "ln_evidence" in attr_dict:
+                ln_evidence = attr_dict["ln_evidence"]
+                dset.attrs["ln_evidence"] = ln_evidence[0]
+                dset.attrs["ln_evidence_error"] = ln_evidence[1]
+                print(
+                    f"Ln(Z): {float(ln_evidence[0]):.2f} +/- {float(ln_evidence[1]):.2f}"
+                )
 
             count_scaling = 0
 
@@ -2254,7 +2235,7 @@ class Database:
             for i, item in enumerate(modelpar):
                 auto_corr = integrated_time(samples[:, i], quiet=True)[0]
 
-                if np.allclose(samples[:, i], np.mean(samples[:, i]), atol=0.0):
+                if item in fixed_param:
                     print(f"   - {item}: fixed")
                 else:
                     print(f"   - {item}: {auto_corr:.2f}")
@@ -2565,7 +2546,7 @@ class Database:
         list(species.core.box.ModelBox)
             List with ``ModelBox`` objects. When fitting an unresolved
             binary system, this list contains the model spectra of
-            the combined flux. 
+            the combined flux.
         list(species.core.box.ModelBox)
             The list of ``ModelBox`` objects is only returned when
             fitting and unresolved binary system. It contains the
@@ -4089,9 +4070,9 @@ class Database:
                     n_param = dset_attrs["n_param"] + 1
 
                     dset.attrs["n_param"] = n_param
-                    dset.attrs[
-                        f"parameter{n_param-1}"
-                    ] = f"{cloud_item[:-6].lower()}_fraction"
+                    dset.attrs[f"parameter{n_param-1}"] = (
+                        f"{cloud_item[:-6].lower()}_fraction"
+                    )
 
         if radtrans["quenching"] == "diffusion":
             p_quench = np.zeros(samples.shape[0])
