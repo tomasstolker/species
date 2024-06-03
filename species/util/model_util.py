@@ -6,14 +6,18 @@ import json
 import warnings
 
 from pathlib import Path
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 
+from PyAstronomy.pyasl import fastRotBroad
+from scipy.interpolate import interp1d, RegularGridInterpolator
 from typeguard import typechecked
 
+from species.core import constants
 from species.core.box import ModelBox, create_box
-from species.util.spec_util import create_wavelengths
+from species.util.dust_util import ism_extinction
+from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
 @typechecked
@@ -271,14 +275,14 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
 
     new_dict = {}
 
-    for key, value in param_dict.items():
-        if star_index == 0 and key[-1] == "0":
-            new_dict[key[:-2]] = value
+    for param_key, param_value in param_dict.items():
+        if star_index == 0 and param_key[-1] == "0":
+            new_dict[param_key[:-2]] = param_value
 
-        elif star_index == 1 and key[-1] == "1":
-            new_dict[key[:-2]] = value
+        elif star_index == 1 and param_key[-1] == "1":
+            new_dict[param_key[:-2]] = param_value
 
-        elif key in [
+        elif param_key in [
             "teff",
             "logg",
             "feh",
@@ -289,6 +293,255 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
             "parallax",
             "ism_ext",
         ]:
-            new_dict[key] = value
+            new_dict[param_key] = param_value
 
     return new_dict
+
+
+@typechecked
+def extract_disk_param(
+    param_dict: Dict[str, float], disk_index: Optional[int] = None
+) -> Dict[str, float]:
+    """
+    Function for extracting the blackbody disk parameters from a
+    dictionary with a mix of atmospheric and blackbody parameters.
+
+
+    Parameters
+    ----------
+    param_dict : dict
+        Dictionary with the model parameters.
+    disk_index : int, None
+        Disk index that is used for extracting the blackbody
+        parameters from ``param_dict``. A single disk component
+        will be used by setting the argument to ``None``.
+
+    Returns
+    -------
+    dict
+        Dictionary with the extracted blackbody parameters.
+    """
+
+    new_dict = {}
+
+    if disk_index is None:
+        new_dict["teff"] = param_dict["disk_teff"]
+        new_dict["radius"] = param_dict["disk_radius"]
+
+    else:
+        new_dict["teff"] = param_dict[f"disk_teff_{disk_index}"]
+        new_dict["radius"] = param_dict[f"disk_radius_{disk_index}"]
+
+    for param_key, param_value in param_dict.items():
+        if param_key in [
+            "distance",
+            "parallax",
+            "ism_ext",
+        ]:
+            new_dict[param_key] = param_value
+
+    return new_dict
+
+
+@typechecked
+def apply_obs(
+    model_flux: np.ndarray,
+    model_wavel: Optional[np.ndarray] = None,
+    model_param: Optional[Dict[str, float]] = None,
+    data_wavel: Optional[np.ndarray] = None,
+    spec_res: Optional[float] = None,
+    rot_broad: Optional[float] = None,
+    rad_vel: Optional[float] = None,
+    cross_sections: Optional[RegularGridInterpolator] = None,
+) -> np.ndarray:
+    """
+    Function for post-processing of a model spectrum. This will
+    apply a rotational broadening, radial velocity shift, extinction,
+    scaling, instrumental broadening, and wavelength resampling.
+    Each of the steps are optional, depending on the arguments that
+    are set and the parameters in the ``model_param`` dictionary.
+
+    Parameters
+    ----------
+    model_flux : np.ndarray
+        Array with the fluxes of the model spectrum.
+    model_wavel : np.ndarray, None
+        Array with the wavelengths of the model spectrum. Used by
+        most of the steps, except the flux scaling.
+    model_param : dict(str, float), None
+        Dictionary with the model parameters. Not used if the
+        argument is set to ``None``.
+    data_wavel : np.ndarray, None
+        Array with the wavelengths of the data used for the
+        wavelength resampling. Not applied if the argument is
+        set to ``None``.
+    spec_res : float, None
+        Spectral resolution of the data used for the instrumental
+        broadening. Not applied if the argument is set to ``None``.
+    rot_broad : float, None
+        Rotational broadening :math:`v\\sin{i}` (km/s). Not
+        applied if the argument is set to ``None``.
+    rad_vel : float, None
+        Radial velocity (km/s). Not applied if the argument
+        is set to ``None``.
+    cross_sections : RegularGridInterpolator, None
+        Interpolated cross sections for fitting extinction by dust
+        grains with a log-normal or power-law size distribution.
+
+    Returns
+    -------
+    np.ndarray
+        Array with the processed model fluxes.
+    """
+
+    # Set empty dictionary if None
+
+    if model_param is None:
+        model_param = {}
+
+    # Apply rotational broadening
+
+    if rot_broad is not None:
+        # The fastRotBroad requires constant wavelength steps
+        # Upsample by a factor of 4 to not lose spectral information
+
+        spec_interp = interp1d(model_wavel, model_flux)
+
+        wavel_new = np.linspace(
+            model_wavel[0],
+            model_wavel[-1],
+            4 * model_wavel.size,
+        )
+
+        flux_new = spec_interp(wavel_new)
+
+        # Apply fast rotational broadening
+        # Only to be used on a limited wavelength range
+
+        flux_broad = fastRotBroad(
+            wvl=wavel_new,
+            flux=flux_new,
+            epsilon=0.0,
+            vsini=rot_broad,
+            effWvl=None,
+        )
+
+        # Interpolate back to the original wavelength sampling
+
+        spec_interp = interp1d(wavel_new, flux_broad)
+        model_flux = spec_interp(model_wavel)
+
+    # Apply radial velocity shift
+
+    if rad_vel is not None:
+        wavel_shift = rad_vel * 1e3 * model_wavel / constants.LIGHT
+
+        spec_interp = interp1d(
+            model_wavel + wavel_shift,
+            model_flux,
+            fill_value="extrapolate",
+        )
+
+        model_flux = spec_interp(model_wavel)
+
+    # Apply extinction
+
+    if "ism_ext" in model_param:
+        ism_reddening = model_param.get("ism_red", 3.1)
+
+        ext_filt = ism_extinction(
+            model_param["ism_ext"],
+            ism_reddening,
+            model_wavel,
+        )
+
+        model_flux *= 10.0 ** (-0.4 * ext_filt)
+
+    # elif "lognorm_ext" in model_param:
+    #     cross_tmp = cross_sections["Generic/Bessell.V"](
+    #         (10.0 ** model_param["lognorm_radius"], model_param["lognorm_sigma"])
+    #     )
+    #
+    #     n_grains = (
+    #         model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+    #     )
+    #
+    #     cross_tmp = cross_sections["spectrum"](
+    #         (
+    #             model_wavel,
+    #             10.0 ** model_param["lognorm_radius"],
+    #             model_param["lognorm_sigma"],
+    #         )
+    #     )
+    #
+    #     n_grains = (
+    #         model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+    #     )
+    #     print(n_grains)
+    #
+    #     model_flux *= np.exp(-cross_tmp * n_grains)
+    #
+    # elif "powerlaw_ext" in model_param:
+    #     cross_tmp = cross_sections["Generic/Bessell.V"](
+    #         (10.0 ** model_param["powerlaw_max"], model_param["powerlaw_exp"])
+    #     )
+    #
+    #     n_grains = (
+    #         model_param["powerlaw_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+    #     )
+    #
+    #     cross_tmp = cross_sections["spectrum"](
+    #         (
+    #             model_wavel,
+    #             10.0 ** model_param["powerlaw_max"],
+    #             model_param["powerlaw_exp"],
+    #         )
+    #     )
+    #
+    #     model_flux *= np.exp(-cross_tmp * n_grains)
+
+    # elif self.ext_filter is not None:
+    #     ism_reddening = all_param.get("ism_red", 3.1)
+    #
+    #     av_required = convert_to_av(
+    #         filter_name=self.ext_filter,
+    #         filter_ext=all_param[f"phot_ext_{self.ext_filter}"],
+    #         v_band_red=ism_reddening,
+    #     )
+    #
+    #     ext_spec = ism_extinction(
+    #         av_required, ism_reddening, self.spectrum[spec_item][0][:, 0]
+    #     )
+    #
+    #     model_flux *= 10.0 ** (-0.4 * ext_spec)
+
+    # Scale the spectrum by (radius/distance)^2
+
+    if "radius" in model_param:
+        model_flux *= (model_param["radius"] * constants.R_JUP) ** 2 / (
+            1e3 * constants.PARSEC / model_param["parallax"]
+        ) ** 2
+
+    elif "flux_scaling" in model_param:
+        model_flux *= model_param["flux_scaling"]
+
+    elif "log_flux_scaling" in model_param:
+        model_flux *= 10.0 ** model_param["log_flux_scaling"]
+
+    # Apply instrument broadening
+
+    if spec_res is not None:
+        model_flux = smooth_spectrum(model_wavel, model_flux, spec_res)
+
+    # Resample wavelengths to data
+
+    if data_wavel is not None:
+        flux_interp = interp1d(model_wavel, model_flux, bounds_error=True)
+        model_flux = flux_interp(data_wavel)
+
+    # Shift the spectrum by a constant
+
+    # if "flux_offset" in model_param:
+    #     model_flux += model_param["flux_offset"]
+
+    return model_flux

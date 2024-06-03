@@ -118,7 +118,11 @@ def multi_photometry(
                     readmodel = ReadModel(spectrum, filter_name=item)
 
                 try:
-                    if "teff_0" in parameters and "teff_1" in parameters:
+                    if (
+                        spectrum != "planck"
+                        and "teff_0" in parameters
+                        and "teff_1" in parameters
+                    ):
                         # Binary system
 
                         param_0 = binary_to_single(parameters, 0)

@@ -342,32 +342,20 @@ def calc_reddening(
 
 
 @typechecked
-def interp_lognorm(
-    inc_phot: List[str],
-    inc_spec: List[str],
-) -> Tuple[
-    Dict[str, Union[RegularGridInterpolator, List[RegularGridInterpolator]]],
+def interp_lognorm() -> Tuple[
+    RegularGridInterpolator,
     np.ndarray,
     np.ndarray,
 ]:
     """
-    Function for interpolating the log-normal dust cross sections for
-    each filter and spectrum.
-
-    Parameters
-    ----------
-    inc_phot : list(str)
-        List with filter names. Not used if the list is empty.
-    inc_spec : list(str)
-        List with the spectrum names (as stored in the database with
-        :func:`~species.data.database.Database.add_object`). Not used
-        if the list is empty.
+    Function for interpolating the cross sections for dust grains with
+    a log-normal size distribution. The returned dictionary contains
+    the cross sections for each filter and spectrum.
 
     Returns
     -------
-    dict
-        Dictionary with the extinction cross section for each filter
-        and spectrum.
+    RegularGridInterpolator
+        Interpolated extinction cross sections.
     np.ndarray
         Grid points of the geometric mean radius.
     np.ndarray
@@ -389,45 +377,42 @@ def interp_lognorm(
     print(f"   - Geometric mean radius (um) = {radius_g[0]:.2e} - {radius_g[-1]:.2e}")
     print(f"   - Geometric standard deviation = {sigma_g[0]:.2f} - {sigma_g[-1]:.2f}")
 
-    inc_phot.append("Generic/Bessell.V")
-
-    cross_sections = {}
-
-    for phot_item in inc_phot:
-        read_filt = ReadFilter(phot_item)
-        filt_trans = read_filt.get_filter()
-
-        cross_phot = np.zeros((radius_g.shape[0], sigma_g.shape[0]))
-
-        for i in range(radius_g.shape[0]):
-            for j in range(sigma_g.shape[0]):
-                cross_interp = interp1d(
-                    wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-                )
-
-                cross_tmp = cross_interp(filt_trans[:, 0])
-
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
-
-                # Filter-weighted average of the extinction cross section
-                cross_phot[i, j] = integral1 / integral2
-
-        cross_sections[phot_item] = RegularGridInterpolator(
-            (radius_g, sigma_g), cross_phot, method="linear", bounds_error=True
-        )
+    # inc_phot.append("Generic/Bessell.V")
+    #
+    # cross_sections = {}
+    #
+    # for phot_item in inc_phot:
+    #     read_filt = ReadFilter(phot_item)
+    #     filt_trans = read_filt.get_filter()
+    #
+    #     cross_phot = np.zeros((radius_g.shape[0], sigma_g.shape[0]))
+    #
+    #     for i in range(radius_g.shape[0]):
+    #         for j in range(sigma_g.shape[0]):
+    #             cross_interp = interp1d(
+    #                 wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
+    #             )
+    #
+    #             cross_tmp = cross_interp(filt_trans[:, 0])
+    #
+    #             integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+    #             integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
+    #
+    #             # Filter-weighted average of the extinction cross section
+    #             cross_phot[i, j] = integral1 / integral2
+    #
+    #     cross_sections[phot_item] = RegularGridInterpolator(
+    #         (radius_g, sigma_g), cross_phot, method="linear", bounds_error=True
+    #     )
 
     print("Interpolating dust opacities...", end="")
 
-    if len(inc_spec) > 0:
-        cross_tmp = RegularGridInterpolator(
-            (wavelength, radius_g, sigma_g),
-            cross_section,
-            method="linear",
-            bounds_error=True,
-        )
-
-        cross_sections["spectrum"] = cross_tmp
+    cross_sections = RegularGridInterpolator(
+        (wavelength, radius_g, sigma_g),
+        cross_section,
+        method="linear",
+        bounds_error=True,
+    )
 
     print(" [DONE]")
 
@@ -435,32 +420,20 @@ def interp_lognorm(
 
 
 @typechecked
-def interp_powerlaw(
-    inc_phot: List[str],
-    inc_spec: List[str],
-) -> Tuple[
-    Dict[str, Union[RegularGridInterpolator, List[RegularGridInterpolator]]],
+def interp_powerlaw() -> Tuple[
+    RegularGridInterpolator,
     np.ndarray,
     np.ndarray,
 ]:
     """
-    Function for interpolating the power-law dust cross sections for
-    each filter and spectrum.
-
-    Parameters
-    ----------
-    inc_phot : list(str)
-        List with filter names. Not used if the list is empty.
-    inc_spec : list(str)
-        List with the spectrum names (as stored in the database with
-        :func:`~species.data.database.Database.add_object`). Not used
-        if the list is empty.
+    Function for interpolating the cross sections for dust grains with
+    a power-law size distribution. The returned dictionary contains
+    the cross sections for each filter and spectrum.
 
     Returns
     -------
-    dict
-        Dictionary with the extinction cross section for each filter
-        and spectrum.
+    RegularGridInterpolator
+        Interpolate extinction cross sections.
     np.ndarray
         Grid points of the maximum radius.
     np.ndarray
@@ -482,45 +455,42 @@ def interp_powerlaw(
     print(f"   - Maximum radius (um) = {radius_max[0]:.2e} - {radius_max[-1]:.2e}")
     print(f"   - Power-law exponent = {exponent[0]:.2f} - {exponent[-1]:.2f}")
 
-    inc_phot.append("Generic/Bessell.V")
-
-    cross_sections = {}
-
-    for phot_item in inc_phot:
-        read_filt = ReadFilter(phot_item)
-        filt_trans = read_filt.get_filter()
-
-        cross_phot = np.zeros((radius_max.shape[0], exponent.shape[0]))
-
-        for i in range(radius_max.shape[0]):
-            for j in range(exponent.shape[0]):
-                cross_interp = interp1d(
-                    wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-                )
-
-                cross_tmp = cross_interp(filt_trans[:, 0])
-
-                integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-                integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
-
-                # Filter-weighted average of the extinction cross section
-                cross_phot[i, j] = integral1 / integral2
-
-        cross_sections[phot_item] = RegularGridInterpolator(
-            (radius_max, exponent), cross_phot, method="linear", bounds_error=True
-        )
+    # inc_phot.append("Generic/Bessell.V")
+    #
+    # cross_sections = {}
+    #
+    # for phot_item in inc_phot:
+    #     read_filt = ReadFilter(phot_item)
+    #     filt_trans = read_filt.get_filter()
+    #
+    #     cross_phot = np.zeros((radius_max.shape[0], exponent.shape[0]))
+    #
+    #     for i in range(radius_max.shape[0]):
+    #         for j in range(exponent.shape[0]):
+    #             cross_interp = interp1d(
+    #                 wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
+    #             )
+    #
+    #             cross_tmp = cross_interp(filt_trans[:, 0])
+    #
+    #             integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+    #             integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
+    #
+    #             # Filter-weighted average of the extinction cross section
+    #             cross_phot[i, j] = integral1 / integral2
+    #
+    #     cross_sections[phot_item] = RegularGridInterpolator(
+    #         (radius_max, exponent), cross_phot, method="linear", bounds_error=True
+    #     )
 
     print("Interpolating dust opacities...", end="")
 
-    if len(inc_spec) > 0:
-        cross_tmp = RegularGridInterpolator(
-            (wavelength, radius_max, exponent),
-            cross_section,
-            method="linear",
-            bounds_error=True,
-        )
-
-        cross_sections["spectrum"] = cross_tmp
+    cross_sections = RegularGridInterpolator(
+        (wavelength, radius_max, exponent),
+        cross_section,
+        method="linear",
+        bounds_error=True,
+    )
 
     print(" [DONE]")
 

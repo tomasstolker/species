@@ -608,39 +608,26 @@ def plot_posterior(
                 box.parameters.append("luminosity")
                 ndim += 1
 
-        if "teff_0" in box.parameters and "radius_0" in box.parameters:
-            teff_index = np.argwhere(np.array(box.parameters) == "teff_0")
-            radius_index = np.argwhere(np.array(box.parameters) == "radius_0")
+        for i in range(100):
+            if f"teff_{i}" in box.parameters and f"radius_{i}" in box.parameters:
+                teff_index = np.argwhere(np.array(box.parameters) == f"teff_{i}")
+                radius_index = np.argwhere(np.array(box.parameters) == f"radius_{i}")
 
-            luminosity = (
-                4.0
-                * np.pi
-                * (samples[..., radius_index[0]] * constants.R_JUP) ** 2
-                * constants.SIGMA_SB
-                * samples[..., teff_index[0]] ** 4.0
-                / constants.L_SUN
-            )
+                luminosity = (
+                    4.0
+                    * np.pi
+                    * (samples[..., radius_index[0]] * constants.R_JUP) ** 2
+                    * constants.SIGMA_SB
+                    * samples[..., teff_index[0]] ** 4.0
+                    / constants.L_SUN
+                )
 
-            samples = np.append(samples, np.log10(luminosity), axis=-1)
-            box.parameters.append("luminosity_0")
-            ndim += 1
+                samples = np.append(samples, np.log10(luminosity), axis=-1)
+                box.parameters.append(f"luminosity_{i}")
+                ndim += 1
 
-        if "teff_1" in box.parameters and "radius_1" in box.parameters:
-            teff_index = np.argwhere(np.array(box.parameters) == "teff_1")
-            radius_index = np.argwhere(np.array(box.parameters) == "radius_1")
-
-            luminosity = (
-                4.0
-                * np.pi
-                * (samples[..., radius_index[0]] * constants.R_JUP) ** 2
-                * constants.SIGMA_SB
-                * samples[..., teff_index[0]] ** 4.0
-                / constants.L_SUN
-            )
-
-            samples = np.append(samples, np.log10(luminosity), axis=-1)
-            box.parameters.append("luminosity_1")
-            ndim += 1
+            else:
+                break
 
         if "teff_0" in box.parameters and "radius_0" in box.parameters:
             luminosity = 0.0

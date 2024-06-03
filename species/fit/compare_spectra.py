@@ -641,9 +641,7 @@ class CompareSpectra:
                                 )
 
                                 c_denom = (
-                                    weights_list
-                                    * model_list**2
-                                    / data_list[:, 2] ** 2
+                                    weights_list * model_list**2 / data_list[:, 2] ** 2
                                 )
 
                                 if np.nansum(model_list) == 0.0:

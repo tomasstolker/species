@@ -2247,11 +2247,6 @@ class Database:
 
             dset.attrs["n_scaling"] = int(count_scaling)
 
-            if "teff_0" in modelpar and "teff_1" in modelpar:
-                dset.attrs["binary"] = True
-            else:
-                dset.attrs["binary"] = False
-
             print("\nIntegrated autocorrelation time:")
 
             from emcee.autocorr import integrated_time
@@ -2314,7 +2309,7 @@ class Database:
 
             if "n_param" in dset.attrs:
                 n_param = dset.attrs["n_param"]
-            elif "nparam" in dset.attrs:
+            else:
                 n_param = dset.attrs["nparam"]
 
             if samples.ndim == 3:
@@ -2407,7 +2402,7 @@ class Database:
 
             if "n_param" in dset.attrs:
                 n_param = dset.attrs["n_param"]
-            elif "nparam" in dset.attrs:
+            else:
                 n_param = dset.attrs["nparam"]
 
             samples = np.asarray(dset)

@@ -285,13 +285,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("teff")
         param[index] = r"$T_\mathrm{eff}$ (K)"
 
-    if "teff_0" in param:
-        index = param.index("teff_0")
-        param[index] = r"$T_\mathrm{eff,1}$ (K)"
+    for i in range(100):
+        if f"disk_teff_{i}" in param:
+            index = param.index(f"disk_teff_{i}")
+            param[index] = r"$T_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$ (K)"
 
-    if "teff_1" in param:
-        index = param.index("teff_1")
-        param[index] = r"$T_\mathrm{eff,2}$ (K)"
+        else:
+            break
 
     if "logg" in param:
         index = param.index("logg")
@@ -367,6 +367,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "vsini" in param:
         index = param.index("vsini")
         param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
+
+    if "rad_vel" in param:
+        index = param.index("rad_vel")
+        param[index] = r"RV (km s$^{-1}$)"
 
     if "mass" in param:
         index = param.index("mass")
@@ -472,7 +476,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     for i, item in enumerate(ascii_lowercase[1:]):
         if f"teff_evol_{i}" in param:
             index = param.index(f"teff_evol_{i}")
-            param[index] = rf"$T_\mathrm{{eff, {item}}}$ (K)"
+            param[index] = rf"$T_\mathrm{{eff,{item}}}$ (K)"
         else:
             break
 
@@ -624,9 +628,9 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     for i, item in enumerate(cloud_species):
         if f"{item.lower()}_fraction" in param:
             index = param.index(f"{item.lower()}_fraction")
-            param[
-                index
-            ] = rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
+            param[index] = (
+                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
+            )
 
         if f"{item.lower()}_tau" in param:
             index = param.index(f"{item.lower()}_tau")
@@ -674,6 +678,18 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
 
+        elif item[0:8] == "rad_vel_":
+            item_name = item[8:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
+
+        elif item[0:6] == "vsini_":
+            item_name = item[6:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            param[i] = rf"$v\,\sin\,i_\mathrm{{{item_name}}}$ (km s$^{-1}$)"
+
         elif item[0:11] == "wavelength_":
             item_name = item[11:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
@@ -716,7 +732,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     for i in range(100):
         if f"teff_{i}" in param:
             index = param.index(f"teff_{i}")
-            param[index] = rf"$T_\mathrm{{{i+1}}}$ (K)"
+            param[index] = rf"$T_\mathrm{{eff,{i+1}}}$ (K)"
 
         else:
             break
@@ -970,8 +986,8 @@ def quantity_unit(
     param: List[str], object_type: str
 ) -> Tuple[List[str], List[Optional[str]], List[str]]:
     """
-    Function for creating lists with quantities, units, and labels
-    for fitted parameter.
+    Function for creating lists with quantities, units,
+    and labels for the fitted parameter.
 
     Parameters
     ----------
@@ -995,47 +1011,49 @@ def quantity_unit(
     label = []
 
     for item in param:
+        item_split = item.split("_")
+
         if item == "teff":
             quantity.append("teff")
             unit.append("K")
             label.append(r"$T_\mathrm{eff}$")
 
-        if item == "logg":
+        elif item == "logg":
             quantity.append("logg")
             unit.append(None)
             label.append(r"$\log g$")
 
-        if item == "metallicity":
+        elif item == "metallicity":
             quantity.append("metallicity")
             unit.append(None)
             label.append("[Fe/H]")
 
-        if item == "feh":
+        elif item == "feh":
             quantity.append("feh")
             unit.append(None)
             label.append("[Fe/H]")
 
-        if item == "fsed":
+        elif item == "fsed":
             quantity.append("fsed")
             unit.append(None)
             label.append(r"$f_\mathrm{sed}$")
 
-        if item == "c_o_ratio":
+        elif item == "c_o_ratio":
             quantity.append("c_o_ratio")
             unit.append(None)
             label.append("C/O")
 
-        if item == "log_kzz":
+        elif item == "log_kzz":
             quantity.append("log_kzz")
             unit.append(None)
             label.append(r"$\log\,K_\mathrm{zz}$")
 
-        if item == "ad_index":
+        elif item == "ad_index":
             quantity.append("ad_index")
             unit.append(None)
             label.append(r"$\gamma_\mathrm{ad}$")
 
-        if item == "radius":
+        elif item == "radius":
             quantity.append("radius")
 
             if object_type == "planet":
@@ -1046,28 +1064,26 @@ def quantity_unit(
                 unit.append(r"$R_\mathrm{\odot}$")
                 label.append(r"$R_\ast$")
 
-        item_split = item.split("_")
-
-        if len(item_split) == 2 and item_split[1].isdigit():
-            param_index = int(item_split[1])
+        elif len(item_split) > 1 and item_split[-1].isdigit():
+            param_index = int(item_split[-1])
 
             if item_split[0] == "teff":
-                quantity.append(f"teff_{item_split[1]}")
+                quantity.append(f"teff_{param_index}")
                 unit.append("K")
-                label.append(rf"$T_\mathrm{{{param_index+1}}}$")
+                label.append(rf"$T_\mathrm{{eff,{param_index+1}}}$")
 
             elif item_split[0] == "logg":
-                quantity.append(f"logg_{item_split[1]}")
+                quantity.append(f"logg_{param_index}")
                 unit.append("")
                 label.append(rf"$\log g_\mathrm{{{param_index+1}}}$")
 
             elif item_split[0] == "feh":
-                quantity.append(f"feh_{item_split[1]}")
+                quantity.append(f"feh_{param_index}")
                 unit.append("")
                 label.append(rf"[Fe/H]$_\mathrm{{{param_index+1}}}$")
 
             elif item_split[0] == "radius":
-                quantity.append(f"radius_{item_split[1]}")
+                quantity.append(f"radius_{param_index}")
 
                 if object_type == "planet":
                     unit.append(r"$R_\mathrm{J}$")
@@ -1077,17 +1093,33 @@ def quantity_unit(
 
                 label.append(rf"$R_\mathrm{{{param_index+1}}}$")
 
-        if item == "distance":
+            elif item_split[0] == "disk" and item_split[1] == "teff":
+                quantity.append(f"disk_teff_{param_index}")
+                unit.append("K")
+                label.append(r"$T_\mathrm{disk,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
+            elif item_split[0] == "disk" and item_split[1] == "radius":
+                quantity.append(f"disk_radius_{param_index}")
+
+                if object_type == "planet":
+                    unit.append(r"$R_\mathrm{J}$")
+
+                elif object_type == "star":
+                    unit.append("au")
+
+                label.append(r"$R_\mathrm{disk,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
+        elif item == "distance":
             quantity.append("distance")
             unit.append("pc")
             label.append(r"$d$")
 
-        if item == "parallax":
+        elif item == "parallax":
             quantity.append("parallax")
             unit.append("mas")
             label.append(r"$\varpi$")
 
-        if item == "mass":
+        elif item == "mass":
             quantity.append("mass")
 
             if object_type == "planet":
@@ -1098,57 +1130,48 @@ def quantity_unit(
                 unit.append(r"$M_\mathrm{\odot}$")
                 label.append(r"$M_\ast$")
 
-        if item == "luminosity":
+        elif item == "luminosity":
             quantity.append("luminosity")
             unit.append(None)
             label.append(r"$\log\,L/L_\mathrm{\odot}$")
 
-        if item == "ism_ext":
+        elif item == "ism_ext":
             quantity.append("ism_ext")
             unit.append(None)
             label.append(r"$A_V$")
 
-        if item == "lognorm_ext":
+        elif item == "lognorm_ext":
             quantity.append("lognorm_ext")
             unit.append(None)
             label.append(r"$A_V$")
 
-        if item == "powerlaw_ext":
+        elif item == "powerlaw_ext":
             quantity.append("powerlaw_ext")
             unit.append(None)
             label.append(r"$A_V$")
 
-        if item.startswith("phot_ext_"):
+        elif item.startswith("phot_ext_"):
             quantity.append(item)
             unit.append(None)
             filter_name = item[9:].split("/")[1]
             label.append(rf"$A_\mathrm{{{filter_name}}}$")
 
-        if item == "pt_smooth":
+        elif item == "pt_smooth":
             quantity.append("pt_smooth")
             unit.append(None)
             label.append(r"$\sigma_\mathrm{P-T}$")
 
-        if item == "abund_smooth":
+        elif item == "abund_smooth":
             quantity.append("abund_smooth")
             unit.append(None)
             label.append(r"$\sigma_\mathrm{abund}$")
 
-        if item == "disk_teff":
+        elif item == "disk_teff":
             quantity.append("disk_teff")
             unit.append("K")
             label.append(r"$T_\mathrm{disk}$")
 
-        for i in range(100):
-            if item == f"disk_teff_{i}":
-                quantity.append(f"disk_teff_{i}")
-                unit.append("K")
-                label.append(r"$T_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$")
-
-            else:
-                break
-
-        if item == "disk_radius":
+        elif item == "disk_radius":
             quantity.append("disk_radius")
 
             if object_type == "planet":
@@ -1159,32 +1182,17 @@ def quantity_unit(
 
             label.append(r"$R_\mathrm{disk}$")
 
-        for i in range(100):
-            if item == f"disk_radius_{i}":
-                quantity.append(f"disk_radius_{i}")
-
-                if object_type == "planet":
-                    unit.append(r"$R_\mathrm{J}$")
-
-                elif object_type == "star":
-                    unit.append("au")
-
-                label.append(r"$R_\mathrm{disk,}$" + rf"$_\mathrm{{{i+1}}}$")
-
-            else:
-                break
-
-        if item == "flux_scaling":
+        elif item == "flux_scaling":
             quantity.append("flux_scaling")
             unit.append(None)
             label.append(r"$a_\mathrm{flux}$")
 
-        if item == "log_flux_scaling":
+        elif item == "log_flux_scaling":
             quantity.append("log_flux_scaling")
             unit.append(None)
             label.append(r"$\log\,a_\mathrm{flux}$")
 
-        if item == "flux_offset":
+        elif item == "flux_offset":
             quantity.append("flux_offset")
             unit.append(r"W m$^{-2}$ µm$^{-1}$")
             label.append(r"$b_\mathrm{flux}$")
@@ -1442,7 +1450,7 @@ def create_model_label(
     leg_param: List[str],
     param_fmt: Dict[str, str],
 ) -> str:
-    """"
+    """ "
     Function for creating a label that includes the parameters of a
     model spectrum. The label is used in the legend of a SED plot.
 
@@ -1526,53 +1534,56 @@ def create_model_label(
         if len(par_key) > 0:
             label += ": "
 
-    for item in leg_param:
-        if item in par_key:
-            param_idx = par_key.index(item)
+    for param_item in leg_param:
+        if param_item in par_key:
+            param_idx = par_key.index(param_item)
         else:
             continue
 
-        if item[:4] == "teff":
-            value = f"{model_param[item]:{param_fmt['teff']}}"
+        if param_item[:4] == "teff":
+            value = f"{model_param[param_item]:{param_fmt['teff']}}"
 
-        elif item[:4] == "logg":
-            value = f"{model_param[item]:{param_fmt['logg']}}"
+        elif param_item[:9] == "disk_teff":
+            value = f"{model_param[param_item]:{param_fmt['disk_teff']}}"
 
-        elif item[:3] == "feh":
-            value = f"{model_param[item]:{param_fmt['feh']}}"
+        elif param_item[:4] == "logg":
+            value = f"{model_param[param_item]:{param_fmt['logg']}}"
 
-        elif item[:6] == "radius":
+        elif param_item[:3] == "feh":
+            value = f"{model_param[param_item]:{param_fmt['feh']}}"
+
+        elif param_item[:6] == "radius":
             if object_type == "planet":
-                value = f"{model_param[item]:{param_fmt['radius']}}"
+                value = f"{model_param[param_item]:{param_fmt['radius']}}"
             elif object_type == "star":
-                value = f"{model_param[item]*constants.R_JUP/constants.R_SUN:{param_fmt['radius']}}"
+                value = f"{model_param[param_item]*constants.R_JUP/constants.R_SUN:{param_fmt['radius']}}"
 
-        elif item[:11] == "disk_radius":
+        elif param_item[:11] == "disk_radius":
             if object_type == "planet":
-                value = f"{model_param[item]:{param_fmt['disk_radius']}}"
+                value = f"{model_param[param_item]:{param_fmt['disk_radius']}}"
             elif object_type == "star":
-                radius_au = model_param[item] * constants.R_JUP / constants.AU
+                radius_au = model_param[param_item] * constants.R_JUP / constants.AU
                 value = f"{radius_au:{param_fmt['disk_radius']}}"
 
-        elif item == "mass" and item in leg_param:
+        elif param_item == "mass" and param_item in leg_param:
             if object_type == "planet":
-                value = f"{model_param[item]:{param_fmt['mass']}}"
+                value = f"{model_param[param_item]:{param_fmt['mass']}}"
             elif object_type == "star":
-                value = f"{model_param[item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
+                value = f"{model_param[param_item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
 
-        elif item == "luminosity" and item in leg_param:
-            value = f"{np.log10(model_param[item]):{param_fmt['luminosity']}}"
+        elif param_item == "luminosity" and param_item in leg_param:
+            value = f"{np.log10(model_param[param_item]):{param_fmt['luminosity']}}"
 
-        elif item in leg_param and item in param_fmt:
-            value = f"{model_param[item]:{param_fmt[item]}}"
+        elif param_item in leg_param and param_item in param_fmt:
+            value = f"{model_param[param_item]:{param_fmt[param_item]}}"
 
-        elif item in leg_param and item not in param_fmt:
+        elif param_item in leg_param and param_item not in param_fmt:
             warnings.warn(
-                f"The '{item}' parameter is not found in "
+                f"The '{param_item}' parameter is not found in "
                 "the dictionary of 'param_fmt'."
             )
 
-            value = f"{model_param[item]:{param_fmt[item]:.2f}}"
+            value = f"{model_param[param_item]:{param_fmt[param_item]:.2f}}"
 
         else:
             continue
@@ -1597,7 +1608,7 @@ def create_model_label(
 
 
 def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
-    """"
+    """ "
     Function for creating a dictionary with parameter formats
     that are used in the legend of a plot.
 
