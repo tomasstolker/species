@@ -2014,16 +2014,16 @@ class FitModel:
                     ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
 
                 else:
-                    # Calculate the chi-square without a covariance matrix
-                    chi_sq = (
+                    # Calculate the log-likelihood without a covariance matrix
+                    lnlike_tmp = (
                         -0.5
                         * self.weights[spec_item]
                         * (data_flux - model_flux) ** 2
                         / data_var
                     )
-                    chi_sq += -0.5 * np.log(2.0 * np.pi * data_var)
+                    lnlike_tmp += -0.5 * np.log(2.0 * np.pi * data_var)
 
-                    ln_like += np.nansum(chi_sq)
+                    ln_like += np.nansum(lnlike_tmp)
 
         return ln_like
 
@@ -2288,8 +2288,10 @@ class FitModel:
             if f"scaling_{spec_item}" in self.bounds:
                 spec_labels.append(f"scaling_{spec_item}")
 
-        ln_prob = samples[:, -1]
+        # Samples and ln(L)
+
         samples = samples[:, :-1]
+        ln_prob = samples[:, -1]
 
         # Adding the fixed parameters to the samples
 
@@ -2540,10 +2542,9 @@ class FitModel:
             if f"scaling_{spec_item}" in self.bounds:
                 spec_labels.append(f"scaling_{spec_item}")
 
-        # Posterior samples
-        samples = result["samples"]
+        # Samples and ln(L)
 
-        # Log-likelihood
+        samples = result["samples"]
         ln_prob = result["weighted_samples"]["logl"]
 
         # Adding the fixed parameters to the samples
@@ -2860,6 +2861,8 @@ class FitModel:
                     resume=resume,
                 )
 
+        # Samples and ln(L)
+
         results = dsampler.results
         samples = results.samples_equal()
         ln_prob = results.logl
@@ -2880,7 +2883,7 @@ class FitModel:
             f"\nNested sampling log-evidence: {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
         )
 
-        # Get the best-fit (highest likelihood) point
+        # Get the sample with the highest likelihood
 
         max_idx = np.argmax(ln_prob)
         max_lnlike = ln_prob[max_idx]

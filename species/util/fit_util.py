@@ -267,7 +267,9 @@ def get_residuals(
         warnings.warn(
             "The 'datatype' parameter is no longer "
             "used by the 'get_residuals' function. "
-            "Instead, the 'tag' parameter should be set.",
+            "Instead, the 'tag' parameter should be set, "
+            "which points to the sampling results as "
+            "stored in the database.",
             DeprecationWarning,
         )
 
@@ -275,7 +277,9 @@ def get_residuals(
         warnings.warn(
             "The 'spectrum' parameter is no longer "
             "used by the 'get_residuals' function. "
-            "Instead, the 'tag' parameter should be set.",
+            "Instead, the 'tag' parameter should be set, "
+            "which points to the sampling results as "
+            "stored in the database.",
             DeprecationWarning,
         )
 
@@ -529,5 +533,7 @@ def get_residuals(
         name=objectbox.name,
         photometry=res_phot,
         spectrum=res_spec,
+        chi2=chi2_stat,
+        n_dof=n_dof,
         chi2_red=chi2_red,
     )

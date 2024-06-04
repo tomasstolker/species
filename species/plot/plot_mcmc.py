@@ -268,7 +268,7 @@ def plot_posterior(
         Only used if the ``tag`` contains samples obtained with
         :class:`~species.fit.retrieval.AtmosphericRetrieval`.
     inc_loglike : bool
-        Include the log10 of the likelihood as additional
+        Include the log-likelihood, :math:`\\ln{L}`, as additional
         parameter in the corner plot.
     inc_abund : bool
         Include the abundances when retrieving free abundances with
@@ -886,26 +886,30 @@ def plot_posterior(
         else:
             break
 
-    # Include the log-likelihood
+    # Include the log-likelihood, ln(L)
 
     if inc_loglike:
         # Get ln(L) of the samples
         ln_prob = box.ln_prob[..., np.newaxis]
 
         # Normalized by the maximum ln(L)
-        ln_prob -= np.amax(ln_prob)
+        # ln_prob -= np.amax(ln_prob)
 
         # Convert ln(L) to log10(L)
-        log_prob = ln_prob * np.exp(1.0)
+        # log_prob = ln_prob * np.exp(1.0)
 
         # Convert log10(L) to L
-        prob = 10.0**log_prob
+        # prob = 10.0**log_prob
 
         # Normalize to an integrated probability of 1
-        prob /= np.sum(prob)
+        # prob /= np.sum(prob)
 
-        samples = np.append(samples, np.log10(prob), axis=-1)
-        box.parameters.append("log_prob")
+        # samples = np.append(samples, np.log10(prob), axis=-1)
+        # box.parameters.append("log_prob")
+        # ndim += 1
+
+        samples = np.append(samples, ln_prob, axis=-1)
+        box.parameters.append("ln_prob")
         ndim += 1
 
     # Remove abundances

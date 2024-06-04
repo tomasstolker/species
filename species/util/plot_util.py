@@ -830,6 +830,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("log_prob")
         param[index] = r"$\log\,\mathcal{L}$"
 
+    if "ln_prob" in param:
+        index = param.index("ln_prob")
+        param[index] = r"$\ln\,\mathcal{L}$"
+
     if "log_tau_cloud" in param:
         index = param.index("log_tau_cloud")
         param[index] = r"$\log\,\tau_\mathrm{cloud}$"
