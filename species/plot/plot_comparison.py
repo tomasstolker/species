@@ -23,7 +23,11 @@ from species.core import constants
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
 from species.util.dust_util import ism_extinction
-from species.util.plot_util import create_model_label, create_param_format, update_labels
+from species.util.plot_util import (
+    create_model_label,
+    create_param_format,
+    update_labels,
+)
 from species.util.spec_util import smooth_spectrum
 
 

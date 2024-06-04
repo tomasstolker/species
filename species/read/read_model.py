@@ -13,7 +13,7 @@ import numpy as np
 
 from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import interp1d, RegularGridInterpolator
 
 from species.core import constants
@@ -1887,7 +1887,7 @@ class ReadModel:
             4.0
             * np.pi
             * (model_param["radius"] * constants.R_JUP) ** 2
-            * simps(model_box.flux, model_box.wavelength)
+            * simpson(y=model_box.flux, x=model_box.wavelength)
         )
 
         return np.log10(bol_lum / constants.L_SUN)

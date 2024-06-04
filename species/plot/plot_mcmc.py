@@ -260,7 +260,7 @@ def plot_posterior(
         Include the mass in the posterior plot as calculated
         from the surface gravity and radius.
     inc_log_mass : bool
-        Include the logarithm of the mass, :math:`\\log10{M}`, in
+        Include the logarithm of the mass, :math:`\\log_{10}{M}`, in
         the posterior plot, as calculated from the surface gravity
         and radius.
     inc_pt_param : bool
@@ -523,7 +523,10 @@ def plot_posterior(
 
             else:
                 for disk_idx in range(100):
-                    if f"disk_teff_{disk_idx}" in box.parameters and f"disk_radius_{disk_idx}" in box.parameters:
+                    if (
+                        f"disk_teff_{disk_idx}" in box.parameters
+                        and f"disk_radius_{disk_idx}" in box.parameters
+                    ):
                         n_disk += 1
                     else:
                         break
@@ -568,8 +571,12 @@ def plot_posterior(
                 lum_disk = 0.0
 
                 for disk_idx in range(n_disk):
-                    teff_index = np.argwhere(np.array(box.parameters) == f"disk_teff_{disk_idx}")[0]
-                    radius_index = np.argwhere(np.array(box.parameters) == f"disk_radius_{disk_idx}")[0]
+                    teff_index = np.argwhere(
+                        np.array(box.parameters) == f"disk_teff_{disk_idx}"
+                    )[0]
+                    radius_index = np.argwhere(
+                        np.array(box.parameters) == f"disk_radius_{disk_idx}"
+                    )[0]
 
                     lum_disk += (
                         4.0
@@ -818,7 +825,9 @@ def plot_posterior(
 
     for radius_idx in range(100):
         if f"radius_{radius_idx}" in box.parameters:
-            radius_index = np.argwhere(np.array(box.parameters) == f"radius_{radius_idx}")[0]
+            radius_index = np.argwhere(
+                np.array(box.parameters) == f"radius_{radius_idx}"
+            )[0]
             if object_type == "star":
                 samples[:, radius_index] *= constants.R_JUP / constants.R_SUN
         else:
@@ -867,7 +876,9 @@ def plot_posterior(
 
     for disk_idx in range(100):
         if f"disk_radius_{disk_idx}" in box.parameters:
-            radius_index = np.argwhere(np.array(box.parameters) == f"disk_radius_{disk_idx}")[0]
+            radius_index = np.argwhere(
+                np.array(box.parameters) == f"disk_radius_{disk_idx}"
+            )[0]
             if object_type == "star":
                 samples[:, radius_index] *= constants.R_JUP / constants.AU
         else:
@@ -880,7 +891,9 @@ def plot_posterior(
 
     for disk_idx in range(100):
         if f"radius_bb_{disk_idx}" in box.parameters:
-            radius_index = np.argwhere(np.array(box.parameters) == f"radius_bb_{disk_idx}")[0]
+            radius_index = np.argwhere(
+                np.array(box.parameters) == f"radius_bb_{disk_idx}"
+            )[0]
             if object_type == "star":
                 samples[:, radius_index] *= constants.R_JUP / constants.AU
         else:

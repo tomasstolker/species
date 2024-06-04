@@ -309,7 +309,8 @@
         "lambda/d_lambda": 5000,
         "teff range": [2300, 12000],
         "reference": "Husser et al. (2013)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H"
+        "url": "https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H",
+        "information": "[alpha/Fe] = 0.0"
     },
     "saumon2008-clear": {
         "parameters": ["teff", "logg"],

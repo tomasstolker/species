@@ -874,10 +874,23 @@ def plot_spectrum(
                     fwhm_micron = transmission.filter_fwhm()
 
                     if isinstance(box_item.flux[filter_item][0], np.ndarray):
-                        raise NotImplementedError(
-                            "Unit conversion has not yet been implemented! "
-                            "Please open an issue on Github."
+                        wavel_array = np.full(
+                            box_item.flux[filter_item].shape[1], wavel_micron
                         )
+
+                        data_in = np.column_stack(
+                            [
+                                wavel_array,
+                                box_item.flux[filter_item][0],
+                                box_item.flux[filter_item][1],
+                            ]
+                        )
+
+                        data_out = convert_units(data_in, units, convert_from=False)
+
+                        wavelength = data_out[:, 0]
+                        flux_conv = data_out[:, 1]
+                        sigma_conv = data_out[:, 2]
 
                     else:
                         data_in = np.column_stack(
@@ -918,10 +931,6 @@ def plot_spectrum(
                     # wavelength to frequency
                     fwhm = (fwhm_up + fwhm_down) / 2.0
 
-                    if plot_kwargs[j] and filter_item in plot_kwargs[j]:
-                        if "label" in plot_kwargs[j][filter_item]:
-                            labels_data.append(plot_kwargs[j][filter_item]["label"])
-
                     if not plot_kwargs[j] or filter_item not in plot_kwargs[j]:
                         if not plot_kwargs[j]:
                             plot_kwargs[j] = {}
@@ -932,12 +941,13 @@ def plot_spectrum(
                         scale_tmp = flux_scaling / scaling
 
                         if isinstance(box_item.flux[filter_item][0], np.ndarray):
-                            for i in range(box_item.flux[filter_item].shape[1]):
+                            for phot_idx in range(box_item.flux[filter_item].shape[1]):
                                 plot_obj = ax1.errorbar(
                                     wavelength,
-                                    scale_tmp * box_item.flux[filter_item][0, i],
+                                    scale_tmp * box_item.flux[filter_item][0, phot_idx],
                                     xerr=fwhm / 2.0,
-                                    yerr=scale_tmp * box_item.flux[filter_item][1, i],
+                                    yerr=scale_tmp
+                                    * box_item.flux[filter_item][1, phot_idx],
                                     marker="s",
                                     ms=5,
                                     zorder=3,
@@ -970,28 +980,47 @@ def plot_spectrum(
                             if not isinstance(plot_kwargs[j][filter_item], list):
                                 raise ValueError(
                                     f"A list with {box_item.flux[filter_item].shape[1]} "
-                                    f"dictionaries are required because the filter "
+                                    f"dictionaries is required because the filter "
                                     f"{filter_item} has {box_item.flux[filter_item].shape[1]} "
                                     f"values."
                                 )
 
-                            for i in range(box_item.flux[filter_item].shape[1]):
-                                if "zorder" not in plot_kwargs[j][filter_item][i]:
-                                    plot_kwargs[j][filter_item][i]["zorder"] = 3.0
+                            for phot_idx in range(box_item.flux[filter_item].shape[1]):
+                                if (
+                                    "zorder"
+                                    not in plot_kwargs[j][filter_item][phot_idx]
+                                ):
+                                    plot_kwargs[j][filter_item][phot_idx][
+                                        "zorder"
+                                    ] = 3.0
+
+                                if plot_kwargs[j] and filter_item in plot_kwargs[j]:
+                                    if "label" in plot_kwargs[j][filter_item][phot_idx]:
+                                        labels_data.append(
+                                            plot_kwargs[j][filter_item][phot_idx][
+                                                "label"
+                                            ]
+                                        )
 
                                 ax1.errorbar(
-                                    wavelength,
+                                    wavelength[phot_idx],
                                     flux_scaling
-                                    * box_item.flux[filter_item][0, i]
+                                    * box_item.flux[filter_item][0, phot_idx]
                                     / scaling,
                                     xerr=fwhm / 2.0,
                                     yerr=flux_scaling
-                                    * box_item.flux[filter_item][1, i]
+                                    * box_item.flux[filter_item][1, phot_idx]
                                     / scaling,
-                                    **plot_kwargs[j][filter_item][i],
+                                    **plot_kwargs[j][filter_item][phot_idx],
                                 )
 
                         else:
+                            if plot_kwargs[j] and filter_item in plot_kwargs[j]:
+                                if "label" in plot_kwargs[j][filter_item]:
+                                    labels_data.append(
+                                        plot_kwargs[j][filter_item]["label"]
+                                    )
+
                             if box_item.flux[filter_item][1] == 0.0:
                                 if "zorder" not in plot_kwargs[j][filter_item]:
                                     plot_kwargs[j][filter_item]["zorder"] = 3.0
@@ -1242,10 +1271,16 @@ def plot_spectrum(
 
         for sigma_item in sigma_line:
             if res_lim > sigma_item or (
-                ylim_res is not None and ylim_res[0] < -sigma_item and ylim_res[1] > sigma_item
+                ylim_res is not None
+                and ylim_res[0] < -sigma_item
+                and ylim_res[1] > sigma_item
             ):
-                ax3.axhline(-sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
-                ax3.axhline(sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5)
+                ax3.axhline(
+                    -sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5
+                )
+                ax3.axhline(
+                    sigma_item, ls=":", lw=0.7, color="gray", dashes=(1, 4), zorder=0.5
+                )
 
         if ylim_res is None:
             ax3.set_ylim(-res_lim, res_lim)
