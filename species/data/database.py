@@ -1284,7 +1284,10 @@ class Database:
                                 and hdulist[0].header["INSTRU"] == "GRAVITY"
                             ):
                                 # Read data from a FITS file with the GRAVITY format
-                                gravity_object = hdulist[0].header["OBJECT"]
+                                if "OBJECT" in hdulist[0].header:
+                                    gravity_object = hdulist[0].header["OBJECT"]
+                                else:
+                                    gravity_object = None
 
                                 if verbose:
                                     print("   - GRAVITY spectrum:")
@@ -1448,7 +1451,10 @@ class Database:
                                 and hdulist[0].header["INSTRU"] == "GRAVITY"
                             ):
                                 # Read data from a FITS file with the GRAVITY format
-                                gravity_object = hdulist[0].header["OBJECT"]
+                                if "OBJECT" in hdulist[0].header:
+                                    gravity_object = hdulist[0].header["OBJECT"]
+                                else:
+                                    gravity_object = None
 
                                 if verbose:
                                     print("   - GRAVITY covariance matrix:")

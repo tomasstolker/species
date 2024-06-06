@@ -535,13 +535,13 @@ def plot_spectrum(
             wavelength = box_item.wavelength
             flux = box_item.flux
 
-            data_in = np.column_stack([wavelength, flux])
-            data_out = convert_units(data_in, units, convert_from=False)
-
-            wavelength = data_out[:, 0]
-            flux = data_out[:, 1]
-
             if isinstance(wavelength[0], (np.float32, np.float64)):
+                data_in = np.column_stack([wavelength, flux])
+                data_out = convert_units(data_in, units, convert_from=False)
+
+                wavelength = data_out[:, 0]
+                flux = data_out[:, 1]
+
                 data = np.array(flux, dtype=np.float64)
                 flux_masked = np.ma.array(data, mask=np.isnan(data))
 
@@ -597,8 +597,14 @@ def plot_spectrum(
                     )
 
             elif isinstance(wavelength[0], (np.ndarray)):
-                for i, item in enumerate(wavelength):
-                    data = np.array(flux[i], dtype=np.float64)
+                for i in range(len(wavelength)):
+                    data_in = np.column_stack([wavelength[i], flux[i]])
+                    data_out = convert_units(data_in, units, convert_from=False)
+
+                    wavelength = data_out[:, 0]
+                    flux = data_out[:, 1]
+
+                    data = np.array(flux, dtype=np.float64)
                     flux_masked = np.ma.array(data, mask=np.isnan(data))
 
                     if isinstance(box_item.name[i], bytes):
@@ -607,10 +613,10 @@ def plot_spectrum(
                         label = box_item.name[i]
 
                     if quantity == "flux":
-                        flux_scaling = item
+                        flux_scaling = wavelength
 
                     ax1.plot(
-                        item, flux_scaling * flux_masked / scaling, lw=0.5, label=label
+                        wavelength, flux_scaling * flux_masked / scaling, lw=0.5, label=label
                     )
 
         elif isinstance(box_item, list):
@@ -943,7 +949,7 @@ def plot_spectrum(
                         if isinstance(box_item.flux[filter_item][0], np.ndarray):
                             for phot_idx in range(box_item.flux[filter_item].shape[1]):
                                 plot_obj = ax1.errorbar(
-                                    wavelength,
+                                    wavelength[phot_idx],
                                     scale_tmp * box_item.flux[filter_item][0, phot_idx],
                                     xerr=fwhm / 2.0,
                                     yerr=scale_tmp
