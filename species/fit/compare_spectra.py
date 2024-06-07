@@ -140,163 +140,161 @@ class CompareSpectra:
             if f"spectra/{spec_library}" not in hdf5_file:
                 add_spec_library(self.data_folder, hdf5_file, spec_library)
 
-        # Read object spectra and resolution
+            # Read object spectra and resolution
 
-        obj_spec = []
-        obj_res = []
+            obj_spec = []
+            obj_res = []
 
-        for item in self.spec_name:
-            obj_spec.append(self.object.get_spectrum()[item][0])
-            obj_res.append(self.object.get_spectrum()[item][3])
+            for item in self.spec_name:
+                obj_spec.append(self.object.get_spectrum()[item][0])
+                obj_res.append(self.object.get_spectrum()[item][3])
 
-        # Read inverted covariance matrix
-        # obj_inv_cov = self.object.get_spectrum()[self.spec_name][2]
+            # Read inverted covariance matrix
+            # obj_inv_cov = self.object.get_spectrum()[self.spec_name][2]
 
-        # Create empty lists for results
+            # Create empty lists for results
 
-        name_list = []
-        spt_list = []
-        gk_list = []
-        ck_list = []
-        av_list = []
-        rv_list = []
+            name_list = []
+            spt_list = []
+            gk_list = []
+            ck_list = []
+            av_list = []
+            rv_list = []
 
-        print_message = ""
+            print_message = ""
 
-        # Start looping over library spectra
+            # Start looping over library spectra
 
-        for i, item in enumerate(hdf5_file[f"spectra/{spec_library}"]):
-            # Read spectrum spectral type from library
-            dset = hdf5_file[f"spectra/{spec_library}/{item}"]
+            for i, item in enumerate(hdf5_file[f"spectra/{spec_library}"]):
+                # Read spectrum spectral type from library
+                dset = hdf5_file[f"spectra/{spec_library}/{item}"]
 
-            if isinstance(dset.attrs["sptype"], str):
-                item_sptype = dset.attrs["sptype"]
-            else:
-                # Use decode for backward compatibility
-                item_sptype = dset.attrs["sptype"].decode("utf-8")
+                if isinstance(dset.attrs["sptype"], str):
+                    item_sptype = dset.attrs["sptype"]
+                else:
+                    # Use decode for backward compatibility
+                    item_sptype = dset.attrs["sptype"].decode("utf-8")
 
-            if item_sptype == "None":
-                continue
+                if item_sptype == "None":
+                    continue
 
-            if sptypes is None or item_sptype[0] in sptypes:
-                # Convert HDF5 dataset into numpy array
-                spectrum = np.asarray(dset)
+                if sptypes is None or item_sptype[0] in sptypes:
+                    # Convert HDF5 dataset into numpy array
+                    spectrum = np.asarray(dset)
 
-                if wavel_range is not None:
-                    # Select subset of the spectrum
+                    if wavel_range is not None:
+                        # Select subset of the spectrum
 
-                    if wavel_range[0] is None:
-                        indices = np.where((spectrum[:, 0] < wavel_range[1]))[0]
+                        if wavel_range[0] is None:
+                            indices = np.where((spectrum[:, 0] < wavel_range[1]))[0]
 
-                    elif wavel_range[1] is None:
-                        indices = np.where((spectrum[:, 0] > wavel_range[0]))[0]
+                        elif wavel_range[1] is None:
+                            indices = np.where((spectrum[:, 0] > wavel_range[0]))[0]
 
-                    else:
-                        indices = np.where(
-                            (spectrum[:, 0] > wavel_range[0])
-                            & (spectrum[:, 0] < wavel_range[1])
-                        )[0]
-
-                    if len(indices) == 0:
-                        raise ValueError(
-                            "The selected wavelength range does not "
-                            "cover any wavelength points of the input "
-                            "spectrum. Please use a broader range as "
-                            "argument of 'wavel_range'."
-                        )
-
-                    spectrum = spectrum[indices,]
-
-                empty_message = len(print_message) * " "
-                print(f"\r{empty_message}", end="")
-
-                print_message = f"Processing spectra... {item}"
-                print(f"\r{print_message}", end="")
-
-                # Loop over all values of A_V and RV that will be tested
-
-                for av_item in av_ext:
-                    for rv_item in rad_vel:
-                        for j, spec_item in enumerate(obj_spec):
-                            # Dust extinction
-                            ism_ext = ism_extinction(av_item, 3.1, spectrum[:, 0])
-                            flux_scaling = 10.0 ** (-0.4 * ism_ext)
-
-                            # Shift wavelengths by RV
-                            wavel_shifted = (
-                                spectrum[:, 0]
-                                + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
-                            )
-
-                            # Smooth spectrum
-                            flux_smooth = smooth_spectrum(
-                                wavel_shifted,
-                                spectrum[:, 1] * flux_scaling,
-                                spec_res=obj_res[j],
-                                force_smooth=True,
-                            )
-
-                            # Interpolate library spectrum to object wavelengths
-                            interp_spec = interp1d(
-                                spectrum[:, 0],
-                                flux_smooth,
-                                kind="linear",
-                                fill_value="extrapolate",
-                            )
-
+                        else:
                             indices = np.where(
-                                (spec_item[:, 0] > np.amin(spectrum[:, 0]))
-                                & (spec_item[:, 0] < np.amax(spectrum[:, 0]))
+                                (spectrum[:, 0] > wavel_range[0])
+                                & (spectrum[:, 0] < wavel_range[1])
                             )[0]
 
-                            flux_resample = interp_spec(spec_item[indices, 0])
-
-                            c_numer = (
-                                w_i
-                                * spec_item[indices, 1]
-                                * flux_resample
-                                / spec_item[indices, 2] ** 2
+                        if len(indices) == 0:
+                            raise ValueError(
+                                "The selected wavelength range does not "
+                                "cover any wavelength points of the input "
+                                "spectrum. Please use a broader range as "
+                                "argument of 'wavel_range'."
                             )
 
-                            c_denom = (
-                                w_i * flux_resample**2 / spec_item[indices, 2] ** 2
-                            )
+                        spectrum = spectrum[indices,]
 
-                            if j == 0:
-                                g_k = 0.0
-                                c_k_spec = []
+                    empty_message = len(print_message) * " "
+                    print(f"\r{empty_message}", end="")
 
-                            c_k = np.sum(c_numer) / np.sum(c_denom)
-                            c_k_spec.append(c_k)
+                    print_message = f"Processing spectra... {item}"
+                    print(f"\r{print_message}", end="")
 
-                            chi_sq = (
-                                spec_item[indices, 1] - c_k * flux_resample
-                            ) / spec_item[indices, 2]
+                    # Loop over all values of A_V and RV that will be tested
 
-                            g_k += np.sum(w_i * chi_sq**2)
+                    for av_item in av_ext:
+                        for rv_item in rad_vel:
+                            for j, spec_item in enumerate(obj_spec):
+                                # Dust extinction
+                                ism_ext = ism_extinction(av_item, 3.1, spectrum[:, 0])
+                                flux_scaling = 10.0 ** (-0.4 * ism_ext)
 
-                            # obj_inv_cov_crop = obj_inv_cov[indices, :]
-                            # obj_inv_cov_crop = obj_inv_cov_crop[:, indices]
+                                # Shift wavelengths by RV
+                                wavel_shifted = (
+                                    spectrum[:, 0]
+                                    + spectrum[:, 0] * 1e3 * rv_item / constants.LIGHT
+                                )
 
-                            # g_k = np.dot(spec_item[indices, 1]-c_k*flux_resample,
-                            #     np.dot(obj_inv_cov_crop,
-                            #            spec_item[indices, 1]-c_k*flux_resample))
+                                # Smooth spectrum
+                                flux_smooth = smooth_spectrum(
+                                    wavel_shifted,
+                                    spectrum[:, 1] * flux_scaling,
+                                    spec_res=obj_res[j],
+                                    force_smooth=True,
+                                )
 
-                        # Append to the lists of results
+                                # Interpolate library spectrum to object wavelengths
+                                interp_spec = interp1d(
+                                    spectrum[:, 0],
+                                    flux_smooth,
+                                    kind="linear",
+                                    fill_value="extrapolate",
+                                )
 
-                        name_list.append(item)
-                        spt_list.append(item_sptype)
-                        gk_list.append(g_k)
-                        ck_list.append(c_k_spec)
-                        av_list.append(av_item)
-                        rv_list.append(rv_item)
+                                indices = np.where(
+                                    (spec_item[:, 0] > np.amin(spectrum[:, 0]))
+                                    & (spec_item[:, 0] < np.amax(spectrum[:, 0]))
+                                )[0]
+
+                                flux_resample = interp_spec(spec_item[indices, 0])
+
+                                c_numer = (
+                                    w_i
+                                    * spec_item[indices, 1]
+                                    * flux_resample
+                                    / spec_item[indices, 2] ** 2
+                                )
+
+                                c_denom = (
+                                    w_i * flux_resample**2 / spec_item[indices, 2] ** 2
+                                )
+
+                                if j == 0:
+                                    g_k = 0.0
+                                    c_k_spec = []
+
+                                c_k = np.sum(c_numer) / np.sum(c_denom)
+                                c_k_spec.append(c_k)
+
+                                chi_sq = (
+                                    spec_item[indices, 1] - c_k * flux_resample
+                                ) / spec_item[indices, 2]
+
+                                g_k += np.sum(w_i * chi_sq**2)
+
+                                # obj_inv_cov_crop = obj_inv_cov[indices, :]
+                                # obj_inv_cov_crop = obj_inv_cov_crop[:, indices]
+
+                                # g_k = np.dot(spec_item[indices, 1]-c_k*flux_resample,
+                                #     np.dot(obj_inv_cov_crop,
+                                #            spec_item[indices, 1]-c_k*flux_resample))
+
+                            # Append to the lists of results
+
+                            name_list.append(item)
+                            spt_list.append(item_sptype)
+                            gk_list.append(g_k)
+                            ck_list.append(c_k_spec)
+                            av_list.append(av_item)
+                            rv_list.append(rv_item)
 
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")
 
         print("\rProcessing spectra... [DONE]")
-
-        hdf5_file.close()
 
         name_list = np.asarray(name_list)
         spt_list = np.asarray(spt_list)
