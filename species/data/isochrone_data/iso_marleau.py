@@ -1,9 +1,13 @@
+import h5py
 import numpy as np
+
+from typeguard import typechecked
 
 from species.core import constants
 
 
-def add_marleau(database, tag, file_name):
+@typechecked
+def add_marleau(database: h5py._hl.files.File, tag: str, file_name: str) -> None:
     """
     Function for adding the Marleau et al. isochrone data
     to the database. The isochrone data can be requested
@@ -38,7 +42,7 @@ def add_marleau(database, tag, file_name):
 
     logg = np.log10(1e3 * constants.GRAVITY * mass_cgs / radius_cgs**2)
 
-    print(f"Adding isochrones: {tag}...", end="", flush=True)
+    print(f"\nAdding isochrones: {tag}...", end="", flush=True)
 
     isochrones = np.vstack((age, mass, teff, luminosity, logg))
     isochrones = np.transpose(isochrones)

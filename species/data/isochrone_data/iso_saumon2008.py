@@ -1,13 +1,17 @@
-import os
-import urllib.request
+from pathlib import Path
 
+import h5py
 import numpy as np
+import pooch
+
+from typeguard import typechecked
 
 from species.core import constants
 from species.util.data_util import extract_tarfile
 
 
-def add_saumon2008(database, input_path):
+@typechecked
+def add_saumon2008(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the Saumon & Marley (2008)
     isochrone data to the database.
@@ -25,29 +29,32 @@ def add_saumon2008(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
-    url_iso = "https://home.strw.leidenuniv.nl/~stolker/species/BD_evolution.tgz"
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/BD_evolution.tgz"
 
     iso_tag = "Saumon & Marley (2008)"
     iso_size = "800 kB"
 
-    data_folder = os.path.join(input_path, "saumon_marley_2008")
+    data_folder = Path(input_path) / "saumon_marley_2008"
 
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
+    if not data_folder.exists():
+        data_folder.mkdir()
 
-    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
-    data_file = os.path.join(input_path, input_file)
+    input_file = url.rsplit("/", maxsplit=1)[-1]
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(data_file):
-        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-        urllib.request.urlretrieve(url_iso, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        print()
 
-    print(f"Unpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-    extract_tarfile(data_file, data_folder)
+        pooch.retrieve(
+            url=url,
+            known_hash="fb64793b74a4503f13b9b1daa7d04e9594e9ba6f87353a0dbb50b73257961c88",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
+
+    print(f"\nUnpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
     iso_files = [
@@ -74,12 +81,12 @@ def add_saumon2008(database, input_path):
         "saumon2008-hybrid_solar",
     ]
 
-    for j, item in enumerate(iso_files):
-        iso_path = os.path.join(data_folder, item)
+    for iso_idx, iso_item in enumerate(iso_files):
+        iso_path = Path(data_folder) / iso_item
 
         iso_data = []
 
-        with open(iso_path, encoding="utf-8") as open_file:
+        with open(str(iso_path), encoding="utf-8") as open_file:
             for i, line in enumerate(open_file):
                 if i == 0 or " " not in line.strip():
                     continue
@@ -100,30 +107,32 @@ def add_saumon2008(database, input_path):
                     [param[0], param[1], param[2], param[3], param[4], param[5]]
                 )
 
-        print(f"Adding isochrones: {iso_tag} {labels[j]}...", end="", flush=True)
+        print(
+            f"\nAdding isochrones: {iso_tag} {labels[iso_idx]}...", end="", flush=True
+        )
 
         iso_data = np.array(iso_data)
 
         dset = database.create_dataset(
-            f"isochrones/{db_tags[j]}/age", data=iso_data[:, 0]
+            f"isochrones/{db_tags[iso_idx]}/age", data=iso_data[:, 0]
         )  # (Myr)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/mass", data=iso_data[:, 1]
+            f"isochrones/{db_tags[iso_idx]}/mass", data=iso_data[:, 1]
         )  # (Mjup)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/log_lum", data=iso_data[:, 2]
+            f"isochrones/{db_tags[iso_idx]}/log_lum", data=iso_data[:, 2]
         )  # log(L/Lsun)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/teff", data=iso_data[:, 3]
+            f"isochrones/{db_tags[iso_idx]}/teff", data=iso_data[:, 3]
         )  # (K)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/log_g", data=iso_data[:, 4]
+            f"isochrones/{db_tags[iso_idx]}/log_g", data=iso_data[:, 4]
         )  # log(g)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/radius", data=iso_data[:, 5]
+            f"isochrones/{db_tags[iso_idx]}/radius", data=iso_data[:, 5]
         )  # (Rjup)
 
         dset.attrs["model"] = "saumon2008"
 
         print(" [DONE]")
-        print(f"Database tag: {db_tags[j]}")
+        print(f"Database tag: {db_tags[iso_idx]}")

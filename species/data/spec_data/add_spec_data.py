@@ -1,5 +1,5 @@
 """
-Module for empirical spectral libraries.
+Module for adding spectral libraries to the database.
 """
 
 from typing import List, Optional

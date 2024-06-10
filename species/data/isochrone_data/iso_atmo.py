@@ -1,15 +1,17 @@
-import glob
-import os
-import urllib.request
+from pathlib import Path
 
 import h5py
 import numpy as np
+import pooch
+
+from typeguard import typechecked
 
 from species.core import constants
 from species.util.data_util import extract_tarfile
 
 
-def add_atmo(database, input_path):
+@typechecked
+def add_atmo(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the AMES-Cond and AMES-Dusty
     isochrone data to the database.
@@ -27,35 +29,35 @@ def add_atmo(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
-    url_iso = (
+    url = (
         "https://home.strw.leidenuniv.nl/~stolker/"
         "species/atmo_evolutionary_tracks.tgz"
     )
 
-    # iso_tags = ["ATMO-CEQ", "ATMO-NEQ-weak", , "ATMO-NEQ-strong"]
-    # iso_size = ["235 kB", "182 kB"]
-
     iso_tag = "ATMO"
     iso_size = "9.6 MB"
 
-    data_folder = os.path.join(input_path, "atmo_evolutionary_tracks")
+    data_folder = Path(input_path) / "atmo_evolutionary_tracks"
 
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
+    if not data_folder.exists():
+        data_folder.mkdir()
 
-    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
-    data_file = os.path.join(input_path, input_file)
+    input_file = url.rsplit("/", maxsplit=1)[-1]
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(data_file):
-        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-        urllib.request.urlretrieve(url_iso, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        print()
 
-    print(f"Unpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-    extract_tarfile(data_file, data_folder)
+        pooch.retrieve(
+            url=url,
+            known_hash="f905698a397b980acdc7a3cd7fa514a39e315c674b21dcd5cbba70833777cd3b",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
+
+    print(f"\nUnpacking {iso_tag} isochrones ({iso_size})...", end="", flush=True)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
     iso_files = [
@@ -76,22 +78,22 @@ def add_atmo(database, input_path):
         "atmo-neq-strong",
     ]
 
-    for j, iso_item in enumerate(iso_files):
-        iso_path = os.path.join(data_folder, iso_item)
-        iso_path = os.path.join(iso_path, "MKO_WISE_IRAC")
+    for iso_idx, iso_item in enumerate(iso_files):
+        iso_path = Path(data_folder) / iso_item / "MKO_WISE_IRAC"
 
-        file_list = sorted(glob.glob(iso_path + "/*.txt"))
+        # Ignore hidden files
+        file_list = sorted(iso_path.glob("[!.]*.txt"))
 
-        for i, file_item in enumerate(file_list):
+        for file_idx, file_item in enumerate(file_list):
             # Mass (Msun) - Age (Gyr) - Teff (K) - log(L/Lsun) - Radius (Rsun) - log(g)
-            if i == 0:
-                iso_data = np.loadtxt(file_item)
+            if file_idx == 0:
+                iso_data = np.loadtxt(str(file_item))
 
             else:
-                iso_load = np.loadtxt(file_item)
+                iso_load = np.loadtxt(str(file_item))
                 iso_data = np.vstack((iso_data, iso_load))
 
-            with open(file_item, encoding="utf-8") as open_file:
+            with open(str(file_item), encoding="utf-8") as open_file:
                 parameters = open_file.readline()
                 filter_names = parameters.split()[7:]
 
@@ -99,40 +101,42 @@ def add_atmo(database, input_path):
         iso_data[:, 1] *= 1e3  # (Gyr) -> (Myr)
         iso_data[:, 4] *= constants.R_SUN / constants.R_JUP  # (Rsun) -> (Rjup)
 
-        print(f"Adding isochrones: {labels[j]}...", end="", flush=True)
+        print(f"Adding isochrones: {labels[iso_idx]}...", end="", flush=True)
 
         dtype = h5py.string_dtype(encoding="utf-8", length=None)
 
         dset = database.create_dataset(
-            f"isochrones/{db_tags[j]}/filters", (np.size(filter_names),), dtype=dtype
+            f"isochrones/{db_tags[iso_idx]}/filters",
+            (np.size(filter_names),),
+            dtype=dtype,
         )
 
         dset[...] = filter_names
 
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/mass", data=iso_data[:, 0]
+            f"isochrones/{db_tags[iso_idx]}/mass", data=iso_data[:, 0]
         )  # (Mjup)
         dset = database.create_dataset(
-            f"isochrones/{db_tags[j]}/age", data=iso_data[:, 1]
+            f"isochrones/{db_tags[iso_idx]}/age", data=iso_data[:, 1]
         )  # (Myr)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/teff", data=iso_data[:, 2]
+            f"isochrones/{db_tags[iso_idx]}/teff", data=iso_data[:, 2]
         )  # (K)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/log_lum", data=iso_data[:, 3]
+            f"isochrones/{db_tags[iso_idx]}/log_lum", data=iso_data[:, 3]
         )  # log(L/Lsun)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/radius", data=iso_data[:, 4]
+            f"isochrones/{db_tags[iso_idx]}/radius", data=iso_data[:, 4]
         )  # (Rjup)
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/log_g", data=iso_data[:, 5]
+            f"isochrones/{db_tags[iso_idx]}/log_g", data=iso_data[:, 5]
         )  # log(g)
 
         database.create_dataset(
-            f"isochrones/{db_tags[j]}/magnitudes", data=iso_data[:, 6:]
+            f"isochrones/{db_tags[iso_idx]}/magnitudes", data=iso_data[:, 6:]
         )
 
         dset.attrs["model"] = "atmo"
 
         print(" [DONE]")
-        print(f"Database tag: {db_tags[j]}")
+        print(f"Database tag: {db_tags[iso_idx]}")

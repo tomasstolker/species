@@ -1,27 +1,31 @@
 """
-Text
+Module for the photometric data of L, T, Y dwarfs from Leggett et al.
 """
 
-import os
-import urllib.request
+from pathlib import Path
 
 import h5py
 import numpy as np
 import pandas as pd
+import pooch
+
+from typeguard import typechecked
 
 from species.util.data_util import update_sptype
 
 
-def add_leggett(input_path, database):
+@typechecked
+def add_leggett(input_path: str, database: h5py._hl.files.File) -> None:
     """
-    Function for adding the Database of Ultracool Parallaxes to the database.
+    Function for adding photometric data of L, T, and Y dwarfs from
+    Leggett et al. to the database.
 
     Parameters
     ----------
     input_path : str
         Path of the data folder.
     database : h5py._hl.files.File
-        Database.
+        The HDF5 database that has been opened.
 
     Returns
     -------
@@ -29,29 +33,43 @@ def add_leggett(input_path, database):
         None
     """
 
-    data_file1 = os.path.join(input_path, "2010_phot.xls")
-    url1 = "http://staff.gemini.edu/~sleggett/2010_phot.xls"
+    input_file_1 = "2010_phot.xls"
+    data_file_1 = Path(input_path) / input_file_1
+    url_1 = "http://staff.gemini.edu/~sleggett/2010_phot.xls"
 
-    data_file2 = os.path.join(input_path, "datafile8.txt")
-    url2 = "http://staff.gemini.edu/~sleggett/datafile8.txt"
+    if not data_file_1.exists():
+        print()
 
-    if not os.path.isfile(data_file1):
-        print("Downloading Leggett L and T Dwarf Data (88 kB)...", end="", flush=True)
-        urllib.request.urlretrieve(url1, data_file1)
-        print(" [DONE]")
+        pooch.retrieve(
+            url=url_1,
+            known_hash=None,
+            fname=input_file_1,
+            path=input_path,
+            progressbar=True,
+        )
 
-    if not os.path.isfile(data_file2):
-        print("Downloading Leggett T6+ and Y Dwarf Data (44 kB)...", end="", flush=True)
-        urllib.request.urlretrieve(url2, data_file2)
-        print(" [DONE]")
+    input_file_2 = "datafile8.txt"
+    data_file_2 = Path(input_path) / input_file_2
+    url_2 = "http://staff.gemini.edu/~sleggett/datafile8.txt"
 
-    print("Adding Leggett L and T Dwarf Data...", end="", flush=True)
+    if not data_file_2.exists():
+        print()
+
+        pooch.retrieve(
+            url=url_2,
+            known_hash=None,
+            fname=input_file_2,
+            path=input_path,
+            progressbar=True,
+        )
+
+    print("\nAdding Leggett L and T Dwarf Data...", end="", flush=True)
 
     group = "photometry/leggett"
 
     database.create_group(group)
 
-    dataframe = pd.pandas.read_excel(data_file1)
+    dataframe = pd.pandas.read_excel(data_file_1)
     dataframe.columns = dataframe.columns.str.replace("'", "")
 
     modulus = np.asarray(dataframe["M-m"])  # M-m (mag)
@@ -87,7 +105,7 @@ def add_leggett(input_path, database):
     print(" [DONE]")
     print("Adding Leggett T6+ and Y Dwarf Data...", end="", flush=True)
 
-    with open(data_file2, "r", encoding="utf-8") as open_file:
+    with open(data_file_2, "r", encoding="utf-8") as open_file:
         lines = open_file.readlines()[69:]
 
         for item in lines:

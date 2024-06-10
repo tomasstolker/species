@@ -302,21 +302,34 @@ def get_residuals(
         print(f"Binary: {binary}")
 
         n_param = dset.attrs["n_param"]
-        n_fixed = dset.attrs["n_fixed"]
+
+        if "fixed_param" in hdf5_file[f"results/fit/{tag}/"]:
+            n_fixed = dset.attrs["n_fixed"]
+
+        else:
+            n_fixed = 0
+
+            warnings.warn("The 'fixed_param' group is not found in "
+                          f"the results of {tag}. Probably the "
+                          "results were obtained with an older "
+                          "version of the package. Please rerun "
+                          "FitModel to update the results. Setting "
+                          "the number of fixed parameters to zero.")
 
         print("\nModel parameters:")
         for param_idx in range(n_param):
             param_item = dset.attrs[f"parameter{param_idx}"]
             print(f"   - {param_item}")
 
-        if n_fixed > 0:
+        if n_fixed == 0:
+            print("\nFixed parameters: none")
+
+        else:
             dset = hdf5_file[f"results/fit/{tag}/fixed_param"]
+
             print("\nFixed parameters:")
             for param_item in hdf5_file[f"results/fit/{tag}/fixed_param"]:
                 print(f"   - {param_item}")
-
-        else:
-            print("\nFixed parameters: None")
 
     print(f"\nInclude photometry: {inc_phot}")
     print(f"Include spectra: {inc_spec}")

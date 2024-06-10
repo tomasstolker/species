@@ -6,6 +6,8 @@ from typing import Optional
 
 import h5py
 
+from typeguard import typechecked
+
 from species.data.isochrone_data.iso_ames import add_ames
 from species.data.isochrone_data.iso_atmo import add_atmo
 from species.data.isochrone_data.iso_baraffe2015 import add_baraffe2015
@@ -18,6 +20,7 @@ from species.data.isochrone_data.iso_saumon2008 import add_saumon2008
 from species.data.isochrone_data.iso_sonora import add_sonora
 
 
+@typechecked
 def add_isochrone_grid(
     data_folder: str,
     hdf5_file: h5py._hl.files.File,
@@ -30,9 +33,9 @@ def add_isochrone_grid(
 
     Parameters
     ----------
-    input_path : str
+    data_folder : str
         Folder where the data is located.
-    database : h5py._hl.files.File
+    hdf5_file : h5py._hl.files.File
         Database.
     model_name : str
         Evolutionary model ('ames', 'atmo', 'baraffe2015',

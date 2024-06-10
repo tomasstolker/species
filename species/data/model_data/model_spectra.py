@@ -3,7 +3,6 @@ Module for adding a grid of model spectra to the database.
 """
 
 import json
-import os
 import tarfile
 import warnings
 
@@ -13,8 +12,8 @@ from typing import Optional, Tuple
 import h5py
 import numpy as np
 import pooch
-import spectres
 
+from scipy.interpolate import interp1d
 from typeguard import typechecked
 
 from species.util.core_util import print_section
@@ -141,20 +140,19 @@ def add_model_grid(
 
         wavel_sampling = None
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
     input_file = f"{model_tag}.tgz"
 
-    data_folder = os.path.join(input_path, model_tag)
-    data_file = os.path.join(input_path, input_file)
+    data_folder = Path(input_path) / model_tag
+    data_file = Path(input_path) / input_file
 
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
+    if not data_folder.exists():
+        data_folder.mkdir()
 
     url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_tag}.tgz"
 
-    if not os.path.isfile(data_file):
+    if not data_file.exists():
+        print()
+
         pooch.retrieve(
             url=url,
             known_hash=None,
@@ -164,7 +162,7 @@ def add_model_grid(
         )
 
     if unpack_tar:
-        with tarfile.open(data_file) as tar_open:
+        with tarfile.open(str(data_file)) as tar_open:
             # Get a list of all TAR members
             tar_members = tar_open.getmembers()
 
@@ -194,7 +192,9 @@ def add_model_grid(
             flush=True,
         )
 
-        extract_tarfile(data_file, data_folder, member_list=member_list)
+        print(data_folder)
+        print(data_file)
+        extract_tarfile(str(data_file), str(data_folder), member_list=member_list)
 
         print(" [DONE]")
 
@@ -291,64 +291,73 @@ def add_model_grid(
     print()
     print_message = ""
 
-    for _, _, file_list in os.walk(data_folder):
-        for file_name in sorted(file_list):
-            if file_name[: len(model_tag)] == model_tag:
-                file_split = file_name.split("_")
+    model_files = sorted(data_folder.glob("*"))
 
-                param_index = file_split.index("teff") + 1
-                teff_val = float(file_split[param_index])
+    for file_item in model_files:
+        if file_item.stem[: len(model_tag)] == model_tag:
+            file_split = file_item.stem.split("_")
 
-                if teff_range is not None:
-                    if teff_val < teff_range[0] or teff_val > teff_range[1]:
-                        continue
+            param_index = file_split.index("teff") + 1
+            teff_val = float(file_split[param_index])
 
-                teff.append(teff_val)
+            if teff_range is not None:
+                if teff_val < teff_range[0] or teff_val > teff_range[1]:
+                    continue
 
-                if logg is not None:
-                    param_index = file_split.index("logg") + 1
-                    logg.append(float(file_split[param_index]))
+            teff.append(teff_val)
 
-                if feh is not None:
-                    param_index = file_split.index("feh") + 1
-                    feh.append(float(file_split[param_index]))
+            if logg is not None:
+                param_index = file_split.index("logg") + 1
+                logg.append(float(file_split[param_index]))
 
-                if c_o_ratio is not None:
-                    param_index = file_split.index("co") + 1
-                    c_o_ratio.append(float(file_split[param_index]))
+            if feh is not None:
+                param_index = file_split.index("feh") + 1
+                feh.append(float(file_split[param_index]))
 
-                if fsed is not None:
-                    param_index = file_split.index("fsed") + 1
-                    fsed.append(float(file_split[param_index]))
+            if c_o_ratio is not None:
+                param_index = file_split.index("co") + 1
+                c_o_ratio.append(float(file_split[param_index]))
 
-                if log_kzz is not None:
-                    param_index = file_split.index("logkzz") + 1
-                    log_kzz.append(float(file_split[param_index]))
+            if fsed is not None:
+                param_index = file_split.index("fsed") + 1
+                fsed.append(float(file_split[param_index]))
 
-                if ad_index is not None:
-                    param_index = file_split.index("adindex") + 1
-                    ad_index.append(float(file_split[param_index]))
+            if log_kzz is not None:
+                param_index = file_split.index("logkzz") + 1
+                log_kzz.append(float(file_split[param_index]))
 
-                empty_message = len(print_message) * " "
-                print(f"\r{empty_message}", end="")
+            if ad_index is not None:
+                param_index = file_split.index("adindex") + 1
+                ad_index.append(float(file_split[param_index]))
 
-                print_message = (
-                    f"Adding {model_info['name']} model spectra... {file_name}"
-                )
-                print(f"\r{print_message}", end="", flush=True)
+            empty_message = len(print_message) * " "
+            print(f"\r{empty_message}", end="")
 
-                spec_file = os.path.join(data_folder, file_name)
+            print_message = f"Adding {model_info['name']} model spectra... {file_item}"
+            print(f"\r{print_message}", end="", flush=True)
 
-                if file_name[-4:] == ".dat":
-                    data_wavel, data_flux = np.loadtxt(spec_file, unpack=True)
+            if file_item.suffix == ".dat":
+                data_wavel, data_flux = np.loadtxt(str(file_item), unpack=True)
 
-                else:
-                    data = np.load(spec_file)
+            else:
+                data = np.load(str(file_item))
 
-                    data_wavel = data[:, 0]
-                    data_flux = data[:, 1]
+                data_wavel = data[:, 0]
+                data_flux = data[:, 1]
 
-                if wavel_range is None:
+            if wavel_range is None:
+                if wavelength is None:
+                    wavelength = np.copy(data_wavel)  # (um)
+
+                    if np.all(np.diff(wavelength) < 0):
+                        raise ValueError(
+                            "The wavelengths are not all sorted by increasing value."
+                        )
+
+                flux.append(data_flux)  # (W m-2 um-1)
+
+            else:
+                if not resample_spectra:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
 
@@ -357,45 +366,27 @@ def add_model_grid(
                                 "The wavelengths are not all sorted by increasing value."
                             )
 
-                    flux.append(data_flux)  # (W m-2 um-1)
+                        wavel_select = (wavel_range[0] < wavelength) & (
+                            wavelength < wavel_range[1]
+                        )
+                        wavelength = wavelength[wavel_select]
+
+                    flux.append(data_flux[wavel_select])  # (W m-2 um-1)
 
                 else:
-                    if not resample_spectra:
-                        if wavelength is None:
-                            wavelength = np.copy(data_wavel)  # (um)
+                    flux_interp = interp1d(data_wavel, data_flux)
+                    flux_resample = flux_interp(wavelength)
 
-                            if np.all(np.diff(wavelength) < 0):
-                                raise ValueError(
-                                    "The wavelengths are not all sorted by increasing value."
-                                )
-
-                            wavel_select = (wavel_range[0] < wavelength) & (
-                                wavelength < wavel_range[1]
-                            )
-                            wavelength = wavelength[wavel_select]
-
-                        flux.append(data_flux[wavel_select])  # (W m-2 um-1)
-
-                    else:
-                        flux_resample = spectres.spectres(
-                            wavelength,
-                            data_wavel,
-                            data_flux,
-                            spec_errs=None,
-                            fill=np.nan,
-                            verbose=False,
+                    if np.isnan(np.sum(flux_resample)):
+                        raise ValueError(
+                            f"Resampling is only possible if the new wavelength "
+                            f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
+                            f"sufficiently far within the wavelength range "
+                            f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
+                            f"spectra."
                         )
 
-                        if np.isnan(np.sum(flux_resample)):
-                            raise ValueError(
-                                f"Resampling is only possible if the new wavelength "
-                                f"range ({wavelength[0]} - {wavelength[-1]} um) falls "
-                                f"sufficiently far within the wavelength range "
-                                f"({data_wavel[0]} - {data_wavel[-1]} um) of the input "
-                                f"spectra."
-                            )
-
-                        flux.append(flux_resample)  # (W m-2 um-1)
+                    flux.append(flux_resample)  # (W m-2 um-1)
 
     print()
 

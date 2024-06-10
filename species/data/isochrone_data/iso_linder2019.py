@@ -1,16 +1,19 @@
-import glob
-import os
 import shutil
-import urllib.request
+
+from pathlib import Path
 
 import h5py
 import numpy as np
+import pooch
+
+from typeguard import typechecked
 
 from species.core import constants
 from species.util.data_util import extract_tarfile
 
 
-def add_linder2019(database, input_path):
+@typechecked
+def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the `Linder et al. (2019)
     <https://cdsarc.u-strasbg.fr/viz-bin/qcat?J/A+A/623/A85#/browse>`_
@@ -69,42 +72,41 @@ def add_linder2019(database, input_path):
         "Paranal/SPHERE.IRDIS_D_K12_2",
     )
 
-    data_folder = os.path.join(input_path, "linder_2019")
+    data_folder = Path(input_path) / "linder_2019"
 
-    if os.path.exists(data_folder):
+    if data_folder.exists():
         # The folder should be removed if the TAR file was previously
         # unpacked because the file permissions are set to read-only
         # such that the extract_tarfile will cause an error if the
         # files need to be overwritten
         shutil.rmtree(data_folder)
 
-    os.makedirs(data_folder)
+    data_folder.mkdir()
 
     url = "https://cdsarc.u-strasbg.fr/viz-bin/nph-Cat/tar.gz?J/A+A/623/A85"
-
     input_file = "J_A+A_623_A85.tar.gz"
+    data_file = Path(input_path) / input_file
 
-    data_file = os.path.join(input_path, input_file)
+    if not data_file.exists():
+        print()
 
-    if not os.path.isfile(data_file):
-        print(
-            "Downloading Linder et al. (2019) isochrones (536 kB)...",
-            end="",
-            flush=True,
+        pooch.retrieve(
+            url=url,
+            known_hash="87d218fced3c6cbf9cbe288512e9b47a3faa13886068edf18676f3cfdcb08d0f",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
         )
-        urllib.request.urlretrieve(url, data_file)
-        print(" [DONE]")
 
-    print("Unpacking Linder et al. (2019) isochrones (536 kB)...", end="", flush=True)
-    extract_tarfile(data_file, data_folder)
+    print("\nUnpacking Linder et al. (2019) isochrones (536 kB)...", end="", flush=True)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
-    iso_folder = os.path.join(data_folder, "isochrones")
-    iso_files = sorted(glob.glob(iso_folder + "/*"))
+    iso_folder = Path(data_folder) / "isochrones"
+    iso_files = sorted(iso_folder.glob("*"))
 
     for iso_item in iso_files:
-        file_name = iso_item.split("/")[-1]
-        file_param = file_name[:-4].split("_")
+        file_param = iso_item.stem.split("_")
 
         if int(file_param[3]) == -2:
             atm_model = "petitCODE"
@@ -127,7 +129,7 @@ def add_linder2019(database, input_path):
         iso_data = np.loadtxt(iso_item)
 
         print(
-            f"Adding isochrones: Linder et al. (2019) {atm_model}...",
+            f"\nAdding isochrones: Linder et al. (2019) {atm_model}...",
             end="",
             flush=True,
         )

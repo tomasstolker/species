@@ -25,6 +25,7 @@ from species.core.box import (
 )
 from species.read.read_model import ReadModel
 from species.util.convert_util import apparent_to_absolute
+from species.util.core_util import print_section
 from species.util.plot_util import update_labels
 
 
@@ -88,10 +89,14 @@ class ReadIsochrone:
             None
         """
 
-        self.tag = tag
+        print_section("Read isochrone grid")
 
+        self.tag = tag
         self.extrapolate = extrapolate
         self.create_regular_grid = create_regular_grid
+
+        print(f"Database tag: {self.tag}")
+        print(f"Create regular grid: {self.create_regular_grid}")
 
         if self.extrapolate:
             warnings.warn(
@@ -186,7 +191,7 @@ class ReadIsochrone:
                 self.extra_param["feh"] = float(tag_split[1][:-5])
                 self.extra_param["fsed"] = float(tag_split[2])
 
-            print(f"Setting 'extra_param' attribute: {self.extra_param}")
+            print(f"\nSetting 'extra_param' attribute: {self.extra_param}")
 
     @typechecked
     def _read_data(
@@ -228,6 +233,9 @@ class ReadIsochrone:
             there are magnitudes available.
         """
 
+        iso_mag = None
+        new_mag = None
+
         with h5py.File(self.database, "r") as hdf5_file:
             model_name = hdf5_file[f"isochrones/{self.tag}/age"].attrs["model"]
 
@@ -240,8 +248,6 @@ class ReadIsochrone:
 
             if f"isochrones/{self.tag}/magnitudes" in hdf5_file:
                 iso_mag = np.asarray(hdf5_file[f"isochrones/{self.tag}/magnitudes"])
-            else:
-                iso_mag = None
 
         if self.create_regular_grid:
             age_unique = np.unique(iso_age)
@@ -260,12 +266,12 @@ class ReadIsochrone:
             if iso_mag is not None:
                 new_mag = np.zeros(((n_ages * n_masses, iso_mag.shape[1])))
 
-            for j, age_item in enumerate(age_unique):
+            for age_idx, age_item in enumerate(age_unique):
                 age_select = iso_age == age_item
                 ages_tmp = np.full(n_masses, age_item)
 
-                new_age[j * n_masses : (j + 1) * n_masses] = ages_tmp
-                new_mass[j * n_masses : (j + 1) * n_masses] = mass_unique
+                new_age[age_idx * n_masses : (age_idx + 1) * n_masses] = ages_tmp
+                new_mass[age_idx * n_masses : (age_idx + 1) * n_masses] = mass_unique
 
                 interp_teff = interpolate.interp1d(
                     iso_mass[age_select],
@@ -273,7 +279,7 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_teff[j * n_masses : (j + 1) * n_masses] = interp_teff(mass_unique)
+                new_teff[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_teff(mass_unique)
 
                 interp_loglum = interpolate.interp1d(
                     iso_mass[age_select],
@@ -281,7 +287,7 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_loglum[j * n_masses : (j + 1) * n_masses] = interp_loglum(
+                new_loglum[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_loglum(
                     mass_unique
                 )
 
@@ -291,7 +297,7 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_logg[j * n_masses : (j + 1) * n_masses] = interp_logg(mass_unique)
+                new_logg[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_logg(mass_unique)
 
                 interp_radius = interpolate.interp1d(
                     iso_mass[age_select],
@@ -299,20 +305,21 @@ class ReadIsochrone:
                     fill_value="extrapolate",
                 )
 
-                new_radius[j * n_masses : (j + 1) * n_masses] = interp_radius(
+                new_radius[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_radius(
                     mass_unique
                 )
 
-                for k in range(iso_mag.shape[1]):
-                    interp_mag = interpolate.interp1d(
-                        iso_mass[age_select],
-                        iso_mag[age_select, k],
-                        fill_value="extrapolate",
-                    )
+                if iso_mag is not None:
+                    for mag_idx in range(iso_mag.shape[1]):
+                        interp_mag = interpolate.interp1d(
+                            iso_mass[age_select],
+                            iso_mag[age_select, mag_idx],
+                            fill_value="extrapolate",
+                        )
 
-                    new_mag[j * n_masses : (j + 1) * n_masses, k] = interp_mag(
-                        mass_unique
-                    )
+                        new_mag[age_idx * n_masses : (age_idx + 1) * n_masses, mag_idx] = interp_mag(
+                            mass_unique
+                        )
 
             iso_age = new_age.copy()
             iso_mass = new_mass.copy()

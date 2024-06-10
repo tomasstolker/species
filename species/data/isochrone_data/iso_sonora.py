@@ -1,13 +1,17 @@
-import os
-import urllib.request
+from pathlib import Path
 
+import h5py
 import numpy as np
+import pooch
+
+from typeguard import typechecked
 
 from species.core import constants
 from species.util.data_util import extract_tarfile
 
 
-def add_sonora(database, input_path):
+@typechecked
+def add_sonora(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the
     `Sonora Bobcat <https://zenodo.org/record/5063476>`_
@@ -26,26 +30,30 @@ def add_sonora(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
     url = "https://zenodo.org/record/5063476/files/evolution_and_photometery.tar.gz"
 
     input_file = "evolution_and_photometery.tar.gz"
-    data_file = os.path.join(input_path, input_file)
+    data_file = Path(input_path) / input_file
+
     sub_folder = input_file.split(".", maxsplit=1)[0]
-    data_folder = os.path.join(input_path, sub_folder)
+    data_folder = Path(input_path) / sub_folder
 
-    if not os.path.exists(data_folder):
-        os.makedirs(data_folder)
+    if not data_folder.exists():
+        data_folder.mkdir()
 
-    if not os.path.isfile(data_file):
-        print("Downloading Sonora Bobcat evolution (929 kB)...", end="", flush=True)
-        urllib.request.urlretrieve(url, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        print()
 
-    print("Unpacking Sonora Bobcat evolution (929 kB)...", end="", flush=True)
-    extract_tarfile(data_file, data_folder)
+        pooch.retrieve(
+            url=url,
+            known_hash="2198426d1ca0e410fda7b63c3b7f45f3890a8d9f2fcf0a3a1e36e14185283ca5",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
+
+    print("\nUnpacking Sonora Bobcat evolution (929 kB)...", end="", flush=True)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
     iso_files = [
@@ -56,19 +64,19 @@ def add_sonora(database, input_path):
 
     labels = ["[M/H] = +0.0", "[M/H] = +0.5", "[M/H] = -0.5"]
 
-    for i, item in enumerate(iso_files):
-        iso_file = f"evolution_tables/{item}"
-        iso_path = os.path.join(data_folder, iso_file)
+    for iso_idx, iso_item in enumerate(iso_files):
+        iso_file = f"evolution_tables/{iso_item}"
+        iso_path = Path(data_folder) / iso_file
 
         iso_data = []
 
-        with open(iso_path, encoding="utf-8") as open_file:
-            for j, line in enumerate(open_file):
-                if j == 0 or " " not in line.strip():
+        with open(str(iso_path), encoding="utf-8") as open_file:
+            for line_idx, line_item in enumerate(open_file):
+                if line_idx == 0 or " " not in line_item.strip():
                     continue
 
                 # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
-                param = list(filter(None, line.strip().split(" ")))
+                param = list(filter(None, line_item.strip().split(" ")))
                 param = list(map(float, param))
 
                 param[0] = 1e3 * param[0]  # (Gyr) -> (Myr)
@@ -83,11 +91,13 @@ def add_sonora(database, input_path):
                     [param[0], param[1], param[2], param[3], param[4], param[5]]
                 )
 
-            print(f"Adding isochrones: Sonora {labels[i]}...", end="", flush=True)
+            print(
+                f"\nAdding isochrones: Sonora {labels[iso_idx]}...", end="", flush=True
+            )
 
             iso_data = np.array(iso_data)
 
-            metallicity = labels[i].split(" ")[2]
+            metallicity = labels[iso_idx].split(" ")[2]
 
             dset = database.create_dataset(
                 f"isochrones/sonora{metallicity}/age", data=iso_data[:, 0]

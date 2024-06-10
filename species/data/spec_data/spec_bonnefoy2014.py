@@ -5,12 +5,13 @@ Module for adding young, M- and L-type dwarf spectra from
 """
 
 import gzip
-import os
 import shutil
-import urllib.request
+
+from pathlib import Path
 
 import h5py
 import numpy as np
+import pooch
 
 from astropy.io import fits
 from typeguard import typechecked
@@ -40,25 +41,34 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
 
     print_text = "spectra of young M/L type objects from Bonnefoy et al. 2014"
 
-    data_url = "http://cdsarc.u-strasbg.fr/viz-bin/nph-Cat/tar.gz?J/A+A/562/A127/"
-    data_file = os.path.join(input_path, "J_A+A_562_A127.tar.gz")
-    data_folder = os.path.join(input_path, "bonnefoy+2014/")
+    url = "http://cdsarc.u-strasbg.fr/viz-bin/nph-Cat/tar.gz?J/A+A/562/A127/"
+    input_file = "J_A+A_562_A127.tar.gz"
+    data_file = Path(input_path) / input_file
+    data_folder = Path(input_path) / "bonnefoy+2014/"
 
-    if not os.path.isfile(data_file):
-        print(f"Downloading {print_text} (2.3 MB)...", end="", flush=True)
-        urllib.request.urlretrieve(data_url, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        print()
 
-    if os.path.exists(data_folder):
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
+
+    if data_folder.exists():
         shutil.rmtree(data_folder)
 
-    print(f"Unpacking {print_text} (2.3 MB)...", end="", flush=True)
-    extract_tarfile(data_file, data_folder)
+    print(f"\nUnpacking {print_text} (2.3 MB)...", end="", flush=True)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
     spec_dict = {}
 
-    with gzip.open(os.path.join(data_folder, "stars.dat.gz"), "r") as gzip_file:
+    data_file = Path(data_folder) / "stars.dat.gz"
+
+    with gzip.open(data_file, "r") as gzip_file:
         for line in gzip_file:
             name = line[:13].decode().strip()
             files = line[80:].decode().strip().split()
@@ -87,53 +97,56 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
 
             spec_dict[name] = {"name": name, "sptype": sptype, "files": files}
 
-    database.create_group("spectra/bonnefoy+2014")
-
-    fits_folder = os.path.join(data_folder, "sp")
+    fits_folder = Path(data_folder) / "sp"
 
     print_message = ""
+    print()
 
-    for _, _, files in os.walk(fits_folder):
-        for _, filename in enumerate(files):
-            fname_split = filename.split("_")
+    spec_files = sorted(fits_folder.glob("*"))
 
-            data = fits.getdata(os.path.join(fits_folder, filename))
+    for file_item in spec_files:
+        fname_split = file_item.stem.split("_")
 
-            for name, value in spec_dict.items():
-                if filename in value["files"]:
-                    if name == "TWA 22AB":
-                        # Binary spectrum
-                        continue
+        data = fits.getdata(file_item)
 
-                    if "JHK.fits" in fname_split:
-                        value["JHK"] = data
+        for spec_key, spec_value in spec_dict.items():
+            if file_item.name in spec_value["files"]:
+                if spec_key == "TWA 22AB":
+                    # Binary spectrum
+                    continue
 
-                    elif "J" in fname_split:
-                        value["J"] = data
+                if "JHK" in fname_split:
+                    spec_value["JHK"] = data
 
-                    elif "H+K" in fname_split or "HK" in fname_split:
-                        value["HK"] = data
+                elif "J" in fname_split:
+                    spec_value["J"] = data
 
-    for name, value in spec_dict.items():
+                elif "H+K" in fname_split or "HK" in fname_split:
+                    spec_value["HK"] = data
+
+    for spec_key, spec_value in spec_dict.items():
         empty_message = len(print_message) * " "
         print(f"\r{empty_message}", end="")
 
-        print_message = f"Adding spectra... {name}"
+        print_message = f"Adding spectra... {spec_key}"
         print(f"\r{print_message}", end="")
 
-        if "JHK" in value:
-            sp_data = value["JHK"]
+        if "JHK" in spec_value:
+            sp_data = spec_value["JHK"]
 
-        elif "J" in value and "HK" in value:
-            sp_data = np.vstack((value["J"], value["HK"]))
+        elif "J" in spec_value and "HK" in spec_value:
+            sp_data = np.vstack((spec_value["J"], spec_value["HK"]))
 
         else:
+            # Binary spectrum
             continue
 
-        dset = database.create_dataset(f"spectra/bonnefoy+2014/{name}", data=sp_data)
+        dset = database.create_dataset(
+            f"spectra/bonnefoy+2014/{spec_key}", data=sp_data
+        )
 
-        dset.attrs["name"] = str(name).encode()
-        dset.attrs["sptype"] = str(value["sptype"]).encode()
+        dset.attrs["name"] = str(spec_key).encode()
+        dset.attrs["sptype"] = str(spec_value["sptype"]).encode()
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")

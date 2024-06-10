@@ -1,10 +1,15 @@
-import os
-import urllib.request
+from pathlib import Path
+
+import h5py
+import pooch
+
+from typeguard import typechecked
 
 from species.data.isochrone_data.iso_manual import add_manual
 
 
-def add_nextgen(database, input_path):
+@typechecked
+def add_nextgen(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the NextGen isochrone data to the database.
 
@@ -21,28 +26,28 @@ def add_nextgen(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
-    url_iso = (
+    url = (
         "https://home.strw.leidenuniv.nl/~stolker/species/"
         "model.NextGen.M-0.0.MKO.Vega"
     )
 
-    iso_tag = "NextGen"
-    iso_size = "177 kB"
+    iso_tag = "nextgen"
 
-    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
-    data_file = os.path.join(input_path, input_file)
+    input_file = url.rsplit("/", maxsplit=1)[-1]
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(data_file):
-        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-        urllib.request.urlretrieve(url_iso, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        pooch.retrieve(
+            url=url,
+            known_hash="a72aef342a1782553094114dabc3196c0862a0c17ee5c368fbd1b47b5c611363",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
 
     add_manual(
         database=database,
-        tag=iso_tag.lower(),
-        file_name=data_file,
+        tag=iso_tag,
+        file_name=str(data_file),
         model_name="nextgen",
     )

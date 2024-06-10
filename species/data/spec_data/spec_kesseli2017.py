@@ -3,12 +3,13 @@ Module for adding O5 through L3 SDSS stellar spectra from
 Kesseli et al. (2017) to the database.
 """
 
-import os
 import shutil
-import urllib.request
+
+from pathlib import Path
 
 import h5py
 import numpy as np
+import pooch
 
 from astropy.io import fits
 from typeguard import typechecked
@@ -35,66 +36,64 @@ def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
         None
     """
 
-    data_url = "https://cdsarc.unistra.fr/viz-bin/nph-Cat/tar.gz?J/ApJS/230/16"
-    data_file = os.path.join(input_path, "J_ApJS_230_16.tar.gz")
-    data_folder = os.path.join(input_path, "kesseli+2017/")
+    url = "https://cdsarc.u-strasbg.fr/viz-bin/nph-Cat/tar.gz?J/ApJS/230/16"
+    input_file = "J_ApJS_230_16.tar.gz"
+    data_file = Path(input_path) / input_file
+    data_folder = Path(input_path) / "kesseli+2017/"
 
-    if not os.path.isfile(data_file):
-        print(
-            "Downloading SDSS spectra from Kesseli et al. 2017 (145 MB)...",
-            end="",
-            flush=True,
+    if not data_file.exists():
+        print()
+
+        pooch.retrieve(
+            url=url,
+            known_hash="85e6fa6a242e9ea2d9da89338d0b06ab9fec30316b6af42b449568ac942e9a15",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
         )
-        urllib.request.urlretrieve(data_url, data_file)
-        print(" [DONE]")
 
-    if os.path.exists(data_folder):
+    if data_folder.exists():
         shutil.rmtree(data_folder)
 
     print(
-        "Unpacking SDSS spectra from Kesseli et al. 2017 (145 MB)...",
+        "\nUnpacking SDSS spectra from Kesseli et al. 2017 (145 MB)...",
         end="",
         flush=True,
     )
-    extract_tarfile(data_file, data_folder)
+    extract_tarfile(str(data_file), str(data_folder))
     print(" [DONE]")
 
-    database.create_group("spectra/kesseli+2017")
-
-    fits_folder = os.path.join(data_folder, "fits")
+    fits_folder = Path(data_folder) / "fits"
 
     print_message = ""
+    print()
 
-    for _, _, files in os.walk(fits_folder):
-        for _, filename in enumerate(files):
-            with fits.open(os.path.join(fits_folder, filename)) as hdu_list:
-                data = hdu_list[1].data
+    spec_files = sorted(fits_folder.glob("*"))
 
-                wavelength = 1e-4 * 10.0 ** data["LogLam"]  # (um)
-                flux = data["Flux"]  # Normalized units
-                error = data["PropErr"]  # Normalized units
+    for file_item in spec_files:
+        data = fits.getdata(file_item, ext=1)
 
-                name = filename[:-5].replace("_", " ")
+        wavelength = 1e-4 * 10.0 ** data["LogLam"]  # (um)
+        flux = data["Flux"]  # Normalized units
+        error = data["PropErr"]  # Normalized units
 
-                file_split = filename.split("_")
-                file_split = file_split[0].split(".")
+        name = file_item.stem.replace("_", " ")
 
-                sptype = file_split[0]
+        file_split = file_item.stem.split("_")
+        sptype = file_split[0].split(".")[0]
 
-                spdata = np.column_stack([wavelength, flux, error])
+        spdata = np.column_stack([wavelength, flux, error])
 
-                empty_message = len(print_message) * " "
-                print(f"\r{empty_message}", end="")
+        empty_message = len(print_message) * " "
+        print(f"\r{empty_message}", end="")
 
-                print_message = f"Adding spectra... {name}"
-                print(f"\r{print_message}", end="")
+        print_message = f"Adding spectra... {name}"
+        print(f"\r{print_message}", end="")
 
-                dset = database.create_dataset(
-                    f"spectra/kesseli+2017/{name}", data=spdata
-                )
+        dset = database.create_dataset(f"spectra/kesseli+2017/{name}", data=spdata)
 
-                dset.attrs["name"] = str(name).encode()
-                dset.attrs["sptype"] = str(sptype).encode()
+        dset.attrs["name"] = str(name).encode()
+        dset.attrs["sptype"] = str(sptype).encode()
 
     empty_message = len(print_message) * " "
     print(f"\r{empty_message}", end="")

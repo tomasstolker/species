@@ -2,16 +2,19 @@
 Module for adding a flux-calibrated spectrum of Vega to the database.
 """
 
-import os
+from pathlib import Path
 
+import h5py
 import numpy as np
 import pooch
 import requests
 
 from astropy.io import fits
+from typeguard import typechecked
 
 
-def add_vega(input_path, database):
+@typechecked
+def add_vega(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding a flux-calibrated spectrum of Vega to the
     database. The latest spectrum (alpha_lyr_stis_011.fits) is
@@ -32,9 +35,11 @@ def add_vega(input_path, database):
         None
     """
 
-    data_file = os.path.join(input_path, "alpha_lyr_stis_011.fits")
+    data_file = Path(input_path) / "alpha_lyr_stis_011.fits"
 
-    if not os.path.isfile(data_file):
+    if not data_file.exists():
+        print()
+
         try:
             url = (
                 "https://archive.stsci.edu/hlsps/reference-atlases"
@@ -66,23 +71,22 @@ def add_vega(input_path, database):
     if "spectra/calibration/vega" in database:
         del database["spectra/calibration/vega"]
 
-    with fits.open(data_file) as hdu_list:
-        vega_data = hdu_list[1].data
-        wavelength = vega_data["WAVELENGTH"]  # (Angstrom)
-        flux = vega_data["FLUX"]  # (erg s-1 cm-2 A-1)
-        error_stat = vega_data["STATERROR"]  # (erg s-1 cm-2 A-1)
-        error_sys = vega_data["SYSERROR"]  # (erg s-1 cm-2 A-1)
+    vega_data = fits.getdata(data_file, ext=1)
+    wavelength = vega_data["WAVELENGTH"]  # (Angstrom)
+    flux = vega_data["FLUX"]  # (erg s-1 cm-2 A-1)
+    error_stat = vega_data["STATERROR"]  # (erg s-1 cm-2 A-1)
+    error_sys = vega_data["SYSERROR"]  # (erg s-1 cm-2 A-1)
 
     wavelength *= 1e-4  # (Angstrom) -> (um)
     flux *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
     error_stat *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
     error_sys *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
 
-    print("Adding spectrum: Vega", end="", flush=True)
+    print("\nAdding spectrum: Vega", end="", flush=True)
 
     database.create_dataset(
         "spectra/calibration/vega", data=np.vstack((wavelength, flux, error_stat))
     )
 
-    print("Reference: Bohlin et al. 2014, PASP, 126")
+    print("\nReference: Bohlin et al. 2014, PASP, 126")
     print("URL: https://ui.adsabs.harvard.edu/abs/2014PASP..126..711B/abstract")

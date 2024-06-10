@@ -1,12 +1,16 @@
-import os
-import urllib.request
+from pathlib import Path
 
+import h5py
 import numpy as np
+import pooch
+
+from typeguard import typechecked
 
 from species.core import constants
 
 
-def add_baraffe2015(database, input_path):
+@typechecked
+def add_baraffe2015(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the Baraffe et al. (2015)
     isochrone data to the database.
@@ -24,24 +28,24 @@ def add_baraffe2015(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
-    url_iso = (
-        "http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/BHAC15_tracks+structure"
-    )
+    url = "http://perso.ens-lyon.fr/isabelle.baraffe/BHAC15dir/BHAC15_tracks+structure"
 
     iso_tag = "Baraffe et al. (2015)"
-    iso_size = "1.4 MB"
     db_tag = "baraffe2015"
 
-    input_file = url_iso.rsplit("/", maxsplit=1)[-1]
-    data_file = os.path.join(input_path, input_file)
+    input_file = url.rsplit("/", maxsplit=1)[-1]
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(data_file):
-        print(f"Downloading {iso_tag} isochrones ({iso_size})...", end="", flush=True)
-        urllib.request.urlretrieve(url_iso, data_file)
-        print(" [DONE]")
+    if not data_file.exists():
+        print()
+
+        pooch.retrieve(
+            url=url,
+            known_hash="b95474c5d4284373a2fed3f06d969a44bcd925ac0e5b226cc0235acb7e068d2a",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
 
     # M/Ms, log t(yr), Teff, log(L/Ls), log(g), R/Rs,
     # Log(Li/Li0), log(Tc), log(ROc), Mrad, Rrad, k2conv, k2rad
@@ -55,7 +59,7 @@ def add_baraffe2015(database, input_path):
 
     iso_data = np.column_stack([age, mass, teff, log_lum, log_g, radius])
 
-    print(f"Adding isochrones: {iso_tag}...", end="", flush=True)
+    print(f"\nAdding isochrones: {iso_tag}...", end="", flush=True)
 
     dset = database.create_dataset(
         f"isochrones/{db_tag}/age", data=iso_data[:, 0]

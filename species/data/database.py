@@ -588,6 +588,12 @@ class Database:
 
         from species.data.isochrone_data.add_isochrone import add_isochrone_grid
 
+        print_section("Add isochrone grid")
+
+        print(f"Evolutionary model: {model}")
+        print(f"File name: {filename}")
+        print(f"Database tag: {tag}")
+
         if model == "phoenix":
             warnings.warn(
                 "Please set model='manual' instead of "
@@ -882,8 +888,11 @@ class Database:
             ``flux_density`` can be used in case the magnitudes and/or
             filter profiles are not available. In that case, the fluxes
             can still be selected with ``inc_phot`` in
-            :class:`~species.fit.fit_model.FitModel`. The argument
-            of ``flux_density`` is ignored if set to ``None``.
+            :class:`~species.fit.fit_model.FitModel`. The
+            ``flux_density`` can also be used for an upper limit on a
+            photometric flux, by setting the flux to zero and the
+            uncertainty to the 1:math:`\\sigma` upper limit. The
+            argument of ``flux_density`` is ignored if set to ``None``.
         spectrum : dict, None
             Dictionary with the spectrum, optional covariance matrix,
             and resolving power of the instrument. The input data
@@ -1902,6 +1911,7 @@ class Database:
     @typechecked
     def add_photometry(self, phot_library: str) -> None:
         """
+        Function for adding a photometry library to the database.
         Parameters
         ----------
         phot_library : str
@@ -2113,6 +2123,11 @@ class Database:
         """
 
         from species.data.spec_data.add_spec_data import add_spec_library
+
+        print_section("Add spectral library")
+
+        print(f"Database tag: {spec_library}")
+        print(f"Spectral types: {sptypes}")
 
         with h5py.File(self.database, "a") as hdf5_file:
             if f"spectra/{spec_library}" in hdf5_file:

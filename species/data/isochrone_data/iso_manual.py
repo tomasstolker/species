@@ -1,10 +1,15 @@
 import h5py
 import numpy as np
 
+from typeguard import typechecked
+
 from species.core import constants
 
 
-def add_manual(database, tag, file_name, model_name="manual"):
+@typechecked
+def add_manual(
+    database: h5py._hl.files.File, tag: str, file_name: str, model_name: str = "manual"
+) -> None:
     """
     Function for adding any of the isochrones from
     https://phoenix.ens-lyon.fr/Grids/ or
@@ -88,7 +93,7 @@ def add_manual(database, tag, file_name, model_name="manual"):
     index_sort = np.argsort(iso_data[:, 0])
     iso_data = iso_data[index_sort, :]
 
-    print(f"Adding isochrones: {tag}...", end="", flush=True)
+    print(f"\nAdding isochrones: {tag}...", end="", flush=True)
 
     if check_baraffe:
         filters = header[6:]

@@ -1,10 +1,15 @@
-import os
-import urllib.request
+from pathlib import Path
+
+import h5py
+import pooch
+
+from typeguard import typechecked
 
 from species.data.isochrone_data.iso_manual import add_manual
 
 
-def add_ames(database, input_path):
+@typechecked
+def add_ames(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the AMES-Cond and AMES-Dusty
     isochrone data to the database.
@@ -22,9 +27,6 @@ def add_ames(database, input_path):
         None
     """
 
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-
     url_list = [
         "https://home.strw.leidenuniv.nl/~stolker/species/"
         "model.AMES-Cond-2000.M-0.0.MKO.Vega",
@@ -32,25 +34,31 @@ def add_ames(database, input_path):
         "model.AMES-dusty.M-0.0.MKO.Vega",
     ]
 
-    iso_tags = ["AMES-Cond", "AMES-Dusty"]
-    iso_size = ["235 kB", "182 kB"]
+    file_hash = [
+        "fc04e6f7c02982bb3187b55cdefc2464e3f1564fb8026a8958967cb889f0f581",
+        "c7ba32ae10111c9ca692bf75154edac70b050c06cae211b421e1473725d6380c",
+    ]
 
-    for i, url_item in enumerate(url_list):
+    iso_tags = ["ames-cond", "ames-dusty"]
+
+    for url_idx, url_item in enumerate(url_list):
         input_file = url_item.split("/")[-1]
-        data_file = os.path.join(input_path, input_file)
+        data_file = Path(input_path) / input_file
 
-        if not os.path.isfile(data_file):
-            print(
-                f"Downloading {iso_tags[i]} isochrones ({iso_size[i]})...",
-                end="",
-                flush=True,
+        if not data_file.exists():
+            print()
+
+            pooch.retrieve(
+                url=url_item,
+                known_hash=file_hash[url_idx],
+                fname=input_file,
+                path=input_path,
+                progressbar=True,
             )
-            urllib.request.urlretrieve(url_item, data_file)
-            print(" [DONE]")
 
         add_manual(
             database=database,
-            tag=iso_tags[i].lower(),
-            file_name=data_file,
+            tag=iso_tags[url_idx],
+            file_name=str(data_file),
             model_name="ames",
         )

@@ -2,12 +2,12 @@
 Module for adding the SpeX Prism Spectral Libraries to the database.
 """
 
-import os
-import urllib.request
+from pathlib import Path
 
 import h5py
 import numpy as np
 import pandas as pd
+import pooch
 
 from astropy.io.votable import parse_single_table
 from typeguard import typechecked
@@ -36,103 +36,113 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
         None
     """
 
-    parallax_url = "https://home.strw.leidenuniv.nl/~stolker/species/parallax.dat"
-    parallax_file = os.path.join(input_path, "parallax.dat")
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/parallax.dat"
+    input_file = "parallax.dat"
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(parallax_file):
-        urllib.request.urlretrieve(parallax_url, parallax_file)
+    if not data_file.exists():
+        print()
+
+        pooch.retrieve(
+            url=url,
+            known_hash="e2fe0719a919dc98d24627a12f535862a107e473bc67f09298a40ad474cdd491",
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
 
     parallax_data = pd.pandas.read_csv(
-        parallax_file,
+        data_file,
         usecols=[0, 1, 2],
         names=["object", "parallax", "parallax_error"],
         delimiter=",",
         dtype={"object": str, "parallax": float, "parallax_error": float},
     )
 
-    database.create_group("spectra/spex")
+    data_folder = Path(input_path) / "spex"
 
-    data_path = os.path.join(input_path, "spex")
+    if not data_folder.exists():
+        data_folder.mkdir()
 
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-
-    url_all = (
+    url = (
         "http://svo2.cab.inta-csic.es/vocats/v2/spex/cs.php?"
         "RA=180.000000&DEC=0.000000&SR=180.000000&VERB=2"
     )
 
-    xml_file_spex = os.path.join(data_path, "spex.xml")
+    input_file = "spex.xml"
+    data_file = Path(input_path) / input_file
 
-    if not os.path.isfile(xml_file_spex):
-        urllib.request.urlretrieve(url_all, xml_file_spex)
+    if not data_file.exists():
+        print()
 
-    table = parse_single_table(xml_file_spex)
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname=input_file,
+            path=input_path,
+            progressbar=True,
+        )
+
+    table = parse_single_table(data_file)
     # name = table.array['name']
     twomass = table.array["name2m"]
     url = table.array["access_url"]
 
     unique_id = []
 
-    print_message = ""
+    for url_idx, url_item in enumerate(url):
+        if twomass[url_idx] not in unique_id:
+            input_file = twomass[url_idx] + ".xml"
+            data_file = Path(data_folder) / input_file
 
-    for i, item in enumerate(url):
-        if twomass[i] not in unique_id:
-            if isinstance(twomass[i], str):
-                xml_file_1 = os.path.join(data_path, twomass[i] + ".xml")
-            else:
-                # Use decode for backward compatibility
-                xml_file_1 = os.path.join(
-                    data_path, twomass[i].decode("utf-8") + ".xml"
+            if not data_file.exists():
+                print()
+
+                pooch.retrieve(
+                    url=url_item,
+                    known_hash=None,
+                    fname=input_file,
+                    path=data_folder,
+                    progressbar=True,
                 )
 
-            if not os.path.isfile(xml_file_1):
-                if isinstance(item, str):
-                    urllib.request.urlretrieve(item, xml_file_1)
-                else:
-                    urllib.request.urlretrieve(item.decode("utf-8"), xml_file_1)
-
-            table = parse_single_table(xml_file_1)
+            table = parse_single_table(data_file)
             name = table.array["ID"]
-            url = table.array["access_url"]
+            url_spec = table.array["access_url"]
 
             if isinstance(name[0], str):
                 name = name[0]
             else:
                 name = name[0].decode("utf-8")
 
-            empty_message = len(print_message) * " "
-            print(f"\r{empty_message}", end="")
+            input_file = f"spex_{name}.xml"
+            data_file = Path(input_path) / input_file
 
-            print_message = f"Downloading SpeX Prism Spectral Library... {name}"
-            print(f"\r{print_message}", end="")
+            if not data_file.exists():
+                print()
 
-            xml_file_2 = os.path.join(data_path, f"spex_{name}.xml")
+                pooch.retrieve(
+                    url=url_spec[0],
+                    known_hash=None,
+                    fname=input_file,
+                    path=data_folder,
+                    progressbar=True,
+                )
 
-            if not os.path.isfile(xml_file_2):
-                if isinstance(url[0], str):
-                    urllib.request.urlretrieve(url[0], xml_file_2)
-                else:
-                    urllib.request.urlretrieve(url[0].decode("utf-8"), xml_file_2)
-
-            unique_id.append(twomass[i])
-
-    empty_message = len(print_message) * " "
-    print(f"\r{empty_message}", end="")
-
-    print_message = "Downloading SpeX Prism Spectral Library... [DONE]"
-    print(f"\r{print_message}")
+            unique_id.append(twomass[url_idx])
 
     # 2MASS H band zero point for 0 mag (Cogen et al. 2003)
     zp_hband = 1.133e-9  # (W m-2 um-1)
 
     h_twomass = SyntheticPhotometry("2MASS/2MASS.H", zero_point=zp_hband)
 
-    for votable in os.listdir(data_path):
-        if votable.startswith("spex_") and votable.endswith(".xml"):
-            xml_file = os.path.join(data_path, votable)
+    spec_files = sorted(data_folder.glob("*"))
 
-            table = parse_single_table(xml_file)
+    print_message = ""
+
+    for file_item in spec_files:
+        if file_item.stem.startswith("spex_") and file_item.suffix == ".xml":
+            table = parse_single_table(file_item)
 
             wavelength = table.array["wavelength"]  # (Angstrom)
             flux = table.array["flux"]  # Normalized units

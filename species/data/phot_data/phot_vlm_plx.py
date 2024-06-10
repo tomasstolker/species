@@ -3,19 +3,20 @@ Module for the photometric data and parallaxes from the
 Database of Ultracool Parallaxes.
 """
 
-import os
-import urllib.request
+from pathlib import Path
 
 import h5py
 import numpy as np
 import pooch
 
 from astropy.io import fits
+from typeguard import typechecked
 
 from species.util.data_util import update_sptype
 
 
-def add_vlm_plx(input_path, database):
+@typechecked
+def add_vlm_plx(input_path: str, database: h5py._hl.files.File) -> None:
     """
     Function for adding the Database of Ultracool Parallaxes to the
     database. The FITS file with data was originally downloaded from
@@ -28,7 +29,7 @@ def add_vlm_plx(input_path, database):
     input_path : str
         Data folder.
     database : h5py._hl.files.File
-        HDF5 database.
+        The HDF5 database that has been opened.
 
     Returns
     -------
@@ -36,15 +37,17 @@ def add_vlm_plx(input_path, database):
         None
     """
 
-    data_file = os.path.join(input_path, "vlm-plx-all.fits")
-
+    input_file = "vlm-plx-all.fits"
+    data_file = Path(input_path) / "vlm-plx-all.fits"
     url = "https://home.strw.leidenuniv.nl/~stolker/species/vlm-plx-all.fits"
 
-    if not os.path.isfile(data_file):
+    if not data_file.exists():
+        print()
+
         pooch.retrieve(
             url=url,
             known_hash="d31bb3162d7de890c09ebf9f0497d51159889b5f5e7c4da1ddf01f24d0c2b36f",
-            fname="vlm-plx-all.fits",
+            fname=input_file,
             path=input_path,
             progressbar=True,
         )
