@@ -2163,7 +2163,7 @@ class Database:
         samples : np.ndarray
             Samples of the posterior.
         ln_prob : np.ndarray
-            Log posterior for each sample.
+            Log-likelihood for each sample.
         modelpar : list(str)
             List with the model parameter names.
         bounds : dict
@@ -2275,7 +2275,7 @@ class Database:
     ) -> Dict[str, float]:
         """
         Function for extracting the sample parameters
-        with the highest posterior probability.
+        with the maximum likelihood.
 
         Parameters
         ----------
@@ -2293,11 +2293,11 @@ class Database:
         -------
         dict
             Parameters and values for the sample with the
-            maximum posterior probability.
+            maximum likelihood.
         """
 
         if verbose:
-            print_section("Get sample with highest probability")
+            print_section("Get sample with the maximum likelihood")
             print(f"Database tag: {tag}")
 
         if burnin is None:
@@ -2327,10 +2327,8 @@ class Database:
                 samples = np.reshape(samples, (-1, n_param))
                 ln_prob = np.reshape(ln_prob, -1)
 
-            index_max = np.unravel_index(ln_prob.argmax(), ln_prob.shape)
-
-            # max_prob = ln_prob[index_max]
-            max_sample = samples[index_max]
+            index_max = np.argmax(ln_prob)
+            max_sample = samples[index_max, ]
 
             prob_sample = {}
 
@@ -3310,7 +3308,7 @@ class Database:
                                 f"({norm_prior[0]}, {norm_prior[1]})"
                             )
 
-                            normal_priors[f"{bound_item}/{filter_item}"] = (
+                            normal_priors[f"{prior_item}/{filter_item}"] = (
                                 norm_prior[0],
                                 norm_prior[1],
                             )
@@ -3320,7 +3318,7 @@ class Database:
 
                         print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
 
-                        normal_priors[bound_item] = (norm_prior[0], norm_prior[1])
+                        normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
 
         median_sample = self.get_median_sample(tag, burnin, verbose=False)
         prob_sample = self.get_probable_sample(tag, burnin, verbose=False)
