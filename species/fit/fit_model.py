@@ -1311,20 +1311,20 @@ class FitModel:
             # Use the same object with MultiNest
             param_out = cube
 
-        for item in cube_index:
-            if item in self.normal_prior:
+        for param_item in cube_index:
+            if param_item in self.normal_prior:
                 # Normal prior
-                param_out[cube_index[item]] = norm.ppf(
-                    param_out[cube_index[item]],
-                    loc=self.normal_prior[item][0],
-                    scale=self.normal_prior[item][1],
+                param_out[cube_index[param_item]] = norm.ppf(
+                    param_out[cube_index[param_item]],
+                    loc=self.normal_prior[param_item][0],
+                    scale=self.normal_prior[param_item][1],
                 )
 
             else:
                 # Uniform prior
-                param_out[cube_index[item]] = (
-                    bounds[item][0]
-                    + (bounds[item][1] - bounds[item][0]) * param_out[cube_index[item]]
+                param_out[cube_index[param_item]] = (
+                    bounds[param_item][0]
+                    + (bounds[param_item][1] - bounds[param_item][0]) * param_out[cube_index[param_item]]
                 )
 
         return param_out
@@ -1978,6 +1978,7 @@ class FitModel:
 
             if self.spectrum[spec_item][2] is not None:
                 # Use the inverted covariance matrix
+
                 ln_like += -0.5 * np.dot(
                     self.weights[spec_item] * (data_flux - model_flux),
                     np.dot(data_cov_inv, data_flux - model_flux),
@@ -1988,6 +1989,7 @@ class FitModel:
             else:
                 if spec_item in self.fit_corr:
                     # Covariance model (Wang et al. 2020)
+
                     wavel = self.spectrum[spec_item][0][:, 0]  # (um)
                     wavel_j, wavel_i = np.meshgrid(wavel, wavel)
 
@@ -2015,12 +2017,14 @@ class FitModel:
 
                 else:
                     # Calculate the log-likelihood without a covariance matrix
+
                     lnlike_tmp = (
                         -0.5
                         * self.weights[spec_item]
                         * (data_flux - model_flux) ** 2
                         / data_var
                     )
+
                     lnlike_tmp += -0.5 * np.log(2.0 * np.pi * data_var)
 
                     ln_like += np.nansum(lnlike_tmp)
@@ -2266,12 +2270,12 @@ class FitModel:
             f"{self.imp_ln_z:.2f} +/- {self.imp_ln_z_error:.2f}"
         )
 
-        # Get the best-fit (highest likelihood) point
+        # Get the maximum likelihood sample
 
-        print("\nSample with the highest probability:")
         best_params = analyzer.get_best_fit()
-
         max_lnlike = best_params["log_likelihood"]
+
+        print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for param_idx, param_item in enumerate(best_params["parameters"]):
@@ -2281,7 +2285,7 @@ class FitModel:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
 
         # Get the posterior samples
-        samples = analyzer.get_equal_weighted_posterior()
+        post_samples = analyzer.get_equal_weighted_posterior()
 
         spec_labels = []
         for spec_item in self.spectrum:
@@ -2290,8 +2294,8 @@ class FitModel:
 
         # Samples and ln(L)
 
-        samples = samples[:, :-1]
-        ln_prob = samples[:, -1]
+        ln_prob = post_samples[:, -1]
+        samples = post_samples[:, :-1]
 
         # Adding the fixed parameters to the samples
 
@@ -2522,11 +2526,11 @@ class FitModel:
 
             print(f"   - {param_item} = {mean:.2e} +/- {sigma:.2e}")
 
-        # Get the best-fit (highest likelihood) point
+        # Get the maximum likelihood sample
 
         max_lnlike = result["maximum_likelihood"]["logl"]
 
-        print("\nSample with the highest probability:")
+        print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for lnlike_idx, lnlike_item in enumerate(result["maximum_likelihood"]["point"]):
@@ -2883,13 +2887,13 @@ class FitModel:
             f"\nNested sampling log-evidence: {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
         )
 
-        # Get the sample with the highest likelihood
+        # Get the maximum likelihood sample
 
         max_idx = np.argmax(ln_prob)
         max_lnlike = ln_prob[max_idx]
         best_params = samples[max_idx]
 
-        print("\nSample with the highest probability:")
+        print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         for param_idx, param_item in enumerate(best_params):
