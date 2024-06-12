@@ -6,8 +6,6 @@ also available in the `SpeX Prism Library Analysis Toolkit
 <https://github.com/aburgasser/splat>`_.
 """
 
-import shutil
-
 from pathlib import Path
 
 import h5py
@@ -19,7 +17,7 @@ from astropy.io import fits
 from astroquery.simbad import Simbad
 from typeguard import typechecked
 
-from species.util.data_util import extract_tarfile
+from species.util.data_util import extract_tarfile, remove_directory
 from species.util.query_util import get_simbad
 
 
@@ -87,7 +85,7 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
         )
 
     if data_folder.exists():
-        shutil.rmtree(data_folder)
+        remove_directory(data_folder)
 
     print(f"\nUnpacking {print_text} (173 kB)...", end="", flush=True)
     extract_tarfile(str(data_file), str(data_folder))

@@ -5,7 +5,6 @@ Module for adding young, M- and L-type dwarf spectra from
 """
 
 import gzip
-import shutil
 
 from pathlib import Path
 
@@ -16,7 +15,7 @@ import pooch
 from astropy.io import fits
 from typeguard import typechecked
 
-from species.util.data_util import extract_tarfile
+from species.util.data_util import extract_tarfile, remove_directory
 
 
 @typechecked
@@ -58,7 +57,7 @@ def add_bonnefoy2014(input_path: str, database: h5py._hl.files.File) -> None:
         )
 
     if data_folder.exists():
-        shutil.rmtree(data_folder)
+        remove_directory(data_folder)
 
     print(f"\nUnpacking {print_text} (2.3 MB)...", end="", flush=True)
     extract_tarfile(str(data_file), str(data_folder))

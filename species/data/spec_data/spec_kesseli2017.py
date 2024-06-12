@@ -3,8 +3,6 @@ Module for adding O5 through L3 SDSS stellar spectra from
 Kesseli et al. (2017) to the database.
 """
 
-import shutil
-
 from pathlib import Path
 
 import h5py
@@ -14,7 +12,7 @@ import pooch
 from astropy.io import fits
 from typeguard import typechecked
 
-from species.util.data_util import extract_tarfile
+from species.util.data_util import extract_tarfile, remove_directory
 
 
 @typechecked
@@ -53,7 +51,7 @@ def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
         )
 
     if data_folder.exists():
-        shutil.rmtree(data_folder)
+        remove_directory(data_folder)
 
     print(
         "\nUnpacking SDSS spectra from Kesseli et al. 2017 (145 MB)...",

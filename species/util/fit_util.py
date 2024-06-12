@@ -309,12 +309,14 @@ def get_residuals(
         else:
             n_fixed = 0
 
-            warnings.warn("The 'fixed_param' group is not found in "
-                          f"the results of {tag}. Probably the "
-                          "results were obtained with an older "
-                          "version of the package. Please rerun "
-                          "FitModel to update the results. Setting "
-                          "the number of fixed parameters to zero.")
+            warnings.warn(
+                "The 'fixed_param' group is not found in "
+                f"the results of {tag}. Probably the "
+                "results were obtained with an older "
+                "version of the package. Please rerun "
+                "FitModel to update the results. Setting "
+                "the number of fixed parameters to zero."
+            )
 
         print("\nModel parameters:")
         for param_idx in range(n_param):

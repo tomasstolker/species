@@ -1,5 +1,3 @@
-import shutil
-
 from pathlib import Path
 
 import h5py
@@ -9,7 +7,7 @@ import pooch
 from typeguard import typechecked
 
 from species.core import constants
-from species.util.data_util import extract_tarfile
+from species.util.data_util import extract_tarfile, remove_directory
 
 
 @typechecked
@@ -79,7 +77,7 @@ def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
         # unpacked because the file permissions are set to read-only
         # such that the extract_tarfile will cause an error if the
         # files need to be overwritten
-        shutil.rmtree(data_folder)
+        remove_directory(data_folder)
 
     data_folder.mkdir()
 
