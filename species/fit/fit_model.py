@@ -82,9 +82,8 @@ class FitModel:
             Dict[
                 str,
                 Union[
-                    Tuple[float, float],
-                    Tuple[Optional[Tuple[float, float]]],
-                    Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]],
+                    Optional[Tuple[Optional[float], Optional[float]]],
+                    Tuple[Optional[Tuple[Optional[float], Optional[float]]], Optional[Tuple[Optional[float], Optional[float]]]],
                     Tuple[
                         Optional[Tuple[float, float]],
                         Optional[Tuple[float, float]],
@@ -530,7 +529,7 @@ class FitModel:
         readmodel = ReadModel(self.model)
         self.teff_range = readmodel.get_bounds()["teff"]
 
-        if "teff" in self.bounds:
+        if "teff" in self.bounds and self.bounds["teff"] is not None:
             # List with tuples for blackbody components or
             # tuple with two tuples for a binary system
             if isinstance(self.bounds["teff"][0], tuple):
@@ -609,6 +608,18 @@ class FitModel:
                         del self.bounds[key]
 
                     else:
+                        if self.bounds[key][0] is None:
+                            self.bounds[key] = (
+                                bounds_grid[key][0],
+                                self.bounds[key][1],
+                            )
+
+                        if self.bounds[key][1] is None:
+                            self.bounds[key] = (
+                                self.bounds[key][0],
+                                bounds_grid[key][1],
+                            )
+
                         if self.bounds[key][0] < bounds_grid[key][0]:
                             warnings.warn(
                                 f"The lower bound on {key} "
@@ -1324,7 +1335,8 @@ class FitModel:
                 # Uniform prior
                 param_out[cube_index[param_item]] = (
                     bounds[param_item][0]
-                    + (bounds[param_item][1] - bounds[param_item][0]) * param_out[cube_index[param_item]]
+                    + (bounds[param_item][1] - bounds[param_item][0])
+                    * param_out[cube_index[param_item]]
                 )
 
         return param_out
@@ -2597,7 +2609,7 @@ class FitModel:
     def run_dynesty(
         self,
         tag: str,
-        n_live_points: int = 2000,
+        n_live_points: int = 1000,
         resume: bool = False,
         output: str = "dynesty/",
         evidence_tolerance: float = 0.5,
