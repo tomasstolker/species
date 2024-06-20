@@ -922,6 +922,7 @@ class ReadModel:
             )
 
             idx_select = ext_mag >= 0.0
+
             model_box.wavelength = model_box.wavelength[idx_select]
             model_box.flux = model_box.flux[idx_select]
 
@@ -2060,3 +2061,79 @@ class ReadModel:
             color2=color_2_list,
             sptype=param_list,
         )
+
+    # def test_accuracy(self):
+    #     with self.open_database() as hdf5_file:
+    #         wl_points = np.array(hdf5_file[f"models/{self.model}/wavelength"])
+    #         grid_flux = np.array(hdf5_file[f"models/{self.model}/flux"])
+    #     print(grid_flux.shape)
+    #
+    #     import matplotlib.pyplot as plt
+    #
+    #     for i in range(grid_flux.shape[0]):
+    #         if i == 0:
+    #             continue
+    #         if i == grid_flux.shape[0]-1:
+    #             continue
+    #
+    #         # Get the grid points
+    #
+    #         grid_points = self.get_points()
+    #
+    #         # Select the required Teff points of the grid
+    #
+    #         # if "teff" in grid_points and teff_range is not None:
+    #         #     teff_select = (teff_range[0] <= grid_points["teff"]) & (
+    #         #         grid_points["teff"] <= teff_range[1]
+    #         #     )
+    #         #
+    #         #     grid_points["teff"] = grid_points["teff"][teff_select]
+    #         #
+    #         # else:
+    #         #     teff_select = np.ones(grid_points["teff"].size, dtype=bool)
+    #
+    #         # Create list with grid points
+    #
+    #         grid_points = list(grid_points.values())
+    #         print(grid_points)
+    #
+    #         # Get the boolean array for selecting the fluxes
+    #         # within the requested wavelength range
+    #
+    #         # if self.wl_index is None:
+    #         #     self.wl_points, self.wl_index = self.wavelength_points()
+    #
+    #         # Open de HDF5 database and read the model fluxes
+    #
+    #         # with self.open_database() as hdf5_file:
+    #         #     grid_flux = np.array(hdf5_file[f"models/{self.model}/flux"])
+    #         #     grid_flux = grid_flux[..., self.wl_index]
+    #         #     grid_flux = grid_flux[teff_select, ...]
+    #
+    #         grid_points_select = grid_points.copy()
+    #         grid_points_select[0] = np.delete(grid_points_select[0], i)
+    #
+    #         grid_flux_select = np.delete(grid_flux, i, axis=0)
+    #
+    #         # Interpolate the grid of model spectra
+    #
+    #         spectrum_interp = RegularGridInterpolator(
+    #             grid_points_select,
+    #             grid_flux_select,
+    #             method="linear",
+    #             bounds_error=False,
+    #             fill_value=np.nan,
+    #         )
+    #
+    #         param_test = (grid_points[0][i], grid_points[1][0])
+    #         flux_interp = spectrum_interp(param_test)
+    #         flux_true = grid_flux[i, 0]
+    #         diff = (flux_true-flux_interp)/flux_true
+    #         # plt.figure(figsize=(10., 3.))
+    #         # plt.plot(wl_points, 100.*diff, '-', lw=0.3)
+    #         # plt.yscale('log')
+    #         # plt.show()
+    #         # exit()
+    #
+    #         # grid_flux = grid_flux[..., self.wl_index]
+    #         # grid_flux = grid_flux[teff_select, ...]

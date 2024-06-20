@@ -1057,28 +1057,66 @@ def plot_spectrum(
         elif isinstance(box_item, SynphotBox):
             obj_index = None
 
-            for i, find_item in enumerate(boxes):
+            for box_idx, find_item in enumerate(boxes):
                 if isinstance(find_item, ObjectBox):
-                    obj_index = i
+                    obj_index = box_idx
                     break
 
-            for item in box_item.flux:
-                transmission = ReadFilter(item)
-                wavelength = transmission.mean_wavelength()
-                fwhm = transmission.filter_fwhm()
+            for filter_item in box_item.flux:
+                transmission = ReadFilter(filter_item)
+                wavel_micron = transmission.mean_wavelength()
+                fwhm_micron = transmission.filter_fwhm()
+
+                data_in = np.column_stack(
+                    [
+                        [wavel_micron],
+                        [box_item.flux[filter_item]],
+                        0.0,
+                    ]
+                )
+
+                data_out = convert_units(data_in, units, convert_from=False)
+
+                wavelength = data_out[:, 0]
+                flux_conv = data_out[:, 1]
+
+                # Convert FWHM of filter to requested units
+                data_in = np.column_stack(
+                    [[wavel_micron + fwhm_micron / 2.0], [1.0]]
+                )
+                data_out = convert_units(data_in, units, convert_from=False)
+
+                # Absolute value because could be negative when frequency
+                fwhm_up = np.abs(data_out[0, 0] - wavelength[0])
+
+                # Convert FWHM of filter to requested units
+                data_in = np.column_stack(
+                    [[wavel_micron - fwhm_micron / 2.0], [1.0]]
+                )
+                data_out = convert_units(data_in, units, convert_from=False)
+
+                # Absolute value because could be negative when frequency
+                fwhm_down = np.abs(data_out[0, 0] - wavelength[0])
+
+                # Calculate the average, which will be identical
+                # to fwhm_up and fwhm_down when working with
+                # wavelengths but fwhm_up and fwhm_down will
+                # be different when convertin a FWHM from
+                # wavelength to frequency
+                fwhm = (fwhm_up + fwhm_down) / 2.0
 
                 if quantity == "flux":
                     flux_scaling = wavelength
 
-                if plot_kwargs[j] is not None and item in plot_kwargs[j]:
-                    kwargs_copy = plot_kwargs[j][item].copy()
+                if plot_kwargs[j] is not None and filter_item in plot_kwargs[j]:
+                    kwargs_copy = plot_kwargs[j][filter_item].copy()
 
                     if "zorder" not in kwargs_copy:
                         kwargs_copy["zorder"] = 4.0
 
                     ax1.errorbar(
                         wavelength,
-                        flux_scaling * box_item.flux[item] / scaling,
+                        flux_scaling * flux_conv / scaling,
                         xerr=fwhm / 2.0,
                         yerr=None,
                         **kwargs_copy,
@@ -1087,11 +1125,11 @@ def plot_spectrum(
                 elif (
                     obj_index is None
                     or not plot_kwargs[obj_index]
-                    or item not in plot_kwargs[obj_index]
+                    or filter_item not in plot_kwargs[obj_index]
                 ):
                     ax1.errorbar(
                         wavelength,
-                        flux_scaling * box_item.flux[item] / scaling,
+                        flux_scaling * flux_conv / scaling,
                         xerr=fwhm / 2.0,
                         yerr=None,
                         alpha=0.7,
@@ -1102,12 +1140,12 @@ def plot_spectrum(
                     )
 
                 else:
-                    if isinstance(plot_kwargs[obj_index][item], list):
+                    if isinstance(plot_kwargs[obj_index][filter_item], list):
                         # In case of multiple photometry values for the
                         # same filter, use the plot_kwargs of the first
                         # data point
 
-                        kwargs_copy = plot_kwargs[obj_index][item][0].copy()
+                        kwargs_copy = plot_kwargs[obj_index][filter_item][0].copy()
 
                         if "label" in kwargs_copy:
                             del kwargs_copy["label"]
@@ -1117,7 +1155,7 @@ def plot_spectrum(
 
                         ax1.errorbar(
                             wavelength,
-                            flux_scaling * box_item.flux[item] / scaling,
+                            flux_scaling * flux_conv / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
@@ -1125,7 +1163,7 @@ def plot_spectrum(
                         )
 
                     else:
-                        kwargs_copy = plot_kwargs[obj_index][item].copy()
+                        kwargs_copy = plot_kwargs[obj_index][filter_item].copy()
 
                         if "label" in kwargs_copy:
                             del kwargs_copy["label"]
@@ -1138,7 +1176,7 @@ def plot_spectrum(
 
                         ax1.errorbar(
                             wavelength,
-                            flux_scaling * box_item.flux[item] / scaling,
+                            flux_scaling * flux_conv / scaling,
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
@@ -1146,8 +1184,8 @@ def plot_spectrum(
                         )
 
     if filters is not None:
-        for i, item in enumerate(filters):
-            transmission = ReadFilter(item)
+        for filter_item in filters:
+            transmission = ReadFilter(filter_item)
             data = transmission.get_filter()
 
             data_in = np.ones(data.shape)
