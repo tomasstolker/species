@@ -192,8 +192,6 @@ def add_model_grid(
             flush=True,
         )
 
-        print(data_folder)
-        print(data_file)
         extract_tarfile(str(data_file), str(data_folder), member_list=member_list)
 
         print(" [DONE]")

@@ -303,7 +303,7 @@ def get_residuals(
 
         n_param = dset.attrs["n_param"]
 
-        if "fixed_param" in hdf5_file[f"results/fit/{tag}/"]:
+        if "n_fixed" in dset.attrs:
             n_fixed = dset.attrs["n_fixed"]
 
         else:

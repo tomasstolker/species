@@ -325,12 +325,12 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("fsed")
         param[index] = r"$f_\mathrm{sed}$"
 
-    if "fsed_1" in param:
-        index = param.index("fsed_1")
+    if "fsed_0" in param:
+        index = param.index("fsed_0")
         param[index] = r"$f_\mathrm{sed,1}$"
 
-    if "fsed_2" in param:
-        index = param.index("fsed_2")
+    if "fsed_1" in param:
+        index = param.index("fsed_1")
         param[index] = r"$f_\mathrm{sed,2}$"
 
     if "f_clouds" in param:
@@ -1078,13 +1078,18 @@ def quantity_unit(
 
             elif item_split[0] == "logg":
                 quantity.append(f"logg_{param_index}")
-                unit.append("")
+                unit.append(None)
                 label.append(rf"$\log g_\mathrm{{{param_index+1}}}$")
 
             elif item_split[0] == "feh":
                 quantity.append(f"feh_{param_index}")
-                unit.append("")
+                unit.append(None)
                 label.append(rf"[Fe/H]$_\mathrm{{{param_index+1}}}$")
+
+            elif item_split[0] == "fsed":
+                quantity.append(f"fsed_{param_index}")
+                unit.append(None)
+                label.append(rf"$f_\mathrm{{sed,{param_index+1}}}$")
 
             elif item_split[0] == "radius":
                 quantity.append(f"radius_{param_index}")
@@ -1555,6 +1560,9 @@ def create_model_label(
 
         elif param_item[:3] == "feh":
             value = f"{model_param[param_item]:{param_fmt['feh']}}"
+
+        elif param_item[:4] == "fsed":
+            value = f"{model_param[param_item]:{param_fmt['fsed']}}"
 
         elif param_item[:6] == "radius":
             if object_type == "planet":

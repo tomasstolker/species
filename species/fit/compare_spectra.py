@@ -266,12 +266,15 @@ class CompareSpectra:
                                     g_k = 0.0
                                     c_k_spec = []
 
-                                c_k = np.sum(c_numer) / np.sum(c_denom)
+                                idx_select = np.isfinite(c_numer) & np.isfinite(c_denom)
+
+                                c_k = np.sum(c_numer[idx_select]) / np.sum(c_denom[idx_select])
                                 c_k_spec.append(c_k)
 
                                 chi_sq = (
-                                    spec_item[indices, 1] - c_k * flux_resample
-                                ) / spec_item[indices, 2]
+                                    spec_item[indices, 1][idx_select] - c_k * flux_resample[idx_select]
+                                ) / spec_item[indices, 2][idx_select]
+                                print(chi_sq)
 
                                 g_k += np.sum(w_i * chi_sq**2)
 
