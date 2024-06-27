@@ -2131,7 +2131,7 @@ class Database:
 
         with h5py.File(self.database, "a") as hdf5_file:
             if f"spectra/{spec_library}" in hdf5_file:
-                del hdf5_file["spectra/" + spec_library]
+                del hdf5_file[f"spectra/{spec_library}"]
 
             add_spec_library(self.data_folder, hdf5_file, spec_library, sptypes)
 

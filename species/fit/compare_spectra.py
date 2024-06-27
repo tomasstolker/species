@@ -274,7 +274,6 @@ class CompareSpectra:
                                 chi_sq = (
                                     spec_item[indices, 1][idx_select] - c_k * flux_resample[idx_select]
                                 ) / spec_item[indices, 2][idx_select]
-                                print(chi_sq)
 
                                 g_k += np.sum(w_i * chi_sq**2)
 
@@ -284,6 +283,12 @@ class CompareSpectra:
                                 # g_k = np.dot(spec_item[indices, 1]-c_k*flux_resample,
                                 #     np.dot(obj_inv_cov_crop,
                                 #            spec_item[indices, 1]-c_k*flux_resample))
+
+                            if np.isnan(c_k_spec):
+                                # This can happen if the spectrum only contains NaNs
+                                # because there is an issue with the flux calibration
+                                # For example: ULAS J141623.94+134836.3 (SpeX)
+                                g_k = np.inf
 
                             # Append to the lists of results
 

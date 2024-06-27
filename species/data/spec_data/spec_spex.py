@@ -116,7 +116,7 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
                 name = name[0].decode("utf-8")
 
             input_file = f"spex_{name}.xml"
-            data_file = Path(input_path) / input_file
+            data_file = Path(data_folder) / input_file
 
             if not data_file.exists():
                 print()
@@ -144,12 +144,12 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
         if file_item.stem.startswith("spex_") and file_item.suffix == ".xml":
             table = parse_single_table(file_item)
 
-            wavelength = table.array["wavelength"]  # (Angstrom)
+            wavelength = 1e-4 * table.array["wavelength"]  # (A) -> (um)
             flux = table.array["flux"]  # Normalized units
             spec_res = table.get_field_by_id("res").value
 
-            wavelength = np.array(wavelength * 1e-4)  # (um)
-            flux = np.array(flux)  # (a.u.)
+            wavelength = np.array(wavelength)
+            flux = np.array(flux)
             error = np.full(flux.size, np.nan)
 
             # 2MASS magnitudes
@@ -216,6 +216,9 @@ def add_spex(input_path: str, database: h5py._hl.files.File) -> None:
 
             except KeyError:
                 sptype_nir = None
+
+            if np.isnan(h_mag):
+                continue
 
             h_flux, _ = h_twomass.magnitude_to_flux(h_mag, error=None)
             phot = h_twomass.spectrum_to_flux(wavelength, flux)  # Normalized units
