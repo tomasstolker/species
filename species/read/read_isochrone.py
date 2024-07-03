@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-from scipy import interpolate
+from scipy.interpolate import griddata, interp1d
 from typeguard import typechecked
 
 from species.core.box import (
@@ -273,53 +273,57 @@ class ReadIsochrone:
                 new_age[age_idx * n_masses : (age_idx + 1) * n_masses] = ages_tmp
                 new_mass[age_idx * n_masses : (age_idx + 1) * n_masses] = mass_unique
 
-                interp_teff = interpolate.interp1d(
+                interp_teff = interp1d(
                     iso_mass[age_select],
                     iso_teff[age_select],
                     fill_value="extrapolate",
                 )
 
-                new_teff[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_teff(mass_unique)
+                new_teff[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_teff(
+                    mass_unique
+                )
 
-                interp_loglum = interpolate.interp1d(
+                interp_loglum = interp1d(
                     iso_mass[age_select],
                     iso_loglum[age_select],
                     fill_value="extrapolate",
                 )
 
-                new_loglum[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_loglum(
-                    mass_unique
+                new_loglum[age_idx * n_masses : (age_idx + 1) * n_masses] = (
+                    interp_loglum(mass_unique)
                 )
 
-                interp_logg = interpolate.interp1d(
+                interp_logg = interp1d(
                     iso_mass[age_select],
                     iso_logg[age_select],
                     fill_value="extrapolate",
                 )
 
-                new_logg[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_logg(mass_unique)
+                new_logg[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_logg(
+                    mass_unique
+                )
 
-                interp_radius = interpolate.interp1d(
+                interp_radius = interp1d(
                     iso_mass[age_select],
                     iso_radius[age_select],
                     fill_value="extrapolate",
                 )
 
-                new_radius[age_idx * n_masses : (age_idx + 1) * n_masses] = interp_radius(
-                    mass_unique
+                new_radius[age_idx * n_masses : (age_idx + 1) * n_masses] = (
+                    interp_radius(mass_unique)
                 )
 
                 if iso_mag is not None:
                     for mag_idx in range(iso_mag.shape[1]):
-                        interp_mag = interpolate.interp1d(
+                        interp_mag = interp1d(
                             iso_mass[age_select],
                             iso_mag[age_select, mag_idx],
                             fill_value="extrapolate",
                         )
 
-                        new_mag[age_idx * n_masses : (age_idx + 1) * n_masses, mag_idx] = interp_mag(
-                            mass_unique
-                        )
+                        new_mag[
+                            age_idx * n_masses : (age_idx + 1) * n_masses, mag_idx
+                        ] = interp_mag(mass_unique)
 
             iso_age = new_age.copy()
             iso_mass = new_mass.copy()
@@ -606,7 +610,7 @@ class ReadIsochrone:
                     )
 
             if filters_color is not None:
-                mag_color_1 = interpolate.griddata(
+                mag_color_1 = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_color_1],
                     xi=np.stack((age_points, masses), axis=1),
@@ -615,7 +619,7 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-                mag_color_2 = interpolate.griddata(
+                mag_color_2 = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_color_2],
                     xi=np.stack((age_points, masses), axis=1),
@@ -627,7 +631,7 @@ class ReadIsochrone:
                 color = mag_color_1 - mag_color_2
 
             if filter_mag is not None:
-                mag_abs = interpolate.griddata(
+                mag_abs = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_mag],
                     xi=np.stack((age_points, masses), axis=1),
@@ -636,7 +640,7 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = interpolate.griddata(
+        teff = griddata(
             points=grid_points,
             values=iso_teff,
             xi=np.stack((age_points, masses), axis=1),
@@ -645,7 +649,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        log_lum = interpolate.griddata(
+        log_lum = griddata(
             points=grid_points,
             values=iso_loglum,
             xi=np.stack((age_points, masses), axis=1),
@@ -654,7 +658,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        logg = interpolate.griddata(
+        logg = griddata(
             points=grid_points,
             values=iso_logg,
             xi=np.stack((age_points, masses), axis=1),
@@ -663,7 +667,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        radius = interpolate.griddata(
+        radius = griddata(
             points=grid_points,
             values=iso_radius,
             xi=np.stack((age_points, masses), axis=1),
@@ -776,7 +780,7 @@ class ReadIsochrone:
                 index_mag = filters.index(filter_mag)
 
             if filters_color is not None:
-                mag_color_1 = interpolate.griddata(
+                mag_color_1 = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_color_1],
                     xi=np.stack((ages, mass_points), axis=1),
@@ -785,7 +789,7 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-                mag_color_2 = interpolate.griddata(
+                mag_color_2 = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_color_2],
                     xi=np.stack((ages, mass_points), axis=1),
@@ -797,7 +801,7 @@ class ReadIsochrone:
                 color = mag_color_1 - mag_color_2
 
             if filter_mag is not None:
-                mag_abs = interpolate.griddata(
+                mag_abs = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_mag],
                     xi=np.stack((ages, mass_points), axis=1),
@@ -806,7 +810,7 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = interpolate.griddata(
+        teff = griddata(
             points=grid_points,
             values=iso_teff,
             xi=np.stack((ages, mass_points), axis=1),
@@ -815,7 +819,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        log_lum = interpolate.griddata(
+        log_lum = griddata(
             points=grid_points,
             values=iso_loglum,
             xi=np.stack((ages, mass_points), axis=1),
@@ -824,7 +828,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        logg = interpolate.griddata(
+        logg = griddata(
             points=grid_points,
             values=iso_logg,
             xi=np.stack((ages, mass_points), axis=1),
@@ -833,7 +837,7 @@ class ReadIsochrone:
             rescale=False,
         )
 
-        radius = interpolate.griddata(
+        radius = griddata(
             points=grid_points,
             values=iso_radius,
             xi=np.stack((ages, mass_points), axis=1),
@@ -1278,7 +1282,7 @@ class ReadIsochrone:
 
         age_points = np.full(log_lum.size, age)  # (Myr)
 
-        mass = interpolate.griddata(
+        mass = griddata(
             points=grid_points,
             values=iso_mass,
             xi=np.stack((age_points, log_lum), axis=1),
@@ -1333,7 +1337,7 @@ class ReadIsochrone:
 
         age_points = np.full(log_lum.size, age)  # (Myr)
 
-        radius = interpolate.griddata(
+        radius = griddata(
             points=grid_points,
             values=iso_radius,
             xi=np.stack((age_points, log_lum), axis=1),
@@ -1717,7 +1721,7 @@ class ReadIsochrone:
             )
 
         else:
-            if not filter_name in filter_list:
+            if filter_name not in filter_list:
                 print(
                     f"The '{filter_name}' filter is not found in the "
                     "list of available filters from the isochrone "

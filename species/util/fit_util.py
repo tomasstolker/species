@@ -298,7 +298,7 @@ def get_residuals(
         dset = hdf5_file[f"results/fit/{tag}/samples"]
         spectrum = dset.attrs["spectrum"]
         binary = dset.attrs["binary"]
-        print(f"\nModel: {spectrum}")
+        print(f"Model: {spectrum}")
         print(f"Binary: {binary}")
 
         n_param = dset.attrs["n_param"]
