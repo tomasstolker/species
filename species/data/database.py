@@ -2249,19 +2249,19 @@ class Database:
 
             dset.attrs["n_scaling"] = int(count_scaling)
 
-            print("\nIntegrated autocorrelation time:")
-
-            from emcee.autocorr import integrated_time
-
-            for i, item in enumerate(modelpar):
-                auto_corr = integrated_time(samples[:, i], quiet=True)[0]
-
-                if item in fixed_param:
-                    print(f"   - {item}: fixed")
-                else:
-                    print(f"   - {item}: {auto_corr:.2f}")
-
-                dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
+            # print("\nIntegrated autocorrelation time:")
+            #
+            # from emcee.autocorr import integrated_time
+            #
+            # for i, item in enumerate(modelpar):
+            #     auto_corr = integrated_time(samples[:, i], quiet=True)[0]
+            #
+            #     if item in fixed_param:
+            #         print(f"   - {item}: fixed")
+            #     else:
+            #         print(f"   - {item}: {auto_corr:.2f}")
+            #
+            #     dset.attrs[f"autocorrelation{i}"] = float(auto_corr)
 
             for key, value in attr_dict.items():
                 dset.attrs[key] = value
