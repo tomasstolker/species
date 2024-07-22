@@ -5,7 +5,7 @@ Module for adding a custom grid of model spectra to the database.
 import warnings
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -21,7 +21,7 @@ from species.util.spec_util import create_wavelengths
 @typechecked
 def add_custom_model_grid(
     model_name: str,
-    data_path: str,
+    data_path: Union[str, Path],
     parameters: List[str],
     database: h5py._hl.files.File,
     wavel_range: Optional[Tuple[float, float]],
@@ -50,17 +50,19 @@ def add_custom_model_grid(
     model_name : str
         Name of the model grid. Should be identical to the model
         name that is included in the filenames.
-    data_path : str
+    data_path : str, Path
         Path where the files with the model spectra are located.
+        Either a relative or absolute path. Either a string or
+        a ``Path`` object from ``pathlib``.
     parameters : list(str)
         List with the model parameters. The following parameters
         are supported: ``teff`` (for :math:`T_\\mathrm{eff}`),
         ``logg`` (for :math:`\\log\\,g`), ``feh`` (for [Fe/H]),
-        ``c_o_ratio`` (for C/O), ``fsed`` (for
-        :math:`f_\\mathrm{sed}`), ``log_kzz`` (for
-        :math:`\\log\\,K_\\mathrm{zz}`), and ``ad_index`` (for
-        :math:`\\gamma_\\mathrm{ad}`). Please contact the code
-        maintainer if support for other parameters should be added.
+        ``co`` (for C/O), ``fsed`` (for :math:`f_\\mathrm{sed}`),
+        ``logkzz`` (for :math:`\\log\\,K_\\mathrm{zz}`), and
+        ``adindex`` (for :math:`\\gamma_\\mathrm{ad}`). Please
+        contact the code maintainer if support for other parameters
+        should be added.
     database : h5py._hl.files.File
         Database.
     wavel_range : tuple(float, float), None
@@ -108,8 +110,11 @@ def add_custom_model_grid(
     else:
         feh = None
 
-    if "c_o_ratio" in parameters:
+    if "co" in parameters:
         c_o_ratio = []
+        co_index = parameters.index('co')
+        parameters[co_index] = 'c_o_ratio'
+
     else:
         c_o_ratio = None
 
@@ -118,12 +123,12 @@ def add_custom_model_grid(
     else:
         fsed = None
 
-    if "log_kzz" in parameters:
+    if "logkzz" in parameters:
         log_kzz = []
     else:
         log_kzz = None
 
-    if "ad_index" in parameters:
+    if "adindex" in parameters:
         ad_index = []
     else:
         ad_index = None
@@ -153,8 +158,8 @@ def add_custom_model_grid(
     model_files = sorted(data_path.glob("*"))
 
     for file_item in model_files:
-        if file_item[: len(model_name)] == model_name:
-            file_split = file_item.split("_")
+        if file_item.stem[: len(model_name)] == model_name:
+            file_split = file_item.stem.split("_")
 
             param_index = file_split.index("teff") + 1
             teff_val = float(file_split[param_index])
@@ -195,7 +200,13 @@ def add_custom_model_grid(
             print_message = f"Adding {model_name} model spectra... {file_item}"
             print(f"\r{print_message}", end="")
 
-            data_wavel, data_flux = np.loadtxt(str(file_item), unpack=True)
+            if file_item.suffix == ".npy":
+                data = np.load(str(file_item))
+                data_wavel = data[:, 0]
+                data_flux = data[:, 1]
+
+            else:
+                data_wavel, data_flux = np.loadtxt(str(file_item), unpack=True)
 
             if wavel_range is None:
                 if wavelength is None:

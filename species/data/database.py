@@ -5,8 +5,6 @@ Module with functionalities for reading and writing of data.
 import json
 import os
 import sys
-
-# import urllib.error
 import warnings
 
 from configparser import ConfigParser
@@ -752,7 +750,7 @@ class Database:
     def add_custom_model(
         self,
         model: str,
-        data_path: str,
+        data_path: Union[str, Path],
         parameters: List[str],
         wavel_range: Optional[Tuple[float, float]] = None,
         wavel_sampling: Optional[float] = None,
@@ -763,36 +761,39 @@ class Database:
         database. The spectra are read from the ``data_path`` and
         should contain the ``model_name`` and ``parameters`` in
         the filenames in the following format example:
-        `model-name_teff_1000_logg_4.0_feh_0.0_spec.dat`. The
+        `model-name_teff_1000_logg_4.0_feh_0.0_spec.dat` or
+        `model-name_teff_1000_logg_4.0_feh_0.0_spec.npy`. The
         list with ``parameters`` should contain the same parameters
-        as are included in the filename. Each datafile should contain
-        two columns with the wavelengths in :math:`\\mu\\text{m}`
-        and the fluxes in
+        as are included in the filenames. Each datafile should
+        contain two columns with the wavelengths in
+        :math:`\\mu\\text{m}` and the fluxes in
         :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`. Each file
         should contain the same number and values of wavelengths. The
-        wavelengths should be logarithmically sampled, so at a constant
-        resolution, :math:`\\lambda/\\Delta\\lambda`. If not, then the
+        wavelengths should be logarithmically spaced, so at a constant
+        :math:`\\lambda/\\Delta\\lambda`. If not, then the
         ``wavel_range`` and ``wavel_sampling`` parameters should be
-        used such that the wavelengths are resampled when reading the
-        data into the ``species`` database.
+        used such that the wavelengths are resampled.
 
         Parameters
         ----------
         model : str
             Name of the model grid. Should be identical to the model
             name that is used in the filenames.
-        data_path : str
+        data_path : str, Path
             Path where the files with the model spectra are located.
-            It is best to provide an absolute path to the folder.
+            Either a relative or absolute path. Either a string or
+            a ``Path`` object from ``pathlib``. The model spectra
+            can be stored as NumPy binary files (.npy) or plain
+            text files.
         parameters : list(str)
             List with the model parameters. The following parameters
             are supported: ``teff`` (for :math:`T_\\mathrm{eff}`),
             ``logg`` (for :math:`\\log\\,g`), ``feh`` (for [Fe/H]),
-            ``c_o_ratio`` (for C/O), ``fsed`` (for
-            :math:`f_\\mathrm{sed}`), ``log_kzz`` (for
-            :math:`\\log\\,K_\\mathrm{zz}`), and ``ad_index`` (for
-            :math:`\\gamma_\\mathrm{ad}`). Please contact the code
-            maintainer if support for other parameters should be added.
+            ``co`` (for C/O), ``fsed`` (for :math:`f_\\mathrm{sed}`),
+            ``logkzz`` (for :math:`\\log\\,K_\\mathrm{zz}`), and
+            ``adindex`` (for :math:`\\gamma_\\mathrm{ad}`). Please
+            contact the code maintainer if support for other
+            parameters should be added.
         wavel_range : tuple(float, float), None
             Wavelength range (:math:`\\mu\\text{m}`) that will be
             stored in the database. The full wavelength range is used
@@ -2328,7 +2329,7 @@ class Database:
                 ln_prob = np.reshape(ln_prob, -1)
 
             index_max = np.argmax(ln_prob)
-            max_sample = samples[index_max, ]
+            max_sample = samples[index_max,]
 
             prob_sample = {}
 
