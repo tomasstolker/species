@@ -206,7 +206,7 @@ class ReadFilter:
         return root2 - root1
 
     @typechecked
-    def effective_width(self) -> np.float32:
+    def effective_width(self) -> Union[np.float32, np.float64]:
         """
         Calculate the effective width of the filter profile. The
         effective width is equivalent to the horizontal size of a

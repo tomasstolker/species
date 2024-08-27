@@ -944,7 +944,7 @@ def plot_spectrum(
                     data_out = convert_units(data_in, units, convert_from=False)
 
                     # Absolute value because could be negative when frequency
-                    fwhm_up = np.abs(data_out[0, 0] - wavelength[0])
+                    hwhm_up = np.abs(data_out[0, 0] - wavelength[0])
 
                     # Convert FWHM of filter to requested units
                     data_in = np.column_stack(
@@ -953,14 +953,14 @@ def plot_spectrum(
                     data_out = convert_units(data_in, units, convert_from=False)
 
                     # Absolute value because could be negative when frequency
-                    fwhm_down = np.abs(data_out[0, 0] - wavelength[0])
+                    hwhm_down = np.abs(data_out[0, 0] - wavelength[0])
 
-                    # Calculate the average, which will be identical
-                    # to fwhm_up and fwhm_down when working with
-                    # wavelengths but fwhm_up and fwhm_down will
-                    # be different when convertin a FWHM from
+                    # Calculate the FWHM, which will be identical
+                    # to 2*hwhm_up and 2*hwhm_down when working with
+                    # wavelengths but hwhm_up and hwhm_down will
+                    # be different when converting a FWHM from
                     # wavelength to frequency
-                    fwhm = (fwhm_up + fwhm_down) / 2.0
+                    fwhm = (hwhm_up + hwhm_down)
 
                     if not plot_kwargs[j] or filter_item not in plot_kwargs[j]:
                         if not plot_kwargs[j]:
@@ -1112,7 +1112,7 @@ def plot_spectrum(
                 data_out = convert_units(data_in, units, convert_from=False)
 
                 # Absolute value because could be negative when frequency
-                fwhm_up = np.abs(data_out[0, 0] - wavelength[0])
+                hwhm_up = np.abs(data_out[0, 0] - wavelength[0])
 
                 # Convert FWHM of filter to requested units
                 data_in = np.column_stack(
@@ -1121,14 +1121,14 @@ def plot_spectrum(
                 data_out = convert_units(data_in, units, convert_from=False)
 
                 # Absolute value because could be negative when frequency
-                fwhm_down = np.abs(data_out[0, 0] - wavelength[0])
+                hwhm_down = np.abs(data_out[0, 0] - wavelength[0])
 
-                # Calculate the average, which will be identical
-                # to fwhm_up and fwhm_down when working with
-                # wavelengths but fwhm_up and fwhm_down will
-                # be different when convertin a FWHM from
+                # Calculate the FWHM, which will be identical
+                # to 2*hwhm_up and 2*hwhm_down when working with
+                # wavelengths but hwhm_up and hwhm_down will
+                # be different when converting a FWHM from
                 # wavelength to frequency
-                fwhm = (fwhm_up + fwhm_down) / 2.0
+                fwhm = (hwhm_up + hwhm_down)
 
                 if quantity == "flux":
                     flux_scaling = wavelength
