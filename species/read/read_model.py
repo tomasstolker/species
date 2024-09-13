@@ -1830,11 +1830,16 @@ class ReadModel:
     def integrate_spectrum(self, model_param: Dict[str, float]) -> float:
         """
         Function for calculating the bolometric flux by integrating
-        a model spectrum at the requested parameters. In principle,
-        the calculated luminosity should be approximately the same
-        as the value that can be calculated directly from the
-        :math:`T_\\mathrm{eff}` and radius parameters, unless the
-        atmospheric model had not properly converged.
+        a model spectrum at the requested parameters. Therefore, when
+        extinction is applied to the spectrum, the luminosity is the
+        extinct luminosity and not the intrinsic luminosity. Without
+        applying extinction, the integrated luminosity should in
+        principle be the same as the luminosity calculated directly
+        from the :math:`T_\\mathrm{eff}` and radius parameters. Unless
+        a particular spectrum from a radiative-convective model had
+        not fully converged, so it can be useful to check if the
+        integrated luminosity is indeed consistent with the
+        :math:`T_\\mathrm{eff}` of the model.
 
         Parameters
         ----------
@@ -1855,7 +1860,7 @@ class ReadModel:
             raise ValueError(
                 "Please include the 'radius' parameter "
                 "in the 'model_param' dictionary, "
-                "which is require for calculating the "
+                "which is required for calculating the "
                 "bolometric luminosity."
             )
 

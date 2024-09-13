@@ -19,7 +19,7 @@ import pooch
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.units.quantity import Quantity
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from tqdm.auto import tqdm
 from typeguard import typechecked
 
@@ -4203,7 +4203,7 @@ class Database:
                 sample_scale = (sample_distance / sample_radius) ** 2
 
                 # Blackbody flux: sigma * Teff^4
-                flux_int = simps(sample_scale * box_item.flux, box_item.wavelength)
+                flux_int = simpson(sample_scale * box_item.flux, box_item.wavelength)
                 teff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
 
             db_tag = f"results/fit/{tag}/samples"
@@ -4583,7 +4583,7 @@ class Database:
             sample_scale = (sample_distance / sample_radius) ** 2
 
             # Blackbody flux: sigma * Teff^4
-            flux_int = simps(sample_scale * box_item.flux, box_item.wavelength)
+            flux_int = simpson(sample_scale * box_item.flux, box_item.wavelength)
             t_eff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
 
             # Bolometric luminosity: 4 * pi * R^2 * sigma * Teff^4
@@ -4879,7 +4879,7 @@ class Database:
 
         # Blackbody flux: sigma * Teff^4
         # Scale the flux back to the planet surface
-        flux_int = simps(
+        flux_int = simpson(
             model_box.flux * (distance / radius) ** 2, model_box.wavelength
         )
         pcode_param["teff"] = (flux_int / constants.SIGMA_SB) ** 0.25

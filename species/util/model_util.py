@@ -209,7 +209,7 @@ def gaussian_spectrum(
 #         readmodel = ReadModel(modelbox.model)
 #         fullspec = readmodel.get_model(modelbox.parameters)
 #
-#     flux = simps(fullspec.flux, fullspec.wavelength)
+#     flux = simpson(fullspec.flux, fullspec.wavelength)
 #
 #     if "parallax" in modelbox.parameters:
 #         luminosity = (

@@ -35,7 +35,7 @@ except:
 from molmass import Formula
 from PyAstronomy.pyasl import fastRotBroad
 from schwimmbad import MPIPool
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import interp1d
 from scipy.stats import invgamma, norm
 from typeguard import typechecked
@@ -2331,7 +2331,7 @@ class AtmosphericRetrieval:
                     plt.clf()
 
                 # Bolometric flux (W m-2) from the low-resolution spectrum
-                f_bol_spec = simps(flux_lowres, wlen_lowres)
+                f_bol_spec = simpson(flux_lowres, wlen_lowres)
 
                 # Calculate again a low-resolution spectrum (R = 10) but now
                 # with the new Feautrier function from petitRADTRANS
