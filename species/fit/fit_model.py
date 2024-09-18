@@ -34,7 +34,6 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 from typeguard import typechecked
 
-from species.core import constants
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_model import ReadModel
 from species.read.read_object import ReadObject
@@ -43,10 +42,8 @@ from species.read.read_filter import ReadFilter
 from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.dust_util import (
-    convert_to_av,
     interp_lognorm,
     interp_powerlaw,
-    ism_extinction,
 )
 from species.util.model_util import (
     binary_to_single,
@@ -83,7 +80,10 @@ class FitModel:
                 str,
                 Union[
                     Optional[Tuple[Optional[float], Optional[float]]],
-                    Tuple[Optional[Tuple[Optional[float], Optional[float]]], Optional[Tuple[Optional[float], Optional[float]]]],
+                    Tuple[
+                        Optional[Tuple[Optional[float], Optional[float]]],
+                        Optional[Tuple[Optional[float], Optional[float]]],
+                    ],
                     Tuple[
                         Optional[Tuple[float, float]],
                         Optional[Tuple[float, float]],
@@ -944,9 +944,12 @@ class FitModel:
                 for spec_key, spec_value in self.spectrum.items():
                     print(f"\rInterpolating {spec_key}...", end="", flush=True)
 
+                    # The ReadModel class will make sure that wavelength range of
+                    # the selected subgrid fully includes the requested wavel_range
+
                     wavel_range = (
-                        0.9 * spec_value[0][0, 0],
-                        1.1 * spec_value[0][-1, 0],
+                        spec_value[0][0, 0],
+                        spec_value[0][-1, 0],
                     )
 
                     readmodel = ReadModel(self.model, wavel_range=wavel_range)
@@ -1019,8 +1022,16 @@ class FitModel:
                 print(" [DONE]")
 
             for spec_key, spec_value in self.spectrum.items():
+                # Use the wavelength range of the selected atmospheric model
+                # because the sampled blackbody spectrum will get interpolated
+                # to the wavelengths of the model spectrum instead of the data
+                spec_idx = list(self.spectrum.keys()).index(spec_key)
                 print(f"\rInterpolating {spec_key}...", end="", flush=True)
-                wavel_range = (0.9 * spec_value[0][0, 0], 1.1 * spec_value[0][-1, 0])
+                # wavel_range = (spec_value[0][0, 0], spec_value[0][-1, 0])
+                wavel_range = (
+                    self.modelspec[spec_idx].wl_points[0],
+                    self.modelspec[spec_idx].wl_points[-1],
+                )
                 readmodel = ReadModel("blackbody", wavel_range=wavel_range)
                 readmodel.interpolate_grid(teff_range=None)
                 self.diskspec.append(readmodel)
@@ -1169,7 +1180,7 @@ class FitModel:
         for item in self.modelpar:
             print(f"   - {item}")
 
-        # Add parallax to dictionary with Gaussian priors
+        # Add parallax to dictionary with normal priors
 
         if (
             "parallax" in self.modelpar
@@ -1523,7 +1534,8 @@ class FitModel:
 
                     if phot_flux_1 / phot_flux_0 < ratio_prior[0]:
                         return -np.inf
-                    elif phot_flux_1 / phot_flux_0 > ratio_prior[1]:
+
+                    if phot_flux_1 / phot_flux_0 > ratio_prior[1]:
                         return -np.inf
 
                 # Normal prior for the flux ratio
@@ -2057,8 +2069,8 @@ class FitModel:
         """
 
         attr_dict = {
-            "spec_type": "model",
-            "spec_name": self.model,
+            "model_type": "atmosphere",
+            "model_name": self.model,
             "ln_evidence": (self.ln_z, self.ln_z_error),
             "parallax": self.obj_parallax[0],
             "binary": self.binary,
@@ -2297,7 +2309,11 @@ class FitModel:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
 
         # Get the posterior samples
+
         post_samples = analyzer.get_equal_weighted_posterior()
+
+        # Create list with the spectrum labels that are used
+        # for fitting an additional scaling parameter
 
         spec_labels = []
         for spec_item in self.spectrum:

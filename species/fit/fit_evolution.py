@@ -29,6 +29,7 @@ from typeguard import typechecked
 
 from species.core import constants
 from species.read.read_isochrone import ReadIsochrone
+from species.util.core_util import print_section
 
 
 class FitEvolution:
@@ -44,11 +45,12 @@ class FitEvolution:
     def __init__(
         self,
         evolution_model: str,
-        object_lbol: Optional[Union[Tuple[float, float], List[Tuple[float, float]]]],
-        object_mass: Optional[
+        log_lum: Optional[Union[Tuple[float, float], List[Tuple[float, float]]]],
+        age_prior: Optional[Tuple[float, float, float]] = None,
+        mass_prior: Optional[
             Union[Tuple[float, float], List[Optional[Tuple[float, float]]]]
         ] = None,
-        object_radius: Optional[
+        radius_prior: Optional[
             Union[Tuple[float, float], List[Optional[Tuple[float, float]]]]
         ] = None,
         bounds: Optional[
@@ -71,23 +73,28 @@ class FitEvolution:
             argument, and error message is printed that includes
             a list with the isochrone models that are available
             in the current ``species`` database.
-        object_lbol : tuple(float, float), list(tuple(float, float))
+        log_lum : tuple(float, float), list(tuple(float, float))
             List with tuples that contain :math:`\\log10{L/L_\\odot}`
             and the related uncertainty for one or multiple objects.
             The list should follow the alphabetical order of companion
             characters (i.e. b, c, d, etc.) to make sure that the
             labels are correctly shown when plotting results.
-        object_mass : tuple(float, float), list(tuple(float, float)), None
+        age_prior : tuple(float, float, float), None
+            Tuple with an optional (asymmetric) normal prior for the
+            age (Myr). The tuple should contain three values, for
+            example, ``age_prior=(20., -5., +2.)``. The prior is not
+            applied if the argument is set to ``None``.
+        mass_prior : tuple(float, float), list(tuple(float, float)), None
             Optional list with tuples that contain the (dynamical)
             masses and the related uncertainty for one or multiple
-            objects. These masses we be used as Gaussian prior with
-            the fit. The order should be identical to ``object_lbol``.
-        object_radius : tuple(float, float), list(tuple(float, float)), None
+            objects. These masses we be used as normal prior with
+            the fit. The order should be identical to ``log_lum``.
+        radius_prior : tuple(float, float), list(tuple(float, float)), None
             Optional list with tuples that contain the radii (e.g.
             from and SED fit) and the related uncertainty for one
-            or multiple objects. These radii we be used as Gaussian
+            or multiple objects. These radii we be used as normal
             prior with the fit. The order should be identical to
-            ``object_lbol``.
+            ``log_lum``.
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform or
             log-uniform priors. Fixing a parameter is possible by
@@ -100,33 +107,44 @@ class FitEvolution:
             None
         """
 
+        print_section("Fit evolutionary model")
+
         self.evolution_model = evolution_model
-        self.object_lbol = object_lbol
-        self.object_mass = object_mass
-        self.object_radius = object_radius
+        self.log_lum = log_lum
+        self.mass_prior = mass_prior
+        self.radius_prior = radius_prior
         self.bounds = bounds
+        self.age_prior = age_prior
+        self.normal_prior = {}
         self.fix_param = {}
 
-        if isinstance(self.object_lbol, tuple):
-            self.object_lbol = [self.object_lbol]
-            self.object_mass = [self.object_mass]
-            self.n_planets = 1
+        print(f"Evolution model: {self.evolution_model}")
+        print(f"Luminosity log(L/Lsun): {self.log_lum}")
 
-        if isinstance(self.object_lbol, list):
-            self.n_planets = len(self.object_lbol)
+        print(f"\nAge prior: {self.age_prior}")
+        print(f"Mass prior (Rjup): {self.mass_prior}")
+        print(f"Radius prior (Rjup): {self.radius_prior}")
 
-        else:
-            self.n_planets = 1
+        if isinstance(self.log_lum, tuple):
+            self.log_lum = [self.log_lum]
 
-        if self.object_mass is None:
-            self.object_mass = []
+        self.n_planets = len(self.log_lum)
+
+        if self.mass_prior is None:
+            self.mass_prior = []
             for i in range(self.n_planets):
-                self.object_mass.append(None)
+                self.mass_prior.append(None)
 
-        if self.object_radius is None:
-            self.object_radius = []
+        elif isinstance(self.mass_prior, tuple):
+            self.mass_prior = [self.mass_prior]
+
+        if self.radius_prior is None:
+            self.radius_prior = []
             for i in range(self.n_planets):
-                self.object_radius.append(None)
+                self.radius_prior.append(None)
+
+        elif isinstance(self.radius_prior, tuple):
+            self.radius_prior = [self.radius_prior]
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -138,9 +156,15 @@ class FitEvolution:
 
         # Add grid with evolution data
 
-        with h5py.File(self.database_path, "r") as h5_file:
-            found_model = bool(f"isochrones/{evolution_model}" in h5_file)
-            tag_list = list(h5_file["isochrones"])
+        with h5py.File(self.database_path, "r") as hdf_file:
+            found_group = bool("isochrones" in hdf_file)
+
+            if found_group:
+                found_model = bool(f"isochrones/{evolution_model}" in hdf_file)
+                tag_list = list(hdf_file["isochrones"])
+            else:
+                found_model = False
+                tag_list = None
 
         if not found_model:
             raise ValueError(
@@ -159,70 +183,21 @@ class FitEvolution:
         for i in range(self.n_planets):
             self.model_par.append(f"mass_{i}")
 
-    @typechecked
-    def run_multinest(
-        self,
-        tag: str,
-        n_live_points: int = 1000,
-        output: str = "multinest/",
-    ) -> None:
-        """
-        Function to run the ``PyMultiNest`` wrapper of the
-        ``MultiNest`` sampler. While ``PyMultiNest`` can be
-        installed with ``pip`` from the PyPI repository,
-        ``MultiNest`` has to to be build manually. See the
-        ``PyMultiNest`` documentation for details:
-        http://johannesbuchner.github.io/PyMultiNest/install.html.
-        Note that the library path of ``MultiNest`` should be set
-        to the environmental variable ``LD_LIBRARY_PATH`` on a
-        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac.
-        Alternatively, the variable can be set before importing
-        the ``species`` package, for example:
+        # Read isochrone grid
 
-        .. code-block:: python
-
-            >>> import os
-            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
-            >>> import species
-
-        Parameters
-        ----------
-        tag : str
-            Database tag where the samples will be stored.
-        n_live_points : int
-            Number of live points.
-        output : str
-            Path that is used for the output files from MultiNest.
-
-        Returns
-        -------
-        NoneType
-            None
-        """
-
-        try:
-            from mpi4py import MPI
-
-            mpi_rank = MPI.COMM_WORLD.Get_rank()
-
-        except ModuleNotFoundError:
-            mpi_rank = 0
-
-        # Create the output folder if required
-
-        if mpi_rank == 0 and not os.path.exists(output):
-            os.mkdir(output)
-
-        read_iso = ReadIsochrone(
+        self.read_iso = ReadIsochrone(
             tag=self.evolution_model,
             create_regular_grid=False,
+            verbose=False,
         )
 
         # Prior boundaries
 
         if self.bounds is not None:
+            # Set manual prior boundaries
+
             bounds_grid = {}
-            for key, value in read_iso.grid_points().items():
+            for key, value in self.read_iso.grid_points().items():
                 if key in ["age", "mass"]:
                     bounds_grid[key] = (value[0], value[-1])
 
@@ -305,9 +280,9 @@ class FitEvolution:
 
             for i in range(self.n_planets):
                 if f"inflate_mass{i}" in self.bounds:
-                    if self.object_mass[i] is None:
+                    if self.mass_prior[i] is None:
                         warnings.warn(
-                            f"The object_mass with index "
+                            f"The mass_prior with index "
                             f"{i} is set to None so the "
                             f"inflate_mass{i} parameter "
                             f"will be excluded."
@@ -319,9 +294,10 @@ class FitEvolution:
                         self.model_par.append(f"inflate_mass{i}")
 
         else:
-            # Set all parameter boundaries to the grid boundaries
+            # Set all prior boundaries to the grid boundaries
+
             self.bounds = {}
-            for key, value in read_iso.grid_points().items():
+            for key, value in self.read_iso.grid_points().items():
                 if key == "age":
                     self.bounds[key] = (value[0], value[-1])
 
@@ -343,20 +319,95 @@ class FitEvolution:
             self.model_par.remove(item)
 
         if self.fix_param:
-            print(f"Fixing {len(self.fix_param)} parameters:")
+            print(f"\nFixing {len(self.fix_param)} parameters:")
 
             for key, value in self.fix_param.items():
                 print(f"   - {key} = {value}")
 
-        print(f"Fitting {len(self.model_par)} parameters:")
+        print(f"\nFitting {len(self.model_par)} parameters:")
 
         for item in self.model_par:
             print(f"   - {item}")
 
-        print("Prior boundaries:")
+        # Printing uniform and normal priors
 
-        for key, value in self.bounds.items():
-            print(f"   - {key} = {value}")
+        print("\nUniform priors (min, max):")
+
+        for param_key, param_value in self.bounds.items():
+            print(f"   - {param_key} = {param_value}")
+
+        if len(self.normal_prior) > 0:
+            print("\nNormal priors (mean, sigma):")
+            for param_key, param_value in self.normal_prior.items():
+                if -0.1 < param_value[0] < 0.1:
+                    print(
+                        f"   - {param_key} = {param_value[0]:.2e} +/- {param_value[1]:.2e}"
+                    )
+                else:
+                    print(
+                        f"   - {param_key} = {param_value[0]:.2f} +/- {param_value[1]:.2f}"
+                    )
+
+    @typechecked
+    def run_multinest(
+        self,
+        tag: str,
+        n_live_points: int = 200,
+        output: str = "multinest/",
+    ) -> None:
+        """
+        Function to run the ``PyMultiNest`` wrapper of the
+        ``MultiNest`` sampler. While ``PyMultiNest`` can be
+        installed with ``pip`` from the PyPI repository,
+        ``MultiNest`` has to to be build manually. See the
+        ``PyMultiNest`` documentation for details:
+        http://johannesbuchner.github.io/PyMultiNest/install.html.
+        Note that the library path of ``MultiNest`` should be set
+        to the environmental variable ``LD_LIBRARY_PATH`` on a
+        Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac.
+        Alternatively, the variable can be set before importing
+        the ``species`` package, for example:
+
+        .. code-block:: python
+
+            >>> import os
+            >>> os.environ['DYLD_LIBRARY_PATH'] = '/path/to/MultiNest/lib'
+            >>> import species
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the samples will be stored.
+        n_live_points : int
+            Number of live points.
+        output : str
+            Path that is used for the output files from MultiNest.
+
+        Returns
+        -------
+        NoneType
+            None
+        """
+
+        print_section("Nested sampling with MultiNest")
+
+        print(f"Database tag: {tag}")
+        print(f"Number of live points: {n_live_points}")
+        print(f"Output folder: {output}")
+        print()
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ModuleNotFoundError:
+            mpi_rank = 0
+
+        # Create the output folder if required
+
+        if mpi_rank == 0 and not os.path.exists(output):
+            os.mkdir(output)
 
         # Create a dictionary with the cube indices of the parameters
 
@@ -390,9 +441,9 @@ class FitEvolution:
                 if key != "age":
                     obj_idx = int(key.split("_")[-1])
 
-                if key[:4] == "mass" and self.object_mass[obj_idx] is not None:
-                    # Gaussian mass prior
-                    sigma = self.object_mass[obj_idx][1]
+                if key[:4] == "mass" and self.mass_prior[obj_idx] is not None:
+                    # Normal mass prior
+                    sigma = self.mass_prior[obj_idx][1]
 
                     if f"inflate_mass{obj_idx}" in self.bounds:
                         sigma += (
@@ -406,7 +457,7 @@ class FitEvolution:
 
                     cube[cube_index[f"mass_{obj_idx}"]] = stats.norm.ppf(
                         cube[cube_index[f"mass_{obj_idx}"]],
-                        loc=self.object_mass[obj_idx][0],
+                        loc=self.mass_prior[obj_idx][0],
                         scale=sigma,
                     )
 
@@ -417,7 +468,7 @@ class FitEvolution:
                     )
 
         @typechecked
-        def ln_like(params, n_dim, n_param) -> np.float64:
+        def ln_like(params, n_dim, n_param) -> Union[float, np.float64]:
             """
             Function for return the log-likelihood for
             the sampled parameter cube.
@@ -441,69 +492,85 @@ class FitEvolution:
 
             chi_square = 0.0
 
-            for i in range(self.n_planets):
+            for planet_idx in range(self.n_planets):
                 param_names = [
                     "age",
-                    f"mass_{i}",
+                    f"mass_{planet_idx}",
                 ]
+
+                if "age" in self.fix_param:
+                    age_param = self.fix_param["age"]
+                else:
+                    age_param = params[cube_index["age"]]
 
                 param_val = []
 
-                for item in param_names:
-                    if item in self.fix_param:
-                        param_val.append(self.fix_param[item])
+                for param_item in param_names:
+                    if param_item in self.fix_param:
+                        param_val.append(self.fix_param[param_item])
 
                     else:
-                        param_val.append(params[cube_index[item]])
+                        param_val.append(params[cube_index[param_item]])
 
-                if f"inflate_lbol{i}" in self.bounds:
+                if f"inflate_lbol{planet_idx}" in self.bounds:
                     lbol_var = (
-                        self.object_lbol[i][1] + params[cube_index[f"inflate_lbol{i}"]]
+                        self.log_lum[planet_idx][1]
+                        + params[cube_index[f"inflate_lbol{planet_idx}"]]
                     ) ** 2.0
                 else:
-                    lbol_var = self.object_lbol[i][1] ** 2
+                    lbol_var = self.log_lum[planet_idx][1] ** 2
 
-                iso_box = read_iso.get_isochrone(
-                    age=params[cube_index["age"]],
-                    masses=np.array([params[cube_index[f"mass_{i}"]]]),
+                iso_box = self.read_iso.get_isochrone(
+                    age=age_param,
+                    masses=np.array([params[cube_index[f"mass_{planet_idx}"]]]),
                     filters_color=None,
                     filter_mag=None,
                 )
 
                 chi_square += (
-                    self.object_lbol[i][0] - iso_box.log_lum[0]
+                    self.log_lum[planet_idx][0] - iso_box.log_lum[0]
                 ) ** 2 / lbol_var
 
                 # Only required when fitting the
                 # inflation on the Lbol variance
                 chi_square += np.log(2.0 * np.pi * lbol_var)
 
-                if self.object_mass[i] is not None:
+                if self.mass_prior[planet_idx] is not None:
                     # Only required when fitting the
                     # inflation on the mass variance
-                    if f"inflate_mass{i}" in self.bounds:
+                    if f"inflate_mass{planet_idx}" in self.bounds:
                         mass_var = (
-                            self.object_mass[i][1]
-                            + params[cube_index[f"inflate_mass{i}"]]
+                            self.mass_prior[planet_idx][1]
+                            + params[cube_index[f"inflate_mass{planet_idx}"]]
                         ) ** 2.0
                     else:
-                        mass_var = self.object_mass[i][1] ** 2
+                        mass_var = self.mass_prior[planet_idx][1] ** 2
 
                     chi_square += np.log(2.0 * np.pi * mass_var)
 
                 # Radius prior
-                if self.object_radius[i] is not None:
+                if self.radius_prior[planet_idx] is not None:
                     chi_square += (
-                        self.object_radius[i][0] - iso_box.radius[0]
-                    ) ** 2 / self.object_radius[i][1] ** 2
+                        self.radius_prior[planet_idx][0] - iso_box.radius[0]
+                    ) ** 2 / self.radius_prior[planet_idx][1] ** 2
+
+                # Age prior
+                if self.age_prior is not None:
+                    if age_param < self.age_prior[0]:
+                        # Use lower errorbar on the age
+                        chi_square += (
+                            self.age_prior[0] - age_param
+                        ) ** 2 / self.age_prior[1] ** 2
+                    else:
+                        # Use upper errorbar on the age
+                        chi_square += (
+                            self.age_prior[0] - age_param
+                        ) ** 2 / self.age_prior[2] ** 2
 
                 # ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
                 # ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
 
-            if np.isnan(chi_square):
-                log_like = -np.inf
-
-            elif np.isinf(chi_square):
+            if not np.isfinite(chi_square):
                 log_like = -np.inf
 
             else:
@@ -533,9 +600,9 @@ class FitEvolution:
         # Nested sampling global log-evidence
         ln_z = sampling_stats["nested sampling global log-evidence"]
         ln_z_error = sampling_stats["nested sampling global log-evidence error"]
-        print(f"Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
+        print(f"\nNested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
 
-        # Nested sampling global log-evidence
+        # Nested importance sampling global log-evidence
         ln_z = sampling_stats["nested importance sampling global log-evidence"]
         ln_z_error = sampling_stats[
             "nested importance sampling global log-evidence error"
@@ -544,127 +611,106 @@ class FitEvolution:
             f"Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}"
         )
 
-        # Get the best-fit (highest likelihood) point
-        print("Sample with the highest likelihood:")
-        best_params = analyzer.get_best_fit()
+        # Get the maximum likelihood sample
 
+        best_params = analyzer.get_best_fit()
         max_lnlike = best_params["log_likelihood"]
+
+        print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
-        for i, item in enumerate(best_params["parameters"]):
-            print(f"   - {self.model_par[i]} = {item:.2f}")
+        for param_idx, param_item in enumerate(best_params["parameters"]):
+            if -0.1 < param_item < 0.1:
+                print(f"   - {self.model_par[param_idx]} = {param_item:.2e}")
+            else:
+                print(f"   - {self.model_par[param_idx]} = {param_item:.2f}")
 
         # Get the posterior samples
-        samples = analyzer.get_equal_weighted_posterior()
 
-        analyzer = pymultinest.analyse.Analyzer(
-            len(self.model_par), outputfiles_basename=output
-        )
+        post_samples = analyzer.get_equal_weighted_posterior()
 
-        sampling_stats = analyzer.get_stats()
+        # Samples and ln(L)
 
-        ln_z = sampling_stats["nested sampling global log-evidence"]
-        ln_z_error = sampling_stats["nested sampling global log-evidence error"]
-        print(f"Nested sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}")
-
-        ln_z = sampling_stats["nested importance sampling global log-evidence"]
-        ln_z_error = sampling_stats[
-            "nested importance sampling global log-evidence error"
-        ]
-        print(
-            f"Nested importance sampling global log-evidence: {ln_z:.2f} +/- {ln_z_error:.2f}"
-        )
-
-        print("Sample with the highest likelihood:")
-        best_params = analyzer.get_best_fit()
-
-        max_lnlike = best_params["log_likelihood"]
-        print(f"   - Log-likelihood = {max_lnlike:.2f}")
-
-        for i, item in enumerate(best_params["parameters"]):
-            print(f"   - {self.model_par[i]} = {item:.2f}")
-
-        samples = analyzer.get_equal_weighted_posterior()
-
-        ln_prob = samples[:, -1]
+        ln_prob = post_samples[:, -1]
+        samples = post_samples[:, :-1]
 
         # Adding the fixed parameters to the samples
 
         if self.fix_param:
-            samples_tmp = samples[:, :-1]
+            samples_tmp = np.copy(samples)
             self.model_par = ["age"]
 
-            for i in range(self.n_planets):
-                self.model_par.append(f"mass_{i}")
+            for planet_idx in range(self.n_planets):
+                self.model_par.append(f"mass_{planet_idx}")
 
-            for i in range(self.n_planets):
-                if f"inflate_lbol{i}" in self.bounds:
-                    self.model_par.append(f"inflate_lbol{i}")
+            for planet_idx in range(self.n_planets):
+                if f"inflate_lbol{planet_idx}" in self.bounds:
+                    self.model_par.append(f"inflate_lbol{planet_idx}")
 
-            for i in range(self.n_planets):
-                if f"inflate_mass{i}" in self.bounds:
-                    self.model_par.append(f"inflate_mass{i}")
+            for planet_idx in range(self.n_planets):
+                if f"inflate_mass{planet_idx}" in self.bounds:
+                    self.model_par.append(f"inflate_mass{planet_idx}")
 
-            samples = np.zeros((samples_tmp.shape[0], len(self.model_par)))
+            samples = np.zeros((samples.shape[0], len(self.model_par)))
 
-            for i, key in enumerate(self.model_par):
-                if key in self.fix_param:
-                    samples[:, i] = np.full(samples_tmp.shape[0], self.fix_param[key])
+            for param_idx, param_item in enumerate(self.model_par):
+                if param_item in self.fix_param:
+                    samples[:, param_idx] = np.full(
+                        samples_tmp.shape[0], self.fix_param[param_item]
+                    )
                 else:
-                    samples[:, i] = samples_tmp[:, cube_index[key]]
+                    samples[:, param_idx] = samples_tmp[:, cube_index[param_item]]
 
-        else:
-            samples = samples[:, :-1]
-
-        # Recreate cube_index dictionary because of included fix_param
+        # Recreate cube_index dictionary because the fix_param
+        # parameters have been included in the samples array
 
         cube_index = {}
-        for i, item in enumerate(self.model_par):
-            cube_index[item] = i
+        for param_idx, param_item in enumerate(self.model_par):
+            cube_index[param_item] = param_idx
 
-        # Add atmospheric parameters (R, Teff, and log(g))
+        # Add atmospheric parameters: R, Teff, and log(g)
 
-        print("Extracting the posteriors of Teff, R, and log(g)...")
+        print("\nExtracting the posteriors of Teff, R, and log(g):")
 
         radius = np.zeros((samples.shape[0], self.n_planets))
         log_g = np.zeros((samples.shape[0], self.n_planets))
         t_eff = np.zeros((samples.shape[0], self.n_planets))
 
-        for j in tqdm(range(self.n_planets)):
-            for i in tqdm(range(samples.shape[0]), leave=False):
-                age = samples[i, cube_index["age"]]
-                mass = samples[i, cube_index[f"mass_{j}"]]
+        for planet_idx in tqdm(range(self.n_planets)):
+            for sample_idx in tqdm(range(samples.shape[0]), leave=False):
+                age = samples[sample_idx, cube_index["age"]]
+                mass = samples[sample_idx, cube_index[f"mass_{planet_idx}"]]
 
-                iso_box = read_iso.get_isochrone(
+                iso_box = self.read_iso.get_isochrone(
                     age=age,
                     masses=np.array([mass]),
                     filters_color=None,
                     filter_mag=None,
                 )
 
-                radius[i, j] = iso_box.radius[0]
-                log_g[i, j] = iso_box.logg[0]
+                radius[sample_idx, planet_idx] = iso_box.radius[0]
+                log_g[sample_idx, planet_idx] = iso_box.logg[0]
 
                 l_bol = 10.0 ** iso_box.log_lum[0] * constants.L_SUN
 
-                t_eff[i, j] = (
+                t_eff[sample_idx, planet_idx] = (
                     l_bol
                     / (
                         4.0
                         * np.pi
-                        * (radius[i, j] * constants.R_JUP) ** 2
+                        * (radius[sample_idx, planet_idx] * constants.R_JUP) ** 2
                         * constants.SIGMA_SB
                     )
                 ) ** 0.25
 
-        for i in range(self.n_planets):
-            self.model_par.append(f"teff_evol_{i}")
+        for planet_idx in range(self.n_planets):
+            self.model_par.append(f"teff_{planet_idx}")
 
-        for i in range(self.n_planets):
-            self.model_par.append(f"radius_evol_{i}")
+        for planet_idx in range(self.n_planets):
+            self.model_par.append(f"radius_{planet_idx}")
 
-        for i in range(self.n_planets):
-            self.model_par.append(f"logg_evol_{i}")
+        for planet_idx in range(self.n_planets):
+            self.model_par.append(f"logg_{planet_idx}")
 
         samples = np.hstack((samples, t_eff, radius, log_g))
 
@@ -672,8 +718,8 @@ class FitEvolution:
         # derived parameters that were included
 
         cube_index = {}
-        for i, item in enumerate(self.model_par):
-            cube_index[item] = i
+        for param_idx, param_item in enumerate(self.model_par):
+            cube_index[param_item] = param_idx
 
         # Remove outliers
 
@@ -697,73 +743,93 @@ class FitEvolution:
 
         # Apply uncertainty inflation
 
-        for i in range(self.n_planets):
-            if f"inflate_lbol{i}" in self.bounds:
-                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{i}"]])
+        for planet_idx in range(self.n_planets):
+            if f"inflate_lbol{planet_idx}" in self.bounds:
+                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{planet_idx}"]])
                 index_prob = np.argmax(ln_prob)
-                sigma_add = samples[index_prob, cube_index[f"inflate_lbol{i}"]]
+                sigma_add = samples[index_prob, cube_index[f"inflate_lbol{planet_idx}"]]
 
-                self.object_lbol[i] = (
-                    self.object_lbol[i][0],
-                    self.object_lbol[i][1] + sigma_add,
+                self.log_lum[planet_idx] = (
+                    self.log_lum[planet_idx][0],
+                    self.log_lum[planet_idx][1] + sigma_add,
                 )
 
-        for i in range(self.n_planets):
-            if f"inflate_mass{i}" in self.bounds:
-                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{i}"]])
+        for planet_idx in range(self.n_planets):
+            if f"inflate_mass{planet_idx}" in self.bounds:
+                # sigma_add = np.median(samples[:, cube_index[f"inflate_lbol{planet_idx}"]])
                 index_prob = np.argmax(ln_prob)
-                sigma_add = samples[index_prob, cube_index[f"inflate_mass{i}"]]
+                sigma_add = samples[index_prob, cube_index[f"inflate_mass{planet_idx}"]]
 
-                self.object_mass[i] = (
-                    self.object_mass[i][0],
-                    self.object_mass[i][1] + sigma_add,
+                self.mass_prior[planet_idx] = (
+                    self.mass_prior[planet_idx][0],
+                    self.mass_prior[planet_idx][1] + sigma_add,
                 )
 
-        # Set object_radius to posterior value if argument was None
+        # Set radius_prior to posterior value if argument was None
 
-        for i, item in enumerate(self.object_radius):
-            if item is None:
-                radius_samples = samples[:, cube_index[f"radius_evol_{i}"]]
-                self.object_radius[i] = (
-                    np.mean(radius_samples),
-                    np.std(radius_samples),
-                )
+        # for planet_idx, planet_item in enumerate(self.radius_prior):
+        #     if planet_item is None:
+        #         radius_samples = samples[:, cube_index[f"radius_{planet_idx}"]]
+        #         self.radius_prior[planet_idx] = (
+        #             np.mean(radius_samples),
+        #             np.std(radius_samples),
+        #         )
 
-        # Adjust object_mass to posterior value
+        # Adjust mass_prior to posterior value
 
-        # for i, item in enumerate(self.object_mass):
+        # for i, item in enumerate(self.mass_prior):
         #     mass_samples = samples[:, cube_index[f"mass_{i}"]]
-        #     self.object_mass[i] = (np.mean(mass_samples), np.std(mass_samples))
+        #     self.mass_prior[i] = (np.mean(mass_samples), np.std(mass_samples))
 
-        # Adjust object_radius to posterior value
+        # Adjust radius_prior to posterior value
 
-        # for i, item in enumerate(self.object_radius):
-        #     radius_samples = samples[:, cube_index[f"radius_evol_{i}"]]
-        #     self.object_radius[i] = (np.mean(radius_samples), np.std(radius_samples))
+        # for i, item in enumerate(self.radius_prior):
+        #     radius_samples = samples[:, cube_index[f"radius_{i}"]]
+        #     self.radius_prior[i] = (np.mean(radius_samples), np.std(radius_samples))
 
-        # Set object_mass and object_radius to NaN if no prior was provided
+        # Set age_prior to NaN if no prior was provided
 
-        for i, item in enumerate(self.object_mass):
-            if f"mass_{i}" in self.fix_param:
-                self.object_mass[i] = (self.fix_param[f"mass_{i}"], 0.0)
-            elif item is None:
-                self.object_mass[i] = np.nan
+        if self.age_prior is None:
+            self.age_prior = [np.nan]
 
-        for i, item in enumerate(self.object_radius):
-            if item is None:
-                self.object_radius[i] = np.nan
+        elif "age" in self.fix_param:
+            self.age_prior = (self.fix_param["age"], 0.0)
+
+        # Set mass_prior to NaN if no prior was provided
+
+        for planet_idx, planet_item in enumerate(self.mass_prior):
+            if f"mass_{planet_idx}" in self.fix_param:
+                self.mass_prior[planet_idx] = (
+                    self.fix_param[f"mass_{planet_idx}"],
+                    0.0,
+                )
+
+            elif planet_item is None:
+                self.mass_prior[planet_idx] = np.nan
+
+        # Set radius_prior to NaN if no prior was provided
+
+        for planet_idx, planet_item in enumerate(self.radius_prior):
+            if f"radius_{planet_idx}" in self.fix_param:
+                self.radius_prior[planet_idx] = (
+                    self.fix_param[f"radius_{planet_idx}"],
+                    0.0,
+                )
+
+            elif planet_item is None:
+                self.radius_prior[planet_idx] = np.nan
 
         # Dictionary with attributes that will be stored
 
         attr_dict = {
-            "spec_type": "model",
-            "spec_name": "evolution",
-            "evolution_model": self.evolution_model,
+            "model_type": "evolution",
+            "model_name": self.evolution_model,
             "ln_evidence": (ln_z, ln_z_error),
             "n_planets": self.n_planets,
-            "object_lbol": self.object_lbol,
-            "object_mass": self.object_mass,
-            "object_radius": self.object_radius,
+            "log_lum": self.log_lum,
+            "age_prior": self.age_prior,
+            "mass_prior": self.mass_prior,
+            "radius_prior": self.radius_prior,
         }
 
         # Add samples to the database
@@ -776,10 +842,13 @@ class FitEvolution:
             species_db = Database()
 
             species_db.add_samples(
+                tag=tag,
                 sampler="multinest",
                 samples=samples,
                 ln_prob=ln_prob,
-                tag=tag,
                 modelpar=self.model_par,
+                bounds=self.bounds,
+                normal_prior=self.normal_prior,
+                fixed_param=self.fix_param,
                 attr_dict=attr_dict,
             )

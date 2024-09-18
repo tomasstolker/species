@@ -425,16 +425,16 @@ def plot_spectrum(
         font_size = {}
 
     if "xlabel" not in font_size:
-        font_size["xlabel"] = 11.
+        font_size["xlabel"] = 11.0
 
     if "ylabel" not in font_size:
-        font_size["ylabel"] = 11.
+        font_size["ylabel"] = 11.0
 
     if "title" not in font_size:
-        font_size["title"] = 13.
+        font_size["title"] = 13.0
 
     if "legend" not in font_size:
-        font_size["legend"] = 9.
+        font_size["legend"] = 9.0
 
     print(f"Font sizes: {font_size}")
 
@@ -459,10 +459,14 @@ def plot_spectrum(
 
     if residuals is not None:
         if quantity == "flux density":
-            ax3.set_ylabel(r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=font_size["ylabel"])
+            ax3.set_ylabel(
+                r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=font_size["ylabel"]
+            )
 
         elif quantity == "flux":
-            ax3.set_ylabel(r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=font_size["ylabel"])
+            ax3.set_ylabel(
+                r"$\Delta$$F_\lambda$ ($\sigma$)", fontsize=font_size["ylabel"]
+            )
 
     if quantity == "magnitude":
         scaling = 1.0
@@ -521,7 +525,9 @@ def plot_spectrum(
                 )
 
             elif quantity == "flux":
-                ax1.set_ylabel(r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=font_size["ylabel"])
+                ax1.set_ylabel(
+                    r"$\lambda$$F_\lambda$ (W m$^{-2}$)", fontsize=font_size["ylabel"]
+                )
 
             scaling = 1.0
 
@@ -641,7 +647,10 @@ def plot_spectrum(
                         flux_scaling = wavelength
 
                     ax1.plot(
-                        wavelength, flux_scaling * flux_masked / scaling, lw=0.5, label=label
+                        wavelength,
+                        flux_scaling * flux_masked / scaling,
+                        lw=0.5,
+                        label=label,
                     )
 
         elif isinstance(box_item, list):
@@ -960,7 +969,7 @@ def plot_spectrum(
                     # wavelengths but hwhm_up and hwhm_down will
                     # be different when converting a FWHM from
                     # wavelength to frequency
-                    fwhm = (hwhm_up + hwhm_down)
+                    fwhm = hwhm_up + hwhm_down
 
                     if not plot_kwargs[j] or filter_item not in plot_kwargs[j]:
                         if not plot_kwargs[j]:
@@ -1106,18 +1115,14 @@ def plot_spectrum(
                 flux_conv = data_out[:, 1]
 
                 # Convert FWHM of filter to requested units
-                data_in = np.column_stack(
-                    [[wavel_micron + fwhm_micron / 2.0], [1.0]]
-                )
+                data_in = np.column_stack([[wavel_micron + fwhm_micron / 2.0], [1.0]])
                 data_out = convert_units(data_in, units, convert_from=False)
 
                 # Absolute value because could be negative when frequency
                 hwhm_up = np.abs(data_out[0, 0] - wavelength[0])
 
                 # Convert FWHM of filter to requested units
-                data_in = np.column_stack(
-                    [[wavel_micron - fwhm_micron / 2.0], [1.0]]
-                )
+                data_in = np.column_stack([[wavel_micron - fwhm_micron / 2.0], [1.0]])
                 data_out = convert_units(data_in, units, convert_from=False)
 
                 # Absolute value because could be negative when frequency
@@ -1128,7 +1133,7 @@ def plot_spectrum(
                 # wavelengths but hwhm_up and hwhm_down will
                 # be different when converting a FWHM from
                 # wavelength to frequency
-                fwhm = (hwhm_up + hwhm_down)
+                fwhm = hwhm_up + hwhm_down
 
                 if quantity == "flux":
                     flux_scaling = wavelength

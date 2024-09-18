@@ -296,9 +296,12 @@ def get_residuals(
 
     with h5py.File(database_path, "r") as hdf5_file:
         dset = hdf5_file[f"results/fit/{tag}/samples"]
-        spectrum = dset.attrs["spectrum"]
+        if "model_name" in dset.attrs:
+            model_name = dset.attrs["model_name"]
+        elif "spectrum" in dset.attrs:
+            model_name = dset.attrs["spectrum"]
         binary = dset.attrs["binary"]
-        print(f"Model: {spectrum}")
+        print(f"Model: {model_name}")
         print(f"Binary: {binary}")
 
         n_param = dset.attrs["n_param"]
@@ -347,7 +350,7 @@ def get_residuals(
 
         model_phot = multi_photometry(
             datatype="model",
-            spectrum=spectrum,
+            spectrum=model_name,
             filters=inc_phot,
             parameters=parameters,
             radtrans=radtrans,
@@ -378,7 +381,7 @@ def get_residuals(
     if inc_spec and objectbox.spectrum is not None:
         res_spec = {}
 
-        if spectrum == "petitradtrans":
+        if model_name == "petitradtrans":
             # Calculate the petitRADTRANS spectrum only once
             # Smoothing and resampling not with get_model
             model = radtrans.get_model(parameters)
@@ -393,7 +396,7 @@ def get_residuals(
                 wl_new = objectbox.spectrum[key][0][:, 0]
                 spec_res = objectbox.spectrum[key][3]
 
-                if spectrum == "planck":
+                if model_name == "planck":
                     readmodel = ReadPlanck(wavel_range=wavel_range)
 
                     model = readmodel.get_spectrum(
@@ -411,7 +414,7 @@ def get_residuals(
                         verbose=True,
                     )
 
-                elif spectrum == "petitradtrans":
+                elif model_name == "petitradtrans":
                     # Smoothing to the instrument resolution
                     flux_smooth = convolve_spectrum(
                         model.wavelength, model.flux, spec_res
@@ -431,7 +434,7 @@ def get_residuals(
                     # Resampling to the new wavelength points
                     # is done by the get_model method
 
-                    readmodel = ReadModel(spectrum, wavel_range=wavel_range)
+                    readmodel = ReadModel(model_name, wavel_range=wavel_range)
 
                     if "teff_0" in parameters and "teff_1" in parameters:
                         # Binary system
@@ -466,7 +469,7 @@ def get_residuals(
 
                         model_spec = create_box(
                             boxtype="model",
-                            model=spectrum,
+                            model=model_name,
                             wavelength=wl_new,
                             flux=flux_comb,
                             parameters=parameters,

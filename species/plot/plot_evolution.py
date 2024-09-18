@@ -13,6 +13,7 @@ from typeguard import typechecked
 from matplotlib.ticker import AutoMinorLocator
 
 from species.read.read_isochrone import ReadIsochrone
+from species.util.core_util import print_section
 
 
 @typechecked
@@ -28,9 +29,9 @@ def plot_cooling(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
-) -> Tuple[mpl.figure.Figure, List[List[np.ndarray]], np.ndarray]:
+) -> Tuple[mpl.figure.Figure, List[List[List[np.ndarray]]], np.ndarray]:
     """
-    Function for plotting samples of cooling curves that are
+    Function for plotting samples of cooling tracks that are
     randomly drawn from the posterior distributions of the
     age and mass parameters that have been estimated with
     :class:`~species.fit.fit_evolution.FitEvolution`.
@@ -40,7 +41,7 @@ def plot_cooling(
     tag : str
         Database tag where the samples are stored
     n_samples : int
-        Number of randomly drawn cooling curves that will be plotted.
+        Number of randomly drawn cooling tracks that will be plotted.
     cooling_param : str
         Type of cooling parameter that will be plotted
         ('luminosity' or 'radius').
@@ -72,7 +73,7 @@ def plot_cooling(
         The ``Figure`` object that can be used for further
         customization of the plot.
     np.ndarray
-        Array with the cooling curves. The array contains
+        Array with the cooling tracks. The array contains
         :math:`L/L_\\odot` or radius as function of time
         for each companion and sample, so the shape is
         (n_companions, n_samples, n_ages).
@@ -80,6 +81,12 @@ def plot_cooling(
         Array with the random indices that have been
         sampled from the posterior distribution.
     """
+
+    print_section("Plot cooling tracks")
+
+    print(f"Database tag: {tag}")
+    print(f"Number of samples: {n_samples}")
+    print(f"Model parameters: {cooling_param}")
 
     plt.close()
 
@@ -98,24 +105,26 @@ def plot_cooling(
     samples = samples_box.samples
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
-    evolution_model = attr["evolution_model"]
-    object_lbol = attr["object_lbol"]
-    object_radius = attr["object_radius"]
-    object_age = (np.mean(samples[:, 0]), np.std(samples[:, 0]))
+    model_name = attr["model_name"]
+    log_lum = attr["log_lum"]
+    age_prior = attr["age_prior"]
+    radius_prior = attr["radius_prior"]
 
-    read_iso = ReadIsochrone(evolution_model)
+    if np.isnan(age_prior[0]):
+        param_idx = samples_box.parameters.index("age")
+        age_prior = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+    else:
+        # Asymmetric normal prior set in FitEvolution
+        age_prior = [
+            age_prior[0],
+            age_prior[0] + age_prior[1],
+            age_prior[0] + age_prior[2],
+        ]
+
+    read_iso = ReadIsochrone(model_name)
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    if output is None:
-        print("Plotting cooling curves...", end="", flush=True)
-    else:
-        print(
-            f"Plotting cooling curves: {output}...",
-            end="",
-            flush=True,
-        )
 
     fig = plt.figure(1, figsize=figsize)
     gridsp = mpl.gridspec.GridSpec(n_planets, 1)
@@ -131,11 +140,21 @@ def plot_cooling(
     if yscale is None:
         yscale = "linear"
 
-    cool_curves = []
+    cool_tracks = []
     for i in range(n_planets):
-        cool_curves.append([])
+        cool_tracks.append([])
 
     for i in range(n_planets):
+        if not isinstance(radius_prior[i], np.ndarray) and np.isnan(radius_prior[i]):
+            param_idx = samples_box.parameters.index(f"radius_{i}")
+            radius_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+        else:
+            radius_tmp = [
+                radius_prior[i][0],
+                radius_prior[i][0] - radius_prior[i][1],
+                radius_prior[i][0] + radius_prior[i][1],
+            ]
+
         ax[i].set_xscale(xscale)
         ax[i].set_yscale(yscale)
 
@@ -201,17 +220,17 @@ def plot_cooling(
             for planet_idx in range(n_planets):
                 mass = samples[sample_idx, 1 + planet_idx]
 
-                cool_box = read_iso.get_cooling_curve(mass=mass, ages=None)
+                cool_box = read_iso.get_cooling_track(mass=mass, ages=None)
 
                 if cooling_param == "luminosity":
-                    cool_curves[planet_idx].append(cool_box.log_lum)
+                    cool_tracks[planet_idx].append([cool_box.age, cool_box.log_lum])
 
                 elif cooling_param == "radius":
-                    cool_curves[planet_idx].append(cool_box.radius)
+                    cool_tracks[planet_idx].append([cool_box.age, cool_box.radius])
 
                 ax[planet_idx].plot(
-                    cool_box.age,
-                    cool_curves[planet_idx][-1],
+                    cool_tracks[planet_idx][-1][0],
+                    cool_tracks[planet_idx][-1][1],
                     lw=0.5,
                     color="gray",
                     alpha=0.5,
@@ -220,21 +239,25 @@ def plot_cooling(
     for i in range(n_planets):
         if cooling_param == "luminosity":
             ax[i].errorbar(
-                object_age[0],
-                object_lbol[i][0],
-                xerr=object_age[1],
-                yerr=object_lbol[i][1],
+                [age_prior[0]],
+                [log_lum[i][0]],
+                xerr=[
+                    [age_prior[0] - np.abs(age_prior[1])],
+                    [age_prior[2] - age_prior[0]],
+                ],
+                yerr=[log_lum[i][1]],
                 color="tab:orange",
             )
 
-        elif cooling_param == "radius" and isinstance(object_radius[i], np.ndarray):
-            # Only plot the data if these were provided as optional
-            # argument of object_radius when using FitEvolution
+        elif cooling_param == "radius":
             ax[i].errorbar(
-                object_age[0],
-                object_radius[i][0],
-                xerr=object_age[1],
-                yerr=object_radius[i][1],
+                [age_prior[0]],
+                [radius_tmp[0]],
+                xerr=[
+                    [age_prior[0] - np.abs(age_prior[1])],
+                    [age_prior[2] - age_prior[0]],
+                ],
+                yerr=[[radius_tmp[0] - radius_tmp[1]], [radius_tmp[2] - radius_tmp[0]]],
                 color="tab:orange",
             )
 
@@ -244,11 +267,10 @@ def plot_cooling(
     if output is None:
         plt.show()
     else:
+        print(f"\nOutput: {output}")
         plt.savefig(output, bbox_inches="tight")
 
-    print(" [DONE]")
-
-    return fig, cool_curves, ran_indices
+    return fig, cool_tracks, ran_indices
 
 
 @typechecked
@@ -263,7 +285,7 @@ def plot_isochrones(
     offset: Optional[Tuple[float, float]] = None,
     figsize: Optional[Tuple[float, float]] = (4.0, 2.5),
     output: Optional[str] = None,
-) -> Tuple[mpl.figure.Figure, List[List[np.ndarray]], np.ndarray]:
+) -> Tuple[mpl.figure.Figure, List[List[List[np.ndarray]]], np.ndarray]:
     """
     Function for plotting samples of isochrones that are
     randomly drawn from the posterior distributions of the
@@ -277,7 +299,7 @@ def plot_isochrones(
     tag : str
         Database tag where the samples are stored
     n_samples : int
-        Number of randomly drawn cooling curves that will be plotted.
+        Number of randomly drawn cooling tracks that will be plotted.
     xlim : tuple(float, float), None
         Limits of the wavelength axis. Automatic limits are used if
         the argument is set to ``None``.
@@ -314,6 +336,11 @@ def plot_isochrones(
         sampled from the posterior distribution.
     """
 
+    print_section("Plot isochrones")
+
+    print(f"Database tag: {tag}")
+    print(f"Number of samples: {n_samples}")
+
     plt.close()
 
     from species.data.database import Database
@@ -324,23 +351,26 @@ def plot_isochrones(
     samples = samples_box.samples
     attr = samples_box.attributes
     n_planets = attr["n_planets"]
-    evolution_model = attr["evolution_model"]
-    object_lbol = attr["object_lbol"]
-    object_mass = attr["object_mass"]
+    model_name = attr["model_name"]
+    log_lum = attr["log_lum"]
+    age_prior = attr["age_prior"]
+    mass_prior = attr["mass_prior"]
 
-    read_iso = ReadIsochrone(evolution_model)
+    if np.isnan(age_prior[0]):
+        param_idx = samples_box.parameters.index("age")
+        age_prior = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+    else:
+        # Asymmetric normal prior set in FitEvolution
+        age_prior = [
+            age_prior[0],
+            age_prior[0] + age_prior[1],
+            age_prior[0] + age_prior[2],
+        ]
+
+    read_iso = ReadIsochrone(model_name)
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    if output is None:
-        print("Plotting isochrones...", end="", flush=True)
-    else:
-        print(
-            f"Plotting isochrones: {output}...",
-            end="",
-            flush=True,
-        )
 
     fig = plt.figure(1, figsize=figsize)
     gridsp = mpl.gridspec.GridSpec(n_planets, 1)
@@ -424,22 +454,32 @@ def plot_isochrones(
 
             iso_box = read_iso.get_isochrone(age=age, masses=None)
 
-            isochrones[planet_idx].append(iso_box.log_lum)
+            isochrones[planet_idx].append([iso_box.mass, iso_box.log_lum])
 
             ax[planet_idx].plot(
-                iso_box.mass,
-                isochrones[planet_idx][-1],
+                isochrones[planet_idx][-1][0],
+                isochrones[planet_idx][-1][1],
                 lw=0.5,
                 color="gray",
                 alpha=0.5,
             )
 
     for i in range(n_planets):
+        if not isinstance(mass_prior[i], np.ndarray) and np.isnan(mass_prior[i]):
+            param_idx = samples_box.parameters.index(f"mass_{i}")
+            mass_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+        else:
+            mass_tmp = [
+                mass_prior[i][0],
+                mass_prior[i][0] - mass_prior[i][1],
+                mass_prior[i][0] + mass_prior[i][1],
+            ]
+
         ax[i].errorbar(
-            object_mass[i][0],
-            object_lbol[i][0],
-            xerr=object_mass[i][1],
-            yerr=object_lbol[i][1],
+            [mass_tmp[0]],
+            [log_lum[i][0]],
+            xerr=[[mass_tmp[0] - mass_tmp[1]], [mass_tmp[2] - mass_tmp[0]]],
+            yerr=[log_lum[i][1]],
             color="tab:orange",
         )
 
@@ -447,10 +487,9 @@ def plot_isochrones(
         ax[0].set_title(title, fontsize=18.0)
 
     if output is None:
+        print(f"\nOutput: {output}")
         plt.show()
     else:
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig, isochrones, ran_indices

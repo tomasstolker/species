@@ -313,7 +313,20 @@ def plot_posterior(
 
     print(f"Database tag: {tag}")
     print(f"Object type: {object_type}")
-    print(f"Manual parameters: {param_inc}")
+    print(f"Manual parameters: {param_inc}\n")
+
+    if "model_type" in box.attributes:
+        print((f"Model type: {box.attributes['model_type']}"))
+    elif "spec_type" in box.attributes:
+        print((f"Model type: {box.attributes['spec_type']}"))
+
+    if "model_name" in box.attributes:
+        print((f"Model name: {box.attributes['model_name']}"))
+    elif "spec_name" in box.attributes:
+        print((f"Model type: {box.attributes['spec_name']}"))
+
+    if "sampler" in box.attributes:
+        print((f"Sampler: {box.attributes['sampler']}"))
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -971,6 +984,20 @@ def plot_posterior(
         ndim = len(param_inc)
         samples = param_new
 
+    # Only for fitting evolutionary models
+    # Remove index from parameter names when fitting 1 planet
+
+    if "model_type" in box.attributes and box.attributes["model_type"] == "evolution":
+        if box.attributes["n_planets"] == 1:
+            param_copy = box.parameters.copy()
+            box.parameters = []
+
+            for param_item in param_copy:
+                if param_item[-2:] == "_0":
+                    box.parameters.append(param_item[:-2])
+                else:
+                    box.parameters.append(param_item)
+
     # Update axes labels
 
     box_param = box.parameters.copy()
@@ -1000,7 +1027,7 @@ def plot_posterior(
 
     if max_prob:
         max_idx = np.argmax(box.ln_prob)
-        max_sample = samples[max_idx, ]
+        max_sample = samples[max_idx,]
 
     if isinstance(title_fmt, list) and len(title_fmt) != ndim:
         raise ValueError(
@@ -1041,6 +1068,8 @@ def plot_posterior(
             hist_title = f"{param_label} = {best_fit} {unit_label}"
 
         hist_titles.append(hist_title)
+
+    # Create corner plot
 
     fig = corner.corner(
         samples,
@@ -1148,12 +1177,10 @@ def plot_posterior(
     if title:
         fig.suptitle(title, y=1.02, fontsize=16)
 
-    if output is not None:
-        print(f"\nOutput: {output}")
-
     if output is None:
         plt.show()
     else:
+        print(f"\nOutput: {output}")
         plt.savefig(output, bbox_inches="tight")
 
     return fig

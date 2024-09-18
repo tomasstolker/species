@@ -50,6 +50,7 @@ class ReadIsochrone:
         tag: Optional[str] = None,
         create_regular_grid: bool = False,
         extrapolate: bool = False,
+        verbose: bool = True,
     ) -> None:
         """
         Parameters
@@ -76,12 +77,14 @@ class ReadIsochrone:
             since there might be inaccuracies in the extrapolated
             parts of the parameter space, in particular for the
             cooling curves extracted with
-            :func:`~species.read.read_isochrone.ReadIsochrone.get_cooling_curve`.
+            :func:`~species.read.read_isochrone.ReadIsochrone.get_cooling_track`.
         extrapolate : str
             DEPRECATED: This parameter has been renamed to
             ``create_regular_grid`` and will be removed in a future
             release. Please use the ``create_regular_grid``
             parameter instead.
+        verbose : bool
+            Print output.
 
         Returns
         -------
@@ -89,14 +92,15 @@ class ReadIsochrone:
             None
         """
 
-        print_section("Read isochrone grid")
-
         self.tag = tag
         self.extrapolate = extrapolate
         self.create_regular_grid = create_regular_grid
+        self.verbose = verbose
 
-        print(f"Database tag: {self.tag}")
-        print(f"Create regular grid: {self.create_regular_grid}")
+        if self.verbose:
+            print_section("Read isochrone grid")
+            print(f"Database tag: {self.tag}")
+            print(f"Create regular grid: {self.create_regular_grid}")
 
         if self.extrapolate:
             warnings.warn(
@@ -191,7 +195,8 @@ class ReadIsochrone:
                 self.extra_param["feh"] = float(tag_split[1][:-5])
                 self.extra_param["fsed"] = float(tag_split[2])
 
-            print(f"\nSetting 'extra_param' attribute: {self.extra_param}")
+            if self.verbose:
+                print(f"\nSetting 'extra_param' attribute: {self.extra_param}")
 
     @typechecked
     def _read_data(
@@ -710,7 +715,7 @@ class ReadIsochrone:
         )
 
     @typechecked
-    def get_cooling_curve(
+    def get_cooling_track(
         self,
         mass: float,
         ages: Optional[np.ndarray] = None,

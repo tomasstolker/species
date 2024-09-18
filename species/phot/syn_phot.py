@@ -115,10 +115,7 @@ class SyntheticPhotometry:
             self.wavel_range = read_filt.wavelength_range()
 
         with h5py.File(self.database, "r") as hdf5_file:
-            if "spectra/calibration/vega" in hdf5_file:
-                vega_found = True
-            else:
-                vega_found = False
+            vega_found = "spectra/calibration/vega" in hdf5_file
 
         if not vega_found:
             with h5py.File(self.database, "a") as hdf5_file:
@@ -285,7 +282,7 @@ class SyntheticPhotometry:
                         f"The filter profile of {self.filter_name} "
                         f"({self.wavel_range[0]:.4f}-{self.wavel_range[1]:.4f}) "
                         f"lies outside the wavelength range of the spectrum. "
-                        f"The synthetic flux is set to NaN."
+                        f"The returned synthetic flux is therefore set to NaN."
                     )
 
                     syn_flux = np.nan

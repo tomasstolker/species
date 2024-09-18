@@ -214,8 +214,8 @@ class FitSpectrum:
         # Dictionary with attributes that will be stored
 
         attr_dict = {
-            "spec_type": "calibration",
-            "spec_name": self.spectrum,
+            "model_type": "calibration",
+            "model_name": self.spectrum,
             "mean_accept": np.mean(ens_sampler.acceptance_fraction),
         }
 

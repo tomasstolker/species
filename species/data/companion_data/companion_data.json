@@ -112,7 +112,7 @@
             "Currie et al. 2013",
             "Gaia Early Data Release 3",
             "Males et al. 2014",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Miret-Roig et al. 2020",
             "Nowak et al. 2020",
             "Stolker et al. 2019",
@@ -152,7 +152,7 @@
         ],
         "references": [
             "Gaia Early Data Release 3",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Miret-Roig et al. 2020",
             "Nowak et al. 2020"
         ]
@@ -369,7 +369,7 @@
             "Gaia Early Data Release 3",
             "Galicher et al. 2011",
             "Marois et al. 2010",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Wang et al. 2018",
             "Zurlo et al. 2016"
         ]
@@ -448,7 +448,7 @@
             "Gaia Early Data Release 3",
             "Galicher et al. 2011",
             "Marois et al. 2010",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Wang et al. 2018",
             "Zurlo et al. 2016"
         ]
@@ -527,7 +527,7 @@
             "Gaia Early Data Release 3",
             "Galicher et al. 2011",
             "Marois et al. 2010",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Wang et al. 2018",
             "Zurlo et al. 2016"
         ]
@@ -596,7 +596,7 @@
             "Currie et al. 2014",
             "Gaia Early Data Release 3",
             "Marois et al. 2010",
-            "Mirek Brandt et al. 2021",
+            "Brandt et al. 2021",
             "Wang et al. 2018",
             "Zurlo et al. 2016"
         ]
@@ -947,8 +947,9 @@
             0.03
         ],
         "mass_companion": [
-            20.0,
-            20.0
+            12.7,
+            -1.0,
+            1.2
         ],
         "accretion": false,
         "age": [

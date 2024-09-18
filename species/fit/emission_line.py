@@ -1163,8 +1163,8 @@ class EmissionLine:
         # Dictionary with attributes that will be stored
 
         attr_dict = {
-            "spec_type": "model",
-            "spec_name": "gaussian",
+            "model_type": "emission line",
+            "model_name": "gaussian",
             "ln_evidence": (ln_z, ln_z_error),
             "parallax": self.parallax,
         }

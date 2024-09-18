@@ -187,10 +187,14 @@ class ReadModel:
             wl_index = np.ones(wl_points.shape[0], dtype=bool)
 
         else:
-            wl_index = (wl_points > self.wavel_range[0]) & (
-                wl_points < self.wavel_range[1]
+            wl_index = (wl_points >= self.wavel_range[0]) & (
+                wl_points <= self.wavel_range[1]
             )
             index = np.where(wl_index)[0]
+
+            # Add extra wavelength points at the boundary to make
+            # sure that the wavelength range of a filter profile
+            # is fully included by the model spectrum
 
             if index[0] - 1 >= 0:
                 wl_index[index[0] - 1] = True
@@ -233,6 +237,20 @@ class ReadModel:
                 grid_points["teff"] <= teff_range[1]
             )
 
+            # Add extra Teff points at the boundary to make sure
+            # sure that the Teff prior of a fit is fully included
+            # in the Teff range that is interpolated
+
+            first_teff = np.where(teff_select)[0][0]
+
+            if first_teff - 1 >= 0:
+                teff_select[first_teff - 1] = True
+
+            last_teff = np.where(teff_select)[0][-1]
+
+            if last_teff + 1 < teff_select.size:
+                teff_select[last_teff + 1] = True
+
             grid_points["teff"] = grid_points["teff"][teff_select]
 
         else:
@@ -261,7 +279,7 @@ class ReadModel:
             grid_points,
             grid_flux,
             method="linear",
-            bounds_error=False,
+            bounds_error=True,
             fill_value=np.nan,
         )
 
@@ -1836,10 +1854,10 @@ class ReadModel:
         applying extinction, the integrated luminosity should in
         principle be the same as the luminosity calculated directly
         from the :math:`T_\\mathrm{eff}` and radius parameters. Unless
-        a particular spectrum from a radiative-convective model had
-        not fully converged, so it can be useful to check if the
-        integrated luminosity is indeed consistent with the
-        :math:`T_\\mathrm{eff}` of the model.
+        the radiative-convective model had not fully converged for a
+        particular set of input parameters. It can thus be useful
+        to check if the integrated luminosity is indeed consistent
+        with the :math:`T_\\mathrm{eff}` of the model.
 
         Parameters
         ----------
@@ -2071,7 +2089,6 @@ class ReadModel:
     #     with self.open_database() as hdf5_file:
     #         wl_points = np.array(hdf5_file[f"models/{self.model}/wavelength"])
     #         grid_flux = np.array(hdf5_file[f"models/{self.model}/flux"])
-    #     print(grid_flux.shape)
     #
     #     import matplotlib.pyplot as plt
     #
@@ -2100,7 +2117,6 @@ class ReadModel:
     #         # Create list with grid points
     #
     #         grid_points = list(grid_points.values())
-    #         print(grid_points)
     #
     #         # Get the boolean array for selecting the fluxes
     #         # within the requested wavelength range
