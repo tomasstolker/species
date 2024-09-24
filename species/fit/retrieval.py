@@ -3583,7 +3583,8 @@ class AtmosphericRetrieval:
 
         for spec_value in self.spectrum.values():
             data_spec_res.append(spec_value[3])
-
+        if len(data_spec_res) == 0:
+            data_spec_res.append(40) # for photometry only retrievals
         max_spec_res = max(data_spec_res)
 
         if max_spec_res > 1000.0 and self.res_mode == "c-k":
