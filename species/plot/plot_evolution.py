@@ -44,7 +44,7 @@ def plot_cooling(
         Number of randomly drawn cooling tracks that will be plotted.
     cooling_param : str
         Type of cooling parameter that will be plotted
-        ('luminosity' or 'radius').
+        ('luminosity', 'radius', 'teff', or 'logg').
     xlim : tuple(float, float), None
         Limits of the wavelength axis. Automatic limits are used if
         the argument is set to ``None``.
@@ -90,11 +90,11 @@ def plot_cooling(
 
     plt.close()
 
-    if cooling_param not in ["luminosity", "radius"]:
+    if cooling_param not in ["luminosity", "radius", "teff", "logg"]:
         raise ValueError(
             "The argument of 'cooling_parameter' is "
             "not valid and should be set to "
-            "'luminosity' or 'radius'."
+            "'luminosity', 'radius', 'teff', or 'logg'."
         )
 
     from species.data.database import Database
@@ -155,6 +155,12 @@ def plot_cooling(
                 radius_prior[i][0] + radius_prior[i][1],
             ]
 
+        param_idx = samples_box.parameters.index(f"teff_{i}")
+        teff_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
+        param_idx = samples_box.parameters.index(f"logg_{i}")
+        logg_tmp = np.percentile(samples[:, param_idx], [50.0, 16.0, 84.0])
+
         ax[i].set_xscale(xscale)
         ax[i].set_yscale(yscale)
 
@@ -199,10 +205,16 @@ def plot_cooling(
             ax[i].set_xlabel("Age (Myr)", fontsize=13)
 
         if cooling_param == "luminosity":
-            ax[i].set_ylabel("$\\log(L/L_\\odot)$", fontsize=13)
+            ax[i].set_ylabel("$\log(L/L_\odot)$", fontsize=13)
 
         elif cooling_param == "radius":
-            ax[i].set_ylabel("Radius ($R_\\mathrm{J}$)", fontsize=13)
+            ax[i].set_ylabel("Radius ($R_\mathrm{J}$)", fontsize=13)
+
+        elif cooling_param == "teff":
+            ax[i].set_ylabel("$T_\mathrm{eff}$ (K)", fontsize=13)
+
+        elif cooling_param == "logg":
+            ax[i].set_ylabel("$\log\,g$", fontsize=13)
 
         if xlim is not None:
             ax[i].set_xlim(xlim[0], xlim[1])
@@ -227,6 +239,12 @@ def plot_cooling(
 
                 elif cooling_param == "radius":
                     cool_tracks[planet_idx].append([cool_box.age, cool_box.radius])
+
+                elif cooling_param == "teff":
+                    cool_tracks[planet_idx].append([cool_box.age, cool_box.teff])
+
+                elif cooling_param == "logg":
+                    cool_tracks[planet_idx].append([cool_box.age, cool_box.logg])
 
                 ax[planet_idx].plot(
                     cool_tracks[planet_idx][-1][0],
@@ -258,6 +276,30 @@ def plot_cooling(
                     [age_prior[2] - age_prior[0]],
                 ],
                 yerr=[[radius_tmp[0] - radius_tmp[1]], [radius_tmp[2] - radius_tmp[0]]],
+                color="tab:orange",
+            )
+
+        elif cooling_param == "teff":
+            ax[i].errorbar(
+                [age_prior[0]],
+                [teff_tmp[0]],
+                xerr=[
+                    [age_prior[0] - np.abs(age_prior[1])],
+                    [age_prior[2] - age_prior[0]],
+                ],
+                yerr=[[teff_tmp[0] - teff_tmp[1]], [teff_tmp[2] - teff_tmp[0]]],
+                color="tab:orange",
+            )
+
+        elif cooling_param == "logg":
+            ax[i].errorbar(
+                [age_prior[0]],
+                [logg_tmp[0]],
+                xerr=[
+                    [age_prior[0] - np.abs(age_prior[1])],
+                    [age_prior[2] - age_prior[0]],
+                ],
+                yerr=[[logg_tmp[0] - logg_tmp[1]], [logg_tmp[2] - logg_tmp[0]]],
                 color="tab:orange",
             )
 

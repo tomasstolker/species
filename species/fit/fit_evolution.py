@@ -359,14 +359,14 @@ class FitEvolution:
         Function to run the ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be
         installed with ``pip`` from the PyPI repository,
-        ``MultiNest`` has to to be build manually. See the
+        ``MultiNest`` has to be build manually. See the
         ``PyMultiNest`` documentation for details:
         http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set
         to the environmental variable ``LD_LIBRARY_PATH`` on a
         Linux machine and ``DYLD_LIBRARY_PATH`` on a Mac.
-        Alternatively, the variable can be set before importing
-        the ``species`` package, for example:
+        Alternatively, the variable can be set before
+        importing the ``species`` package, for example:
 
         .. code-block:: python
 

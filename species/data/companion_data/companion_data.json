@@ -221,6 +221,37 @@
             "Stolker et al. 2020a"
         ]
     },
+    "HIP 99770 b": {
+        "simbad": "* b03 Cyg",
+        "parallax": [
+            24.5456,
+            0.0911
+        ],
+        "semi_major": [
+            16.9,
+            -1.8,
+            3.4
+        ],
+        "mass_star": [
+            1.85,
+            0.19
+        ],
+        "mass_companion": [
+            16.1,
+            -5.0,
+            5.4
+        ],
+        "accretion": false,
+        "age": [
+            45.0,
+            -5.0,
+            5.0
+        ],
+        "references": [
+            "Currie et al. 2023",
+            "Zuckerman 2019"
+        ]
+    },
     "51 Eri b": {
         "simbad": "51 Eri",
         "parallax": [
@@ -699,7 +730,7 @@
         "semi_major": [
             20.8,
             -0.7,
-            0.7
+            0.6
         ],
         "mass_star": [
             0.98,
@@ -720,10 +751,16 @@
                 2.3e-19
             ]
         },
+        "age": [
+            5.4,
+            -1.0,
+            1.0
+        ],
         "references": [
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
             "Hashimoto et al. 2020",
+            "Müller et al. 2018",
             "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"
@@ -747,7 +784,7 @@
         },
         "semi_major": [
             34.3,
-            -2.2,
+            -1.8,
             2.2
         ],
         "mass_star": [
@@ -759,9 +796,15 @@
             4.7
         ],
         "accretion": true,
+        "age": [
+            5.4,
+            -1.0,
+            1.0
+        ],
         "references": [
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
+            "Müller et al. 2018",
             "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"

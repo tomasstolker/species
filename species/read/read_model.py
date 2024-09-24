@@ -1853,7 +1853,7 @@ class ReadModel:
         extinct luminosity and not the intrinsic luminosity. Without
         applying extinction, the integrated luminosity should in
         principle be the same as the luminosity calculated directly
-        from the :math:`T_\\mathrm{eff}` and radius parameters. Unless
+        from the :math:`T_\\mathrm{eff}` and radius parameters, unless
         the radiative-convective model had not fully converged for a
         particular set of input parameters. It can thus be useful
         to check if the integrated luminosity is indeed consistent
