@@ -24,7 +24,7 @@ try:
 except:
     warnings.warn(
         "PyMultiNest could not be imported. "
-        "Perhaps because MultiNest was not build "
+        "Perhaps because MultiNest was not built "
         "and/or found at the LD_LIBRARY_PATH "
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
@@ -2095,7 +2095,7 @@ class FitModel:
         Function to run the ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be
         installed with ``pip`` from the PyPI repository,
-        ``MultiNest`` has to to be build manually. See the
+        ``MultiNest`` has to to be built manually. See the
         `PyMultiNest documentation <http://johannesbuchner.
         github.io/PyMultiNest/install.html>`_. The library
         path of ``MultiNest`` should be set to the

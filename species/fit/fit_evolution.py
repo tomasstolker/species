@@ -18,7 +18,7 @@ try:
 except:
     warnings.warn(
         "PyMultiNest could not be imported. "
-        "Perhaps because MultiNest was not build "
+        "Perhaps because MultiNest was not built "
         "and/or found at the LD_LIBRARY_PATH "
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
@@ -87,14 +87,19 @@ class FitEvolution:
         mass_prior : tuple(float, float), list(tuple(float, float)), None
             Optional list with tuples that contain the (dynamical)
             masses and the related uncertainty for one or multiple
-            objects. These masses we be used as normal prior with
+            objects. These masses will be used as normal prior with
             the fit. The order should be identical to ``log_lum``.
+            For fitting multiple objects, an item in the list can be
+            to ``None`` to not apply the normal prior on a specific
+            object.
         radius_prior : tuple(float, float), list(tuple(float, float)), None
             Optional list with tuples that contain the radii (e.g.
             from and SED fit) and the related uncertainty for one
-            or multiple objects. These radii we be used as normal
+            or multiple objects. These radii will be used as normal
             prior with the fit. The order should be identical to
-            ``log_lum``.
+            ``log_lum``. For fitting multiple objects, an item in
+            the list can be to ``None`` to not apply the normal
+            prior on a specific object.
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform or
             log-uniform priors. Fixing a parameter is possible by
@@ -120,10 +125,6 @@ class FitEvolution:
 
         print(f"Evolution model: {self.evolution_model}")
         print(f"Luminosity log(L/Lsun): {self.log_lum}")
-
-        print(f"\nAge prior: {self.age_prior}")
-        print(f"Mass prior (Rjup): {self.mass_prior}")
-        print(f"Radius prior (Rjup): {self.radius_prior}")
 
         if isinstance(self.log_lum, tuple):
             self.log_lum = [self.log_lum]
@@ -191,88 +192,81 @@ class FitEvolution:
             verbose=False,
         )
 
+        # Check if the log_lum values are within the
+        # available range of the evolutionary grid
+
+        _, _, _, _, grid_log_lum, _, _, _ = self.read_iso._read_data()
+
+        for planet_idx in range(self.n_planets):
+            if self.log_lum[planet_idx][0] < np.amin(grid_log_lum):
+                warnings.warn(
+                    f"The luminosity of the object with index {planet_idx}, "
+                    f"log_lum={self.log_lum[planet_idx][0]}, is smaller than "
+                    f"the minimum luminosity in the '{self.evolution_model}' "
+                    f"grid, log(L/Lsun)={np.amin(grid_log_lum)}."
+                )
+
+            if self.log_lum[planet_idx][0] > np.amax(grid_log_lum):
+                warnings.warn(
+                    f"The luminosity of the object with index {planet_idx}, "
+                    f"log_lum={self.log_lum[planet_idx][0]}, is larger than "
+                    f"the maximum luminosity in the '{self.evolution_model}' "
+                    f"grid, log(L/Lsun)={np.amax(grid_log_lum)}."
+                )
+
         # Prior boundaries
 
         if self.bounds is not None:
             # Set manual prior boundaries
 
             bounds_grid = {}
-            for key, value in self.read_iso.grid_points().items():
-                if key in ["age", "mass"]:
-                    bounds_grid[key] = (value[0], value[-1])
+            for param_key, param_value in self.read_iso.grid_points().items():
+                if param_key in ["age", "mass"]:
+                    bounds_grid[param_key] = (param_value[0], param_value[-1])
 
-            for key, value in bounds_grid.items():
-                if key not in self.bounds:
-                    # Set the parameter boundaries to the grid
-                    # boundaries if set to None or not found
-                    if key == "age":
-                        self.bounds[key] = bounds_grid[key]
+            for param_key, param_value in bounds_grid.items():
+                for planet_idx in range(self.n_planets):
+                    if param_key == "age":
+                        param_new = param_key
+                    else:
+                        param_new = f"{param_key}_{planet_idx}"
+
+                    if param_new not in self.bounds:
+                        # Set the parameter boundaries to the grid
+                        # boundaries if set to None or not found
+                        self.bounds[param_new] = bounds_grid[param_key]
 
                     else:
-                        for i in range(self.n_planets):
-                            if f"{key}_{i}" not in self.bounds:
-                                self.bounds[f"{key}_{i}"] = bounds_grid[key]
-
-                else:
-                    if self.bounds[key][0] < bounds_grid[key][0]:
-                        warnings.warn(
-                            f"The lower bound on {key} "
-                            f"({self.bounds[key][0]}) is smaller than "
-                            f"the lower bound from the available "
-                            f"evolution model grid "
-                            f"({bounds_grid[key][0]}). The lower bound "
-                            f"of the {key} prior will be adjusted to "
-                            f"{bounds_grid[key][0]}."
-                        )
-
-                        if key == "age":
-                            self.bounds[key] = (
-                                bounds_grid[key][0],
-                                self.bounds[key][1],
+                        if self.bounds[param_new][0] < bounds_grid[param_key][0]:
+                            warnings.warn(
+                                f"The lower bound on {param_new} "
+                                f"({self.bounds[param_new][0]}) is smaller than "
+                                f"the lower bound from the available "
+                                f"evolution model grid "
+                                f"({bounds_grid[param_key][0]}). The lower bound "
+                                f"of the {param_new} prior will be adjusted to "
+                                f"{bounds_grid[param_key][0]}."
                             )
 
-                        else:
-                            for i in range(self.n_planets):
-                                self.bounds[f"{key}_{i}"] = (
-                                    bounds_grid[key][0],
-                                    self.bounds[key][1],
-                                )
-
-                    if self.bounds[key][1] > bounds_grid[key][1]:
-                        warnings.warn(
-                            f"The upper bound on {key} "
-                            f"({self.bounds[key][1]}) is larger than the "
-                            f"upper bound from the available evolution "
-                            f"model grid ({bounds_grid[key][1]}). The "
-                            f"bound of the {key} prior will be adjusted "
-                            f"to {bounds_grid[key][1]}."
-                        )
-
-                        if key == "age":
-                            self.bounds[key] = (
-                                self.bounds[key][0],
-                                bounds_grid[key][1],
+                            self.bounds[param_new] = (
+                                bounds_grid[param_key][0],
+                                self.bounds[param_new][1],
                             )
 
-                        else:
-                            for i in range(self.n_planets):
-                                if f"{key}_{i}" in self.bounds:
-                                    self.bounds[f"{key}_{i}"] = (
-                                        self.bounds[f"{key}_{i}"][0],
-                                        bounds_grid[key][1],
-                                    )
+                        if self.bounds[param_new][1] > bounds_grid[param_key][1]:
+                            warnings.warn(
+                                f"The upper bound on {param_new} "
+                                f"({self.bounds[param_new][1]}) is larger than the "
+                                f"upper bound from the available evolution "
+                                f"model grid ({bounds_grid[param_key][1]}). The "
+                                f"bound of the {param_new} prior will be adjusted "
+                                f"to {bounds_grid[param_key][1]}."
+                            )
 
-                                else:
-                                    self.bounds[f"{key}_{i}"] = (
-                                        self.bounds[key][0],
-                                        bounds_grid[key][1],
-                                    )
-
-                    if key != "age":
-                        for i in range(self.n_planets):
-                            self.bounds[f"{key}_{i}"] = self.bounds[key]
-
-                        del self.bounds[key]
+                            self.bounds[param_new] = (
+                                self.bounds[param_new][0],
+                                bounds_grid[param_key][1],
+                            )
 
             for i in range(self.n_planets):
                 if f"inflate_lbol{i}" in self.bounds:
@@ -336,7 +330,13 @@ class FitEvolution:
         for param_key, param_value in self.bounds.items():
             print(f"   - {param_key} = {param_value}")
 
+        print(f"\nNormal priors (mean, sigma):")
+        print(f"   - Age: {self.age_prior}")
+        print(f"   - Mass (Mjup): {self.mass_prior}")
+        print(f"   - Radius (Rjup): {self.radius_prior}")
+
         if len(self.normal_prior) > 0:
+            # Not used by the current implementation
             print("\nNormal priors (mean, sigma):")
             for param_key, param_value in self.normal_prior.items():
                 if -0.1 < param_value[0] < 0.1:
@@ -359,7 +359,7 @@ class FitEvolution:
         Function to run the ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be
         installed with ``pip`` from the PyPI repository,
-        ``MultiNest`` has to be build manually. See the
+        ``MultiNest`` has to be built manually. See the
         ``PyMultiNest`` documentation for details:
         http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set

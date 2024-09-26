@@ -377,18 +377,22 @@ class Database:
             if parallax is None:
                 parallax = tuple(comp_data[item]["parallax"])
 
-            app_mag = comp_data[item]["app_mag"]
+            if "app_mag" in comp_data[item]:
+                app_mag = comp_data[item]["app_mag"]
 
-            for key, value in app_mag.items():
-                if isinstance(value[0], list):
-                    mag_list = []
-                    for mag_item in value:
-                        mag_list.append(tuple(mag_item))
+                for key, value in app_mag.items():
+                    if isinstance(value[0], list):
+                        mag_list = []
+                        for mag_item in value:
+                            mag_list.append(tuple(mag_item))
 
-                    app_mag[key] = mag_list
+                        app_mag[key] = mag_list
 
-                else:
-                    app_mag[key] = tuple(value)
+                    else:
+                        app_mag[key] = tuple(value)
+
+            else:
+                app_mag = None
 
             self.add_object(
                 object_name=item,
