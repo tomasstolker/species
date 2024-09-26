@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "species"
+version = "0.8.4"
+authors = [{name = "Tomas Stolker", email = "stolker@strw.leidenuniv.nl"}]
+description = "Toolkit for atmospheric characterization of directly imaged exoplanets"
+readme = "README.rst"
+requires-python = ">=3.9"
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+
+[project.urls]
+Documentation = "https://species.readthedocs.io"
+Repository = "https://github.com/tomasstolker/species"
+Issues = "https://github.com/tomasstolker/species/issues"
+
+[tool.setuptools]
+packages = []
+py-modules = []
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.package-data]
+example = ["*.json"]
