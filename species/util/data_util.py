@@ -390,7 +390,8 @@ def add_missing(
         print(f"   - {item}: {grid_shape[i]}")
 
     flux = np.asarray(database[f"models/{model}/flux"])  # (W m-1 um-1)
-    flux[flux <= 0.0] = 1e-50
+    # Should be < and not <= since missing spectra have zero fluxes
+    flux[flux < 0.0] = 1e-50
     flux = np.log10(flux)
 
     count_total = 0
