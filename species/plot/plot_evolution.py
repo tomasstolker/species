@@ -205,16 +205,16 @@ def plot_cooling(
             ax[i].set_xlabel("Age (Myr)", fontsize=13)
 
         if cooling_param == "luminosity":
-            ax[i].set_ylabel("$\log(L/L_\odot)$", fontsize=13)
+            ax[i].set_ylabel(r"$\log(L/L_\odot)$", fontsize=13)
 
         elif cooling_param == "radius":
-            ax[i].set_ylabel("Radius ($R_\mathrm{J}$)", fontsize=13)
+            ax[i].set_ylabel(r"Radius ($R_\mathrm{J}$)", fontsize=13)
 
         elif cooling_param == "teff":
-            ax[i].set_ylabel("$T_\mathrm{eff}$ (K)", fontsize=13)
+            ax[i].set_ylabel(r"$T_\mathrm{eff}$ (K)", fontsize=13)
 
         elif cooling_param == "logg":
-            ax[i].set_ylabel("$\log\,g$", fontsize=13)
+            ax[i].set_ylabel(r"$\log\,g$", fontsize=13)
 
         if xlim is not None:
             ax[i].set_xlim(xlim[0], xlim[1])
@@ -471,9 +471,9 @@ def plot_isochrones(
             ax[i].xaxis.set_minor_locator(AutoMinorLocator(5))
 
         if i == n_planets - 1:
-            ax[i].set_xlabel("Mass ($M_\\mathrm{J}$)", fontsize=13)
+            ax[i].set_xlabel(r"Mass ($M_\mathrm{J}$)", fontsize=13)
 
-        ax[i].set_ylabel("$\\log(L/L_\\odot)$", fontsize=13)
+        ax[i].set_ylabel(r"$\log(L/L_\odot)$", fontsize=13)
 
         ax[i].set_xscale(xscale)
         ax[i].set_yscale(yscale)
