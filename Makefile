@@ -2,6 +2,7 @@
 
 help:
 	@echo "pypi - submit to PyPI server"
+	@echo "pypi-check - check the distribution for PyPI"
 	@echo "pypi-test - submit to TestPyPI server"
 	@echo "docs - generate Sphinx documentation"
 	@echo "coverage - check code coverage"
@@ -9,11 +10,15 @@ help:
 	@echo "clean - remove artifacts"
 
 pypi:
-	python setup.py sdist bdist_wheel
+	python -m build
 	twine upload dist/*
 
+pypi-check:
+	python -m build
+	twine check dist/*
+
 pypi-test:
-	python setup.py sdist bdist_wheel
+	python -m build
 	twine upload --repository testpypi dist/*
 
 docs:

@@ -276,8 +276,10 @@ class ReadPlanck:
             model_box.wavelength = wavel_resample
             model_box.flux = flux
 
+        lum_total = 0.0
+
         if n_planck == 1 and "radius" in model_param:
-            model_box.parameters["luminosity"] = (
+            lum_bb = (
                 4.0
                 * np.pi
                 * (model_box.parameters["radius"] * constants.R_JUP) ** 2
@@ -286,27 +288,27 @@ class ReadPlanck:
                 / constants.L_SUN
             )  # (Lsun)
 
-        elif n_planck > 1:
-            lum_total = 0.0
+            lum_total += lum_bb
+            model_box.parameters["log_lum"] = np.log10(lum_bb)
 
+        elif n_planck > 1:
             for i in range(n_planck):
                 if f"radius_{i}" in model_box.parameters:
                     # Add up the luminosity of the blackbody components (Lsun)
-                    surface = (
+                    lum_bb = (
                         4.0
                         * np.pi
                         * (model_box.parameters[f"radius_{i}"] * constants.R_JUP) ** 2
-                    )
-
-                    lum_total += (
-                        surface
                         * constants.SIGMA_SB
                         * model_box.parameters[f"teff_{i}"] ** 4.0
                         / constants.L_SUN
                     )
 
-            if lum_total > 0.0:
-                model_box.parameters["luminosity"] = lum_total
+                    lum_total += lum_bb
+                    model_box.parameters[f"luminosity_{i}"] = lum_bb
+
+        if lum_total > 0.0:
+            model_box.parameters["log_lum"] = np.log10(lum_total)
 
         return model_box
 

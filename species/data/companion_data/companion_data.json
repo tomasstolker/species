@@ -21,7 +21,7 @@
         },
         "semi_major": [
             9.3,
-            -2.4,
+            -1.8,
             2.4
         ],
         "mass_star": [
@@ -40,7 +40,7 @@
         ],
         "references": [
             "Bell et al. 2015",
-            "De Rose et al. 2023",
+            "De Rosa et al. 2023",
             "Gaia Early Data Release 3"
         ]
     },
@@ -864,9 +864,15 @@
             2.0
         ],
         "accretion": false,
+        "age": [
+            10.0,
+            -2.0,
+            2.0
+        ],
         "references": [
             "Chauvin et al. 2004",
             "Gaia Early Data Release 3",
+            "Luhman et al. 2023",
             "Mohanty et al. 2007",
             "Patience et al. 2010",
             "Song et al. 2006"

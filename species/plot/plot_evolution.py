@@ -20,7 +20,7 @@ from species.util.core_util import print_section
 def plot_cooling(
     tag: str,
     n_samples: int = 50,
-    cooling_param: str = "luminosity",
+    cooling_param: str = "log_lum",
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     xscale: Optional[str] = "linear",
@@ -44,7 +44,7 @@ def plot_cooling(
         Number of randomly drawn cooling tracks that will be plotted.
     cooling_param : str
         Type of cooling parameter that will be plotted
-        ('luminosity', 'radius', 'teff', or 'logg').
+        ('log_lum', 'radius', 'teff', or 'logg').
     xlim : tuple(float, float), None
         Limits of the wavelength axis. Automatic limits are used if
         the argument is set to ``None``.
@@ -90,11 +90,11 @@ def plot_cooling(
 
     plt.close()
 
-    if cooling_param not in ["luminosity", "radius", "teff", "logg"]:
+    if cooling_param not in ["log_lum", "luminosity", "radius", "teff", "logg"]:
         raise ValueError(
             "The argument of 'cooling_parameter' is "
             "not valid and should be set to "
-            "'luminosity', 'radius', 'teff', or 'logg'."
+            "'log_lum', 'radius', 'teff', or 'logg'."
         )
 
     from species.data.database import Database
@@ -204,7 +204,7 @@ def plot_cooling(
         if i == n_planets - 1:
             ax[i].set_xlabel("Age (Myr)", fontsize=13)
 
-        if cooling_param == "luminosity":
+        if cooling_param in ["luminosity", "log_lum"]:
             ax[i].set_ylabel(r"$\log(L/L_\odot)$", fontsize=13)
 
         elif cooling_param == "radius":
@@ -234,7 +234,7 @@ def plot_cooling(
 
                 cool_box = read_iso.get_cooling_track(mass=mass, ages=None)
 
-                if cooling_param == "luminosity":
+                if cooling_param in ["luminosity", "log_lum"]:
                     cool_tracks[planet_idx].append([cool_box.age, cool_box.log_lum])
 
                 elif cooling_param == "radius":
@@ -255,7 +255,7 @@ def plot_cooling(
                 )
 
     for i in range(n_planets):
-        if cooling_param == "luminosity":
+        if cooling_param in ["luminosity", "log_lum"]:
             ax[i].errorbar(
                 [age_prior[0]],
                 [log_lum[i][0]],

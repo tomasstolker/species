@@ -104,7 +104,9 @@ class ReadModel:
             "distance",
             "parallax",
             "mass",
-            "luminosity",
+            "log_lum",
+            "log_lum_atm",
+            "log_lum_disk",
             "lognorm_radius",
             "lognorm_sigma",
             "lognorm_ext",
@@ -1046,8 +1048,10 @@ class ReadModel:
 
         # Add the luminosity to the parameter dictionary
 
+        lum_total = 0.0
+
         if "radius" in model_box.parameters:
-            model_box.parameters["luminosity"] = (
+            lum_atm = (
                 4.0
                 * np.pi
                 * (model_box.parameters["radius"] * constants.R_JUP) ** 2
@@ -1056,10 +1060,13 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
+            lum_total += lum_atm
+            model_box.parameters["log_lum_atm"] = np.log10(lum_atm)
+
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-            model_box.parameters["luminosity"] += (
+            lum_disk = (
                 4.0
                 * np.pi
                 * (model_box.parameters["disk_radius"] * constants.R_JUP) ** 2
@@ -1068,9 +1075,12 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
+            lum_total += lum_disk
+            model_box.parameters["log_lum_disk"] = np.log10(lum_disk)
+
         elif n_disk > 1:
             for disk_idx in range(n_disk):
-                model_box.parameters["luminosity"] += (
+                lum_disk = (
                     4.0
                     * np.pi
                     * (
@@ -1082,6 +1092,12 @@ class ReadModel:
                     * model_box.parameters[f"disk_teff_{disk_idx}"] ** 4.0
                     / constants.L_SUN
                 )  # (Lsun)
+
+                lum_total += lum_disk
+                model_box.parameters[f"log_lum_disk_{disk_idx}"] = np.log10(lum_disk)
+
+        if lum_total > 0.0:
+            model_box.parameters["log_lum"] = np.log10(lum_total)
 
         # Add the planet mass to the parameter dictionary
 
@@ -1410,17 +1426,12 @@ class ReadModel:
 
             model_box.wavelength = wavel_resample
 
-        # Add the planet mass to the parameter dictionary
-
-        if "radius" in model_param and "logg" in model_param:
-            model_param["mass"] = logg_to_mass(
-                model_param["logg"], model_param["radius"]
-            )
-
         # Add the luminosity to the parameter dictionary
 
+        lum_total = 0.0
+
         if "radius" in model_box.parameters:
-            model_box.parameters["luminosity"] = (
+            lum_atm = (
                 4.0
                 * np.pi
                 * (model_box.parameters["radius"] * constants.R_JUP) ** 2
@@ -1429,10 +1440,13 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
+            lum_total += lum_atm
+            model_box.parameters["log_lum_atm"] = np.log10(lum_atm)
+
         # Add the blackbody disk components to the luminosity
 
         if n_disk == 1:
-            model_box.parameters["luminosity"] += (
+            lum_disk = (
                 4.0
                 * np.pi
                 * (model_box.parameters["disk_radius"] * constants.R_JUP) ** 2
@@ -1441,9 +1455,12 @@ class ReadModel:
                 / constants.L_SUN
             )  # (Lsun)
 
+            lum_total += lum_disk
+            model_box.parameters["log_lum_disk"] = np.log10(lum_disk)
+
         elif n_disk > 1:
             for disk_idx in range(n_disk):
-                model_box.parameters["luminosity"] += (
+                lum_disk = (
                     4.0
                     * np.pi
                     * (
@@ -1455,6 +1472,19 @@ class ReadModel:
                     * model_box.parameters["disk_teff"] ** 4.0
                     / constants.L_SUN
                 )  # (Lsun)
+
+                lum_total += lum_disk
+                model_box.parameters[f"log_lum_disk_{disk_idx}"] = np.log10(lum_disk)
+
+        if lum_total > 0.0:
+            model_box.parameters["log_lum"] = np.log10(lum_total)
+
+        # Add the planet mass to the parameter dictionary
+
+        if "radius" in model_param and "logg" in model_param:
+            model_param["mass"] = logg_to_mass(
+                model_param["logg"], model_param["radius"]
+            )
 
         return model_box
 

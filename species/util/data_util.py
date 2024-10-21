@@ -70,7 +70,9 @@ def extract_tarfile(
                 if not is_within_directory(path, str(member_path)):
                     raise Exception("Attempted path traversal in TAR file")
 
-            tar.extractall(path, members=member_list, numeric_owner=numeric_owner)
+            tar.extractall(
+                path, members=member_list, numeric_owner=numeric_owner, filter="data"
+            )
 
         safe_extract(tar, data_folder, member_list=member_list)
 

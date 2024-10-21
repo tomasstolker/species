@@ -3662,7 +3662,7 @@ class Database:
         coord_points: List[np.ndarray],
         object_name: str,
         spec_name: List[str],
-        model: str,
+        model_name: str,
         scale_spec: List[str],
         extra_scaling: Optional[np.ndarray],
         inc_phot: List[str],
@@ -3693,7 +3693,7 @@ class Database:
         spec_name : list(str)
             List with spectrum names that are stored at the object
             data of ``object_name``.
-        model : str
+        model_name : str
             Atmospheric model grid that is used for the comparison.
         scale_spec : list(str)
             List with spectrum names to which an additional scaling
@@ -3732,7 +3732,7 @@ class Database:
             )
 
             dset.attrs["object_name"] = str(object_name)
-            dset.attrs["model"] = str(model)
+            dset.attrs["model_name"] = str(model_name)
             dset.attrs["n_param"] = len(model_param)
             dset.attrs["n_spec_name"] = len(spec_name)
             dset.attrs["n_scale_spec"] = len(scale_spec)

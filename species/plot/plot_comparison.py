@@ -985,7 +985,7 @@ def plot_model_spectra(
         List with the parameters to include in the legend of the
         model spectra. Apart from atmospheric parameters (e.g.
         'teff', 'logg', 'radius') also parameters such as 'mass'
-        and 'luminosity' can be included. The default atmospheric
+        and 'log_lum' can be included. The default atmospheric
         parameters are included in the legend if the argument is
         set to ``None``.
 
@@ -1016,11 +1016,15 @@ def plot_model_spectra(
 
         object_name = dset.attrs["object_name"]
         n_spec_name = dset.attrs["n_spec_name"]
-        model_name = dset.attrs["model"]
         n_param = dset.attrs["n_param"]
         n_scale_spec = dset.attrs["n_scale_spec"]
         parallax = dset.attrs["parallax"]
         n_inc_phot = dset.attrs["n_inc_phot"]
+
+        if "model_name" in dset.attrs:
+            model_name = dset.attrs["model_name"]
+        else:
+            model_name = dset.attrs["model"]
 
         spec_name = []
         for i in range(n_spec_name):

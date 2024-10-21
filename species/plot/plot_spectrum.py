@@ -151,10 +151,10 @@ def plot_spectrum(
     leg_param : list(str), None
         List with the parameters to include in the legend of the
         model spectra. Apart from atmospheric parameters (e.g.
-        'teff', 'logg', 'radius') also parameters such as 'mass'
-        and 'luminosity' can be included. The default atmospheric
-        parameters are included in the legend if the argument is
-        set to ``None``.
+        'teff', 'logg', 'radius') also parameters such as 'mass',
+        'log_lum', log_lum_atm', and 'log_lum_disk' can be
+        included. The default atmospheric parameters are included
+        in the legend if the argument is set to ``None``.
     param_fmt : dict(str, str), None
         Dictionary with formats that will be used for the model
         parameter. The parameters are included in the ``legend``
@@ -975,12 +975,12 @@ def plot_spectrum(
                         if not plot_kwargs[j]:
                             plot_kwargs[j] = {}
 
-                        if quantity == "flux":
-                            flux_scaling = wavelength
-
-                        scale_tmp = flux_scaling / scaling
-
                         if isinstance(box_item.flux[filter_item][0], np.ndarray):
+                            if quantity == "flux":
+                                flux_scaling = wavelength[0]
+
+                            scale_tmp = flux_scaling / scaling
+
                             for phot_idx in range(box_item.flux[filter_item].shape[1]):
                                 plot_obj = ax1.errorbar(
                                     wavelength[phot_idx],
@@ -995,6 +995,11 @@ def plot_spectrum(
                                 )
 
                         else:
+                            if quantity == "flux":
+                                flux_scaling = wavelength
+
+                            scale_tmp = flux_scaling / scaling
+
                             plot_obj = ax1.errorbar(
                                 wavelength,
                                 scale_tmp * flux_conv,
@@ -1013,10 +1018,10 @@ def plot_spectrum(
                         }
 
                     else:
-                        if quantity == "flux":
-                            flux_scaling = wavelength
-
                         if isinstance(box_item.flux[filter_item][0], np.ndarray):
+                            if quantity == "flux":
+                                flux_scaling = wavelength[0]
+
                             if not isinstance(plot_kwargs[j][filter_item], list):
                                 raise ValueError(
                                     f"A list with {box_item.flux[filter_item].shape[1]} "
@@ -1055,6 +1060,9 @@ def plot_spectrum(
                                 )
 
                         else:
+                            if quantity == "flux":
+                                flux_scaling = wavelength
+
                             if plot_kwargs[j] and filter_item in plot_kwargs[j]:
                                 if "label" in plot_kwargs[j][filter_item]:
                                     labels_data.append(

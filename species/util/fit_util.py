@@ -295,31 +295,62 @@ def get_residuals(
     database_path = config["species"]["database"]
 
     with h5py.File(database_path, "r") as hdf5_file:
-        dset = hdf5_file[f"results/fit/{tag}/samples"]
+        if f"results/fit/{tag}/samples" in hdf5_file:
+            results_type = "FitModel"
+            dset = hdf5_file[f"results/fit/{tag}/samples"]
+            print("Results type: FitModel")
+
+        elif f"results/comparison/{tag}/goodness_of_fit" in hdf5_file:
+            results_type = "CompareSpectra"
+            dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
+            print("Selected results: CompareSpectra")
+
+        else:
+            raise ValueError(
+                f"The '{tag}' tag is not found in the "
+                "database. Please specify modeling  "
+                "results from either FitModel or "
+                "CompareSpectra."
+            )
+
         if "model_name" in dset.attrs:
             model_name = dset.attrs["model_name"]
         elif "spectrum" in dset.attrs:
             model_name = dset.attrs["spectrum"]
-        binary = dset.attrs["binary"]
+        elif "model" in dset.attrs:
+            model_name = dset.attrs["model"]
+        else:
+            raise ValueError(
+                "The attribute with the model name is "
+                f"not found in the results of '{tag}'."
+            )
+
         print(f"Model: {model_name}")
-        print(f"Binary: {binary}")
+
+        if "binary" in dset.attrs:
+            binary = dset.attrs["binary"]
+            print(f"Binary: {binary}")
 
         n_param = dset.attrs["n_param"]
 
-        if "n_fixed" in dset.attrs:
-            n_fixed = dset.attrs["n_fixed"]
+        if results_type == "FitModel":
+            if "n_fixed" in dset.attrs:
+                n_fixed = dset.attrs["n_fixed"]
 
+            else:
+                n_fixed = 0
+
+                warnings.warn(
+                    "The 'fixed_param' group is not found in "
+                    f"the results of {tag}. Probably the "
+                    "results were obtained with an older "
+                    "version of the package. Please rerun "
+                    "FitModel to update the results. Setting "
+                    "the number of fixed parameters to zero."
+                )
         else:
+            # TODO not yet implemented for CompareSpectra
             n_fixed = 0
-
-            warnings.warn(
-                "The 'fixed_param' group is not found in "
-                f"the results of {tag}. Probably the "
-                "results were obtained with an older "
-                "version of the package. Please rerun "
-                "FitModel to update the results. Setting "
-                "the number of fixed parameters to zero."
-            )
 
         print("\nModel parameters:")
         for param_idx in range(n_param):
