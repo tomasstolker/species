@@ -1244,7 +1244,7 @@ def plot_spectrum(
 
         if obj_index is None:
             raise ValueError(
-                "ObjectBox not found so can not create "
+                "ObjectBox not found so cannot create "
                 "residuals. Please add an ObjectBox to "
                 "the list of boxes."
             )

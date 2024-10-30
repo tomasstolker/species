@@ -643,6 +643,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("kzz")
         param[index] = r"$\log\,K_\mathrm{zz}$"
 
+    if "log_co_iso" in param:
+        index = param.index("log_co_iso")
+        param[index] = r"$\log\,^{12}\mathrm{CO}/^{13}\mathrm{CO}$"
+
     for i, item in enumerate(cloud_species):
         if f"{item.lower()}_fraction" in param:
             index = param.index(f"{item.lower()}_fraction")
@@ -1075,6 +1079,11 @@ def quantity_unit(
             unit.append(None)
             label.append(r"$\gamma_\mathrm{ad}$")
 
+        elif item == "log_co_iso":
+            quantity.append("log_co_iso")
+            unit.append(None)
+            label.append(r"$\log\,^{12}\mathrm{CO}/^{13}\mathrm{CO}$")
+
         elif item == "radius":
             quantity.append("radius")
 
@@ -1167,6 +1176,17 @@ def quantity_unit(
             elif object_type == "star":
                 unit.append(None)
                 label.append(r"$\log\,L_\ast/L_\mathrm{\odot}$")
+
+        elif item == "log_lum":
+            quantity.append("log_lum")
+
+            if object_type == "planet":
+                unit.append(None)
+                label.append(r"$\log\,L/L_\mathrm{\odot}$")
+
+            elif object_type == "star":
+                unit.append(None)
+                label.append(r"$\log\,L/L_\mathrm{\odot}$")
 
         elif item == "log_lum_atm":
             quantity.append("log_lum_atm")
@@ -1541,7 +1561,13 @@ def create_model_label(
 
     # Do not include these parameters by default in the legend
 
-    not_default = ["distance", "parallax", "mass", "luminosity", "log_lum"]
+    not_default = ["distance", "parallax", "mass", "luminosity"]
+
+    # Do not include log_lum because log_lum_atm is already include
+    # expect when the model spectrum is a blackbody from ReadPlanck
+
+    if model_name != "planck":
+        not_default.append("log_lum")
 
     # Use the model parameters if leg_param is empty
 
@@ -1617,28 +1643,28 @@ def create_model_label(
                 radius_au = model_param[param_item] * constants.R_JUP / constants.AU
                 value = f"{radius_au:{param_fmt['disk_radius']}}"
 
-        elif param_item == "mass" and param_item in leg_param:
+        elif param_item == "mass":
             if object_type == "planet":
                 value = f"{model_param[param_item]:{param_fmt['mass']}}"
             elif object_type == "star":
                 value = f"{model_param[param_item]*constants.M_JUP/constants.M_SUN:{param_fmt['mass']}}"
 
-        elif param_item == "luminosity" and param_item in leg_param:
+        elif param_item == "luminosity":
             value = f"{np.log10(model_param[param_item]):{param_fmt['luminosity']}}"
 
-        elif param_item == "log_lum" and param_item in leg_param:
+        elif param_item == "log_lum":
             value = f"{model_param[param_item]:{param_fmt['log_lum']}}"
 
-        elif param_item == "log_lum_atm" and param_item in leg_param:
+        elif param_item == "log_lum_atm":
             value = f"{model_param[param_item]:{param_fmt['log_lum_atm']}}"
 
-        elif param_item == "log_lum_disk" and param_item in leg_param:
+        elif param_item == "log_lum_disk":
             value = f"{model_param[param_item]:{param_fmt['log_lum_disk']}}"
 
-        elif param_item in leg_param and param_item in param_fmt:
+        elif param_item in param_fmt:
             value = f"{model_param[param_item]:{param_fmt[param_item]}}"
 
-        elif param_item in leg_param and param_item not in param_fmt:
+        elif param_item not in param_fmt:
             warnings.warn(
                 f"The '{param_item}' parameter is not "
                 "found in the dictionary of 'param_fmt'."
@@ -1705,6 +1731,7 @@ def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
         "metallicity",
         "fsed",
         "log_kzz",
+        "log_co_iso",
         "distance",
         "parallax",
         "mass",

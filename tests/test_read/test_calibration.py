@@ -50,7 +50,7 @@ class TestCalibration:
         )
 
         assert np.sum(spec_box.wavelength) == pytest.approx(
-            183.35527924487636, rel=self.limit, abs=0.0
+            175.68298611775307, rel=self.limit, abs=0.0
         )
         assert np.sum(spec_box.flux) == pytest.approx(
             2.3131999524734138e-09, rel=self.limit, abs=0.0

@@ -161,6 +161,7 @@ def sort_data(
     param_fsed: Optional[np.ndarray],
     param_logkzz: Optional[np.ndarray],
     param_adindex: Optional[np.ndarray],
+    param_logcoiso: Optional[np.ndarray],
     wavelength: np.ndarray,
     flux: np.ndarray,
 ) -> List[np.ndarray]:
@@ -186,6 +187,9 @@ def sort_data(
         (cm2 s-1) of each spectrum. Not used if set to ``None``.
     param_adindex : np.ndarray, None
         Array with the effective adiabatic index. Not used if
+        set to ``None``.
+    param_logcoiso : np.ndarray, None
+        Array with the 12CO/13CO isotopologue ratio. Not used if
         set to ``None``.
     wavelength : np.ndarray
         Array with the wavelengths (um).
@@ -240,6 +244,11 @@ def sort_data(
         spec_shape.append(adindex_unique.shape[0])
         print(f"   - gamma_ad = {adindex_unique}")
 
+    if param_logcoiso is not None:
+        logcoiso_unique = np.unique(param_logcoiso)
+        spec_shape.append(logcoiso_unique.shape[0])
+        print(f"   - log(12CO/13CO) = {logcoiso_unique}")
+
     spec_shape.append(wavelength.shape[0])
 
     spectrum = np.zeros(spec_shape)
@@ -276,6 +285,10 @@ def sort_data(
             index_adindex = np.argwhere(adindex_unique == param_adindex[i])[0][0]
             spec_select.append(index_adindex)
 
+        if param_logcoiso is not None:
+            index_logcoiso = np.argwhere(logcoiso_unique == param_logcoiso[i])[0][0]
+            spec_select.append(index_logcoiso)
+
         spec_select.append(...)
 
         spectrum[tuple(spec_select)] = flux[i]
@@ -299,6 +312,9 @@ def sort_data(
 
     if param_adindex is not None:
         sorted_data.append(adindex_unique)
+
+    if param_logcoiso is not None:
+        sorted_data.append(logcoiso_unique)
 
     sorted_data.append(wavelength)
     sorted_data.append(spectrum)
@@ -858,7 +874,7 @@ def convert_units(
 ) -> np.ndarray:
     """
     Function for converting the wavelength units to or from
-    :math:`\\mu\\text{m}^{-1}` and the flux units to or from
+    :math:`\\mu\\text{m}` and the flux units to or from
     :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
 
     Parameters
@@ -877,7 +893,7 @@ def convert_units(
         "Jy", "MJy"). One can use "um" or "µm" interchangeably,
         and similarly "AA", "Å", "A", or "angstrom".
     convert_from : bool
-        Convert from ``units_in`` to :math:`\\mu\\text{m}^{-1}` and
+        Convert from ``units_in`` to :math:`\\mu\\text{m}` and
         :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}` when set to
         ``True``. Or, convert to ``units_in`` when set to ``False``.
 

@@ -1469,13 +1469,13 @@ class FitModel:
                         warnings.warn(
                             "The 'logg' parameter is not used "
                             f"by the '{self.model}' model so "
-                            "the mass prior can not be applied."
+                            "the mass prior cannot be applied."
                         )
 
                     elif "radius" not in self.modelpar:
                         warnings.warn(
                             "The 'radius' parameter is not fitted "
-                            "so the mass prior can not be applied."
+                            "so the mass prior cannot be applied."
                         )
 
             elif prior_key[:6] == "ratio_":
@@ -2506,7 +2506,7 @@ class FitModel:
             ln_like = self._lnlike_func(params)
 
             if not np.isfinite(ln_like):
-                # UltraNest can not handle np.inf in the likelihood
+                # UltraNest cannot handle np.inf in the likelihood
                 ln_like = -1e100
 
             return ln_like

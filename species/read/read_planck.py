@@ -9,14 +9,15 @@ from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import spectres
 
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ColorMagBox, ColorColorBox, ModelBox, create_box
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
+from species.util.dust_util import ism_extinction
 from species.util.spec_util import create_wavelengths, smooth_spectrum
 
 
@@ -147,6 +148,35 @@ class ReadPlanck:
 
         return updated_param
 
+    @staticmethod
+    @typechecked
+    def apply_ext_ism(
+        wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Internal function for applying ISM extinction to a spectrum.
+
+        wavelengths : np.ndarray
+            Wavelengths (um) of the spectrum.
+        flux : np.ndarray
+            Fluxes (W m-2 um-1) of the spectrum.
+        v_band_ext : float
+            Extinction (mag) in the V band.
+        v_band_red : float
+            Reddening in the V band.
+
+        Returns
+        -------
+        np.ndarray
+            Fluxes (W m-2 um-1) with the extinction applied.
+        np.ndarray
+            Extinction (mag) as function of wavelength.
+        """
+
+        ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
+
+        return flux * 10.0 ** (-0.4 * ext_mag), ext_mag
+
     @typechecked
     def get_spectrum(
         self,
@@ -251,8 +281,7 @@ class ReadPlanck:
                     wavel_points, model_param[f"teff_{i}"], scaling
                 )  # (W m-2 um-1)
 
-        if spec_res is not None:
-            flux = smooth_spectrum(wavel_points, flux, spec_res)
+        # Create ModelBox with the spectrum
 
         model_box = create_box(
             boxtype="model",
@@ -263,8 +292,27 @@ class ReadPlanck:
             quantity="flux",
         )
 
+        # Apply extinction
+
+        if "ism_ext" in model_param:
+            ism_reddening = model_param.get("ism_red", 3.1)
+
+            model_box.flux, ext_mag = self.apply_ext_ism(
+                model_box.wavelength,
+                model_box.flux,
+                model_param["ism_ext"],
+                ism_reddening,
+            )
+
+        # Smooth the spectrum
+
+        if spec_res is not None:
+            flux = smooth_spectrum(wavel_points, flux, spec_res)
+
+        # Resample the spectrum
+
         if wavel_resample is not None:
-            flux = spectres.spectres(
+            flux = spectres_numba(
                 wavel_resample,
                 wavel_points,
                 flux,

@@ -26,7 +26,16 @@ Repository = "https://github.com/tomasstolker/species"
 Issues = "https://github.com/tomasstolker/species/issues"
 
 [tool.setuptools]
-packages = ["species"]
+packages = [
+    "species",
+    "species.core",
+    "species.data",
+    "species.fit",
+    "species.phot",
+    "species.plot",
+    "species.read",
+    "species.util"
+]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

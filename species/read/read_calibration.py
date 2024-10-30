@@ -9,10 +9,10 @@ from typing import Dict, Optional, Tuple
 
 import h5py
 import numpy as np
-import spectres
 
-from scipy import interpolate, optimize
-
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.core.box import SpectrumBox, create_box
@@ -107,14 +107,14 @@ class ReadCalibration:
         calib_box = self.get_spectrum(apply_mask=apply_mask)
 
         if interp_highres:
-            flux_interp = interpolate.interp1d(
+            flux_interp = interp1d(
                 calib_box.wavelength,
                 calib_box.flux,
                 bounds_error=False,
                 fill_value="extrapolate",
             )
 
-            sigma_interp = interpolate.interp1d(
+            sigma_interp = interp1d(
                 calib_box.wavelength,
                 calib_box.error,
                 bounds_error=False,
@@ -135,14 +135,14 @@ class ReadCalibration:
                     spec_res=spec_res,
                 )
 
-            flux_interp = interpolate.interp1d(
+            flux_interp = interp1d(
                 calib_box.wavelength,
                 calib_box.flux,
                 bounds_error=False,
                 fill_value="extrapolate",
             )
 
-            sigma_interp = interpolate.interp1d(
+            sigma_interp = interp1d(
                 calib_box.wavelength,
                 calib_box.error,
                 bounds_error=False,
@@ -160,13 +160,13 @@ class ReadCalibration:
                     spec_res=spec_res,
                 )
 
-            flux_new, error_new = spectres.spectres(
+            flux_new, error_new = spectres_numba(
                 wavel_points,
                 calib_box.wavelength,
                 calib_box.flux,
                 spec_errs=calib_box.error,
-                fill=0.0,
-                verbose=False,
+                fill=np.nan,
+                verbose=True,
             )
 
         if model_param is not None:
@@ -268,7 +268,7 @@ class ReadCalibration:
             else:
                 indices = np.arange(0, wavelength.size, 1)
 
-            popt, pcov = optimize.curve_fit(
+            popt, pcov = curve_fit(
                 f=_power_law,
                 xdata=wavelength[indices],
                 ydata=flux[indices],
@@ -295,18 +295,21 @@ class ReadCalibration:
                 (wavelength[0], wavelength[-1]), wavel_sampling
             )
 
-            flux_new, error_new = spectres.spectres(
+            flux_new, error_new = spectres_numba(
                 wavelength_new,
                 wavelength,
                 flux,
                 spec_errs=error,
-                fill=0.0,
+                fill=np.nan,
                 verbose=True,
             )
 
-            wavelength = wavelength_new
-            flux = flux_new
-            error = error_new
+            # Fluxes at the edges on the resampled spectrum might be NaN 
+
+            flux_nan = np.isnan(flux_new)
+            wavelength = wavelength_new[~flux_nan]
+            flux = flux_new[~flux_nan]
+            error = error_new[~flux_nan]
 
         return create_box(
             boxtype="spectrum",

@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 
 from typeguard import typechecked
-from scipy import interpolate
+from scipy.interpolate import interp1d, InterpolatedUnivariateSpline
 
 from species.data.filter_data.filter_data import add_filter_profile
 from species.data.spec_data.spec_vega import add_vega
@@ -85,7 +85,7 @@ class ReadFilter:
         return data
 
     @typechecked
-    def interpolate_filter(self) -> interpolate.interp1d:
+    def interpolate_filter(self) -> interp1d:
         """
         Interpolate a filter profile with the `interp1d <https://
         docs.scipy.org/doc/scipy/reference/generated/
@@ -100,7 +100,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return interpolate.interp1d(
+        return interp1d(
             data[:, 0],
             data[:, 1],
             kind="linear",
@@ -165,7 +165,7 @@ class ReadFilter:
 
             vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
-        flux_interp = interpolate.interp1d(
+        flux_interp = interp1d(
             vega_spec[0,],
             vega_spec[1,],
             bounds_error=False,
@@ -193,7 +193,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        spline = interpolate.InterpolatedUnivariateSpline(
+        spline = InterpolatedUnivariateSpline(
             data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
         )
         root = spline.roots()

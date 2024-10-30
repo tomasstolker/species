@@ -17,6 +17,7 @@ import spectres
 from matplotlib.ticker import MultipleLocator
 from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import interp1d
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.core import constants
@@ -1162,39 +1163,47 @@ class ReadRadtrans:
         # Convolve with a broadening kernel for vsin(i)
 
         if "vsini" in model_param:
-            # fastRotBroad requires a regular
-            # wavelength sampling while pRT uses
-            # a logarithmic wavelength sampling
-            wavel_even = np.linspace(
+            # fastRotBroad requires a linear wavelength sampling
+            # while pRT uses a logarithmic wavelength sampling
+            # so change temporarily to a linear sampling
+            # with a factor 10 larger number of wavelengths
+
+            wavel_linear = np.linspace(
                 np.amin(wavelength), np.amax(wavelength), wavelength.size * 10
             )
 
-            # So change temporarily to a linear sampling
-            # with a factor 10 larger number of wavelengths
-            spec_interp = interp1d(wavelength, flux)
-            flux_even = spec_interp(wavel_even)
+            flux_linear = spectres_numba(
+                wavel_linear,
+                wavelength,
+                flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
+            )
 
             # Apply the rotational broadening
-            spec_broad = fastRotBroad(
-                wvl=wavel_even,
-                flux=flux_even,
+            # The rotBroad function is much slower than
+            # fastRotBroad when tested on a large array
+
+            flux_broad = fastRotBroad(
+                wvl=wavel_linear,
+                flux=flux_linear,
                 epsilon=1.0,
                 vsini=model_param["vsini"],
                 effWvl=None,
             )
 
-            # The rotBroad function is much slower than
-            # fastRotBroad when tested on a large array
-            # spec_broad = rotBroad(wvl=wavel_even,
-            #                       flux=flux_even,
-            #                       epsilon=1.,
-            #                       vsini=model_param['vsini'],
-            #                       edgeHandling='firstlast')
-
             # And change back to the original (logarithmic)
             # wavelength sampling, with constant R
-            spec_interp = interp1d(wavel_even, spec_broad)
-            flux = spec_interp(wavelength)
+
+            flux = spectres_numba(
+                wavelength,
+                wavel_linear,
+                flux_broad,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
+            )
 
         # Convolve the spectrum with a Gaussian LSF
 

@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Union
 
 import h5py
 import numpy as np
-import spectres
 
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.core.box import ObjectBox, ResidualsBox, SynphotBox, create_box
@@ -308,7 +308,7 @@ def get_residuals(
         else:
             raise ValueError(
                 f"The '{tag}' tag is not found in the "
-                "database. Please specify modeling  "
+                "database. Please specify modeling "
                 "results from either FitModel or "
                 "CompareSpectra."
             )
@@ -415,7 +415,8 @@ def get_residuals(
         if model_name == "petitradtrans":
             # Calculate the petitRADTRANS spectrum only once
             # Smoothing and resampling not with get_model
-            model = radtrans.get_model(parameters)
+
+            model_box = radtrans.get_model(parameters)
 
         for key in objectbox.spectrum:
             if isinstance(inc_spec, bool) or key in inc_spec:
@@ -430,34 +431,36 @@ def get_residuals(
                 if model_name == "planck":
                     readmodel = ReadPlanck(wavel_range=wavel_range)
 
-                    model = readmodel.get_spectrum(
+                    model_box = readmodel.get_spectrum(
                         model_param=parameters, spec_res=1000.0
                     )
 
                     # Separate resampling to the new wavelength points
 
-                    flux_new = spectres.spectres(
+                    flux_new = spectres_numba(
                         wl_new,
-                        model.wavelength,
-                        model.flux,
+                        model_box.wavelength,
+                        model_box.flux,
                         spec_errs=None,
-                        fill=0.0,
+                        fill=np.nan,
                         verbose=True,
                     )
 
                 elif model_name == "petitradtrans":
                     # Smoothing to the instrument resolution
+
                     flux_smooth = convolve_spectrum(
-                        model.wavelength, model.flux, spec_res
+                        model_box.wavelength, model_box.flux, spec_res
                     )
 
                     # Resampling to the new wavelength points
-                    flux_new = spectres.spectres(
+
+                    flux_new = spectres_numba(
                         wl_new,
-                        model.wavelength,
+                        model_box.wavelength,
                         flux_smooth,
                         spec_errs=None,
-                        fill=0.0,
+                        fill=np.nan,
                         verbose=True,
                     )
 

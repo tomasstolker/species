@@ -357,7 +357,7 @@ class SyntheticPhotometry:
             error_flux = np.std(phot_random)
 
         elif error is not None and np.any(np.isnan(error)):
-            warnings.warn("Spectum contains NaN so can not calculate the error.")
+            warnings.warn("Spectum contains NaN so cannot calculate the error.")
             error_flux = None
 
         else:
@@ -479,7 +479,7 @@ class SyntheticPhotometry:
             error_app_mag = np.std(mag_random)
 
         elif error is not None and np.any(np.isnan(error)):
-            warnings.warn("Spectum contains NaN so can not calculate the error.")
+            warnings.warn("Spectum contains NaN so cannot calculate the error.")
             error_app_mag = None
 
         else:

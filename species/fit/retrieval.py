@@ -3573,7 +3573,7 @@ class AtmosphericRetrieval:
 
         elif "fsed_1" in bounds or "fsed_2" in bounds:
             raise ValueError(
-                "The cross_corr parameter can not be "
+                "The cross_corr parameter cannot be "
                 "used with multiple fsed parameters."
             )
 
@@ -3663,7 +3663,7 @@ class AtmosphericRetrieval:
                 if param_item in bounds:
                     warnings.warn(
                         f"The '{param_item}' parameter "
-                        "can not be used if the "
+                        "cannot be used if the "
                         "'abund_nodes' argument is set. "
                         "The  prior boundaries of "
                         f"'{param_item}' will therefore "

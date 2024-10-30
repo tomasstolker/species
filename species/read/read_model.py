@@ -15,6 +15,7 @@ from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simpson
 from scipy.interpolate import interp1d, RegularGridInterpolator
+from spectres.spectral_resampling_numba import spectres_numba
 
 from species.core import constants
 from species.core.box import (
@@ -561,13 +562,11 @@ class ReadModel:
         -------
         np.ndarray
             Fluxes (W m-2 um-1) with the extinction applied.
-        np.ndarray
-            Extinction (mag) as function of wavelength.
         """
 
         ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
 
-        return flux * 10.0 ** (-0.4 * ext_mag), ext_mag
+        return flux * 10.0 ** (-0.4 * ext_mag)
 
     @typechecked
     def get_model(
@@ -598,7 +597,7 @@ class ReadModel:
             argument is set to ``None``.
         wavel_resample : np.ndarray, None
             Wavelength points (um) to which the spectrum is resampled.
-            Optional smoothin with ``spec_res`` is applied for
+            Optional smoothing with ``spec_res`` is applied for
             resampling with ``wavel_resample``. The wavelength points
             as stored in the database are used if the argument is set
             to ``None``.
@@ -712,6 +711,7 @@ class ReadModel:
             "fsed",
             "log_kzz",
             "ad_index",
+            "log_co_iso",
         ]
 
         parameters = []
@@ -803,10 +803,14 @@ class ReadModel:
 
             planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
-            flux_interp = interp1d(
-                planck_box.wavelength, planck_box.flux, bounds_error=False
+            flux += spectres_numba(
+                self.wl_points,
+                planck_box.wavelength,
+                planck_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
             )
-            flux += flux_interp(self.wl_points)
 
         elif n_disk > 1:
             readplanck = ReadPlanck(
@@ -827,10 +831,14 @@ class ReadModel:
 
                 planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
-                flux_interp = interp1d(
-                    planck_box.wavelength, planck_box.flux, bounds_error=False
+                flux += spectres_numba(
+                    self.wl_points,
+                    planck_box.wavelength,
+                    planck_box.flux,
+                    spec_errs=None,
+                    fill=np.nan,
+                    verbose=True,
                 )
-                flux += flux_interp(self.wl_points)
 
         # Create ModelBox with the spectrum
 
@@ -847,20 +855,30 @@ class ReadModel:
         # Apply rotational broadening vsin(i) in km/s
 
         if "vsini" in model_param:
-            spec_interp = interp1d(
-                model_box.wavelength, model_box.flux, bounds_error=False
-            )
+            # fastRotBroad requires a linear wavelength sampling
+            # while pRT uses a logarithmic wavelength sampling,
+            # so change temporarily to a linear sampling
+            # with a factor 5 larger number of wavelengths
 
-            wavel_new = np.linspace(
+            wavel_linear = np.linspace(
                 model_box.wavelength[0],
                 model_box.wavelength[-1],
-                2 * model_box.wavelength.size,
+                5 * model_box.wavelength.size,
+            )
+
+            flux_linear = spectres_numba(
+                wavel_linear,
+                model_box.wavelength,
+                model_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
             )
 
             if fast_rot_broad:
                 flux_broad = fastRotBroad(
-                    wvl=wavel_new,
-                    flux=spec_interp(wavel_new),
+                    wvl=wavel_linear,
+                    flux=flux_linear,
                     epsilon=0.0,
                     vsini=model_param["vsini"],
                     effWvl=None,
@@ -868,15 +886,21 @@ class ReadModel:
 
             else:
                 flux_broad = rotBroad(
-                    wvl=wavel_new,
-                    flux=spec_interp(wavel_new),
+                    wvl=wavel_linear,
+                    flux=flux_linear,
                     epsilon=0.0,
                     vsini=model_param["vsini"],
                     edgeHandling="firstlast",
                 )
 
-            spec_interp = interp1d(wavel_new, flux_broad, bounds_error=False)
-            model_box.flux = spec_interp(model_box.wavelength)
+            model_box.flux = spectres_numba(
+                model_box.wavelength,
+                wavel_linear,
+                flux_broad,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
+            )
 
         # Apply veiling
 
@@ -934,17 +958,12 @@ class ReadModel:
             else:
                 ism_ext_av = model_param["ism_ext"]
 
-            model_box.flux, ext_mag = self.apply_ext_ism(
+            model_box.flux = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
                 ism_ext_av,
                 ism_reddening,
             )
-
-            idx_select = ext_mag >= 0.0
-
-            model_box.wavelength = model_box.wavelength[idx_select]
-            model_box.flux = model_box.flux[idx_select]
 
         # Smooth the spectrum
 
@@ -956,58 +975,16 @@ class ReadModel:
         # Resample the spectrum
 
         if wavel_resample is not None:
-            flux_interp = interp1d(
-                model_box.wavelength, model_box.flux, bounds_error=False
+            model_box.flux = spectres_numba(
+                wavel_resample,
+                model_box.wavelength,
+                model_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
             )
-            model_box.flux = flux_interp(wavel_resample)
-
-            # model_box.flux = spectres.spectres(
-            #     wavel_resample,
-            #     model_box.wavelength,
-            #     model_box.flux,
-            #     spec_errs=None,
-            #     fill=np.nan,
-            #     verbose=True,
-            # )
 
             model_box.wavelength = wavel_resample
-
-        # elif spec_res is not None and not smooth:
-        #     index = np.where(np.isnan(model_box.flux))[0]
-        #
-        #     if index.size > 0:
-        #         raise ValueError(
-        #             "Flux values should not contains NaNs. Please make sure that "
-        #             "the parameter values and the wavelength range are within "
-        #             "the grid boundaries as stored in the database."
-        #         )
-        #
-        #     wavel_resample = create_wavelengths(
-        #         (self.wl_points[0], self.wl_points[-1]), spec_res
-        #     )
-        #
-        #     indices = np.where(
-        #         (wavel_resample > self.wl_points[0])
-        #         & (wavel_resample < self.wl_points[-2])
-        #     )[0]
-        #
-        #     wavel_resample = wavel_resample[indices]
-        #
-        #     flux_interp = interp1d(
-        #         model_box.wavelength, model_box.flux, bounds_error=False
-        #     )
-        #     model_box.flux = flux_interp(wavel_resample)
-        #
-        #     # model_box.flux = spectres.spectres(
-        #     #     wavel_resample,
-        #     #     model_box.wavelength,
-        #     #     model_box.flux,
-        #     #     spec_errs=None,
-        #     #     fill=np.nan,
-        #     #     verbose=True,
-        #     # )
-        #
-        #     model_box.wavelength = wavel_resample
 
         # Convert flux to magnitude
 
@@ -1018,18 +995,14 @@ class ReadModel:
 
                 vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
-            flux_interp = interp1d(vega_spec[0,], vega_spec[1,])
-
-            flux_vega = flux_interp(model_box.wavelength)
-
-            # flux_vega, _ = spectres.spectres(
-            #     model_box.wavelength,
-            #     calib_box.wavelength,
-            #     calib_box.flux,
-            #     spec_errs=calib_box.error,
-            #     fill=np.nan,
-            #     verbose=True,
-            # )
+            flux_vega = spectres_numba(
+                model_box.wavelength,
+                vega_spec[0,],
+                vega_spec[1,],
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
+            )
 
             model_box.flux = -2.5 * np.log10(model_box.flux / flux_vega)
             model_box.quantity = "magnitude"
@@ -1196,6 +1169,7 @@ class ReadModel:
             "fsed",
             "log_kzz",
             "ad_index",
+            "log_co_iso",
         ]
 
         # Create lists with the parameter names and values
@@ -1307,10 +1281,14 @@ class ReadModel:
 
             planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
-            flux_interp = interp1d(
-                planck_box.wavelength, planck_box.flux, bounds_error=False
+            flux += spectres_numba(
+                self.wl_points,
+                planck_box.wavelength,
+                planck_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
             )
-            flux += flux_interp(self.wl_points)
 
         elif n_disk > 1:
             readplanck = ReadPlanck(
@@ -1331,10 +1309,14 @@ class ReadModel:
 
                 planck_box = readplanck.get_spectrum(disk_param, spec_res=spec_res)
 
-                flux_interp = interp1d(
-                    planck_box.wavelength, planck_box.flux, bounds_error=False
+                flux += spectres_numba(
+                    self.wl_points,
+                    planck_box.wavelength,
+                    planck_box.flux,
+                    spec_errs=None,
+                    fill=np.nan,
+                    verbose=True,
                 )
-                flux += flux_interp(self.wl_points)
 
         # Create ModelBox with the spectrum
 
@@ -1389,16 +1371,12 @@ class ReadModel:
             else:
                 ism_ext_av = model_param["ism_ext"]
 
-            model_box.flux, ext_mag = self.apply_ext_ism(
+            model_box.flux = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
                 ism_ext_av,
                 ism_reddening,
             )
-
-            idx_select = ext_mag >= 0.0
-            model_box.wavelength = model_box.wavelength[idx_select]
-            model_box.flux = model_box.flux[idx_select]
 
         # Smooth the spectrum
 
@@ -1410,19 +1388,14 @@ class ReadModel:
         # Resample the spectrum
 
         if wavel_resample is not None:
-            flux_interp = interp1d(
-                model_box.wavelength, model_box.flux, bounds_error=False
+            model_box.flux = spectres_numba(
+                wavel_resample,
+                model_box.wavelength,
+                model_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=True,
             )
-            model_box.flux = flux_interp(wavel_resample)
-
-            # model_box.flux = spectres.spectres(
-            #     wavel_resample,
-            #     model_box.wavelength,
-            #     model_box.flux,
-            #     spec_errs=None,
-            #     fill=np.nan,
-            #     verbose=True,
-            # )
 
             model_box.wavelength = wavel_resample
 

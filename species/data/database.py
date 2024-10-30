@@ -932,7 +932,7 @@ class Database:
         units : dict, None
             Dictionary with the units of the data provided with
             ``flux_density`` and ``spectrum``. Only required if
-            the wavelength units are not :math:`\\mu\\text{m}^{-1}`
+            the wavelength units are not :math:`\\mu\\text{m}`
             and/or the flux units are not provided as
             :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}`.
             Otherwise, the argument of ``units`` can be set to
@@ -1077,7 +1077,7 @@ class Database:
                     except KeyError:
                         warnings.warn(
                             f"Filter '{mag_item}' is not available on the SVO Filter "
-                            f"Profile Service so a flux calibration can not be done. "
+                            f"Profile Service so a flux calibration cannot be done. "
                             f"Please add the filter manually with the 'add_filter' "
                             f"function. For now, only the '{mag_item}' magnitude of "
                             f"'{object_name}' is stored."
@@ -1105,7 +1105,7 @@ class Database:
                         except KeyError:
                             warnings.warn(
                                 f"Filter '{mag_item}' is not available on the SVO "
-                                f"Filter Profile Service so a flux calibration can not "
+                                f"Filter Profile Service so a flux calibration cannot "
                                 f"be done. Please add the filter manually with the "
                                 f"'add_filter' function. For now, only the "
                                 f"'{mag_item}' magnitude of '{object_name}' is "
@@ -1346,7 +1346,7 @@ class Database:
 
                                 if spec_item not in read_spec:
                                     raise ValueError(
-                                        f"The spectrum data from {spec_value[0]} can not "
+                                        f"The spectrum data from {spec_value[0]} cannot "
                                         f"be read. The data format should be 2D with "
                                         f"3 columns."
                                     )
@@ -1357,14 +1357,14 @@ class Database:
 
                         except UnicodeDecodeError:
                             raise ValueError(
-                                f"The spectrum data from {spec_value[0]} can not "
+                                f"The spectrum data from {spec_value[0]} cannot "
                                 "be read. Please provide a FITS or ASCII file."
                             )
 
                         if data.ndim != 2 or 3 not in data.shape:
                             raise ValueError(
                                 f"The spectrum data from {spec_value[0]} "
-                                "can not be read. The data format "
+                                "cannot be read. The data format "
                                 "should be 2D with 3 columns."
                             )
 
@@ -1530,7 +1530,7 @@ class Database:
 
                                 if spec_item not in read_cov:
                                     raise ValueError(
-                                        f"The covariance matrix from {spec_value[1]} can not "
+                                        f"The covariance matrix from {spec_value[1]} cannot "
                                         f"be read. The data format should be 2D with the "
                                         f"same number of wavelength points as the "
                                         f"spectrum."
@@ -1542,14 +1542,14 @@ class Database:
                         except UnicodeDecodeError:
                             raise ValueError(
                                 f"The covariance matrix from {spec_value[1]} "
-                                f"can not be read. Please provide a "
+                                f"cannot be read. Please provide a "
                                 f"FITS or ASCII file."
                             )
 
                         if data.ndim != 2 or data.shape[0] != data.shape[1]:
                             raise ValueError(
                                 f"The covariance matrix from {spec_value[1]} "
-                                f"can not be read. The data format "
+                                f"cannot be read. The data format "
                                 f"should be 2D with the same number of "
                                 f"wavelength points as the spectrum."
                             )

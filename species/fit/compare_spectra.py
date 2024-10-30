@@ -407,7 +407,7 @@ class CompareSpectra:
         fix_logg : float, None
             Fix the value of :math:`\\log(g)`, for example if estimated
             from gravity-sensitive spectral features. Typically,
-            :math:`\\log(g)` can not be accurately determined when
+            :math:`\\log(g)` cannot be accurately determined when
             comparing the spectra over a broad wavelength range.
         scale_spec : list(str), None
             List with names of observed spectra to which an additional
