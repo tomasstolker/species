@@ -49,23 +49,27 @@ def add_jwst_ydwarfs(input_path: str, database: h5py._hl.files.File) -> None:
             progressbar=True,
         )
 
-    database.create_group("pphotometry/beiler2024")
+    database.create_group("photometry/beiler2024")
 
-    with fits.open(data_file) as hdu_list:
+    with fits.open(data_file, mode='update') as hdu_list:
         phot_data = hdu_list[1].data
 
     parallax = np.array(phot_data['PLX'], dtype=float)  # (mas)
     parallax_error = np.array(phot_data['EPLX'], dtype=float)  # (mas)
 
-    name = phot_data["Name"]
-    name = np.core.defchararray.strip(name)
+    name = np.array(phot_data["Name"]).astype('str')
 
-    sptype_nir = phot_data["SpT"]
+    sptype_nir = np.array(phot_data["SpT"]).astype('str')
     sptype_nir = np.core.defchararray.strip(sptype_nir)
 
     sptype = update_sptype(sptype_nir)
 
     dtype = h5py.special_dtype(vlen=str)
+
+    flag = np.repeat("null", np.size(name))
+
+    dset = database.create_dataset("photometry/beiler2024" + "/flag", (np.size(flag),), dtype=dtype)
+    dset[...] = flag
 
     dset = database.create_dataset(
         "photometry/beiler2024/name", (np.size(name),), dtype=dtype
