@@ -100,9 +100,17 @@
     "bt-nextgen": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-NextGen",
-        "file size": "328 MB",
+        "file size": "240 MB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 2000,
+        "teff range": [2600, 30000]
+    },
+    "bt-nextgen-highres": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-NextGen",
+        "file size": "1.3 GB",
+        "wavelength range": [0.1, 50],
+        "lambda/d_lambda": 200000,
         "teff range": [2600, 30000]
     },
     "bt-nextgen-subsolar": {
@@ -351,9 +359,9 @@
     "sonora-cholla": {
         "parameters": ["teff", "logg", "log_kzz"],
         "name": "Sonora Cholla",
-        "file size": "497 MB",
+        "file size": "149 MB",
         "wavelength range": [1, 250],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 5000,
         "teff range": [500, 1300],
         "information": "[Fe/H] = 0.0",
         "reference": "Karalidi et al. (2021)",
@@ -362,9 +370,9 @@
     "sonora-bobcat": {
         "parameters": ["teff", "logg", "feh"],
         "name": "Sonora Bobcat",
-        "file size": "1.1 GB",
+        "file size": "392 MB",
         "wavelength range": [0.4, 50],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 5000,
         "teff range": [200, 2400],
         "reference": "Marley et al. (2021)",
         "url": "https://zenodo.org/record/5063476"
@@ -372,9 +380,9 @@
     "sonora-bobcat-co": {
         "parameters": ["teff", "c_o_ratio"],
         "name": "Sonora Bobcat C/O",
-        "file size": "112 MB",
+        "file size": "41 MB",
         "wavelength range": [0.4, 50],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 5000,
         "teff range": [200, 2400],
         "information": "[Fe/H] = 0.0, log(g) = 5.0",
         "reference": "Marley et al. (2021)",
