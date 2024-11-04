@@ -1920,7 +1920,7 @@ class Database:
         Parameters
         ----------
         phot_library : str
-            Photometric library ('vlm-plx' or 'leggett').
+            Photometric library ('vlm-plx', 'leggett', or 'beiler2024').
 
         Returns
         -------
@@ -1946,6 +1946,11 @@ class Database:
                 from species.data.phot_data.phot_leggett import add_leggett
 
                 add_leggett(self.data_folder, hdf5_file)
+            
+            elif phot_library[0:10] == "beiler2024":
+                from species.data.phot_data.phot_jwst_ydwarfs import add_jwst_ydwarfs
+
+                add_jwst_ydwarfs(self.data_folder, hdf5_file)
 
     @typechecked
     def add_calibration(

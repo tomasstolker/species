@@ -64,6 +64,8 @@ def sptype_to_index(
         ]
 
         for i, item in enumerate(spec_types):
+            if isinstance(item, bytes):
+                item = item.decode("utf-8") # this catches spt names from fits files that are saved to the hdf5 as bytes
             if item[0:2] in ["O0", "O1", "O2", "O3", "O4"]:
                 spt_discrete[i] = 0.5
 
@@ -136,6 +138,8 @@ def sptype_to_index(
         spt_check = ["O", "B", "A", "F", "G", "K", "M", "L", "T", "Y"]
 
         for i, item in enumerate(spec_types):
+            if isinstance(item, bytes):
+                item = item.decode("utf-8") # this catches spt names from fits files that are saved to the hdf5 as bytes
             if item[0] == "O":
                 spt_discrete[i] = 0.5
 
