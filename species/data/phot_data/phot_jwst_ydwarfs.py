@@ -35,8 +35,7 @@ def add_jwst_ydwarfs(input_path: str, database: h5py._hl.files.File) -> None:
 
     input_file = "Beiler2024_synth_phot.fits"
     data_file = Path(input_path) / "Beiler2024_synth_phot.fits"
-    # url = "https://home.strw.leidenuniv.nl/~stolker/species/Beiler2024_synth_phot.fits"
-    url = "https://github.com/wbalmer/species/raw/refs/heads/beiler_phot/species/data/phot_data/Beiler2024_synth_phot.fits" # tmp file host
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/Beiler2024_synth_phot.fits"
 
     if not data_file.exists():
         print()
