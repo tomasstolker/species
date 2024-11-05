@@ -152,7 +152,7 @@ class ReadPlanck:
     @typechecked
     def apply_ext_ism(
         wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
 
@@ -169,13 +169,11 @@ class ReadPlanck:
         -------
         np.ndarray
             Fluxes (W m-2 um-1) with the extinction applied.
-        np.ndarray
-            Extinction (mag) as function of wavelength.
         """
 
         ext_mag = ism_extinction(v_band_ext, v_band_red, wavelengths)
 
-        return flux * 10.0 ** (-0.4 * ext_mag), ext_mag
+        return flux * 10.0 ** (-0.4 * ext_mag)
 
     @typechecked
     def get_spectrum(
@@ -297,7 +295,7 @@ class ReadPlanck:
         if "ism_ext" in model_param:
             ism_reddening = model_param.get("ism_red", 3.1)
 
-            model_box.flux, ext_mag = self.apply_ext_ism(
+            model_box.flux = self.apply_ext_ism(
                 model_box.wavelength,
                 model_box.flux,
                 model_param["ism_ext"],

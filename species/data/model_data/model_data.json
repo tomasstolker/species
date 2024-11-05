@@ -5,7 +5,8 @@
         "file size": "57 MB",
         "wavelength range": [0.5, 40],
         "lambda/d_lambda": 2000,
-        "teff range": [100, 6600]
+        "teff range": [100, 6600],
+        "checksum": "991f3919b260443bb54c61501d80dddfafe05879715492f5d04aa319d774903a"
     },
     "ames-dusty": {
         "parameters": ["teff", "logg"],
@@ -13,17 +14,19 @@
         "file size": "22 MB",
         "wavelength range": [0.5, 40],
         "lambda/d_lambda": 2000,
-        "teff range": [500, 4000]
+        "teff range": [500, 4000],
+        "checksum": "3aff09243479a01003bfebdf6886fdbffc902739b625b6134509b6928a840447"
     },
     "atmo": {
         "parameters": ["teff", "logg"],
         "name": "ATMO",
-        "file size": "45 MB",
-        "wavelength range": [0.4, 6000],
+        "file size": "31 MB",
+        "wavelength range": [0.2, 6000],
         "lambda/d_lambda": 1000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
+        "checksum": "e2054db0eb135b89ae42abb91ddb8d3a7eb7afa6dbe2f9aefa1328a29a2fe8e9"
     },
     "atmo-ceq": {
         "parameters": ["teff", "logg"],
@@ -33,7 +36,8 @@
         "lambda/d_lambda": 10000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
+        "checksum": "bab2dc6920d9358bd0a554b9d5554b09e5885fec2daf91ee11ccf340c310fcbf"
     },
     "atmo-neq-weak": {
         "parameters": ["teff", "logg"],
@@ -43,7 +47,8 @@
         "lambda/d_lambda": 10000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
+        "checksum": "1d0ddb22e43feff0255c7421915364e45e2f4d6c51b1c52793b8f532ee01d654"
     },
     "atmo-neq-strong": {
         "parameters": ["teff", "logg"],
@@ -53,7 +58,8 @@
         "lambda/d_lambda": 10000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P"
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
+        "checksum": "5868ad63be5fad48808398926f689713eaea8298631ae215b7835d4d6d786a0b"
     },
     "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
@@ -63,39 +69,44 @@
         "lambda/d_lambda": 3000,
         "teff range": [800, 3000],
         "reference": "Petrus et al. (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P",
+        "checksum": "ffc7ae3f85cdce83d3a1e6dbaea0af3faf971fcbc2705428a01a17d526e06081"
     },
     "blackbody": {
         "parameters": ["teff"],
         "name": "blackbody",
-        "file size": "56 MB",
+        "file size": "41 MB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 1000,
-        "teff range": [10, 20000]
+        "teff range": [10, 20000],
+        "checksum": "afb8059f365378b7122e7170a62bfd312d3a21c5d514eb5aaab1558e69792d83"
     },
     "bt-cond": {
         "parameters": ["teff", "logg"],
         "name": "BT-Cond",
-        "file size": "162 MB",
+        "file size": "64 MB",
         "wavelength range": [0.1, 100],
-        "lambda/d_lambda": 10000,
-        "teff range": [800, 4000]
+        "lambda/d_lambda": 5000,
+        "teff range": [800, 4000],
+        "checksum": "5b8d2bf3b280fe7016c5a4f569a9e1176292568cd73ecaf0223baf25e1a99d53"
+    },
+    "bt-cond-feh": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-Cond",
+        "file size": "148 MB",
+        "wavelength range": [0.1, 100],
+        "lambda/d_lambda": 5000,
+        "teff range": [2600, 4000],
+        "checksum": "e357284c7e0082fa0eb7cbc78034f72bd731512de85813c325beb13d3c10f1ed"
     },
     "bt-dusty": {
         "parameters": ["teff", "logg"],
         "name": "BT-Dusty",
-        "file size": "205 MB",
+        "file size": "46 MB",
         "wavelength range": [0.1, 100],
-        "lambda/d_lambda": 10000,
-        "teff range": [1000, 4000]
-    },
-    "bt-cond-feh": {
-        "parameters": ["teff", "logg", "feh"],
-        "name": "BT-Cond [Fe/H]",
-        "file size": "390 MB",
-        "wavelength range": [0.1, 100],
-        "lambda/d_lambda": 10000,
-        "teff range": [2600, 4000]
+        "lambda/d_lambda": 5000,
+        "teff range": [1000, 4000],
+        "checksum": "4d6c7af3388c5b86576df0dbe148fdec7f5c7817e1f83653a95bf994ab5a4f7c"
     },
     "bt-nextgen": {
         "parameters": ["teff", "logg", "feh"],
@@ -103,7 +114,8 @@
         "file size": "240 MB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 2000,
-        "teff range": [2600, 30000]
+        "teff range": [2600, 30000],
+        "checksum": "cf4f3d299ea7d49c1276f9347a63e3e86f877197f47a6baf01a04b4fc87ab04b"
     },
     "bt-nextgen-highres": {
         "parameters": ["teff", "logg", "feh"],
@@ -111,7 +123,8 @@
         "file size": "1.3 GB",
         "wavelength range": [0.1, 50],
         "lambda/d_lambda": 200000,
-        "teff range": [2600, 30000]
+        "teff range": [2600, 30000],
+        "checksum": "c2fe40a6d8da4ee96834a58908b69fedc0cf4dffdf867d6591320a98b031b3ab"
     },
     "bt-nextgen-subsolar": {
         "parameters": ["teff", "logg", "feh"],
@@ -120,7 +133,8 @@
         "wavelength range": [0.1, 50],
         "lambda/d_lambda": 4000,
         "teff range": [2600, 30000],
-        "information": "[alpha/Fe] = 0.4"
+        "information": "[alpha/Fe] = 0.4",
+        "checksum": "130ff69900edd5441b9c4cee6f1b5d3f874f18345d63d21ec0a25096cac1f2bd"
     },
     "bt-settl": {
         "parameters": ["teff", "logg"],
@@ -128,7 +142,8 @@
         "file size": "227 MB",
         "wavelength range": [0.1, 100],
         "lambda/d_lambda": 10000,
-        "teff range": [400, 4000]
+        "teff range": [400, 4000],
+        "checksum": "70d34a26c946ba31ae631e54de45b915c99c1defd01a5c2b194e337ab51afb89"
     },
     "bt-settl-cifist": {
         "parameters": ["teff", "logg"],
@@ -136,7 +151,8 @@
         "file size": "1.4 GB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 20000,
-        "teff range": [1200, 7000]
+        "teff range": [1200, 7000],
+        "checksum": "a45d353fada1443430662c59f894c1e6f85244adb39af7eb1cedfed3ae6c4356"
     },
     "drift-phoenix": {
         "parameters": ["teff", "logg", "feh"],
@@ -146,7 +162,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [1000, 3000],
         "reference": "Helling et al. (2008)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H"
+        "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H",
+        "checksum": "ba71a5e4d3d399a6f8ae249590c2e174e90ec2b55e712d350dad8ca1ae83a907"
     },
     "exo-rem-cloud-r500": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -156,7 +173,8 @@
         "lambda/d_lambda": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
+        "checksum": "d91ca3a8bcde40c744ce7d9712ae74be822c2d4b394ce3394e89b8ef6ad79a74"
     },
     "exo-rem-nocloud-r500": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -166,7 +184,8 @@
         "lambda/d_lambda": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
+        "checksum": "af38e6a7243f4e11712363f776efedffa57055c22e471509a6276020ec70fc78"
     },
     "exo-rem-cloud-r20000": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -176,7 +195,8 @@
         "lambda/d_lambda": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
+        "checksum": "4dd73d2e5a12756c05b9439cf7f4c03d2cc084e33b97af0efc3da3409c83a092"
     },
     "exo-rem-cloud-r20000-isotopes": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_co_iso"],
@@ -186,7 +206,8 @@
         "lambda/d_lambda": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C"
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
+        "checksum": "48f060ef905fd1c4affbcd633675f120341118d717f7a2dd2e6ffe9fa0a75a1a"
     },
     "koester-wd": {
         "parameters": ["teff", "logg"],
@@ -196,7 +217,8 @@
         "lambda/d_lambda": 2000,
         "teff range": [5000, 80000],
         "reference": "Koester (2010)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K"
+        "url": "https://ui.adsabs.harvard.edu/abs/2010MmSAI..81..921K",
+        "checksum": "5dc5661f841b6870fbdf118feaa86bf7e3524189062dbd0f6795f62cd2837537"
     },
     "lacy2023-clear-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -206,7 +228,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "a3f933c4345f250a9820080425eb11a5aea5f12a6bbbf5f92b4e7a6b984bde23"
     },
     "lacy2023-clear-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -216,7 +239,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "56a85656d05bc397b1df03aa0c769a8313bfa3104a4f4c50b25df50514a714ea"
     },
     "lacy2023-cloudy-thin-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -226,7 +250,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "52e4c42a2838e86d5b9c706e2a4df5d0fbbd05d94e3a9f18f1c8c0c946030e67"
     },
     "lacy2023-cloudy-thin-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -236,7 +261,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "c5c2fb23e15ec6eb950a46e6f306d701f5caae0bfabe8335ccd6a19a8aebeb7d"
     },
     "lacy2023-cloudy-thick-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -246,7 +272,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "b7e6d490139c1213fe81c5b14b2e74a6a8039d0b441f5e061c24225add3d6b14"
     },
     "lacy2023-cloudy-thick-neq": {
         "parameters": ["teff", "logg", "feh"],
@@ -256,7 +283,8 @@
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "6c84c6125647849841dbbccacc40bad3c1cdfa3cee2e27febf47f89dc3234969"
     },
     "morley-2012": {
         "parameters": ["teff", "logg", "fsed"],
@@ -266,7 +294,8 @@
         "lambda/d_lambda": 10000,
         "teff range": [400, 1300],
         "reference": "Morley et al. (2012)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M"
+        "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M",
+        "checksum": "a07d32021b92e73159a5503956053fad1aa2a61e17567456ccf5ad25f2d88632"
     },
     "petitcode-cool-clear": {
         "parameters": ["teff", "logg", "feh"],
@@ -276,7 +305,8 @@
         "lambda/d_lambda": 1000,
         "teff range": [500, 1000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
+        "checksum": "f6e28fb92836169a565e66f703f1cc8360cc70fd644c2b35b9615b0b5edd963e"
     },
     "petitcode-cool-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
@@ -287,7 +317,8 @@
         "teff range": [500, 850],
         "information": "log(Kzz) = 7.5",
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
+        "checksum": "505659fb93f13f9735b0aed5fef04fc2d9b1552fa469a65c0f35b59d1fa5c5bd"
     },
     "petitcode-hot-clear": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -297,7 +328,8 @@
         "lambda/d_lambda": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
+        "checksum": "3e5c5192e3668fb48795d50e34afa147c7c1ebfad2b2095e1504106627452817"
     },
     "petitcode-hot-cloudy": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "fsed"],
@@ -307,7 +339,8 @@
         "lambda/d_lambda": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M"
+        "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
+        "checksum": "3cf545f94795cb235176f9df838fdaa0b2e69094f8fbf4e4bafda99afae2c5da"
     },
     "petitcode-linder2019-clear": {
         "parameters": ["teff", "logg", "feh"],
@@ -317,7 +350,8 @@
         "lambda/d_lambda": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L",
+        "checksum": "aa93364a5e9bee594b45e54a42a17b55907ee5f869c1d95a3ba15bbbc10d09dd"
     },
     "petitcode-linder2019-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
@@ -327,7 +361,8 @@
         "lambda/d_lambda": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L"
+        "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L",
+        "checksum": "48b61dd41d661ae67494613ba786ed8e44aca998660c15c6cb86f2a5b4676916"
     },
     "phoenix-husser2013": {
         "parameters": ["teff", "logg", "feh"],
@@ -338,7 +373,8 @@
         "teff range": [2300, 12000],
         "reference": "Husser et al. (2013)",
         "url": "https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H",
-        "information": "[alpha/Fe] = 0.0"
+        "information": "[alpha/Fe] = 0.0",
+        "checksum": "151b6c086d11badc22ba8299ae140617cc50b68ad595a2e7bd14d0aa2ca3fbe2"
     },
     "saumon2008-clear": {
         "parameters": ["teff", "logg"],
@@ -346,7 +382,8 @@
         "file size": "197 Mb",
         "wavelength range": [0.4, 50],
         "lambda/d_lambda": 5000,
-        "teff range": [500, 2400]
+        "teff range": [500, 2400],
+        "checksum": "a7ab015f6b1a34acdd06ec29836fba6f79e7c6914acf5ac18f7bc0dab4428ad5"
     },
     "saumon2008-cloudy": {
         "parameters": ["teff", "logg"],
@@ -354,7 +391,8 @@
         "file size": "122 Mb",
         "wavelength range": [0.4, 50],
         "lambda/d_lambda": 5000,
-        "teff range": [500, 2400]
+        "teff range": [500, 2400],
+        "checksum": "6556af44347d86aeea0c2baef2ec6c252629faac4fa052be1cc977bf56fccf23"
     },
     "sonora-cholla": {
         "parameters": ["teff", "logg", "log_kzz"],
@@ -365,7 +403,8 @@
         "teff range": [500, 1300],
         "information": "[Fe/H] = 0.0",
         "reference": "Karalidi et al. (2021)",
-        "url": "https://zenodo.org/record/4450269"
+        "url": "https://zenodo.org/record/4450269",
+        "checksum": "c5325fb89ed5e29b8b61807ba4c08cefbe8cca0f132c1015d425c623fea180bf"
     },
     "sonora-bobcat": {
         "parameters": ["teff", "logg", "feh"],
@@ -375,7 +414,8 @@
         "lambda/d_lambda": 5000,
         "teff range": [200, 2400],
         "reference": "Marley et al. (2021)",
-        "url": "https://zenodo.org/record/5063476"
+        "url": "https://zenodo.org/record/5063476",
+        "checksum": "e1fa30f22971eec72bc977343308a6bee2eff2cf2e7d979accfcc0e14b1184c5"
     },
     "sonora-bobcat-co": {
         "parameters": ["teff", "c_o_ratio"],
@@ -386,7 +426,8 @@
         "teff range": [200, 2400],
         "information": "[Fe/H] = 0.0, log(g) = 5.0",
         "reference": "Marley et al. (2021)",
-        "url": "https://zenodo.org/record/5063476"
+        "url": "https://zenodo.org/record/5063476",
+        "checksum": "9629b650bfcd28a749e714f48bf970fdd8684bbe7b0ea9505248d52e2d419f57"
     },
     "sonora-elfowl-l": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
@@ -396,7 +437,8 @@
         "lambda/d_lambda": 60000,
         "teff range": [1300, 2400],
         "reference": "Mukherjee et al. (2023)",
-        "url": "https://zenodo.org/records/10385987"
+        "url": "https://zenodo.org/records/10385987",
+        "checksum": "d1ba567bb2421681f10f86a70057d869b3b0f3857ea9dc071693caede3c71de1"
     },
     "sonora-elfowl-t": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
@@ -406,7 +448,8 @@
         "lambda/d_lambda": 60000,
         "teff range": [575, 1200],
         "reference": "Mukherjee et al. (2023)",
-        "url": "https://zenodo.org/records/10385821"
+        "url": "https://zenodo.org/records/10385821",
+        "checksum": "d91163cc96ceff9891896b869d66b544756a3719ae91486ab9c6f3a0722989cc"
     },
     "sonora-elfowl-y": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_kzz"],
@@ -416,7 +459,8 @@
         "lambda/d_lambda": 60000,
         "teff range": [275, 550],
         "reference": "Mukherjee et al. (2023)",
-        "url": "https://zenodo.org/records/10381250"
+        "url": "https://zenodo.org/records/10381250",
+        "checksum": "bf499caa222c6cb17ce8c750272e0ace6c1e0083c91adda49d21ce1f2b3e5f42"
     },
     "sphinx": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -426,6 +470,7 @@
         "lambda/d_lambda": 250,
         "teff range": [2000, 4000],
         "reference": "Iyer et al. (2023)",
-        "url": "https://zenodo.org/record/7416042"
+        "url": "https://zenodo.org/record/7416042",
+        "checksum": "9751ea29b09b1e73b3ad2558938af5bc50ebbba3bc1bf5e0aa62d2017251aedb"
     }
 }

@@ -2,6 +2,7 @@
 Module for adding a grid of model spectra to the database.
 """
 
+import hashlib
 import json
 import tarfile
 import warnings
@@ -141,12 +142,22 @@ def add_model_grid(
 
     url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_tag}.tgz"
 
-    if not data_file.exists():
+    if data_file.exists():
+        sha256_hash = hashlib.sha256(open(str(data_file),'rb').read()).hexdigest()
+
+        if sha256_hash != model_info['checksum']:
+            warnings.warn(f"The hash of the '{model_tag}' file is not as "
+                          "expected, probably because the model grid has "
+                          "been updated on the server. Please remove the "
+                          "following file such that the latest version "
+                          f"will be downloaded: {str(data_file)}")
+
+    else:
         print()
 
         pooch.retrieve(
             url=url,
-            known_hash=None,
+            known_hash=f"sha256:{model_info['checksum']}",
             fname=input_file,
             path=input_path,
             progressbar=True,
