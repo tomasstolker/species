@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 
 from species import SpeciesInit
+
 # from species.data.database import Database
 from species.read.read_color import ReadColorColor, ReadColorMagnitude
 from species.util import test_util

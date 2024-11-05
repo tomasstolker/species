@@ -1568,7 +1568,7 @@ def create_model_label(
     not_default = ["distance", "parallax", "mass", "luminosity"]
 
     # Do not include log_lum because log_lum_atm is already include
-    # expect when the model spectrum is a blackbody from ReadPlanck
+    # except when the model spectrum is a blackbody from ReadPlanck
 
     if model_name != "planck":
         not_default.append("log_lum")

@@ -545,7 +545,7 @@ class ReadModel:
     @typechecked
     def apply_ext_ism(
         wavelengths: np.ndarray, flux: np.ndarray, v_band_ext: float, v_band_red: float
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         """
         Internal function for applying ISM extinction to a spectrum.
 

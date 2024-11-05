@@ -497,11 +497,12 @@ def plot_grid_statistic(
         Output filename for the plot. The plot is shown in an
         interface window if the argument is set to ``None``.
     extra_param : str, None
-        Extra parameter to be overplotted with contours. The argument
-        can be set to any of the atmospheric parameters that were used
-        for the comparison, for example, 'teff', 'logg', 'feh', or
-        'radius'. Optionally, the argument can be set to 'ism_ext' in
-        case the ``av_points`` parameter of the
+        Extra parameter that is shown as contours, overlayed on the
+        goodness-of-fit figure. The argument can be set to any of
+        the atmospheric parameters that were used for the comparison,
+        for example, 'teff', 'logg', 'feh', or 'radius'. Optionally,
+        the argument can be set to 'ism_ext' in case the ``av_points``
+        parameter of the
         :func:`~species.fit.compare_spectra.CompareSpectra.compare_model`
         method was used. Extra contours are not plotted if the
         argument is set to ``None``.
@@ -1019,7 +1020,11 @@ def plot_model_spectra(
         n_param = dset.attrs["n_param"]
         n_scale_spec = dset.attrs["n_scale_spec"]
         parallax = dset.attrs["parallax"]
-        n_inc_phot = dset.attrs["n_inc_phot"]
+
+        if "n_inc_phot" in dset.attrs:
+            n_inc_phot = dset.attrs
+        else:
+            n_inc_phot = 0
 
         if "model_name" in dset.attrs:
             model_name = dset.attrs["model_name"]

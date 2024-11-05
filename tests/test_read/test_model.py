@@ -47,7 +47,9 @@ class TestModel:
         read_model = ReadModel("ames-cond", filter_name="Paranal/NACO.H")
 
         model_box = read_model.get_model(
-            self.model_param, spec_res=100.0, magnitude=False,
+            self.model_param,
+            spec_res=100.0,
+            magnitude=False,
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(
@@ -58,7 +60,9 @@ class TestModel:
         )
 
         model_box = read_model.get_model(
-            self.model_param, spec_res=100.0, magnitude=True,
+            self.model_param,
+            spec_res=100.0,
+            magnitude=True,
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(

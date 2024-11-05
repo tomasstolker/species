@@ -34,13 +34,34 @@ class TestCalibration:
 
     def test_resample_spectrum(self):
         read_calib = ReadCalibration("vega")
+
         spec_box = read_calib.resample_spectrum(
-            np.linspace(1.0, 2.0, 10), apply_mask=True
+            wavel_points=np.linspace(1.0, 5.0, 101),
+            model_param=None,
+            spec_res=None,
+            apply_mask=True,
+            interp_highres=False,
         )
 
-        assert np.sum(spec_box.wavelength) == 15.0
+        assert np.sum(spec_box.wavelength) == 303.0
         assert np.sum(spec_box.flux) == pytest.approx(
-            2.2628022608148692e-08, rel=self.limit, abs=0.0
+            6.51324713540645e-08, rel=self.limit, abs=0.0
+        )
+
+    def test_resample_smooth(self):
+        read_calib = ReadCalibration("vega")
+
+        spec_box = read_calib.resample_spectrum(
+            wavel_points=np.linspace(1.0, 5.0, 101),
+            model_param=None,
+            spec_res=50.,
+            apply_mask=True,
+            interp_highres=True,
+        )
+
+        assert np.sum(spec_box.wavelength) == 303.0
+        assert np.sum(spec_box.flux) == pytest.approx(
+            6.516063242575011e-08, rel=self.limit, abs=0.0
         )
 
     def test_get_spectrum(self):

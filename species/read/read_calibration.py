@@ -10,7 +10,6 @@ from typing import Dict, Optional, Tuple
 import h5py
 import numpy as np
 
-from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
@@ -85,18 +84,20 @@ class ReadCalibration:
             Spectral resolution that is used for smoothing the spectrum
             before resampling the wavelengths. No smoothing is applied
             if the argument is set to ``None``. The smoothing can only
-            be applied to spectra with a constant spectral resolution
-            (which is the case for all model spectra that are
-            supported by ``species``) or a constant wavelength
-            spacing. The first smoothing approach is fastest.
+            be applied to spectra with a constant
+            $\\lambda/\\Delta\\lambda$ (which is the case for all model
+            spectra that are supported by ``species``) or a constant
+            wavelength spacing. The ``interp_highres`` parameter can be
+            set to ``True`` to resample the spectrum to
+            $\\lambda/\\Delta\\lambda = 10000$ before smoothing the
+            spectrum.
         apply_mask : bool
             Exclude negative values and NaNs.
         interp_highres : bool
-            Oversample the spectrum to $R = 10000$, such that the
-            ``spec_res`` parameter can be applied on a spectrum with
-            constant $\\lambda/\\Delta\\lambda$. The uncertainties
-            are crudely propagated with an interpolation as well
-            and should only be considered as estimate.
+            Oversample the spectrum to
+            $\\lambda/\\Delta\\lambda = 10000$, such that the smoothing
+            by the ``spec_res`` parameter will be applied on a spectrum
+            with constant logarithmically spaced wavelengths.
 
         Returns
         -------
@@ -107,50 +108,34 @@ class ReadCalibration:
         calib_box = self.get_spectrum(apply_mask=apply_mask)
 
         if interp_highres:
-            flux_interp = interp1d(
+            wavel_highres = create_wavelengths(
+                (calib_box.wavelength[0], calib_box.wavelength[-1]), 10000.0
+            )
+
+            flux_highres, error_highres = spectres_numba(
+                wavel_highres,
                 calib_box.wavelength,
                 calib_box.flux,
-                bounds_error=False,
-                fill_value="extrapolate",
+                spec_errs=calib_box.error,
+                fill=np.nan,
+                verbose=True,
             )
-
-            sigma_interp = interp1d(
-                calib_box.wavelength,
-                calib_box.error,
-                bounds_error=False,
-                fill_value="extrapolate",
-            )
-
-            wavel_range = (calib_box.wavelength[0], calib_box.wavelength[-1])
-            wavel_highres = create_wavelengths(wavel_range, 10000.0)
-
-            calib_box.wavelength = wavel_highres
-            calib_box.flux = flux_interp(wavel_highres)
-            calib_box.error = sigma_interp(wavel_highres)
 
             if spec_res is not None:
-                calib_box.flux = smooth_spectrum(
-                    wavelength=calib_box.wavelength,
-                    flux=calib_box.flux,
+                flux_highres = smooth_spectrum(
+                    wavelength=wavel_highres,
+                    flux=flux_highres,
                     spec_res=spec_res,
                 )
 
-            flux_interp = interp1d(
-                calib_box.wavelength,
-                calib_box.flux,
-                bounds_error=False,
-                fill_value="extrapolate",
+            flux_new, error_new = spectres_numba(
+                wavel_points,
+                wavel_highres,
+                flux_highres,
+                spec_errs=error_highres,
+                fill=np.nan,
+                verbose=True,
             )
-
-            sigma_interp = interp1d(
-                calib_box.wavelength,
-                calib_box.error,
-                bounds_error=False,
-                fill_value="extrapolate",
-            )
-
-            flux_new = flux_interp(wavel_points)
-            error_new = sigma_interp(wavel_points)
 
         else:
             if spec_res is not None:
@@ -304,7 +289,7 @@ class ReadCalibration:
                 verbose=True,
             )
 
-            # Fluxes at the edges on the resampled spectrum might be NaN 
+            # Fluxes at the edges on the resampled spectrum might be NaN
 
             flux_nan = np.isnan(flux_new)
             wavelength = wavelength_new[~flux_nan]

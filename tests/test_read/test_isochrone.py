@@ -103,7 +103,10 @@ class TestIsochrone:
         colorcolor_box = read_isochrone.get_color_color(
             age=100.0,
             masses=np.linspace(35.0, 45.0, 10),
-            filters_colors = (("MKO/NSFCam.J", "MKO/NSFCam.H"), ("MKO/NSFCam.H", "MKO/NSFCam.Ks")),
+            filters_colors=(
+                ("MKO/NSFCam.J", "MKO/NSFCam.H"),
+                ("MKO/NSFCam.H", "MKO/NSFCam.Ks"),
+            ),
         )
 
         assert colorcolor_box.object_type == "model"

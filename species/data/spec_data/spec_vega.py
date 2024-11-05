@@ -81,11 +81,12 @@ def add_vega(input_path: str, database: h5py._hl.files.File) -> None:
     flux *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
     error_stat *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
     error_sys *= 1e-3 * 1e4  # (erg s-1 cm-2 A-1) -> (W m-2 um-1)
+    error = np.sqrt(error_stat**2 + error_sys**2)  # (W m-2 um-1)
 
     print("\nAdding spectrum: Vega", end="", flush=True)
 
     database.create_dataset(
-        "spectra/calibration/vega", data=np.vstack((wavelength, flux, error_stat))
+        "spectra/calibration/vega", data=np.vstack((wavelength, flux, error))
     )
 
     print("\nReference: Bohlin et al. 2014, PASP, 126")
