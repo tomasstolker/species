@@ -31,7 +31,7 @@ except:
 
 from schwimmbad import MPIPool
 from scipy.interpolate import interp1d
-from scipy.stats import norm
+from scipy.stats import norm, truncnorm
 from typeguard import typechecked
 
 from species.phot.syn_phot import SyntheticPhotometry
@@ -354,7 +354,10 @@ class FitModel:
                  - The prior boundaries of ``ism_ext`` and ``ism_red``
                    should be provided in the ``bounds`` dictionary, for
                    example ``bounds={'ism_ext': (0., 10.),
-                   'ism_red': (0., 20.)}``.
+                   'ism_red': (1., 10.)}``. It is recommended to set the
+                   minimum value of ``ism_red`` to at least 1.0 since the
+                   extinction will be negative for the infrared
+                   wavelength regime otherwise.
 
             Log-normal size distribution:
 
@@ -471,7 +474,9 @@ class FitModel:
             ``normal_prior``. The parameter is not used if the
             argument is set to ``None``. See also the ``bounds``
             parameter for including priors with a (log-)uniform
-            distribution.
+            distribution. Setting a parameter both in ``bounds``
+            and ``normal_prior`` will create a prior from a
+            truncated normal distribution.
 
         Returns
         -------
@@ -1122,6 +1127,14 @@ class FitModel:
             if "ism_red" in self.bounds or "ism_red" in self.normal_prior:
                 self.modelpar.append("ism_red")
 
+        elif "ism_red" in self.bounds:
+            warnings.warn("The 'ism_red' parameter is set in the "
+                          "bounds dictionary but the 'ism_ext' "
+                          "parameter is not included. The 'ism_red' "
+                          "parameter is therefore ignored since the "
+                          "reddening can only be fitted in "
+                          "combination with the extinction.")
+
         # Veiling parameters
 
         if "veil_a" in self.bounds:
@@ -1335,12 +1348,36 @@ class FitModel:
 
         for param_item in cube_index:
             if param_item in self.normal_prior:
-                # Normal prior
-                param_out[cube_index[param_item]] = norm.ppf(
-                    param_out[cube_index[param_item]],
-                    loc=self.normal_prior[param_item][0],
-                    scale=self.normal_prior[param_item][1],
-                )
+                if param_item in bounds:
+                    # Truncated normal prior
+
+                    # The truncation values are given in number of
+                    # standard deviations relative to the mean
+                    # of the normal distribution
+
+                    a_trunc = (
+                        bounds[param_item][0] - self.normal_prior[param_item][0]
+                    ) / self.normal_prior[param_item][1]
+
+                    b_trunc = (
+                        bounds[param_item][1] - self.normal_prior[param_item][0]
+                    ) / self.normal_prior[param_item][1]
+
+                    param_out[cube_index[param_item]] = truncnorm.ppf(
+                        param_out[cube_index[param_item]],
+                        a_trunc,
+                        b_trunc,
+                        loc=self.normal_prior[param_item][0],
+                        scale=self.normal_prior[param_item][1],
+                    )
+
+                else:
+                    # Normal prior
+                    param_out[cube_index[param_item]] = norm.ppf(
+                        param_out[cube_index[param_item]],
+                        loc=self.normal_prior[param_item][0],
+                        scale=self.normal_prior[param_item][1],
+                    )
 
             else:
                 # Uniform prior

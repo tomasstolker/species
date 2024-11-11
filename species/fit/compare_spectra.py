@@ -29,8 +29,8 @@ from species.util.spec_util import smooth_spectrum
 
 class CompareSpectra:
     """
-    Class for comparing the spectrum of an object with
-    a library of empirical or model spectra.
+    Class for comparing one or multiple spectra of an object with a
+    library of empirical spectra or a grid of model spectra.
     """
 
     @typechecked
@@ -85,8 +85,8 @@ class CompareSpectra:
         rad_vel: Optional[Union[List[float], np.ndarray]] = None,
     ) -> None:
         """
-        Method for finding the best fitting empirical spectra
-        from a selected library by evaluating the goodness-of-fit
+        Method for finding the best matching empirical spectra
+        from the selected library by evaluating the goodness-of-fit
         statistic from `Cushing et al. (2008) <https://ui.adsabs.
         harvard.edu/abs/2008ApJ...678.1372C/abstract>`_.
 
@@ -386,10 +386,15 @@ class CompareSpectra:
         inc_phot: Union[List[str], bool] = False,
     ) -> None:
         """
-        Method for finding the best-fit spectrum from a grid of
-        atmospheric model spectra by evaluating the goodness-of-fit
+        Method for evaluating the goodness-of-fit
         statistic from `Cushing et al. (2008) <https://ui.adsabs.
-        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_.
+        harvard.edu/abs/2008ApJ...678.1372C/abstract>`_ for all
+        combination of parameters in a grid of model spectra.
+        For each set of parameters, the model will be scaled in
+        order to minimize the goodness-of-fit. The scaling gives
+        the radius since the distance is adopted from the selected
+        ``object_name``. The model spectra are not interpolated so
+        only parameters available from the grid are tested.
 
         Parameters
         ----------
@@ -411,8 +416,8 @@ class CompareSpectra:
             comparing the spectra over a broad wavelength range.
         scale_spec : list(str), None
             List with names of observed spectra to which an additional
-            flux scaling is applied to best match the spectral
-            templates. This can be used to account for a difference in
+            flux scaling is applied to best match each model spectrum
+            This parameter can be used to account for a difference in
             absolute calibration between spectra.
         weights : bool
             Apply a weighting of the spectra and photometry based on

@@ -31,46 +31,57 @@
     "atmo-ceq": {
         "parameters": ["teff", "logg"],
         "name": "ATMO CEQ",
-        "file size": "455 MB",
+        "file size": "59 MB",
         "wavelength range": [0.2, 6000],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 2000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "bab2dc6920d9358bd0a554b9d5554b09e5885fec2daf91ee11ccf340c310fcbf"
+        "checksum": "d536d95ac92c67d51fac367e409f9e2faa53c55fdd32ade0eae6d8115de757c5"
     },
     "atmo-neq-weak": {
         "parameters": ["teff", "logg"],
         "name": "ATMO NEQ weak",
-        "file size": "276 MB",
+        "file size": "36 MB",
         "wavelength range": [0.2, 6000],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 2000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "1d0ddb22e43feff0255c7421915364e45e2f4d6c51b1c52793b8f532ee01d654"
+        "checksum": "b5e808a9faa99ec864ced4a43f80689a15e04386c3041db94f3cce92da5e70ed"
     },
     "atmo-neq-strong": {
         "parameters": ["teff", "logg"],
         "name": "ATMO NEQ strong",
-        "file size": "274 MB",
+        "file size": "36 MB",
         "wavelength range": [0.2, 6000],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 2000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "5868ad63be5fad48808398926f689713eaea8298631ae215b7835d4d6d786a0b"
+        "checksum": "f277b984cb57d5155ce7d841a561c6acc9b3d46a7b6c97fc334cc5827212e041"
     },
     "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
         "name": "ATMO (Petrus et al. 2023)",
-        "file size": "2.1 GB",
+        "file size": "1.6 GB",
         "wavelength range": [0.2, 30],
         "lambda/d_lambda": 3000,
         "teff range": [800, 3000],
         "reference": "Petrus et al. (2023)",
         "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P",
-        "checksum": "ffc7ae3f85cdce83d3a1e6dbaea0af3faf971fcbc2705428a01a17d526e06081"
+        "checksum": "be76774098ba3113f21f4b5516ec672f1615e95ae62134de786115bc25ad267c"
+    },
+    "atmo-petrus2023-highres": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
+        "name": "ATMO (Petrus et al. 2023)",
+        "file size": "2.4 GB",
+        "wavelength range": [0.2, 2.5],
+        "lambda/d_lambda": 10000,
+        "teff range": [800, 3000],
+        "reference": "Petrus et al. (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023A%26A...670L...9P",
+        "checksum": "baa64a1809c8689c2dfcb5d36b6eb780ae6b7ee4c6b5dc6f2e83989f4839c592"
     },
     "blackbody": {
         "parameters": ["teff"],
@@ -139,31 +150,31 @@
     "bt-settl": {
         "parameters": ["teff", "logg"],
         "name": "BT-Settl",
-        "file size": "227 MB",
-        "wavelength range": [0.1, 100],
-        "lambda/d_lambda": 10000,
+        "file size": "45 MB",
+        "wavelength range": [0.1, 500],
+        "lambda/d_lambda": 2000,
         "teff range": [400, 4000],
-        "checksum": "70d34a26c946ba31ae631e54de45b915c99c1defd01a5c2b194e337ab51afb89"
+        "checksum": "ca67668ebbf071d99f10ba2bf3092cdd9c0a13b2cc4688b4bd0da2d57e28300f"
     },
     "bt-settl-cifist": {
         "parameters": ["teff", "logg"],
         "name": "BT-Settl CIFIST",
-        "file size": "1.4 GB",
+        "file size": "442 MB",
         "wavelength range": [0.1, 5000],
-        "lambda/d_lambda": 20000,
+        "lambda/d_lambda": 10000,
         "teff range": [1200, 7000],
-        "checksum": "a45d353fada1443430662c59f894c1e6f85244adb39af7eb1cedfed3ae6c4356"
+        "checksum": "b6122d3cc290367968821075b7e7d8b7302656433021d7c4cf6a52aa4cee8500"
     },
     "drift-phoenix": {
         "parameters": ["teff", "logg", "feh"],
         "name": "DRIFT-PHOENIX",
-        "file size": "229 MB",
-        "wavelength range": [0.1, 50],
-        "lambda/d_lambda": 4000,
+        "file size": "109 MB",
+        "wavelength range": [0.1, 500],
+        "lambda/d_lambda": 2000,
         "teff range": [1000, 3000],
         "reference": "Helling et al. (2008)",
         "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H",
-        "checksum": "ba71a5e4d3d399a6f8ae249590c2e174e90ec2b55e712d350dad8ca1ae83a907"
+        "checksum": "b59b7711a4ed9dcf9284ef0c3f2b614598eec89bf53f548ceb361b806db70757"
     },
     "exo-rem-cloud-r500": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
@@ -461,6 +472,28 @@
         "reference": "Mukherjee et al. (2023)",
         "url": "https://zenodo.org/records/10381250",
         "checksum": "bf499caa222c6cb17ce8c750272e0ace6c1e0083c91adda49d21ce1f2b3e5f42"
+    },
+    "sonora-diamondback": {
+        "parameters": ["teff", "logg", "feh", "fsed"],
+        "name": "Sonora Diamondback",
+        "file size": "639 MB",
+        "wavelength range": [0.3, 250],
+        "lambda/d_lambda": 6000,
+        "teff range": [900, 2400],
+        "reference": "Morley et al. (2024)",
+        "url": "https://zenodo.org/records/12735103",
+        "checksum": "1d2d65d7c72fd2f402507367fd40a5b030172fac6869770d7be52e5fc96d8f88"
+    },
+    "sonora-diamondback-highres": {
+        "parameters": ["teff", "logg", "feh", "fsed"],
+        "name": "Sonora Diamondback",
+        "file size": "2 GB",
+        "wavelength range": [0.3, 250],
+        "lambda/d_lambda": 30000,
+        "teff range": [900, 2400],
+        "reference": "Morley et al. (2024)",
+        "url": "https://zenodo.org/records/12735103",
+        "checksum": "22cb53d21ea50b4bbedea320ae6dddc4e2b4d901b4b326450b45c4cb4bdea901"
     },
     "sphinx": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],

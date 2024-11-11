@@ -4,6 +4,14 @@ species.data.phot\_data package
 Submodules
 ----------
 
+species.data.phot\_data.phot\_jwst\_ydwarfs module
+--------------------------------------------------
+
+.. automodule:: species.data.phot_data.phot_jwst_ydwarfs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.phot\_data.phot\_leggett module
 --------------------------------------------
 
