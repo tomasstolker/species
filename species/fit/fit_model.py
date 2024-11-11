@@ -758,6 +758,8 @@ class FitModel:
             # Add blackbody disk components
 
             if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
+                teff_range = ReadModel("blackbody").get_bounds()['teff']
+
                 if isinstance(bounds["disk_teff"], list) and isinstance(
                     bounds["disk_radius"], list
                 ):
@@ -779,6 +781,28 @@ class FitModel:
                             "disk_radius"
                         ][disk_idx]
 
+                        if self.bounds[f"disk_teff_{disk_idx}"][0] < teff_range[0]:
+                            warnings.warn("The lower bound on the prior of "
+                                          f"'disk_teff_{disk_idx}' "
+                                          f"({self.bounds['disk_teff'][0]} K) is below "
+                                          "the minimum value available in the blackbody "
+                                          f"grid ({teff_range[0]} K). The lower bound "
+                                          "is therefore adjusted to the minimum value "
+                                          "from the grid.")
+
+                            self.bounds[f"disk_teff_{disk_idx}"] = (teff_range[0], self.bounds[f"disk_teff_{disk_idx}"][1])
+
+                        if self.bounds[f"disk_teff_{disk_idx}"][1] > teff_range[1]:
+                            warnings.warn("The upper bound on the prior of "
+                                          f"'disk_teff_{disk_idx}' "
+                                          f"({self.bounds['disk_teff'][1]} K) is above "
+                                          "the maximum value available in the blackbody "
+                                          f"grid ({teff_range[1]} K). The upper bound "
+                                          "is therefore adjusted to the maximum value "
+                                          "from the grid.")
+
+                            self.bounds[f"disk_teff_{disk_idx}"] = (self.bounds[f"disk_teff_{disk_idx}"][0], teff_range[1])
+
                     del self.bounds["disk_teff"]
                     del self.bounds["disk_radius"]
 
@@ -789,6 +813,26 @@ class FitModel:
 
                     self.modelpar.append("disk_teff")
                     self.modelpar.append("disk_radius")
+
+                    if self.bounds['disk_teff'][0] < teff_range[0]:
+                        warnings.warn("The lower bound on the prior of 'disk_teff' "
+                                      f"({self.bounds['disk_teff'][0]} K) is below "
+                                      "the minimum value available in the blackbody "
+                                      f"grid ({teff_range[0]} K). The lower bound "
+                                      "is therefore adjusted to the minimum value "
+                                      "from the grid.")
+
+                        self.bounds['disk_teff'] = (teff_range[0], self.bounds['disk_teff'][1])
+
+                    if self.bounds['disk_teff'][1] > teff_range[1]:
+                        warnings.warn("The upper bound on the prior of 'disk_teff' "
+                                      f"({self.bounds['disk_teff'][1]} K) is above "
+                                      "the maximum value available in the blackbody "
+                                      f"grid ({teff_range[1]} K). The upper bound "
+                                      "is therefore adjusted to the maximum value "
+                                      "from the grid.")
+
+                        self.bounds['disk_teff'] = (self.bounds['disk_teff'][0], teff_range[1])
 
             # Update parameters of binary system
 

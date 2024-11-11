@@ -416,7 +416,7 @@ class CompareSpectra:
             comparing the spectra over a broad wavelength range.
         scale_spec : list(str), None
             List with names of observed spectra to which an additional
-            flux scaling is applied to best match each model spectrum
+            flux scaling is applied to best match each model spectrum.
             This parameter can be used to account for a difference in
             absolute calibration between spectra.
         weights : bool
