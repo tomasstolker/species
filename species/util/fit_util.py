@@ -390,22 +390,24 @@ def get_residuals(
 
         res_phot = {}
 
-        for item in inc_phot:
-            transmission = ReadFilter(item)
-            res_phot[item] = np.zeros(objectbox.flux[item].shape)
+        for phot_item in inc_phot:
+            transmission = ReadFilter(phot_item)
+            res_phot[phot_item] = np.zeros(objectbox.flux[phot_item].shape)
 
-            if objectbox.flux[item].ndim == 1:
-                res_phot[item][0] = transmission.mean_wavelength()
-                res_phot[item][1] = (
-                    objectbox.flux[item][0] - model_phot.flux[item]
-                ) / objectbox.flux[item][1]
+            if objectbox.flux[phot_item].ndim == 1:
+                res_phot[phot_item][0] = transmission.mean_wavelength()
 
-            elif objectbox.flux[item].ndim == 2:
-                for j in range(objectbox.flux[item].shape[1]):
-                    res_phot[item][0, j] = transmission.mean_wavelength()
-                    res_phot[item][1, j] = (
-                        objectbox.flux[item][0, j] - model_phot.flux[item]
-                    ) / objectbox.flux[item][1, j]
+                res_phot[phot_item][1] = (
+                    objectbox.flux[phot_item][0] - model_phot.flux[phot_item]
+                ) / objectbox.flux[phot_item][1]
+
+            elif objectbox.flux[phot_item].ndim == 2:
+                for j in range(objectbox.flux[phot_item].shape[1]):
+                    res_phot[phot_item][0, j] = transmission.mean_wavelength()
+
+                    res_phot[phot_item][1, j] = (
+                        objectbox.flux[phot_item][0, j] - model_phot.flux[phot_item]
+                    ) / objectbox.flux[phot_item][1, j]
 
     # Spectra residuals
 
@@ -529,13 +531,13 @@ def get_residuals(
     print("\nResiduals (sigma):")
 
     if res_phot is not None:
-        for item in inc_phot:
-            if res_phot[item].ndim == 1:
-                print(f"   - {item} = {res_phot[item][1]:.2f}")
+        for phot_item in inc_phot:
+            if res_phot[phot_item].ndim == 1:
+                print(f"   - {phot_item} = {res_phot[phot_item][1]:.2f}")
 
-            elif res_phot[item].ndim == 2:
-                for j in range(res_phot[item].shape[1]):
-                    print(f"   - {item} = {res_phot[item][1, j]:.2f}")
+            elif res_phot[phot_item].ndim == 2:
+                for j in range(res_phot[phot_item].shape[1]):
+                    print(f"   - {phot_item} = {res_phot[phot_item][1, j]:.2f}")
 
     if res_spec is not None:
         for key in objectbox.spectrum:

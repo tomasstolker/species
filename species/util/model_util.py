@@ -11,7 +11,8 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 
 from PyAstronomy.pyasl import fastRotBroad
-from scipy.interpolate import interp1d, RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.core import constants
@@ -333,15 +334,20 @@ def apply_obs(
         # The fastRotBroad requires constant wavelength steps
         # Upsample by a factor of 4 to not lose spectral information
 
-        spec_interp = interp1d(model_wavel, model_flux)
-
         wavel_new = np.linspace(
             model_wavel[0],
             model_wavel[-1],
             4 * model_wavel.size,
         )
 
-        flux_new = spec_interp(wavel_new)
+        flux_new = spectres_numba(
+            wavel_new,
+            model_wavel,
+            model_flux,
+            spec_errs=None,
+            fill=np.nan,
+            verbose=True,
+        )
 
         # Apply fast rotational broadening
         # Only to be used on a limited wavelength range
@@ -356,21 +362,28 @@ def apply_obs(
 
         # Interpolate back to the original wavelength sampling
 
-        spec_interp = interp1d(wavel_new, flux_broad)
-        model_flux = spec_interp(model_wavel)
+        model_flux = spectres_numba(
+            model_wavel,
+            wavel_new,
+            flux_broad,
+            spec_errs=None,
+            fill=np.nan,
+            verbose=True,
+        )
 
     # Apply radial velocity shift
 
     if rad_vel is not None:
         wavel_shift = rad_vel * 1e3 * model_wavel / constants.LIGHT
 
-        spec_interp = interp1d(
+        model_flux = spectres_numba(
+            model_wavel,
             model_wavel + wavel_shift,
             model_flux,
-            fill_value="extrapolate",
+            spec_errs=None,
+            fill=np.nan,
+            verbose=True,
         )
-
-        model_flux = spec_interp(model_wavel)
 
     # Apply extinction
 
@@ -464,8 +477,14 @@ def apply_obs(
     # Resample wavelengths to data
 
     if data_wavel is not None:
-        flux_interp = interp1d(model_wavel, model_flux, bounds_error=True)
-        model_flux = flux_interp(data_wavel)
+        model_flux = spectres_numba(
+            data_wavel,
+            model_wavel,
+            model_flux,
+            spec_errs=None,
+            fill=np.nan,
+            verbose=True,
+        )
 
     # Shift the spectrum by a constant
 

@@ -679,7 +679,7 @@ class FitModel:
                                 warnings.warn(
                                     f"The upper bound on {key}_{i} "
                                     f"({self.bounds[f'{key}_{i}'][0]}) "
-                                    f"is larger than the lower bound "
+                                    f"is larger than the upper bound "
                                     f"from the available {self.model} "
                                     f"model grid ({bounds_grid[key][1]}). "
                                     f"The upper bound of the {key}_{i} "

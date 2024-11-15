@@ -83,7 +83,7 @@ class CompareSpectra:
         sptypes: Optional[List[str]] = None,
         av_ext: Optional[Union[List[float], np.ndarray]] = None,
         rad_vel: Optional[Union[List[float], np.ndarray]] = None,
-    ) -> None:
+    ) -> List[Tuple[float, str, str]]:
         """
         Method for finding the best matching empirical spectra
         from the selected library by evaluating the goodness-of-fit
@@ -124,8 +124,12 @@ class CompareSpectra:
 
         Returns
         -------
-        NoneType
-            None
+        list(tuple(float, str, str))
+            List with the 10 best matching spectra. Each item in the
+            list includes the goodness-of-fit, the object name, and
+            the spectral type. Less than 10 objects are stored if
+            there were less than 10 spectra selected from the
+            ``spec_library``.
         """
 
         w_i = 1.0
@@ -341,20 +345,32 @@ class CompareSpectra:
 
         print("Best-fitting spectra:")
 
+        best_list = []
+
         if len(gk_select) < 10:
-            for i, gk_item in enumerate(gk_select):
+            for gk_idx, gk_item in enumerate(gk_select):
+                best_list.append((gk_item, name_select[gk_idx], spt_select[gk_idx]))
+
                 print(
-                    f"   {i+1:2d}. G = {gk_item:.2e} -> {name_select[i]}, {spt_select[i]}, "
-                    f"A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n"
-                    f"                      scalings = {ck_select[i]}"
+                    f"   {gk_idx+1:2d}. G = {gk_item:.2e} -> "
+                    "{name_select[gk_idx]}, {spt_select[gk_idx]}, "
+                    f"A_V = {av_select[gk_idx]:.2f}, "
+                    f"RV = {rv_select[gk_idx]:.0f} km/s,\n"
+                    f"                       scalings = {ck_select[gk_idx]}"
                 )
 
         else:
-            for i in range(10):
+            for gk_idx in range(10):
+                best_list.append(
+                    (gk_select[gk_idx], name_select[gk_idx], spt_select[gk_idx])
+                )
+
                 print(
-                    f"   {i+1:2d}. G = {gk_select[i]:.2e} -> {name_select[i]}, {spt_select[i]}, "
-                    f"A_V = {av_select[i]:.2f}, RV = {rv_select[i]:.0f} km/s,\n"
-                    f"                      scalings = {ck_select[i]}"
+                    f"   {gk_idx+1:2d}. G = {gk_select[gk_idx]:.2e} -> "
+                    f"{name_select[gk_idx]}, {spt_select[gk_idx]}, "
+                    f"A_V = {av_select[gk_idx]:.2f}, "
+                    f"RV = {rv_select[gk_idx]:.0f} km/s,\n"
+                    f"                       scalings = {ck_select[gk_idx]}"
                 )
 
         from species.data.database import Database
@@ -373,6 +389,8 @@ class CompareSpectra:
             spec_name=self.spec_name,
             spec_library=spec_library,
         )
+
+        return best_list
 
     @typechecked
     def compare_model(

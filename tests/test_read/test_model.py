@@ -53,10 +53,10 @@ class TestModel:
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(
-            92.26773310928259, rel=self.limit, abs=0.0
+            105.55154232152323, rel=self.limit, abs=0.0
         )
         assert np.sum(model_box.flux) == pytest.approx(
-            1.7094871900384091e-12, rel=self.limit, abs=0.0
+            1.8337478754024314e-12, rel=self.limit, abs=0.0
         )
 
         model_box = read_model.get_model(
@@ -66,10 +66,10 @@ class TestModel:
         )
 
         assert np.sum(model_box.wavelength) == pytest.approx(
-            92.26773310928259, rel=self.limit, abs=0.0
+            105.55154232152323, rel=self.limit, abs=0.0
         )
         assert np.sum(model_box.flux) == pytest.approx(
-            646.3569174101167, rel=self.limit, abs=0.0
+            743.6394157329515, rel=self.limit, abs=0.0
         )
 
     def test_get_data(self):
@@ -77,10 +77,10 @@ class TestModel:
         model_box = read_model.get_data(self.model_param)
 
         assert np.sum(model_box.wavelength) == pytest.approx(
-            92.26773310928259, rel=self.limit, abs=0.0
+            105.55154232152323, rel=self.limit, abs=0.0
         )
         assert np.sum(model_box.flux) == pytest.approx(
-            1.709457282591505e-12, rel=self.limit, abs=0.0
+            1.8337268916259445e-12, rel=self.limit, abs=0.0
         )
 
     def test_get_flux(self):

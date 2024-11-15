@@ -197,13 +197,18 @@ class ReadModel:
 
             # Add extra wavelength points at the boundary to make
             # sure that the wavelength range of a filter profile
-            # is fully included by the model spectrum
+            # is fully included by the model spectrum.
 
-            if index[0] - 1 >= 0:
-                wl_index[index[0] - 1] = True
+            # Adding 1 wavelength at both boundaries is not
+            # sufficient because of the way that spectres
+            # treats the edges with the resampling.
 
-            if index[-1] + 1 < wl_index.size:
-                wl_index[index[-1] + 1] = True
+            for i in range(1, 6):
+                if index[0] - i >= 0:
+                    wl_index[index[0] - i] = True
+
+                if index[-1] + i < wl_index.size:
+                    wl_index[index[-1] + i] = True
 
         return wl_points[wl_index], wl_index
 
