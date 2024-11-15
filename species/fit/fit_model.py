@@ -344,7 +344,10 @@ class FitModel:
                    The first is with the empirical relation from
                    `Cardelli et al. (1989)
                    <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
-                   for ISM extinction.
+                   for ISM extinction. Please note that this relation
+                   is defined for wavelengths in the range of
+                   0.125-3.3 µm, so no extinction is applied to
+                   the fluxes with wavelengths outside this range.
 
                  - The extinction is parametrized by the $V$ band
                    extinction, $A_V$ (``ism_ext``), and optionally the
@@ -758,7 +761,7 @@ class FitModel:
             # Add blackbody disk components
 
             if "disk_teff" in self.bounds and "disk_radius" in self.bounds:
-                teff_range = ReadModel("blackbody").get_bounds()['teff']
+                teff_range = ReadModel("blackbody").get_bounds()["teff"]
 
                 if isinstance(bounds["disk_teff"], list) and isinstance(
                     bounds["disk_radius"], list
@@ -782,26 +785,36 @@ class FitModel:
                         ][disk_idx]
 
                         if self.bounds[f"disk_teff_{disk_idx}"][0] < teff_range[0]:
-                            warnings.warn("The lower bound on the prior of "
-                                          f"'disk_teff_{disk_idx}' "
-                                          f"({self.bounds['disk_teff'][0]} K) is below "
-                                          "the minimum value available in the blackbody "
-                                          f"grid ({teff_range[0]} K). The lower bound "
-                                          "is therefore adjusted to the minimum value "
-                                          "from the grid.")
+                            warnings.warn(
+                                "The lower bound on the prior of "
+                                f"'disk_teff_{disk_idx}' "
+                                f"({self.bounds['disk_teff'][0]} K) is below "
+                                "the minimum value available in the blackbody "
+                                f"grid ({teff_range[0]} K). The lower bound "
+                                "is therefore adjusted to the minimum value "
+                                "from the grid."
+                            )
 
-                            self.bounds[f"disk_teff_{disk_idx}"] = (teff_range[0], self.bounds[f"disk_teff_{disk_idx}"][1])
+                            self.bounds[f"disk_teff_{disk_idx}"] = (
+                                teff_range[0],
+                                self.bounds[f"disk_teff_{disk_idx}"][1],
+                            )
 
                         if self.bounds[f"disk_teff_{disk_idx}"][1] > teff_range[1]:
-                            warnings.warn("The upper bound on the prior of "
-                                          f"'disk_teff_{disk_idx}' "
-                                          f"({self.bounds['disk_teff'][1]} K) is above "
-                                          "the maximum value available in the blackbody "
-                                          f"grid ({teff_range[1]} K). The upper bound "
-                                          "is therefore adjusted to the maximum value "
-                                          "from the grid.")
+                            warnings.warn(
+                                "The upper bound on the prior of "
+                                f"'disk_teff_{disk_idx}' "
+                                f"({self.bounds['disk_teff'][1]} K) is above "
+                                "the maximum value available in the blackbody "
+                                f"grid ({teff_range[1]} K). The upper bound "
+                                "is therefore adjusted to the maximum value "
+                                "from the grid."
+                            )
 
-                            self.bounds[f"disk_teff_{disk_idx}"] = (self.bounds[f"disk_teff_{disk_idx}"][0], teff_range[1])
+                            self.bounds[f"disk_teff_{disk_idx}"] = (
+                                self.bounds[f"disk_teff_{disk_idx}"][0],
+                                teff_range[1],
+                            )
 
                     del self.bounds["disk_teff"]
                     del self.bounds["disk_radius"]
@@ -814,25 +827,35 @@ class FitModel:
                     self.modelpar.append("disk_teff")
                     self.modelpar.append("disk_radius")
 
-                    if self.bounds['disk_teff'][0] < teff_range[0]:
-                        warnings.warn("The lower bound on the prior of 'disk_teff' "
-                                      f"({self.bounds['disk_teff'][0]} K) is below "
-                                      "the minimum value available in the blackbody "
-                                      f"grid ({teff_range[0]} K). The lower bound "
-                                      "is therefore adjusted to the minimum value "
-                                      "from the grid.")
+                    if self.bounds["disk_teff"][0] < teff_range[0]:
+                        warnings.warn(
+                            "The lower bound on the prior of 'disk_teff' "
+                            f"({self.bounds['disk_teff'][0]} K) is below "
+                            "the minimum value available in the blackbody "
+                            f"grid ({teff_range[0]} K). The lower bound "
+                            "is therefore adjusted to the minimum value "
+                            "from the grid."
+                        )
 
-                        self.bounds['disk_teff'] = (teff_range[0], self.bounds['disk_teff'][1])
+                        self.bounds["disk_teff"] = (
+                            teff_range[0],
+                            self.bounds["disk_teff"][1],
+                        )
 
-                    if self.bounds['disk_teff'][1] > teff_range[1]:
-                        warnings.warn("The upper bound on the prior of 'disk_teff' "
-                                      f"({self.bounds['disk_teff'][1]} K) is above "
-                                      "the maximum value available in the blackbody "
-                                      f"grid ({teff_range[1]} K). The upper bound "
-                                      "is therefore adjusted to the maximum value "
-                                      "from the grid.")
+                    if self.bounds["disk_teff"][1] > teff_range[1]:
+                        warnings.warn(
+                            "The upper bound on the prior of 'disk_teff' "
+                            f"({self.bounds['disk_teff'][1]} K) is above "
+                            "the maximum value available in the blackbody "
+                            f"grid ({teff_range[1]} K). The upper bound "
+                            "is therefore adjusted to the maximum value "
+                            "from the grid."
+                        )
 
-                        self.bounds['disk_teff'] = (self.bounds['disk_teff'][0], teff_range[1])
+                        self.bounds["disk_teff"] = (
+                            self.bounds["disk_teff"][0],
+                            teff_range[1],
+                        )
 
             # Update parameters of binary system
 
@@ -1172,12 +1195,14 @@ class FitModel:
                 self.modelpar.append("ism_red")
 
         elif "ism_red" in self.bounds:
-            warnings.warn("The 'ism_red' parameter is set in the "
-                          "bounds dictionary but the 'ism_ext' "
-                          "parameter is not included. The 'ism_red' "
-                          "parameter is therefore ignored since the "
-                          "reddening can only be fitted in "
-                          "combination with the extinction.")
+            warnings.warn(
+                "The 'ism_red' parameter is set in the "
+                "bounds dictionary but the 'ism_ext' "
+                "parameter is not included. The 'ism_red' "
+                "parameter is therefore ignored since the "
+                "reddening can only be fitted in "
+                "combination with the extinction."
+            )
 
         # Veiling parameters
 

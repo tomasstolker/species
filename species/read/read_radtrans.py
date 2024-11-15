@@ -432,7 +432,7 @@ class ReadRadtrans:
                    wavelengths.
 
                  - When using ``ism_ext``, the reddening, $R_V$, can
-                   also be optionaly set with the ``ism_red``
+                   also be optionally set with the ``ism_red``
                    parameter. Otherwise it is set to the standard
                    value for the diffuse ISM, $R_V = 3.1$.
 
