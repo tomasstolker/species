@@ -484,8 +484,9 @@ def plot_posterior(
         box.samples = updated_samples
 
     print("\nMedian parameters:")
-    for key, value in box.median_sample.items():
-        print(f"   - {key} = {value:.2e}")
+    for param_key, param_value in box.median_sample.items():
+        if isinstance(param_value, float):
+            print(f"   - {param_key} = {param_value:.2e}")
 
     if "gauss_mean" in box.parameters:
         param_index = np.argwhere(np.array(box.parameters) == "gauss_mean")[0]
@@ -497,12 +498,13 @@ def plot_posterior(
 
     if box.prob_sample is not None:
         print("\nSample with highest probability:")
-        for key, value in box.prob_sample.items():
-            print(f"   - {key} = {value:.2e}")
+        for param_key, param_value in box.prob_sample.items():
+            if isinstance(param_value, float):
+                print(f"   - {param_key} = {param_value:.2e}")
 
-    for item in box.parameters:
-        if item[0:11] == "wavelength_":
-            param_index = box.parameters.index(item)
+    for param_item in box.parameters:
+        if param_item[0:11] == "wavelength_":
+            param_index = box.parameters.index(param_item)
 
             # (um) -> (nm)
             box.samples[:, param_index] *= 1e3

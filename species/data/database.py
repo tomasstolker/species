@@ -2365,13 +2365,17 @@ class Database:
             if "pt_smooth" in dset.attrs:
                 prob_sample["pt_smooth"] = dset.attrs["pt_smooth"]
 
+            if "ext_model" in dset.attrs:
+                prob_sample["ext_model"] = dset.attrs["ext_model"]
+
         if verbose:
             print("\nParameters:")
-            for key, value in prob_sample.items():
-                if key in ["luminosity", "flux_scaling", "flux_offset"]:
-                    print(f"   - {key} = {value:.2e}")
-                else:
-                    print(f"   - {key} = {value:.2f}")
+            for param_key, param_value in prob_sample.items():
+                if isinstance(param_value, float):
+                    if param_key in ["luminosity", "flux_scaling", "flux_offset"]:
+                        print(f"   - {param_key} = {param_value:.2e}")
+                    else:
+                        print(f"   - {param_key} = {param_value:.2f}")
 
         return prob_sample
 
@@ -2456,13 +2460,17 @@ class Database:
             if "pt_smooth" in dset.attrs:
                 median_sample["pt_smooth"] = dset.attrs["pt_smooth"]
 
+            if "ext_model" in dset.attrs:
+                median_sample["ext_model"] = dset.attrs["ext_model"]
+
         if verbose:
             print("\nParameters:")
-            for key, value in median_sample.items():
-                if key in ["luminosity", "flux_scaling", "flux_offset"]:
-                    print(f"   - {key} = {value:.2e}")
-                else:
-                    print(f"   - {key} = {value:.2f}")
+            for param_key, param_value in median_sample.items():
+                if isinstance(param_value, float):
+                    if param_key in ["luminosity", "flux_scaling", "flux_offset"]:
+                        print(f"   - {param_key} = {param_value:.2e}")
+                    else:
+                        print(f"   - {param_key} = {param_value:.2f}")
 
         return median_sample
 
@@ -2548,8 +2556,8 @@ class Database:
         Tuple[List[ModelBox], List[ModelBox], List[ModelBox]],
     ]:
         """
-        Function for drawing random spectra from the
-        sampled posterior distributions.
+        Function for drawing random model spectra from the
+        sampled posterior distribution.
 
         Parameters
         ----------
@@ -2696,8 +2704,6 @@ class Database:
         for i in range(n_param):
             param.append(dset.attrs[f"parameter{i}"])
 
-        hdf5_file.close()
-
         if model_type in ["model", "atmosphere"]:
             if model_name == "planck":
                 from species.read.read_planck import ReadPlanck
@@ -2744,6 +2750,9 @@ class Database:
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
+            if "ext_av" in model_param and "ext_model" in dset.attrs:
+                model_param["ext_model"] = dset.attrs["ext_model"]
+
             if model_type in ["model", "atmosphere"]:
                 if model_name == "planck":
                     specbox = readmodel.get_spectrum(
@@ -2755,8 +2764,9 @@ class Database:
                 elif model_name == "powerlaw":
                     if wavel_resample is not None:
                         warnings.warn(
-                            "The 'wavel_resample' parameter is not support by the "
-                            "'powerlaw' model so the argument will be ignored."
+                            "The 'wavel_resample' parameter is not "
+                            "support by the 'powerlaw' model so the "
+                            "argument will be ignored."
                         )
 
                     from species.util.model_util import powerlaw_spectrum
@@ -2822,6 +2832,8 @@ class Database:
             if binary:
                 boxes_0.append(specbox_0)
                 boxes_1.append(specbox_1)
+
+        hdf5_file.close()
 
         if binary:
             return boxes, boxes_0, boxes_1
@@ -2928,116 +2940,119 @@ class Database:
             for i in range(n_param):
                 param.append(dset.attrs[f"parameter{i}"])
 
-        if model_type in ["model", "atmosphere"]:
-            if model_name == "powerlaw":
-                from species.phot.syn_phot import SyntheticPhotometry
-
-                synphot = SyntheticPhotometry(filter_name)
-                synphot.zero_point()  # Set the wavel_range attribute
-
-            else:
-                from species.read.read_model import ReadModel
-
-                readmodel = ReadModel(model_name, filter_name=filter_name)
-
-        elif model_type == "calibration":
-            from species.read.read_calibration import ReadCalibration
-
-            readcalib = ReadCalibration(model_name, filter_name=filter_name)
-
-        mcmc_phot = np.zeros((samples.shape[0]))
-
-        for i in tqdm(range(samples.shape[0]), desc="Getting MCMC photometry"):
-            model_param = {}
-
-            for j in range(n_param):
-                model_param[param[j]] = samples[i, j]
-
-            if (
-                "parallax" not in model_param
-                and "parallax_0" not in model_param
-                and parallax is not None
-            ):
-                model_param["parallax"] = parallax
-
-            elif "distance" not in model_param and distance is not None:
-                model_param["distance"] = distance
-
             if model_type in ["model", "atmosphere"]:
                 if model_name == "powerlaw":
-                    from species.util.model_util import powerlaw_spectrum
+                    from species.phot.syn_phot import SyntheticPhotometry
 
-                    pl_box = powerlaw_spectrum(synphot.wavel_range, model_param)
+                    synphot = SyntheticPhotometry(filter_name)
+                    synphot.zero_point()  # Set the wavel_range attribute
 
+                else:
+                    from species.read.read_model import ReadModel
+
+                    readmodel = ReadModel(model_name, filter_name=filter_name)
+
+            elif model_type == "calibration":
+                from species.read.read_calibration import ReadCalibration
+
+                readcalib = ReadCalibration(model_name, filter_name=filter_name)
+
+            mcmc_phot = np.zeros((samples.shape[0]))
+
+            for i in tqdm(range(samples.shape[0]), desc="Getting MCMC photometry"):
+                model_param = {}
+
+                for j in range(n_param):
+                    model_param[param[j]] = samples[i, j]
+
+                if (
+                    "parallax" not in model_param
+                    and "parallax_0" not in model_param
+                    and parallax is not None
+                ):
+                    model_param["parallax"] = parallax
+
+                elif "distance" not in model_param and distance is not None:
+                    model_param["distance"] = distance
+
+                if "ext_av" in model_param and "ext_model" in dset.attrs:
+                    model_param["ext_model"] = dset.attrs["ext_model"]
+
+                if model_type in ["model", "atmosphere"]:
+                    if model_name == "powerlaw":
+                        from species.util.model_util import powerlaw_spectrum
+
+                        pl_box = powerlaw_spectrum(synphot.wavel_range, model_param)
+
+                        if phot_type == "magnitude":
+                            app_mag, _ = synphot.spectrum_to_magnitude(
+                                pl_box.wavelength, pl_box.flux
+                            )
+                            mcmc_phot[i] = app_mag[0]
+
+                        elif phot_type == "flux":
+                            mcmc_phot[i], _ = synphot.spectrum_to_flux(
+                                pl_box.wavelength, pl_box.flux
+                            )
+
+                    else:
+                        if phot_type == "magnitude":
+                            if binary:
+                                from species.util.model_util import binary_to_single
+
+                                param_0 = binary_to_single(model_param, 0)
+                                mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
+
+                                param_1 = binary_to_single(model_param, 1)
+                                mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
+
+                                # Weighted flux of two spectra for atmospheric asymmetries
+                                # Or simply the same in case of an actual binary system
+
+                                if "spec_weight" in model_param:
+                                    mcmc_phot[i] = (
+                                        model_param["spec_weight"] * mcmc_phot_0
+                                        + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                    )
+
+                                else:
+                                    mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
+
+                            else:
+                                mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
+
+                        elif phot_type == "flux":
+                            if binary:
+                                from species.util.model_util import binary_to_single
+
+                                param_0 = binary_to_single(model_param, 0)
+                                mcmc_phot_0, _ = readmodel.get_flux(param_0)
+
+                                param_1 = binary_to_single(model_param, 1)
+                                mcmc_phot_1, _ = readmodel.get_flux(param_1)
+
+                                # Weighted flux of two spectra for atmospheric asymmetries
+                                # Or simply the same in case of an actual binary system
+
+                                if "spec_weight" in model_param:
+                                    mcmc_phot[i] = (
+                                        model_param["spec_weight"] * mcmc_phot_0
+                                        + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                    )
+
+                                else:
+                                    mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
+
+                            else:
+                                mcmc_phot[i], _ = readmodel.get_flux(model_param)
+
+                elif model_type == "calibration":
                     if phot_type == "magnitude":
-                        app_mag, _ = synphot.spectrum_to_magnitude(
-                            pl_box.wavelength, pl_box.flux
-                        )
+                        app_mag, _ = readcalib.get_magnitude(model_param=model_param)
                         mcmc_phot[i] = app_mag[0]
 
                     elif phot_type == "flux":
-                        mcmc_phot[i], _ = synphot.spectrum_to_flux(
-                            pl_box.wavelength, pl_box.flux
-                        )
-
-                else:
-                    if phot_type == "magnitude":
-                        if binary:
-                            from species.util.model_util import binary_to_single
-
-                            param_0 = binary_to_single(model_param, 0)
-                            mcmc_phot_0, _ = readmodel.get_magnitude(param_0)
-
-                            param_1 = binary_to_single(model_param, 1)
-                            mcmc_phot_1, _ = readmodel.get_magnitude(param_1)
-
-                            # Weighted flux of two spectra for atmospheric asymmetries
-                            # Or simply the same in case of an actual binary system
-
-                            if "spec_weight" in model_param:
-                                mcmc_phot[i] = (
-                                    model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
-                                )
-
-                            else:
-                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
-
-                        else:
-                            mcmc_phot[i], _ = readmodel.get_magnitude(model_param)
-
-                    elif phot_type == "flux":
-                        if binary:
-                            from species.util.model_util import binary_to_single
-
-                            param_0 = binary_to_single(model_param, 0)
-                            mcmc_phot_0, _ = readmodel.get_flux(param_0)
-
-                            param_1 = binary_to_single(model_param, 1)
-                            mcmc_phot_1, _ = readmodel.get_flux(param_1)
-
-                            # Weighted flux of two spectra for atmospheric asymmetries
-                            # Or simply the same in case of an actual binary system
-
-                            if "spec_weight" in model_param:
-                                mcmc_phot[i] = (
-                                    model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
-                                )
-
-                            else:
-                                mcmc_phot[i] = mcmc_phot_0 + mcmc_phot_1
-
-                        else:
-                            mcmc_phot[i], _ = readmodel.get_flux(model_param)
-
-            elif model_type == "calibration":
-                if phot_type == "magnitude":
-                    app_mag, _ = readcalib.get_magnitude(model_param=model_param)
-                    mcmc_phot[i] = app_mag[0]
-
-                elif phot_type == "flux":
-                    mcmc_phot[i], _ = readcalib.get_flux(model_param=model_param)
+                        mcmc_phot[i], _ = readcalib.get_flux(model_param=model_param)
 
         if phot_type == "flux":
             from species.read.read_filter import ReadFilter

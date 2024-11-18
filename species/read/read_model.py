@@ -8,9 +8,11 @@ import warnings
 from configparser import ConfigParser
 from typing import Dict, List, Optional, Tuple, Union
 
+import dust_extinction.parameter_averages as dust_ext
 import h5py
 import numpy as np
 
+from astropy import units as u
 from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simpson
@@ -39,6 +41,20 @@ from species.util.spec_util import smooth_spectrum
 class ReadModel:
     """
     Class for reading a model spectrum from the database.
+    Extinction is applied by adding the ``ext_model`` parameter
+    to the ``model_param`` dictionary of any of the ``ReadModel``
+    methods. The value of ``ext_model`` should be the name of
+    any of the extinction models from the ``dust-extinction``
+    package (see `list of available models <https://
+    dust-extinction.readthedocs.io/en/latest/dust_extinction/
+    choose_model.html>`_). For example, set the value to
+    ``'CCM89'`` to use the extinction relation from
+    `Cardelli et al. (1989) <https://ui.adsabs.harvard.edu/
+    abs/1989ApJ...345..245C/abstract>`_. When setting the
+    ``ext_model``, the ``ext_av`` should be included in
+    ``model_param`` to specify the visual extinction,
+    :math:`A_V`, and optionally ``ext_rv``, to specify the
+    reddening, :math:`R_V`.
     """
 
     @typechecked
@@ -113,6 +129,9 @@ class ReadModel:
             "lognorm_ext",
             "ism_ext",
             "ism_red",
+            "ext_model",
+            "ext_av",
+            "ext_rv",
             "powerlaw_max",
             "powerlaw_exp",
             "powerlaw_ext",
@@ -970,6 +989,50 @@ class ReadModel:
                 ism_reddening,
             )
 
+        if "ext_av" in model_param:
+            if "ext_model" in model_param:
+                ext_model = getattr(dust_ext, model_param["ext_model"])()
+
+                if "ext_rv" in model_param:
+                    ext_model.Rv = model_param["ext_rv"]
+
+                # Wavelength range (um) for which the extinction is defined
+                ext_wavel = (1.0 / ext_model.x_range[1], 1.0 / ext_model.x_range[0])
+
+                if (
+                    model_box.wavelength[0] < ext_wavel[0]
+                    or model_box.wavelength[-1] > ext_wavel[1]
+                ):
+                    warnings.warn(
+                        "The wavelength range of the model spectrum "
+                        f"({model_box.wavelength[0]:.3f}-"
+                        f"{model_box.wavelength[-1]:.3f} um) "
+                        "does not fully lie within the available "
+                        "wavelength range of the extinction model "
+                        f"({ext_wavel[0]:.3f}-{ext_wavel[1]:.3f} um). "
+                        "The extinction will therefore not be applied "
+                        "to fluxes of which the wavelength lies "
+                        "outside the range of the extinction model."
+                    )
+
+                wavel_select = (model_box.wavelength > ext_wavel[0]) & (
+                    model_box.wavelength < ext_wavel[1]
+                )
+
+                model_box.flux[wavel_select] *= ext_model.extinguish(
+                    model_box.wavelength[wavel_select] * u.micron,
+                    Av=model_param["ext_av"],
+                )
+
+            else:
+                warnings.warn(
+                    "The 'ext_av' parameter is included in the "
+                    "'model_param' dictionary but the 'ext_model' "
+                    "parameter is missing. Therefore, the 'ext_av' "
+                    "parameter is ignored and no extinction is "
+                    "applied to the spectrum."
+                )
+
         # Smooth the spectrum
 
         if spec_res is not None:
@@ -1382,6 +1445,50 @@ class ReadModel:
                 ism_ext_av,
                 ism_reddening,
             )
+
+        if "ext_av" in model_param:
+            if "ext_model" in model_param:
+                ext_model = getattr(dust_ext, model_param["ext_model"])()
+
+                if "ext_rv" in model_param:
+                    ext_model.Rv = model_param["ext_rv"]
+
+                # Wavelength range (um) for which the extinction is defined
+                ext_wavel = (1.0 / ext_model.x_range[1], 1.0 / ext_model.x_range[0])
+
+                if (
+                    model_box.wavelength[0] < ext_wavel[0]
+                    or model_box.wavelength[-1] > ext_wavel[1]
+                ):
+                    warnings.warn(
+                        "The wavelength range of the model spectrum "
+                        f"({model_box.wavelength[0]:.3f}-"
+                        f"{model_box.wavelength[-1]:.3f} um) "
+                        "does not fully lie within the available "
+                        "wavelength range of the extinction model "
+                        f"({ext_wavel[0]:.3f}-{ext_wavel[1]:.3f} um). "
+                        "The extinction will therefore not be applied "
+                        "to fluxes of which the wavelength lies "
+                        "outside the range of the extinction model."
+                    )
+
+                wavel_select = (model_box.wavelength > ext_wavel[0]) & (
+                    model_box.wavelength < ext_wavel[1]
+                )
+
+                model_box.flux[wavel_select] *= ext_model.extinguish(
+                    model_box.wavelength[wavel_select] * u.micron,
+                    Av=model_param["ext_av"],
+                )
+
+            else:
+                warnings.warn(
+                    "The 'ext_av' parameter is included in the "
+                    "'model_param' dictionary but the 'ext_model' "
+                    "parameter is missing. Therefore, the 'ext_av' "
+                    "parameter is ignored and no extinction is "
+                    "applied to the spectrum."
+                )
 
         # Smooth the spectrum
 

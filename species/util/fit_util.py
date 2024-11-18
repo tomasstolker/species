@@ -77,10 +77,11 @@ def multi_photometry(
 
         print("\nParameters:")
         for param_key, param_value in parameters.items():
-            if -0.1 < param_value < 0.1:
-                print(f"   - {param_key} = {param_value:.2e}")
-            else:
-                print(f"   - {param_key} = {param_value:.2f}")
+            if isinstance(param_value, float):
+                if -0.1 < param_value < 0.1:
+                    print(f"   - {param_key} = {param_value:.2e}")
+                else:
+                    print(f"   - {param_key} = {param_value:.2f}")
 
     mean_wavel = {}
 

@@ -2,6 +2,7 @@ astrodbkit2
 astropy
 astroquery
 corner
+dust-extinction
 dynesty
 emcee
 h5py

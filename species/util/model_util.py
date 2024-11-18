@@ -8,8 +8,10 @@ import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
+import dust_extinction.parameter_averages as dust_ext
 import numpy as np
 
+from astropy import units as u
 from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import RegularGridInterpolator
 from spectres.spectral_resampling_numba import spectres_numba
@@ -221,6 +223,7 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
             "distance",
             "parallax",
             "ism_ext",
+            "ext_av",
         ]:
             new_dict[param_key] = param_value
 
@@ -266,6 +269,7 @@ def extract_disk_param(
             "distance",
             "parallax",
             "ism_ext",
+            "ext_av",
         ]:
             new_dict[param_key] = param_value
 
@@ -282,6 +286,7 @@ def apply_obs(
     rot_broad: Optional[float] = None,
     rad_vel: Optional[float] = None,
     cross_sections: Optional[RegularGridInterpolator] = None,
+    ext_model: Optional[str] = None,
 ) -> np.ndarray:
     """
     Function for post-processing of a model spectrum. This will
@@ -316,6 +321,14 @@ def apply_obs(
     cross_sections : RegularGridInterpolator, None
         Interpolated cross sections for fitting extinction by dust
         grains with a log-normal or power-law size distribution.
+    ext_model : str, None
+        Name with the extinction model from the ``dust-extinction``
+        package (see `list of available models
+        <https://dust-extinction.readthedocs.io/en/latest/
+        dust_extinction/choose_model.html>`_). For example,
+        set the argument to ``'CCM89'`` to use the extinction
+        relation from `Cardelli et al. (1989) <https://ui.adsabs.
+        harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
 
     Returns
     -------
@@ -398,6 +411,31 @@ def apply_obs(
 
         model_flux *= 10.0 ** (-0.4 * ext_filt)
 
+    if "ext_av" in model_param:
+        ext_object = getattr(dust_ext, ext_model)()
+
+        if "ext_rv" in model_param:
+            ext_object.Rv = model_param["ext_rv"]
+
+        # Wavelength range (um) for which the extinction is defined
+        ext_wavel = (1./ext_object.x_range[1], 1./ext_object.x_range[0])
+
+        if model_wavel[0] < ext_wavel[0] or model_wavel[-1] > ext_wavel[1]:
+            warnings.warn("The wavelength range of the model spectrum "
+                          f"({model_wavel[0]:.3f}-{model_wavel[-1]:.3f} "
+                          "um) does not fully lie within the available "
+                          "wavelength range of the extinction model "
+                          f"({ext_wavel[0]:.3f}-{ext_wavel[1]:.3f} um). "
+                          "The extinction will therefore not be applied "
+                          "to fluxes of which the wavelength lies "
+                          "outside the range of the extinction model.")
+
+        wavel_select = (model_wavel > ext_wavel[0]) & (model_wavel < ext_wavel[1])
+
+        model_flux[wavel_select] *= ext_object.extinguish(
+            model_wavel[wavel_select] * u.micron, Av=model_param["ext_av"]
+        )
+
     # elif "lognorm_ext" in model_param:
     #     cross_tmp = cross_sections["Generic/Bessell.V"](
     #         (10.0 ** model_param["lognorm_radius"], model_param["lognorm_sigma"])
@@ -418,7 +456,6 @@ def apply_obs(
     #     n_grains = (
     #         model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
     #     )
-    #     print(n_grains)
     #
     #     model_flux *= np.exp(-cross_tmp * n_grains)
     #

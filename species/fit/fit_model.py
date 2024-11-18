@@ -99,6 +99,7 @@ class FitModel:
         apply_weights: Union[bool, Dict[str, Union[float, np.ndarray]]] = False,
         ext_filter: Optional[str] = None,
         normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
+        ext_model: Optional[str] = None,
     ) -> None:
         """
         Parameters
@@ -340,14 +341,34 @@ class FitModel:
 
             ISM extinction parameters:
 
-                 - There are three approaches for fitting extinction.
-                   The first is with the empirical relation from
-                   `Cardelli et al. (1989)
-                   <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
-                   for ISM extinction. Please note that this relation
-                   is defined for wavelengths in the range of
-                   0.125-3.3 µm, so no extinction is applied to
-                   the fluxes with wavelengths outside this range.
+                 - Fit the extinction with any of the models in the
+                   ``dust-extinction`` package (see `list of
+                   available models <https://dust-extinction.
+                   readthedocs.io/en/latest/dust_extinction/
+                   choose_model.html>`_). This is done by setting the
+                   the argument of ``ext_model``, for example to
+                   ``'CCM89'`` for using the relation from
+                   `Cardelli et al. (1989) <https://ui.adsabs.
+                   harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
+
+                 - The extinction is parametrized by the visual
+                   extinction, $A_V$ (``ext_av``), and optionally the
+                   reddening, R_V (``ext_rv``). If ``ext_rv`` is not
+                   provided, its value is fixed to 3.1 and not fitted.
+
+                 - The prior boundaries of ``ext_av`` and ``ext_rv``
+                   should be provided in the ``bounds`` dictionary, for
+                   example ``bounds={'ext_av': (0., 5.),
+                   'ext_rv': (1., 5.)}``.
+
+            ISM extinction parameters (DEPRECATED):
+
+                 - Fit the extinction with the relation from
+                   `Cardelli et al. (1989) <https://ui.adsabs.
+                   harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
+                   This relation is defined for wavelengths in the
+                   range of 0.125-3.3 µm, so no extinction is applied
+                   to the fluxes with wavelengths outside this range.
 
                  - The extinction is parametrized by the $V$ band
                    extinction, $A_V$ (``ism_ext``), and optionally the
@@ -364,10 +385,9 @@ class FitModel:
 
             Log-normal size distribution:
 
-                 - The second approach is fitting the extinction of a
-                   log-normal size distribution of grains with a
-                   crystalline MgSiO3 composition, and a homogeneous,
-                   spherical structure.
+                 - Fitting the extinction of a log-normal size
+                   distribution of grains with a crystalline MgSiO3
+                   composition, and a homogeneous, spherical structure.
 
                  - The size distribution is parameterized with a mean
                    geometric radius (``lognorm_radius`` in um) and a
@@ -395,10 +415,9 @@ class FitModel:
 
             Power-law size distribution:
 
-                 - The third approach is fitting the extinction of a
-                   power-law size distribution of grains, again with a
-                   crystalline MgSiO3 composition, and a homogeneous,
-                   spherical structure.
+                 - Fitting the extinction of a power-law size
+                   distribution of grains, with a crystalline MgSiO3
+                   composition, and a homogeneous, spherical structure.
 
                  - The size distribution is parameterized with a
                    maximum radius (``powerlaw_max`` in um) and a
@@ -480,6 +499,20 @@ class FitModel:
             distribution. Setting a parameter both in ``bounds``
             and ``normal_prior`` will create a prior from a
             truncated normal distribution.
+        ext_model : str, None
+            Name with the extinction model from the
+            ``dust-extinction`` package (see `list of available
+            models <https://dust-extinction.readthedocs.io/en/
+            latest/dust_extinction/choose_model.html>`_). For example,
+            set the argument to ``'CCM89'`` to use the extinction
+            relation from `Cardelli et al. (1989) <https://ui.adsabs.
+            harvard.edu/abs/1989ApJ...345..245C/abstract>`_. To use
+            the ``ext_model``, it is mandatory to add the ``ext_av``
+            parameter to the ``bounds`` dictionary for setting the
+            prior boundaries of :math:`A_V`. The reddening
+            can be optionally added to the ``bounds`` with the
+            ``ext_rv`` parameter. Otherwise, it is set to the
+            default of :math:`R_V = 3.1`.
 
         Returns
         -------
@@ -514,6 +547,7 @@ class FitModel:
         self.ext_filter = ext_filter
         self.param_interp = None
         self.cross_sections = None
+        self.ext_model = None
         self.ln_z = None
         self.ln_z_error = None
         self.n_planck = 0
@@ -559,6 +593,17 @@ class FitModel:
         # Models that do not require a grid interpolation
 
         self.non_interp_model = ["planck", "powerlaw"]
+
+        # Check if deprecated ism_ext parameter is used
+
+        if "ism_ext" in self.bounds:
+            warnings.warn(
+                "The use of 'ism_ext' for fitting the extinction is "
+                "deprecated. Please use the 'ext_model' parameter of "
+                "'FitModel' in combination with setting 'ext_av' in "
+                "the 'model_param' dictionary",
+                DeprecationWarning,
+            )
 
         # Set model parameters and boundaries
 
@@ -1194,7 +1239,7 @@ class FitModel:
             if "ism_red" in self.bounds or "ism_red" in self.normal_prior:
                 self.modelpar.append("ism_red")
 
-        elif "ism_red" in self.bounds:
+        elif "ism_ext" not in self.bounds and "ism_red" in self.bounds:
             warnings.warn(
                 "The 'ism_red' parameter is set in the "
                 "bounds dictionary but the 'ism_ext' "
@@ -1203,6 +1248,47 @@ class FitModel:
                 "reddening can only be fitted in "
                 "combination with the extinction."
             )
+
+        elif ext_model is not None:
+            self.ext_model = ext_model
+
+            if "ext_av" in self.bounds or "ext_av" in self.normal_prior:
+                self.modelpar.append("ext_av")
+
+                if "ext_rv" in self.bounds or "ext_rv" in self.normal_prior:
+                    self.modelpar.append("ext_rv")
+
+            else:
+                self.ext_model = None
+
+                warnings.warn(
+                    "The 'ext_model' is set but the 'ext_av' "
+                    "parameter is missing in the 'bounds' "
+                    "dictionary so the 'ext_model' parameter "
+                    "will be ignored and no extinction will "
+                    "be fitted."
+                )
+
+        elif ext_model is None:
+            if "ext_av" in self.bounds:
+                del self.bounds["ext_av"]
+
+                warnings.warn(
+                    "The 'ext_av' parameter is set in the 'bounds' "
+                    "dictionary but the 'ext_model' is not set. "
+                    "The 'ext_av' parameter will therefore be "
+                    "ignored and no extinction will be fitted."
+                )
+
+            if "ext_rv" in self.bounds:
+                del self.bounds["ext_rv"]
+
+                warnings.warn(
+                    "The 'ext_rv' parameter is set in the 'bounds' "
+                    "dictionary but the 'ext_model' is not set. "
+                    "The 'ext_rv' parameter will therefore be "
+                    "ignored and no extinction will be fitted."
+                )
 
         # Veiling parameters
 
@@ -1604,6 +1690,7 @@ class FitModel:
                     model_wavel=self.flux_ratio[filter_name].wl_points,
                     model_param=all_param_0,
                     cross_sections=self.cross_sections,
+                    ext_model=self.ext_model,
                 )
 
                 phot_flux_0 = self.prior_phot[filter_name].spectrum_to_flux(
@@ -1627,6 +1714,7 @@ class FitModel:
                     model_wavel=self.flux_ratio[filter_name].wl_points,
                     model_param=all_param_1,
                     cross_sections=self.cross_sections,
+                    ext_model=self.ext_model,
                 )
 
                 phot_flux_1 = self.prior_phot[filter_name].spectrum_to_flux(
@@ -1702,6 +1790,7 @@ class FitModel:
                         model_wavel=self.modelphot[phot_idx].wl_points,
                         model_param=all_param_0,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                     # Star 1
@@ -1721,6 +1810,7 @@ class FitModel:
                         model_wavel=self.modelphot[phot_idx].wl_points,
                         model_param=all_param_1,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                     # Weighted flux of two spectra for atmospheric asymmetries
@@ -1750,6 +1840,7 @@ class FitModel:
                         model_wavel=self.modelphot[phot_idx].wl_points,
                         model_param=all_param,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                 # Calculate synthetic photometry
@@ -1774,6 +1865,7 @@ class FitModel:
                         model_wavel=self.diskphot[phot_idx].wl_points,
                         model_param=disk_param,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                     # Calculate synthetic photometry
@@ -1797,6 +1889,7 @@ class FitModel:
                             model_wavel=self.diskphot[phot_idx].wl_points,
                             model_param=disk_param,
                             cross_sections=self.cross_sections,
+                            ext_model=self.ext_model,
                         )
 
                         # Calculate synthetic photometry
@@ -1938,6 +2031,7 @@ class FitModel:
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         model_param=all_param_0,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                     # Star 1
@@ -1957,6 +2051,7 @@ class FitModel:
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         model_param=all_param_1,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                     # Weighted flux of two spectra for atmospheric asymmetries
@@ -1985,6 +2080,7 @@ class FitModel:
                         model_flux=model_flux,
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         cross_sections=self.cross_sections,
+                        ext_model=self.ext_model,
                     )
 
                 # Add blackbody disk components
@@ -2006,6 +2102,7 @@ class FitModel:
                             model_flux=flux_tmp,
                             model_wavel=disk_wavel,
                             cross_sections=self.cross_sections,
+                            ext_model=self.ext_model,
                         )
 
                     elif self.n_disk > 1:
@@ -2027,6 +2124,7 @@ class FitModel:
                                 model_flux=flux_tmp,
                                 model_wavel=disk_wavel,
                                 cross_sections=self.cross_sections,
+                                ext_model=self.ext_model,
                             )
 
                     # Interpolate blackbody spectrum to the atmosphere spectrum
@@ -2181,6 +2279,9 @@ class FitModel:
             "parallax": self.obj_parallax[0],
             "binary": self.binary,
         }
+
+        if self.ext_model is not None:
+            attr_dict["ext_model"] = self.ext_model
 
         if self.ext_filter is not None:
             attr_dict["ext_filter"] = self.ext_filter

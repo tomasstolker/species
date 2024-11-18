@@ -598,6 +598,22 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("ism_red")
         param[index] = r"$R_V$"
 
+    if "ext_av" in param:
+        index = param.index("ext_av")
+        param[index] = r"$A_V$"
+
+    if "ext_av_0" in param:
+        index = param.index("ext_av_0")
+        param[index] = r"$A_{V,\mathrm{1}}$"
+
+    if "ext_av_1" in param:
+        index = param.index("ext_av_1")
+        param[index] = r"$A_{V,\mathrm{2}}$"
+
+    if "ext_rv" in param:
+        index = param.index("ext_rv")
+        param[index] = r"$R_V$"
+
     for item in param:
         if item.startswith("phot_ext_"):
             index = param.index(item)
@@ -1219,6 +1235,11 @@ def quantity_unit(
             unit.append(None)
             label.append(r"$A_V$")
 
+        elif item == "ext_av":
+            quantity.append("ext_av")
+            unit.append(None)
+            label.append(r"$A_V$")
+
         elif item == "lognorm_ext":
             quantity.append("lognorm_ext")
             unit.append(None)
@@ -1746,6 +1767,7 @@ def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
         "parallax",
         "mass",
         "ism_ext",
+        "ext_av",
         "lognorm_ext",
         "powerlaw_ext",
         "log_flux_scaling",
