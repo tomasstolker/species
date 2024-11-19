@@ -794,10 +794,12 @@ class Database:
             are supported: ``teff`` (for :math:`T_\\mathrm{eff}`),
             ``logg`` (for :math:`\\log\\,g`), ``feh`` (for [Fe/H]),
             ``co`` (for C/O), ``fsed`` (for :math:`f_\\mathrm{sed}`),
-            ``logkzz`` (for :math:`\\log\\,K_\\mathrm{zz}`), and
-            ``adindex`` (for :math:`\\gamma_\\mathrm{ad}`). Please
-            contact the code maintainer if support for other
-            parameters should be added.
+            ``logkzz`` (for :math:`\\log\\,K_\\mathrm{zz}`),
+            ``adindex`` (for :math:`\\gamma_\\mathrm{ad}`), and
+            ``log_co_iso`` (for
+            :math:`\\log\,^{12}\\mathrm{CO}/^{13}\\mathrm{CO}`).
+            Please contact the code maintainer if support for
+            other parameters should be added.
         wavel_range : tuple(float, float), None
             Wavelength range (:math:`\\mu\\text{m}`) that will be
             stored in the database. The full wavelength range is used
@@ -1307,11 +1309,11 @@ class Database:
                                     print("   - GRAVITY spectrum:")
                                     print(f"      - Object: {gravity_object}")
 
-                                wavelength = hdulist[1].data["WAVELENGTH"]  # (um)
-                                flux = hdulist[1].data["FLUX"]  # (W m-2 um-1)
+                                wavelength = hdulist[1].data["WAVELENGTH"].byteswap().newbyteorder()  # (um)
+                                flux = hdulist[1].data["FLUX"].byteswap().newbyteorder()  # (W m-2 um-1)
                                 covariance = hdulist[1].data[
                                     "COVARIANCE"
-                                ]  # (W m-2 um-1)^2
+                                ].byteswap().newbyteorder()  # (W m-2 um-1)^2
                                 error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
 
                                 read_spec[spec_item] = np.column_stack(
@@ -1324,7 +1326,7 @@ class Database:
                                     print("   - Spectrum:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(hdu_item.data)
+                                    data = np.asarray(hdu_item.data.byteswap().newbyteorder())
 
                                     if (
                                         data.ndim == 2
@@ -1476,7 +1478,7 @@ class Database:
 
                                 read_cov[spec_item] = hdulist[1].data[
                                     "COVARIANCE"
-                                ]  # (W m-2 um-1)^2
+                                ].byteswap().newbyteorder()  # (W m-2 um-1)^2
 
                             else:
                                 if spec_item in units:
@@ -1494,7 +1496,7 @@ class Database:
                                     print("   - Covariance matrix:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(hdu_item.data)
+                                    data = np.asarray(hdu_item.data.byteswap().newbyteorder())
 
                                     corr_warn = (
                                         f"The matrix from {spec_value[1]} contains "
@@ -2018,6 +2020,7 @@ class Database:
         if filename is not None:
             if filename[-5:] == ".fits":
                 data = fits.getdata(filename)
+                data = data.byteswap().newbyteorder()
 
                 if data.ndim != 2:
                     raise RuntimeError(
@@ -2765,8 +2768,8 @@ class Database:
                     if wavel_resample is not None:
                         warnings.warn(
                             "The 'wavel_resample' parameter is not "
-                            "support by the 'powerlaw' model so the "
-                            "argument will be ignored."
+                            "supported by the 'powerlaw' model so "
+                            "the argument will be ignored."
                         )
 
                     from species.util.model_util import powerlaw_spectrum

@@ -90,9 +90,9 @@ The following data and models are currently supported:
 
 **Dust extinction**
 
-- ISM relation from `Cardelli et al. (1989) <https://ui.adsabs.harvard.edu/abs/1989ApJ...345..245C/abstract>`_
-- Extinction cross sections computed with `PyMieScatt <https://pymiescatt.readthedocs.io>`_
-- Optical constants compiled by `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_
+- Extinction models from `dust-extinction <https://dust-extinction.readthedocs.io/en/latest/dust_extinction/choose_model.html>`_
+- Dust cross sections computed with `PyMieScatt <https://pymiescatt.readthedocs.io>`_
+- Optical constants adopted from `Mollière et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019A%26A...627A..67M/abstract>`_
 
 Please give credit to the relevant references when using any of the external data in a publication. More information is available on the respective websites. Support for other datasets can be requested by creating an `issue <https://github.com/tomasstolker/species/issues>`_ on the Github page.
 
