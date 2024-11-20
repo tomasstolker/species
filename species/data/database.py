@@ -1309,11 +1309,24 @@ class Database:
                                     print("   - GRAVITY spectrum:")
                                     print(f"      - Object: {gravity_object}")
 
-                                wavelength = hdulist[1].data["WAVELENGTH"].byteswap().newbyteorder()  # (um)
-                                flux = hdulist[1].data["FLUX"].byteswap().newbyteorder()  # (W m-2 um-1)
-                                covariance = hdulist[1].data[
-                                    "COVARIANCE"
-                                ].byteswap().newbyteorder()  # (W m-2 um-1)^2
+                                wavelength = (
+                                    hdulist[1]
+                                    .data["WAVELENGTH"]
+                                    .byteswap()
+                                    .newbyteorder()
+                                )  # (um)
+
+                                flux = (
+                                    hdulist[1].data["FLUX"].byteswap().newbyteorder()
+                                )  # (W m-2 um-1)
+
+                                covariance = (
+                                    hdulist[1]
+                                    .data["COVARIANCE"]
+                                    .byteswap()
+                                    .newbyteorder()
+                                )  # (W m-2 um-1)^2
+
                                 error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
 
                                 read_spec[spec_item] = np.column_stack(
@@ -1326,7 +1339,9 @@ class Database:
                                     print("   - Spectrum:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(hdu_item.data.byteswap().newbyteorder())
+                                    data = np.asarray(
+                                        hdu_item.data.byteswap().newbyteorder()
+                                    )
 
                                     if (
                                         data.ndim == 2
@@ -1476,9 +1491,12 @@ class Database:
                                     print("   - GRAVITY covariance matrix:")
                                     print(f"      - Object: {gravity_object}")
 
-                                read_cov[spec_item] = hdulist[1].data[
-                                    "COVARIANCE"
-                                ].byteswap().newbyteorder()  # (W m-2 um-1)^2
+                                read_cov[spec_item] = (
+                                    hdulist[1]
+                                    .data["COVARIANCE"]
+                                    .byteswap()
+                                    .newbyteorder()
+                                )  # (W m-2 um-1)^2
 
                             else:
                                 if spec_item in units:
@@ -1496,7 +1514,9 @@ class Database:
                                     print("   - Covariance matrix:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(hdu_item.data.byteswap().newbyteorder())
+                                    data = np.asarray(
+                                        hdu_item.data.byteswap().newbyteorder()
+                                    )
 
                                     corr_warn = (
                                         f"The matrix from {spec_value[1]} contains "
@@ -1948,7 +1968,7 @@ class Database:
                 from species.data.phot_data.phot_leggett import add_leggett
 
                 add_leggett(self.data_folder, hdf5_file)
-            
+
             elif phot_library[0:10] == "beiler2024":
                 from species.data.phot_data.phot_jwst_ydwarfs import add_jwst_ydwarfs
 
@@ -3015,7 +3035,8 @@ class Database:
                                 if "spec_weight" in model_param:
                                     mcmc_phot[i] = (
                                         model_param["spec_weight"] * mcmc_phot_0
-                                        + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                        + (1.0 - model_param["spec_weight"])
+                                        * mcmc_phot_1
                                     )
 
                                 else:
@@ -3040,7 +3061,8 @@ class Database:
                                 if "spec_weight" in model_param:
                                     mcmc_phot[i] = (
                                         model_param["spec_weight"] * mcmc_phot_0
-                                        + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
+                                        + (1.0 - model_param["spec_weight"])
+                                        * mcmc_phot_1
                                     )
 
                                 else:

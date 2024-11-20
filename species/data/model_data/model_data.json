@@ -251,7 +251,29 @@
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",
         "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
-        "checksum": "56a85656d05bc397b1df03aa0c769a8313bfa3104a4f4c50b25df50514a714ea"
+        "checksum": "0b34a058e70c0439ddba7bac562008f6ffa4cb23ad2bba89992f316c83b151de"
+    },
+    "lacy2023-cloudy-thick-eq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thick clouds EQ",
+        "file size": "74 MB",
+        "wavelength range": [0.4, 300],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "f0e7d4a428a8367d47626007d8739090044ed95816a53209825faa9ca13acc8d"
+    },
+    "lacy2023-cloudy-thick-neq": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "coolTLUSTY thick clouds NEQ",
+        "file size": "63 MB",
+        "wavelength range": [0.4, 300],
+        "lambda/d_lambda": 4000,
+        "teff range": [200, 450],
+        "reference": "Lacy & Burrows (2023)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
+        "checksum": "9a6ed906a41e88ef17fccab792f7bac5eb487c698da9c31d33b044c7d4cf17b0"
     },
     "lacy2023-cloudy-thin-eq": {
         "parameters": ["teff", "logg", "feh"],
@@ -262,51 +284,29 @@
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
         "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
-        "checksum": "52e4c42a2838e86d5b9c706e2a4df5d0fbbd05d94e3a9f18f1c8c0c946030e67"
+        "checksum": "3227b5875e165e76a8a251365c78fdf3a7115b699cbb09d1ee443a9ee188ab8e"
     },
     "lacy2023-cloudy-thin-neq": {
         "parameters": ["teff", "logg", "feh"],
         "name": "coolTLUSTY thin clouds NEQ",
-        "file size": "67 MB",
+        "file size": "46 MB",
         "wavelength range": [0.4, 300],
         "lambda/d_lambda": 4000,
         "teff range": [200, 450],
         "reference": "Lacy & Burrows (2023)",
         "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
-        "checksum": "c5c2fb23e15ec6eb950a46e6f306d701f5caae0bfabe8335ccd6a19a8aebeb7d"
+        "checksum": "86b9b06ee00d581c21e5c58049b3e23fb54b0ccb040ac30213ad68e744ad4d32"
     },
-    "lacy2023-cloudy-thick-eq": {
-        "parameters": ["teff", "logg", "feh"],
-        "name": "coolTLUSTY thick clouds EQ",
-        "file size": "73 MB",
-        "wavelength range": [0.4, 300],
-        "lambda/d_lambda": 4000,
-        "teff range": [200, 450],
-        "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
-        "checksum": "b7e6d490139c1213fe81c5b14b2e74a6a8039d0b441f5e061c24225add3d6b14"
-    },
-    "lacy2023-cloudy-thick-neq": {
-        "parameters": ["teff", "logg", "feh"],
-        "name": "coolTLUSTY thick clouds NEQ",
-        "file size": "67 MB",
-        "wavelength range": [0.4, 300],
-        "lambda/d_lambda": 4000,
-        "teff range": [200, 450],
-        "reference": "Lacy & Burrows (2023)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2023ApJ...950....8L",
-        "checksum": "6c84c6125647849841dbbccacc40bad3c1cdfa3cee2e27febf47f89dc3234969"
-    },
-    "morley-2012": {
+    "morley2012": {
         "parameters": ["teff", "logg", "fsed"],
         "name": "Morley et al. (2012)",
-        "file size": "141 MB",
+        "file size": "62 MB",
         "wavelength range": [0.6, 30],
-        "lambda/d_lambda": 10000,
+        "lambda/d_lambda": 6000,
         "teff range": [400, 1300],
         "reference": "Morley et al. (2012)",
         "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M",
-        "checksum": "a07d32021b92e73159a5503956053fad1aa2a61e17567456ccf5ad25f2d88632"
+        "checksum": "6e79358d113a04202c0966029eda85e7913d2d7c8f57804a733c2333d89f1bc8"
     },
     "petitcode-cool-clear": {
         "parameters": ["teff", "logg", "feh"],
@@ -378,32 +378,32 @@
     "phoenix-husser2013": {
         "parameters": ["teff", "logg", "feh"],
         "name": "PHOENIX (Husser et al. 2013)",
-        "file size": "1.3 GB",
+        "file size": "4.7 GB",
         "wavelength range": [0.5, 5],
-        "lambda/d_lambda": 5000,
+        "lambda/d_lambda": 20000,
         "teff range": [2300, 12000],
         "reference": "Husser et al. (2013)",
         "url": "https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H",
         "information": "[alpha/Fe] = 0.0",
-        "checksum": "151b6c086d11badc22ba8299ae140617cc50b68ad595a2e7bd14d0aa2ca3fbe2"
+        "checksum": "5b4d10fa29a15007ee8e1f05c7187fd1e2cbcfdf69f042665453b0e977c6c73a"
     },
     "saumon2008-clear": {
         "parameters": ["teff", "logg"],
         "name": "Saumon & Marley (2008) clear",
-        "file size": "197 MB",
+        "file size": "87 MB",
         "wavelength range": [0.4, 50],
-        "lambda/d_lambda": 5000,
+        "lambda/d_lambda": 6000,
         "teff range": [500, 2400],
-        "checksum": "a7ab015f6b1a34acdd06ec29836fba6f79e7c6914acf5ac18f7bc0dab4428ad5"
+        "checksum": "874acbda7dcdb4a732d7c2605b8bf4381af331292c7d2c08f6380e874936654a"
     },
     "saumon2008-cloudy": {
         "parameters": ["teff", "logg"],
         "name": "Saumon & Marley (2008) cloudy",
-        "file size": "122 MB",
+        "file size": "54 MB",
         "wavelength range": [0.4, 50],
-        "lambda/d_lambda": 5000,
+        "lambda/d_lambda": 6000,
         "teff range": [500, 2400],
-        "checksum": "6556af44347d86aeea0c2baef2ec6c252629faac4fa052be1cc977bf56fccf23"
+        "checksum": "e2d33de5e5658e11f43e1b68eaf25a411e0e2ac584b0f9989526d66b3c399754"
     },
     "sonora-cholla": {
         "parameters": ["teff", "logg", "log_kzz"],
