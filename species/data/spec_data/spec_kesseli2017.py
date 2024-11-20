@@ -44,7 +44,7 @@ def add_kesseli2017(input_path: str, database: h5py._hl.files.File) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="85e6fa6a242e9ea2d9da89338d0b06ab9fec30316b6af42b449568ac942e9a15",
+            known_hash=None,
             fname=input_file,
             path=input_path,
             progressbar=True,

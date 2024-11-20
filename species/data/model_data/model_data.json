@@ -311,69 +311,69 @@
     "petitcode-cool-clear": {
         "parameters": ["teff", "logg", "feh"],
         "name": "petitCODE cool clear",
-        "file size": "86 MB",
+        "file size": "62 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [500, 1000],
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
-        "checksum": "f6e28fb92836169a565e66f703f1cc8360cc70fd644c2b35b9615b0b5edd963e"
+        "checksum": "743e3d3076b6802a6b26a681df8372d5a9aa27756eefa4ce7268edc1dbff105c"
     },
     "petitcode-cool-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
         "name": "petitCODE cool cloudy",
-        "file size": "224 MB",
+        "file size": "163 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [500, 850],
         "information": "log(Kzz) = 7.5",
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
-        "checksum": "505659fb93f13f9735b0aed5fef04fc2d9b1552fa469a65c0f35b59d1fa5c5bd"
+        "checksum": "bcba49f4b7ec83743d454cf523297d5c4808bd1611ef72e39107312fe35aa525"
     },
     "petitcode-hot-clear": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "petitCODE hot clear",
-        "file size": "42 MB",
+        "file size": "31 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
-        "checksum": "3e5c5192e3668fb48795d50e34afa147c7c1ebfad2b2095e1504106627452817"
+        "checksum": "e7c850fc8ebb5cfd326536d1073c9a58ba02d001397eb650ca4811b42ae9f727"
     },
     "petitcode-hot-cloudy": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "fsed"],
         "name": "petitCODE hot cloudy",
-        "file size": "126 MB",
+        "file size": "92 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [1000, 2000],
         "reference": "Mollière et al. (2015)",
         "url": "https://ui.adsabs.harvard.edu/abs/2015ApJ...813...47M",
-        "checksum": "3cf545f94795cb235176f9df838fdaa0b2e69094f8fbf4e4bafda99afae2c5da"
+        "checksum": "612b64b5f2fbde3357013391c559551840af7316d866510c82aafeea39a24f01"
     },
     "petitcode-linder2019-clear": {
         "parameters": ["teff", "logg", "feh"],
         "name": "petitCODE clear (Linder et al. 2019)",
-        "file size": "225 MB",
+        "file size": "163 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
         "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L",
-        "checksum": "aa93364a5e9bee594b45e54a42a17b55907ee5f869c1d95a3ba15bbbc10d09dd"
+        "checksum": "70f5c3012e930053ba00dcaef00fd352b530bcee56a8f0c9403381db8bf3b898"
     },
     "petitcode-linder2019-cloudy": {
         "parameters": ["teff", "logg", "feh", "fsed"],
         "name": "petitCODE cloudy (Linder et al. 2019)",
-        "file size": "1.4 GB",
+        "file size": "976 MB",
         "wavelength range": [0.1, 250],
         "lambda/d_lambda": 1000,
         "teff range": [150, 1000],
         "reference": "Linder et al. (2019)",
         "url": "https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L",
-        "checksum": "48b61dd41d661ae67494613ba786ed8e44aca998660c15c6cb86f2a5b4676916"
+        "checksum": "1c2da2ab9f80265ece353f987e0c02fcc81c9034d1ca8fb94194640544b0bf8e"
     },
     "phoenix-husser2013": {
         "parameters": ["teff", "logg", "feh"],
