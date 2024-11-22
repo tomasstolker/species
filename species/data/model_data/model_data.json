@@ -37,18 +37,7 @@
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "d536d95ac92c67d51fac367e409f9e2faa53c55fdd32ade0eae6d8115de757c5"
-    },
-    "atmo-neq-weak": {
-        "parameters": ["teff", "logg"],
-        "name": "ATMO NEQ weak",
-        "file size": "36 MB",
-        "wavelength range": [0.2, 6000],
-        "lambda/d_lambda": 2000,
-        "teff range": [200, 1800],
-        "reference": "Phillips et al. (2020)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "b5e808a9faa99ec864ced4a43f80689a15e04386c3041db94f3cce92da5e70ed"
+        "checksum": "a3aabb7e76a1be53916d6518fd75f54b78f6efa6f0dcce4e19561fe905443c7e"
     },
     "atmo-neq-strong": {
         "parameters": ["teff", "logg"],
@@ -59,7 +48,18 @@
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "f277b984cb57d5155ce7d841a561c6acc9b3d46a7b6c97fc334cc5827212e041"
+        "checksum": "a14865674459593b53b309f3aacb00f2d4c6cf7d4c620fd13cb5f7d586a03a5e"
+    },
+    "atmo-neq-weak": {
+        "parameters": ["teff", "logg"],
+        "name": "ATMO NEQ weak",
+        "file size": "36 MB",
+        "wavelength range": [0.2, 6000],
+        "lambda/d_lambda": 2000,
+        "teff range": [200, 1800],
+        "reference": "Phillips et al. (2020)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
+        "checksum": "4b1b8611f3392857b179dc7ae10a8897f42b2efd800abdc2e38ee0b3b9d5030c"
     },
     "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
@@ -122,11 +122,11 @@
     "bt-nextgen": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-NextGen",
-        "file size": "240 MB",
+        "file size": "226 MB",
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 2000,
         "teff range": [2600, 30000],
-        "checksum": "cf4f3d299ea7d49c1276f9347a63e3e86f877197f47a6baf01a04b4fc87ab04b"
+        "checksum": "8c5256843ed0604b8444d4919a4af182fbb250334b41f27cfa64cf703cbcf43d"
     },
     "bt-nextgen-highres": {
         "parameters": ["teff", "logg", "feh"],
