@@ -222,7 +222,7 @@ class ReadModel:
             # sufficient because of the way that spectres
             # treats the edges with the resampling.
 
-            for i in range(1, 6):
+            for i in range(1, 20):
                 if index[0] - i >= 0:
                     wl_index[index[0] - i] = True
 

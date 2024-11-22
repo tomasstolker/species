@@ -418,17 +418,19 @@ def apply_obs(
             ext_object.Rv = model_param["ext_rv"]
 
         # Wavelength range (um) for which the extinction is defined
-        ext_wavel = (1./ext_object.x_range[1], 1./ext_object.x_range[0])
+        ext_wavel = (1.0 / ext_object.x_range[1], 1.0 / ext_object.x_range[0])
 
         if model_wavel[0] < ext_wavel[0] or model_wavel[-1] > ext_wavel[1]:
-            warnings.warn("The wavelength range of the model spectrum "
-                          f"({model_wavel[0]:.3f}-{model_wavel[-1]:.3f} "
-                          "um) does not fully lie within the available "
-                          "wavelength range of the extinction model "
-                          f"({ext_wavel[0]:.3f}-{ext_wavel[1]:.3f} um). "
-                          "The extinction will therefore not be applied "
-                          "to fluxes of which the wavelength lies "
-                          "outside the range of the extinction model.")
+            warnings.warn(
+                "The wavelength range of the model spectrum "
+                f"({model_wavel[0]:.3f}-{model_wavel[-1]:.3f} "
+                "um) does not fully lie within the available "
+                "wavelength range of the extinction model "
+                f"({ext_wavel[0]:.3f}-{ext_wavel[1]:.3f} um). "
+                "The extinction will therefore not be applied "
+                "to fluxes of which the wavelength lies "
+                "outside the range of the extinction model."
+            )
 
         wavel_select = (model_wavel > ext_wavel[0]) & (model_wavel < ext_wavel[1])
 
@@ -514,6 +516,11 @@ def apply_obs(
     # Resample wavelengths to data
 
     if data_wavel is not None:
+        # The 'fill' should not happen because model_wavel is
+        # 20 wavelength points broader than data_wavel, but
+        # spectres sometimes set the outer fluxes to 'fill'
+        # when a smaller margin than 20 wavelengths was used.
+
         model_flux = spectres_numba(
             data_wavel,
             model_wavel,
