@@ -976,11 +976,34 @@ class FitModel:
             self.synphot.append(SyntheticPhotometry(filter_item))
 
             if self.model not in self.non_interp_model:
-                # Interpolate the model grid for each filter
                 print(f"Interpolating {filter_item}...", end="", flush=True)
+
+                # Check wavelength range of filter profile
+                read_filt = ReadFilter(filter_item)
+                filt_wavel = read_filt.wavelength_range()
+
+                # Check wavelength range of model spectrum
                 readmodel = ReadModel(self.model, filter_name=filter_item)
+                model_wavel = readmodel.get_wavelengths()
+
+                if filt_wavel[0] < model_wavel[0] or filt_wavel[1] > model_wavel[-1]:
+                    raise ValueError(
+                        f"The wavelength range of the {filter_item} "
+                        f"filter profile, {filt_wavel[0]:.2f}-"
+                        f"{filt_wavel[1]:.2f} um, extends beyond the "
+                        "wavelength range of the model spectrum, "
+                        f"{model_wavel[0]:.2f}-{model_wavel[-1]:.2f} "
+                        "um. Please set 'wavel_range=None' when "
+                        "adding the model grid with `add_model()' and "
+                        "optionally set the 'fit_from' and "
+                        "'extend_from' parameters for extending the "
+                        "model spectra with a Rayleigh-Jeans slope."
+                    )
+
+                # Interpolate the model grid for each filter
                 readmodel.interpolate_grid(teff_range=self.teff_range)
                 self.modelphot.append(readmodel)
+
                 print(" [DONE]")
 
             # Add parameter for error inflation
@@ -1070,6 +1093,26 @@ class FitModel:
                     )
 
                     readmodel = ReadModel(self.model, wavel_range=wavel_range)
+                    model_wavel = readmodel.get_wavelengths()
+
+                    if (
+                        spec_value[0][0, 0] < model_wavel[0]
+                        or spec_value[0][-1, 0] > model_wavel[-1]
+                    ):
+                        raise ValueError(
+                            f"The wavelength range of the {spec_key} "
+                            f"spectrum, {spec_value[0][0, 0]:.2f}-"
+                            f"{spec_value[0][-1, 0]:.2f} um, extends "
+                            "beyond the wavelength range of the model "
+                            f"spectrum, {model_wavel[0]:.2f}-"
+                            f"{model_wavel[-1]:.2f} um. Please set "
+                            "'wavel_range=None' when adding the model "
+                            "grid with `add_model()' and optionally "
+                            "set the 'fit_from' and 'extend_from' "
+                            "parameters for extending the model "
+                            "spectra with a Rayleigh-Jeans slope."
+                        )
+
                     readmodel.interpolate_grid(teff_range=self.teff_range)
 
                     self.modelspec.append(readmodel)

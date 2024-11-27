@@ -11,9 +11,11 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import pooch
 
+from scipy.optimize import curve_fit
 from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
@@ -32,6 +34,8 @@ def add_model_grid(
     teff_range: Optional[Tuple[float, float]] = None,
     wavel_sampling: Optional[float] = None,
     unpack_tar: bool = True,
+    fit_from: Optional[float] = None,
+    extend_from: Optional[float] = None,
 ) -> None:
     """
     Function for adding a grid of model spectra to the database.
@@ -67,6 +71,20 @@ def add_model_grid(
         Unpack the TAR file with the model spectra in the
         ``data_folder``. The argument can be set to ``False`` if
         the TAR file had already been unpacked previously.
+    fit_from : float, None
+        Extend the spectra with a Rayleigh-Jeans slope. To do so, the
+        red end of the spectra will be fitted by setting ``fit_from``
+        to the minimum wavelength (in um) beyond which fluxes will be
+        included in the least-squares fit. The spectra are not
+        extended when setting the argument to ``None``.
+    extend_from : float, None
+        This parameter can be used in combination with ``fit_from``.
+        The argument of ``extend_from`` is the minimum wavelength
+        (in um) from which the spectra will be extended with the
+        Rayleigh-Jeans slope. The spectra will be extended from the
+        last available wavelength when setting the argument to
+        ``None``. Typically, the value of ``fit_from`` will be
+        smaller than the value of ``extend_from``.
 
     Returns
     -------
@@ -143,14 +161,16 @@ def add_model_grid(
     url = f"https://home.strw.leidenuniv.nl/~stolker/species/{model_tag}.tgz"
 
     if data_file.exists():
-        sha256_hash = hashlib.sha256(open(str(data_file),'rb').read()).hexdigest()
+        sha256_hash = hashlib.sha256(open(str(data_file), "rb").read()).hexdigest()
 
-        if sha256_hash != model_info['checksum']:
-            warnings.warn(f"The hash of the '{model_tag}' file is not as "
-                          "expected, probably because the model grid has "
-                          "been updated on the server. Please remove the "
-                          "following file such that the latest version "
-                          f"will be downloaded: {str(data_file)}")
+        if sha256_hash != model_info["checksum"]:
+            warnings.warn(
+                f"The hash of the '{model_tag}' file is not as "
+                "expected, probably because the model grid has "
+                "been updated on the server. Please remove the "
+                "following file such that the latest version "
+                f"will be downloaded: {str(data_file)}"
+            )
 
     else:
         print()
@@ -298,6 +318,8 @@ def add_model_grid(
 
     model_files = sorted(data_folder.glob("*"))
 
+    check_plot = False
+
     for file_item in model_files:
         if file_item.stem[: len(model_tag)] == model_tag:
             file_split = file_item.stem.split("_")
@@ -354,14 +376,120 @@ def add_model_grid(
                 data_wavel = data[:, 0]
                 data_flux = data[:, 1]
 
+            if fit_from is not None:
+                if fit_from > data_wavel[-1]:
+                    raise ValueError(
+                        "The argument of 'fit_from', "
+                        f"{fit_from} um, is larger than the "
+                        f"longest wavelength of the {model_tag} "
+                        f"model spectra, {data_wavel[-1]:.2f} um."
+                    )
+
+                def linear_func(log_wavel, a_param):
+                    return a_param - 4.0 * log_wavel
+
+                fit_select = data_wavel > fit_from
+
+                popt_fit, _ = curve_fit(
+                    linear_func,
+                    np.log10(data_wavel[fit_select]),
+                    np.log10(data_flux[fit_select]),
+                    p0=[1.0],
+                    maxfev=10000,
+                )
+
+                if extend_from is None:
+                    wavel_ext = create_wavelengths(
+                        (data_wavel[-1], 6000.0), wavel_sampling
+                    )
+
+                    extend_select = np.zeros(data_wavel.size, dtype=bool)
+
+                else:
+                    extend_select = data_wavel > extend_from
+
+                    if np.sum(extend_select) == 0:
+                        wavel_ext = create_wavelengths(
+                            (data_wavel[-1], 6000.0), wavel_sampling
+                        )
+
+                    else:
+                        wavel_ext = create_wavelengths(
+                            (data_wavel[extend_select][0], 6000.0), wavel_sampling
+                        )
+
+                flux_ext = 10.0 ** linear_func(
+                    np.log10(wavel_ext),
+                    popt_fit[0],
+                )
+
+                wavel_combined = np.hstack((data_wavel[~extend_select], wavel_ext[1:]))
+                flux_combined = np.hstack((data_flux[~extend_select], flux_ext[1:]))
+
+                wavel_new = create_wavelengths((data_wavel[2], 5000.0), wavel_sampling)
+
+                flux_new = spectres_numba(
+                    wavel_new,
+                    wavel_combined,
+                    flux_combined,
+                    spec_errs=None,
+                    fill=np.nan,
+                    verbose=True,
+                )
+
+                if not check_plot:
+                    check_plot = True
+
+                    plt.figure(figsize=(6, 3))
+
+                    plt.plot(
+                        data_wavel,
+                        data_flux,
+                        ls="-",
+                        lw=0.6,
+                        color="tab:orange",
+                        label="Original",
+                    )
+
+                    plt.plot(
+                        wavel_new,
+                        flux_new,
+                        ls="-",
+                        lw=0.2,
+                        color="black",
+                        label="Extended",
+                    )
+
+                    plt.xscale("log")
+                    plt.yscale("log")
+                    plt.xlabel("Wavelength (μm)")
+                    plt.ylabel("Flux (W m$^{-2}$ μm$^{-1}$)")
+                    plt.legend(frameon=False)
+                    plt.show()
+
+                    user_check = input(
+                        "Does the extended model spectrum seem fine? (y/n)? "
+                    )
+
+                    if user_check not in ["y", "Y", "yes", "Yes"]:
+                        raise UserWarning(
+                            "Please adjust the 'fit_from' and/or "
+                            "'extend_from' arguments, and run "
+                            "again 'add_model()'."
+                        )
+
+                data_wavel = wavel_new
+                data_flux = flux_new
+
+            if np.all(np.diff(data_wavel) < 0):
+                raise ValueError(
+                    f"The wavelengths of {file_item.stem} are "
+                    "not all monotonically increasing."
+                )
+
             if wavel_range is None:
                 if wavelength is None:
                     wavelength = np.copy(data_wavel)  # (um)
-
-                    if np.all(np.diff(wavelength) < 0):
-                        raise ValueError(
-                            "The wavelengths are not all sorted by increasing value."
-                        )
 
                 flux.append(data_flux)  # (W m-2 um-1)
 
@@ -369,11 +497,6 @@ def add_model_grid(
                 if not resample_spectra:
                     if wavelength is None:
                         wavelength = np.copy(data_wavel)  # (um)
-
-                        if np.all(np.diff(wavelength) < 0):
-                            raise ValueError(
-                                "The wavelengths are not all sorted by increasing value."
-                            )
 
                         wavel_select = (wavel_range[0] < wavelength) & (
                             wavelength < wavel_range[1]

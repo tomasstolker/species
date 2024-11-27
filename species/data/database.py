@@ -676,6 +676,8 @@ class Database:
         wavel_sampling: Optional[float] = None,
         teff_range: Optional[Tuple[float, float]] = None,
         unpack_tar: bool = True,
+        fit_from: Optional[float] = None,
+        extend_from: Optional[float] = None,
     ) -> None:
         """
         Function for adding a grid of model spectra to the database.
@@ -691,7 +693,11 @@ class Database:
         the input grid was sufficient for modeling the spectra at
         the considered wavelength regime. See also
         :func:`~species.data.database.Database.add_custom_model`
-        for adding a custom grid to the database.
+        for adding a custom grid to the database. Most grids
+        provide spectra up to the near- or mid-infrared regime.
+        To extend the spectra towards longer wavelengths, it is
+        possible to use the ``fit_from`` and ``extend_from``
+        parameters to extend the spectra with a Rayleigh-Jeans slope.
 
         Parameters
         ----------
@@ -730,6 +736,22 @@ class Database:
             argument can be set to ``False`` such that the
             unpacking will be skipped. This can save some time
             with unpacking large TAR files.
+        fit_from : float, None
+            Extend the spectra with a Rayleigh-Jeans slope. To do so,
+            the red end of the spectra will be fitted by setting
+            ``fit_from`` to the minimum wavelength (in um) beyond
+            which fluxes will be included in the least-squares fit.
+            The spectra are not extended when setting the
+            argument to ``None``.
+        extend_from : float, None
+            This parameter can be used in combination with
+            ``fit_from``. The argument of ``extend_from`` is the
+            minimum wavelength (in um) from which the spectra
+            will be extended with the Rayleigh-Jeans slope.
+            The spectra will be extended from the last available
+            wavelength when setting the argument to ``None``.
+            Typically, the value of ``fit_from`` will be smaller
+            than the value of ``extend_from``.
 
         Returns
         -------
@@ -748,6 +770,8 @@ class Database:
                 teff_range=teff_range,
                 wavel_sampling=wavel_sampling,
                 unpack_tar=unpack_tar,
+                fit_from=fit_from,
+                extend_from=extend_from,
             )
 
     @typechecked

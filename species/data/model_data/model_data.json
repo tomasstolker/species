@@ -31,35 +31,35 @@
     "atmo-ceq": {
         "parameters": ["teff", "logg"],
         "name": "ATMO CEQ",
-        "file size": "59 MB",
-        "wavelength range": [0.2, 6000],
+        "file size": "39 MB",
+        "wavelength range": [0.2, 2000],
         "lambda/d_lambda": 2000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "a3aabb7e76a1be53916d6518fd75f54b78f6efa6f0dcce4e19561fe905443c7e"
+        "checksum": "eea84c68b2b5d95bc204de3e4713c88f93073276d93b4fb5ce1c4ffcd38d0f26"
     },
     "atmo-neq-strong": {
         "parameters": ["teff", "logg"],
         "name": "ATMO NEQ strong",
-        "file size": "36 MB",
-        "wavelength range": [0.2, 6000],
+        "file size": "24 MB",
+        "wavelength range": [0.2, 2000],
         "lambda/d_lambda": 2000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "a14865674459593b53b309f3aacb00f2d4c6cf7d4c620fd13cb5f7d586a03a5e"
+        "checksum": "8d3ec59acb07938e8e453088d5c59f8d36a079caba6f1ffc36d4832f62478cd4"
     },
     "atmo-neq-weak": {
         "parameters": ["teff", "logg"],
         "name": "ATMO NEQ weak",
-        "file size": "36 MB",
-        "wavelength range": [0.2, 6000],
+        "file size": "23 MB",
+        "wavelength range": [0.2, 2000],
         "lambda/d_lambda": 2000,
         "teff range": [200, 1800],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "4b1b8611f3392857b179dc7ae10a8897f42b2efd800abdc2e38ee0b3b9d5030c"
+        "checksum": "0ebf04f1bd9df8196060aa1809612aa94f6da3a8c9553f9d429fac760a014775"
     },
     "atmo-petrus2023": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "ad_index"],
@@ -126,7 +126,7 @@
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 2000,
         "teff range": [2600, 30000],
-        "checksum": "8c5256843ed0604b8444d4919a4af182fbb250334b41f27cfa64cf703cbcf43d"
+        "checksum": "eb3dda397d296b7aa9e4d7549fd77eed5c6ff625e6265a2c09b86b4c1f986de7"
     },
     "bt-nextgen-highres": {
         "parameters": ["teff", "logg", "feh"],
@@ -246,7 +246,7 @@
         "parameters": ["teff", "logg", "feh"],
         "name": "coolTLUSTY clear NEQ",
         "file size": "136 MB",
-        "wavelength range": [0.4, 3005],
+        "wavelength range": [0.4, 300],
         "lambda/d_lambda": 4000,
         "teff range": [200, 600],
         "reference": "Lacy & Burrows (2023)",

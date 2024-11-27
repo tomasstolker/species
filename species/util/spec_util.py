@@ -51,6 +51,7 @@ def create_wavelengths(
         ceil(n_test * wavel_sampling / np.mean(sampling_test)) + 1,
     )
 
+    # Check wavelength sampling, lambda/D_lambda, of the created array
     # res_out = np.mean(0.5*(wavel_array[1:]+wavel_array[:-1])/np.diff(wavel_array))
 
     return wavel_array

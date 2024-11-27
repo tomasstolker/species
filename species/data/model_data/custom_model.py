@@ -112,8 +112,8 @@ def add_custom_model_grid(
 
     if "co" in parameters:
         c_o_ratio = []
-        co_index = parameters.index('co')
-        parameters[co_index] = 'c_o_ratio'
+        co_index = parameters.index("co")
+        parameters[co_index] = "c_o_ratio"
 
     else:
         c_o_ratio = None
