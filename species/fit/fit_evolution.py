@@ -23,7 +23,7 @@ except:
         "(Linux) or DYLD_LIBRARY_PATH (Mac)?"
     )
 
-from scipy import stats
+from scipy.stats import norm, truncnorm
 from tqdm.auto import tqdm
 from typeguard import typechecked
 
@@ -441,7 +441,69 @@ class FitEvolution:
                 if key != "age":
                     obj_idx = int(key.split("_")[-1])
 
-                if key[:4] == "mass" and self.mass_prior[obj_idx] is not None:
+                if key == "age" and self.age_prior is not None:
+                    # Asymmetric and truncated normal age prior
+
+                    if cube[cube_index["age"]] < 0.5:
+                        # Use lower errorbar on the age
+                        # Truncated normal prior
+
+                        # The truncation values are given in number of
+                        # standard deviations relative to the mean
+                        # of the normal distribution
+
+                        if "age" in self.bounds:
+                            a_trunc = (
+                                self.bounds["age"][0] - self.age_prior[0]
+                            ) / np.abs(self.age_prior[1])
+
+                            b_trunc = (
+                                self.bounds["age"][1] - self.age_prior[0]
+                            ) / np.abs(self.age_prior[1])
+
+                        else:
+                            a_trunc = -self.age_prior[0] / np.abs(self.age_prior[1])
+                            b_trunc = np.inf
+
+                        cube[cube_index["age"]] = truncnorm.ppf(
+                            cube[cube_index["age"]],
+                            a_trunc,
+                            b_trunc,
+                            loc=self.age_prior[0],
+                            scale=np.abs(self.age_prior[1]),
+                        )
+
+                    else:
+                        # Use upper errorbar on the age
+
+                        if "age" in self.bounds:
+                            # Truncated normal prior
+
+                            a_trunc = (
+                                self.bounds["age"][0] - self.age_prior[0]
+                            ) / np.abs(self.age_prior[2])
+
+                            b_trunc = (
+                                self.bounds["age"][1] - self.age_prior[0]
+                            ) / np.abs(self.age_prior[2])
+
+                            cube[cube_index["age"]] = truncnorm.ppf(
+                                cube[cube_index["age"]],
+                                a_trunc,
+                                b_trunc,
+                                loc=self.age_prior[0],
+                                scale=np.abs(self.age_prior[2]),
+                            )
+
+                        else:
+                            # Regular normal prior
+                            cube[cube_index["age"]] = norm.ppf(
+                                cube[cube_index["age"]],
+                                loc=self.age_prior[0],
+                                scale=self.age_prior[2],
+                            )
+
+                elif key[:4] == "mass" and self.mass_prior[obj_idx] is not None:
                     # Normal mass prior
                     sigma = self.mass_prior[obj_idx][1]
 
@@ -455,7 +517,7 @@ class FitEvolution:
                             * cube[cube_index[f"inflate_mass{obj_idx}"]]
                         )
 
-                    cube[cube_index[f"mass_{obj_idx}"]] = stats.norm.ppf(
+                    cube[cube_index[f"mass_{obj_idx}"]] = norm.ppf(
                         cube[cube_index[f"mass_{obj_idx}"]],
                         loc=self.mass_prior[obj_idx][0],
                         scale=sigma,
@@ -520,11 +582,16 @@ class FitEvolution:
                 else:
                     lbol_var = self.log_lum[planet_idx][1] ** 2
 
+                param_interp = ["log_lum"]
+                if self.radius_prior[planet_idx] is not None:
+                    param_interp.append("radius")
+
                 iso_box = self.read_iso.get_isochrone(
                     age=age_param,
                     masses=np.array([params[cube_index[f"mass_{planet_idx}"]]]),
                     filters_color=None,
                     filter_mag=None,
+                    param_interp=param_interp,
                 )
 
                 chi_square += (
@@ -553,19 +620,6 @@ class FitEvolution:
                     chi_square += (
                         self.radius_prior[planet_idx][0] - iso_box.radius[0]
                     ) ** 2 / self.radius_prior[planet_idx][1] ** 2
-
-                # Age prior
-                if self.age_prior is not None:
-                    if age_param < self.age_prior[0]:
-                        # Use lower errorbar on the age
-                        chi_square += (
-                            self.age_prior[0] - age_param
-                        ) ** 2 / self.age_prior[1] ** 2
-                    else:
-                        # Use upper errorbar on the age
-                        chi_square += (
-                            self.age_prior[0] - age_param
-                        ) ** 2 / self.age_prior[2] ** 2
 
                 # ln_like += -0.5 * weight * (obj_item[0] - phot_flux) ** 2 / phot_var
                 # ln_like += -0.5 * weight * np.log(2.0 * np.pi * phot_var)
@@ -686,6 +740,7 @@ class FitEvolution:
                     masses=np.array([mass]),
                     filters_color=None,
                     filter_mag=None,
+                    param_interp=["log_lum", "logg", "radius"],
                 )
 
                 radius[sample_idx, planet_idx] = iso_box.radius[0]

@@ -90,7 +90,7 @@ def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="87d218fced3c6cbf9cbe288512e9b47a3faa13886068edf18676f3cfdcb08d0f",
+            known_hash=None,
             fname=input_file,
             path=input_path,
             progressbar=True,

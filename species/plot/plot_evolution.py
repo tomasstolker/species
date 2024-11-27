@@ -494,7 +494,9 @@ def plot_isochrones(
         for planet_idx in range(n_planets):
             age = samples[sample_idx, 0]
 
-            iso_box = read_iso.get_isochrone(age=age, masses=None)
+            iso_box = read_iso.get_isochrone(
+                age=age, masses=None, param_interp=["log_lum"]
+            )
 
             isochrones[planet_idx].append([iso_box.mass, iso_box.log_lum])
 

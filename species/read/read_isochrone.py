@@ -519,6 +519,7 @@ class ReadIsochrone:
         masses: Optional[np.ndarray] = None,
         filter_mag: Optional[str] = None,
         filters_color: Optional[Tuple[str, str]] = None,
+        param_interp: Optional[List[str]] = None,
     ) -> IsochroneBox:
         """
         Function for interpolating an isochrone.
@@ -540,6 +541,13 @@ class ReadIsochrone:
             Filter names for the color as listed in the file with the
             isochrone data. Not selected if set to ``None`` or if only
             evolutionary tracks are available.
+        param_interp : list(str), None
+            List with the parameters that will be interpolated from
+            the isochrone grid. By default, all parameters will
+            be interpolated and stored in the ``IsochroneBox``
+            when the argument is set to ``None``. However, to
+            decrease the computation time, a subset of parameters
+            can be selected from 'log_lum', 'teff', 'logg', 'radius'.
 
         Returns
         -------
@@ -567,6 +575,12 @@ class ReadIsochrone:
             idx_min = (np.abs(iso_age - age)).argmin()
             age_select = iso_age == iso_age[idx_min]
             masses = np.unique(iso_mass[age_select])  # (Mjup)
+
+            if masses.size < 5:
+                # This can happen if the age sampling in the
+                # isochrone grid was different for each mass,
+                # for example baraffe+2015
+                masses = np.unique(iso_mass)  # (Mjup)
 
         age_points = np.full(masses.shape[0], age)  # (Myr)
         grid_points = np.column_stack([iso_age, iso_mass])
@@ -645,41 +659,57 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = griddata(
-            points=grid_points,
-            values=iso_teff,
-            xi=np.stack((age_points, masses), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if param_interp is None or "teff" in param_interp:
+            teff = griddata(
+                points=grid_points,
+                values=iso_teff,
+                xi=np.stack((age_points, masses), axis=1),
+                method="linear",
+                fill_value="nan",
+                rescale=False,
+            )
 
-        log_lum = griddata(
-            points=grid_points,
-            values=iso_loglum,
-            xi=np.stack((age_points, masses), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        else:
+            teff = None
 
-        logg = griddata(
-            points=grid_points,
-            values=iso_logg,
-            xi=np.stack((age_points, masses), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if param_interp is None or "log_lum" in param_interp:
+            log_lum = griddata(
+                points=grid_points,
+                values=iso_loglum,
+                xi=np.stack((age_points, masses), axis=1),
+                method="linear",
+                fill_value="nan",
+                rescale=False,
+            )
 
-        radius = griddata(
-            points=grid_points,
-            values=iso_radius,
-            xi=np.stack((age_points, masses), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        else:
+            log_lum = None
+
+        if param_interp is None or "logg" in param_interp:
+            logg = griddata(
+                points=grid_points,
+                values=iso_logg,
+                xi=np.stack((age_points, masses), axis=1),
+                method="linear",
+                fill_value="nan",
+                rescale=False,
+            )
+
+        else:
+            logg = None
+
+        if param_interp is None or "radius" in param_interp:
+            radius = griddata(
+                points=grid_points,
+                values=iso_radius,
+                xi=np.stack((age_points, masses), axis=1),
+                method="linear",
+                fill_value="nan",
+                rescale=False,
+            )
+
+        else:
+            radius = None
 
         if mag_abs is None and filter_mag is not None:
             warnings.warn(

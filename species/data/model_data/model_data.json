@@ -20,13 +20,13 @@
     "atmo": {
         "parameters": ["teff", "logg"],
         "name": "ATMO",
-        "file size": "31 MB",
-        "wavelength range": [0.2, 6000],
+        "file size": "21 MB",
+        "wavelength range": [0.2, 2000],
         "lambda/d_lambda": 1000,
         "teff range": [200, 3000],
         "reference": "Phillips et al. (2020)",
         "url": "https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P",
-        "checksum": "e2054db0eb135b89ae42abb91ddb8d3a7eb7afa6dbe2f9aefa1328a29a2fe8e9"
+        "checksum": "b42581abdde49b45a44e8dc8fd59a0edf56073b54e96e81c787de34242a6511c"
     },
     "atmo-ceq": {
         "parameters": ["teff", "logg"],
@@ -163,7 +163,7 @@
         "wavelength range": [0.1, 5000],
         "lambda/d_lambda": 10000,
         "teff range": [1200, 7000],
-        "checksum": "b6122d3cc290367968821075b7e7d8b7302656433021d7c4cf6a52aa4cee8500"
+        "checksum": "a1a1510d2b3e47ddad43dfcba9c508cf1177fcaa615881d02522e3458132aa3f"
     },
     "drift-phoenix": {
         "parameters": ["teff", "logg", "feh"],
