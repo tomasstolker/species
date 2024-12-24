@@ -203,7 +203,6 @@ def plot_walkers(
 @typechecked
 def plot_posterior(
     tag: str,
-    burnin: Optional[int] = None,
     title: Optional[str] = None,
     offset: Optional[Tuple[float, float]] = None,
     title_fmt: Union[str, List[str]] = ".2f",
@@ -229,9 +228,6 @@ def plot_posterior(
     ----------
     tag : str
         Database tag with the samples.
-    burnin : int, None
-        Number of burnin steps to exclude. All samples
-        are used if the argument is set to ``None``.
     title : str, None
         Plot title. No title is shown if the arguments
         is set to ``None``.
@@ -306,7 +302,7 @@ def plot_posterior(
 
     species_db = Database()
 
-    box = species_db.get_samples(tag, burnin=burnin)
+    box = species_db.get_samples(tag)
     samples = box.samples
 
     print_section("Plot posterior distributions")
@@ -330,9 +326,6 @@ def plot_posterior(
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
-    if burnin is None:
-        burnin = 0
 
     # index_sel = [0, 1, 8, 9, 14]
     # samples = samples[:, index_sel]
@@ -1198,7 +1191,6 @@ def plot_posterior(
 def plot_mag_posterior(
     tag: str,
     filter_name: str,
-    burnin: Optional[int] = None,
     xlim: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
 ) -> Tuple[np.ndarray, mpl.figure.Figure]:
@@ -1212,9 +1204,6 @@ def plot_mag_posterior(
         Database tag with the posterior samples.
     filter_name : str
         Filter name.
-    burnin : int, None
-        Number of burnin steps to exclude. All samples are
-        used if the argument is set to ``None``.
     xlim : tuple(float, float), None
         Axis limits. Automatically set if the argument is
         set to ``None``.
@@ -1238,7 +1227,7 @@ def plot_mag_posterior(
 
     species_db = Database()
 
-    samples = species_db.get_mcmc_photometry(tag, filter_name, burnin)
+    samples = species_db.get_mcmc_photometry(tag, filter_name)
 
     if output is None:
         print("Plotting photometry samples...", end="", flush=True)
@@ -1307,7 +1296,6 @@ def plot_mag_posterior(
 @typechecked
 def plot_size_distributions(
     tag: str,
-    burnin: Optional[int] = None,
     random: Optional[int] = None,
     offset: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
@@ -1320,10 +1308,6 @@ def plot_size_distributions(
     ----------
     tag : str
         Database tag with the samples.
-    burnin : int, None
-        Number of burnin steps to exclude. All samples are used if the
-        argument is set to ``None``. Only required after running MCMC
-        with :func:`~species.fit.fit_model.FitModel.run_mcmc`.
     random : int, None
         Number of randomly selected samples. All samples are used
         if the argument set to ``None``.
@@ -1351,9 +1335,6 @@ def plot_size_distributions(
     else:
         print(f"Plotting size distributions: {output}...", end="", flush=True)
 
-    if burnin is None:
-        burnin = 0
-
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
@@ -1365,22 +1346,9 @@ def plot_size_distributions(
 
     samples = box.samples
 
-    if samples.ndim == 2 and random is not None:
+    if random is not None:
         ran_index = np.random.randint(samples.shape[0], size=random)
         samples = samples[ran_index,]
-
-    elif samples.ndim == 3:
-        if burnin > samples.shape[1]:
-            raise ValueError(
-                f"The 'burnin' value is larger than the number of steps "
-                f"({samples.shape[1]}) that are made by the walkers."
-            )
-
-        samples = samples[:, burnin:, :]
-
-        ran_walker = np.random.randint(samples.shape[0], size=random)
-        ran_step = np.random.randint(samples.shape[1], size=random)
-        samples = samples[ran_walker, ran_step, :]
 
     if "lognorm_radius" in box.parameters:
         log_r_index = box.parameters.index("lognorm_radius")
@@ -1483,7 +1451,6 @@ def plot_size_distributions(
 @typechecked
 def plot_extinction(
     tag: str,
-    burnin: Optional[int] = None,
     random: Optional[int] = None,
     wavel_range: Optional[Tuple[float, float]] = None,
     xlim: Optional[Tuple[float, float]] = None,
@@ -1501,10 +1468,6 @@ def plot_extinction(
     ----------
     tag : str
         Database tag with the samples.
-    burnin : int, None
-        Number of burnin steps to exclude. All samples are used if the
-        argument is set to ``None``. Only required after running MCMC
-        with :func:`~species.fit.fit_model.FitModel.run_mcmc`.
     random : int, None
         Number of randomly selected samples. All samples are used if
         the argument is set to ``None``.
@@ -1537,9 +1500,6 @@ def plot_extinction(
     species_db = Database()
     box = species_db.get_samples(tag)
 
-    if burnin is None:
-        burnin = 0
-
     if wavel_range is None:
         wavel_range = (0.4, 10.0)
 
@@ -1548,22 +1508,9 @@ def plot_extinction(
 
     samples = box.samples
 
-    if samples.ndim == 2 and random is not None:
+    if random is not None:
         ran_index = np.random.randint(samples.shape[0], size=random)
         samples = samples[ran_index,]
-
-    elif samples.ndim == 3:
-        if burnin > samples.shape[1]:
-            raise ValueError(
-                f"The 'burnin' value is larger than the number of steps "
-                f"({samples.shape[1]}) that are made by the walkers."
-            )
-
-        samples = samples[:, burnin:, :]
-
-        ran_walker = np.random.randint(samples.shape[0], size=random)
-        ran_step = np.random.randint(samples.shape[1], size=random)
-        samples = samples[ran_walker, ran_step, :]
 
     fig = plt.figure(figsize=(6, 3))
     gridsp = mpl.gridspec.GridSpec(1, 1)

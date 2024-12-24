@@ -983,6 +983,14 @@ class ReadModel:
                     "applied to the spectrum."
                 )
 
+        # Apply radial velocity shift to the wavelengths
+
+        if "rad_vel" in model_param:
+            # Wavelength shift in um
+            # rad_vel in km s-1 and constants.LIGHT in m s-1
+            wavel_shift = model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
+            model_box.wavelength += wavel_shift
+
         # Smooth the spectrum
 
         if spec_res is not None:
@@ -1464,6 +1472,14 @@ class ReadModel:
                     "parameter is ignored and no extinction is "
                     "applied to the spectrum."
                 )
+
+        # Apply radial velocity shift to the wavelengths
+
+        if "rad_vel" in model_param:
+            # Wavelength shift in um
+            # rad_vel in km s-1 and constants.LIGHT in m s-1
+            wavel_shift = model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
+            model_box.wavelength += wavel_shift
 
         # Smooth the spectrum
 

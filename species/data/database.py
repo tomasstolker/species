@@ -2331,7 +2331,6 @@ class Database:
     def get_probable_sample(
         self,
         tag: str,
-        burnin: Optional[int] = None,
         verbose: bool = True,
     ) -> Dict[str, float]:
         """
@@ -2342,11 +2341,6 @@ class Database:
         ----------
         tag : str
             Database tag with the posterior results.
-        burnin : int, None
-            Number of burnin steps to remove. No burnin is
-            removed if the argument is set to ``None``. Is
-            only applied on posterior distributions that
-            have been sampled with ``emcee``.
         verbose : bool
             Print output, including the parameter values.
 
@@ -2361,9 +2355,6 @@ class Database:
             print_section("Get sample with the maximum likelihood")
             print(f"Database tag: {tag}")
 
-        if burnin is None:
-            burnin = 0
-
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
 
@@ -2374,19 +2365,6 @@ class Database:
                 n_param = dset.attrs["n_param"]
             else:
                 n_param = dset.attrs["nparam"]
-
-            if samples.ndim == 3:
-                if burnin > samples.shape[0]:
-                    raise ValueError(
-                        f"The 'burnin' value is larger than the number of steps "
-                        f"({samples.shape[1]}) that are made by the walkers."
-                    )
-
-                samples = samples[burnin:, :, :]
-                ln_prob = ln_prob[burnin:, :]
-
-                samples = np.reshape(samples, (-1, n_param))
-                ln_prob = np.reshape(ln_prob, -1)
 
             index_max = np.argmax(ln_prob)
             max_sample = samples[index_max,]
@@ -2430,7 +2408,6 @@ class Database:
     def get_median_sample(
         self,
         tag: str,
-        burnin: Optional[int] = None,
         verbose: bool = True,
     ) -> Dict[str, float]:
         """
@@ -2441,11 +2418,6 @@ class Database:
         ----------
         tag : str
             Database tag with the posterior results.
-        burnin : int, None
-            Number of burnin steps to remove. No burnin is
-            removed if the argument is set to ``None``. Is
-            only applied on posterior distributions that
-            have been sampled with ``emcee``.
         verbose : bool
             Print output, including the parameter values.
 
@@ -2459,9 +2431,6 @@ class Database:
             print_section("Get median parameters")
             print(f"Database tag: {tag}")
 
-        if burnin is None:
-            burnin = 0
-
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
 
@@ -2471,21 +2440,6 @@ class Database:
                 n_param = dset.attrs["nparam"]
 
             samples = np.asarray(dset)
-
-            # samples = samples[samples[:, 2] > 100., ]
-
-            if samples.ndim == 3:
-                if burnin > samples.shape[0]:
-                    raise ValueError(
-                        "The 'burnin' value is larger than the "
-                        f"number of steps ({samples.shape[1]}) "
-                        "that are made by the walkers."
-                    )
-
-                if burnin is not None:
-                    samples = samples[burnin:, :, :]
-
-                samples = np.reshape(samples, (-1, n_param))
 
             median_sample = {}
 
@@ -2594,7 +2548,6 @@ class Database:
         self,
         tag: str,
         random: int,
-        burnin: Optional[int] = None,
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
@@ -2612,11 +2565,6 @@ class Database:
             Database tag with the posterior samples.
         random : int
             Number of random samples.
-        burnin : int, None
-            Number of burnin steps to remove. No burnin is
-            removed if the argument is set to ``None``. Is
-            only applied on posterior distributions that
-            have been sampled with ``emcee``.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. Full spectrum is
             used if set to ``None``.
@@ -2651,9 +2599,6 @@ class Database:
         print(f"Number of samples: {random}")
         print(f"Wavelength range (um): {wavel_range}")
         print(f"Resolution: {spec_res}")
-
-        if burnin is None:
-            burnin = 0
 
         hdf5_file = h5py.File(self.database, "r")
         dset = hdf5_file[f"results/fit/{tag}/samples"]
@@ -2728,24 +2673,8 @@ class Database:
 
         samples = np.asarray(dset)
 
-        # samples = samples[samples[:, 2] > 100., ]
-
-        if samples.ndim == 2:
-            rand_index = np.random.randint(samples.shape[0], size=random)
-            samples = samples[rand_index,]
-
-        elif samples.ndim == 3:
-            if burnin > samples.shape[0]:
-                raise ValueError(
-                    f"The 'burnin' value is larger than the number of steps "
-                    f"({samples.shape[1]}) that are made by the walkers."
-                )
-
-            samples = samples[burnin:, :, :]
-
-            ran_walker = np.random.randint(samples.shape[0], size=random)
-            ran_step = np.random.randint(samples.shape[1], size=random)
-            samples = samples[ran_walker, ran_step, :]
+        rand_index = np.random.randint(samples.shape[0], size=random)
+        samples = samples[rand_index,]
 
         param = []
         for i in range(n_param):
@@ -2892,7 +2821,6 @@ class Database:
         self,
         tag: str,
         filter_name: str,
-        burnin: Optional[int] = None,
         phot_type: str = "magnitude",
         flux_units: str = "W m-2 um-1",
     ) -> np.ndarray:
@@ -2907,11 +2835,6 @@ class Database:
         filter_name : str
             Filter name for which the synthetic photometry
             will be computed.
-        burnin : int, None
-            Number of burnin steps to remove. No burnin is
-            removed if the argument is set to ``None``. Is
-            only applied on posterior distributions that
-            have been sampled with ``emcee``.
         phot_type : str
             Photometry type ('magnitude' or 'flux').
         flux_units : tuple(str, str), None
@@ -2931,9 +2854,6 @@ class Database:
                 "The argument of 'phot_type' is not recognized "
                 "and should be set to 'magnitude' or 'flux'."
             )
-
-        if burnin is None:
-            burnin = 0
 
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
@@ -2969,19 +2889,6 @@ class Database:
                 distance = None
 
             samples = np.asarray(dset)
-
-            if samples.ndim == 3:
-                if burnin > samples.shape[0]:
-                    raise ValueError(
-                        "The 'burnin' value is larger than the "
-                        f"number of steps ({samples.shape[1]}) "
-                        "that are made by the walkers."
-                    )
-
-                samples = samples[burnin:, :, :]
-                samples = samples.reshape(
-                    (samples.shape[0] * samples.shape[1], n_param)
-                )
 
             param = []
             for i in range(n_param):
@@ -3255,7 +3162,6 @@ class Database:
     def get_samples(
         self,
         tag: str,
-        burnin: Optional[int] = None,
         random: Optional[int] = None,
         json_file: Optional[str] = None,
     ) -> SamplesBox:
@@ -3264,14 +3170,9 @@ class Database:
         ----------
         tag: str
             Database tag with the samples.
-        burnin : int, None
-            Number of burnin steps to remove. No burnin is
-            removed if the argument is set to ``None``. Is
-            only applied on posterior distributions that
-            have been sampled with ``emcee``.
         random : int, None
-            Number of random samples to select. All samples (with
-            the burnin excluded) are selected if set to ``None``.
+            Number of random samples to select. All samples are
+            selected if the argument is set to ``None``.
         json_file : str, None
             JSON file to store the posterior samples. The data will
             not be written if the argument is set to ``None``.
@@ -3284,31 +3185,13 @@ class Database:
 
         print_section("Get posterior samples")
 
-        if burnin is None:
-            burnin = 0
-
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
             ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
 
             samples = np.asarray(dset)
 
-            if samples.ndim == 3:
-                if burnin > samples.shape[0]:
-                    raise ValueError(
-                        "The 'burnin' value is larger than the number "
-                        f"of steps ({samples.shape[1]}) that are made "
-                        "by the walkers."
-                    )
-
-                samples = samples[burnin:, :, :]
-
-                if random is not None:
-                    ran_walker = np.random.randint(samples.shape[0], size=random)
-                    ran_step = np.random.randint(samples.shape[1], size=random)
-                    samples = samples[ran_walker, ran_step, :]
-
-            elif samples.ndim == 2 and random is not None:
+            if random is not None:
                 indices = np.random.randint(samples.shape[0], size=random)
                 samples = samples[indices, :]
 
@@ -3412,8 +3295,8 @@ class Database:
 
                         normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
 
-        median_sample = self.get_median_sample(tag, burnin, verbose=False)
-        prob_sample = self.get_probable_sample(tag, burnin, verbose=False)
+        median_sample = self.get_median_sample(tag, verbose=False)
+        prob_sample = self.get_probable_sample(tag, verbose=False)
 
         if json_file is not None:
             samples_dict = {}

@@ -355,7 +355,13 @@ def apply_obs(
     # Apply radial velocity shift
 
     if rad_vel is not None:
-        wavel_shift = rad_vel * 1e3 * model_wavel / constants.LIGHT
+        # Wavelength shift in um
+        # rad_vel in km s-1 and constants.LIGHT in m s-1
+        wavel_shift = model_wavel * 1e3 * rad_vel / constants.LIGHT
+
+        # This will introduce a few NaNs at the edge of the flux array
+        # but that should not influence the fit given the total number
+        # of wavelength points of a typical spectra
 
         model_flux = spectres_numba(
             model_wavel,
@@ -363,7 +369,7 @@ def apply_obs(
             model_flux,
             spec_errs=None,
             fill=np.nan,
-            verbose=True,
+            verbose=False,
         )
 
     # Apply extinction
@@ -495,7 +501,7 @@ def apply_obs(
             model_flux,
             spec_errs=None,
             fill=np.nan,
-            verbose=True,
+            verbose=False,
         )
 
     # Shift the spectrum by a constant
