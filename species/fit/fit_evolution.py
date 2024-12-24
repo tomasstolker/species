@@ -481,18 +481,18 @@ class FitEvolution:
 
                             a_trunc = (
                                 self.bounds["age"][0] - self.age_prior[0]
-                            ) / np.abs(self.age_prior[2])
+                            ) / self.age_prior[2]
 
                             b_trunc = (
                                 self.bounds["age"][1] - self.age_prior[0]
-                            ) / np.abs(self.age_prior[2])
+                            ) / self.age_prior[2]
 
                             cube[cube_index["age"]] = truncnorm.ppf(
                                 cube[cube_index["age"]],
                                 a_trunc,
                                 b_trunc,
                                 loc=self.age_prior[0],
-                                scale=np.abs(self.age_prior[2]),
+                                scale=self.age_prior[2],
                             )
 
                         else:

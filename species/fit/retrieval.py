@@ -33,7 +33,6 @@ except:
     )
 
 from molmass import Formula
-from PyAstronomy.pyasl import fastRotBroad
 from schwimmbad import MPIPool
 from scipy.integrate import simpson
 from scipy.interpolate import interp1d
@@ -44,9 +43,10 @@ from species.core import constants
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.read.read_object import ReadObject
+from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.dust_util import apply_ism_ext
-from species.util.convert_util import logg_to_mass
+from species.util.model_util import rot_int_cmj
 from species.util.retrieval_util import (
     calc_metal_ratio,
     calc_spectrum_clear,
@@ -2860,25 +2860,12 @@ class AtmosphericRetrieval:
             # Apply optional rotational broadening
 
             if "vsini" in cube_index and spec_item in self.apply_vsini:
-                spec_interp = interp1d(model_wavel, model_flux)
-
-                wavel_new = np.linspace(
-                    model_wavel[0],
-                    model_wavel[-1],
-                    2 * model_wavel.shape[0],
-                )
-
-                flux_broad = fastRotBroad(
-                    wvl=wavel_new,
-                    flux=spec_interp(wavel_new),
-                    epsilon=0.0,
+                model_flux = rot_int_cmj(
+                    wavel=model_wavel,
+                    flux=model_flux,
                     vsini=cube[cube_index["vsini"]],
-                    effWvl=None,
+                    eps=0.0,
                 )
-
-                spec_interp = interp1d(wavel_new, flux_broad)
-
-                model_flux = spec_interp(model_wavel)
 
             # Shift the wavelengths of the data with
             # the fitted calibration parameter
@@ -3209,23 +3196,15 @@ class AtmosphericRetrieval:
 
                - Rotational broadening can be fitted by including the
                  ``vsini`` parameter (km/s). This parameter will only
-                 be relevant if the rotational broadening is stronger
-                 than or comparable to the instrumental broadening,
+                 be relevant if the rotational broadening is
+                 significant compared to the instrumental broadening,
                  so typically when the data has a high spectral
                  resolution. The resolution is set when adding a
                  spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
-                 Note that the broadening is applied with the
-                 `fastRotBroad <https://pyastronomy.readthedocs.io/
-                 en/latest/pyaslDoc/aslDoc/rotBroad.html#PyAstronomy.
-                 pyasl.fastRotBroad>`_ function from ``PyAstronomy``.
-                 The rotational broadening is only accurate if the
-                 wavelength range of the data is somewhat narrow.
-                 For example, when fitting a medium- or
-                 high-resolution spectrum across multiple bands
-                 (e.g. $JHK$ bands) then it is best to split up the
-                 data into the separate bands when adding them with
-                 :func:`~species.data.database.Database.add_object`.
+                 The broadening is applied with the function from
+                 `Carvalho & Johns-Krull (2023) <https://ui.adsabs.
+                 harvard.edu/abs/2023RNAAS...7...91C/abstract>`_.
 
             Calibration parameters (optional):
 
@@ -3390,7 +3369,7 @@ class AtmosphericRetrieval:
             the spectra (i.e. excluding low-resolution spectra for
             which the broadening will not matter), the computation
             will be a bit faster. This parameter is only used when
-            the ``vsini`` model parameter has been include in
+            the ``vsini`` model parameter has been included in
             ``bounds``. The :math:`v \\sin(i)` is applied to all
             spectra by setting the argument of ``apply_vsini``
             to ``None``.

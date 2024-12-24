@@ -12,7 +12,8 @@ import dust_extinction.parameter_averages as dust_ext
 import numpy as np
 
 from astropy import units as u
-from PyAstronomy.pyasl import fastRotBroad
+
+# from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import RegularGridInterpolator
 from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
@@ -344,44 +345,11 @@ def apply_obs(
     # Apply rotational broadening
 
     if rot_broad is not None:
-        # The fastRotBroad requires constant wavelength steps
-        # Upsample by a factor of 4 to not lose spectral information
-
-        wavel_new = np.linspace(
-            model_wavel[0],
-            model_wavel[-1],
-            4 * model_wavel.size,
-        )
-
-        flux_new = spectres_numba(
-            wavel_new,
-            model_wavel,
-            model_flux,
-            spec_errs=None,
-            fill=np.nan,
-            verbose=True,
-        )
-
-        # Apply fast rotational broadening
-        # Only to be used on a limited wavelength range
-
-        flux_broad = fastRotBroad(
-            wvl=wavel_new,
-            flux=flux_new,
-            epsilon=0.0,
+        model_flux = rot_int_cmj(
+            wavel=model_wavel,
+            flux=model_flux,
             vsini=rot_broad,
-            effWvl=None,
-        )
-
-        # Interpolate back to the original wavelength sampling
-
-        model_flux = spectres_numba(
-            model_wavel,
-            wavel_new,
-            flux_broad,
-            spec_errs=None,
-            fill=np.nan,
-            verbose=True,
+            eps=0.0,
         )
 
     # Apply radial velocity shift
@@ -518,8 +486,8 @@ def apply_obs(
     if data_wavel is not None:
         # The 'fill' should not happen because model_wavel is
         # 20 wavelength points broader than data_wavel, but
-        # spectres sometimes set the outer fluxes to 'fill'
-        # when a smaller margin than 20 wavelengths was used.
+        # spectres sometimes sets the outer fluxes to 'fill'
+        # depending on the spectral resolution of the data
 
         model_flux = spectres_numba(
             data_wavel,
@@ -536,3 +504,87 @@ def apply_obs(
     #     model_flux += model_param["flux_offset"]
 
     return model_flux
+
+
+@typechecked
+def rot_int_cmj(
+    wavel: np.ndarray,
+    flux: np.ndarray,
+    vsini: float,
+    eps: float = 0.6,
+    nr: int = 10,
+    ntheta: int = 100,
+    dif: float = 0.0,
+):
+    """
+    A routine to quickly rotationally broaden a spectrum in linear time.
+    This function has been adopted from `Carvalho & Johns-Krull (2023)
+    <https://ui.adsabs.harvard.edu/abs/2023RNAAS...7...91C/abstract>`_.
+
+    Parameters
+    ----------
+    wavel : np.ndarray
+        Array with the wavelengths.
+    flux : np.ndarray
+        Array with the fluxes
+    vsini : float
+        Projected rotational velocity (km s-1).
+    eps : float
+        Coefficient of the limb darkening law (default: 0.0).
+    nr : int
+        Number of radial bins on the projected disk (default: 10).
+    ntheta : int
+        Number of azimuthal bins in the largest radial annulus
+        (default: 100). Note: the number of bins at each r is
+        int(r*ntheta) where r < 1.
+    dif : float
+        Differential rotation coefficient (default = 0.0), applied
+        according to the law Omeg(th)/Omeg(eq) = (1 - dif/2 - (dif/2)
+        cos(2 th)). Dif = 0.675 reproduces the law proposed by Smith,
+        1994, A&A, Vol. 287, p. 523-534, to unify WTTS and CTTS.
+        Dif = 0.23 is similar to observed solar differential rotation.
+        Note: the th in the expression above is the stellar co-latitude,
+        which is not the same as the integration variable used in the
+        function. This is a disk integration routine.
+
+    Returns
+    -------
+    np.ndarray
+        Array with the rotationally broadened spectrum.
+    """
+
+    ns = np.zeros(flux.shape)
+    tarea = 0.0
+    dr = 1.0 / nr
+
+    for j in range(nr):
+        r = dr / 2.0 + j * dr
+        area = (
+            ((r + dr / 2.0) ** 2 - (r - dr / 2.0) ** 2)
+            / int(ntheta * r)
+            * (1.0 - eps + eps * np.cos(np.arcsin(r)))
+        )
+
+        for k in range(int(ntheta * r)):
+            th = np.pi / int(ntheta * r) + k * 2.0 * np.pi / int(ntheta * r)
+
+            if dif != 0:
+                vl = (
+                    vsini
+                    * r
+                    * np.sin(th)
+                    * (
+                        1.0
+                        - dif / 2.0
+                        - dif / 2.0 * np.cos(2.0 * np.arccos(r * np.cos(th)))
+                    )
+                )
+            else:
+                vl = r * vsini * np.sin(th)
+
+            ns += area * np.interp(
+                wavel + wavel * vl / (1e-3 * constants.LIGHT), wavel, flux
+            )
+            tarea += area
+
+    return ns / tarea

@@ -1,6 +1,7 @@
 {
     "AF Lep b": {
         "simbad": "V* AF Lep",
+        "gaia_dr3": 3009908378049913216,
         "parallax": [
             37.2539,
             0.0195
@@ -46,6 +47,7 @@
     },
     "beta Pic b": {
         "simbad": "beta Pic",
+        "gaia_dr3": 4792774797545800832,
         "parallax": [
             50.9307,
             0.1482
@@ -121,6 +123,7 @@
     },
     "beta Pic c": {
         "simbad": "beta Pic",
+        "gaia_dr3": 4792774797545800832,
         "parallax": [
             50.9307,
             0.1482
@@ -159,6 +162,7 @@
     },
     "HIP 65426 b": {
         "simbad": "HIP 65426",
+        "gaia_dr3": 6070080754075553792,
         "parallax": [
             9.3031,
             0.0346
@@ -223,6 +227,7 @@
     },
     "HIP 99770 b": {
         "simbad": "* b03 Cyg",
+        "gaia_dr3": 2060523518197844608,
         "parallax": [
             24.5456,
             0.0911
@@ -254,6 +259,7 @@
     },
     "51 Eri b": {
         "simbad": "51 Eri",
+        "gaia_dr3": 3205095125321700480,
         "parallax": [
             33.439,
             0.0777
@@ -323,6 +329,7 @@
     },
     "HR 8799 b": {
         "simbad": "HR 8799",
+        "gaia_dr3": 2832463659640297472,
         "parallax": [
             24.462,
             0.0455
@@ -407,6 +414,7 @@
     },
     "HR 8799 c": {
         "simbad": "HR 8799",
+        "gaia_dr3": 2832463659640297472,
         "parallax": [
             24.462,
             0.0455
@@ -486,6 +494,7 @@
     },
     "HR 8799 d": {
         "simbad": "HR 8799",
+        "gaia_dr3": 2832463659640297472,
         "parallax": [
             24.462,
             0.0455
@@ -565,6 +574,7 @@
     },
     "HR 8799 e": {
         "simbad": "HR 8799",
+        "gaia_dr3": 2832463659640297472,
         "parallax": [
             24.462,
             0.0455
@@ -634,6 +644,7 @@
     },
     "HD 95086 b": {
         "simbad": "HD 95086",
+        "gaia_dr3": 5231963962676292224,
         "parallax": [
             11.5659,
             0.0187
@@ -681,6 +692,7 @@
     },
     "PDS 70 b": {
         "simbad": "PDS 70",
+        "gaia_dr3": 6110141563309613056,
         "parallax": [
             8.8975,
             0.0191
@@ -768,6 +780,7 @@
     },
     "PDS 70 c": {
         "simbad": "PDS 70",
+        "gaia_dr3": 6110141563309613056,
         "parallax": [
             8.8975,
             0.0191
@@ -812,6 +825,7 @@
     },
     "2M 1207 B": {
         "simbad": "2MASSWJ 1207334-393254",
+        "gaia_dr3": 3459372646830687104,
         "parallax": [
             15.4624,
             0.1163
@@ -880,6 +894,7 @@
     },
     "AB Pic B": {
         "simbad": "AB Pic",
+        "gaia_dr3": 5495052596695570816,
         "parallax": [
             19.9452,
             0.0124
@@ -920,6 +935,7 @@
     },
     "HD 206893 B": {
         "simbad": "HD 206893",
+        "gaia_dr3": 6843672087120107264,
         "parallax": [
             24.5275,
             0.0354
@@ -982,6 +998,7 @@
     },
     "HD 206893 c": {
         "simbad": "HD 206893",
+        "gaia_dr3": 6843672087120107264,
         "parallax": [
             24.5275,
             0.0354
@@ -1014,6 +1031,7 @@
     },
     "RZ Psc B": {
         "simbad": "RZ Psc",
+        "gaia_dr3": 307981178401165184,
         "parallax": [
             5.3661,
             0.0274
@@ -1055,6 +1073,7 @@
     },
     "GQ Lup B": {
         "simbad": "GQ Lup",
+        "gaia_dr3": 6011522757643074304,
         "parallax": [
             6.4893,
             0.0289
@@ -1180,6 +1199,7 @@
     },
     "PZ Tel B": {
         "simbad": "PZ Tel",
+        "gaia_dr3": 6655168686921108864,
         "parallax": [
             21.1621,
             0.0223
@@ -1274,6 +1294,7 @@
     },
     "kappa And b": {
         "simbad": "kappa And",
+        "gaia_dr3": 1926476042681491712,
         "parallax": [
             19.4064,
             0.2104
@@ -1327,6 +1348,7 @@
     },
     "HD 1160 B": {
         "simbad": "HD 1160",
+        "gaia_dr3": 2741090498161113344,
         "parallax": [
             8.2721,
             0.0355
@@ -1375,7 +1397,8 @@
         ]
     },
     "ROXs 12 B": {
-        "simbad": "ROXs 12 B",
+        "simbad": "ROXs 12",
+        "gaia_dr3": 6048935358761628288,
         "parallax": [
             7.217,
             0.0172
@@ -1416,6 +1439,7 @@
     },
     "ROXs 42 Bb": {
         "simbad": "ROXs 42 B",
+        "gaia_dr3": 6047587937321868288,
         "parallax": [
             6.8284,
             0.0309
@@ -1471,6 +1495,7 @@
     },
     "GJ 504 b": {
         "simbad": "GJ 504",
+        "gaia_dr3": 3732539683617410816,
         "parallax": [
             56.8577,
             0.1224
@@ -1544,41 +1569,42 @@
         ]
     },
     "GJ 758 B": {
-            "simbad": "GJ 758",
-            "distance": [15.61, 0.005],
-            "parallax": [64.04, 0.02],
-            "app_mag": {
-                "Paranal/SPHERE.IRDIS_D_Y23_2": [20.15, 0.20],  
-                "Paranal/SPHERE.IRDIS_D_Y23_3": [19.39, 0.10], 
-                "Paranal/SPHERE.IRDIS_D_J23_2": [20.02, 0.25],
-                "Paranal/SPHERE.IRDIS_D_J23_3": [17.79, 0.18],
-                "Paranal/SPHERE.IRDIS_D_H23_2": [17.55, 0.12],
-                "Paranal/SPHERE.IRDIS_D_H23_3": [19.84, 0.42], 
-                "Paranal/SPHERE.IRDIS_D_K12_1": [17.99, 0.21],
-                "Paranal/SPHERE.IRDIS_D_K12_2": [18.74, 0.35],
-                "Subaru/CIAO.J": [17.58, 0.20],  
-                "Gemini/NIRI.H-G0203w": [18.16, 0.2], 
-                "Gemini/NIRI.Kcont209-G0217": [17.12, 0.2], 
-                "Keck/NIRC2.Lp": [15.0, 0.1],  
-                "Gemini/NIRI.CH4short-G0228": [17.74, 0.2] 
-            },
-            "mass_star": [0.96, 0.03], 
-            "mass_companion": [38.0, 0.8],
-            "semi_major": [
-                29.7,
-                -5.3,
-                5.3
-            ],
-            "accretion": false,
-            "references": [
-                "Gaia Early Data Release 3",
-                "Vigan et al. 2016",
-                "Janson et al. 2011",
-                "Brandt, G. M. et al. 2021"
-            ]
+        "simbad": "GJ 758",
+        "gaia_dr3": 2046207670631964928,
+        "parallax": [64.04, 0.02],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_Y23_2": [20.15, 0.20],
+            "Paranal/SPHERE.IRDIS_D_Y23_3": [19.39, 0.10],
+            "Paranal/SPHERE.IRDIS_D_J23_2": [20.02, 0.25],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [17.79, 0.18],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [17.55, 0.12],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [19.84, 0.42],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [17.99, 0.21],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [18.74, 0.35],
+            "Subaru/CIAO.J": [17.58, 0.20],
+            "Gemini/NIRI.H-G0203w": [18.16, 0.2],
+            "Gemini/NIRI.Kcont209-G0217": [17.12, 0.2],
+            "Keck/NIRC2.Lp": [15.0, 0.1],
+            "Gemini/NIRI.CH4short-G0228": [17.74, 0.2]
+        },
+        "mass_star": [0.96, 0.03],
+        "mass_companion": [38.0, 0.8],
+        "semi_major": [
+            29.7,
+            -5.3,
+            5.3
+        ],
+        "accretion": false,
+        "references": [
+            "Gaia Early Data Release 3",
+            "Vigan et al. 2016",
+            "Janson et al. 2011",
+            "Brandt, G. M. et al. 2021"
+        ]
     },
     "GU Psc b": {
         "simbad": "GU Psc",
+        "gaia_dr3": 2784120641627589760,
         "parallax": [
             21.0051,
             0.026
@@ -1634,6 +1660,7 @@
     },
     "2M0103 ABb": {
         "simbad": "2MASS J01033563-5515561",
+        "gaia_dr3": 4914632365579875200,
         "parallax": [
             21.18,
             1.37
@@ -1688,6 +1715,7 @@
     },
     "1RXS 1609 B": {
         "simbad": "1RXS J160929.1-210524",
+        "gaia_dr3": 6243841249531772800,
         "parallax": [
             7.2444,
             0.0176
@@ -1734,6 +1762,7 @@
     },
     "GSC 06214 B": {
         "simbad": "GSC 06214-00210",
+        "gaia_dr3": 6244440552088537600,
         "parallax": [
             9.1923,
             0.0214
@@ -1794,6 +1823,7 @@
     },
     "HD 72946 B": {
         "simbad": "HD 72946",
+        "gaia_dr3": 594989417312890368,
         "parallax": [
             38.9809,
             0.0412
@@ -1829,6 +1859,7 @@
     },
     "HIP 64892 B": {
         "simbad": "HIP 64892",
+        "gaia_dr3": 6088264477373916032,
         "parallax": [
             8.3595,
             0.0483
@@ -1876,6 +1907,7 @@
     },
     "HD 13724 B": {
         "simbad": "HD 13724",
+        "gaia_dr3": 4942867480584948352,
         "parallax": [
             23.0157,
             0.0178
@@ -1927,6 +1959,7 @@
     },
     "YSES 1 b": {
         "simbad": "TYC 8998-760-1",
+        "gaia_dr3": 5864061893213196032,
         "parallax": [
             10.6124,
             0.0116
@@ -2007,6 +2040,7 @@
     },
     "YSES 1 c": {
         "simbad": "TYC 8998-760-1",
+        "gaia_dr3": 5864061893213196032,
         "parallax": [
             10.6124,
             0.0116
@@ -2071,6 +2105,7 @@
     },
     "YSES 2 b": {
         "simbad": "TYC 8984-2245-1",
+        "gaia_dr3": 5236792880333011968,
         "parallax": [
             9.1115,
             0.031
@@ -2106,6 +2141,7 @@
     },
     "HD 142527 B": {
         "simbad": "HD 142527",
+        "gaia_dr3": 5994826707951507200,
         "parallax": [
             6.2791,
             0.0284
@@ -2225,6 +2261,7 @@
     },
     "CS Cha B": {
         "simbad": "CS Cha",
+        "gaia_dr3": 5201179389431267584,
         "parallax": [
             5.9251,
             0.0675
@@ -2271,6 +2308,7 @@
     },
     "CT Cha B": {
         "simbad": "CT Cha",
+        "gaia_dr3": 5201360671411974912,
         "parallax": [
             5.2645,
             0.0116
@@ -2315,6 +2353,7 @@
     },
     "SR 12 C": {
         "simbad": "2MASS J16271951-2441403",
+        "gaia_dr3": 6049072007438134272,
         "parallax": [
             8.9034,
             0.4288
@@ -2371,6 +2410,7 @@
     },
     "DH Tau B": {
         "simbad": "DH Tau",
+        "gaia_dr3": 151374202498079872,
         "parallax": [
             7.4936,
             0.0255
@@ -2412,6 +2452,7 @@
     },
     "HD 4747 B": {
         "simbad": "HD 4747",
+        "gaia_dr3": 2348830516542653824,
         "parallax": [
             53.0526,
             0.0282
@@ -2448,6 +2489,7 @@
     },
     "HR 3549 B": {
         "simbad": "HR 3549",
+        "gaia_dr3": 5304593027881569024,
         "parallax": [
             10.5509,
             0.0383
@@ -2502,6 +2544,7 @@
     },
     "CHXR 73 B": {
         "simbad": "CHXR 73",
+        "gaia_dr3": 5201175987817179136,
         "parallax": [
             5.2256,
             0.0804
@@ -2537,6 +2580,7 @@
     },
     "HD 19467 B": {
         "simbad": "HD 19467",
+        "gaia_dr3": 5155981730587168384,
         "parallax": [
             31.2191,
             0.024
@@ -2584,6 +2628,7 @@
     },
     "b Cen (AB)b": {
         "simbad": "b Cen",
+        "gaia_dr3": 6105713692544123520,
         "parallax": [
             10.0339,
             0.3142
@@ -2627,6 +2672,7 @@
     },
     "VHS 1256 B": {
         "simbad": "SIPS J1256-1257",
+        "gaia_dr3": 3526198184723289472,
         "parallax": [
             47.2733,
             0.4731

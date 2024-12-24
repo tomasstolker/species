@@ -176,29 +176,29 @@
         "url": "https://ui.adsabs.harvard.edu/abs/2008ApJ...675L.105H",
         "checksum": "b59b7711a4ed9dcf9284ef0c3f2b614598eec89bf53f548ceb361b806db70757"
     },
-    "exo-rem-cloud-r500": {
+    "exo-rem-lowres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "Exo-REM",
-        "file size": "703 MB",
+        "file size": "493 MB",
+        "wavelength range": [0.34, 250.0],
+        "lambda/d_lambda": 500,
+        "teff range": [400, 2000],
+        "reference": "Charnay et al. (2018)",
+        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
+        "checksum": "58df9a1227286644a3c4c505d573228c1ec6f10dd652ecbbee4f875c3d8ca86a"
+    },
+    "exo-rem-nocloud": {
+        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
+        "name": "Exo-REM",
+        "file size": "356 MB",
         "wavelength range": [0.35, 250.0],
         "lambda/d_lambda": 500,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
-        "checksum": "d91ca3a8bcde40c744ce7d9712ae74be822c2d4b394ce3394e89b8ef6ad79a74"
+        "checksum": "52addf881edbeba5f2ced0628f30325c3890e2b7dfcdc7ec000565c93fdd0e60"
     },
-    "exo-rem-nocloud-r500": {
-        "parameters": ["teff", "logg", "feh", "c_o_ratio"],
-        "name": "Exo-REM",
-        "file size": "508 MB",
-        "wavelength range": [0.35, 250.0],
-        "lambda/d_lambda": 500,
-        "teff range": [400, 2000],
-        "reference": "Charnay et al. (2018)",
-        "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
-        "checksum": "af38e6a7243f4e11712363f776efedffa57055c22e471509a6276020ec70fc78"
-    },
-    "exo-rem-cloud-r20000": {
+    "exo-rem-highres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "Exo-REM",
         "file size": "21 GB",
@@ -209,7 +209,7 @@
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
         "checksum": "4dd73d2e5a12756c05b9439cf7f4c03d2cc084e33b97af0efc3da3409c83a092"
     },
-    "exo-rem-cloud-r20000-isotopes": {
+    "exo-rem-highres-isotopes": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_co_iso"],
         "name": "Exo-REM",
         "file size": "239 MB",

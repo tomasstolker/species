@@ -416,7 +416,7 @@ def add_missing(
     count_interp = 0
     count_missing = 0
 
-    if np.isinf(np.sum(flux)):
+    if not np.isfinite(np.sum(flux)):
         print("\nFix missing grid points with a linear interpolation:")
 
     if len(parameters) == 1:

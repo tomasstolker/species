@@ -12,7 +12,11 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Project
+        uses: actions/checkout@v2
+
+      - name: Install BLAS, LAPACK, GCC, Pandoc
+        run: sudo apt-get install libblas-dev liblapack-dev gcc pandoc
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -28,8 +32,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install pandoc
-          sudo apt-get install gcc
           pip install --upgrade pip wheel
           pip install flake8 pytest pytest-cov cython
           pip install -r docs/requirements.txt

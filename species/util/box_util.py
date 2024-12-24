@@ -94,15 +94,25 @@ def update_objectbox(
             spec_tmp = value[0]
 
             if f"scaling_{key}" in model_param:
-                # Scale the flux of the spectrum
+                # Scale the fluxes and uncertainties of the spectrum
                 scaling = model_param[f"scaling_{key}"]
 
-                print(
-                    f"Scaling the flux of {key} by: {scaling:.2f}...",
-                    end="",
-                    flush=True,
-                )
+                if scaling < 0.01:
+                    print(
+                        f"Scaling the flux of {key} by: {scaling:.2e}...",
+                        end="",
+                        flush=True,
+                    )
+
+                else:
+                    print(
+                        f"Scaling the flux of {key} by: {scaling:.2f}...",
+                        end="",
+                        flush=True,
+                    )
+
                 spec_tmp[:, 1] *= model_param[f"scaling_{key}"]
+                spec_tmp[:, 2] *= model_param[f"scaling_{key}"]
                 print(" [DONE]")
 
             if f"error_{key}" in model_param:

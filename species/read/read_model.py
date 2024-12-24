@@ -13,7 +13,6 @@ import h5py
 import numpy as np
 
 from astropy import units as u
-from PyAstronomy.pyasl import rotBroad, fastRotBroad
 from typeguard import typechecked
 from scipy.integrate import simpson
 from scipy.interpolate import interp1d, RegularGridInterpolator
@@ -34,7 +33,7 @@ from species.read.read_filter import ReadFilter
 from species.read.read_planck import ReadPlanck
 from species.util.convert_util import logg_to_mass
 from species.util.dust_util import check_dust_database, ism_extinction, convert_to_av
-from species.util.model_util import binary_to_single
+from species.util.model_util import binary_to_single, rot_int_cmj
 from species.util.spec_util import smooth_spectrum
 
 
@@ -599,7 +598,6 @@ class ReadModel:
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
         magnitude: bool = False,
-        fast_rot_broad: bool = True,
         ext_filter: Optional[str] = None,
         **kwargs,
     ) -> ModelBox:
@@ -628,14 +626,6 @@ class ReadModel:
         magnitude : bool
             Normalize the spectrum with a flux calibrated spectrum of
             Vega and return the magnitude instead of flux density.
-        fast_rot_broad : bool
-            Apply fast algorithm for the rotational broadening if set
-            to ``True``, otherwise a slow but more accurate broadening
-            is applied if set to ``False``. The fast algorithm will
-            only provide an accurate broadening if the wavelength range
-            of the spectrum is somewhat narrow (e.g. only the :math:`K`
-            band). The argument is only used if the ``vsini`` parameter
-            is included in the ``model_param`` dictionary.
         ext_filter : str, None
             Filter that is associated with the (optional) extinction
             parameter, ``ism_ext``. When the argument of ``ext_filter``
@@ -879,51 +869,11 @@ class ReadModel:
         # Apply rotational broadening vsin(i) in km/s
 
         if "vsini" in model_param:
-            # fastRotBroad requires a linear wavelength sampling
-            # while pRT uses a logarithmic wavelength sampling,
-            # so change temporarily to a linear sampling
-            # with a factor 5 larger number of wavelengths
-
-            wavel_linear = np.linspace(
-                model_box.wavelength[0],
-                model_box.wavelength[-1],
-                5 * model_box.wavelength.size,
-            )
-
-            flux_linear = spectres_numba(
-                wavel_linear,
-                model_box.wavelength,
-                model_box.flux,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
-            )
-
-            if fast_rot_broad:
-                flux_broad = fastRotBroad(
-                    wvl=wavel_linear,
-                    flux=flux_linear,
-                    epsilon=0.0,
-                    vsini=model_param["vsini"],
-                    effWvl=None,
-                )
-
-            else:
-                flux_broad = rotBroad(
-                    wvl=wavel_linear,
-                    flux=flux_linear,
-                    epsilon=0.0,
-                    vsini=model_param["vsini"],
-                    edgeHandling="firstlast",
-                )
-
-            model_box.flux = spectres_numba(
-                model_box.wavelength,
-                wavel_linear,
-                flux_broad,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
+            model_box.flux = rot_int_cmj(
+                wavel=model_box.wavelength,
+                flux=model_box.flux,
+                vsini=model_param["vsini"],
+                eps=0.0,
             )
 
         # Apply veiling
@@ -1397,6 +1347,31 @@ class ReadModel:
             quantity="flux",
             spec_res=spec_res,
         )
+
+        # Apply rotational broadening vsin(i) in km/s
+
+        if "vsini" in model_param:
+            model_box.flux = rot_int_cmj(
+                wavel=model_box.wavelength,
+                flux=model_box.flux,
+                vsini=model_param["vsini"],
+                eps=0.0,
+            )
+
+        # Apply veiling
+
+        if (
+            "veil_a" in model_param
+            and "veil_b" in model_param
+            and "veil_ref" in model_param
+        ):
+            lambda_ref = 0.5  # (um)
+
+            veil_flux = model_param["veil_ref"] + model_param["veil_b"] * (
+                model_box.wavelength - lambda_ref
+            )
+
+            model_box.flux = model_param["veil_a"] * model_box.flux + veil_flux
 
         # Apply extinction
 
@@ -2007,25 +1982,26 @@ class ReadModel:
             or self.wavel_range[1] != wavel_points[-1]
         ):
             warnings.warn(
-                "The 'wavel_range' is not set to the "
-                "maximum available range. To maximize the "
-                "accuracy when calculating the bolometric "
-                "luminosity, it is recommended to set "
-                "'wavel_range=None'."
+                "The 'wavel_range' is not set to the maximum "
+                "available range. To maximize the accuracy when "
+                "calculating the bolometric luminosity, it is "
+                "recommended to set 'wavel_range=None'."
             )
 
-        if "parallax" in model_param:
-            del model_param["parallax"]
+        param_copy = model_param.copy()
 
-        if "distance" in model_param:
-            del model_param["distance"]
+        if "parallax" in param_copy:
+            del param_copy["parallax"]
 
-        model_box = self.get_model(model_param)
+        if "distance" in param_copy:
+            del param_copy["distance"]
+
+        model_box = self.get_model(param_copy)
 
         bol_lum = (
             4.0
             * np.pi
-            * (model_param["radius"] * constants.R_JUP) ** 2
+            * (param_copy["radius"] * constants.R_JUP) ** 2
             * simpson(y=model_box.flux, x=model_box.wavelength)
         )
 

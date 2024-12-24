@@ -821,7 +821,7 @@ class Database:
             ``logkzz`` (for :math:`\\log\\,K_\\mathrm{zz}`),
             ``adindex`` (for :math:`\\gamma_\\mathrm{ad}`), and
             ``log_co_iso`` (for
-            :math:`\\log\,^{12}\\mathrm{CO}/^{13}\\mathrm{CO}`).
+            :math:`\\log\\,^{12}\\mathrm{CO}/^{13}\\mathrm{CO}`).
             Please contact the code maintainer if support for
             other parameters should be added.
         wavel_range : tuple(float, float), None
@@ -2419,7 +2419,7 @@ class Database:
             print("\nParameters:")
             for param_key, param_value in prob_sample.items():
                 if isinstance(param_value, float):
-                    if param_key in ["luminosity", "flux_scaling", "flux_offset"]:
+                    if param_value < 0.01:
                         print(f"   - {param_key} = {param_value:.2e}")
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
@@ -2514,7 +2514,7 @@ class Database:
             print("\nParameters:")
             for param_key, param_value in median_sample.items():
                 if isinstance(param_value, float):
-                    if param_key in ["luminosity", "flux_scaling", "flux_offset"]:
+                    if param_value < 0.01:
                         print(f"   - {param_key} = {param_value:.2e}")
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
@@ -2581,11 +2581,11 @@ class Database:
 
         if verbose:
             print("\nParameters:")
-            for key, value in model_param.items():
-                if key in ["luminosity", "flux_scaling", "flux_offset"]:
-                    print(f"   - {key} = {value:.2e}")
+            for param_key, param_value in model_param.items():
+                if param_value < 0.01:
+                    print(f"   - {param_key} = {param_value:.2e}")
                 else:
-                    print(f"   - {key} = {value:.2f}")
+                    print(f"   - {param_key} = {param_value:.2f}")
 
         return model_param
 

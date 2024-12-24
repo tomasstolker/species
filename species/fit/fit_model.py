@@ -143,14 +143,14 @@ class FitModel:
 
                - Radial velocity can be included with the ``rad_vel``
                  parameter (km/s). This parameter will only be relevant
-                 if the radial velocity shift can be spectrally
-                 resolved given the instrument resolution. When
-                 including ``rad_vel``, a single RV will be fitted
-                 for all spectra. Or, it is also possible by fitting
-                 an RV for individual spectra by for example including
-                 the parameter as ``rad_vel_SPHERE`` in case the
-                 spectrum name is ``SPHERE``, that is, the name used
-                 as tag when adding the spectrum to the database with
+                 if the radial velocity shift can be detected given
+                 the instrument resolution. When including ``rad_vel``,
+                 a single RV will be fitted for all spectra. Or, it is
+                 also possible by fitting an RV for individual spectra
+                 by for example including the parameter as
+                 ``rad_vel_CRIRES`` in case the spectrum name is
+                 ``CRIRES``, that is, the name used as tag when adding
+                 the spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
 
                - Rotational broadening can be fitted by including the
@@ -161,23 +161,15 @@ class FitModel:
                  resolution. The resolution is set when adding a
                  spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
-                 Note that the broadening is applied with the
-                 `fastRotBroad <https://pyastronomy.readthedocs.io/
-                 en/latest/pyaslDoc/aslDoc/rotBroad.html#PyAstronomy.
-                 pyasl.fastRotBroad>`_ function from ``PyAstronomy``.
-                 The rotational broadening is only accurate if the
-                 wavelength range of the data is somewhat narrow.
-                 For example, when fitting a medium- or
-                 high-resolution spectrum across multiple bands
-                 (e.g. $JHK$ bands) then it is best to split up the
-                 data into the separate bands when adding them with
-                 :func:`~species.data.database.Database.add_object`.
+                 The broadening is applied with the function from
+                 `Carvalho & Johns-Krull (2023) <https://ui.adsabs.
+                 harvard.edu/abs/2023RNAAS...7...91C/abstract>`_.
                  A single broadening parameter, ``vsini``, can be
                  fitted, so it is applied for all spectra. Or, it is
                  also possible to fit the broadening for individual
                  spectra by for example including the parameter as
-                 ``vsini_SPHERE`` in case the spectrum name is
-                 ``SPHERE``, that is, the name used as tag when
+                 ``vsini_CRIRES`` in case the spectrum name is
+                 ``CRIRES``, that is, the name used as tag when
                  adding the spectrum to the database with
                  :func:`~species.data.database.Database.add_object`.
 
@@ -601,7 +593,7 @@ class FitModel:
                 "The use of 'ism_ext' for fitting the extinction is "
                 "deprecated. Please use the 'ext_model' parameter of "
                 "'FitModel' in combination with setting 'ext_av' in "
-                "the 'model_param' dictionary",
+                "the 'bounds' dictionary.",
                 DeprecationWarning,
             )
 
@@ -1202,6 +1194,7 @@ class FitModel:
                 if bounds[spec_item][0] is not None:
                     # Add the flux scaling parameter
                     self.modelpar.append(f"scaling_{spec_item}")
+
                     self.bounds[f"scaling_{spec_item}"] = (
                         bounds[spec_item][0][0],
                         bounds[spec_item][0][1],
@@ -1210,6 +1203,7 @@ class FitModel:
                 if len(bounds[spec_item]) > 1 and bounds[spec_item][1] is not None:
                     # Add the error inflation parameters
                     self.modelpar.append(f"error_{spec_item}")
+
                     self.bounds[f"error_{spec_item}"] = (
                         bounds[spec_item][1][0],
                         bounds[spec_item][1][1],
@@ -2207,7 +2201,7 @@ class FitModel:
             #
             #         model_flux = all_param["veil_a"] * model_flux + veil_flux
 
-            # Optionally scale the data to account for calibration
+            # Optional flux scaling to account for calibration inaccuracy
 
             if f"scaling_{spec_item}" in all_param:
                 spec_scaling = all_param[f"scaling_{spec_item}"]
@@ -2215,35 +2209,41 @@ class FitModel:
                 spec_scaling = 1.0
 
             data_flux = spec_scaling * self.spectrum[spec_item][0][:, 1]
+            data_var = spec_scaling**2 * self.spectrum[spec_item][0][:, 2] ** 2
 
-            # Optionally inflate the data uncertainties
+            # Optional variance inflation (see Piette & Madhusudhan 2020)
 
             if f"error_{spec_item}" in all_param:
-                # Variance with error inflation (see Piette & Madhusudhan 2020)
-                data_var = (
-                    self.spectrum[spec_item][0][:, 2] ** 2
-                    + (all_param[f"error_{spec_item}"] * model_flux) ** 2
-                )
-            else:
-                # Variance without error inflation
-                data_var = self.spectrum[spec_item][0][:, 2] ** 2
+                data_var += (all_param[f"error_{spec_item}"] * model_flux) ** 2
 
             # Select the inverted covariance matrix
 
             if self.spectrum[spec_item][2] is not None:
                 if f"error_{spec_item}" in all_param:
                     # Ratio of the inflated and original uncertainties
-                    sigma_ratio = np.sqrt(data_var) / self.spectrum[spec_item][0][:, 2]
+                    sigma_ratio = np.sqrt(data_var) / (
+                        spec_scaling * self.spectrum[spec_item][0][:, 2]
+                    )
                     sigma_j, sigma_i = np.meshgrid(sigma_ratio, sigma_ratio)
 
                     # Calculate the inverted matrix of the inflated covariances
                     data_cov_inv = np.linalg.inv(
-                        self.spectrum[spec_item][1] * sigma_i * sigma_j
+                        spec_scaling**2
+                        * sigma_i
+                        * sigma_j
+                        * self.spectrum[spec_item][1]
                     )
 
                 else:
-                    # Use the inverted covariance matrix directly
-                    data_cov_inv = self.spectrum[spec_item][2]
+                    if spec_scaling == 1.0:
+                        # Use the inverted covariance matrix directly
+                        data_cov_inv = self.spectrum[spec_item][2]
+                    else:
+                        # Apply flux scaling to covariance matrix
+                        # and then invert the covariance matrix
+                        data_cov_inv = np.linalg.inv(
+                            spec_scaling**2 * self.spectrum[spec_item][1]
+                        )
 
             # Calculate the log-likelihood
 

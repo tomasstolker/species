@@ -15,7 +15,6 @@ import numpy as np
 import spectres
 
 from matplotlib.ticker import MultipleLocator
-from PyAstronomy.pyasl import fastRotBroad
 from scipy.interpolate import interp1d
 from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
@@ -26,6 +25,7 @@ from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.util.convert_util import logg_to_mass
 from species.util.dust_util import apply_ism_ext
+from species.util.model_util import rot_int_cmj
 from species.util.retrieval_util import (
     calc_metal_ratio,
     calc_spectrum_clear,
@@ -445,11 +445,9 @@ class ReadRadtrans:
                  - Rotational broadening can be applied by adding the
                    ``vsini`` parameter, which is the projected spin
                    velocity (km/s), :math:`v\\sin{i}`. The broadening
-                   is applied with the ``fastRotBroad`` function from
-                   ``PyAstronomy`` (see for details the `documentation
-                   <https://pyastronomy.readthedocs.io/en/latest/
-                   pyaslDoc/aslDoc/ rotBroad.html#fastrotbroad-a-
-                   faster-algorithm>`_).
+                   is applied with the function from `Carvalho &
+                   Johns-Krull (2023) <https://ui.adsabs.harvard.edu/
+                   abs/2023RNAAS...7...91C/abstract>`_.
 
         quenching : str, None
             Quenching type for CO/CH$_4$/H$_2$O abundances. Either
@@ -1163,46 +1161,11 @@ class ReadRadtrans:
         # Convolve with a broadening kernel for vsin(i)
 
         if "vsini" in model_param:
-            # fastRotBroad requires a linear wavelength sampling
-            # while pRT uses a logarithmic wavelength sampling
-            # so change temporarily to a linear sampling
-            # with a factor 10 larger number of wavelengths
-
-            wavel_linear = np.linspace(
-                np.amin(wavelength), np.amax(wavelength), wavelength.size * 10
-            )
-
-            flux_linear = spectres_numba(
-                wavel_linear,
-                wavelength,
-                flux,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
-            )
-
-            # Apply the rotational broadening
-            # The rotBroad function is much slower than
-            # fastRotBroad when tested on a large array
-
-            flux_broad = fastRotBroad(
-                wvl=wavel_linear,
-                flux=flux_linear,
-                epsilon=1.0,
+            flux = rot_int_cmj(
+                wavel=wavelength,
+                flux=flux,
                 vsini=model_param["vsini"],
-                effWvl=None,
-            )
-
-            # And change back to the original (logarithmic)
-            # wavelength sampling, with constant R
-
-            flux = spectres_numba(
-                wavelength,
-                wavel_linear,
-                flux_broad,
-                spec_errs=None,
-                fill=np.nan,
-                verbose=True,
+                eps=0.0,
             )
 
         # Convolve the spectrum with a Gaussian LSF
