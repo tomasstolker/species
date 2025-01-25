@@ -108,13 +108,11 @@ class ReadModel:
             self.mean_wavelength = None
 
         config_file = Path.cwd() / "species_config.ini"
-        print(config_file)
 
         config = ConfigParser()
         config.read(config_file)
-        print(list(config))
+
         self.database = config["species"]["database"]
-        print(self.database)
         self.data_folder = config["species"]["data_folder"]
 
         self.extra_param = [

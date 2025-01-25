@@ -3,11 +3,11 @@ Module for setting up species in the working folder.
 """
 
 import json
-import os
 import socket
 import urllib.request
 
-from typing import Optional
+from pathlib import Path, PosixPath
+from typing import Optional, Union
 
 from configparser import ConfigParser
 from importlib.util import find_spec
@@ -25,11 +25,11 @@ class SpeciesInit:
     """
 
     @typechecked
-    def __init__(self, database_file: Optional[str] = None) -> None:
+    def __init__(self, database_file: Optional[Union[str, PosixPath]] = None) -> None:
         """
         Parameters
         ----------
-        database_file : str, None
+        database_file : str, PosixPath, None
             Path to the HDF5 database that is stored as
             `species_database.hdf5`. Setting the argument will
             overwrite the database path in the configuration file.
@@ -65,14 +65,14 @@ class SpeciesInit:
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")
 
-        working_folder = os.path.abspath(os.getcwd())
+        working_folder = Path.cwd()
         print(f"\nWorking folder: {working_folder}")
 
-        config_file = os.path.join(working_folder, "species_config.ini")
+        config_file = working_folder / "species_config.ini"
 
         config = ConfigParser(allow_no_value=True)
 
-        if os.path.isfile(config_file):
+        if config_file.exists():
             print(f"\nConfiguration file: {config_file}")
 
         else:
@@ -86,30 +86,34 @@ class SpeciesInit:
             # config.set('species', '; File with the HDF5 database')
             config.set("species", "vega_mag", "0.03")
 
-            with open(config_file, "w") as file_obj:
+            with open(config_file, "w", encoding="utf-8") as file_obj:
                 config.write(file_obj)
 
             print(" [DONE]")
 
         config.read(config_file)
+        config_update = False
 
         if database_file is None:
             if "database" in config["species"]:
-                database_file = os.path.abspath(config["species"]["database"])
+                database_file = Path(config["species"]["database"])
 
             else:
-                database_file = "species_database.hdf5"
+                database_file = Path("./species_database.hdf5")
                 config.set("species", "database", "species_database.hdf5")
+                config_update = True
 
         else:
             config.set("species", "database", database_file)
+            config_update = True
 
         if "data_folder" in config["species"]:
-            data_folder = os.path.abspath(config["species"]["data_folder"])
+            data_folder = Path(config["species"]["data_folder"])
 
         else:
-            data_folder = "./data/"
+            data_folder = Path("./data/")
             config.set("species", "data_folder", "./data/")
+            config_update = True
 
         if "vega_mag" in config["species"]:
             vega_mag = config["species"]["vega_mag"]
@@ -117,11 +121,16 @@ class SpeciesInit:
         else:
             vega_mag = 0.03
             config.set("species", "vega_mag", "0.03")
+            config_update = True
 
-        with open(config_file, "w", encoding="utf-8") as file_obj:
-            config.write(file_obj)
+        if config_update:
+            # If condition is needed because the file should
+            # not be opened when using MPI and the config
+            # file is already present and no need to update
+            with open(config_file, "w", encoding="utf-8") as file_obj:
+                config.write(file_obj)
 
-        if os.path.isfile(database_file):
+        if database_file.exists():
             print(f"Database file: {database_file}")
 
         else:
@@ -130,12 +139,12 @@ class SpeciesInit:
             h5_file.close()
             print(" [DONE]")
 
-        if os.path.exists(data_folder):
+        if data_folder.exists():
             print(f"Data folder: {data_folder}")
 
         else:
             print("Creating data folder...", end="", flush=True)
-            os.makedirs(data_folder)
+            data_folder.mkdir()
             print(" [DONE]")
 
         print("\nConfiguration settings:")
