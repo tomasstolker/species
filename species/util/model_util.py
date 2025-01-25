@@ -225,6 +225,8 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
             "parallax",
             "ism_ext",
             "ext_av",
+            "vsini",
+            "rad_vel",
         ]:
             new_dict[param_key] = param_value
 
@@ -352,26 +354,6 @@ def apply_obs(
             eps=0.0,
         )
 
-    # Apply radial velocity shift
-
-    if rad_vel is not None:
-        # Wavelength shift in um
-        # rad_vel in km s-1 and constants.LIGHT in m s-1
-        wavel_shift = model_wavel * 1e3 * rad_vel / constants.LIGHT
-
-        # This will introduce a few NaNs at the edge of the flux array
-        # but that should not influence the fit given the total number
-        # of wavelength points of a typical spectra
-
-        model_flux = spectres_numba(
-            model_wavel,
-            model_wavel + wavel_shift,
-            model_flux,
-            spec_errs=None,
-            fill=np.nan,
-            verbose=False,
-        )
-
     # Apply extinction
 
     if "ism_ext" in model_param:
@@ -481,6 +463,26 @@ def apply_obs(
 
     elif "log_flux_scaling" in model_param:
         model_flux *= 10.0 ** model_param["log_flux_scaling"]
+
+    # Apply radial velocity shift
+
+    if rad_vel is not None:
+        # Wavelength shift in um
+        # rad_vel in km s-1 and constants.LIGHT in m s-1
+        wavel_shift = model_wavel * 1e3 * rad_vel / constants.LIGHT
+
+        # Resampling will introduce a few NaNs at the edge of the flux
+        # array but that should not influence the fit given the total
+        # number of wavelength points of a typical spectrum
+
+        model_flux = spectres_numba(
+            model_wavel,
+            model_wavel + wavel_shift,
+            model_flux,
+            spec_errs=None,
+            fill=np.nan,
+            verbose=False,
+        )
 
     # Apply instrument broadening
 

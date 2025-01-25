@@ -2357,41 +2357,42 @@ class Database:
 
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
+            dset_attrs = dict(dset.attrs)
 
             samples = np.asarray(dset)
             ln_prob = np.asarray(hdf5_file[f"results/fit/{tag}/ln_prob"])
 
-            if "n_param" in dset.attrs:
-                n_param = dset.attrs["n_param"]
-            else:
-                n_param = dset.attrs["nparam"]
+        if "n_param" in dset_attrs:
+            n_param = dset_attrs["n_param"]
+        else:
+            n_param = dset_attrs["nparam"]
 
-            index_max = np.argmax(ln_prob)
-            max_sample = samples[index_max,]
+        index_max = np.argmax(ln_prob)
+        max_sample = samples[index_max,]
 
-            prob_sample = {}
+        prob_sample = {}
 
-            for i in range(n_param):
-                par_key = dset.attrs[f"parameter{i}"]
-                par_value = max_sample[i]
+        for i in range(n_param):
+            par_key = dset_attrs[f"parameter{i}"]
+            par_value = max_sample[i]
 
-                prob_sample[par_key] = par_value
+            prob_sample[par_key] = par_value
 
-            if (
-                "parallax" not in prob_sample
-                and "parallax_0" not in prob_sample
-                and "parallax" in dset.attrs
-            ):
-                prob_sample["parallax"] = dset.attrs["parallax"]
+        if (
+            "parallax" not in prob_sample
+            and "parallax_0" not in prob_sample
+            and "parallax" in dset_attrs
+        ):
+            prob_sample["parallax"] = dset_attrs["parallax"]
 
-            elif "distance" not in prob_sample and "distance" in dset.attrs:
-                prob_sample["distance"] = dset.attrs["distance"]
+        elif "distance" not in prob_sample and "distance" in dset_attrs:
+            prob_sample["distance"] = dset_attrs["distance"]
 
-            if "pt_smooth" in dset.attrs:
-                prob_sample["pt_smooth"] = dset.attrs["pt_smooth"]
+        if "pt_smooth" in dset_attrs:
+            prob_sample["pt_smooth"] = dset_attrs["pt_smooth"]
 
-            if "ext_model" in dset.attrs:
-                prob_sample["ext_model"] = dset.attrs["ext_model"]
+        if "ext_model" in dset_attrs:
+            prob_sample["ext_model"] = dset_attrs["ext_model"]
 
         if verbose:
             print("\nParameters:")
@@ -2433,36 +2434,36 @@ class Database:
 
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
-
-            if "n_param" in dset.attrs:
-                n_param = dset.attrs["n_param"]
-            else:
-                n_param = dset.attrs["nparam"]
-
             samples = np.asarray(dset)
+            dset_attrs = dict(dset.attrs)
 
-            median_sample = {}
+        if "n_param" in dset_attrs:
+            n_param = dset_attrs["n_param"]
+        else:
+            n_param = dset_attrs["nparam"]
 
-            for i in range(n_param):
-                par_key = dset.attrs[f"parameter{i}"]
-                par_value = np.median(samples[:, i])
-                median_sample[par_key] = par_value
+        median_sample = {}
 
-            if (
-                "parallax" not in median_sample
-                and "parallax_0" not in median_sample
-                and "parallax" in dset.attrs
-            ):
-                median_sample["parallax"] = dset.attrs["parallax"]
+        for i in range(n_param):
+            par_key = dset_attrs[f"parameter{i}"]
+            par_value = np.median(samples[:, i])
+            median_sample[par_key] = par_value
 
-            elif "distance" not in median_sample and "distance" in dset.attrs:
-                median_sample["distance"] = dset.attrs["distance"]
+        if (
+            "parallax" not in median_sample
+            and "parallax_0" not in median_sample
+            and "parallax" in dset_attrs
+        ):
+            median_sample["parallax"] = dset_attrs["parallax"]
 
-            if "pt_smooth" in dset.attrs:
-                median_sample["pt_smooth"] = dset.attrs["pt_smooth"]
+        elif "distance" not in median_sample and "distance" in dset_attrs:
+            median_sample["distance"] = dset_attrs["distance"]
 
-            if "ext_model" in dset.attrs:
-                median_sample["ext_model"] = dset.attrs["ext_model"]
+        if "pt_smooth" in dset_attrs:
+            median_sample["pt_smooth"] = dset_attrs["pt_smooth"]
+
+        if "ext_model" in dset_attrs:
+            median_sample["ext_model"] = dset_attrs["ext_model"]
 
         if verbose:
             print("\nParameters:")
@@ -2508,30 +2509,31 @@ class Database:
             print_section("Get best comparison parameters")
             print(f"Database tag: {tag}")
 
-        with h5py.File(self.database, "a") as hdf5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
+            dset_attrs = dict(dset.attrs)
 
-            n_param = dset.attrs["n_param"]
-            n_scale_spec = dset.attrs["n_scale_spec"]
+        n_param = dset_attrs["n_param"]
+        n_scale_spec = dset_attrs["n_scale_spec"]
 
-            model_param = {}
+        model_param = {}
 
-            for i in range(n_param):
-                model_param[dset.attrs[f"parameter{i}"]] = dset.attrs[f"best_param{i}"]
+        for i in range(n_param):
+            model_param[dset_attrs[f"parameter{i}"]] = dset_attrs[f"best_param{i}"]
 
-            if "parallax" in dset.attrs:
-                model_param["parallax"] = dset.attrs["parallax"]
+        if "parallax" in dset_attrs:
+            model_param["parallax"] = dset_attrs["parallax"]
 
-            elif "distance" in dset.attrs:
-                model_param["distance"] = dset.attrs["distance"]
+        elif "distance" in dset_attrs:
+            model_param["distance"] = dset_attrs["distance"]
 
-            model_param["radius"] = dset.attrs["radius"]
+        model_param["radius"] = dset_attrs["radius"]
 
-            for i in range(n_scale_spec):
-                scale_spec = dset.attrs[f"scale_spec{i}"]
-                model_param[f"scaling_{scale_spec}"] = dset.attrs[
-                    f"scaling_{scale_spec}"
-                ]
+        for i in range(n_scale_spec):
+            scale_spec = dset_attrs[f"scale_spec{i}"]
+            model_param[f"scaling_{scale_spec}"] = dset_attrs[
+                f"scaling_{scale_spec}"
+            ]
 
         if verbose:
             print("\nParameters:")
@@ -2600,60 +2602,62 @@ class Database:
         print(f"Wavelength range (um): {wavel_range}")
         print(f"Resolution: {spec_res}")
 
-        hdf5_file = h5py.File(self.database, "r")
-        dset = hdf5_file[f"results/fit/{tag}/samples"]
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"results/fit/{tag}/samples"]
+            samples = np.array(dset)
+            dset_attrs = dict(dset.attrs)
 
-        if "model_type" in dset.attrs:
-            model_type = dset.attrs["model_type"]
+        if "model_type" in dset_attrs:
+            model_type = dset_attrs["model_type"]
         else:
-            model_type = dset.attrs["type"]
+            model_type = dset_attrs["type"]
 
-        if "model_name" in dset.attrs:
-            model_name = dset.attrs["model_name"]
+        if "model_name" in dset_attrs:
+            model_name = dset_attrs["model_name"]
         else:
-            model_name = dset.attrs["spectrum"]
+            model_name = dset_attrs["spectrum"]
 
-        if "n_param" in dset.attrs:
-            n_param = dset.attrs["n_param"]
-        elif "nparam" in dset.attrs:
-            n_param = dset.attrs["nparam"]
+        if "n_param" in dset_attrs:
+            n_param = dset_attrs["n_param"]
+        elif "nparam" in dset_attrs:
+            n_param = dset_attrs["nparam"]
 
-        if "n_scaling" in dset.attrs:
-            n_scaling = dset.attrs["n_scaling"]
-        elif "nscaling" in dset.attrs:
-            n_scaling = dset.attrs["nscaling"]
+        if "n_scaling" in dset_attrs:
+            n_scaling = dset_attrs["n_scaling"]
+        elif "nscaling" in dset_attrs:
+            n_scaling = dset_attrs["nscaling"]
         else:
             n_scaling = 0
 
-        if "n_error" in dset.attrs:
-            n_error = dset.attrs["n_error"]
+        if "n_error" in dset_attrs:
+            n_error = dset_attrs["n_error"]
         else:
             n_error = 0
 
-        if "binary" in dset.attrs:
-            binary = dset.attrs["binary"]
+        if "binary" in dset_attrs:
+            binary = dset_attrs["binary"]
         else:
             binary = False
 
-        if "ext_filter" in dset.attrs:
-            ext_filter = dset.attrs["ext_filter"]
+        if "ext_filter" in dset_attrs:
+            ext_filter = dset_attrs["ext_filter"]
         else:
             ext_filter = None
 
         ignore_param = []
 
         for i in range(n_scaling):
-            ignore_param.append(dset.attrs[f"scaling{i}"])
+            ignore_param.append(dset_attrs[f"scaling{i}"])
 
         for i in range(n_error):
-            ignore_param.append(dset.attrs[f"error{i}"])
+            ignore_param.append(dset_attrs[f"error{i}"])
 
         for i in range(n_param):
-            if dset.attrs[f"parameter{i}"][:9] == "corr_len_":
-                ignore_param.append(dset.attrs[f"parameter{i}"])
+            if dset_attrs[f"parameter{i}"][:9] == "corr_len_":
+                ignore_param.append(dset_attrs[f"parameter{i}"])
 
-            elif dset.attrs[f"parameter{i}"][:9] == "corr_amp_":
-                ignore_param.append(dset.attrs[f"parameter{i}"])
+            elif dset_attrs[f"parameter{i}"][:9] == "corr_amp_":
+                ignore_param.append(dset_attrs[f"parameter{i}"])
 
         if spec_res is not None and model_type == "calibration":
             warnings.warn(
@@ -2661,24 +2665,22 @@ class Database:
                 "implemented for calibration spectra."
             )
 
-        if "parallax" in dset.attrs:
-            parallax = dset.attrs["parallax"]
+        if "parallax" in dset_attrs:
+            parallax = dset_attrs["parallax"]
         else:
             parallax = None
 
-        if "distance" in dset.attrs:
-            distance = dset.attrs["distance"]
+        if "distance" in dset_attrs:
+            distance = dset_attrs["distance"]
         else:
             distance = None
-
-        samples = np.asarray(dset)
 
         rand_index = np.random.randint(samples.shape[0], size=random)
         samples = samples[rand_index,]
 
         param = []
         for i in range(n_param):
-            param.append(dset.attrs[f"parameter{i}"])
+            param.append(dset_attrs[f"parameter{i}"])
 
         if model_type in ["model", "atmosphere"]:
             if model_name == "planck":
@@ -2726,8 +2728,8 @@ class Database:
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
-            if "ext_av" in model_param and "ext_model" in dset.attrs:
-                model_param["ext_model"] = dset.attrs["ext_model"]
+            if "ext_av" in model_param and "ext_model" in dset_attrs:
+                model_param["ext_model"] = dset_attrs["ext_model"]
 
             if model_type in ["model", "atmosphere"]:
                 if model_name == "planck":
@@ -2808,8 +2810,6 @@ class Database:
             if binary:
                 boxes_0.append(specbox_0)
                 boxes_1.append(specbox_1)
-
-        hdf5_file.close()
 
         if binary:
             return boxes, boxes_0, boxes_1

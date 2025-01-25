@@ -970,13 +970,15 @@ def plot_posterior(
 
     if param_inc is not None:
         param_new = np.zeros((samples.shape[0], len(param_inc)))
-        for i, item in enumerate(param_inc):
-            if item in box.parameters:
-                param_index = box.parameters.index(item)
-                param_new[:, i] = samples[:, param_index]
+        param_inc_new = []
+        for param_idx, param_item in enumerate(param_inc):
+            if param_item in box.parameters:
+                param_index = box.parameters.index(param_item)
+                param_new[:, param_idx] = samples[:, param_index]
+                param_inc_new.append(param_item)
 
-        box.parameters = param_inc
-        ndim = len(param_inc)
+        box.parameters = param_inc_new
+        ndim = len(param_inc_new)
         samples = param_new
 
     # Only for fitting evolutionary models

@@ -343,6 +343,38 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("fsed_1")
         param[index] = r"$f_\mathrm{sed,2}$"
 
+    if "vsini" in param:
+        index = param.index("vsini")
+        param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
+
+    if "vsini_0" in param:
+        index = param.index("vsini_0")
+        param[index] = r"$v\,\sin\,i_\mathrm{1}$ (km s$^{-1}$)"
+
+    if "vsini_1" in param:
+        index = param.index("vsini_1")
+        param[index] = r"$v\,\sin\,i_\mathrm{2}$ (km s$^{-1}$)"
+
+    if "rad_vel" in param:
+        index = param.index("rad_vel")
+        param[index] = r"RV (km s$^{-1}$)"
+
+    if "rad_vel_0" in param:
+        index = param.index("rad_vel_0")
+        param[index] = r"RV$_\mathrm{1}$ (km s$^{-1}$)"
+
+    if "rad_vel_1" in param:
+        index = param.index("rad_vel_1")
+        param[index] = r"RV$_\mathrm{2}$ (km s$^{-1}$)"
+
+    if "log_lum_0" in param:
+        index = param.index("log_lum_0")
+        param[index] = r"$\log\,L_\mathrm{1}/L_\mathrm{\odot}$"
+
+    if "log_lum_1" in param:
+        index = param.index("log_lum_1")
+        param[index] = r"$\log\,L_\mathrm{2}/L_\mathrm{\odot}$"
+
     if "f_clouds" in param:
         index = param.index("f_clouds")
         param[index] = r"$w_\mathrm{clouds}$"
@@ -373,14 +405,6 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
     if "parallax_1" in param:
         index = param.index("parallax_1")
         param[index] = r"$\varpi_\mathrm{2}$ (mas)"
-
-    if "vsini" in param:
-        index = param.index("vsini")
-        param[index] = r"$v\,\sin\,i$ (km s$^{-1}$)"
-
-    if "rad_vel" in param:
-        index = param.index("rad_vel")
-        param[index] = r"RV (km s$^{-1}$)"
 
     if "mass" in param:
         index = param.index("mass")

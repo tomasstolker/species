@@ -2,10 +2,10 @@
 Module with reading functionalities for atmospheric model spectra.
 """
 
-import os
 import warnings
 
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import dust_extinction.parameter_averages as dust_ext
@@ -107,12 +107,14 @@ class ReadModel:
         else:
             self.mean_wavelength = None
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        config_file = Path.cwd() / "species_config.ini"
+        print(config_file)
 
         config = ConfigParser()
         config.read(config_file)
-
+        print(list(config))
         self.database = config["species"]["database"]
+        print(self.database)
         self.data_folder = config["species"]["data_folder"]
 
         self.extra_param = [
@@ -988,8 +990,24 @@ class ReadModel:
         if "rad_vel" in model_param:
             # Wavelength shift in um
             # rad_vel in km s-1 and constants.LIGHT in m s-1
-            wavel_shift = model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
-            model_box.wavelength += wavel_shift
+
+            wavel_shift = (
+                model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
+            )
+
+            # Resampling will introduce a few NaNs at the edge of the
+            # flux array. Resampling is needed because shifting the
+            # wavelength array does not work when combining two spectra
+            # of a binary system of which the two stars have different RVs.
+
+            model_box.flux = spectres_numba(
+                model_box.wavelength,
+                model_box.wavelength + wavel_shift,
+                model_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=False,
+            )
 
         # Smooth the spectrum
 
@@ -1478,8 +1496,24 @@ class ReadModel:
         if "rad_vel" in model_param:
             # Wavelength shift in um
             # rad_vel in km s-1 and constants.LIGHT in m s-1
-            wavel_shift = model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
-            model_box.wavelength += wavel_shift
+
+            wavel_shift = (
+                model_box.wavelength * 1e3 * model_param["rad_vel"] / constants.LIGHT
+            )
+
+            # Resampling will introduce a few NaNs at the edge of the
+            # flux array. Resampling is needed because shifting the
+            # wavelength array does not work when combining two spectra
+            # of a binary system of which the two stars have different RVs.
+
+            model_box.flux = spectres_numba(
+                model_box.wavelength,
+                model_box.wavelength + wavel_shift,
+                model_box.flux,
+                spec_errs=None,
+                fill=np.nan,
+                verbose=False,
+            )
 
         # Smooth the spectrum
 
@@ -1869,7 +1903,7 @@ class ReadModel:
         ``model_param`` dictionary should contain the parameters
         for both components (e.g. ``teff_0`` and ``teff_1``, instead
         of ``teff``). Apart from that, the same parameters are used
-        as with :meth:`~species.read.read_model.ReadModel.get_model`.
+        as with :func:`~species.read.read_model.ReadModel.get_model`.
 
         Parameters
         ----------

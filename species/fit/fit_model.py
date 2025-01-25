@@ -730,7 +730,7 @@ class FitModel:
 
             else:
                 # Set all parameter boundaries to the grid boundaries
-                readmodel = ReadModel(self.model, None, None)
+                readmodel = ReadModel(self.model)
                 self.bounds = readmodel.get_bounds()
 
             self.modelpar = readmodel.get_parameters()
@@ -1116,31 +1116,49 @@ class FitModel:
             self.modelspec = None
             self.n_corr_par = 0
 
-        # Optional rotational broading
+        # Optional parameters, either global or for each instrument/spectrum
 
-        if "vsini" in self.bounds:
-            # Global vsin(i) parameter (km s-1)
-            self.modelpar.append("vsini")
-            self.bounds["vsini"] = (bounds["vsini"][0], bounds["vsini"][1])
+        for param_item in ["vsini", "rad_vel"]:
+            if param_item in self.bounds:
+                if self.binary:
+                    if isinstance(self.bounds[param_item][0], tuple):
+                        self.modelpar.append(f"{param_item}_0")
+                        self.modelpar.append(f"{param_item}_1")
+                        self.bounds[f"{param_item}_0"] = self.bounds[param_item][0]
+                        self.bounds[f"{param_item}_1"] = self.bounds[param_item][1]
+                        del self.bounds[param_item]
 
-        else:
-            # Instrument specific vsin(i) parameters (kms s-1)
-            for spec_item in self.spectrum:
-                if f"vsini_{spec_item}" in self.bounds:
-                    self.modelpar.append(f"vsini_{spec_item}")
+                    else:
+                        self.modelpar.append(param_item)
 
-        # Optional radial velocity
+                else:
+                    self.modelpar.append(param_item)
 
-        if "rad_vel" in self.bounds:
-            # Global RV parameter (km s-1)
-            self.modelpar.append("rad_vel")
-            self.bounds["rad_vel"] = (bounds["rad_vel"][0], bounds["rad_vel"][1])
+            else:
+                for spec_item in self.spectrum:
+                    param_spec = f"{param_item}_{spec_item}"
 
-        else:
-            # Instrument specific RV parameters (kms s-1)
-            for spec_item in self.spectrum:
-                if f"rad_vel_{spec_item}" in self.bounds:
-                    self.modelpar.append(f"rad_vel_{spec_item}")
+                    if param_spec in self.bounds:
+                        if self.binary:
+                            if isinstance(self.bounds[param_spec][0], tuple):
+                                self.modelpar.append(f"{param_spec}_0")
+                                self.modelpar.append(f"{param_spec}_1")
+
+                                self.bounds[f"{param_spec}_0"] = self.bounds[
+                                    param_spec
+                                ][0]
+
+                                self.bounds[f"{param_spec}_1"] = self.bounds[
+                                    param_spec
+                                ][1]
+
+                                del self.bounds[param_spec]
+
+                            else:
+                                self.modelpar.append(param_spec)
+
+                        else:
+                            self.modelpar.append(param_spec)
 
         # Get the parameter order if interpolate_grid is used
 
@@ -2008,27 +2026,6 @@ class FitModel:
         # Compare spectra with model
 
         for spec_idx, spec_item in enumerate(self.spectrum.keys()):
-            # Set rotational broadening
-
-            if "vsini" in self.modelpar:
-                rot_broad = params[self.cube_index["vsini"]]
-
-            elif f"vsini_{spec_item}" in self.modelpar:
-                rot_broad = params[self.cube_index[f"vsini_{spec_item}"]]
-
-            else:
-                rot_broad = None
-
-            # Set radial velocity
-
-            if "rad_vel" in self.modelpar:
-                rad_vel = params[self.cube_index["rad_vel"]]
-
-            elif f"rad_vel_{spec_item}" in self.modelpar:
-                rad_vel = params[self.cube_index[f"rad_vel_{spec_item}"]]
-
-            else:
-                rad_vel = None
 
             if self.model == "planck":
                 # Calculate a blackbody spectrum from the sampled parameters
@@ -2053,6 +2050,32 @@ class FitModel:
                 if self.binary:
                     # Star 0
 
+                    if "vsini" in self.modelpar:
+                        rot_broad_0 = params[self.cube_index["vsini"]]
+
+                    elif "vsini_0" in self.modelpar:
+                        rot_broad_0 = params[self.cube_index["vsini_0"]]
+
+                    elif f"vsini_{spec_item}_0" in self.modelpar:
+                        rot_broad_0 = params[self.cube_index[f"vsini_{spec_item}_0"]]
+
+                    else:
+                        rot_broad_0 = None
+
+                    # Set radial velocity
+
+                    if "rad_vel" in self.modelpar:
+                        rad_vel_0 = params[self.cube_index["rad_vel"]]
+
+                    elif "rad_vel_0" in self.modelpar:
+                        rad_vel_0 = params[self.cube_index["rad_vel_0"]]
+
+                    elif f"rad_vel_{spec_item}_0" in self.modelpar:
+                        rad_vel_0 = params[self.cube_index[f"rad_vel_{spec_item}_0"]]
+
+                    else:
+                        rad_vel_0 = None
+
                     param_0 = binary_to_single(param_dict, 0)
 
                     model_flux_0 = self.modelspec[spec_idx].spectrum_interp(
@@ -2068,10 +2091,38 @@ class FitModel:
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         model_param=all_param_0,
                         cross_sections=self.cross_sections,
+                        rot_broad=rot_broad_0,
+                        rad_vel=rad_vel_0,
                         ext_model=self.ext_model,
                     )
 
                     # Star 1
+
+                    if "vsini" in self.modelpar:
+                        rot_broad_1 = params[self.cube_index["vsini"]]
+
+                    elif "vsini_1" in self.modelpar:
+                        rot_broad_1 = params[self.cube_index["vsini_1"]]
+
+                    elif f"vsini_{spec_item}_1" in self.modelpar:
+                        rot_broad_1 = params[self.cube_index[f"vsini_{spec_item}_1"]]
+
+                    else:
+                        rot_broad_1 = None
+
+                    # Set radial velocity
+
+                    if "rad_vel" in self.modelpar:
+                        rad_vel_1 = params[self.cube_index["rad_vel"]]
+
+                    elif "rad_vel_1" in self.modelpar:
+                        rad_vel_1 = params[self.cube_index["rad_vel_1"]]
+
+                    elif f"rad_vel_{spec_item}_1" in self.modelpar:
+                        rad_vel_1 = params[self.cube_index[f"rad_vel_{spec_item}_1"]]
+
+                    else:
+                        rad_vel_1 = None
 
                     param_1 = binary_to_single(param_dict, 1)
 
@@ -2088,6 +2139,8 @@ class FitModel:
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         model_param=all_param_1,
                         cross_sections=self.cross_sections,
+                        rot_broad=rot_broad_1,
+                        rad_vel=rad_vel_1,
                         ext_model=self.ext_model,
                     )
 
@@ -2104,6 +2157,28 @@ class FitModel:
                         model_flux = model_flux_0 + model_flux_1
 
                 else:
+                    # Set rotational broadening
+
+                    if "vsini" in self.modelpar:
+                        rot_broad = params[self.cube_index["vsini"]]
+
+                    elif f"vsini_{spec_item}" in self.modelpar:
+                        rot_broad = params[self.cube_index[f"vsini_{spec_item}"]]
+
+                    else:
+                        rot_broad = None
+
+                    # Set radial velocity
+
+                    if "rad_vel" in self.modelpar:
+                        rad_vel = params[self.cube_index["rad_vel"]]
+
+                    elif f"rad_vel_{spec_item}" in self.modelpar:
+                        rad_vel = params[self.cube_index[f"rad_vel_{spec_item}"]]
+
+                    else:
+                        rad_vel = None
+
                     # Interpolate model spectrum
 
                     model_flux = self.modelspec[spec_idx].spectrum_interp(
@@ -2117,6 +2192,8 @@ class FitModel:
                         model_flux=model_flux,
                         model_wavel=self.modelspec[spec_idx].wl_points,
                         cross_sections=self.cross_sections,
+                        rot_broad=rot_broad,
+                        rad_vel=rad_vel,
                         ext_model=self.ext_model,
                     )
 
@@ -2169,15 +2246,13 @@ class FitModel:
                     flux_interp = interp1d(disk_wavel, disk_flux)
                     model_flux += flux_interp(self.modelspec[spec_idx].wl_points)
 
-            # Extinction and flux scaling have already been applied
+            # Extinction, flux scaling, vsin(i), and RV have already been applied
 
             model_flux = apply_obs(
                 model_flux=model_flux,
                 model_wavel=self.modelspec[spec_idx].wl_points,
                 data_wavel=self.spectrum[spec_item][0][:, 0],
                 spec_res=self.spectrum[spec_item][3],
-                rot_broad=rot_broad,
-                rad_vel=rad_vel,
             )
 
             # Optional flux offset
