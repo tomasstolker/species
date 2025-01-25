@@ -137,6 +137,15 @@
         "teff range": [2600, 30000],
         "checksum": "c2fe40a6d8da4ee96834a58908b69fedc0cf4dffdf867d6591320a98b031b3ab"
     },
+    "bt-nextgen-optical": {
+        "parameters": ["teff", "logg", "feh"],
+        "name": "BT-NextGen",
+        "file size": "7.2 GB",
+        "wavelength range": [0.1, 1.0],
+        "lambda/d_lambda": 500000,
+        "teff range": [2600, 30000],
+        "checksum": "c195263c988cea59c9dacee23e4a9fc3878bc0b04c33e223cdcedb7464b1f9d3"
+    },
     "bt-nextgen-subsolar": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-NextGen subsolar",
@@ -191,9 +200,9 @@
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "Exo-REM",
         "file size": "356 MB",
-        "wavelength range": [0.35, 250.0],
+        "wavelength range": [0.34, 250.0],
         "lambda/d_lambda": 500,
-        "teff range": [400, 2000],
+        "teff range": [200, 1950],
         "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
         "checksum": "52addf881edbeba5f2ced0628f30325c3890e2b7dfcdc7ec000565c93fdd0e60"
@@ -201,24 +210,24 @@
     "exo-rem-highres": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio"],
         "name": "Exo-REM",
-        "file size": "21 GB",
-        "wavelength range": [0.67, 250.0],
-        "lambda/d_lambda": 500,
+        "file size": "14 GB",
+        "wavelength range": [0.7, 250.0],
+        "lambda/d_lambda": 20000,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
-        "checksum": "4dd73d2e5a12756c05b9439cf7f4c03d2cc084e33b97af0efc3da3409c83a092"
+        "checksum": "27838e5935eb8f2faa22e99f5df694dbc653fc14f9a1d50317de076928c7d671"
     },
     "exo-rem-highres-isotopes": {
         "parameters": ["teff", "logg", "feh", "c_o_ratio", "log_co_iso"],
         "name": "Exo-REM",
-        "file size": "239 MB",
-        "wavelength range": [0.67, 250.0],
-        "lambda/d_lambda": 500,
+        "file size": "6.2G GB",
+        "wavelength range": [0.7, 250.0],
+        "lambda/d_lambda": 20000,
         "teff range": [400, 2000],
         "reference": "Charnay et al. (2018)",
         "url": "https://ui.adsabs.harvard.edu/abs/2018ApJ...854..172C",
-        "checksum": "48f060ef905fd1c4affbcd633675f120341118d717f7a2dd2e6ffe9fa0a75a1a"
+        "checksum": "fa4e4355859c09d68a5094c142e3c2a4e41476c4d65ed733d8f3ae7d30ab2003"
     },
     "koester-wd": {
         "parameters": ["teff", "logg"],
