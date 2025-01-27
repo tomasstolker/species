@@ -132,8 +132,8 @@ def pt_ret_model(
     # Interpolate the abundances, following chemical equilibrium
 
     _, _, nabla_ad = eq_chem.interpolate_mass_fractions(
-        np.full(tedd.shape[0], c_o_ratio),
-        np.full(tedd.shape[0], metallicity),
+        np.full(tedd.size, c_o_ratio),
+        np.full(tedd.size, metallicity),
         tedd,
         press,
         carbon_pressure_quench=None,
@@ -170,8 +170,8 @@ def pt_ret_model(
                 t_take = copy.copy(tfinal)
 
             _, _, nabla_ad = eq_chem.interpolate_mass_fractions(
-                np.full(tedd.shape[0], c_o_ratio),
-                np.full(tedd.shape[0], metallicity),
+                np.full(t_take.size, c_o_ratio),
+                np.full(t_take.size, metallicity),
                 t_take,
                 press,
                 carbon_pressure_quench=None,
@@ -514,7 +514,7 @@ def create_pt_profile(
 
     elif pt_profile in ["free", "monotonic"]:
         knot_temp = []
-        for i in range(knot_press.shape[0]):
+        for i in range(knot_press.size):
             knot_temp.append(cube[cube_index[f"t{i}"]])
 
         knot_temp = np.asarray(knot_temp)
@@ -2741,8 +2741,8 @@ def quench_pressure(
 
     # Interpolate the equilibbrium abundances
 
-    co_array = np.full(pressure.shape[0], c_o_ratio)
-    feh_array = np.full(pressure.shape[0], metallicity)
+    co_array = np.full(pressure.size, c_o_ratio)
+    feh_array = np.full(pressure.size, metallicity)
 
     from petitRADTRANS.chemistry.pre_calculated_chemistry import (
         PreCalculatedEquilibriumChemistryTable,

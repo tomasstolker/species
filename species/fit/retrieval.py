@@ -291,10 +291,6 @@ class AtmosphericRetrieval:
             object_name, inc_phot=True, inc_spec=True, verbose=False
         )
 
-        # Copy the cloud species into a new list because the values will be adjusted by Radtrans
-
-        # self.cloud_species_full = self.cloud_species.copy()
-
         # Get photometric data
 
         self.objphot = []
@@ -634,19 +630,6 @@ class AtmosphericRetrieval:
         # Cloud parameters
 
         if "log_kappa_0" in bounds:
-            inspect_prt = inspect.getfullargspec(rt_object.calculate_flux)
-
-            if "give_absorption_opacity" not in inspect_prt.args:
-                raise RuntimeError(
-                    "The Radtrans.calculate_flux method "
-                    "from petitRADTRANS does not have "
-                    "the give_absorption_opacity "
-                    "parameter. Probably you are "
-                    "using an outdated version so "
-                    "please update petitRADTRANS "
-                    "to the latest version."
-                )
-
             if "fsed_1" in bounds and "fsed_2" in bounds:
                 self.parameters.append("fsed_1")
                 self.parameters.append("fsed_2")
@@ -672,19 +655,6 @@ class AtmosphericRetrieval:
                 self.parameters.append("lambda_ray")
 
         elif "log_kappa_gray" in bounds:
-            inspect_prt = inspect.getfullargspec(rt_object.calculate_flux)
-
-            if "give_absorption_opacity" not in inspect_prt.args:
-                raise RuntimeError(
-                    "The Radtrans.calculate_flux method "
-                    "from petitRADTRANS does not have "
-                    "the give_absorption_opacity "
-                    "parameter. Probably you are "
-                    "using an outdated version so "
-                    "please update petitRADTRANS "
-                    "to the latest version."
-                )
-
             self.parameters.append("log_kappa_gray")
             self.parameters.append("log_cloud_top")
 
@@ -722,10 +692,7 @@ class AtmosphericRetrieval:
 
             if len(self.cloud_species) > 1:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = item
-                    cloud_2 = self.cloud_species[0]
-
-                    self.parameters.append(f"{cloud_1}_{cloud_2}_ratio")
+                    self.parameters.append(f"{item}_{self.cloud_species[0]}_ratio")
 
         # Add the flux scaling parameters
 
@@ -1199,19 +1166,18 @@ class AtmosphericRetrieval:
 
             if "log_tau_cloud" in bounds:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = item
-                    cloud_2 = self.cloud_species[0]
-
                     mass_ratio = (
-                        bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                        bounds[f"{item}_{self.cloud_species[0]}_ratio"][0]
                         + (
-                            bounds[f"{cloud_1}_{cloud_2}_ratio"][1]
-                            - bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                            bounds[f"{item}_{self.cloud_species[0]}_ratio"][1]
+                            - bounds[f"{item}_{self.cloud_species[0]}_ratio"][0]
                         )
-                        * cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]]
+                        * cube[cube_index[f"{item}_{self.cloud_species[0]}_ratio"]]
                     )
 
-                    cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]] = mass_ratio
+                    cube[cube_index[f"{item}_{self.cloud_species[0]}_ratio"]] = (
+                        mass_ratio
+                    )
 
             else:
                 for item in self.cloud_species:
@@ -1558,19 +1524,18 @@ class AtmosphericRetrieval:
 
                 if len(self.cloud_species) > 1:
                     for item in self.cloud_species[1:]:
-                        cloud_1 = item
-                        cloud_2 = self.cloud_species[0]
-
                         mass_ratio = (
-                            bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                            bounds[f"{item}_{self.cloud_species[0]}_ratio"][0]
                             + (
-                                bounds[f"{cloud_1}_{cloud_2}_ratio"][1]
-                                - bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
+                                bounds[f"{item}_{self.cloud_species[0]}_ratio"][1]
+                                - bounds[f"{item}_{self.cloud_species[0]}_ratio"][0]
                             )
-                            * cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]]
+                            * cube[cube_index[f"{item}_{self.cloud_species[0]}_ratio"]]
                         )
 
-                        cube[cube_index[f"{cloud_1}_{cloud_2}_ratio"]] = mass_ratio
+                        cube[cube_index[f"{item}_{self.cloud_species[0]}_ratio"]] = (
+                            mass_ratio
+                        )
 
             elif self.chemistry == "equilibrium":
                 # Cloud mass fractions at the cloud base,
@@ -2079,11 +2044,8 @@ class AtmosphericRetrieval:
                             cloud_fractions[item] = 0.0
 
                         else:
-                            cloud_1 = item
-                            cloud_2 = self.cloud_species[0]
-
                             cloud_fractions[item] = cube[
-                                cube_index[f"{cloud_1}_{cloud_2}_ratio"]
+                                cube_index[f"{item}_{self.cloud_species[0]}_ratio"]
                             ]
 
                 log_x_base = log_x_cloud_base(
@@ -2105,11 +2067,8 @@ class AtmosphericRetrieval:
                             log_x_base[item] = 0.0
 
                         else:
-                            cloud_1 = item
-                            cloud_2 = self.cloud_species[0]
-
                             log_x_base[item] = cube[
-                                cube_index[f"{cloud_1}_{cloud_2}_ratio"]
+                                cube_index[f"{item}_{self.cloud_species[0]}_ratio"]
                             ]
 
                 else:
@@ -2200,7 +2159,7 @@ class AtmosphericRetrieval:
             if self.check_flux is not None:
                 # Pressure index at the radiative-convective boundary
                 # if conv_press is None:
-                #     i_conv = lowres_radtrans.press.shape[0]
+                #     i_conv = lowres_radtrans.press.size]
                 # else:
                 #     i_conv = np.argmax(conv_press < 1e-6 * lowres_radtrans.press)
 
@@ -2359,7 +2318,7 @@ class AtmosphericRetrieval:
                     ln_prior += -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
 
                     # for i in range(i_conv):
-                    # for i in range(lowres_radtrans.press.shape[0]):
+                    # for i in range(lowres_radtrans.press.size]):
                     #     if not isclose(
                     #         f_bol_spec,
                     #         f_bol,
@@ -2880,7 +2839,7 @@ class AtmosphericRetrieval:
                                 / (2.0 * corr_len[spec_item] ** 2)
                             )
                             + (1.0 - corr_amp[spec_item] ** 2)
-                            * np.eye(data_wavel.shape[0])
+                            * np.eye(data_wavel.size)
                             * error_i**2
                         )
 
@@ -2907,7 +2866,7 @@ class AtmosphericRetrieval:
                 # See Eq. 9 in Brogi & Line (2019)
 
                 # Number of wavelengths
-                n_wavel = float(data_flux.shape[0])
+                n_wavel = float(data_flux.size)
 
                 # Apply the optional flux scaling to the data
                 data_flux_scaled = scaling[spec_item] * data_flux
@@ -3522,12 +3481,27 @@ class AtmosphericRetrieval:
         # Pressure array for Radtrans
 
         if self.pressure_grid in ["standard", "manual"]:
+            print(
+                f"\nNumber of pressure levels used with the "
+                f"radiative transfer: {self.pressure.size}"
+            )
+
             radtrans_press = np.copy(self.pressure)
 
         elif self.pressure_grid == "smaller":
+            print(
+                f"\nNumber of pressure levels used with the "
+                f"radiative transfer: {self.pressure[::3].size}"
+            )
+
             radtrans_press = self.pressure[::3]
 
         elif self.pressure_grid == "clouds":
+            print(
+                "\nNumber of pressure levels used with the "
+                "radiative transfer: adaptive refinement"
+            )
+
             radtrans_press = self.pressure[::24]
 
         # Create an instance of Ratrans
@@ -3641,59 +3615,6 @@ class AtmosphericRetrieval:
                 line_opacity_mode="c-k",
                 scattering_in_emission=self.scattering,
             )
-
-        # Create the RT arrays
-
-        # if self.pressure_grid == "standard":
-        #     print(
-        #         f"\nNumber of pressure levels used with the "
-        #         f"radiative transfer: {self.pressure.size}"
-        #     )
-        #
-        #     rt_object.setup_opa_structure(self.pressure)
-        #
-        #     for item in self.ccf_radtrans.values():
-        #         item.setup_opa_structure(self.pressure)
-        #
-        #     if self.check_flux is not None:
-        #         lowres_radtrans.setup_opa_structure(self.pressure)
-        #
-        # elif self.pressure_grid == "smaller":
-        #     print(
-        #         f"\nNumber of pressure levels used with the "
-        #         f"radiative transfer: {self.pressure[::3].size}"
-        #     )
-        #
-        #     rt_object.setup_opa_structure(self.pressure[::3])
-        #
-        #     for item in self.ccf_radtrans.values():
-        #         item.setup_opa_structure(self.pressure[::3])
-        #
-        #     if self.check_flux is not None:
-        #         lowres_radtrans.setup_opa_structure(self.pressure[::3])
-        #
-        # elif self.pressure_grid == "clouds":
-        #     if len(self.cloud_species) == 0:
-        #         raise ValueError(
-        #             "Please select a different pressure_grid. Setting the argument "
-        #             "to 'clouds' is only possible with the use of cloud species."
-        #         )
-        #
-        #     # The pressure structure is reinitiated after the
-        #     # refinement around the cloud deck so the current
-        #     # initializiation to 60 pressure points is not used
-        #     print(
-        #         "\nNumber of pressure levels used with the "
-        #         "radiative transfer: adaptive refinement"
-        #     )
-        #
-        #     rt_object.setup_opa_structure(self.pressure[::24])
-        #
-        #     for item in self.ccf_radtrans.values():
-        #         item.setup_opa_structure(self.pressure[::24])
-        #
-        #     if self.check_flux is not None:
-        #         lowres_radtrans.setup_opa_structure(self.pressure[::24])
 
         # Create the knot pressures for temperature profile
 

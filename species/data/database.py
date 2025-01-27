@@ -4019,8 +4019,8 @@ class Database:
                         quench_press = None
 
                     abund_in = eq_chem.interpolate_mass_fractions(
-                        np.full(pressure.shape, sample_dict["c_o_ratio"]),
-                        np.full(pressure.shape, sample_dict["metallicity"]),
+                        np.full(pressure.shape[0], sample_dict["c_o_ratio"]),
+                        np.full(pressure.shape[0], sample_dict["metallicity"]),
                         temp,
                         pressure,
                         carbon_pressure_quench=quench_press,
@@ -4740,8 +4740,8 @@ class Database:
         # Interpolate the abundances, following chemical equilibrium
 
         abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
-            np.full(pressure.shape, model_param["c_o_ratio"]),
-            np.full(pressure.shape, model_param["metallicity"]),
+            np.full(pressure.shape[0], model_param["c_o_ratio"]),
+            np.full(pressure.shape[0], model_param["metallicity"]),
             temperature,
             pressure,
             carbon_pressure_quench=p_quench,

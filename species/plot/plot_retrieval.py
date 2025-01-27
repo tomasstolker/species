@@ -811,7 +811,7 @@ def plot_pt_profile(
                 )
 
         if extra_axis is not None:
-            ax2.legend(loc="upper right", frameon=False, fontsize=12.0)
+            ax2.legend(loc="upper right", frameon=False, fontsize=10.0)
 
     else:
         if extra_axis is not None:
@@ -1493,7 +1493,7 @@ def plot_clouds(
         ha="left",
         va="bottom",
         transform=ax1.transAxes,
-        color="black",
+        color="white",
         fontsize=13.0,
     )
 
