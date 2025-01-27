@@ -2531,9 +2531,7 @@ class Database:
 
         for i in range(n_scale_spec):
             scale_spec = dset_attrs[f"scale_spec{i}"]
-            model_param[f"scaling_{scale_spec}"] = dset_attrs[
-                f"scaling_{scale_spec}"
-            ]
+            model_param[f"scaling_{scale_spec}"] = dset_attrs[f"scaling_{scale_spec}"]
 
         if verbose:
             print("\nParameters:")
@@ -2966,8 +2964,7 @@ class Database:
                             if "spec_weight" in model_param:
                                 mcmc_phot[i] = (
                                     model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"])
-                                    * mcmc_phot_1
+                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
                                 )
 
                             else:
@@ -2992,8 +2989,7 @@ class Database:
                             if "spec_weight" in model_param:
                                 mcmc_phot[i] = (
                                     model_param["spec_weight"] * mcmc_phot_0
-                                    + (1.0 - model_param["spec_weight"])
-                                    * mcmc_phot_1
+                                    + (1.0 - model_param["spec_weight"]) * mcmc_phot_1
                                 )
 
                             else:
@@ -3935,49 +3931,44 @@ class Database:
 
         rt_object = None
 
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
+        )
+
+        eq_chem = PreCalculatedEquilibriumChemistryTable()
+        eq_chem.load()
+
         for i, cloud_item in enumerate(radtrans["cloud_species"]):
-            if f"{cloud_item[:-6].lower()}_tau" in parameters:
+            if f"{cloud_item}_tau" in parameters:
                 pressure = np.logspace(-6, 3, n_pressures)
                 cloud_mass = np.zeros(samples.shape[0])
 
                 if rt_object is None:
-                    print("Importing petitRADTRANS...", end="", flush=True)
                     from petitRADTRANS.radtrans import Radtrans
 
-                    print(" [DONE]")
+                    # Pressure array for Radtrans
 
-                    print("Importing chemistry module...", end="", flush=True)
-                    if "poor_mans_nonequ_chem" in sys.modules:
-                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                            interpol_abundances,
-                        )
-                    else:
-                        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                            interpol_abundances,
-                        )
-                    print(" [DONE]")
+                    if self.pressure_grid in ["standard", "manual"]:
+                        radtrans_press = np.copy(pressure)
+
+                    elif self.pressure_grid == "smaller":
+                        radtrans_press = pressure[::3]
+
+                    elif self.pressure_grid == "clouds":
+                        radtrans_press = pressure[::24]
 
                     rt_object = Radtrans(
+                        pressures=radtrans_press,
                         line_species=radtrans["line_species"],
                         rayleigh_species=["H2", "He"],
                         cloud_species=radtrans["cloud_species"].copy(),
-                        continuum_opacities=["H2-H2", "H2-He"],
-                        wlen_bords_micron=radtrans["wavel_range"],
-                        mode="c-k",
-                        test_ck_shuffle_comp=radtrans["scattering"],
-                        do_scat_emis=radtrans["scattering"],
+                        gas_continuum_contributors=["H2-H2", "H2-He"],
+                        wavelength_boundaries=radtrans["wavel_range"],
+                        line_opacity_mode="c-k",
+                        scattering_in_emission=radtrans["scattering"],
                     )
 
-                    if radtrans["pressure_grid"] == "standard":
-                        rt_object.setup_opa_structure(pressure)
-
-                    elif radtrans["pressure_grid"] == "smaller":
-                        rt_object.setup_opa_structure(pressure[::3])
-
-                    elif radtrans["pressure_grid"] == "clouds":
-                        rt_object.setup_opa_structure(pressure[::24])
-
-                desc = f"Calculating mass fractions of {cloud_item[:-6]}"
+                desc = f"Calculating mass fractions of {cloud_item}"
 
                 for j in tqdm(range(samples.shape[0]), desc=desc):
                     sample_dict = list_to_dict(
@@ -4027,12 +4018,13 @@ class Database:
                     else:
                         quench_press = None
 
-                    abund_in = interpol_abundances(
-                        np.full(pressure.shape[0], sample_dict["c_o_ratio"]),
-                        np.full(pressure.shape[0], sample_dict["metallicity"]),
+                    abund_in = eq_chem.interpolate_mass_fractions(
+                        np.full(pressure.shape, sample_dict["c_o_ratio"]),
+                        np.full(pressure.shape, sample_dict["metallicity"]),
                         temp,
                         pressure,
-                        Pquench_carbon=quench_press,
+                        carbon_pressure_quench=quench_press,
+                        full=False,
                     )
 
                     # Calculate the scaled mass fraction of the clouds
@@ -4045,8 +4037,8 @@ class Database:
                         abund_in["MMW"],
                         "equilibrium",
                         abund_in,
-                        cloud_item[:-3],
-                        sample_dict[f"{cloud_item[:-6].lower()}_tau"],
+                        cloud_item,
+                        sample_dict[f"{cloud_item}_tau"],
                         pressure_grid=radtrans["pressure_grid"],
                     )
 
@@ -4067,9 +4059,7 @@ class Database:
                     n_param = dset_attrs["n_param"] + 1
 
                     dset.attrs["n_param"] = n_param
-                    dset.attrs[f"parameter{n_param-1}"] = (
-                        f"{cloud_item[:-6].lower()}_fraction"
-                    )
+                    dset.attrs[f"parameter{n_param-1}"] = f"{cloud_item}_fraction"
 
         if radtrans["quenching"] == "diffusion":
             p_quench = np.zeros(samples.shape[0])
@@ -4180,7 +4170,7 @@ class Database:
                 sample_scale = (sample_distance / sample_radius) ** 2
 
                 # Blackbody flux: sigma * Teff^4
-                flux_int = simpson(sample_scale * box_item.flux, box_item.wavelength)
+                flux_int = simpson(sample_scale * box_item.flux, x=box_item.wavelength)
                 teff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
 
             db_tag = f"results/fit/{tag}/samples"
@@ -4559,7 +4549,7 @@ class Database:
             sample_scale = (sample_distance / sample_radius) ** 2
 
             # Blackbody flux: sigma * Teff^4
-            flux_int = simpson(sample_scale * box_item.flux, box_item.wavelength)
+            flux_int = simpson(sample_scale * box_item.flux, x=box_item.wavelength)
             t_eff[i] = (flux_int / constants.SIGMA_SB) ** 0.25
 
             # Bolometric luminosity: 4 * pi * R^2 * sigma * Teff^4
@@ -4740,24 +4730,23 @@ class Database:
                 knot_press, knot_temp, pressure, pt_smooth=pt_smooth
             )
 
-        if "poor_mans_nonequ_chem" in sys.modules:
-            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-        else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
+        )
+
+        eq_chem = PreCalculatedEquilibriumChemistryTable()
+        eq_chem.load()
 
         # Interpolate the abundances, following chemical equilibrium
-        abund_in = interpol_abundances(
+
+        abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
             np.full(pressure.shape, model_param["c_o_ratio"]),
             np.full(pressure.shape, model_param["metallicity"]),
             temperature,
             pressure,
-            Pquench_carbon=p_quench,
+            carbon_pressure_quench=p_quench,
+            full=True,
         )
-
-        # Extract the mean molecular weight
-        mmw = abund_in["MMW"]
 
         cloud_fractions = {}
 
@@ -4766,23 +4755,18 @@ class Database:
 
             for i, item in enumerate(cloud_species):
                 if i == 0:
-                    cloud_fractions[item[:-3]] = 0.0
+                    cloud_fractions[item] = 0.0
 
                 else:
-                    cloud_1 = item[:-6].lower()
-                    cloud_2 = cloud_species[0][:-6].lower()
-
-                    cloud_fractions[item[:-3]] = model_param[
-                        f"{cloud_1}_{cloud_2}_ratio"
+                    cloud_fractions[item] = model_param[
+                        f"{item}_{cloud_species[0]}_ratio"
                     ]
 
         else:
             # tau_cloud = None
 
             for i, item in enumerate(cloud_species):
-                cloud_fractions[item[:-3]] = model_param[
-                    f"{item[:-6].lower()}_fraction"
-                ]
+                cloud_fractions[item] = model_param[f"{item}_fraction"]
 
         log_x_base = log_x_cloud_base(
             model_param["c_o_ratio"], model_param["metallicity"], cloud_fractions
@@ -4792,7 +4776,7 @@ class Database:
 
         for item in cloud_species:
             p_base_item = find_cloud_deck(
-                item[:-6],
+                item,
                 pressure,
                 temperature,
                 model_param["metallicity"],
@@ -4801,15 +4785,15 @@ class Database:
                 plotting=False,
             )
 
-            abund_in[item[:-3]] = np.zeros_like(temperature)
+            abund_in[item] = np.zeros_like(temperature)
 
-            abund_in[item[:-3]][pressure < p_base_item] = (
-                10.0 ** log_x_base[item[:-6]]
+            abund_in[item][pressure < p_base_item] = (
+                10.0 ** log_x_base[item]
                 * (pressure[pressure <= p_base_item] / p_base_item)
                 ** model_param["fsed"]
             )
 
-            p_base[item[:-3]] = p_base_item
+            p_base[item] = p_base_item
 
             indices = np.where(pressure <= p_base_item)[0]
             pcode_param[f"{item}_base"] = pressure[np.amax(indices)]
@@ -4856,7 +4840,7 @@ class Database:
         # Blackbody flux: sigma * Teff^4
         # Scale the flux back to the planet surface
         flux_int = simpson(
-            model_box.flux * (distance / radius) ** 2, model_box.wavelength
+            model_box.flux * (distance / radius) ** 2, x=model_box.wavelength
         )
         pcode_param["teff"] = (flux_int / constants.SIGMA_SB) ** 0.25
 
@@ -4864,7 +4848,7 @@ class Database:
             cloud_scaling = read_rad.rt_object.cloud_scaling_factor
 
             for item in cloud_species_full:
-                cloud_abund = abund_in[item[:-3]]
+                cloud_abund = abund_in[item]
                 indices = np.where(cloud_abund > 0.0)[0]
                 pcode_param[f"{item}_abund"] = (
                     cloud_scaling * cloud_abund[np.amax(indices)]
@@ -4872,7 +4856,7 @@ class Database:
 
         else:
             for item in cloud_species_full:
-                cloud_abund = abund_in[item[:-3]]
+                cloud_abund = abund_in[item]
                 indices = np.where(cloud_abund > 0.0)[0]
                 pcode_param[f"{item}_abund"] = cloud_abund[np.amax(indices)]
 

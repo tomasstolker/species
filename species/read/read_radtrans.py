@@ -141,7 +141,12 @@ class ReadRadtrans:
         self.pressure_grid = pressure_grid
         self.cloud_wavel = cloud_wavel
         self.pt_manual = pt_manual
-        self.lbl_opacity_sampling = lbl_opacity_sampling
+        self.res_mode = res_mode
+
+        if lbl_opacity_sampling is None:
+            self.lbl_opacity_sampling = 1
+        else:
+            self.lbl_opacity_sampling = lbl_opacity_sampling
 
         # Set maximum pressure
 
@@ -215,41 +220,49 @@ class ReadRadtrans:
         # Import petitRADTRANS here because it is slow
 
         print("Importing petitRADTRANS...", end="", flush=True)
+
         from petitRADTRANS.radtrans import Radtrans
+        from petitRADTRANS.chemistry.utils import simplify_species_list
 
         print(" [DONE]")
+
+        # Pressure array for Radtrans
+
+        if self.pressure_grid in ["standard", "manual"]:
+            radtrans_press = np.copy(self.pressure)
+
+        elif self.pressure_grid == "smaller":
+            radtrans_press = self.pressure[::3]
+
+        elif self.pressure_grid == "clouds":
+            radtrans_press = self.pressure[::24]
 
         # Create the Radtrans object
 
         self.rt_object = Radtrans(
+            pressures=radtrans_press,
             line_species=self.line_species,
             rayleigh_species=["H2", "He"],
             cloud_species=self.cloud_species,
-            continuum_opacities=["H2-H2", "H2-He"],
-            wlen_bords_micron=self.wavel_range,
-            mode=res_mode,
-            test_ck_shuffle_comp=self.scattering,
-            do_scat_emis=self.scattering,
-            lbl_opacity_sampling=lbl_opacity_sampling,
+            gas_continuum_contributors=["H2-H2", "H2-He"],
+            wavelength_boundaries=self.wavel_range,
+            line_opacity_mode=self.res_mode,
+            scattering_in_emission=self.scattering,
+            line_by_line_opacity_sampling=self.lbl_opacity_sampling,
         )
-
-        # Setup the opacity arrays
-
-        if self.pressure_grid == "standard":
-            self.rt_object.setup_opa_structure(self.pressure)
-
-        elif self.pressure_grid == "manual":
-            self.rt_object.setup_opa_structure(self.pressure)
-
-        elif self.pressure_grid == "smaller":
-            self.rt_object.setup_opa_structure(self.pressure[::3])
-
-        elif self.pressure_grid == "clouds":
-            self.rt_object.setup_opa_structure(self.pressure[::24])
 
         # Set the default of abund_smooth to None
 
         self.abund_smooth = None
+
+        # Equilibrium chemistry table
+
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
+        )
+
+        self.eq_chem = PreCalculatedEquilibriumChemistryTable()
+        self.eq_chem.load()
 
     @typechecked
     def get_model(
@@ -742,31 +755,23 @@ class ReadRadtrans:
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
-                    if f"{item[:-3].lower()}_fraction" in model_param:
-                        cloud_fractions[item] = model_param[
-                            f"{item[:-3].lower()}_fraction"
-                        ]
+                    if f"{item}_fraction" in model_param:
+                        cloud_fractions[item] = model_param[f"{item}_fraction"]
 
-                    elif f"{item[:-3].lower()}_tau" in model_param:
-                        # Import the chemistry module here because it is slow
-
-                        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                            interpol_abundances,
-                        )
+                    elif f"{item}_tau" in model_param:
+                        # Import the chemistry module here in case
+                        # petitRADTRANS was not installed
 
                         # Interpolate the abundances, following chemical equilibrium
 
-                        abund_in = interpol_abundances(
+                        abund_in, mmw, _ = self.eq_chem.interpolate_mass_fractions(
                             np.full(self.pressure.size, c_o_ratio),
                             np.full(self.pressure.size, metallicity),
                             temp,
                             self.pressure,
-                            Pquench_carbon=p_quench,
+                            carbon_pressure_quench=p_quench,
+                            full=True,
                         )
-
-                        # Extract the mean molecular weight
-
-                        mmw = abund_in["MMW"]
 
                         # Calculate the scaled mass fraction of the clouds
 
@@ -779,7 +784,7 @@ class ReadRadtrans:
                             "equilibrium",
                             abund_in,
                             item,
-                            model_param[f"{item[:-3].lower()}_tau"],
+                            model_param[f"{item}_tau"],
                             pressure_grid=self.pressure_grid,
                         )
 
@@ -803,11 +808,8 @@ class ReadRadtrans:
                             cloud_fractions[item] = 0.0
 
                         else:
-                            cloud_1 = item[:-3].lower()
-                            cloud_2 = self.cloud_species[0][:-3].lower()
-
                             cloud_fractions[item] = model_param[
-                                f"{cloud_1}_{cloud_2}_ratio"
+                                f"{item}_{self.cloud_species[0]}_ratio"
                             ]
 
                 # Create a dictionary with the log mass fractions at the cloud base
@@ -838,7 +840,7 @@ class ReadRadtrans:
                         # Set the log10 of the mass fractions at th
                         # cloud base equal to the value from the
                         # parameter dictionary
-                        log_x_base[item[:-3]] = model_param[item]
+                        log_x_base[item] = model_param[item]
 
                 else:
                     # Set the log10 of the mass fractions with the
@@ -847,14 +849,11 @@ class ReadRadtrans:
                     # tau_cloud that is used in calc_spectrum_clouds
                     for i, item in enumerate(self.cloud_species):
                         if i == 0:
-                            log_x_base[item[:-3]] = 0.0
+                            log_x_base[item] = 0.0
 
                         else:
-                            cloud_1 = item[:-3].lower()
-                            cloud_2 = self.cloud_species[0][:-3].lower()
-
-                            log_x_base[item[:-3]] = model_param[
-                                f"{cloud_1}_{cloud_2}_ratio"
+                            log_x_base[item] = model_param[
+                                f"{item}_{self.cloud_species[0]}_ratio"
                             ]
 
             # Calculate the petitRADTRANS spectrum
@@ -867,7 +866,7 @@ class ReadRadtrans:
                 (
                     wavelength,
                     flux_1,
-                    emission_contr_1,
+                    extra_out_1,
                     _,
                 ) = calc_spectrum_clouds(
                     self.rt_object,
@@ -888,6 +887,8 @@ class ReadRadtrans:
                     contribution=True,
                     tau_cloud=tau_cloud,
                     cloud_wavel=self.cloud_wavel,
+                    return_opacities=True,
+                    eq_chem=self.eq_chem,
                 )
 
                 cloud_dict = model_param.copy()
@@ -896,7 +897,7 @@ class ReadRadtrans:
                 (
                     wavelength,
                     flux_2,
-                    emission_contr_2,
+                    extra_out_2,
                     _,
                 ) = calc_spectrum_clouds(
                     self.rt_object,
@@ -917,6 +918,8 @@ class ReadRadtrans:
                     contribution=True,
                     tau_cloud=tau_cloud,
                     cloud_wavel=self.cloud_wavel,
+                    return_opacities=True,
+                    eq_chem=self.eq_chem,
                 )
 
                 flux = (
@@ -925,15 +928,16 @@ class ReadRadtrans:
                 )
 
                 emission_contr = (
-                    model_param["f_clouds"] * emission_contr_1
-                    + (1.0 - model_param["f_clouds"]) * emission_contr_2
+                    model_param["f_clouds"] * extra_out_1["emission_contribution"]
+                    + (1.0 - model_param["f_clouds"])
+                    * extra_out_2["emission_contribution"]
                 )
 
             else:
                 (
                     wavelength,
                     flux,
-                    emission_contr,
+                    extra_out,
                     _,
                 ) = calc_spectrum_clouds(
                     self.rt_object,
@@ -954,12 +958,16 @@ class ReadRadtrans:
                     contribution=True,
                     tau_cloud=tau_cloud,
                     cloud_wavel=self.cloud_wavel,
+                    return_opacities=True,
+                    eq_chem=self.eq_chem,
                 )
+
+                emission_contr = extra_out["emission_contribution"]
 
         elif chemistry == "equilibrium":
             # Calculate the petitRADTRANS spectrum for a clear atmosphere
 
-            wavelength, flux, emission_contr = calc_spectrum_clear(
+            wavelength, flux, extra_out = calc_spectrum_clear(
                 self.rt_object,
                 self.pressure,
                 temp,
@@ -973,7 +981,11 @@ class ReadRadtrans:
                 knot_press_abund=knot_press_abund,
                 abund_smooth=self.abund_smooth,
                 contribution=True,
+                return_opacities=True,
+                eq_chem=self.eq_chem,
             )
+
+            emission_contr = extra_out["emission_contribution"]
 
         elif chemistry == "free":
             log_x_abund = {}
@@ -989,7 +1001,7 @@ class ReadRadtrans:
                             f"{line_item}_{node_idx}"
                         ]
 
-            wavelength, flux, emission_contr = calc_spectrum_clear(
+            wavelength, flux, extra_out = calc_spectrum_clear(
                 self.rt_object,
                 self.pressure,
                 temp,
@@ -1003,7 +1015,11 @@ class ReadRadtrans:
                 abund_smooth=self.abund_smooth,
                 pressure_grid=self.pressure_grid,
                 contribution=True,
+                return_opacities=True,
+                eq_chem=self.eq_chem,
             )
+
+            emission_contr = extra_out["emission_contribution"]
 
         if "radius" in model_param:
             # Calculate the planet mass from log(g) and radius
@@ -1058,18 +1074,20 @@ class ReadRadtrans:
                 # From petitRADTRANS: Only use 0 index for species
                 # because for lbl or test_ck_shuffle_comp = True
                 # everything has been moved into the 0th index
-                w_gauss = self.rt_object.w_gauss[..., np.newaxis, np.newaxis]
+                w_gauss = self.rt_object._lines_loaded_opacities["weights_gauss"][
+                    ..., np.newaxis, np.newaxis
+                ]
                 optical_depth = np.sum(
-                    w_gauss * self.rt_object.total_tau[:, :, 0, :], axis=0
+                    w_gauss * extra_out["optical_depths"][:, :, 0, :], axis=0
                 )
 
             else:
                 # TODO Is this correct?
-                w_gauss = self.rt_object.w_gauss[
+                w_gauss = self.rt_object._lines_loaded_opacities["weights_gauss"][
                     ..., np.newaxis, np.newaxis, np.newaxis
                 ]
                 optical_depth = np.sum(
-                    w_gauss * self.rt_object.total_tau[:, :, :, :], axis=0
+                    w_gauss * extra_out["optical_depths"][:, :, :, :], axis=0
                 )
 
                 # Sum over all species
@@ -1125,7 +1143,7 @@ class ReadRadtrans:
             ax.xaxis.set_major_locator(MultipleLocator(1.0))
             ax.xaxis.set_minor_locator(MultipleLocator(0.2))
 
-            press_bar = 1e-6 * self.rt_object.press  # (Ba) -> (Bar)
+            press_bar = 1e-6 * self.rt_object.pressures  # (Ba) -> (Bar)
 
             xx_grid, yy_grid = np.meshgrid(wavelength, press_bar)
 
@@ -1142,7 +1160,7 @@ class ReadRadtrans:
             photo_press = np.zeros(wavelength.shape[0])
 
             for i in range(photo_press.shape[0]):
-                press_interp = interp1d(optical_depth[i, :], self.rt_object.press)
+                press_interp = interp1d(optical_depth[i, :], self.rt_object.pressures)
                 photo_press[i] = press_interp(1.0) * 1e-6  # cgs to (bar)
 
             ax.plot(wavelength, photo_press, lw=0.5, color="gray")
@@ -1182,7 +1200,7 @@ class ReadRadtrans:
         # Resample the spectrum
 
         if wavel_resample is not None:
-            flux = spectres.spectres(
+            flux = spectres_numba(
                 wavel_resample,
                 wavelength,
                 flux,
@@ -1194,7 +1212,7 @@ class ReadRadtrans:
             wavelength = wavel_resample
 
         if hasattr(self.rt_object, "h_bol"):
-            pressure = 1e-6 * self.rt_object.press  # (bar)
+            pressure = 1e-6 * self.rt_object.pressures  # (bar)
             f_bol = -4.0 * np.pi * self.rt_object.h_bol
             f_bol *= 1e-3  # (erg s-1 cm-2) -> (W m-2)
             bol_flux = np.column_stack((pressure, f_bol))
@@ -1211,6 +1229,7 @@ class ReadRadtrans:
             quantity="flux",
             contribution=emission_contr,
             bol_flux=bol_flux,
+            extra_out=extra_out,
         )
 
     @typechecked

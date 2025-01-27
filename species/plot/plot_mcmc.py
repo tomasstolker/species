@@ -33,7 +33,7 @@ from species.util.retrieval_util import (
     atomic_masses,
     calc_metal_ratio,
     get_line_species,
-    mass_fractions,
+    mass_frac_dict,
     mean_molecular_weight,
 )
 
@@ -455,7 +455,7 @@ def plot_posterior(
                     log_x_abund[param_item] = samples_item[param_index]
 
             # Create a dictionary with all mass fractions, including H2 and He
-            x_abund = mass_fractions(log_x_abund, line_species)
+            x_abund = mass_frac_dict(log_x_abund, line_species)
 
             # Calculate the mean molecular weight from the input mass fractions
             mmw = mean_molecular_weight(x_abund)

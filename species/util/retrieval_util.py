@@ -5,7 +5,6 @@ This module was put together many contributions by Paul Mollière
 """
 
 import copy
-import sys
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -75,6 +74,7 @@ def pt_ret_model(
     metallicity: float,
     c_o_ratio: float,
     conv: bool = True,
+    eq_chem: Optional = None,
 ) -> Tuple[Optional[np.ndarray], Optional[float], Optional[float]]:
     """
     Pressure-temperature profile for a self-luminous atmosphere (see
@@ -107,6 +107,8 @@ def pt_ret_model(
         interpolation.
     conv : bool
         Enforce a convective adiabat.
+    eq_chem : PreCalculatedEquilibriumChemistryTable, None
+        TODO
 
     Returns
     -------
@@ -127,26 +129,16 @@ def pt_ret_model(
     # Calculate the Eddington temperature
     tedd = (3.0 / 4.0 * tint**4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
-    # Import interpol_abundances here because it slows down importing
-    # species otherwise. Importing interpol_abundances is only slow
-    # the first time, which occurs at the start of the run_multinest
-    # method of AtmosphericRetrieval
+    # Interpolate the abundances, following chemical equilibrium
 
-    if "poor_mans_nonequ_chem" in sys.modules:
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-    else:
-        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-            interpol_abundances,
-        )
-
-    ab = interpol_abundances(
+    _, _, nabla_ad = eq_chem.interpolate_mass_fractions(
         np.full(tedd.shape[0], c_o_ratio),
         np.full(tedd.shape[0], metallicity),
         tedd,
         press,
+        carbon_pressure_quench=None,
+        full=True,
     )
-
-    nabla_ad = ab["nabla_ad"]
 
     # Enforce convective adiabat
     if conv:
@@ -177,14 +169,14 @@ def pt_ret_model(
             else:
                 t_take = copy.copy(tfinal)
 
-            ab = interpol_abundances(
-                np.full(t_take.shape[0], c_o_ratio),
-                np.full(t_take.shape[0], metallicity),
+            _, _, nabla_ad = eq_chem.interpolate_mass_fractions(
+                np.full(tedd.shape[0], c_o_ratio),
+                np.full(tedd.shape[0], metallicity),
                 t_take,
                 press,
+                carbon_pressure_quench=None,
+                full=True,
             )
-
-            nabla_ad = ab["nabla_ad"]
 
             # Calculate the average nabla_ad between the layers
             nabla_ad_mean = nabla_ad
@@ -414,6 +406,7 @@ def create_pt_profile(
     metallicity: float,
     c_o_ratio: float,
     pt_smooth: Optional[Union[float, Dict[str, float]]] = 0.3,
+    eq_chem: Optional = None,
 ) -> Tuple[
     Optional[np.ndarray], Optional[np.ndarray], Optional[float], Optional[float]
 ]:
@@ -447,6 +440,8 @@ def create_pt_profile(
         :math:`\\log10{P/\\mathrm{bar}}`, with the default value
         set to 0.3 dex. No smoothing is applied if the argument
         is set to ``None``.
+    eq_chem : PreCalculatedEquilibriumChemistryTable, None
+        TODO
 
     Returns
     -------
@@ -474,6 +469,7 @@ def create_pt_profile(
             pressure,
             metallicity,
             c_o_ratio,
+            eq_chem,
         )
 
     elif pt_profile == "mod-molliere":
@@ -485,6 +481,7 @@ def create_pt_profile(
             pressure,
             metallicity,
             c_o_ratio,
+            eq_chem,
         )
 
     elif pt_profile == "gradient":
@@ -585,7 +582,7 @@ def make_half_pressure_better(
     indexes_small = press_small[:, 0] > 0.0
     indexes = press_plus_index[:, 0] > 0.0
 
-    for key, P_cloud in p_base.items():
+    for P_cloud in p_base.values():
         indexes_small = indexes_small & (
             (np.log10(press_small[:, 0] / P_cloud) > 0.05)
             | (np.log10(press_small[:, 0] / P_cloud) < -0.3)
@@ -615,6 +612,7 @@ def make_half_pressure_better(
 def create_abund_dict(
     abund_in: Dict[str, np.ndarray],
     line_species: List[str],
+    cloud_species: List[str],
     chemistry: str,
     pressure_grid: str = "smaller",
     indices: Optional[np.ndarray] = None,
@@ -628,6 +626,8 @@ def create_abund_dict(
         Dictionary with the mass fractions.
     line_species : list
         List with the line species.
+    cloud_species : list
+        List with the cloud species.
     chemistry : str
         Chemistry type ('equilibrium' or 'free').
     pressure_grid : str
@@ -654,138 +654,44 @@ def create_abund_dict(
         Dictionary with the updated names of the abundances.
     """
 
-    # Create a dictionary with the updated abundance names
+    from petitRADTRANS.chemistry.utils import simplify_species_list
+
+    line_simple = simplify_species_list(line_species)
+    # cloud_simple = simplify_species_list(cloud_species)
+
+    # Create a dictionary with the mass fractions
 
     abund_out = {}
 
     if indices is not None:
-        for item in line_species:
-            if chemistry == "equilibrium":
-                item_replace = item.replace("_R_10", "")
-                item_replace = item_replace.replace("_R_30", "")
-                item_replace = item_replace.replace("_all_iso_HITEMP", "")
-                item_replace = item_replace.replace("_all_iso_Chubb", "")
-                item_replace = item_replace.replace("_all_iso", "")
-                item_replace = item_replace.replace("_HITEMP", "")
-                item_replace = item_replace.replace("_main_iso", "")
-                item_replace = item_replace.replace("_lor_cut", "")
-                item_replace = item_replace.replace("_allard", "")
-                item_replace = item_replace.replace("_burrows", "")
-                item_replace = item_replace.replace("_all_Plez", "")
-                item_replace = item_replace.replace("_all_Exomol", "")
-                item_replace = item_replace.replace("_Plez", "")
+        for i, item in enumerate(line_species):
+            abund_out[item] = abund_in[line_simple[i]][indices]
 
-                abund_out[item] = abund_in[item_replace][indices]
-
-            elif chemistry == "free":
-                abund_out[item] = abund_in[item][indices]
-
-        if "Fe(c)" in abund_in:
-            abund_out["Fe(c)"] = abund_in["Fe(c)"][indices]
-
-        if "MgSiO3(c)" in abund_in:
-            abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"][indices]
-
-        if "Mg2SiO4(c)" in abund_in:
-            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"][indices]
-
-        if "Al2O3(c)" in abund_in:
-            abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"][indices]
-
-        if "Na2S(c)" in abund_in:
-            abund_out["Na2S(c)"] = abund_in["Na2S(c)"][indices]
-
-        if "KCL(c)" in abund_in:
-            abund_out["KCL(c)"] = abund_in["KCL(c)"][indices]
+        for i, item in enumerate(cloud_species):
+            abund_out[item] = abund_in[item][indices]
 
         abund_out["H2"] = abund_in["H2"][indices]
         abund_out["He"] = abund_in["He"][indices]
 
     elif pressure_grid == "smaller":
-        for item in line_species:
-            if chemistry == "equilibrium":
-                item_replace = item.replace("_R_10", "")
-                item_replace = item_replace.replace("_R_30", "")
-                item_replace = item_replace.replace("_all_iso_HITEMP", "")
-                item_replace = item_replace.replace("_all_iso_Chubb", "")
-                item_replace = item_replace.replace("_all_iso", "")
-                item_replace = item_replace.replace("_HITEMP", "")
-                item_replace = item_replace.replace("_main_iso", "")
-                item_replace = item_replace.replace("_lor_cut", "")
-                item_replace = item_replace.replace("_allard", "")
-                item_replace = item_replace.replace("_burrows", "")
-                item_replace = item_replace.replace("_all_Plez", "")
-                item_replace = item_replace.replace("_all_Exomol", "")
-                item_replace = item_replace.replace("_Plez", "")
+        for i, item in enumerate(line_species):
+            abund_out[item] = abund_in[line_simple[i]][::3]
 
-                abund_out[item] = abund_in[item_replace][::3]
-
-            elif chemistry == "free":
-                abund_out[item] = abund_in[item][::3]
-
-        if "Fe(c)" in abund_in:
-            abund_out["Fe(c)"] = abund_in["Fe(c)"][::3]
-
-        if "MgSiO3(c)" in abund_in:
-            abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"][::3]
-
-        if "Mg2SiO4(c)" in abund_in:
-            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"][::3]
-
-        if "Al2O3(c)" in abund_in:
-            abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"][::3]
-
-        if "Na2S(c)" in abund_in:
-            abund_out["Na2S(c)"] = abund_in["Na2S(c)"][::3]
-
-        if "KCL(c)" in abund_in:
-            abund_out["KCL(c)"] = abund_in["KCL(c)"][::3]
+        for i, item in enumerate(cloud_species):
+            abund_out[item] = abund_in[item][::3]
 
         abund_out["H2"] = abund_in["H2"][::3]
         abund_out["He"] = abund_in["He"][::3]
 
     else:
-        for item in line_species:
-            if chemistry == "equilibrium":
-                item_replace = item.replace("_R_10", "")
-                item_replace = item_replace.replace("_R_30", "")
-                item_replace = item_replace.replace("_all_iso_HITEMP", "")
-                item_replace = item_replace.replace("_all_iso_Chubb", "")
-                item_replace = item_replace.replace("_all_iso", "")
-                item_replace = item_replace.replace("_HITEMP", "")
-                item_replace = item_replace.replace("_main_iso", "")
-                item_replace = item_replace.replace("_lor_cut", "")
-                item_replace = item_replace.replace("_allard", "")
-                item_replace = item_replace.replace("_burrows", "")
-                item_replace = item_replace.replace("_all_Plez", "")
-                item_replace = item_replace.replace("_all_Exomol", "")
-                item_replace = item_replace.replace("_Plez", "")
+        for i, item in enumerate(line_species):
+            abund_out[item] = abund_in[line_simple[i]][:]
 
-                abund_out[item] = abund_in[item_replace]
+        for i, item in enumerate(cloud_species):
+            abund_out[item] = abund_in[item][:]
 
-            elif chemistry == "free":
-                abund_out[item] = abund_in[item]
-
-        if "Fe(c)" in abund_in:
-            abund_out["Fe(c)"] = abund_in["Fe(c)"]
-
-        if "MgSiO3(c)" in abund_in:
-            abund_out["MgSiO3(c)"] = abund_in["MgSiO3(c)"]
-
-        if "Mg2SiO4(c)" in abund_in:
-            abund_out["Mg2SiO4(c)"] = abund_in["Mg2SiO4(c)"]
-
-        if "Al2O3(c)" in abund_in:
-            abund_out["Al2O3(c)"] = abund_in["Al2O3(c)"]
-
-        if "Na2S(c)" in abund_in:
-            abund_out["Na2S(c)"] = abund_in["Na2S(c)"]
-
-        if "KCL(c)" in abund_in:
-            abund_out["KCL(c)"] = abund_in["KCL(c)"]
-
-        abund_out["H2"] = abund_in["H2"]
-        abund_out["He"] = abund_in["He"]
+        abund_out["H2"] = abund_in["H2"][:]
+        abund_out["He"] = abund_in["He"][:]
 
     # Correction for the nuclear spin degeneracy that was not included
     # in the partition function. See Charnay et al. (2018)
@@ -811,7 +717,9 @@ def calc_spectrum_clear(
     abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
     contribution: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    return_opacities: bool = False,
+    eq_chem: Optional = None,
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[Dict]]:
     """
     Function to simulate an emission spectrum of a clear atmosphere.
     The function supports both equilibrium chemistry
@@ -864,6 +772,10 @@ def calc_spectrum_clear(
         accuracy fluxes.
     contribution : bool
         Calculate the emission contribution.
+    return_opacities : bool
+        Return opacities and optical depth.
+    eq_chem : PreCalculatedEquilibriumChemistryTable, None
+        TODO
 
     Returns
     -------
@@ -873,6 +785,8 @@ def calc_spectrum_clear(
         Flux (W m-2 um-1).
     np.ndarray, None
         Emission contribution.
+    dict, None
+        Dictionary with extra output.
     """
 
     if knot_press_abund is None:
@@ -881,33 +795,22 @@ def calc_spectrum_clear(
         abund_nodes = knot_press_abund.size
 
     if chemistry == "equilibrium":
-        # Import interpol_abundances here because it slows down
-        # importing species otherwise. Importing interpol_abundances
-        # is only slow the first time, which occurs at the start of
-        # the run_multinest method of AtmosphericRetrieval
-        if "poor_mans_nonequ_chem" in sys.modules:
-            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-        else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
+        # Equilibrium chemistry
 
-        # Chemical equilibrium
-        abund_in = interpol_abundances(
+        abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
             np.full(pressure.shape, c_o_ratio),
             np.full(pressure.shape, metallicity),
             temperature,
             pressure,
-            Pquench_carbon=p_quench,
+            carbon_pressure_quench=p_quench,
+            full=True,
         )
-        # Extract the mean molecular weight
-        mmw = abund_in["MMW"]
 
     elif chemistry == "free":
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
+        abund_in = mass_frac_dict(log_x_abund, rt_object.line_species, abund_nodes)
 
         # Create list of all species
         abund_species = rt_object.line_species.copy()
@@ -966,35 +869,30 @@ def calc_spectrum_clear(
         pressure = pressure[::3]
         mmw = mmw[::3]
 
-    abundances = create_abund_dict(
+    mass_fractions = create_abund_dict(
         abund_in,
         rt_object.line_species,
+        rt_object.cloud_species,
         chemistry,
         pressure_grid=pressure_grid,
         indices=None,
     )
 
-    # calculate the emission spectrum
-    rt_object.calc_flux(
-        temperature, abundances, 10.0**log_g, mmw, contribution=contribution
+    # Calculate the emission spectrum
+    # wavelength in cm and flux in erg cm-2 s-1 cm-1
+
+    rad_wavel, rad_flux, extra_out = rt_object.calculate_flux(
+        temperatures=temperature,
+        mass_fractions=mass_fractions,
+        mean_molar_masses=mmw,
+        reference_gravity=10.0**log_g,
+        return_contribution=contribution,
+        return_opacities=return_opacities,
     )
 
-    # convert frequency (Hz) to wavelength (cm)
-    wavel = constants.LIGHT * 1e2 / rt_object.freq
+    # Return wavelength (um), flux (W m-2 um-1), and extra output
 
-    # optionally return the emission contribution
-    if contribution:
-        contr_em = rt_object.contr_em
-    else:
-        contr_em = None
-
-    # return wavelength (micron), flux (W m-2 um-1),
-    # and emission contribution
-    return (
-        1e4 * wavel,
-        1e-7 * rt_object.flux * constants.LIGHT * 1e2 / wavel**2.0,
-        contr_em,
-    )
+    return 1e4 * rad_wavel, 1e-7 * rad_flux, extra_out
 
 
 @typechecked
@@ -1017,8 +915,10 @@ def calc_spectrum_clouds(
     contribution: bool = False,
     tau_cloud: Optional[float] = None,
     cloud_wavel: Optional[Tuple[float, float]] = None,
+    return_opacities: bool = False,
+    eq_chem: Optional = None,
 ) -> Tuple[
-    Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray
+    Optional[np.ndarray], Optional[np.ndarray], Optional[Dict], Optional[np.ndarray]
 ]:
     """
     Function to simulate an emission spectrum of a cloudy atmosphere.
@@ -1091,6 +991,10 @@ def calc_spectrum_clouds(
         ``cloud_wavel`` should be encompassed by the range of
         ``wavel_range``.  The full wavelength range (i.e.
         ``wavel_range``) is used if the argument is set to ``None``.
+    return_opacities : bool
+        Return opacities and optical depth.
+    eq_chem : PreCalculatedEquilibriumChemistryTable, None
+        TODO
 
     Returns
     -------
@@ -1098,9 +1002,9 @@ def calc_spectrum_clouds(
         Wavelength (um).
     np.ndarray, None
         Flux (W m-2 um-1).
+    dict, None
+        Dictionary with extra output.
     np.ndarray, None
-        Emission contribution.
-    np.ndarray
         Array with mean molecular weight.
     """
 
@@ -1110,35 +1014,22 @@ def calc_spectrum_clouds(
         abund_nodes = knot_press_abund.size
 
     if chemistry == "equilibrium":
-        # Import interpol_abundances here because it slows down
-        # importing species otherwise. Importing interpol_abundances
-        # is only slow the first time, which occurs at the start
-        # of the run_multinest method of AtmosphericRetrieval
+        # Equilibrium chemistry
 
-        if "poor_mans_nonequ_chem" in sys.modules:
-            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-        else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
-
-        # Interpolate the abundances, following chemical equilibrium
-        abund_in = interpol_abundances(
+        abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
             np.full(pressure.shape, c_o_ratio),
             np.full(pressure.shape, metallicity),
             temperature,
             pressure,
-            Pquench_carbon=p_quench,
+            carbon_pressure_quench=p_quench,
+            full=True,
         )
-
-        # Extract the mean molecular weight
-        mmw = abund_in["MMW"]
 
     elif chemistry == "free":
         # Free abundances
 
         # Create a dictionary with all mass fractions
-        abund_in = mass_fractions(log_x_abund, rt_object.line_species, abund_nodes)
+        abund_in = mass_frac_dict(log_x_abund, rt_object.line_species, abund_nodes)
 
         # Create list of all species
         abund_species = rt_object.line_species.copy()
@@ -1173,7 +1064,7 @@ def calc_spectrum_clouds(
                         f"Found {nan_count} NaN values in sampled abundance nodes."
                     )
 
-                    return None, None, None, np.zeros(1)
+                    return None, None, None, None
 
                 abund_in[abund_item] = pt_spline_interp(
                     knot_press_abund, knot_abund, pressure, pt_smooth=abund_smooth
@@ -1194,8 +1085,8 @@ def calc_spectrum_clouds(
         p_base = {}
 
         for cloud_item in log_x_base:
-            if f"log_p_base_{cloud_item}(c)" in cloud_dict:
-                p_base_item = 10.0 ** cloud_dict[f"log_p_base_{cloud_item}(c)"]
+            if f"log_p_base_{cloud_item}" in cloud_dict:
+                p_base_item = 10.0 ** cloud_dict[f"log_p_base_{cloud_item}"]
 
             else:
                 p_base_item = find_cloud_deck(
@@ -1208,16 +1099,16 @@ def calc_spectrum_clouds(
                     plotting=plotting,
                 )
 
-            p_base[f"{cloud_item}(c)"] = p_base_item
+            p_base[f"{cloud_item}"] = p_base_item
 
-            abund_in[f"{cloud_item}(c)"] = np.zeros_like(temperature)
+            abund_in[f"{cloud_item}"] = np.zeros_like(temperature)
 
             if "fsed" in cloud_dict:
                 f_sed = cloud_dict["fsed"]
             else:
-                f_sed = cloud_dict[f"fsed_{cloud_item}(c)"]
+                f_sed = cloud_dict[f"fsed_{cloud_item}"]
 
-            abund_in[f"{cloud_item}(c)"][pressure < p_base_item] = (
+            abund_in[f"{cloud_item}"][pressure < p_base_item] = (
                 10.0 ** log_x_base[cloud_item]
                 * (pressure[pressure <= p_base_item] / p_base_item) ** f_sed
             )
@@ -1229,11 +1120,12 @@ def calc_spectrum_clouds(
     else:
         indices = None
 
-    # Update the abundance dictionary
+    # Create dictionary with mass fractions
 
-    abundances = create_abund_dict(
+    mass_fractions = create_abund_dict(
         abund_in,
         rt_object.line_species,
+        rt_object.cloud_species,
         chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
@@ -1279,38 +1171,9 @@ def calc_spectrum_clouds(
 
     # Optionally plot the cloud properties
 
-    if (
-        plotting
-        and Kzz_use is not None
-        and (
-            rt_object.wlen_bords_micron[0] != 0.5
-            and rt_object.wlen_bords_micron[1] != 30.0
-        )
-    ):
-        if "CO_all_iso" in abundances:
-            plt.plot(abundances["CO_all_iso"], pressure, label="CO")
-        if "CO_all_iso_HITEMP" in abundances:
-            plt.plot(abundances["CO_all_iso_HITEMP"], pressure, label="CO")
-        if "CO_all_iso_Chubb" in abundances:
-            plt.plot(abundances["CO_all_iso_Chubb"], pressure, label="CO")
-        if "CH4" in abundances:
-            plt.plot(abundances["CH4"], pressure, label="CH4")
-        if "H2O" in abundances:
-            plt.plot(abundances["H2O"], pressure, label="H2O")
-        if "H2O_HITEMP" in abundances:
-            plt.plot(abundances["H2O_HITEMP"], pressure, label="H2O")
-        if "Na" in abundances:
-            plt.plot(abundances["Na"], pressure, label="Na")
-        if "K" in abundances:
-            plt.plot(abundances["K"], pressure, label="K")
-        if "Na_allard" in abundances:
-            plt.plot(abundances["Na_allard"], pressure, label="Na")
-        if "K_allard" in abundances:
-            plt.plot(abundances["K_allard"], pressure, label="K")
-        if "Na_burrows" in abundances:
-            plt.plot(abundances["Na_burrows"], pressure, label="Na")
-        if "K_burrows" in abundances:
-            plt.plot(abundances["K_burrows"], pressure, label="K")
+    if plotting and Kzz_use is not None:
+        for key, value in mass_fractions.items():
+            plt.plot(value, pressure, label=key)
         plt.xlim(1e-10, 1.0)
         plt.ylim(pressure[-1], pressure[0])
         plt.yscale("log")
@@ -1327,7 +1190,7 @@ def calc_spectrum_clouds(
 
         for item in log_x_base:
             plt.axhline(
-                p_base[f"{item}(c)"], label=f"Cloud deck {item}", ls="--", color="black"
+                p_base[f"{item}"], label=f"Cloud deck {item}", ls="--", color="black"
             )
 
         plt.yscale("log")
@@ -1337,10 +1200,10 @@ def calc_spectrum_clouds(
         plt.clf()
 
         for item in log_x_base:
-            plt.plot(abundances[f"{item}(c)"], pressure)
-            plt.axhline(p_base[f"{item}(c)"])
+            plt.plot(mass_fractions[f"{item}"], pressure)
+            plt.axhline(p_base[f"{item}"])
             plt.yscale("log")
-            if np.count_nonzero(abundances[f"{item}(c)"]) > 0:
+            if np.count_nonzero(mass_fractions[f"{item}"]) > 0:
                 plt.xscale("log")
             plt.ylim(1e3, 1e-6)
             plt.xlim(1e-10, 1.0)
@@ -1348,7 +1211,7 @@ def calc_spectrum_clouds(
             if "fsed" in cloud_dict:
                 fsed = cloud_dict["fsed"]
             else:
-                fsed = cloud_dict[f"fsed_{item}(c)"]
+                fsed = cloud_dict[f"fsed_{item}"]
             log_kzz = cloud_dict["log_kzz"]
             plt.title(
                 f"fsed = {fsed:.2f}, log(Kzz) = {log_kzz:.2f}, "
@@ -1356,10 +1219,6 @@ def calc_spectrum_clouds(
             )
             plt.savefig(f"{item.lower()}_clouds.png", bbox_inches="tight")
             plt.clf()
-
-    # Turn clouds off
-    # abundances['MgSiO3(c)'] = np.zeros_like(pressure)
-    # abundances['Fe(c)'] = np.zeros_like(pressure)
 
     # Reinitiate the pressure layers after make_half_pressure_better
     if pressure_grid == "clouds":
@@ -1516,27 +1375,28 @@ def calc_spectrum_clouds(
         kappa_scat = None
 
     # Calculate the emission spectrum
+    # TODO make cloud_wlen work again
 
-    rt_object.calc_flux(
-        temperature,
-        abundances,
-        10.0**log_g,
-        mmw,
-        sigma_lnorm=sigma_lnorm,
-        Kzz=Kzz_use,
-        fsed=fseds,
-        radius=None,
-        contribution=contribution,
-        gray_opacity=None,
-        Pcloud=None,
-        kappa_zero=None,
-        gamma_scat=None,
-        add_cloud_scat_as_abs=False,
-        hack_cloud_photospheric_tau=tau_cloud,
-        give_absorption_opacity=kappa_abs,
-        give_scattering_opacity=kappa_scat,
-        cloud_wlen=cloud_wavel,
+    rad_wavel, rad_flux, extra_out = rt_object.calculate_flux(
+        temperatures=temperature,
+        mass_fractions=mass_fractions,
+        mean_molar_masses=mmw,
+        reference_gravity=10.0**log_g,
+        cloud_particle_radius_distribution_std=sigma_lnorm,
+        eddy_diffusion_coefficients=Kzz_use,
+        cloud_f_sed=fseds,
+        cloud_photosphere_median_optical_depth=tau_cloud,
+        additional_absorption_opacities_function=kappa_abs,
+        additional_scattering_opacities_function=kappa_scat,
+        # cloud_wlen=cloud_wavel,
+        return_contribution=contribution,
+        return_opacities=return_opacities,
     )
+
+    # if rt_object.flux is None:
+    #     rad_wavel = None
+    #     rad_flux = None
+    #     extra_out = None
 
     # if (
     #     hasattr(rt_object, "scaling_physicality")
@@ -1548,52 +1408,6 @@ def calc_spectrum_clouds(
     #     f_lambda = None
     #     contr_em = None
     #
-    # else:
-    #     wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-    #
-    #     # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-    #     f_lambda = 1e4 * rt_object.flux
-    #
-    #     # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-    #     f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-    #
-    #     # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-    #     f_lambda *= 1e-6
-    #
-    #     # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-    #     f_lambda *= 1e-7
-    #
-    #     # Optionally return the emission contribution
-    #     if contribution:
-    #         contr_em = rt_object.contr_em
-    #     else:
-    #         contr_em = None
-
-    if rt_object.flux is None:
-        wavel = None
-        f_lambda = None
-        contr_em = None
-
-    else:
-        wavel = 1e6 * constants.LIGHT / rt_object.freq  # (um)
-
-        # (erg s-1 cm-2 Hz-1) -> (erg s-1 m-2 Hz-1)
-        f_lambda = 1e4 * rt_object.flux
-
-        # (erg s-1 m-2 Hz-1) -> (erg s-1 m-2 m-1)
-        f_lambda *= constants.LIGHT / (1e-6 * wavel) ** 2.0
-
-        # (erg s-1 m-2 m-1) -> (erg s-1 m-2 um-1)
-        f_lambda *= 1e-6
-
-        # (erg s-1 m-2 um-1) -> (W m-2 um-1)
-        f_lambda *= 1e-7
-
-        # Optionally return the emission contribution
-        if contribution:
-            contr_em = rt_object.contr_em
-        else:
-            contr_em = None
 
     # if plotting and Kzz_use is None and hasattr(rt_object, "continuum_opa"):
     #     plt.plot(wavel, rt_object.continuum_opa[:, 0], label="Total continuum opacity")
@@ -1614,11 +1428,13 @@ def calc_spectrum_clouds(
     #     plt.savefig("continuum_opacity.png", bbox_inches="tight")
     #     plt.clf()
 
-    return wavel, f_lambda, contr_em, mmw
+    # Return wavelength (um), flux (W m-2 um-1), and extra output
+
+    return 1e4 * rad_wavel, 1e-7 * rad_flux, extra_out, mmw
 
 
 @typechecked
-def mass_fractions(
+def mass_frac_dict(
     log_x_abund: Dict[str, float],
     line_species: List[str],
     abund_nodes: Optional[int] = None,
@@ -1733,7 +1549,7 @@ def calc_metal_ratio(
 
     # Create a dictionary with all mass fractions
 
-    abund = mass_fractions(log_x_abund, line_species, abund_nodes=None)
+    abund = mass_frac_dict(log_x_abund, line_species, abund_nodes=None)
 
     # Calculate the mean molecular weight from the input mass fractions
 
@@ -1860,7 +1676,7 @@ def potassium_abundance(
     masses = atomic_masses()
 
     # Create a dictionary with all mass fractions
-    x_abund = mass_fractions(log_x_abund, line_species, abund_nodes)
+    x_abund = mass_frac_dict(log_x_abund, line_species, abund_nodes)
 
     if abund_nodes is None:
         # Calculate mean molecular weight from the mass fractions
@@ -1954,14 +1770,21 @@ def log_x_cloud_base(
         instead of Na2S(c)).
     """
 
+    from petitRADTRANS.chemistry.utils import simplify_species_list
+
     log_x_base = {}
 
-    for item in cloud_fractions:
+    # cloud_simple = simplify_species_list(cloud_fractions.keys())
+
+    for key, value in cloud_fractions.items():
+        # Simplify cloud species name
+        cloud_simple = simplify_species_list([key])
+
         # Mass fraction
-        x_cloud = cloud_mass_fraction(f"{item[:-3]}", metallicity, c_o_ratio)
+        x_cloud = cloud_mass_fraction(cloud_simple[0], metallicity, c_o_ratio)
 
         # Log10 of the mass fraction at the cloud base
-        log_x_base[f"{item[:-3]}"] = np.log10(10.0 ** cloud_fractions[item] * x_cloud)
+        log_x_base[f"{key}"] = np.log10(10.0**value * x_cloud)
 
     return log_x_base
 
@@ -2256,8 +2079,12 @@ def find_cloud_deck(
         Pressure (bar) at the base of the cloud deck.
     """
 
+    from petitRADTRANS.chemistry.utils import simplify_species_list
+
+    cloud_simple = simplify_species_list([composition])
+
     Tcond_on_input_grid = get_condensation_curve(
-        composition=composition,
+        composition=cloud_simple[0],
         press=press,
         metallicity=metallicity,
         c_o_ratio=c_o_ratio,
@@ -2367,7 +2194,7 @@ def scale_cloud_abund(
 
     # Get the pressure (bar) of the cloud base
     p_base = find_cloud_deck(
-        composition[:-3],
+        composition,
         pressure,
         temperature,
         params["metallicity"],
@@ -2383,7 +2210,7 @@ def scale_cloud_abund(
     # Set the cloud abundances by scaling
     # from the base with the f_sed parameter
     abund_in[composition][pressure < p_base] = (
-        10.0 ** log_x_base[composition[:-3]]
+        10.0 ** log_x_base[composition]
         * (pressure[pressure <= p_base] / p_base) ** params["fsed"]
     )
 
@@ -2393,11 +2220,12 @@ def scale_cloud_abund(
     else:
         indices = None
 
-    # Update the abundance dictionary
+    # Create the dictionary with mass fractions
 
-    abundances = create_abund_dict(
+    mass_fractions = create_abund_dict(
         abund_in,
         rt_object.line_species,
+        rt_object.cloud_species,
         chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
@@ -2450,7 +2278,7 @@ def scale_cloud_abund(
     # Calculate the cloud opacities for
     # the defined atmospheric structure
     rt_object.calc_cloud_opacity(
-        abundances,
+        mass_fractions,
         mmw_select,
         10.0 ** params["logg"],
         params["sigma_lnorm"],
@@ -2916,22 +2744,26 @@ def quench_pressure(
     co_array = np.full(pressure.shape[0], c_o_ratio)
     feh_array = np.full(pressure.shape[0], metallicity)
 
-    if "poor_mans_nonequ_chem" in sys.modules:
-        from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-    else:
-        from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-            interpol_abundances,
-        )
+    from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+        PreCalculatedEquilibriumChemistryTable,
+    )
 
-    abund_eq = interpol_abundances(
-        co_array, feh_array, temperature, pressure, Pquench_carbon=None
+    eq_chem = PreCalculatedEquilibriumChemistryTable()
+
+    _, mmw, _ = eq_chem.interpolate_mass_fractions(
+        co_array,
+        feh_array,
+        temperature,
+        pressure,
+        carbon_pressure_quench=None,
+        full=True,
     )
 
     # Surface gravity (m s-2)
     gravity = 1e-2 * 10.0**log_g
 
     # Mean molecular weight (kg)
-    mmw = abund_eq["MMW"] * constants.ATOMIC_MASS
+    mmw *= constants.ATOMIC_MASS
 
     # Pressure scale height (m)
     h_scale = constants.BOLTZMANN * temperature / (mmw * gravity)

@@ -293,7 +293,7 @@ class AtmosphericRetrieval:
 
         # Copy the cloud species into a new list because the values will be adjusted by Radtrans
 
-        self.cloud_species_full = self.cloud_species.copy()
+        # self.cloud_species_full = self.cloud_species.copy()
 
         # Get photometric data
 
@@ -439,6 +439,7 @@ class AtmosphericRetrieval:
         self.cube_index = None
         self.rt_object = None
         self.lowres_radtrans = None
+        self.eq_chem = None
 
         # Weighting of the photometric and spectroscopic data
 
@@ -491,12 +492,11 @@ class AtmosphericRetrieval:
         rt_object = Radtrans(
             line_species=self.line_species,
             rayleigh_species=["H2", "He"],
-            cloud_species=self.cloud_species_full.copy(),
-            continuum_opacities=["H2-H2", "H2-He"],
-            wlen_bords_micron=(0.1, 251.0),
-            mode="c-k",
-            test_ck_shuffle_comp=self.scattering,
-            do_scat_emis=self.scattering,
+            cloud_species=self.cloud_species,
+            gas_continuum_contributors=["H2-H2", "H2-He"],
+            wavelength_boundaries=(0.1, 251.0),
+            line_opacity_mode="c-k",
+            scattering_in_emission=self.scattering,
         )
 
         mol_masses = {}
@@ -634,11 +634,11 @@ class AtmosphericRetrieval:
         # Cloud parameters
 
         if "log_kappa_0" in bounds:
-            inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+            inspect_prt = inspect.getfullargspec(rt_object.calculate_flux)
 
             if "give_absorption_opacity" not in inspect_prt.args:
                 raise RuntimeError(
-                    "The Radtrans.calc_flux method "
+                    "The Radtrans.calculate_flux method "
                     "from petitRADTRANS does not have "
                     "the give_absorption_opacity "
                     "parameter. Probably you are "
@@ -672,11 +672,11 @@ class AtmosphericRetrieval:
                 self.parameters.append("lambda_ray")
 
         elif "log_kappa_gray" in bounds:
-            inspect_prt = inspect.getfullargspec(rt_object.calc_flux)
+            inspect_prt = inspect.getfullargspec(rt_object.calculate_flux)
 
             if "give_absorption_opacity" not in inspect_prt.args:
                 raise RuntimeError(
-                    "The Radtrans.calc_flux method "
+                    "The Radtrans.calculate_flux method "
                     "from petitRADTRANS does not have "
                     "the give_absorption_opacity "
                     "parameter. Probably you are "
@@ -705,14 +705,12 @@ class AtmosphericRetrieval:
                 if not self.global_fsed:
                     self.parameters.append(f"fsed_{item}")
 
-                cloud_lower = item[:-3].lower()
-
-                if f"{cloud_lower}_tau" in bounds:
-                    self.parameters.append(f"{cloud_lower}_tau")
+                if f"{item}_tau" in bounds:
+                    self.parameters.append(f"{item}_tau")
 
                 elif "log_tau_cloud" not in bounds:
                     if self.chemistry == "equilibrium":
-                        self.parameters.append(f"{cloud_lower}_fraction")
+                        self.parameters.append(f"{item}_fraction")
 
                     elif self.chemistry == "free":
                         self.parameters.append(item)
@@ -724,8 +722,8 @@ class AtmosphericRetrieval:
 
             if len(self.cloud_species) > 1:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = item[:-3].lower()
-                    cloud_2 = self.cloud_species[0][:-3].lower()
+                    cloud_1 = item
+                    cloud_2 = self.cloud_species[0]
 
                     self.parameters.append(f"{cloud_1}_{cloud_2}_ratio")
 
@@ -799,7 +797,7 @@ class AtmosphericRetrieval:
 
         # List all parameters
 
-        print(f"Fitting {len(self.parameters)} parameters:")
+        print(f"\nFitting {len(self.parameters)} parameters:")
 
         for item in self.parameters:
             print(f"   - {item}")
@@ -1201,8 +1199,8 @@ class AtmosphericRetrieval:
 
             if "log_tau_cloud" in bounds:
                 for item in self.cloud_species[1:]:
-                    cloud_1 = item[:-3].lower()
-                    cloud_2 = self.cloud_species[0][:-3].lower()
+                    cloud_1 = item
+                    cloud_2 = self.cloud_species[0]
 
                     mass_ratio = (
                         bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
@@ -1560,8 +1558,8 @@ class AtmosphericRetrieval:
 
                 if len(self.cloud_species) > 1:
                     for item in self.cloud_species[1:]:
-                        cloud_1 = item[:-3].lower()
-                        cloud_2 = self.cloud_species[0][:-3].lower()
+                        cloud_1 = item
+                        cloud_2 = self.cloud_species[0]
 
                         mass_ratio = (
                             bounds[f"{cloud_1}_{cloud_2}_ratio"][0]
@@ -1580,33 +1578,31 @@ class AtmosphericRetrieval:
                 # from elemental abundances
                 # (see Eq. 3 in Mollière et al. 2020)
 
-                for item in self.cloud_species_full:
-                    cloud_lower = item[:-6].lower()
+                for item in self.cloud_species:
+                    if f"{item}_fraction" in bounds:
+                        cloud_bounds = bounds[f"{item}_fraction"]
 
-                    if f"{cloud_lower}_fraction" in bounds:
-                        cloud_bounds = bounds[f"{cloud_lower}_fraction"]
-
-                        cube[cube_index[f"{cloud_lower}_fraction"]] = (
+                        cube[cube_index[f"{item}_fraction"]] = (
                             cloud_bounds[0]
                             + (cloud_bounds[1] - cloud_bounds[0])
-                            * cube[cube_index[f"{cloud_lower}_fraction"]]
+                            * cube[cube_index[f"{item}_fraction"]]
                         )
 
-                    elif f"{cloud_lower}_tau" in bounds:
-                        cloud_bounds = bounds[f"{cloud_lower}_tau"]
+                    elif f"{item}_tau" in bounds:
+                        cloud_bounds = bounds[f"{item}_tau"]
 
-                        cube[cube_index[f"{cloud_lower}_tau"]] = (
+                        cube[cube_index[f"{item}_tau"]] = (
                             cloud_bounds[0]
                             + (cloud_bounds[1] - cloud_bounds[0])
-                            * cube[cube_index[f"{cloud_lower}_tau"]]
+                            * cube[cube_index[f"{item}_tau"]]
                         )
 
                     else:
                         # Default: 0.05 - 1.
-                        cube[cube_index[f"{cloud_lower}_fraction"]] = (
+                        cube[cube_index[f"{item}_fraction"]] = (
                             np.log10(0.05)
                             + (np.log10(1.0) - np.log10(0.05))
-                            * cube[cube_index[f"{cloud_lower}_fraction"]]
+                            * cube[cube_index[f"{item}_fraction"]]
                         )
 
         # Add flux scaling parameter if the boundaries are provided
@@ -1761,14 +1757,7 @@ class AtmosphericRetrieval:
             Sum of the logarithm of the prior and likelihood.
         """
 
-        if "poor_mans_nonequ_chem" in sys.modules:
-            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-        else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
-
-        from petitRADTRANS.retrieval.rebin_give_width import rebin_give_width
+        from petitRADTRANS.fortran_rebin import fortran_rebin
 
         # Initiate the logarithm of the prior and likelihood
 
@@ -1843,7 +1832,7 @@ class AtmosphericRetrieval:
         calc_tau_cloud = False
 
         for item in self.cloud_species:
-            if item[:-3].lower() + "_tau" in bounds:
+            if f"{item}_tau" in bounds:
                 calc_tau_cloud = True
 
         # Read the P-T smoothing parameter or use
@@ -1943,77 +1932,6 @@ class AtmosphericRetrieval:
         #     # Maximum pressure (bar) for the radiative-convective boundary
         #     return -np.inf
 
-        # Enforce convective adiabat
-
-        # if self.plotting:
-        #     plt.plot(temp, self.pressure, "-", lw=1.0)
-        #
-        # if self.pt_profile == "monotonic":
-        #     ab = interpol_abundances(
-        #         np.full(temp.shape[0], c_o_ratio),
-        #         np.full(temp.shape[0], metallicity),
-        #         temp,
-        #         self.pressure,
-        #     )
-        #
-        #     nabla_ad = ab["nabla_ad"]
-        #
-        #     # Convert pressures from bar to cgs units
-        #     press_cgs = self.pressure * 1e6
-        #
-        #     # Calculate the current, radiative temperature gradient
-        #     nab_rad = np.diff(np.log(temp)) / np.diff(np.log(press_cgs))
-        #
-        #     # Extend to array of same length as pressure structure
-        #     nabla_rad = np.ones_like(temp)
-        #     nabla_rad[0] = nab_rad[0]
-        #     nabla_rad[-1] = nab_rad[-1]
-        #     nabla_rad[1:-1] = (nab_rad[1:] + nab_rad[:-1]) / 2.0
-        #
-        #     # Where is the atmosphere convectively unstable?
-        #     conv_index = nabla_rad > nabla_ad
-        #
-        #     tfinal = None
-        #
-        #     for i in range(10):
-        #         if i == 0:
-        #             t_take = copy.copy(temp)
-        #         else:
-        #             t_take = copy.copy(tfinal)
-        #
-        #         ab = interpol_abundances(
-        #             np.full(t_take.shape[0], c_o_ratio),
-        #             np.full(t_take.shape[0], metallicity),
-        #             t_take,
-        #             self.pressure,
-        #         )
-        #
-        #         nabla_ad = ab["nabla_ad"]
-        #
-        #         # Calculate the average nabla_ad between the layers
-        #         nabla_ad_mean = nabla_ad
-        #         nabla_ad_mean[1:] = (nabla_ad[1:] + nabla_ad[:-1]) / 2.0
-        #
-        #         # What are the increments in temperature due to convection
-        #         tnew = nabla_ad_mean[conv_index] * np.mean(np.diff(np.log(press_cgs)))
-        #
-        #         # What is the last radiative temperature?
-        #         tstart = np.log(t_take[~conv_index][-1])
-        #
-        #         # Integrate and translate to temperature
-        #         # from log(temperature)
-        #         tnew = np.exp(np.cumsum(tnew) + tstart)
-        #
-        #         # Add upper radiative and lower covective
-        #         # part into one single array
-        #         tfinal = copy.copy(t_take)
-        #         tfinal[conv_index] = tnew
-        #
-        #         if np.max(np.abs(t_take - tfinal) / t_take) < 0.01:
-        #             break
-        #
-        #     temp = copy.copy(tfinal)
-
         if self.plotting:
             plt.plot(temp, self.pressure, "-")
             plt.yscale("log")
@@ -2035,16 +1953,14 @@ class AtmosphericRetrieval:
                 p_quench = None
 
             # Interpolate the abundances, following chemical equilibrium
-            abund_in = interpol_abundances(
+            abund_in, mmw, _ = self.eq_chem.interpolate_mass_fractions(
                 np.full(self.pressure.size, cube[cube_index["c_o_ratio"]]),
                 np.full(self.pressure.size, cube[cube_index["metallicity"]]),
                 temp,
                 self.pressure,
-                Pquench_carbon=p_quench,
+                carbon_pressure_quench=p_quench,
+                full=True,
             )
-
-            # Extract the mean molecular weight
-            mmw = abund_in["MMW"]
 
         # Check for isothermal regions
 
@@ -2131,12 +2047,10 @@ class AtmosphericRetrieval:
                 cloud_fractions = {}
 
                 for item in self.cloud_species:
-                    if f"{item[:-3].lower()}_fraction" in self.parameters:
-                        cloud_fractions[item] = cube[
-                            cube_index[f"{item[:-3].lower()}_fraction"]
-                        ]
+                    if f"{item}_fraction" in self.parameters:
+                        cloud_fractions[item] = cube[cube_index[f"{item}_fraction"]]
 
-                    elif f"{item[:-3].lower()}_tau" in self.parameters:
+                    elif f"{item}_tau" in self.parameters:
                         params = cube_to_dict(cube, cube_index)
 
                         cloud_fractions[item] = scale_cloud_abund(
@@ -2148,7 +2062,7 @@ class AtmosphericRetrieval:
                             self.chemistry,
                             abund_in,
                             item,
-                            params[f"{item[:-3].lower()}_tau"],
+                            params[f"{item}_tau"],
                             pressure_grid=self.pressure_grid,
                         )
 
@@ -2165,8 +2079,8 @@ class AtmosphericRetrieval:
                             cloud_fractions[item] = 0.0
 
                         else:
-                            cloud_1 = item[:-3].lower()
-                            cloud_2 = self.cloud_species[0][:-3].lower()
+                            cloud_1 = item
+                            cloud_2 = self.cloud_species[0]
 
                             cloud_fractions[item] = cube[
                                 cube_index[f"{cloud_1}_{cloud_2}_ratio"]
@@ -2188,20 +2102,20 @@ class AtmosphericRetrieval:
 
                     for i, item in enumerate(self.cloud_species):
                         if i == 0:
-                            log_x_base[item[:-3]] = 0.0
+                            log_x_base[item] = 0.0
 
                         else:
-                            cloud_1 = item[:-3].lower()
-                            cloud_2 = self.cloud_species[0][:-3].lower()
+                            cloud_1 = item
+                            cloud_2 = self.cloud_species[0]
 
-                            log_x_base[item[:-3]] = cube[
+                            log_x_base[item] = cube[
                                 cube_index[f"{cloud_1}_{cloud_2}_ratio"]
                             ]
 
                 else:
                     log_x_base = {}
                     for item in self.cloud_species:
-                        log_x_base[item[:-3]] = cube[cube_index[item]]
+                        log_x_base[item] = cube[cube_index[item]]
 
             # Create dictionary with cloud parameters
             cloud_param = [
@@ -2315,6 +2229,7 @@ class AtmosphericRetrieval:
                     plotting=self.plotting,
                     contribution=False,
                     tau_cloud=tau_cloud,
+                    eq_chem=self.eq_chem,
                 )
 
                 if wlen_lowres is None and flux_lowres is None:
@@ -2375,19 +2290,14 @@ class AtmosphericRetrieval:
                         n_press = lowres_radtrans.press.size
 
                         # Interpolate abundances to get MMW and nabla_ad
-                        abund_test = interpol_abundances(
+                        _, mmw, nabla_ad = self.eq_chem.interpolate_mass_fractions(
                             np.full(n_press, cube[cube_index["c_o_ratio"]]),
                             np.full(n_press, cube[cube_index["metallicity"]]),
                             lowres_radtrans.temp,
                             lowres_radtrans.press * 1e-6,  # (bar)
-                            Pquench_carbon=p_quench,
+                            carbon_pressure_quench=p_quench,
+                            full=True,
                         )
-
-                        # Mean molecular weight
-                        mmw = abund_test["MMW"]
-
-                        # Adiabatic temperature gradient
-                        nabla_ad = abund_test["nabla_ad"]
 
                         # Pressure (Ba) -> (Pa)
                         press_pa = 1e-1 * lowres_radtrans.press
@@ -2508,6 +2418,7 @@ class AtmosphericRetrieval:
                     plotting=self.plotting,
                     contribution=False,
                     tau_cloud=tau_cloud,
+                    eq_chem=self.eq_chem,
                 )
 
                 (
@@ -2533,6 +2444,7 @@ class AtmosphericRetrieval:
                     plotting=self.plotting,
                     contribution=False,
                     tau_cloud=tau_cloud,
+                    eq_chem=self.eq_chem,
                 )
 
                 flux_lambda = (
@@ -2564,6 +2476,7 @@ class AtmosphericRetrieval:
                     plotting=self.plotting,
                     contribution=False,
                     tau_cloud=tau_cloud,
+                    eq_chem=self.eq_chem,
                 )
 
             if wlen_micron is None and flux_lambda is None:
@@ -2675,6 +2588,7 @@ class AtmosphericRetrieval:
                     plotting=self.plotting,
                     contribution=False,
                     tau_cloud=tau_cloud,
+                    eq_chem=self.eq_chem,
                 )
 
                 if ccf_wavel[item] is None and ccf_flux[item] is None:
@@ -2699,6 +2613,7 @@ class AtmosphericRetrieval:
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     contribution=False,
+                    eq_chem=self.eq_chem,
                 )
 
                 # Calculate clear spectra for high-resolution data (i.e. line-by-line)
@@ -2725,6 +2640,7 @@ class AtmosphericRetrieval:
                         abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         contribution=False,
+                        eq_chem=self.eq_chem,
                     )
 
             elif self.chemistry == "free":
@@ -2744,6 +2660,7 @@ class AtmosphericRetrieval:
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
                     contribution=False,
+                    eq_chem=self.eq_chem,
                 )
 
                 # Calculate clear spectra for high-resolution data (i.e. line-by-line)
@@ -2781,6 +2698,7 @@ class AtmosphericRetrieval:
                         abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
                         contribution=False,
+                        eq_chem=self.eq_chem,
                     )
 
         end = time.time()
@@ -2910,7 +2828,7 @@ class AtmosphericRetrieval:
 
             # Resample to the observation
 
-            flux_rebinned = rebin_give_width(
+            flux_rebinned = fortran_rebin.rebin_spectrum_bin(
                 model_wavel, flux_smooth, data_wavel, self.spectrum[spec_item][4]
             )
 
@@ -3531,7 +3449,7 @@ class AtmosphericRetrieval:
         # from petitRADTRANS.fort_spec import feautrier_rad_trans
         # from petitRADTRANS.fort_spec import feautrier_pt_it
 
-        print(" [DONE]")
+        print(" [DONE]\n")
 
         # List with spectra for which the covariances
         # are modeled with a Gaussian process
@@ -3601,21 +3519,30 @@ class AtmosphericRetrieval:
                     "line species will not be downsampled."
                 )
 
+        # Pressure array for Radtrans
+
+        if self.pressure_grid in ["standard", "manual"]:
+            radtrans_press = np.copy(self.pressure)
+
+        elif self.pressure_grid == "smaller":
+            radtrans_press = self.pressure[::3]
+
+        elif self.pressure_grid == "clouds":
+            radtrans_press = self.pressure[::24]
+
         # Create an instance of Ratrans
         # The names in self.cloud_species are changed after initiating Radtrans
 
-        print("Setting up petitRADTRANS...")
-
         rt_object = Radtrans(
+            pressures=radtrans_press,
             line_species=self.line_species,
             rayleigh_species=["H2", "He"],
             cloud_species=self.cloud_species,
-            continuum_opacities=["H2-H2", "H2-He"],
-            wlen_bords_micron=self.wavel_range,
-            mode=self.res_mode,
-            test_ck_shuffle_comp=self.scattering,
-            do_scat_emis=self.scattering,
-            lbl_opacity_sampling=self.lbl_opacity_sampling,
+            gas_continuum_contributors=["H2-H2", "H2-He"],
+            wavelength_boundaries=self.wavel_range,
+            line_opacity_mode=self.res_mode,
+            scattering_in_emission=self.scattering,
+            line_by_line_opacity_sampling=self.lbl_opacity_sampling,
         )
 
         # Create list with parameters for MultiNest
@@ -3676,17 +3603,15 @@ class AtmosphericRetrieval:
                 1.05 * self.spectrum[item][0][-1, 0],
             )
 
-            ccf_cloud_species = self.cloud_species_full.copy()
-
             self.ccf_radtrans[item] = Radtrans(
+                pressures=radtrans_press,
                 line_species=self.ccf_species,
                 rayleigh_species=["H2", "He"],
-                cloud_species=ccf_cloud_species,
-                continuum_opacities=["H2-H2", "H2-He"],
-                wlen_bords_micron=ccf_wavel_range,
-                mode="lbl",
-                test_ck_shuffle_comp=self.scattering,
-                do_scat_emis=self.scattering,
+                cloud_species=self.cloud_species,
+                gas_continuum_contributors=["H2-H2", "H2-He"],
+                wavelength_boundaries=ccf_wavel_range,
+                line_opacity_mode="lbl",
+                scattering_in_emission=self.scattering,
             )
 
         # Create instance of Radtrans with (very) low-resolution
@@ -3707,68 +3632,68 @@ class AtmosphericRetrieval:
                 line_species_low_res.append(item + "_R_10")
 
             lowres_radtrans = Radtrans(
+                pressures=radtrans_press,
                 line_species=line_species_low_res,
                 rayleigh_species=["H2", "He"],
-                cloud_species=self.cloud_species_full.copy(),
-                continuum_opacities=["H2-H2", "H2-He"],
-                wlen_bords_micron=(0.5, 30.0),
-                mode="c-k",
-                test_ck_shuffle_comp=self.scattering,
-                do_scat_emis=self.scattering,
+                cloud_species=self.cloud_species,
+                gas_continuum_contributors=["H2-H2", "H2-He"],
+                wavelength_boundaries=(0.5, 30.0),
+                line_opacity_mode="c-k",
+                scattering_in_emission=self.scattering,
             )
 
         # Create the RT arrays
 
-        if self.pressure_grid == "standard":
-            print(
-                f"\nNumber of pressure levels used with the "
-                f"radiative transfer: {self.pressure.size}"
-            )
-
-            rt_object.setup_opa_structure(self.pressure)
-
-            for item in self.ccf_radtrans.values():
-                item.setup_opa_structure(self.pressure)
-
-            if self.check_flux is not None:
-                lowres_radtrans.setup_opa_structure(self.pressure)
-
-        elif self.pressure_grid == "smaller":
-            print(
-                f"\nNumber of pressure levels used with the "
-                f"radiative transfer: {self.pressure[::3].size}"
-            )
-
-            rt_object.setup_opa_structure(self.pressure[::3])
-
-            for item in self.ccf_radtrans.values():
-                item.setup_opa_structure(self.pressure[::3])
-
-            if self.check_flux is not None:
-                lowres_radtrans.setup_opa_structure(self.pressure[::3])
-
-        elif self.pressure_grid == "clouds":
-            if len(self.cloud_species) == 0:
-                raise ValueError(
-                    "Please select a different pressure_grid. Setting the argument "
-                    "to 'clouds' is only possible with the use of cloud species."
-                )
-
-            # The pressure structure is reinitiated after the
-            # refinement around the cloud deck so the current
-            # initializiation to 60 pressure points is not used
-            print(
-                "\nNumber of pressure levels used with the "
-                "radiative transfer: adaptive refinement"
-            )
-
-            rt_object.setup_opa_structure(self.pressure[::24])
-
-            for item in self.ccf_radtrans.values():
-                item.setup_opa_structure(self.pressure[::24])
-
-            if self.check_flux is not None:
-                lowres_radtrans.setup_opa_structure(self.pressure[::24])
+        # if self.pressure_grid == "standard":
+        #     print(
+        #         f"\nNumber of pressure levels used with the "
+        #         f"radiative transfer: {self.pressure.size}"
+        #     )
+        #
+        #     rt_object.setup_opa_structure(self.pressure)
+        #
+        #     for item in self.ccf_radtrans.values():
+        #         item.setup_opa_structure(self.pressure)
+        #
+        #     if self.check_flux is not None:
+        #         lowres_radtrans.setup_opa_structure(self.pressure)
+        #
+        # elif self.pressure_grid == "smaller":
+        #     print(
+        #         f"\nNumber of pressure levels used with the "
+        #         f"radiative transfer: {self.pressure[::3].size}"
+        #     )
+        #
+        #     rt_object.setup_opa_structure(self.pressure[::3])
+        #
+        #     for item in self.ccf_radtrans.values():
+        #         item.setup_opa_structure(self.pressure[::3])
+        #
+        #     if self.check_flux is not None:
+        #         lowres_radtrans.setup_opa_structure(self.pressure[::3])
+        #
+        # elif self.pressure_grid == "clouds":
+        #     if len(self.cloud_species) == 0:
+        #         raise ValueError(
+        #             "Please select a different pressure_grid. Setting the argument "
+        #             "to 'clouds' is only possible with the use of cloud species."
+        #         )
+        #
+        #     # The pressure structure is reinitiated after the
+        #     # refinement around the cloud deck so the current
+        #     # initializiation to 60 pressure points is not used
+        #     print(
+        #         "\nNumber of pressure levels used with the "
+        #         "radiative transfer: adaptive refinement"
+        #     )
+        #
+        #     rt_object.setup_opa_structure(self.pressure[::24])
+        #
+        #     for item in self.ccf_radtrans.values():
+        #         item.setup_opa_structure(self.pressure[::24])
+        #
+        #     if self.check_flux is not None:
+        #         lowres_radtrans.setup_opa_structure(self.pressure[::24])
 
         # Create the knot pressures for temperature profile
 
@@ -3807,7 +3732,7 @@ class AtmosphericRetrieval:
 
         radtrans_dict = {}
         radtrans_dict["line_species"] = self.line_species
-        radtrans_dict["cloud_species"] = self.cloud_species_full
+        radtrans_dict["cloud_species"] = self.cloud_species
         radtrans_dict["ccf_species"] = self.ccf_species
         radtrans_dict["res_mode"] = self.res_mode
         radtrans_dict["lbl_opacity_sampling"] = self.lbl_opacity_sampling
@@ -3838,6 +3763,18 @@ class AtmosphericRetrieval:
         self.cube_index = cube_index
         self.rt_object = rt_object
         self.lowres_radtrans = lowres_radtrans
+
+        # Create instance of PreCalculatedEquilibriumChemistryTable
+
+        if self.chemistry == "equilibrium":
+
+            from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+                PreCalculatedEquilibriumChemistryTable,
+            )
+
+            print()
+            self.eq_chem = PreCalculatedEquilibriumChemistryTable()
+            self.eq_chem.load()
 
     @typechecked
     def run_multinest(

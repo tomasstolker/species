@@ -1725,7 +1725,7 @@ def create_model_label(
                 "found in the dictionary of 'param_fmt'."
             )
 
-            value = f"{model_param[param_item]:{param_fmt[param_item]:.2f}}"
+            value = f"{model_param[param_item]:.2f}"
 
         else:
             continue

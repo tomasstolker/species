@@ -92,8 +92,6 @@ def plot_pt_profile(
     else:
         print(f"Plotting the P-T profiles: {output}...", end="", flush=True)
 
-    cloud_species = ["Fe(c)", "MgSiO3(c)", "Al2O3(c)", "Na2S(c)", "KCL(c)"]
-
     cloud_colors = [
         "tab:blue",
         "tab:orange",
@@ -537,8 +535,8 @@ def plot_pt_profile(
 
         elif box.attributes["quenching"] == "diffusion":
             p_quench = quench_pressure(
-                radtrans.rt_object.press,
-                radtrans.rt_object.temp,
+                radtrans.rt_object.pressures,
+                radtrans.rt_object.temperatures,
                 model_param["metallicity"],
                 model_param["c_o_ratio"],
                 model_param["logg"],
@@ -550,55 +548,58 @@ def plot_pt_profile(
 
         # Import interpol_abundances here because it is slow
 
-        if "poor_mans_nonequ_chem" in sys.modules:
-            from poor_mans_nonequ_chem.poor_mans_nonequ_chem import interpol_abundances
-        else:
-            from petitRADTRANS.poor_mans_nonequ_chem.poor_mans_nonequ_chem import (
-                interpol_abundances,
-            )
-
-        abund_in = interpol_abundances(
-            np.full(pressure.shape[0], model_param["c_o_ratio"]),
-            np.full(pressure.shape[0], model_param["metallicity"]),
-            temp,
-            pressure,
-            Pquench_carbon=p_quench,
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
         )
 
-        for item in cloud_species:
-            if f"{item[:-3].lower()}_tau" in model_param:
+        eq_chem = PreCalculatedEquilibriumChemistryTable()
+
+        abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
+            np.full(pressure.size, model_param["c_o_ratio"]),
+            np.full(pressure.size, model_param["metallicity"]),
+            temp,
+            pressure,
+            carbon_pressure_quench=p_quench,
+            full=True,
+        )
+
+        for cloud_item in radtrans.cloud_species:
+            if f"{cloud_item}_tau" in model_param:
                 # Calculate the scaled mass fraction of the clouds
-                model_param[f"{item[:-3].lower()}_fraction"] = scale_cloud_abund(
+                model_param[f"{cloud_item}_fraction"] = scale_cloud_abund(
                     model_param,
                     radtrans.rt_object,
                     pressure,
                     temp,
-                    abund_in["MMW"],
+                    mmw,
                     "equilibrium",
                     abund_in,
-                    item,
-                    model_param[f"{item[:-3].lower()}_tau"],
+                    cloud_item,
+                    model_param[f"{cloud_item}_tau"],
                     pressure_grid=radtrans.pressure_grid,
                 )
 
-        for cloud_item in cloud_species:
-            if cloud_item in radtrans.cloud_species:
-                cond_temp = get_condensation_curve(
-                    composition=cloud_item[:-3],
-                    press=pressure,
-                    metallicity=model_param["metallicity"],
-                    c_o_ratio=model_param["c_o_ratio"],
-                    mmw=np.mean(abund_in["MMW"]),
-                )
+        from petitRADTRANS.chemistry.utils import simplify_species_list
 
-                ax.plot(
-                    cond_temp,
-                    pressure,
-                    "--",
-                    lw=0.8,
-                    color=next(color_iter, "black"),
-                    zorder=2,
-                )
+        for cloud_item in radtrans.cloud_species:
+            cloud_simple = simplify_species_list([cloud_item])
+
+            cond_temp = get_condensation_curve(
+                composition=cloud_simple[0],
+                press=pressure,
+                metallicity=model_param["metallicity"],
+                c_o_ratio=model_param["c_o_ratio"],
+                mmw=np.mean(mmw),
+            )
+
+            ax.plot(
+                cond_temp,
+                pressure,
+                "--",
+                lw=0.8,
+                color=next(color_iter, "black"),
+                zorder=2,
+            )
 
     if box.attributes["chemistry"] == "free":
         # Remove these parameters otherwise ReadRadtrans.get_model()
@@ -616,7 +617,11 @@ def plot_pt_profile(
         )
 
         ax.plot(
-            contr_1d, 1e-6 * radtrans.rt_object.press, ls="--", lw=0.5, color="black"
+            contr_1d,
+            1e-6 * radtrans.rt_object.pressures,
+            ls="--",
+            lw=0.5,
+            color="black",
         )
 
         if extra_axis == "photosphere":
@@ -707,7 +712,9 @@ def plot_pt_profile(
             for i in range(photo_press.shape[0]):
                 # Interpolate the optical depth to
                 # the photosphere at tau = 2/3
-                press_interp = interp1d(optical_depth[i, :], radtrans.rt_object.press)
+                press_interp = interp1d(
+                    optical_depth[i, :], radtrans.rt_object.pressures
+                )
                 photo_press[i] = press_interp(2.0 / 3.0) * 1e-6  # cgs to (bar)
 
             ax2.plot(
@@ -763,7 +770,7 @@ def plot_pt_profile(
                 ax2.set_xlabel("Average particle radius (µm)", fontsize=13, va="bottom")
 
                 # Recalculate the best-fit model to update the r_g attribute of radtrans.rt_object
-                radtrans.get_model(model_param)
+                model_box = radtrans.get_model(model_param)
 
                 if offset is not None:
                     ax2.get_xaxis().set_label_coords(0.5, 1.0 + abs(offset[0]))
@@ -779,29 +786,29 @@ def plot_pt_profile(
 
             color_iter = iter(cloud_colors)
 
-            for cloud_item in cloud_species:
-                if cloud_item in radtrans.cloud_species:
-                    cloud_index = radtrans.rt_object.cloud_species.index(cloud_item)
+            for cloud_item in radtrans.cloud_species:
+                cloud_index = radtrans.rt_object.cloud_species.index(cloud_item)
 
-                    label = ""
-                    for char in cloud_item[:-3]:
-                        if char.isnumeric():
-                            label += f"$_{char}$"
-                        else:
-                            label += char
+                label = ""
+                for char in cloud_item:
+                    if char.isnumeric():
+                        label += f"$_{char}$"
+                    else:
+                        label += char
 
-                    if label == "KCL":
-                        label = "KCl"
+                if label == "KCL":
+                    label = "KCl"
 
-                    ax2.plot(
-                        # (cm) -> (um)
-                        radtrans.rt_object.r_g[:, cloud_index] * 1e4,
-                        # (Ba) -> (Bar)
-                        radtrans.rt_object.press * 1e-6,
-                        lw=0.8,
-                        color=next(color_iter),
-                        label=label,
-                    )
+                ax2.plot(
+                    # (cm) -> (um)
+                    model_box.extra_out["cloud_particles_mean_radii"][:, cloud_index]
+                    * 1e4,
+                    # (Ba) -> (Bar)
+                    radtrans.rt_object.pressures * 1e-6,
+                    lw=0.8,
+                    color=next(color_iter),
+                    label=label,
+                )
 
         if extra_axis is not None:
             ax2.legend(loc="upper right", frameon=False, fontsize=12.0)
@@ -883,16 +890,18 @@ def plot_opacities(
     ax7 = plt.subplot(gridsp[0, 4])
     ax8 = plt.subplot(gridsp[1, 4])
 
-    radtrans.get_model(model_param)
+    model_box = radtrans.get_model(model_param)
 
     # Line opacities
 
-    wavelength, opacity = radtrans.rt_object.get_opa(radtrans.rt_object.temp)
+    wavelength, opacity = radtrans.rt_object.__compute_opacities(
+        radtrans.rt_object.temperatures
+    )
 
     wavelength *= 1e4  # (um)
 
     opacity_line = np.zeros(
-        (radtrans.rt_object.freq.shape[0], radtrans.rt_object.press.shape[0])
+        (radtrans.rt_object.freq.shape[0], radtrans.rt_object.pressures.shape[0])
     )
 
     for item in opacity.values():
@@ -900,17 +909,11 @@ def plot_opacities(
 
     # Continuum opacities
 
-    opacity_cont_abs = radtrans.rt_object.continuum_opa
-    opacity_cont_scat = radtrans.rt_object.continuum_opa_scat
-    # opacity_cont_scat = radtrans.rt_object.continuum_opa_scat_emis
-    opacity_total = opacity_line + opacity_cont_abs + opacity_cont_scat
+    opacity_cont_abs = model_box.extra_out["cloud_absorption_opacities"]
+    opacity_cont_scat = model_box.extra_out["continuum_opacities_scattering"]
+    opacity_total = model_box.extra_out["opacities"]
 
     albedo = opacity_cont_scat / opacity_total
-
-    # if radtrans.scattering:
-    #     opacity_cont = radtrans.rt_object.continuum_opa_scat_emis
-    # else:
-    #     opacity_cont = radtrans.rt_object.continuum_opa_scat
 
     ax1.tick_params(
         axis="both",
@@ -1178,7 +1181,7 @@ def plot_opacities(
     # ax3.yaxis.set_minor_locator(LogLocator(base=1.))
     # ax4.yaxis.set_minor_locator(LogLocator(base=1.))
 
-    xx_grid, yy_grid = np.meshgrid(wavelength, 1e-6 * radtrans.rt_object.press)
+    xx_grid, yy_grid = np.meshgrid(wavelength, 1e-6 * radtrans.rt_object.pressures)
 
     fig_1 = ax1.pcolormesh(
         xx_grid,
@@ -1253,17 +1256,17 @@ def plot_opacities(
     ax6.set_xlim(wavelength[0], wavelength[-1])
 
     ax1.set_ylim(
-        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+        radtrans.rt_object.pressures[-1] * 1e-6, radtrans.rt_object.pressures[0] * 1e-6
     )
     ax2.set_ylim(
-        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+        radtrans.rt_object.pressures[-1] * 1e-6, radtrans.rt_object.pressures[0] * 1e-6
     )
 
     ax5.set_ylim(
-        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+        radtrans.rt_object.pressures[-1] * 1e-6, radtrans.rt_object.pressures[0] * 1e-6
     )
     ax6.set_ylim(
-        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+        radtrans.rt_object.pressures[-1] * 1e-6, radtrans.rt_object.pressures[0] * 1e-6
     )
 
     if offset is not None:
@@ -1356,9 +1359,9 @@ def plot_clouds(
     model_param = box.prob_sample
 
     if (
-        f"{composition.lower()}_fraction" not in model_param
+        f"{composition}_fraction" not in model_param
         and "log_tau_cloud" not in model_param
-        and f"{composition}(c)" not in model_param
+        and composition not in model_param
     ):
         raise ValueError(
             f"The mass fraction of the {composition} clouds is "
@@ -1381,10 +1384,12 @@ def plot_clouds(
     ax1 = plt.subplot(gridsp[0, 0])
     ax2 = plt.subplot(gridsp[0, 1])
 
-    radtrans.get_model(model_param)
+    model_box = radtrans.get_model(model_param)
 
-    cloud_index = radtrans.rt_object.cloud_species.index(f"{composition}(c)")
-    radius_g = radtrans.rt_object.r_g[:, cloud_index] * 1e4  # (cm) -> (um)
+    cloud_index = radtrans.rt_object.cloud_species.index(composition)
+    radius_g = (
+        model_box.extra_out["cloud_particles_mean_radii"][:, cloud_index] * 1e4
+    )  # (cm) -> (um)
     sigma_g = model_param["sigma_lnorm"]
 
     r_bins = np.logspace(-3.0, 3.0, 1000)
@@ -1457,7 +1462,7 @@ def plot_clouds(
         right=True,
     )
 
-    xx_grid, yy_grid = np.meshgrid(radii, 1e-6 * radtrans.rt_object.press)
+    xx_grid, yy_grid = np.meshgrid(radii, 1e-6 * radtrans.rt_object.pressures)
 
     mesh_fig = ax1.pcolormesh(
         xx_grid,
@@ -1473,10 +1478,12 @@ def plot_clouds(
     )
     cb.ax.set_ylabel("dn/dr", rotation=270, labelpad=20, fontsize=11)
 
-    for item in radtrans.rt_object.press * 1e-6:  # (bar)
+    for item in radtrans.rt_object.pressures * 1e-6:  # (bar)
         ax1.axhline(item, ls="-", lw=0.1, color="white")
 
-    for item in radtrans.rt_object.cloud_radii * 1e4:  # (um)
+    for item in (
+        radtrans.rt_object._clouds_loaded_opacities["particles_radii"] * 1e4
+    ):  # (um)
         ax1.axvline(item, ls="-", lw=0.1, color="white")
 
     ax1.text(
@@ -1495,7 +1502,7 @@ def plot_clouds(
 
     ax1.set_xlim(radii[0], radii[-1])
     ax1.set_ylim(
-        radtrans.rt_object.press[-1] * 1e-6, radtrans.rt_object.press[0] * 1e-6
+        radtrans.rt_object.pressures[-1] * 1e-6, radtrans.rt_object.pressures[0] * 1e-6
     )
 
     if offset is not None:
@@ -1583,7 +1590,7 @@ def plot_abundances(
 
     ax = plt.subplot(gridsp[0, 0])
 
-    radtrans.get_model(model_param)
+    model_box = radtrans.get_model(model_param)
 
     ax.tick_params(
         axis="both",
@@ -1625,7 +1632,7 @@ def plot_abundances(
 
         ax.plot(
             radtrans.rt_object.line_abundances[:, line_idx],
-            radtrans.rt_object.press * 1e-6,
+            radtrans.rt_object.pressures * 1e-6,
             lw=0.7,
             label=line_label,
         )
@@ -1638,7 +1645,8 @@ def plot_abundances(
 
     if ylim is None:
         ax.set_ylim(
-            1e-6 * radtrans.rt_object.press[-1], 1e-6 * radtrans.rt_object.press[0]
+            1e-6 * radtrans.rt_object.pressures[-1],
+            1e-6 * radtrans.rt_object.pressures[0],
         )
     else:
         ax.set_ylim(ylim[0], ylim[1])
