@@ -2050,6 +2050,14 @@ class FitModel:
                 if self.binary:
                     # Star 0
 
+                    param_0 = binary_to_single(param_dict, 0)
+
+                    model_flux_0 = self.modelspec[spec_idx].spectrum_interp(
+                        list(param_0.values())
+                    )[0]
+
+                    # Set rotational broadening
+
                     if "vsini" in self.modelpar:
                         rot_broad_0 = params[self.cube_index["vsini"]]
 
@@ -2076,13 +2084,7 @@ class FitModel:
                     else:
                         rad_vel_0 = None
 
-                    param_0 = binary_to_single(param_dict, 0)
-
-                    model_flux_0 = self.modelspec[spec_idx].spectrum_interp(
-                        list(param_0.values())
-                    )[0]
-
-                    # Apply extinction and flux scaling
+                    # Apply extinction, flux scaling, vsin(i), and RV
 
                     all_param_0 = binary_to_single(all_param, 0)
 
@@ -2097,6 +2099,14 @@ class FitModel:
                     )
 
                     # Star 1
+
+                    param_1 = binary_to_single(param_dict, 1)
+
+                    model_flux_1 = self.modelspec[spec_idx].spectrum_interp(
+                        list(param_1.values())
+                    )[0]
+
+                    # Set rotational broadening
 
                     if "vsini" in self.modelpar:
                         rot_broad_1 = params[self.cube_index["vsini"]]
@@ -2124,13 +2134,7 @@ class FitModel:
                     else:
                         rad_vel_1 = None
 
-                    param_1 = binary_to_single(param_dict, 1)
-
-                    model_flux_1 = self.modelspec[spec_idx].spectrum_interp(
-                        list(param_1.values())
-                    )[0]
-
-                    # Apply extinction and flux scaling
+                    # Apply extinction, flux scaling, vsin(i), and RV
 
                     all_param_1 = binary_to_single(all_param, 1)
 
@@ -2185,7 +2189,7 @@ class FitModel:
                         list(param_dict.values())
                     )[0]
 
-                    # Apply extinction and flux scaling
+                    # Apply extinction, flux scaling, vsin(i), and RV
 
                     model_flux = apply_obs(
                         model_param=all_param,

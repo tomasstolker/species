@@ -149,12 +149,12 @@
     "bt-nextgen-subsolar": {
         "parameters": ["teff", "logg", "feh"],
         "name": "BT-NextGen subsolar",
-        "file size": "1.5 GB",
+        "file size": "564 MB",
         "wavelength range": [0.1, 50],
-        "lambda/d_lambda": 4000,
+        "lambda/d_lambda": 2000,
         "teff range": [2600, 30000],
         "information": "[alpha/Fe] = 0.4",
-        "checksum": "130ff69900edd5441b9c4cee6f1b5d3f874f18345d63d21ec0a25096cac1f2bd"
+        "checksum": "54c193c90d2231a9b3c1567811988fbd770e57bef0b837ad31d77365aac20174"
     },
     "bt-settl": {
         "parameters": ["teff", "logg"],
@@ -315,7 +315,7 @@
         "teff range": [400, 1300],
         "reference": "Morley et al. (2012)",
         "url": "https://ui.adsabs.harvard.edu/abs/2012ApJ...756..172M",
-        "checksum": "6e79358d113a04202c0966029eda85e7913d2d7c8f57804a733c2333d89f1bc8"
+        "checksum": "89a45f46aecc3042171556b325468df4961a1b08eb71a0183aa824af7844e90d"
     },
     "petitcode-cool-clear": {
         "parameters": ["teff", "logg", "feh"],

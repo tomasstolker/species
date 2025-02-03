@@ -357,15 +357,15 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "rad_vel" in param:
         index = param.index("rad_vel")
-        param[index] = r"RV (km s$^{-1}$)"
+        param[index] = r"$v_\mathrm{r}$ (km s$^{-1}$)"
 
     if "rad_vel_0" in param:
         index = param.index("rad_vel_0")
-        param[index] = r"RV$_\mathrm{1}$ (km s$^{-1}$)"
+        param[index] = r"$v_\mathrm{r,1} (km s$^{-1}$)"
 
     if "rad_vel_1" in param:
         index = param.index("rad_vel_1")
-        param[index] = r"RV$_\mathrm{2}$ (km s$^{-1}$)"
+        param[index] = r"$v_\mathrm{r,2}$ (km s$^{-1}$)"
 
     if "log_lum_0" in param:
         index = param.index("log_lum_0")
@@ -748,13 +748,13 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
             item_name = item[7:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
+            param[i] = rf"$v_\mathrm{{r, {item_name}}}$ (km s$^{{-1}}$)"
 
         elif item[0:8] == "rad_vel_":
             item_name = item[8:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"RV$_\mathrm{{{item_name}}}$ (km s$^{{-1}}$)"
+            param[i] = rf"$v_\mathrm{{r, {item_name}}}$ (km s$^{{-1}}$)"
 
         elif item[0:6] == "vsini_":
             item_name = item[6:]
@@ -972,7 +972,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "line_vrad" in param:
         index = param.index("line_vrad")
-        param[index] = r"RV (km s$^{-1}$)"
+        param[index] = r"$v_\mathrm{r}$ (km s$^{-1}$)"
 
     if "log_kappa_0" in param:
         index = param.index("log_kappa_0")
@@ -1320,6 +1320,16 @@ def quantity_unit(
             quantity.append("flux_offset")
             unit.append(r"W m$^{-2}$ µm$^{-1}$")
             label.append(r"$b_\mathrm{flux}$")
+
+        elif item == "rad_vel":
+            quantity.append("rad_vel")
+            unit.append(r"km s$^{-1}$")
+            label.append(r"$v_\mathrm{r}$")
+
+        elif item == "vsini":
+            quantity.append("vsini")
+            unit.append(r"km s$^{-1}$")
+            label.append(r"$v\,\sin\,i$")
 
     return quantity, unit, label
 
@@ -1795,6 +1805,8 @@ def create_param_format(param_fmt: Optional[Dict[str, str]]) -> Dict[str, str]:
         "lognorm_ext",
         "powerlaw_ext",
         "log_flux_scaling",
+        "rad_vel",
+        "vsini",
     ]
 
     for param_item in param_add:

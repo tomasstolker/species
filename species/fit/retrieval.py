@@ -2159,7 +2159,7 @@ class AtmosphericRetrieval:
             if self.check_flux is not None:
                 # Pressure index at the radiative-convective boundary
                 # if conv_press is None:
-                #     i_conv = lowres_radtrans.press.size]
+                #     i_conv = lowres_radtrans.press.size
                 # else:
                 #     i_conv = np.argmax(conv_press < 1e-6 * lowres_radtrans.press)
 
@@ -2318,7 +2318,7 @@ class AtmosphericRetrieval:
                     ln_prior += -0.5 * f_bol.size * np.log(2.0 * np.pi * sigma_fbol**2)
 
                     # for i in range(i_conv):
-                    # for i in range(lowres_radtrans.press.size]):
+                    # for i in range(lowres_radtrans.press.size):
                     #     if not isclose(
                     #         f_bol_spec,
                     #         f_bol,
