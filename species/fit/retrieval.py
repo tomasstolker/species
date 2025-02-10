@@ -7,9 +7,7 @@ Bayesian inference can be done with
 or with `Dynesty <https://dynesty.readthedocs.io>`_.
 """
 
-# import copy
 import os
-import inspect
 import json
 import sys
 import time
@@ -1981,6 +1979,7 @@ class AtmosphericRetrieval:
                 cube[cube_index["c_o_ratio"]],
                 cube[cube_index["logg"]],
                 cube[cube_index["log_kzz"]],
+                self.eq_chem,
             )
 
         else:
@@ -2181,7 +2180,6 @@ class AtmosphericRetrieval:
                     log_x_base,
                     cloud_dict,
                     cube[cube_index["logg"]],
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2370,7 +2368,6 @@ class AtmosphericRetrieval:
                     log_x_base,
                     cloud_dict_1,
                     cube[cube_index["logg"]],
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2396,7 +2393,6 @@ class AtmosphericRetrieval:
                     log_x_base,
                     cloud_dict_2,
                     cube[cube_index["logg"]],
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2428,7 +2424,6 @@ class AtmosphericRetrieval:
                     log_x_base,
                     cloud_dict,
                     cube[cube_index["logg"]],
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2540,7 +2535,6 @@ class AtmosphericRetrieval:
                     log_x_base,
                     cloud_dict,
                     cube[cube_index["logg"]],
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2567,7 +2561,6 @@ class AtmosphericRetrieval:
                     cube[cube_index["metallicity"]],
                     p_quench,
                     None,
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2594,7 +2587,6 @@ class AtmosphericRetrieval:
                         cube[cube_index["metallicity"]],
                         p_quench,
                         None,
-                        chemistry=self.chemistry,
                         knot_press_abund=self.knot_press_abund,
                         abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
@@ -2614,7 +2606,6 @@ class AtmosphericRetrieval:
                     None,
                     None,
                     log_x_abund,
-                    chemistry=self.chemistry,
                     knot_press_abund=self.knot_press_abund,
                     abund_smooth=abund_smooth,
                     pressure_grid=self.pressure_grid,
@@ -2652,7 +2643,6 @@ class AtmosphericRetrieval:
                         None,
                         None,
                         log_x_ccf,
-                        chemistry=self.chemistry,
                         knot_press_abund=self.knot_press_abund,
                         abund_smooth=abund_smooth,
                         pressure_grid=self.pressure_grid,
@@ -3093,9 +3083,9 @@ class AtmosphericRetrieval:
 
                 - For example, ``bounds={'SPHERE': ((0.8, 1.2),
                   (-16., -14.), (-0.01, 0.01))}`` if the scaling is
-                  fitted between 0.8 and 1.2, each uncertainty is
-                  inflated with a constant value between
-                  :math:`10^{-16}` and :math:`10^{-14}` W
+                  fitted between 0.8 and 1.2, each flux uncertainty
+                  is increased in quadrature by a constant value
+                  between :math:`10^{-16}` and :math:`10^{-14}` W
                   :math:`\\mathrm{m}^{-2}` :math:`\\mu\\mathrm{m}^{-1}`,
                   and a constant wavelength offset between
                   -0.01 and 0.01 :math:`\\mu\\mathrm{m}`

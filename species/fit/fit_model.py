@@ -288,48 +288,48 @@ class FitModel:
 
             Calibration parameters:
 
-                 - For each spectrum/instrument, two optional
-                   parameters can be fitted to account for biases in
-                   the calibration: a scaling of the flux and a
-                   relative inflation of the uncertainties.
-
-                 - For example, ``bounds={'SPHERE': ((0.8, 1.2),
-                   (0., 1.))}`` if the scaling is fitted between
-                   0.8 and 1.2, and the error is inflated (relative
-                   to the sampled model fluxes) with a value
-                   between 0 and 1.
-
-                 - The dictionary key should be the same as the
-                   database tag of the spectrum. For example,
-                   ``{'SPHERE': ((0.8, 1.2), (0., 1.))}``
-                   if the spectrum is stored as ``'SPHERE'`` with
+                 - For each spectrum, a scaling of the fluxes can be
+                   fitted, to account for an inaccuracy of the
+                   absolute flux calibration. For example,
+                   ``bounds={'scaling_SPHERE': (0.8, 1.2)}`` if the
+                   scaling is fitted between 0.8 and 1.2, and the
+                   spectrum is stored as ``'SPHERE'`` with
                    :func:`~species.data.database.Database.add_object`.
 
-                 - Each of the two calibration parameters can be set to
-                   ``None`` in which case the parameter is not used. For
-                   example,
-                   ``bounds={'SPHERE': ((0.8, 1.2), None)}``.
+                 - For each spectrum, a error inflation can be fitted,
+                   to account for an underestimation of the flux
+                   uncertainties. The errors are inflated relative
+                   to the sampled model fluxes. For example,
+                   ``bounds={'error_SPHERE': (0.0, 2.0)}`` will
+                   scale each sampled model spectrum by a factor between
+                   0.0 and 2.0, and add this scaled model spectrum
+                   in quadrature to the uncertainties of the
+                   observed spectrum. In this case, applied to the
+                   spectrum that is stored as ``'SPHERE'`` with
+                   :func:`~species.data.database.Database.add_object`.
+                   This approach has been adopted from `Piette &
+                   Madhusudhan (2020) <https://ui.adsabs.harvard.edu/
+                   abs/2020MNRAS.497.5136P/abstract>`_. The error
+                   inflation parameter is :math:`x_\\mathrm{tol}` in
+                   Eq. 8 from their work.
 
-                 - The errors of the photometric fluxes can be inflated
-                   to account for underestimated error bars. The error
-                   inflation is relative to the actual flux and is
-                   either fitted separately for a filter, or a single
-                   error inflation is applied to all filters from an
-                   instrument. For the first case, the keyword in the
-                   ``bounds`` dictionary should be provided in the
-                   following format:
-                   ``'Paranal/NACO.Mp_error': (0., 1.)``. Here, the
+                 - The errors of the photometric fluxes can also be
+                   inflated, to account for an underestimated
+                   uncertainty. The error inflation is relative to the
+                   actual flux and is either fitted separately for a
+                   filter, or a single error inflation is applied to
+                   all filters from an instrument. For the first case,
+                   the keyword in the ``bounds`` dictionary should be
+                   provided in the following format:
+                   ``'error_Paranal/NACO.Mp': (0., 1.)``. Here, the
                    error of the NACO :math:`M'` flux is inflated up to
                    100 percent of the actual flux. For the second case,
                    only the telescope/instrument part of the the filter
                    name should be provided in the ``bounds``
                    dictionary, so in the following format:
-                   ``'Paranal/NACO_error': (0., 1.)``. This will
+                   ``'error_Paranal/NACO': (0., 1.)``. This will
                    increase the errors of all NACO filters by the same
                    (relative) amount.
-
-                 - No calibration parameters are fitted if the
-                   spectrum name is not included in ``bounds``.
 
             ISM extinction parameters:
 
@@ -1002,14 +1002,23 @@ class FitModel:
 
             instr_filt = filter_item.split(".")[0]
 
-            if f"{filter_item}_error" in self.bounds:
-                self.modelpar.append(f"{filter_item}_error")
+            if f"error_{filter_item}" in self.bounds:
+                self.modelpar.append(f"error_{filter_item}")
 
             elif (
-                f"{instr_filt}_error" in self.bounds
-                and f"{instr_filt}_error" not in self.modelpar
+                f"error_{instr_filt}" in self.bounds
+                and f"error_{instr_filt}" not in self.modelpar
             ):
-                self.modelpar.append(f"{instr_filt}_error")
+                self.modelpar.append(f"error_{instr_filt}")
+
+            elif f"log_error_{filter_item}" in self.bounds:
+                self.modelpar.append(f"log_error_{filter_item}")
+
+            elif (
+                f"log_error_{instr_filt}" in self.bounds
+                and f"log_error_{instr_filt}" not in self.modelpar
+            ):
+                self.modelpar.append(f"log_error_{instr_filt}")
 
             # Store the flux and uncertainty for each filter
 
@@ -1207,46 +1216,49 @@ class FitModel:
                 self.diskspec.append(readmodel)
                 print(" [DONE]")
 
+        # Optional flux scaling and error inflation parameters of spectra
+
         for spec_item in self.spectrum:
-            if bounds is not None and spec_item in bounds:
-                if bounds[spec_item][0] is not None:
-                    # Add the flux scaling parameter
-                    self.modelpar.append(f"scaling_{spec_item}")
+            if f"scaling_{spec_item}" in self.bounds:
+                self.modelpar.append(f"scaling_{spec_item}")
 
-                    self.bounds[f"scaling_{spec_item}"] = (
-                        bounds[spec_item][0][0],
-                        bounds[spec_item][0][1],
+                if self.bounds[f"scaling_{spec_item}"][0] < 0.0:
+                    raise ValueError(
+                        f"The lower bound of 'scaling_{spec_item}' "
+                        "is smaller than 0. The flux scaling "
+                        "should be larger than 0."
                     )
 
-                if len(bounds[spec_item]) > 1 and bounds[spec_item][1] is not None:
-                    # Add the error inflation parameters
-                    self.modelpar.append(f"error_{spec_item}")
-
-                    self.bounds[f"error_{spec_item}"] = (
-                        bounds[spec_item][1][0],
-                        bounds[spec_item][1][1],
+                if self.bounds[f"scaling_{spec_item}"][1] < 0.0:
+                    raise ValueError(
+                        f"The upper bound of 'scaling_{spec_item}' "
+                        "is smaller than 0. The flux scaling "
+                        "should be larger than 0."
                     )
 
-                    if self.bounds[f"error_{spec_item}"][1] < 0.0:
-                        warnings.warn(
-                            f"The lower bound of 'error_{spec_item}' "
-                            "is smaller than 0. The error inflation "
-                            "should be given relative to the model "
-                            "fluxes so the boundaries should be "
-                            "larger than 0."
-                        )
+            if f"error_{spec_item}" in self.bounds:
+                self.modelpar.append(f"error_{spec_item}")
 
-                    if self.bounds[f"error_{spec_item}"][1] < 0.0:
-                        warnings.warn(
-                            f"The upper bound of 'error_{spec_item}' "
-                            "is smaller than 0. The error inflation "
-                            "should be given relative to the model "
-                            "fluxes so the boundaries should be "
-                            "larger than 0."
-                        )
+                if self.bounds[f"error_{spec_item}"][0] < 0.0:
+                    raise ValueError(
+                        f"The lower bound of 'error_{spec_item}' "
+                        "is smaller than 0. The error inflation "
+                        "should be given relative to the model "
+                        "fluxes so the boundaries should be "
+                        "larger than 0."
+                    )
 
-                if spec_item in self.bounds:
-                    del self.bounds[spec_item]
+                if self.bounds[f"error_{spec_item}"][1] < 0.0:
+                    raise ValueError(
+                        f"The upper bound of 'error_{spec_item}' "
+                        "is smaller than 0. The error inflation "
+                        "should be given relative to the model "
+                        "fluxes so the boundaries should be "
+                        "larger than 0."
+                    )
+
+            if f"log_error_{spec_item}" in self.bounds:
+                self.modelpar.append(f"log_error_{spec_item}")
 
         # Exctinction parameters
 
@@ -1966,19 +1978,29 @@ class FitModel:
                 # Get the telescope/instrument name
                 instr_check = filter_name.split(".")[0]
 
-                if f"{filter_name}_error" in all_param:
+                if f"error_{filter_name}" in all_param:
+                    # Inflate photometric uncertainty for filter
+                    # Scale relative to the uncertainty
+                    phot_var += all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
+
+                elif f"error_{instr_check}" in all_param:
+                    # Inflate photometric uncertainty for instrument
+                    # Scale relative to the uncertainty
+                    phot_var += all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
+
+                elif f"log_error_{filter_name}" in all_param:
                     # Inflate photometric uncertainty for filter
                     # Scale relative to the uncertainty
                     phot_var += (
-                        all_param[f"{filter_name}_error"] ** 2 * phot_item[1] ** 2
-                    )
+                        10.0 ** all_param[f"log_error_{filter_name}"]
+                    ) ** 2 * phot_flux**2
 
-                elif f"{instr_check}_error" in all_param:
+                elif f"log_error_{instr_check}" in all_param:
                     # Inflate photometric uncertainty for instrument
                     # Scale relative to the uncertainty
                     phot_var += (
-                        all_param[f"{instr_check}_error"] ** 2 * phot_item[1] ** 2
-                    )
+                        10.0 ** all_param[f"log_error_{instr_check}"]
+                    ) ** 2 * phot_flux**2
 
                 ln_like += (
                     -0.5
@@ -1997,21 +2019,33 @@ class FitModel:
                     # Get the telescope/instrument name
                     instr_check = filter_name.split(".")[0]
 
-                    if f"{filter_name}_error" in all_param:
+                    if f"error_{filter_name}" in all_param:
                         # Inflate photometric uncertainty for filter
                         # Scale relative to the uncertainty
                         phot_var += (
-                            all_param[f"{filter_name}_error"] ** 2
-                            * phot_item[1, phot_idx] ** 2
+                            all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
                         )
 
-                    elif f"{instr_check}_error" in all_param:
+                    elif f"error_{instr_check}" in all_param:
                         # Inflate photometric uncertainty for instrument
                         # Scale relative to the uncertainty
                         phot_var += (
-                            all_param[f"{instr_check}_error"] ** 2
-                            * phot_item[1, phot_idx] ** 2
+                            all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
                         )
+
+                    elif f"log_error_{filter_name}" in all_param:
+                        # Inflate photometric uncertainty for filter
+                        # Scale relative to the uncertainty
+                        phot_var += (
+                            10.0 ** all_param[f"log_error_{filter_name}"]
+                        ) ** 2 * phot_flux**2
+
+                    elif f"log_error_{instr_check}" in all_param:
+                        # Inflate photometric uncertainty for instrument
+                        # Scale relative to the uncertainty
+                        phot_var += (
+                            10.0 ** all_param[f"log_error_{instr_check}"]
+                        ) ** 2 * phot_flux**2
 
                     ln_like += (
                         -0.5
@@ -2295,10 +2329,18 @@ class FitModel:
             if f"error_{spec_item}" in all_param:
                 data_var += (all_param[f"error_{spec_item}"] * model_flux) ** 2
 
+            elif f"log_error_{spec_item}" in all_param:
+                data_var += (
+                    10.0 ** all_param[f"log_error_{spec_item}"] * model_flux
+                ) ** 2
+
             # Select the inverted covariance matrix
 
             if self.spectrum[spec_item][2] is not None:
-                if f"error_{spec_item}" in all_param:
+                if (
+                    f"error_{spec_item}" in all_param
+                    or f"log_error_{spec_item}" in all_param
+                ):
                     # Ratio of the inflated and original uncertainties
                     sigma_ratio = np.sqrt(data_var) / (
                         spec_scaling * self.spectrum[spec_item][0][:, 2]
@@ -3236,7 +3278,6 @@ class FitModel:
         np.savetxt(out_file, np.c_[samples, ln_prob])
 
         # Nested sampling global log-evidence
-        # TODO check if selecting the last index is correct
 
         self.ln_z = results.logz[-1]
         self.ln_z_error = results.logzerr[-1]

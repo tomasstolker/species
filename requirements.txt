@@ -15,6 +15,7 @@ pooch
 PyMieScatt
 pymultinest
 requests
+rich
 schwimmbad
 scipy
 shapely

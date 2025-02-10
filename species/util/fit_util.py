@@ -351,6 +351,7 @@ def get_residuals(
                 )
         else:
             # TODO not yet implemented for CompareSpectra
+            warnings.warn("Not yet implemented for CompareSpectra")
             n_fixed = 0
 
         print("\nModel parameters:")

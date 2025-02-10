@@ -108,7 +108,9 @@ def pt_ret_model(
     conv : bool
         Enforce a convective adiabat.
     eq_chem : PreCalculatedEquilibriumChemistryTable, None
-        TODO
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``. The instance is created if the
+        arguments is set to ``None``.
 
     Returns
     -------
@@ -130,6 +132,13 @@ def pt_ret_model(
     tedd = (3.0 / 4.0 * tint**4.0 * (2.0 / 3.0 + tau)) ** 0.25
 
     # Interpolate the abundances, following chemical equilibrium
+
+    if eq_chem is None:
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
+        )
+
+        eq_chem = PreCalculatedEquilibriumChemistryTable()
 
     _, _, nabla_ad = eq_chem.interpolate_mass_fractions(
         np.full(tedd.size, c_o_ratio),
@@ -441,7 +450,10 @@ def create_pt_profile(
         set to 0.3 dex. No smoothing is applied if the argument
         is set to ``None``.
     eq_chem : PreCalculatedEquilibriumChemistryTable, None
-        TODO
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``. Only required when fitting abundances
+        following equilibrium chemistry and when ``pt_profile``
+        is either 'molliere' or 'mod-molliere'.
 
     Returns
     -------
@@ -613,7 +625,6 @@ def create_abund_dict(
     abund_in: Dict[str, np.ndarray],
     line_species: List[str],
     cloud_species: List[str],
-    chemistry: str,
     pressure_grid: str = "smaller",
     indices: Optional[np.ndarray] = None,
 ) -> Dict[str, np.ndarray]:
@@ -628,8 +639,6 @@ def create_abund_dict(
         List with the line species.
     cloud_species : list
         List with the cloud species.
-    chemistry : str
-        Chemistry type ('equilibrium' or 'free').
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -712,7 +721,6 @@ def calc_spectrum_clear(
     metallicity: Optional[float],
     p_quench: Optional[float],
     log_x_abund: Optional[dict],
-    chemistry: str,
     knot_press_abund: Optional[np.ndarray],
     abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
@@ -722,9 +730,6 @@ def calc_spectrum_clear(
 ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[Dict]]:
     """
     Function to simulate an emission spectrum of a clear atmosphere.
-    The function supports both equilibrium chemistry
-    (``chemistry='equilibrium'``) and free abundances
-    (``chemistry='free'``).
 
     rt_object : petitRADTRANS.radtrans.Radtrans
         Instance of ``Radtrans``.
@@ -743,20 +748,19 @@ def calc_spectrum_clear(
         Quenching pressure (bar).
     log_x_abund : dict, None
         Dictionary with the log10 of the abundances. Only required when
-        ``chemistry='free'``.
-    chemistry : str
-        Chemistry type ('equilibrium' or 'free').
+        ``eq_chem`` is not ``None``, so when fitting free abundances.
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
-        required when ``chemistry='free'``.
+        required when ``eq_chem`` is not ``None``, so when fitting
+        free abundances.
     abund_smooth : float, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the abundance profiles, after the abundance nodes
         have been interpolated to a higher pressure resolution.
-        Only required with ```chemistry='free'``` and
-        ``knot_press_abund`` is not set to ``None``. The argument
-        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
-        smoothing is applied if the argument if set to 0 or ``None``.
+        Only required with ``eq_chem`` and ``knot_press_abund``
+        are both not ``None``. The argument should be given as
+        :math:`\\log10{P/\\mathrm{bar}}`. No smoothing is applied
+        if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -775,7 +779,10 @@ def calc_spectrum_clear(
     return_opacities : bool
         Return opacities and optical depth.
     eq_chem : PreCalculatedEquilibriumChemistryTable, None
-        TODO
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``. Only required when fitting abundances
+        following equilibrium chemistry. With free abundances,
+        the argument should be set to ``None``.
 
     Returns
     -------
@@ -794,7 +801,7 @@ def calc_spectrum_clear(
     else:
         abund_nodes = knot_press_abund.size
 
-    if chemistry == "equilibrium":
+    if eq_chem is not None:
         # Equilibrium chemistry
 
         abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
@@ -806,7 +813,7 @@ def calc_spectrum_clear(
             full=True,
         )
 
-    elif chemistry == "free":
+    else:
         # Free abundances
 
         # Create a dictionary with all mass fractions
@@ -873,7 +880,6 @@ def calc_spectrum_clear(
         abund_in,
         rt_object.line_species,
         rt_object.cloud_species,
-        chemistry,
         pressure_grid=pressure_grid,
         indices=None,
     )
@@ -907,7 +913,6 @@ def calc_spectrum_clouds(
     log_x_base: Optional[dict],
     cloud_dict: Dict[str, Optional[float]],
     log_g: float,
-    chemistry: str,
     knot_press_abund: Optional[np.ndarray],
     abund_smooth: Optional[float],
     pressure_grid: str = "smaller",
@@ -939,8 +944,8 @@ def calc_spectrum_clouds(
     p_quench : float, None
         Quenching pressure (bar).
     log_x_abund : dict, None
-        Dictionary with the log10 of the abundances. Only required
-        when ``chemistry='free'``.
+        Dictionary with the log10 of the abundances. Only required when
+        ``eq_chem`` is not ``None``, so when fitting free abundances.
     log_x_base : dict, None
         Dictionary with the log10 of the mass fractions at the cloud
         base. Only required when the ``cloud_dict`` contains ``fsed``,
@@ -949,19 +954,18 @@ def calc_spectrum_clouds(
         Dictionary with the cloud parameters.
     log_g : float
         Log10 of the surface gravity (cm s-2).
-    chemistry : str
-        Chemistry type ('equilibrium' or 'free').
     knot_press_abund : np.ndarray, None
         Pressure nodes at which the abundances are sampled. Only
-        required when ``chemistry='free'``.
+        required when ``eq_chem`` is not ``None``, so when fitting
+        free abundances.
     abund_smooth : float, None
         Standard deviation of the Gaussian kernel that is used for
         smoothing the abundance profiles, after the abundance nodes
         have been interpolated to a higher pressure resolution.
-        Only required with ```chemistry='free'``` and
-        ``knot_press_abund`` is not set to ``None``. The argument
-        should be given as :math:`\\log10{P/\\mathrm{bar}}`. No
-        smoothing is applied if the argument if set to 0 or ``None``.
+        Only required with ``eq_chem`` and ``knot_press_abund``
+        are both not ``None``. The argument should be given as
+        :math:`\\log10{P/\\mathrm{bar}}`. No smoothing is applied
+        if the argument if set to 0 or ``None``.
     pressure_grid : str
         The type of pressure grid that is used for the radiative
         transfer. Either 'standard', to use 180 layers both for the
@@ -994,7 +998,10 @@ def calc_spectrum_clouds(
     return_opacities : bool
         Return opacities and optical depth.
     eq_chem : PreCalculatedEquilibriumChemistryTable, None
-        TODO
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``. Only required when fitting abundances
+        following equilibrium chemistry. With free abundances,
+        the argument should be set to ``None``.
 
     Returns
     -------
@@ -1013,7 +1020,7 @@ def calc_spectrum_clouds(
     else:
         abund_nodes = knot_press_abund.size
 
-    if chemistry == "equilibrium":
+    if eq_chem is not None:
         # Equilibrium chemistry
 
         abund_in, mmw, _ = eq_chem.interpolate_mass_fractions(
@@ -1025,7 +1032,7 @@ def calc_spectrum_clouds(
             full=True,
         )
 
-    elif chemistry == "free":
+    else:
         # Free abundances
 
         # Create a dictionary with all mass fractions
@@ -1126,7 +1133,6 @@ def calc_spectrum_clouds(
         abund_in,
         rt_object.line_species,
         rt_object.cloud_species,
-        chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
     )
@@ -1182,7 +1188,7 @@ def calc_spectrum_clouds(
         plt.ylabel("Pressure (bar)")
         if p_quench is not None:
             plt.axhline(p_quench, ls="--", color="black")
-        plt.legend(loc="best")
+        plt.legend(loc="best", fontsize=8.)
         plt.savefig("abundances.png", bbox_inches="tight")
         plt.clf()
 
@@ -1931,7 +1937,7 @@ def cloud_mass_fraction(
 
     # Scale the solar number densities by the [Fe/H], except H and He
     for item in nfracs:
-        if item != "H" and item != "He":
+        if item not in ["H", "He"]:
             nfracs_use[item] = nfracs[item] * 10.0**metallicity
 
     # Adjust the VMR of O with the C/O ratio
@@ -2122,7 +2128,6 @@ def scale_cloud_abund(
     pressure: np.ndarray,
     temperature: np.ndarray,
     mmw: np.ndarray,
-    chemistry: str,
     abund_in: Dict[str, np.ndarray],
     composition: str,
     tau_cloud: float,
@@ -2146,8 +2151,6 @@ def scale_cloud_abund(
     mmw : np.ndarray
         Array with the mean molecular weights corresponding
         to ``pressure``.
-    chemistry : str
-        Chemistry type (only ``'equilibrium'`` is supported).
     abund_in : dict
         Dictionary with arrays that contain the pressure-dependent,
         equilibrium mass fractions of the line species.
@@ -2226,7 +2229,6 @@ def scale_cloud_abund(
         abund_in,
         rt_object.line_species,
         rt_object.cloud_species,
-        chemistry,
         pressure_grid=pressure_grid,
         indices=indices,
     )
@@ -2712,6 +2714,7 @@ def quench_pressure(
     c_o_ratio: float,
     log_g: float,
     log_kzz: float,
+    eq_chem,
 ) -> Optional[float]:
     """
     Function to determine the CO/CH$_4$ quenching pressure by
@@ -2732,6 +2735,9 @@ def quench_pressure(
         Log10 of the surface gravity (cm s-2).
     log_kzz : float
         Log10 of the eddy diffusion coefficient (cm2 s-1).
+    eq_chem : PreCalculatedEquilibriumChemistryTable
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``.
 
     Returns
     -------
@@ -2743,12 +2749,6 @@ def quench_pressure(
 
     co_array = np.full(pressure.size, c_o_ratio)
     feh_array = np.full(pressure.size, metallicity)
-
-    from petitRADTRANS.chemistry.pre_calculated_chemistry import (
-        PreCalculatedEquilibriumChemistryTable,
-    )
-
-    eq_chem = PreCalculatedEquilibriumChemistryTable()
 
     _, mmw, _ = eq_chem.interpolate_mass_fractions(
         co_array,

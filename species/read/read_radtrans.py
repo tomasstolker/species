@@ -251,18 +251,10 @@ class ReadRadtrans:
             line_by_line_opacity_sampling=self.lbl_opacity_sampling,
         )
 
-        # Set the default of abund_smooth to None
+        # Initialize attributes to None
 
         self.abund_smooth = None
-
-        # Equilibrium chemistry table
-
-        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
-            PreCalculatedEquilibriumChemistryTable,
-        )
-
-        self.eq_chem = PreCalculatedEquilibriumChemistryTable()
-        self.eq_chem.load()
+        self.eq_chem = None
 
     @typechecked
     def get_model(
@@ -495,6 +487,15 @@ class ReadRadtrans:
 
         if "metallicity" in model_param and "c_o_ratio" in model_param:
             chemistry = "equilibrium"
+
+            # Equilibrium chemistry table
+
+            from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+                PreCalculatedEquilibriumChemistryTable,
+            )
+
+            self.eq_chem = PreCalculatedEquilibriumChemistryTable()
+            self.eq_chem.load()
 
         else:
             chemistry = "free"

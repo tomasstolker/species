@@ -361,7 +361,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "rad_vel_0" in param:
         index = param.index("rad_vel_0")
-        param[index] = r"$v_\mathrm{r,1} (km s$^{-1}$)"
+        param[index] = r"$v_\mathrm{r,1}$ (km s$^{-1}$)"
 
     if "rad_vel_1" in param:
         index = param.index("rad_vel_1")
@@ -736,25 +736,37 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
             item_name = item[8:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
+            if item_name.find("/") > 0:
+                item_name = item_name[item_name.find("/") + 1 :]
             param[i] = rf"$a_\mathrm{{{item_name}}}$"
 
         elif item[0:6] == "error_":
             item_name = item[6:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
+            if item_name.find("/") > 0:
+                item_name = item_name[item_name.find("/") + 1 :]
             param[i] = rf"$b_\mathrm{{{item_name}}}$"
+
+        elif item[0:10] == "log_error_":
+            item_name = item[10:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            if item_name.find("/") > 0:
+                item_name = item_name[item_name.find("/") + 1 :]
+            param[i] = rf"$\log\,b_\mathrm{{{item_name}}}$"
 
         elif item[0:7] == "radvel_":
             item_name = item[7:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$v_\mathrm{{r, {item_name}}}$ (km s$^{{-1}}$)"
+            param[i] = rf"$v_\mathrm{{r,{item_name}}}$ (km s$^{{-1}}$)"
 
         elif item[0:8] == "rad_vel_":
             item_name = item[8:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$v_\mathrm{{r, {item_name}}}$ (km s$^{{-1}}$)"
+            param[i] = rf"$v_\mathrm{{r,{item_name}}}$ (km s$^{{-1}}$)"
 
         elif item[0:6] == "vsini_":
             item_name = item[6:]
@@ -768,11 +780,21 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
                 item_name = item_name.replace("_", "\\_")
             param[i] = rf"$c_\mathrm{{{item_name}}}$ (nm)"
 
-        elif item[-6:] == "_error":
-            item_name = item[:-6]
+        elif item[:6] == "error_":
+            item_name = item[6:]
             if item_name.find("\\_") == -1 and item_name.find("_") > 0:
                 item_name = item_name.replace("_", "\\_")
-            param[i] = rf"$f_\mathrm{{{item_name}}}$"
+            if item_name.find("/") > 0:
+                item_name = item_name[item_name.find("/") + 1 :]
+            param[i] = rf"$b_\mathrm{{{item_name}}}$"
+
+        elif item[:10] == "log_error_":
+            item_name = item[10:]
+            if item_name.find("\\_") == -1 and item_name.find("_") > 0:
+                item_name = item_name.replace("_", "\\_")
+            if item_name.find("/") > 0:
+                item_name = item_name[item_name.find("/") + 1 :]
+            param[i] = rf"$\log\,b_\mathrm{{{item_name}}}$"
 
         elif item[0:9] == "corr_len_":
             item_name = item[9:]

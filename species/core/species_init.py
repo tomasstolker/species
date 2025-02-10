@@ -11,6 +11,7 @@ from typing import Optional, Union
 
 from configparser import ConfigParser
 from importlib.util import find_spec
+from rich import print as rprint
 from typeguard import typechecked
 
 import h5py
@@ -43,11 +44,12 @@ class SpeciesInit:
         """
 
         species_version = species.__version__
-        species_msg = f"species v{species_version}"
+        species_init = f"[bold magenta]species v{species_version}[/bold magenta]"
+        len_text = len(f"species v{species_version}")
 
-        print(len(species_msg) * "=")
-        print(species_msg)
-        print(len(species_msg) * "=")
+        print(len_text * "=")
+        rprint(species_init)
+        print(len_text * "=")
 
         try:
             pypi_url = "https://pypi.org/pypi/species/json"
@@ -104,7 +106,12 @@ class SpeciesInit:
                 config_update = True
 
         else:
-            config.set("species", "database", database_file)
+            if isinstance(database_file, str):
+                config.set("species", "database", database_file)
+                database_file = Path(database_file)
+            else:
+                config.set("species", "database", str(database_file))
+
             config_update = True
 
         if "data_folder" in config["species"]:
