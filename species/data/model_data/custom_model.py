@@ -132,6 +132,11 @@ def add_custom_model_grid(
         ad_index = []
     else:
         ad_index = None
+    
+    if "log_co_iso" in parameters:
+        log_co_iso = []
+    else:
+        log_co_iso = None
 
     flux = []
 
@@ -193,6 +198,10 @@ def add_custom_model_grid(
             if ad_index is not None:
                 param_index = file_split.index("adindex") + 1
                 ad_index.append(float(file_split[param_index]))
+
+            if log_co_iso is not None:
+                param_index = file_split.index("coiso") + 1
+                log_co_iso.append(float(file_split[param_index]))
 
             empty_message = len(print_message) * " "
             print(f"\r{empty_message}", end="")
@@ -277,6 +286,9 @@ def add_custom_model_grid(
     if ad_index is not None:
         ad_index = np.asarray(ad_index)
 
+    if log_co_iso is not None:
+        log_co_iso = np.asarray(log_co_iso)
+
     if wavelength is None:
         raise ValueError(
             "No files have been found. Please check "
@@ -294,6 +306,7 @@ def add_custom_model_grid(
         fsed,
         log_kzz,
         ad_index,
+        log_co_iso,
         wavelength,
         np.asarray(flux),
     )
