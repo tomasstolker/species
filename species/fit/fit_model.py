@@ -315,21 +315,22 @@ class FitModel:
 
                  - The errors of the photometric fluxes can also be
                    inflated, to account for an underestimated
-                   uncertainty. The error inflation is relative to the
-                   actual flux and is either fitted separately for a
-                   filter, or a single error inflation is applied to
+                   uncertainty. The errors are inflated relative
+                   to the synthetic photometry from the model. The
+                   inflation can be fitted either for individual
+                   filters, or a single error inflation is applied to
                    all filters from an instrument. For the first case,
                    the keyword in the ``bounds`` dictionary should be
                    provided in the following format:
                    ``'error_Paranal/NACO.Mp': (0., 1.)``. Here, the
                    error of the NACO :math:`M'` flux is inflated up to
-                   100 percent of the actual flux. For the second case,
+                   100 percent of the model flux. For the second case,
                    only the telescope/instrument part of the the filter
                    name should be provided in the ``bounds``
                    dictionary, so in the following format:
                    ``'error_Paranal/NACO': (0., 1.)``. This will
-                   increase the errors of all NACO filters by the same
-                   (relative) amount.
+                   increase the errors of all NACO photometry by the
+                   same amount relative to their model fluxes.
 
             ISM extinction parameters:
 
@@ -1980,24 +1981,24 @@ class FitModel:
 
                 if f"error_{filter_name}" in all_param:
                     # Inflate photometric uncertainty for filter
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
 
                 elif f"error_{instr_check}" in all_param:
                     # Inflate photometric uncertainty for instrument
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
 
                 elif f"log_error_{filter_name}" in all_param:
                     # Inflate photometric uncertainty for filter
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += (
                         10.0 ** all_param[f"log_error_{filter_name}"]
                     ) ** 2 * phot_flux**2
 
                 elif f"log_error_{instr_check}" in all_param:
                     # Inflate photometric uncertainty for instrument
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += (
                         10.0 ** all_param[f"log_error_{instr_check}"]
                     ) ** 2 * phot_flux**2
@@ -2021,28 +2022,28 @@ class FitModel:
 
                     if f"error_{filter_name}" in all_param:
                         # Inflate photometric uncertainty for filter
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
                         )
 
                     elif f"error_{instr_check}" in all_param:
                         # Inflate photometric uncertainty for instrument
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
                         )
 
                     elif f"log_error_{filter_name}" in all_param:
                         # Inflate photometric uncertainty for filter
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             10.0 ** all_param[f"log_error_{filter_name}"]
                         ) ** 2 * phot_flux**2
 
                     elif f"log_error_{instr_check}" in all_param:
                         # Inflate photometric uncertainty for instrument
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             10.0 ** all_param[f"log_error_{instr_check}"]
                         ) ** 2 * phot_flux**2

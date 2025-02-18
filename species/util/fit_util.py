@@ -173,34 +173,34 @@ def multi_photometry(
     app_mag = {}
     abs_mag = {}
 
-    for key, value in flux.items():
-        syn_phot = SyntheticPhotometry(key)
+    for phot_key, phot_value in flux.items():
+        syn_phot = SyntheticPhotometry(phot_key)
         if "parallax" in parameters:
-            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
-                flux=value, error=None, parallax=(parameters["parallax"], None)
+            app_mag[phot_key], abs_mag[phot_key] = syn_phot.flux_to_magnitude(
+                flux=phot_value, error=None, parallax=(parameters["parallax"], None)
             )
 
         elif "distance" in parameters:
-            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
-                flux=value, error=None, distance=(parameters["distance"], None)
+            app_mag[phot_key], abs_mag[phot_key] = syn_phot.flux_to_magnitude(
+                flux=phot_value, error=None, distance=(parameters["distance"], None)
             )
 
         else:
-            app_mag[key], abs_mag[key] = syn_phot.flux_to_magnitude(
-                flux=value, error=None
+            app_mag[phot_key], abs_mag[phot_key] = syn_phot.flux_to_magnitude(
+                flux=phot_value, error=None
             )
 
     if verbose:
         print("\nMagnitudes:")
-        for key, value in app_mag.items():
-            if value[1] is None:
-                print(f"   - {key} = {value[0]:.2f}")
+        for phot_key, phot_value in app_mag.items():
+            if phot_value[1] is None:
+                print(f"   - {phot_key} = {phot_value[0]:.2f}")
             else:
-                print(f"   - {key} = {value[0]:.2f} +/- {value[1]:.2f}")
+                print(f"   - {phot_key} = {phot_value[0]:.2f} +/- {phot_value[1]:.2f}")
 
         print("\nFluxes (W m-2 um-1):")
-        for key, value in flux.items():
-            print(f"   - {key} = {value:.2e}")
+        for phot_key, phot_value in flux.items():
+            print(f"   - {phot_key} = {phot_value:.2e}")
 
     return create_box(
         "synphot",
@@ -226,6 +226,9 @@ def get_residuals(
     """
     Function for calculating the residuals from fitting model or
     calibration spectra to a set of spectra and/or photometry.
+    This function also calculates the (reduced) :math:`\\chi^2`,
+    taking into account the covariances in case these have been
+    provided with a spectrum.
 
     Parameters
     ----------
@@ -267,7 +270,7 @@ def get_residuals(
     if datatype is not None:
         warnings.warn(
             "The 'datatype' parameter is no longer "
-            "used by the 'get_residuals' function. "
+            "used by the 'get_residuals()' function. "
             "Instead, the 'tag' parameter should be set, "
             "which points to the sampling results as "
             "stored in the database.",
@@ -277,7 +280,7 @@ def get_residuals(
     if spectrum is not None:
         warnings.warn(
             "The 'spectrum' parameter is no longer "
-            "used by the 'get_residuals' function. "
+            "used by the 'get_residuals()' function. "
             "Instead, the 'tag' parameter should be set, "
             "which points to the sampling results as "
             "stored in the database.",
@@ -297,11 +300,13 @@ def get_residuals(
 
     with h5py.File(database_path, "r") as hdf5_file:
         if f"results/fit/{tag}/samples" in hdf5_file:
+            # Samples from FitModel
             results_type = "FitModel"
             dset = hdf5_file[f"results/fit/{tag}/samples"]
             print("Results type: FitModel")
 
         elif f"results/comparison/{tag}/goodness_of_fit" in hdf5_file:
+            # Samples from CompareSpectra
             results_type = "CompareSpectra"
             dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
             print("Selected results: CompareSpectra")
@@ -316,10 +321,13 @@ def get_residuals(
 
         if "model_name" in dset.attrs:
             model_name = dset.attrs["model_name"]
+
         elif "spectrum" in dset.attrs:
             model_name = dset.attrs["spectrum"]
+
         elif "model" in dset.attrs:
             model_name = dset.attrs["model"]
+
         else:
             raise ValueError(
                 "The attribute with the model name is "
@@ -345,13 +353,20 @@ def get_residuals(
                     "The 'fixed_param' group is not found in "
                     f"the results of {tag}. Probably the "
                     "results were obtained with an older "
-                    "version of the package. Please rerun "
-                    "FitModel to update the results. Setting "
-                    "the number of fixed parameters to zero."
+                    "version of the package. The number "
+                    "of fixed parameters will be set to "
+                    "zero. The reduced chi^2 may not be "
+                    "accurate in case parameters were "
+                    "fixed when running FitModel."
                 )
+
         else:
             # TODO not yet implemented for CompareSpectra
-            warnings.warn("Not yet implemented for CompareSpectra")
+            warnings.warn(
+                "Not yet implemented for CompareSpectra. Please "
+                "open an issue on the Github page if needed. The "
+                "number of fixed parameters will be set to zero."
+            )
             n_fixed = 0
 
         print("\nModel parameters:")
@@ -374,6 +389,9 @@ def get_residuals(
 
     res_phot = None
     res_spec = None
+
+    chi2_stat = 0
+    n_dof = 0
 
     # Photometry residuals
 
@@ -403,6 +421,9 @@ def get_residuals(
                     objectbox.flux[phot_item][0] - model_phot.flux[phot_item]
                 ) / objectbox.flux[phot_item][1]
 
+                chi2_stat += res_phot[phot_item][1] ** 2
+                n_dof += 1
+
             elif objectbox.flux[phot_item].ndim == 2:
                 for j in range(objectbox.flux[phot_item].shape[1]):
                     res_phot[phot_item][0, j] = transmission.mean_wavelength()
@@ -410,6 +431,9 @@ def get_residuals(
                     res_phot[phot_item][1, j] = (
                         objectbox.flux[phot_item][0, j] - model_phot.flux[phot_item]
                     ) / objectbox.flux[phot_item][1, j]
+
+                    chi2_stat += res_phot[phot_item][1, j] ** 2
+                    n_dof += 1
 
     # Spectra residuals
 
@@ -422,33 +446,28 @@ def get_residuals(
 
             model_box = radtrans.get_model(parameters)
 
-        for key in objectbox.spectrum:
-            if isinstance(inc_spec, bool) or key in inc_spec:
+        for spec_key in objectbox.spectrum:
+            if isinstance(inc_spec, bool) or spec_key in inc_spec:
                 wavel_range = (
-                    0.9 * objectbox.spectrum[key][0][0, 0],
-                    1.1 * objectbox.spectrum[key][0][-1, 0],
+                    0.9 * objectbox.spectrum[spec_key][0][0, 0],
+                    1.1 * objectbox.spectrum[spec_key][0][-1, 0],
                 )
 
-                wl_new = objectbox.spectrum[key][0][:, 0]
-                spec_res = objectbox.spectrum[key][3]
+                wl_new = objectbox.spectrum[spec_key][0][:, 0]
+                spec_res = objectbox.spectrum[spec_key][3]
 
                 if model_name == "planck":
+                    # Resampling to the new wavelength points
+                    # is done by the get_spectrum method
                     readmodel = ReadPlanck(wavel_range=wavel_range)
 
                     model_box = readmodel.get_spectrum(
-                        model_param=parameters, spec_res=1000.0
+                        model_param=parameters,
+                        spec_res=1000.0,
+                        wavel_resample=wl_new,
                     )
 
-                    # Separate resampling to the new wavelength points
-
-                    flux_new = spectres_numba(
-                        wl_new,
-                        model_box.wavelength,
-                        model_box.flux,
-                        spec_errs=None,
-                        fill=np.nan,
-                        verbose=True,
-                    )
+                    flux_new = model_box.flux
 
                 elif model_name == "petitradtrans":
                     # Smoothing to the instrument resolution
@@ -479,7 +498,7 @@ def get_residuals(
 
                         param_0 = binary_to_single(parameters, 0)
 
-                        model_spec_0 = readmodel.get_model(
+                        model_box_0 = readmodel.get_model(
                             param_0,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
@@ -487,7 +506,7 @@ def get_residuals(
 
                         param_1 = binary_to_single(parameters, 1)
 
-                        model_spec_1 = readmodel.get_model(
+                        model_box_1 = readmodel.get_model(
                             param_1,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
@@ -498,14 +517,14 @@ def get_residuals(
 
                         if "spec_weight" in parameters:
                             flux_comb = (
-                                parameters["spec_weight"] * model_spec_0.flux
-                                + (1.0 - parameters["spec_weight"]) * model_spec_1.flux
+                                parameters["spec_weight"] * model_box_0.flux
+                                + (1.0 - parameters["spec_weight"]) * model_box_1.flux
                             )
 
                         else:
-                            flux_comb = model_spec_0.flux + model_spec_1.flux
+                            flux_comb = model_box_0.flux + model_box_1.flux
 
-                        model_spec = create_box(
+                        model_box = create_box(
                             boxtype="model",
                             model=model_name,
                             wavelength=wl_new,
@@ -517,18 +536,40 @@ def get_residuals(
                     else:
                         # Single object
 
-                        model_spec = readmodel.get_model(
+                        model_box = readmodel.get_model(
                             parameters,
                             spec_res=spec_res,
                             wavel_resample=wl_new,
                         )
 
-                    flux_new = model_spec.flux
+                    flux_new = model_box.flux
 
-                data_spec = objectbox.spectrum[key][0]
-                res_tmp = (data_spec[:, 1] - flux_new) / data_spec[:, 2]
+                data_spec = objectbox.spectrum[spec_key][0]
+                diff_spec = data_spec[:, 1] - flux_new
+                res_tmp = diff_spec / data_spec[:, 2]
 
-                res_spec[key] = np.column_stack([wl_new, res_tmp])
+                res_spec[spec_key] = np.column_stack([wl_new, res_tmp])
+                count_nan = np.sum(np.isnan(res_spec[spec_key][:, 1]))
+
+                # objectbox.spectrum[spec_key][2] contains the inverse
+                # of the covariance matrix of a spectrum
+                if objectbox.spectrum[spec_key][2] is None:
+                    chi2_stat += np.nansum(res_spec[spec_key][:, 1] ** 2)
+
+                else:
+                    if data_spec.shape[0] != objectbox.spectrum[spec_key][2].shape[0]:
+                        raise ValueError(
+                            f"The '{spec_key}' spectrum has {data_spec.shape[0]} "
+                            "wavelengths but the covariance matrix has been "
+                            f"specified for {objectbox.spectrum[spec_key][2].shape[0]} "
+                            "wavelengths. Could it be that the spectrum has been "
+                            f"resampled? Please make sure that '{spec_key}' spectrum has "
+                            "the same number of wavelengths as its covariance matrix."
+                        )
+
+                    chi2_stat += diff_spec @ objectbox.spectrum[spec_key][2] @ diff_spec
+
+                n_dof += res_spec[spec_key].shape[0] - count_nan
 
     print("\nResiduals (sigma):")
 
@@ -542,34 +583,12 @@ def get_residuals(
                     print(f"   - {phot_item} = {res_phot[phot_item][1, j]:.2f}")
 
     if res_spec is not None:
-        for key in objectbox.spectrum:
-            if isinstance(inc_spec, bool) or key in inc_spec:
+        for spec_key in objectbox.spectrum:
+            if isinstance(inc_spec, bool) or spec_key in inc_spec:
                 print(
-                    f"   - {key}: min = {np.nanmin(res_spec[key]):.2f}, "
-                    f"max = {np.nanmax(res_spec[key]):.2f}"
+                    f"   - {spec_key}: min = {np.nanmin(res_spec[spec_key]):.2f}, "
+                    f"max = {np.nanmax(res_spec[spec_key]):.2f}"
                 )
-
-    chi2_stat = 0
-    n_dof = 0
-
-    if res_phot is not None:
-        for key, value in res_phot.items():
-            if value.ndim == 1:
-                chi2_stat += value[1] ** 2
-                n_dof += 1
-
-            elif value.ndim == 2:
-                for i in range(value.shape[1]):
-                    chi2_stat += value[1][i] ** 2
-                    n_dof += 1
-
-    if res_spec is not None:
-        for key, value in res_spec.items():
-            count_nan = np.sum(np.isnan(value[:, 1]))
-            chi2_stat += np.nansum(value[:, 1] ** 2)
-
-            n_dof += value.shape[0]
-            n_dof -= count_nan
 
     print(f"\nNumber of data points = {n_dof}")
     print(f"Number of model parameters = {n_param}")

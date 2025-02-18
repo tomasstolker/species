@@ -1188,7 +1188,7 @@ def calc_spectrum_clouds(
         plt.ylabel("Pressure (bar)")
         if p_quench is not None:
             plt.axhline(p_quench, ls="--", color="black")
-        plt.legend(loc="best", fontsize=8.)
+        plt.legend(loc="best", fontsize=8.0)
         plt.savefig("abundances.png", bbox_inches="tight")
         plt.clf()
 
