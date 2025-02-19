@@ -100,6 +100,7 @@ class FitModel:
         ext_filter: Optional[str] = None,
         normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
         ext_model: Optional[str] = None,
+        binary_prior: bool = True,
     ) -> None:
         """
         Parameters
@@ -506,6 +507,12 @@ class FitModel:
             can be optionally added to the ``bounds`` with the
             ``ext_rv`` parameter. Otherwise, it is set to the
             default of :math:`R_V = 3.1`.
+        binary_prior : bool
+            When fitting a binary system (i.e. two sets of atmosphere
+            parameters to spectra and/or photometry), a prior is
+            applied such that the :math:`T_\\mathrm{eff}` and
+            :math:`R` of the primary object will be larger than
+            those parameters of the secondary object.
 
         Returns
         -------
@@ -537,6 +544,7 @@ class FitModel:
         self.object = ReadObject(object_name)
         self.obj_parallax = self.object.get_parallax()
         self.binary = False
+        self.binary_prior = binary_prior
         self.ext_filter = ext_filter
         self.param_interp = None
         self.cross_sections = None
@@ -1696,6 +1704,15 @@ class FitModel:
                     ):
                         return -np.inf
 
+        # Check if the primary star has a higher Teff and larger R
+
+        if self.binary and self.binary_prior:
+            if all_param["teff_1"] > all_param["teff_0"]:
+                return -np.inf
+
+            if all_param["radius_1"] > all_param["radius_0"]:
+                return -np.inf
+
         # Sort the parameters in the correct order for
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
@@ -2699,10 +2716,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
@@ -2953,10 +2970,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
@@ -3308,10 +3325,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)

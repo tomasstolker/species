@@ -147,13 +147,23 @@ def add_allers2013(input_path: str, database: h5py._hl.files.File) -> None:
         else:
             parallax = (np.nan, np.nan)
 
-        if np.isnan(parallax[0]):
-            simbad = Simbad.query_object(simbad_id)
-            if simbad is not None and not simbad["PLX_VALUE"].mask[0]:
-                parallax = (
-                    simbad["PLX_VALUE"].value[0],
-                    simbad["PLX_ERROR"].value[0],
-                )
+        if np.isnan(parallax[0]) and simbad_id is not None:
+            simbad_result = Simbad.query_object(simbad_id)
+
+            if simbad_result is not None and len(simbad_result) > 0:
+                if "PLX_VALUE" in simbad_result.columns:
+                    if not simbad_result["PLX_VALUE"].mask[0]:
+                        parallax = (
+                            simbad_result["PLX_VALUE"].value[0],
+                            simbad_result["PLX_ERROR"].value[0],
+                        )
+
+                else:
+                    if not simbad_result["plx_value"].mask[0]:
+                        parallax = (
+                            simbad_result["plx_value"].value[0],
+                            simbad_result["plx_err"].value[0],
+                        )
 
         index = np.argwhere(source_names == name)
 

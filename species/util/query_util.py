@@ -54,13 +54,16 @@ def get_simbad(name):
         SIMBAD name.
     """
 
-    simbad = Simbad.query_object(name)
+    simbad_result = Simbad.query_object(name)
 
-    if simbad is None:
+    if simbad_result is None or len(simbad_result) == 0:
         simbad_id = None
 
     else:
-        simbad_id = simbad["MAIN_ID"][0]
+        if "MAIN_ID" in simbad_result.columns:
+            simbad_id = simbad_result["MAIN_ID"][0]
+        else:
+            simbad_id = simbad_result["main_id"][0]
 
     return simbad_id
 
@@ -141,15 +144,25 @@ def get_parallax(target):
     simbad_result = simbad.query_object(target)
 
     # query SIMBAD
-    if simbad_result is not None:
-        simbad_id = simbad_result["MAIN_ID"][0]
+    if simbad_result is not None and len(simbad_result) > 0:
+        if "MAIN_ID" in simbad_result.columns:
+            simbad_id = simbad_result["MAIN_ID"][0]
+        else:
+            simbad_id = simbad_result["main_id"][0]
 
         # For backward compatibility
         if not isinstance(simbad_id, str):
             simbad_id = simbad_id.decode("utf-8")
 
-        parallax = simbad_result["PLX_VALUE"][0]  # (mas)
-        parallax_error = simbad_result["PLX_ERROR"][0]  # (mas)
+        if "PLX_VALUE" in simbad_result.columns:
+            parallax = simbad_result["PLX_VALUE"][0]  # (mas)
+        else:
+            parallax = simbad_result["plx_value"][0]  # (mas)
+
+        if "PLX_ERROR" in simbad_result.columns:
+            parallax_error = simbad_result["PLX_ERROR"][0]  # (mas)
+        else:
+            parallax_error = simbad_result["plx_err"][0]  # (mas)
 
         if np.ma.is_masked(parallax):
             parallax = None
