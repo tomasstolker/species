@@ -2403,6 +2403,10 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
+        from species.util.model_util import check_nearest_spec
+
+        check_nearest_spec(dset_attrs["model_name"], prob_sample)
+
         return prob_sample
 
     @typechecked
@@ -2473,6 +2477,10 @@ class Database:
                         print(f"   - {param_key} = {param_value:.2e}")
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
+
+        from species.util.model_util import check_nearest_spec
+
+        check_nearest_spec(dset_attrs["model_name"], median_sample)
 
         return median_sample
 
@@ -3274,10 +3282,17 @@ class Database:
                                 hdf5_file[f"{group_path}/{filter_item}"]
                             )
 
-                            print(
-                                f"   - {prior_item}/{filter_item} = "
-                                f"({norm_prior[0]}, {norm_prior[1]})"
-                            )
+                            if -0.1 < norm_prior[0] < 0.1:
+                                print(
+                                    f"   - {prior_item}/{filter_item} = "
+                                    f"({norm_prior[0]:.2e}, {norm_prior[1]:.2e})"
+                                )
+
+                            else:
+                                print(
+                                    f"   - {prior_item}/{filter_item} = "
+                                    f"({norm_prior[0]:.2f}, {norm_prior[1]:.2f})"
+                                )
 
                             normal_priors[f"{prior_item}/{filter_item}"] = (
                                 norm_prior[0],
@@ -3287,7 +3302,14 @@ class Database:
                     else:
                         norm_prior = np.array(hdf5_file[group_path])
 
-                        print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
+                        if -0.1 < norm_prior[0] < 0.1:
+                            print(
+                                f"   - {prior_item} = ({norm_prior[0]:.2e}, {norm_prior[1]:.2e})"
+                            )
+                        else:
+                            print(
+                                f"   - {prior_item} = ({norm_prior[0]:.2f}, {norm_prior[1]:.2f})"
+                            )
 
                         normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
 

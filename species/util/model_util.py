@@ -5,6 +5,7 @@ Utility functions for model spectra.
 import json
 import warnings
 
+from itertools import product
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -596,3 +597,78 @@ def rot_int_cmj(
             tarea += area
 
     return ns / tarea
+
+
+@typechecked
+def check_nearest_spec(model_name: str, model_param: Dict[str, float]):
+    """
+    Check if the nearest grid points of the requested model parameters
+    have a spectrum stored in the database. For some grids, spectra
+    are missing for certain parameters, in which case a spectrum with
+    zero fluxes has been stored in the database. Interpolating from
+    such a grid point will therefore give an inaccurate spectrum, so
+    it is important to check if for example the best-fit parameters
+    from a fit are close to grid points with a missing spectrum.
+
+    Parameters
+    ----------
+    model_name : str
+        Name of the atmosphere model.
+    model_param : dict
+        Dictionary with the model parameters.
+
+    Returns
+    -------
+    NoneType
+        None
+    """
+
+    from species.read.read_model import ReadModel
+
+    read_model = ReadModel(model_name)
+    model_points = read_model.get_points()
+
+    near_low = {}
+    near_high = {}
+    param_idx = []
+    for param_key, param_value in model_points.items():
+        near_idx = np.argsort(np.abs(model_param[param_key] - param_value))
+        near_low[param_key] = param_value[near_idx[0]]
+        near_high[param_key] = param_value[near_idx[1]]
+        param_idx.append((near_idx[0], near_idx[1]))
+
+    if len(param_idx) == 1:
+        param_comb = list(product(param_idx[0]))
+    elif len(param_idx) == 2:
+        param_comb = list(product(param_idx[0], param_idx[1]))
+    elif len(param_idx) == 3:
+        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2]))
+    elif len(param_idx) == 4:
+        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3]))
+    elif len(param_idx) == 5:
+        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3], param_idx[4]))
+    elif len(param_idx) == 6:
+        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3], param_idx[4], param_idx[5]))
+    else:
+        raise NotImplementedError("This number of parameters is not implemented")
+
+    for comb_item in param_comb:
+        model_param = {}
+        for param_idx, param_key in enumerate(model_points):
+            model_param[param_key] = model_points[param_key][comb_item[param_idx]]
+
+        model_box = read_model.get_data(model_param)
+
+        if np.count_nonzero(model_box.flux) == 0:
+            warnings.warn(
+                "The selected parameters have a nearest grid point for "
+                f"which a spectrum is not available: {model_param}. "
+                "Therefore, zeros had been stored for the spectrum at "
+                "this grid point. Interpolating from this grid point "
+                "will therefore be inaccurate. When using FitModel, it "
+                "is best to adjust the prior range in the 'bounds' "
+                "parameter accordingly to exclude the parameter space "
+                "for which model spectrum is missing. See also details "
+                "printed when the model spectra are added to the "
+                "database with add_model()."
+            )

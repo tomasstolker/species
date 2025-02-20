@@ -100,7 +100,7 @@ class FitModel:
         ext_filter: Optional[str] = None,
         normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
         ext_model: Optional[str] = None,
-        binary_prior: bool = True,
+        binary_prior: bool = False,
     ) -> None:
         """
         Parameters
@@ -110,8 +110,8 @@ class FitModel:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         model : str
-            Name of the atmospheric model (e.g. 'bt-settl', 'exo-rem',
-            'planck', or 'powerlaw').
+            Name of the atmospheric model (see
+            :func:`~species.data.database.Database.available_models`).
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform or
             log-uniform priors. Mandatory parameters are
@@ -930,6 +930,9 @@ class FitModel:
         print(f"Model tag: {model}")
         print(f"Binary star: {self.binary}")
 
+        if self.binary:
+            print(f"Binary prior: {self.binary}")
+
         if self.model not in self.non_interp_model:
             print(f"Blackbody components: {self.n_disk}")
             print(f"Teff interpolation range: {self.teff_range}")
@@ -1604,6 +1607,7 @@ class FitModel:
 
                 else:
                     # Normal prior
+
                     param_out[cube_index[param_item]] = norm.ppf(
                         param_out[cube_index[param_item]],
                         loc=self.normal_prior[param_item][0],
@@ -1612,6 +1616,7 @@ class FitModel:
 
             else:
                 # Uniform prior
+
                 param_out[cube_index[param_item]] = (
                     bounds[param_item][0]
                     + (bounds[param_item][1] - bounds[param_item][0])
@@ -2691,11 +2696,19 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for param_idx, param_item in enumerate(best_params["parameters"]):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < param_item < 0.1:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
+
+        # Check nearest grid points
+
+        from species.util.model_util import check_nearest_spec
+
+        check_nearest_spec(self.model, param_check)
 
         # Get the posterior samples
 
@@ -2950,11 +2963,19 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for lnlike_idx, lnlike_item in enumerate(result["maximum_likelihood"]["point"]):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < lnlike_item < 0.1:
                 print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2e}")
             else:
                 print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2f}")
+
+        # Check nearest grid points
+
+        from species.util.model_util import check_nearest_spec
+
+        check_nearest_spec(self.model, param_check)
 
         # Create a list with scaling labels
 
@@ -3312,11 +3333,21 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for param_idx, param_item in enumerate(best_params):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < param_item < 0.1:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
+
+        # Check nearest grid points
+
+        from species.util.model_util import check_nearest_spec
+
+        check_nearest_spec(self.model, param_check)
+
+        # Create a list with scaling labels
 
         spec_labels = []
         for spec_item in self.spectrum:
