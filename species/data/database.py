@@ -2351,6 +2351,8 @@ class Database:
             maximum likelihood.
         """
 
+        from species.util.model_util import binary_to_single, check_nearest_spec
+
         if verbose:
             print_section("Get sample with the maximum likelihood")
             print(f"Database tag: {tag}")
@@ -2403,9 +2405,15 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        from species.util.model_util import check_nearest_spec
+        if dset_attrs["binary"]:
+            param_0 = binary_to_single(prob_sample, 0)
+            check_nearest_spec(dset_attrs["model_name"], param_0)
 
-        check_nearest_spec(dset_attrs["model_name"], prob_sample)
+            param_1 = binary_to_single(prob_sample, 1)
+            check_nearest_spec(dset_attrs["model_name"], param_1)
+
+        else:
+            check_nearest_spec(dset_attrs["model_name"], prob_sample)
 
         return prob_sample
 
@@ -2431,6 +2439,8 @@ class Database:
         dict
             Median parameter values of the posterior distribution.
         """
+
+        from species.util.model_util import binary_to_single, check_nearest_spec
 
         if verbose:
             print_section("Get median parameters")
@@ -2478,9 +2488,15 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        from species.util.model_util import check_nearest_spec
+        if dset_attrs["binary"]:
+            param_0 = binary_to_single(median_sample, 0)
+            check_nearest_spec(dset_attrs["model_name"], param_0)
 
-        check_nearest_spec(dset_attrs["model_name"], median_sample)
+            param_1 = binary_to_single(median_sample, 1)
+            check_nearest_spec(dset_attrs["model_name"], param_1)
+
+        else:
+            check_nearest_spec(dset_attrs["model_name"], median_sample)
 
         return median_sample
 

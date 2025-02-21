@@ -47,11 +47,11 @@ from species.util.dust_util import (
 )
 from species.util.model_util import (
     binary_to_single,
+    check_nearest_spec,
     extract_disk_param,
     apply_obs,
     powerlaw_spectrum,
 )
-
 
 warnings.filterwarnings("always", category=DeprecationWarning)
 
@@ -2706,9 +2706,18 @@ class FitModel:
 
         # Check nearest grid points
 
-        from species.util.model_util import check_nearest_spec
+        if self.binary:
+            for param_key, param_value in self.fix_param.items():
+                param_check[param_key] = param_value
 
-        check_nearest_spec(self.model, param_check)
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
 
         # Get the posterior samples
 
@@ -2973,9 +2982,18 @@ class FitModel:
 
         # Check nearest grid points
 
-        from species.util.model_util import check_nearest_spec
+        if self.binary:
+            for param_key, param_value in self.fix_param.items():
+                param_check[param_key] = param_value
 
-        check_nearest_spec(self.model, param_check)
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
 
         # Create a list with scaling labels
 
@@ -3343,9 +3361,18 @@ class FitModel:
 
         # Check nearest grid points
 
-        from species.util.model_util import check_nearest_spec
+        if self.binary:
+            for param_key, param_value in self.fix_param.items():
+                param_check[param_key] = param_value
 
-        check_nearest_spec(self.model, param_check)
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
 
         # Create a list with scaling labels
 

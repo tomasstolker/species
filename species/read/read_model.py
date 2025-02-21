@@ -33,7 +33,7 @@ from species.read.read_filter import ReadFilter
 from species.read.read_planck import ReadPlanck
 from species.util.convert_util import logg_to_mass
 from species.util.dust_util import check_dust_database, ism_extinction, convert_to_av
-from species.util.model_util import binary_to_single, rot_int_cmj
+from species.util.model_util import binary_to_single, check_nearest_spec, rot_int_cmj
 from species.util.spec_util import smooth_spectrum
 
 
@@ -653,6 +653,10 @@ class ReadModel:
 
             if not kwargs["smooth"] and spec_res is not None:
                 spec_res = None
+
+        # Check nearest grid points
+
+        check_nearest_spec(self.model, model_param)
 
         # Get grid boundaries
 

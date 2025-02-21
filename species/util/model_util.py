@@ -637,22 +637,7 @@ def check_nearest_spec(model_name: str, model_param: Dict[str, float]):
         near_high[param_key] = param_value[near_idx[1]]
         param_idx.append((near_idx[0], near_idx[1]))
 
-    if len(param_idx) == 1:
-        param_comb = list(product(param_idx[0]))
-    elif len(param_idx) == 2:
-        param_comb = list(product(param_idx[0], param_idx[1]))
-    elif len(param_idx) == 3:
-        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2]))
-    elif len(param_idx) == 4:
-        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3]))
-    elif len(param_idx) == 5:
-        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3], param_idx[4]))
-    elif len(param_idx) == 6:
-        param_comb = list(product(param_idx[0], param_idx[1], param_idx[2], param_idx[3], param_idx[4], param_idx[5]))
-    else:
-        raise NotImplementedError("This number of parameters is not implemented")
-
-    for comb_item in param_comb:
+    for comb_item in list(product(*param_idx)):
         model_param = {}
         for param_idx, param_key in enumerate(model_points):
             model_param[param_key] = model_points[param_key][comb_item[param_idx]]
