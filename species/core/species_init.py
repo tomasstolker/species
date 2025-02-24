@@ -6,7 +6,7 @@ import json
 import socket
 import urllib.request
 
-from pathlib import Path, PosixPath
+from pathlib import Path, PosixPath, WindowsPath
 from typing import Optional, Union
 
 from configparser import ConfigParser
@@ -26,11 +26,13 @@ class SpeciesInit:
     """
 
     @typechecked
-    def __init__(self, database_file: Optional[Union[str, PosixPath]] = None) -> None:
+    def __init__(
+        self, database_file: Optional[Union[str, PosixPath, WindowsPath]] = None
+    ) -> None:
         """
         Parameters
         ----------
-        database_file : str, PosixPath, None
+        database_file : str, PosixPath, WindowsPath, None
             Path to the HDF5 database that is stored as
             `species_database.hdf5`. Setting the argument will
             overwrite the database path in the configuration file.
