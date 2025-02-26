@@ -740,23 +740,24 @@ class FitEvolution:
                     masses=np.array([mass]),
                     filters_color=None,
                     filter_mag=None,
-                    param_interp=["log_lum", "logg", "radius"],
+                    param_interp=["log_lum", "teff", "logg", "radius"],
                 )
 
                 radius[sample_idx, planet_idx] = iso_box.radius[0]
                 log_g[sample_idx, planet_idx] = iso_box.logg[0]
+                t_eff[sample_idx, planet_idx] = iso_box.teff[0]
 
-                l_bol = 10.0 ** iso_box.log_lum[0] * constants.L_SUN
+                # l_bol = 10.0 ** iso_box.log_lum[0] * constants.L_SUN
 
-                t_eff[sample_idx, planet_idx] = (
-                    l_bol
-                    / (
-                        4.0
-                        * np.pi
-                        * (radius[sample_idx, planet_idx] * constants.R_JUP) ** 2
-                        * constants.SIGMA_SB
-                    )
-                ) ** 0.25
+                # t_eff[sample_idx, planet_idx] = (
+                #     l_bol
+                #     / (
+                #         4.0
+                #         * np.pi
+                #         * (radius[sample_idx, planet_idx] * constants.R_JUP) ** 2
+                #         * constants.SIGMA_SB
+                #     )
+                # ) ** 0.25
 
         for planet_idx in range(self.n_planets):
             self.model_par.append(f"teff_{planet_idx}")

@@ -107,15 +107,15 @@ def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
         file_param = iso_item.stem.split("_")
         mags_idx = file_param.index("mags")
 
-        if int(file_param[mags_idx+1]) == -2:
+        if int(file_param[mags_idx + 1]) == -2:
             atm_model = "petitCODE"
-        elif int(file_param[mags_idx+1]) == -3:
+        elif int(file_param[mags_idx + 1]) == -3:
             atm_model = "HELIOS"
         else:
             raise ValueError("Atmospheric model not recognized.")
 
         mh_idx = file_param.index("MH")
-        metallicity = float(file_param[mh_idx+1])
+        metallicity = float(file_param[mh_idx + 1])
 
         if "brighter" in file_param or "fainter" in file_param:
             # Skip _brighter and _fainter files
@@ -123,7 +123,7 @@ def add_linder2019(database: h5py._hl.files.File, input_path: str) -> None:
 
         if "fsed" in file_param:
             fsed_idx = file_param.index("fsed")
-            fsed = float(file_param[fsed_idx+1])
+            fsed = float(file_param[fsed_idx + 1])
         else:
             fsed = None
 
