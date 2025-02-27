@@ -1738,26 +1738,46 @@ class FitModel:
 
         for prior_key, prior_value in self.normal_prior.items():
             if prior_key == "mass":
-                if "logg" in self.modelpar and "radius" in self.modelpar:
-                    mass = logg_to_mass(
-                        params[self.cube_index["logg"]],
-                        params[self.cube_index["radius"]],
-                    )
+                if "logg" in all_param and "radius" in all_param:
+                    mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
                     ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
 
                 else:
-                    if "logg" not in self.modelpar:
+                    if "logg" not in all_param:
                         warnings.warn(
                             "The 'logg' parameter is not used "
                             f"by the '{self.model}' model so "
                             "the mass prior cannot be applied."
                         )
 
-                    elif "radius" not in self.modelpar:
+                    elif "radius" not in all_param:
                         warnings.warn(
                             "The 'radius' parameter is not fitted "
                             "so the mass prior cannot be applied."
+                        )
+
+            elif prior_key in ["mass_0", "mass_1"]:
+                bin_idx = prior_key[-1]
+
+                if f"logg_{bin_idx}" in all_param and f"radius_{bin_idx}" in all_param:
+                    mass = logg_to_mass(
+                        all_param[f"logg_{bin_idx}"], all_param[f"radius_{bin_idx}"]
+                    )
+
+                    ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
+
+                else:
+                    if f"logg_{bin_idx}" not in all_param:
+                        warnings.warn(
+                            f"The 'logg_{bin_idx}' parameter is not "
+                            "fitted so the mass prior can't be applied."
+                        )
+
+                    elif f"radius_{bin_idx}" not in all_param:
+                        warnings.warn(
+                            f"The 'radius_{bin_idx}' parameter is not "
+                            "fitted so the mass prior can't be applied."
                         )
 
             elif prior_key[:6] == "ratio_":
