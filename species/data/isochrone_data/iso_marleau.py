@@ -9,11 +9,10 @@ from species.core import constants
 @typechecked
 def add_marleau(database: h5py._hl.files.File, tag: str, file_name: str) -> None:
     """
-    Function for adding the Marleau et al. isochrone data
-    to the database. The isochrone data can be requested
-    from Gabriel Marleau.
-
-    https://ui.adsabs.harvard.edu/abs/2019A%26A...624A..20M/abstract
+    Function for adding the `Marleau et al. (2019)
+    <https://ui.adsabs.harvard.edu/abs/2019A%26A...624A..20M>`_
+    isochrone data to the database. The isochrone data can be
+    requested by contacting Gabriel Marleau.
 
     Parameters
     ----------

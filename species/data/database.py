@@ -553,7 +553,7 @@ class Database:
     @typechecked
     def add_isochrones(
         self,
-        model: str,
+        model: Optional[str] = None,
         filename: Optional[str] = None,
         tag: Optional[str] = None,
     ) -> None:
@@ -562,25 +562,27 @@ class Database:
 
         Parameters
         ----------
-        model : str
+        model : str, None
             Evolutionary model ('ames', 'atmo', 'baraffe2015',
             'bt-settl', 'linder2019', 'nextgen', 'saumon2008',
-            'sonora', or 'manual'). Isochrones will be
-            automatically downloaded. Alternatively,
-            isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/ or
-            https://perso.ens-lyon.fr/isabelle.baraffe/, and can
-            be manually added by setting the ``filename`` and
-            ``tag`` arguments, and setting ``model='manual'``.
+            'sonora'). Isochrones will be automatically
+            downloaded. Alternatively, the ``filename``
+            parameter can be used in combination with ``tag``.
         filename : str, None
-            Filename with the isochrone data. Setting the argument
-            is only required when ``model='manual'``. Otherwise,
-            the argument can be set to ``None``.
+            Filename with the isochrone data. The argument of
+            ``model`` will be ignored by setting the argument
+            of ``filename``. When using ``filename``, also
+            the argument of ``tag`` should be set. Only files
+            with isochrone data from
+            https://phoenix.ens-lyon.fr/Grids/ and
+            https://perso.ens-lyon.fr/isabelle.baraffe/ are
+            supported. The parameter is ignored by setting
+            the argument to ``None``.
         tag : str, None
             Database tag name where the isochrone that will be
-            stored. Setting the argument is only required when
-            ``model='manual'``. Otherwise, the argument can be
-            set to ``None``.
+            stored. Setting the argument is only required in
+            combination with the ``filename`` parameter.
+            Otherwise, the argument can be set to ``None``.
 
         Returns
         -------
@@ -596,23 +598,26 @@ class Database:
         print(f"File name: {filename}")
         print(f"Database tag: {tag}")
 
-        if model == "phoenix":
-            warnings.warn(
-                "Please set model='manual' instead of "
-                "model='phoenix' when using the filename "
-                "parameter for adding isochrone data.",
-                DeprecationWarning,
+        avail_models = [
+            "ames",
+            "atmo",
+            "baraffe2015",
+            "bt-settl",
+            "linder2019",
+            "nextgen",
+            "saumon2008",
+            "sonora",
+        ]
+
+        if filename is None and model not in avail_models:
+            raise ValueError(
+                f"The selected 'model={model}' is not supported. Please "
+                f"select one of the following models: {avail_models}"
             )
 
         with h5py.File(self.database, "a") as hdf5_file:
-            if "isochrones" not in hdf5_file:
-                hdf5_file.create_group("isochrones")
 
-            if model in ["manual", "marleau", "phoenix"]:
-                if f"isochrones/{tag}" in hdf5_file:
-                    del hdf5_file[f"isochrones/{tag}"]
-
-            elif model == "ames":
+            if model == "ames":
                 if "isochrones/ames-cond" in hdf5_file:
                     del hdf5_file["isochrones/ames-cond"]
                 if "isochrones/ames-dusty" in hdf5_file:
@@ -663,6 +668,10 @@ class Database:
                     del hdf5_file["isochrones/sonora+0.5"]
                 if "isochrones/sonora-0.5" in hdf5_file:
                     del hdf5_file["isochrones/sonora-0.5"]
+
+            else:
+                if f"isochrones/{tag}" in hdf5_file:
+                    del hdf5_file[f"isochrones/{tag}"]
 
             add_isochrone_grid(
                 self.data_folder, hdf5_file, model, filename=filename, tag=tag

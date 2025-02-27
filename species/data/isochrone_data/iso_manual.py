@@ -8,7 +8,7 @@ from species.core import constants
 
 @typechecked
 def add_manual(
-    database: h5py._hl.files.File, tag: str, file_name: str, model_name: str = "manual"
+    database: h5py._hl.files.File, tag: str, file_name: str, model_name: str
 ) -> None:
     """
     Function for adding any of the isochrones from
