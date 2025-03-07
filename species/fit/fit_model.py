@@ -1757,7 +1757,7 @@ class FitModel:
                             "so the mass prior cannot be applied."
                         )
 
-            elif prior_key in ["mass_0", "mass_1"]:
+            elif self.binary and prior_key in ["mass_0", "mass_1"]:
                 bin_idx = prior_key[-1]
 
                 if f"logg_{bin_idx}" in all_param and f"radius_{bin_idx}" in all_param:
@@ -1779,6 +1779,31 @@ class FitModel:
                             f"The 'radius_{bin_idx}' parameter is not "
                             "fitted so the mass prior can't be applied."
                         )
+
+            elif self.binary and prior_key == "mass_ratio":
+                if (
+                    "logg_0" in all_param
+                    and "radius_0" in all_param
+                    and "logg_1" in all_param
+                    and "radius_1" in all_param
+                ):
+                    mass_0 = logg_to_mass(all_param["logg_0"], all_param["radius_0"])
+                    mass_1 = logg_to_mass(all_param["logg_1"], all_param["radius_1"])
+
+                    ln_like += (
+                        -0.5
+                        * (mass_1 / mass_0 - prior_value[0]) ** 2
+                        / prior_value[1] ** 2
+                    )
+
+                else:
+                    for param_item in ["logg_0", "logg_1", "radius_0", "radius_1"]:
+                        if param_item not in all_param:
+                            warnings.warn(
+                                f"The '{param_item}' parameter is "
+                                "not fitted so the mass_ratio prior "
+                                "can't be applied."
+                            )
 
             elif prior_key[:6] == "ratio_":
                 filter_name = prior_key[6:]
