@@ -2414,7 +2414,7 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        if dset_attrs["binary"]:
+        if "binary" in dset_attrs and dset_attrs["binary"]:
             param_0 = binary_to_single(prob_sample, 0)
             check_nearest_spec(dset_attrs["model_name"], param_0)
 
@@ -2497,7 +2497,7 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        if dset_attrs["binary"]:
+        if "binary" in dset_attrs and dset_attrs["binary"]:
             param_0 = binary_to_single(median_sample, 0)
             check_nearest_spec(dset_attrs["model_name"], param_0)
 
