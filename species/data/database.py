@@ -2378,6 +2378,8 @@ class Database:
         else:
             n_param = dset_attrs["nparam"]
 
+        print(dset_attrs)
+        exit()
         index_max = np.argmax(ln_prob)
         max_sample = samples[index_max,]
 
@@ -2414,15 +2416,17 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        if "binary" in dset_attrs and dset_attrs["binary"]:
-            param_0 = binary_to_single(prob_sample, 0)
-            check_nearest_spec(dset_attrs["model_name"], param_0)
+        if "model_type" in dset_attrs and dset_attrs["model_type"] == "atmosphere":
 
-            param_1 = binary_to_single(prob_sample, 1)
-            check_nearest_spec(dset_attrs["model_name"], param_1)
+            if "binary" in dset_attrs and dset_attrs["binary"]:
+                param_0 = binary_to_single(prob_sample, 0)
+                check_nearest_spec(dset_attrs["model_name"], param_0)
 
-        else:
-            check_nearest_spec(dset_attrs["model_name"], prob_sample)
+                param_1 = binary_to_single(prob_sample, 1)
+                check_nearest_spec(dset_attrs["model_name"], param_1)
+
+            else:
+                check_nearest_spec(dset_attrs["model_name"], prob_sample)
 
         return prob_sample
 
@@ -2497,15 +2501,17 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
-        if "binary" in dset_attrs and dset_attrs["binary"]:
-            param_0 = binary_to_single(median_sample, 0)
-            check_nearest_spec(dset_attrs["model_name"], param_0)
+        if "model_type" in dset_attrs and dset_attrs["model_type"] == "atmosphere":
 
-            param_1 = binary_to_single(median_sample, 1)
-            check_nearest_spec(dset_attrs["model_name"], param_1)
+            if "binary" in dset_attrs and dset_attrs["binary"]:
+                param_0 = binary_to_single(median_sample, 0)
+                check_nearest_spec(dset_attrs["model_name"], param_0)
 
-        else:
-            check_nearest_spec(dset_attrs["model_name"], median_sample)
+                param_1 = binary_to_single(median_sample, 1)
+                check_nearest_spec(dset_attrs["model_name"], param_1)
+
+            else:
+                check_nearest_spec(dset_attrs["model_name"], median_sample)
 
         return median_sample
 
