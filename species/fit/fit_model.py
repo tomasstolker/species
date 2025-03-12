@@ -553,7 +553,7 @@ class FitModel:
 
         self.binary_prior = binary_prior
         self.ext_filter = ext_filter
-        self.ext_model = None
+        self.ext_model = ext_model
 
         if fit_corr is None:
             self.fit_corr = []

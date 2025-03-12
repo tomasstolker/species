@@ -1731,6 +1731,12 @@ def create_model_label(
         elif param_item[:4] == "fsed":
             value = f"{model_param[param_item]:{param_fmt['fsed']}}"
 
+        elif param_item[:7] == "ism_ext":
+            value = f"{model_param[param_item]:{param_fmt['ism_ext']}}"
+
+        elif param_item[:6] == "ext_av":
+            value = f"{model_param[param_item]:{param_fmt['ext_av']}}"
+
         elif param_item[:6] == "radius":
             if object_type == "planet":
                 value = f"{model_param[param_item]:{param_fmt['radius']}}"
