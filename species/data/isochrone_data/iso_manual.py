@@ -118,9 +118,15 @@ def add_manual(
     )  # log(L/Lsun)
     database.create_dataset(f"isochrones/{tag}/log_g", data=iso_data[:, 4])  # log(g)
     database.create_dataset(f"isochrones/{tag}/radius", data=iso_data[:, 5])  # (Rjup)
-    database.create_dataset(f"isochrones/{tag}/deuterium", data=iso_data[:, 6])
-    database.create_dataset(f"isochrones/{tag}/lithium", data=iso_data[:, 7])
-    database.create_dataset(f"isochrones/{tag}/magnitudes", data=iso_data[:, 8:])
+
+    if check_baraffe:
+        database.create_dataset(f"isochrones/{tag}/lithium", data=iso_data[:, 6])
+        database.create_dataset(f"isochrones/{tag}/magnitudes", data=iso_data[:, 7:])
+
+    else:
+        database.create_dataset(f"isochrones/{tag}/deuterium", data=iso_data[:, 6])
+        database.create_dataset(f"isochrones/{tag}/lithium", data=iso_data[:, 7])
+        database.create_dataset(f"isochrones/{tag}/magnitudes", data=iso_data[:, 8:])
 
     dset.attrs["model"] = model_name
 
