@@ -2378,8 +2378,6 @@ class Database:
         else:
             n_param = dset_attrs["nparam"]
 
-        print(dset_attrs)
-        exit()
         index_max = np.argmax(ln_prob)
         max_sample = samples[index_max,]
 
@@ -2765,7 +2763,7 @@ class Database:
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
-            if "ext_av" in model_param and "ext_model" in dset_attrs:
+            if "ext_model" in dset_attrs:
                 model_param["ext_model"] = dset_attrs["ext_model"]
 
             if model_type in ["model", "atmosphere"]:

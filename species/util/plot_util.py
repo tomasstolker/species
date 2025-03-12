@@ -1205,6 +1205,16 @@ def quantity_unit(
 
                 label.append(rf"$R_\mathrm{{{param_index+1}}}$")
 
+            elif item[:7] == "ism_ext":
+                quantity.append(f"ism_ext_{param_index}")
+                unit.append(None)
+                label.append(r"$A_{V,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
+            elif item[:6] == "ext_av":
+                quantity.append(f"ext_av_{param_index}")
+                unit.append(None)
+                label.append(r"$A_{V,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
             elif item_split[0] == "disk" and item_split[1] == "teff":
                 quantity.append(f"disk_teff_{param_index}")
                 unit.append("K")

@@ -544,15 +544,16 @@ class FitModel:
         self.object = ReadObject(object_name)
         self.obj_parallax = self.object.get_parallax()
         self.binary = False
-        self.binary_prior = binary_prior
-        self.ext_filter = ext_filter
         self.param_interp = None
         self.cross_sections = None
-        self.ext_model = None
         self.ln_z = None
         self.ln_z_error = None
         self.n_planck = 0
         self.n_disk = 0
+
+        self.binary_prior = binary_prior
+        self.ext_filter = ext_filter
+        self.ext_model = None
 
         if fit_corr is None:
             self.fit_corr = []
@@ -779,6 +780,14 @@ class FitModel:
                             self.bounds["ism_ext_0"] = self.bounds["ism_ext"][0]
                             self.bounds["ism_ext_1"] = self.bounds["ism_ext"][1]
                             del self.bounds["ism_ext"]
+
+                    if "ext_av" in self.bounds:
+                        if isinstance(self.bounds["ext_av"][0], tuple):
+                            self.modelpar.append("ext_av_0")
+                            self.modelpar.append("ext_av_1")
+                            self.bounds["ext_av_0"] = self.bounds["ext_av"][0]
+                            self.bounds["ext_av_1"] = self.bounds["ext_av"][1]
+                            del self.bounds["ext_av"]
 
                 if (
                     "parallax_0" not in self.modelpar
@@ -1331,22 +1340,31 @@ class FitModel:
         elif ext_model is not None:
             self.ext_model = ext_model
 
-            if "ext_av" in self.bounds or "ext_av" in self.normal_prior:
-                self.modelpar.append("ext_av")
+            if self.binary:
+                # ext_av_0 and ext_av_1 were already added to self.modelpar
+                if "ext_rv_0" in self.bounds or "ext_rv_0" in self.normal_prior:
+                    self.modelpar.append("ext_rv_0")
 
-                if "ext_rv" in self.bounds or "ext_rv" in self.normal_prior:
-                    self.modelpar.append("ext_rv")
+                if "ext_rv_1" in self.bounds or "ext_rv_1" in self.normal_prior:
+                    self.modelpar.append("ext_rv_1")
 
             else:
-                self.ext_model = None
+                if "ext_av" in self.bounds or "ext_av" in self.normal_prior:
+                    self.modelpar.append("ext_av")
 
-                warnings.warn(
-                    "The 'ext_model' is set but the 'ext_av' "
-                    "parameter is missing in the 'bounds' "
-                    "dictionary so the 'ext_model' parameter "
-                    "will be ignored and no extinction will "
-                    "be fitted."
-                )
+                    if "ext_rv" in self.bounds or "ext_rv" in self.normal_prior:
+                        self.modelpar.append("ext_rv")
+
+                else:
+                    self.ext_model = None
+
+                    warnings.warn(
+                        "The 'ext_model' is set but the 'ext_av' "
+                        "parameter is missing in the 'bounds' "
+                        "dictionary so the 'ext_model' parameter "
+                        "will be ignored and no extinction will "
+                        "be fitted."
+                    )
 
         elif ext_model is None:
             if "ext_av" in self.bounds:

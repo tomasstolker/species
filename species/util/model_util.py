@@ -215,20 +215,7 @@ def binary_to_single(param_dict: Dict[str, float], star_index: int) -> Dict[str,
         elif star_index == 1 and param_key[-1] == "1":
             new_dict[param_key[:-2]] = param_value
 
-        elif param_key in [
-            "teff",
-            "logg",
-            "feh",
-            "c_o_ratio",
-            "fsed",
-            "radius",
-            "distance",
-            "parallax",
-            "ism_ext",
-            "ext_av",
-            "vsini",
-            "rad_vel",
-        ]:
+        elif param_key[-2:] not in ["_0", "_1"]:
             new_dict[param_key] = param_value
 
     return new_dict

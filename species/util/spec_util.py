@@ -62,7 +62,7 @@ def smooth_spectrum(
     wavelength: np.ndarray,
     flux: np.ndarray,
     spec_res: float,
-    size: int = 11,
+    kernel_size: int = 11,
     force_smooth: bool = False,
 ) -> np.ndarray:
     """
@@ -76,16 +76,19 @@ def smooth_spectrum(
     Parameters
     ----------
     wavelength : np.ndarray
-        Wavelength points (um). Should be sampled with a uniform
-        spectral resolution or a uniform wavelength spacing (slow).
+        Wavelength points (um). Should be sampled with constant
+        logarithmic steps (i.e. fixed :math:`\\lambda/\\Delta\\lambda`)
+        or sampled with a uniform linear spacing. The latter
+        implementation is slow so the first is preferred.
     flux : np.ndarray
         Flux (W m-2 um-1).
     spec_res : float
         Spectral resolution.
-    size : int
-        Kernel size (odd integer).
+    kernel_size : int
+        Kernel size (odd integer). Only used when the wavelengths
+        are linearly sampled. Not used by the function.
     force_smooth : bool
-        Force smoothing for constant spectral resolution
+        Force the smoothing for logarithmically spaced wavelengths.
 
     Returns
     -------
@@ -93,8 +96,8 @@ def smooth_spectrum(
         Smoothed spectrum (W m-2 um-1).
     """
 
-    def _gaussian(size, sigma):
-        pos = range(-(size - 1) // 2, (size - 1) // 2 + 1)
+    def _gaussian(kernel_size, sigma):
+        pos = range(-(kernel_size - 1) // 2, (kernel_size - 1) // 2 + 1)
         kernel = [
             np.exp(-float(x) ** 2 / (2.0 * sigma**2)) / (sigma * np.sqrt(2.0 * np.pi))
             for x in pos
@@ -117,9 +120,6 @@ def smooth_spectrum(
         flux_smooth = gaussian_filter(flux, sigma=sigma_filter, mode="nearest")
 
     else:
-        if size % 2 == 0:
-            raise ValueError("The kernel size should be an odd number.")
-
         flux_smooth = np.zeros(flux.shape)  # (W m-2 um-1)
 
         spacing = np.mean(np.diff(wavelength))  # (um)
@@ -141,17 +141,18 @@ def smooth_spectrum(
             fwhm = item / spec_res  # (um)
             sigma = fwhm / (2.0 * np.sqrt(2.0 * np.log(2.0)))  # (um)
 
-            size = int(
-                5.0 * sigma / spacing
-            )  # Kernel size 5 times the width of the LSF
-            if size % 2 == 0:
-                size += 1
+            # Kernel size 5 times the width of the LSF
+            kernel_size = int(5.0 * sigma / spacing)
 
-            gaussian = _gaussian(size, sigma / spacing)
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+
+            gaussian = _gaussian(kernel_size, sigma / spacing)
 
             try:
                 flux_smooth[i] = np.sum(
-                    gaussian * flux[i - (size - 1) // 2 : i + (size - 1) // 2 + 1]
+                    gaussian
+                    * flux[i - (kernel_size - 1) // 2 : i + (kernel_size - 1) // 2 + 1]
                 )
 
             except ValueError:
