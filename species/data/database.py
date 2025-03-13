@@ -1668,7 +1668,7 @@ class Database:
                 if spec_value[2] is None:
                     if verbose:
                         print(f"      - {spec_item}: None")
-                    dset.attrs["specres"] = 0.0
+                    dset.attrs["specres"] = np.nan
 
                 else:
                     if verbose:

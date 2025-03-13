@@ -2769,10 +2769,10 @@ class FitModel:
 
         # Check nearest grid points
 
-        if self.binary:
-            for param_key, param_value in self.fix_param.items():
-                param_check[param_key] = param_value
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
 
+        if self.binary:
             param_0 = binary_to_single(param_check, 0)
             check_nearest_spec(self.model, param_0)
 
@@ -3045,10 +3045,10 @@ class FitModel:
 
         # Check nearest grid points
 
-        if self.binary:
-            for param_key, param_value in self.fix_param.items():
-                param_check[param_key] = param_value
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
 
+        if self.binary:
             param_0 = binary_to_single(param_check, 0)
             check_nearest_spec(self.model, param_0)
 
@@ -3424,10 +3424,10 @@ class FitModel:
 
         # Check nearest grid points
 
-        if self.binary:
-            for param_key, param_value in self.fix_param.items():
-                param_check[param_key] = param_value
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
 
+        if self.binary:
             param_0 = binary_to_single(param_check, 0)
             check_nearest_spec(self.model, param_0)
 

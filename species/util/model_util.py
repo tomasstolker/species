@@ -301,8 +301,9 @@ def apply_obs(
         wavelength resampling. Not applied if the argument is
         set to ``None``.
     spec_res : float, None
-        Spectral resolution of the data used for the instrumental
-        broadening. Not applied if the argument is set to ``None``.
+        Spectral resolution of the data used for the
+        instrumental broadening. Not applied if the argument
+        is set to ``None`` or np.nan.
     rot_broad : float, None
         Rotational broadening :math:`v\\sin{i}` (km/s). Not
         applied if the argument is set to ``None``.
@@ -474,7 +475,7 @@ def apply_obs(
 
     # Apply instrument broadening
 
-    if spec_res is not None:
+    if spec_res is not None and not np.isnan(spec_res):
         model_flux = smooth_spectrum(model_wavel, model_flux, spec_res)
 
     # Resample wavelengths to data
