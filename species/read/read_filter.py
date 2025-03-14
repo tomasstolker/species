@@ -140,7 +140,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return np.trapz(data[:, 0] * data[:, 1], x=data[:, 0]) / np.trapz(
+        return np.trapezoid(data[:, 0] * data[:, 1], x=data[:, 0]) / np.trapezoid(
             data[:, 1], x=data[:, 0]
         )
 
@@ -174,10 +174,10 @@ class ReadFilter:
 
         flux_filter = flux_interp(filter_profile[:, 0])
 
-        return np.trapz(
+        return np.trapezoid(
             filter_profile[:, 0] * filter_profile[:, 1] * flux_filter,
             x=filter_profile[:, 0],
-        ) / np.trapz(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
+        ) / np.trapezoid(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
 
     @typechecked
     def filter_fwhm(self) -> float:
@@ -221,7 +221,7 @@ class ReadFilter:
 
         data = self.get_filter()
 
-        return np.trapz(data[:, 1], x=data[:, 0]) / np.amax(data[:, 1])
+        return np.trapezoid(data[:, 1], x=data[:, 0]) / np.amax(data[:, 1])
 
     @typechecked
     def detector_type(self) -> str:

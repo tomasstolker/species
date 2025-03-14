@@ -9,7 +9,7 @@ h5py
 matplotlib
 molmass
 numba
-numpy < 2.0.0
+numpy
 pandas
 pooch
 PyMieScatt

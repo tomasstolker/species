@@ -1342,25 +1342,22 @@ class Database:
                                     print("   - GRAVITY spectrum:")
                                     print(f"      - Object: {gravity_object}")
 
-                                wavelength = (
-                                    hdulist[1]
-                                    .data["WAVELENGTH"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (um)
+                                # Wavelength (um)
+                                wavelength = hdulist[1].data["WAVELENGTH"]
+                                # wavelength = wavelength.view(wavelength.dtype.newbyteorder("<"))
 
-                                flux = (
-                                    hdulist[1].data["FLUX"].byteswap().newbyteorder()
-                                )  # (W m-2 um-1)
+                                # Flux (W m-2 um-1)
+                                flux = hdulist[1].data["FLUX"]
+                                # flux = flux.view(flux.dtype.newbyteorder("<"))
 
-                                covariance = (
-                                    hdulist[1]
-                                    .data["COVARIANCE"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (W m-2 um-1)^2
+                                # Covariance (W m-2 um-1)^2
+                                covariance = hdulist[1].data["COVARIANCE"]
+                                # covariance = covariance.view(
+                                #     covariance.dtype.newbyteorder("<")
+                                # )
 
-                                error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
+                                # Uncorrelated uncertainties (W m-2 um-1)
+                                error = np.sqrt(np.diag(covariance))
 
                                 read_spec[spec_item] = np.column_stack(
                                     [wavelength, flux, error]
@@ -1372,9 +1369,8 @@ class Database:
                                     print("   - Spectrum:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(
-                                        hdu_item.data.byteswap().newbyteorder()
-                                    )
+                                    data = hdu_item.data
+                                    # data = data.view(data.dtype.newbyteorder("<"))
 
                                     if (
                                         data.ndim == 2
@@ -1524,12 +1520,11 @@ class Database:
                                     print("   - GRAVITY covariance matrix:")
                                     print(f"      - Object: {gravity_object}")
 
-                                read_cov[spec_item] = (
-                                    hdulist[1]
-                                    .data["COVARIANCE"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (W m-2 um-1)^2
+                                # (W m-2 um-1)^2
+                                read_cov[spec_item] = hdulist[1].data["COVARIANCE"]
+                                # read_cov[spec_item] = read_cov[spec_item].view(
+                                #     read_cov[spec_item].dtype.newbyteorder("<")
+                                # )
 
                             else:
                                 if spec_item in units:
@@ -1547,9 +1542,8 @@ class Database:
                                     print("   - Covariance matrix:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(
-                                        hdu_item.data.byteswap().newbyteorder()
-                                    )
+                                    data = hdu_item.data
+                                    # data = data.view(data.dtype.newbyteorder("<"))
 
                                     corr_warn = (
                                         f"The matrix from {spec_value[1]} contains "
@@ -2073,7 +2067,7 @@ class Database:
         if filename is not None:
             if filename[-5:] == ".fits":
                 data = fits.getdata(filename)
-                data = data.byteswap().newbyteorder()
+                # data = data.view(data.dtype.newbyteorder("<"))
 
                 if data.ndim != 2:
                     raise RuntimeError(
