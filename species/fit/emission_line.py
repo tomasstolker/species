@@ -478,7 +478,7 @@ class EmissionLine:
         Method for calculating the integrated line flux and error. The
         spectrum is first interpolated to :math:`R = 100000` and then
         integrated across the specified wavelength range with the
-        composite trapezoidal rule of ``np.trapz``. The error is
+        composite trapezoidal rule of ``np.trapezoid``. The error is
         estimated with a Monte Carlo approach from 1000 samples.
         The accretion luminosity is also calculated with the relation
         from `Aoyama et al. (2021) <https://ui.adsabs.harvard.edu/
@@ -626,7 +626,7 @@ class EmissionLine:
             flux_rand = spec_interp(wavel_high_res)
 
             # Integrate line flux (W m-2)
-            flux_sample[i] = np.trapz(flux_rand, x=wavel_high_res)
+            flux_sample[i] = np.trapezoid(flux_rand, x=wavel_high_res)
 
             # Line luminosity (Lsun)
             lum_sample[i] = (
@@ -638,9 +638,9 @@ class EmissionLine:
             lum_sample[i] /= constants.L_SUN  # (Lsun)
 
             # Weighted (with flux) mean wavelength (um)
-            mean_sample[i] = np.trapz(
+            mean_sample[i] = np.trapezoid(
                 wavel_high_res * flux_rand, x=wavel_high_res
-            ) / np.trapz(flux_rand, x=wavel_high_res)
+            ) / np.trapezoid(flux_rand, x=wavel_high_res)
 
             # Radial velocity (km s-1)
             vrad_sample[i] = (
@@ -693,7 +693,7 @@ class EmissionLine:
 
         flux_high_res = spec_interp(wavel_high_res)
 
-        line_flux = np.trapz(flux_high_res, x=wavel_high_res)
+        line_flux = np.trapezoid(flux_high_res, x=wavel_high_res)
 
         ax1.plot(
             wavel_high_res, flux_high_res, color="tab:blue", label="High resolution"
@@ -1072,7 +1072,9 @@ class EmissionLine:
                 double_gaussian=double_gaussian,
             )
 
-            line_flux[i] = np.trapz(model_box.flux, x=model_box.wavelength)  # (W m-2)
+            line_flux[i] = np.trapezoid(
+                model_box.flux, x=model_box.wavelength
+            )  # (W m-2)
 
             line_lum[i] = (
                 4.0
@@ -1089,7 +1091,7 @@ class EmissionLine:
                 # Check if the flux is NaN (due to interpolation errors at the spectrum edge)
                 indices = ~np.isnan(spec_norm)
 
-                eq_width[i] = np.trapz(
+                eq_width[i] = np.trapezoid(
                     1.0 - spec_norm[indices], x=model_box.wavelength[indices]
                 )  # (um)
                 eq_width[i] *= 1e4  # (A)

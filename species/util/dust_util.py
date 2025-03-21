@@ -395,8 +395,8 @@ def interp_lognorm() -> Tuple[
     #
     #             cross_tmp = cross_interp(filt_trans[:, 0])
     #
-    #             integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-    #             integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
+    #             integral1 = np.trapezoid(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+    #             integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
     #
     #             # Filter-weighted average of the extinction cross section
     #             cross_phot[i, j] = integral1 / integral2
@@ -473,8 +473,8 @@ def interp_powerlaw() -> Tuple[
     #
     #             cross_tmp = cross_interp(filt_trans[:, 0])
     #
-    #             integral1 = np.trapz(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-    #             integral2 = np.trapz(filt_trans[:, 1], x=filt_trans[:, 0])
+    #             integral1 = np.trapezoid(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
+    #             integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
     #
     #             # Filter-weighted average of the extinction cross section
     #             cross_phot[i, j] = integral1 / integral2

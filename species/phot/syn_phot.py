@@ -322,8 +322,8 @@ class SyntheticPhotometry:
                         )
                         integrand2 = wavelength[indices] * transmission[indices]
 
-                    integral1 = np.trapz(integrand1, x=wavelength[indices])
-                    integral2 = np.trapz(integrand2, x=wavelength[indices])
+                    integral1 = np.trapezoid(integrand1, x=wavelength[indices])
+                    integral2 = np.trapezoid(integrand2, x=wavelength[indices])
 
                     syn_flux = integral1 / integral2
 

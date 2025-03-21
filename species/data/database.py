@@ -553,7 +553,7 @@ class Database:
     @typechecked
     def add_isochrones(
         self,
-        model: str,
+        model: Optional[str] = None,
         filename: Optional[str] = None,
         tag: Optional[str] = None,
     ) -> None:
@@ -562,25 +562,27 @@ class Database:
 
         Parameters
         ----------
-        model : str
+        model : str, None
             Evolutionary model ('ames', 'atmo', 'baraffe2015',
             'bt-settl', 'linder2019', 'nextgen', 'saumon2008',
-            'sonora', or 'manual'). Isochrones will be
-            automatically downloaded. Alternatively,
-            isochrone data can be downloaded from
-            https://phoenix.ens-lyon.fr/Grids/ or
-            https://perso.ens-lyon.fr/isabelle.baraffe/, and can
-            be manually added by setting the ``filename`` and
-            ``tag`` arguments, and setting ``model='manual'``.
+            'sonora'). Isochrones will be automatically
+            downloaded. Alternatively, the ``filename``
+            parameter can be used in combination with ``tag``.
         filename : str, None
-            Filename with the isochrone data. Setting the argument
-            is only required when ``model='manual'``. Otherwise,
-            the argument can be set to ``None``.
+            Filename with the isochrone data. The argument of
+            ``model`` will be ignored by setting the argument
+            of ``filename``. When using ``filename``, also
+            the argument of ``tag`` should be set. Only files
+            with isochrone data from
+            https://phoenix.ens-lyon.fr/Grids/ and
+            https://perso.ens-lyon.fr/isabelle.baraffe/ are
+            supported. The parameter is ignored by setting
+            the argument to ``None``.
         tag : str, None
             Database tag name where the isochrone that will be
-            stored. Setting the argument is only required when
-            ``model='manual'``. Otherwise, the argument can be
-            set to ``None``.
+            stored. Setting the argument is only required in
+            combination with the ``filename`` parameter.
+            Otherwise, the argument can be set to ``None``.
 
         Returns
         -------
@@ -596,23 +598,26 @@ class Database:
         print(f"File name: {filename}")
         print(f"Database tag: {tag}")
 
-        if model == "phoenix":
-            warnings.warn(
-                "Please set model='manual' instead of "
-                "model='phoenix' when using the filename "
-                "parameter for adding isochrone data.",
-                DeprecationWarning,
+        avail_models = [
+            "ames",
+            "atmo",
+            "baraffe2015",
+            "bt-settl",
+            "linder2019",
+            "nextgen",
+            "saumon2008",
+            "sonora",
+        ]
+
+        if filename is None and model not in avail_models:
+            raise ValueError(
+                f"The selected 'model={model}' is not supported. Please "
+                f"select one of the following models: {avail_models}"
             )
 
         with h5py.File(self.database, "a") as hdf5_file:
-            if "isochrones" not in hdf5_file:
-                hdf5_file.create_group("isochrones")
 
-            if model in ["manual", "marleau", "phoenix"]:
-                if f"isochrones/{tag}" in hdf5_file:
-                    del hdf5_file[f"isochrones/{tag}"]
-
-            elif model == "ames":
+            if model == "ames":
                 if "isochrones/ames-cond" in hdf5_file:
                     del hdf5_file["isochrones/ames-cond"]
                 if "isochrones/ames-dusty" in hdf5_file:
@@ -663,6 +668,10 @@ class Database:
                     del hdf5_file["isochrones/sonora+0.5"]
                 if "isochrones/sonora-0.5" in hdf5_file:
                     del hdf5_file["isochrones/sonora-0.5"]
+
+            else:
+                if f"isochrones/{tag}" in hdf5_file:
+                    del hdf5_file[f"isochrones/{tag}"]
 
             add_isochrone_grid(
                 self.data_folder, hdf5_file, model, filename=filename, tag=tag
@@ -1333,25 +1342,22 @@ class Database:
                                     print("   - GRAVITY spectrum:")
                                     print(f"      - Object: {gravity_object}")
 
-                                wavelength = (
-                                    hdulist[1]
-                                    .data["WAVELENGTH"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (um)
+                                # Wavelength (um)
+                                wavelength = hdulist[1].data["WAVELENGTH"]
+                                # wavelength = wavelength.view(wavelength.dtype.newbyteorder("<"))
 
-                                flux = (
-                                    hdulist[1].data["FLUX"].byteswap().newbyteorder()
-                                )  # (W m-2 um-1)
+                                # Flux (W m-2 um-1)
+                                flux = hdulist[1].data["FLUX"]
+                                # flux = flux.view(flux.dtype.newbyteorder("<"))
 
-                                covariance = (
-                                    hdulist[1]
-                                    .data["COVARIANCE"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (W m-2 um-1)^2
+                                # Covariance (W m-2 um-1)^2
+                                covariance = hdulist[1].data["COVARIANCE"]
+                                # covariance = covariance.view(
+                                #     covariance.dtype.newbyteorder("<")
+                                # )
 
-                                error = np.sqrt(np.diag(covariance))  # (W m-2 um-1)
+                                # Uncorrelated uncertainties (W m-2 um-1)
+                                error = np.sqrt(np.diag(covariance))
 
                                 read_spec[spec_item] = np.column_stack(
                                     [wavelength, flux, error]
@@ -1363,9 +1369,8 @@ class Database:
                                     print("   - Spectrum:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(
-                                        hdu_item.data.byteswap().newbyteorder()
-                                    )
+                                    data = hdu_item.data
+                                    # data = data.view(data.dtype.newbyteorder("<"))
 
                                     if (
                                         data.ndim == 2
@@ -1515,12 +1520,11 @@ class Database:
                                     print("   - GRAVITY covariance matrix:")
                                     print(f"      - Object: {gravity_object}")
 
-                                read_cov[spec_item] = (
-                                    hdulist[1]
-                                    .data["COVARIANCE"]
-                                    .byteswap()
-                                    .newbyteorder()
-                                )  # (W m-2 um-1)^2
+                                # (W m-2 um-1)^2
+                                read_cov[spec_item] = hdulist[1].data["COVARIANCE"]
+                                # read_cov[spec_item] = read_cov[spec_item].view(
+                                #     read_cov[spec_item].dtype.newbyteorder("<")
+                                # )
 
                             else:
                                 if spec_item in units:
@@ -1538,9 +1542,8 @@ class Database:
                                     print("   - Covariance matrix:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = np.asarray(
-                                        hdu_item.data.byteswap().newbyteorder()
-                                    )
+                                    data = hdu_item.data
+                                    # data = data.view(data.dtype.newbyteorder("<"))
 
                                     corr_warn = (
                                         f"The matrix from {spec_value[1]} contains "
@@ -1659,7 +1662,7 @@ class Database:
                 if spec_value[2] is None:
                     if verbose:
                         print(f"      - {spec_item}: None")
-                    dset.attrs["specres"] = 0.0
+                    dset.attrs["specres"] = np.nan
 
                 else:
                     if verbose:
@@ -2064,7 +2067,7 @@ class Database:
         if filename is not None:
             if filename[-5:] == ".fits":
                 data = fits.getdata(filename)
-                data = data.byteswap().newbyteorder()
+                # data = data.view(data.dtype.newbyteorder("<"))
 
                 if data.ndim != 2:
                     raise RuntimeError(
@@ -2351,6 +2354,8 @@ class Database:
             maximum likelihood.
         """
 
+        from species.util.model_util import binary_to_single, check_nearest_spec
+
         if verbose:
             print_section("Get sample with the maximum likelihood")
             print(f"Database tag: {tag}")
@@ -2403,6 +2408,18 @@ class Database:
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
 
+        if "model_type" in dset_attrs and dset_attrs["model_type"] == "atmosphere":
+
+            if "binary" in dset_attrs and dset_attrs["binary"]:
+                param_0 = binary_to_single(prob_sample, 0)
+                check_nearest_spec(dset_attrs["model_name"], param_0)
+
+                param_1 = binary_to_single(prob_sample, 1)
+                check_nearest_spec(dset_attrs["model_name"], param_1)
+
+            else:
+                check_nearest_spec(dset_attrs["model_name"], prob_sample)
+
         return prob_sample
 
     @typechecked
@@ -2427,6 +2444,8 @@ class Database:
         dict
             Median parameter values of the posterior distribution.
         """
+
+        from species.util.model_util import binary_to_single, check_nearest_spec
 
         if verbose:
             print_section("Get median parameters")
@@ -2473,6 +2492,18 @@ class Database:
                         print(f"   - {param_key} = {param_value:.2e}")
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")
+
+        if "model_type" in dset_attrs and dset_attrs["model_type"] == "atmosphere":
+
+            if "binary" in dset_attrs and dset_attrs["binary"]:
+                param_0 = binary_to_single(median_sample, 0)
+                check_nearest_spec(dset_attrs["model_name"], param_0)
+
+                param_1 = binary_to_single(median_sample, 1)
+                check_nearest_spec(dset_attrs["model_name"], param_1)
+
+            else:
+                check_nearest_spec(dset_attrs["model_name"], median_sample)
 
         return median_sample
 
@@ -2726,7 +2757,7 @@ class Database:
             elif "distance" not in model_param and distance is not None:
                 model_param["distance"] = distance
 
-            if "ext_av" in model_param and "ext_model" in dset_attrs:
+            if "ext_model" in dset_attrs:
                 model_param["ext_model"] = dset_attrs["ext_model"]
 
             if model_type in ["model", "atmosphere"]:
@@ -3274,10 +3305,17 @@ class Database:
                                 hdf5_file[f"{group_path}/{filter_item}"]
                             )
 
-                            print(
-                                f"   - {prior_item}/{filter_item} = "
-                                f"({norm_prior[0]}, {norm_prior[1]})"
-                            )
+                            if -0.1 < norm_prior[0] < 0.1:
+                                print(
+                                    f"   - {prior_item}/{filter_item} = "
+                                    f"({norm_prior[0]:.2e}, {norm_prior[1]:.2e})"
+                                )
+
+                            else:
+                                print(
+                                    f"   - {prior_item}/{filter_item} = "
+                                    f"({norm_prior[0]:.2f}, {norm_prior[1]:.2f})"
+                                )
 
                             normal_priors[f"{prior_item}/{filter_item}"] = (
                                 norm_prior[0],
@@ -3287,7 +3325,14 @@ class Database:
                     else:
                         norm_prior = np.array(hdf5_file[group_path])
 
-                        print(f"   - {prior_item} = ({norm_prior[0]}, {norm_prior[1]})")
+                        if -0.1 < norm_prior[0] < 0.1:
+                            print(
+                                f"   - {prior_item} = ({norm_prior[0]:.2e}, {norm_prior[1]:.2e})"
+                            )
+                        else:
+                            print(
+                                f"   - {prior_item} = ({norm_prior[0]:.2f}, {norm_prior[1]:.2f})"
+                            )
 
                         normal_priors[prior_item] = (norm_prior[0], norm_prior[1])
 

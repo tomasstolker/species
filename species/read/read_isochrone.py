@@ -144,16 +144,6 @@ class ReadIsochrone:
                     f"tags are found in the database: {tag_list}"
                 )
 
-        self.mag_models = [
-            "ames",
-            "atmo",
-            "baraffe",
-            "bt-settl",
-            "linder2019",
-            "manual",
-            "nextgen",
-        ]
-
         # Connect isochrone model with atmosphere model
         # key = isochrone model, value = atmosphere model
         self.match_model = {
@@ -587,7 +577,7 @@ class ReadIsochrone:
 
         filters = self.get_filters()
 
-        if model in self.mag_models:
+        if filters is not None:
             if filters_color is not None:
                 if filters_color[0] in filters:
                     index_color_1 = filters.index(filters_color[0])
@@ -615,20 +605,6 @@ class ReadIsochrone:
                         f"filters: {filters}"
                     )
 
-            if filter_mag is not None:
-                if filter_mag in filters:
-                    index_mag = filters.index(filter_mag)
-
-                else:
-                    raise ValueError(
-                        f"Magnitudes for the selected "
-                        f"'{filter_mag}' filter are not "
-                        f"found in the '{self.tag}' data. "
-                        f"Please select one of the "
-                        f"following filters: {filters}"
-                    )
-
-            if filters_color is not None:
                 mag_color_1 = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_color_1],
@@ -650,6 +626,18 @@ class ReadIsochrone:
                 color = mag_color_1 - mag_color_2
 
             if filter_mag is not None:
+                if filter_mag in filters:
+                    index_mag = filters.index(filter_mag)
+
+                else:
+                    raise ValueError(
+                        f"Magnitudes for the selected "
+                        f"'{filter_mag}' filter are not "
+                        f"found in the '{self.tag}' data. "
+                        f"Please select one of the "
+                        f"following filters: {filters}"
+                    )
+
                 mag_abs = griddata(
                     points=grid_points,
                     values=iso_mag[:, index_mag],
@@ -806,7 +794,7 @@ class ReadIsochrone:
 
         filters = self.get_filters()
 
-        if model in self.mag_models:
+        if filters is not None:
             if filters_color is not None:
                 index_color_1 = filters.index(filters_color[0])
                 index_color_2 = filters.index(filters_color[1])

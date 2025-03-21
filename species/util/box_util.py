@@ -83,6 +83,11 @@ def update_objectbox(
             ):
                 # Inflate photometric uncertainty of an instrument
 
+                if f"error_{instr_name}" in model_param:
+                    infl_factor = model_param[f"error_{instr_name}"]
+                else:
+                    infl_factor = 10.0 ** model_param[f"error_{instr_name}"]
+
                 if model is None:
                     warnings.warn(
                         "The dictionary with model parameters "
@@ -96,12 +101,7 @@ def update_objectbox(
                     readmodel = ReadModel(model, filter_name=phot_key)
                     model_flux = readmodel.get_flux(model_param)[0]
 
-                if f"error_{instr_name}" in model_param:
-                    infl_factor = model_param[f"error_{instr_name}"]
-                else:
-                    infl_factor = 10.0 ** model_param[f"error_{instr_name}"]
-
-                var_add = infl_factor**2 * model_flux**2
+                    var_add = infl_factor**2 * model_flux**2
 
             else:
                 # No inflation required

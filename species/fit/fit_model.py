@@ -47,11 +47,11 @@ from species.util.dust_util import (
 )
 from species.util.model_util import (
     binary_to_single,
+    check_nearest_spec,
     extract_disk_param,
     apply_obs,
     powerlaw_spectrum,
 )
-
 
 warnings.filterwarnings("always", category=DeprecationWarning)
 
@@ -100,6 +100,7 @@ class FitModel:
         ext_filter: Optional[str] = None,
         normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
         ext_model: Optional[str] = None,
+        binary_prior: bool = False,
     ) -> None:
         """
         Parameters
@@ -109,8 +110,8 @@ class FitModel:
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
         model : str
-            Name of the atmospheric model (e.g. 'bt-settl', 'exo-rem',
-            'planck', or 'powerlaw').
+            Name of the atmospheric model (see
+            :func:`~species.data.database.Database.available_models`).
         bounds : dict(str, tuple(float, float)), None
             The boundaries that are used for the uniform or
             log-uniform priors. Mandatory parameters are
@@ -315,21 +316,22 @@ class FitModel:
 
                  - The errors of the photometric fluxes can also be
                    inflated, to account for an underestimated
-                   uncertainty. The error inflation is relative to the
-                   actual flux and is either fitted separately for a
-                   filter, or a single error inflation is applied to
+                   uncertainty. The errors are inflated relative
+                   to the synthetic photometry from the model. The
+                   inflation can be fitted either for individual
+                   filters, or a single error inflation is applied to
                    all filters from an instrument. For the first case,
                    the keyword in the ``bounds`` dictionary should be
                    provided in the following format:
                    ``'error_Paranal/NACO.Mp': (0., 1.)``. Here, the
                    error of the NACO :math:`M'` flux is inflated up to
-                   100 percent of the actual flux. For the second case,
+                   100 percent of the model flux. For the second case,
                    only the telescope/instrument part of the the filter
                    name should be provided in the ``bounds``
                    dictionary, so in the following format:
                    ``'error_Paranal/NACO': (0., 1.)``. This will
-                   increase the errors of all NACO filters by the same
-                   (relative) amount.
+                   increase the errors of all NACO photometry by the
+                   same amount relative to their model fluxes.
 
             ISM extinction parameters:
 
@@ -505,6 +507,12 @@ class FitModel:
             can be optionally added to the ``bounds`` with the
             ``ext_rv`` parameter. Otherwise, it is set to the
             default of :math:`R_V = 3.1`.
+        binary_prior : bool
+            When fitting a binary system (i.e. two sets of atmosphere
+            parameters to spectra and/or photometry), a prior is
+            applied such that the :math:`T_\\mathrm{eff}` and
+            :math:`R` of the primary object will be larger than
+            those parameters of the secondary object.
 
         Returns
         -------
@@ -536,14 +544,16 @@ class FitModel:
         self.object = ReadObject(object_name)
         self.obj_parallax = self.object.get_parallax()
         self.binary = False
-        self.ext_filter = ext_filter
         self.param_interp = None
         self.cross_sections = None
-        self.ext_model = None
         self.ln_z = None
         self.ln_z_error = None
         self.n_planck = 0
         self.n_disk = 0
+
+        self.binary_prior = binary_prior
+        self.ext_filter = ext_filter
+        self.ext_model = ext_model
 
         if fit_corr is None:
             self.fit_corr = []
@@ -771,6 +781,14 @@ class FitModel:
                             self.bounds["ism_ext_1"] = self.bounds["ism_ext"][1]
                             del self.bounds["ism_ext"]
 
+                    if "ext_av" in self.bounds:
+                        if isinstance(self.bounds["ext_av"][0], tuple):
+                            self.modelpar.append("ext_av_0")
+                            self.modelpar.append("ext_av_1")
+                            self.bounds["ext_av_0"] = self.bounds["ext_av"][0]
+                            self.bounds["ext_av_1"] = self.bounds["ext_av"][1]
+                            del self.bounds["ext_av"]
+
                 if (
                     "parallax_0" not in self.modelpar
                     or "parallax_1" not in self.modelpar
@@ -920,6 +938,9 @@ class FitModel:
         print(f"Object name: {object_name}")
         print(f"Model tag: {model}")
         print(f"Binary star: {self.binary}")
+
+        if self.binary:
+            print(f"Binary prior: {self.binary}")
 
         if self.model not in self.non_interp_model:
             print(f"Blackbody components: {self.n_disk}")
@@ -1319,22 +1340,31 @@ class FitModel:
         elif ext_model is not None:
             self.ext_model = ext_model
 
-            if "ext_av" in self.bounds or "ext_av" in self.normal_prior:
-                self.modelpar.append("ext_av")
+            if self.binary:
+                # ext_av_0 and ext_av_1 were already added to self.modelpar
+                if "ext_rv_0" in self.bounds or "ext_rv_0" in self.normal_prior:
+                    self.modelpar.append("ext_rv_0")
 
-                if "ext_rv" in self.bounds or "ext_rv" in self.normal_prior:
-                    self.modelpar.append("ext_rv")
+                if "ext_rv_1" in self.bounds or "ext_rv_1" in self.normal_prior:
+                    self.modelpar.append("ext_rv_1")
 
             else:
-                self.ext_model = None
+                if "ext_av" in self.bounds or "ext_av" in self.normal_prior:
+                    self.modelpar.append("ext_av")
 
-                warnings.warn(
-                    "The 'ext_model' is set but the 'ext_av' "
-                    "parameter is missing in the 'bounds' "
-                    "dictionary so the 'ext_model' parameter "
-                    "will be ignored and no extinction will "
-                    "be fitted."
-                )
+                    if "ext_rv" in self.bounds or "ext_rv" in self.normal_prior:
+                        self.modelpar.append("ext_rv")
+
+                else:
+                    self.ext_model = None
+
+                    warnings.warn(
+                        "The 'ext_model' is set but the 'ext_av' "
+                        "parameter is missing in the 'bounds' "
+                        "dictionary so the 'ext_model' parameter "
+                        "will be ignored and no extinction will "
+                        "be fitted."
+                    )
 
         elif ext_model is None:
             if "ext_av" in self.bounds:
@@ -1595,6 +1625,7 @@ class FitModel:
 
                 else:
                     # Normal prior
+
                     param_out[cube_index[param_item]] = norm.ppf(
                         param_out[cube_index[param_item]],
                         loc=self.normal_prior[param_item][0],
@@ -1603,6 +1634,7 @@ class FitModel:
 
             else:
                 # Uniform prior
+
                 param_out[cube_index[param_item]] = (
                     bounds[param_item][0]
                     + (bounds[param_item][1] - bounds[param_item][0])
@@ -1695,6 +1727,15 @@ class FitModel:
                     ):
                         return -np.inf
 
+        # Check if the primary star has a higher Teff and larger R
+
+        if self.binary and self.binary_prior:
+            if all_param["teff_1"] > all_param["teff_0"]:
+                return -np.inf
+
+            if all_param["radius_1"] > all_param["radius_0"]:
+                return -np.inf
+
         # Sort the parameters in the correct order for
         # spectrum_interp because it creates a list in
         # the order of the keys in param_dict
@@ -1715,27 +1756,72 @@ class FitModel:
 
         for prior_key, prior_value in self.normal_prior.items():
             if prior_key == "mass":
-                if "logg" in self.modelpar and "radius" in self.modelpar:
-                    mass = logg_to_mass(
-                        params[self.cube_index["logg"]],
-                        params[self.cube_index["radius"]],
-                    )
+                if "logg" in all_param and "radius" in all_param:
+                    mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
                     ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
 
                 else:
-                    if "logg" not in self.modelpar:
+                    if "logg" not in all_param:
                         warnings.warn(
                             "The 'logg' parameter is not used "
                             f"by the '{self.model}' model so "
                             "the mass prior cannot be applied."
                         )
 
-                    elif "radius" not in self.modelpar:
+                    elif "radius" not in all_param:
                         warnings.warn(
                             "The 'radius' parameter is not fitted "
                             "so the mass prior cannot be applied."
                         )
+
+            elif self.binary and prior_key in ["mass_0", "mass_1"]:
+                bin_idx = prior_key[-1]
+
+                if f"logg_{bin_idx}" in all_param and f"radius_{bin_idx}" in all_param:
+                    mass = logg_to_mass(
+                        all_param[f"logg_{bin_idx}"], all_param[f"radius_{bin_idx}"]
+                    )
+
+                    ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
+
+                else:
+                    if f"logg_{bin_idx}" not in all_param:
+                        warnings.warn(
+                            f"The 'logg_{bin_idx}' parameter is not "
+                            "fitted so the mass prior can't be applied."
+                        )
+
+                    elif f"radius_{bin_idx}" not in all_param:
+                        warnings.warn(
+                            f"The 'radius_{bin_idx}' parameter is not "
+                            "fitted so the mass prior can't be applied."
+                        )
+
+            elif self.binary and prior_key == "mass_ratio":
+                if (
+                    "logg_0" in all_param
+                    and "radius_0" in all_param
+                    and "logg_1" in all_param
+                    and "radius_1" in all_param
+                ):
+                    mass_0 = logg_to_mass(all_param["logg_0"], all_param["radius_0"])
+                    mass_1 = logg_to_mass(all_param["logg_1"], all_param["radius_1"])
+
+                    ln_like += (
+                        -0.5
+                        * (mass_1 / mass_0 - prior_value[0]) ** 2
+                        / prior_value[1] ** 2
+                    )
+
+                else:
+                    for param_item in ["logg_0", "logg_1", "radius_0", "radius_1"]:
+                        if param_item not in all_param:
+                            warnings.warn(
+                                f"The '{param_item}' parameter is "
+                                "not fitted so the mass_ratio prior "
+                                "can't be applied."
+                            )
 
             elif prior_key[:6] == "ratio_":
                 filter_name = prior_key[6:]
@@ -1980,24 +2066,24 @@ class FitModel:
 
                 if f"error_{filter_name}" in all_param:
                     # Inflate photometric uncertainty for filter
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
 
                 elif f"error_{instr_check}" in all_param:
                     # Inflate photometric uncertainty for instrument
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
 
                 elif f"log_error_{filter_name}" in all_param:
                     # Inflate photometric uncertainty for filter
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += (
                         10.0 ** all_param[f"log_error_{filter_name}"]
                     ) ** 2 * phot_flux**2
 
                 elif f"log_error_{instr_check}" in all_param:
                     # Inflate photometric uncertainty for instrument
-                    # Scale relative to the uncertainty
+                    # Scale relative to the model flux
                     phot_var += (
                         10.0 ** all_param[f"log_error_{instr_check}"]
                     ) ** 2 * phot_flux**2
@@ -2021,28 +2107,28 @@ class FitModel:
 
                     if f"error_{filter_name}" in all_param:
                         # Inflate photometric uncertainty for filter
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             all_param[f"error_{filter_name}"] ** 2 * phot_flux**2
                         )
 
                     elif f"error_{instr_check}" in all_param:
                         # Inflate photometric uncertainty for instrument
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             all_param[f"error_{instr_check}"] ** 2 * phot_flux**2
                         )
 
                     elif f"log_error_{filter_name}" in all_param:
                         # Inflate photometric uncertainty for filter
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             10.0 ** all_param[f"log_error_{filter_name}"]
                         ) ** 2 * phot_flux**2
 
                     elif f"log_error_{instr_check}" in all_param:
                         # Inflate photometric uncertainty for instrument
-                        # Scale relative to the uncertainty
+                        # Scale relative to the model flux
                         phot_var += (
                             10.0 ** all_param[f"log_error_{instr_check}"]
                         ) ** 2 * phot_flux**2
@@ -2673,11 +2759,28 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for param_idx, param_item in enumerate(best_params["parameters"]):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < param_item < 0.1:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
+
+        # Check nearest grid points
+
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
+
+        if self.binary:
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
 
         # Get the posterior samples
 
@@ -2698,10 +2801,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
@@ -2932,11 +3035,28 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for lnlike_idx, lnlike_item in enumerate(result["maximum_likelihood"]["point"]):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < lnlike_item < 0.1:
                 print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2e}")
             else:
                 print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2f}")
+
+        # Check nearest grid points
+
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
+
+        if self.binary:
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
 
         # Create a list with scaling labels
 
@@ -2952,10 +3072,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
@@ -3294,11 +3414,30 @@ class FitModel:
         print("\nSample with the maximum likelihood:")
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
+        param_check = {}
         for param_idx, param_item in enumerate(best_params):
+            param_check[self.modelpar[param_idx]] = param_item
             if -0.1 < param_item < 0.1:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
                 print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
+
+        # Check nearest grid points
+
+        for param_key, param_value in self.fix_param.items():
+            param_check[param_key] = param_value
+
+        if self.binary:
+            param_0 = binary_to_single(param_check, 0)
+            check_nearest_spec(self.model, param_0)
+
+            param_1 = binary_to_single(param_check, 1)
+            check_nearest_spec(self.model, param_1)
+
+        else:
+            check_nearest_spec(self.model, param_check)
+
+        # Create a list with scaling labels
 
         spec_labels = []
         for spec_item in self.spectrum:
@@ -3307,10 +3446,10 @@ class FitModel:
 
         # Adding the fixed parameters to the samples
 
-        for key, value in self.fix_param.items():
-            self.modelpar.append(key)
+        for param_key, param_value in self.fix_param.items():
+            self.modelpar.append(param_key)
 
-            app_param = np.full(samples.shape[0], value)
+            app_param = np.full(samples.shape[0], param_value)
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)

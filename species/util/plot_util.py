@@ -455,6 +455,10 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         elif object_type == "star":
             param[index] = r"$\log\,M_\mathrm{2}/M_\mathrm{\odot}$"
 
+    if "mass_ratio" in param:
+        index = param.index("mass_ratio")
+        param[index] = r"$q$"
+
     if "age" in param:
         index = param.index("age")
         param[index] = "Age (Myr)"
@@ -1201,6 +1205,16 @@ def quantity_unit(
 
                 label.append(rf"$R_\mathrm{{{param_index+1}}}$")
 
+            elif item[:7] == "ism_ext":
+                quantity.append(f"ism_ext_{param_index}")
+                unit.append(None)
+                label.append(r"$A_{V,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
+            elif item[:6] == "ext_av":
+                quantity.append(f"ext_av_{param_index}")
+                unit.append(None)
+                label.append(r"$A_{V,}$" + rf"$_\mathrm{{{param_index+1}}}$")
+
             elif item_split[0] == "disk" and item_split[1] == "teff":
                 quantity.append(f"disk_teff_{param_index}")
                 unit.append("K")
@@ -1716,6 +1730,12 @@ def create_model_label(
 
         elif param_item[:4] == "fsed":
             value = f"{model_param[param_item]:{param_fmt['fsed']}}"
+
+        elif param_item[:7] == "ism_ext":
+            value = f"{model_param[param_item]:{param_fmt['ism_ext']}}"
+
+        elif param_item[:6] == "ext_av":
+            value = f"{model_param[param_item]:{param_fmt['ext_av']}}"
 
         elif param_item[:6] == "radius":
             if object_type == "planet":
