@@ -4,7 +4,6 @@ Module with functionalities for reading and writing of data.
 
 import json
 import os
-import sys
 import warnings
 
 from configparser import ConfigParser
@@ -1343,18 +1342,20 @@ class Database:
                                     print(f"      - Object: {gravity_object}")
 
                                 # Wavelength (um)
-                                wavelength = hdulist[1].data["WAVELENGTH"]
-                                # wavelength = wavelength.view(wavelength.dtype.newbyteorder("<"))
+                                wavelength = hdulist[1].data["WAVELENGTH"].byteswap()
+                                wavelength = wavelength.view(
+                                    wavelength.dtype.newbyteorder("=")
+                                )
 
                                 # Flux (W m-2 um-1)
-                                flux = hdulist[1].data["FLUX"]
-                                # flux = flux.view(flux.dtype.newbyteorder("<"))
+                                flux = hdulist[1].data["FLUX"].byteswap()
+                                flux = flux.view(flux.dtype.newbyteorder("="))
 
                                 # Covariance (W m-2 um-1)^2
-                                covariance = hdulist[1].data["COVARIANCE"]
-                                # covariance = covariance.view(
-                                #     covariance.dtype.newbyteorder("<")
-                                # )
+                                covariance = hdulist[1].data["COVARIANCE"].byteswap()
+                                covariance = covariance.view(
+                                    covariance.dtype.newbyteorder("=")
+                                )
 
                                 # Uncorrelated uncertainties (W m-2 um-1)
                                 error = np.sqrt(np.diag(covariance))
@@ -1369,8 +1370,8 @@ class Database:
                                     print("   - Spectrum:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = hdu_item.data
-                                    # data = data.view(data.dtype.newbyteorder("<"))
+                                    data = hdu_item.data.byteswap()
+                                    data = data.view(data.dtype.newbyteorder("="))
 
                                     if (
                                         data.ndim == 2
@@ -1521,10 +1522,12 @@ class Database:
                                     print(f"      - Object: {gravity_object}")
 
                                 # (W m-2 um-1)^2
-                                read_cov[spec_item] = hdulist[1].data["COVARIANCE"]
-                                # read_cov[spec_item] = read_cov[spec_item].view(
-                                #     read_cov[spec_item].dtype.newbyteorder("<")
-                                # )
+                                read_cov[spec_item] = (
+                                    hdulist[1].data["COVARIANCE"].byteswap()
+                                )
+                                read_cov[spec_item] = read_cov[spec_item].view(
+                                    read_cov[spec_item].dtype.newbyteorder("=")
+                                )
 
                             else:
                                 if spec_item in units:
@@ -1542,8 +1545,8 @@ class Database:
                                     print("   - Covariance matrix:")
 
                                 for i, hdu_item in enumerate(hdulist):
-                                    data = hdu_item.data
-                                    # data = data.view(data.dtype.newbyteorder("<"))
+                                    data = hdu_item.data.byteswap()
+                                    data = data.view(data.dtype.newbyteorder("="))
 
                                     corr_warn = (
                                         f"The matrix from {spec_value[1]} contains "
@@ -2066,8 +2069,8 @@ class Database:
 
         if filename is not None:
             if filename[-5:] == ".fits":
-                data = fits.getdata(filename)
-                # data = data.view(data.dtype.newbyteorder("<"))
+                data = fits.getdata(filename).byteswap()
+                data = data.view(data.dtype.newbyteorder("="))
 
                 if data.ndim != 2:
                     raise RuntimeError(
@@ -2350,8 +2353,7 @@ class Database:
         Returns
         -------
         dict
-            Parameters and values for the sample with the
-            maximum likelihood.
+            Parameters of the sample with the maximum likelihood.
         """
 
         from species.util.model_util import binary_to_single, check_nearest_spec
@@ -3870,7 +3872,7 @@ class Database:
             if f"results/fit/{tag}" in hdf5_file:
                 del hdf5_file[f"results/fit/{tag}"]
 
-            # Store the ln-likelihood
+            # Store the log-likelihood
             hdf5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=samples[:, -1])
 
             # Remove the column with the log-likelihood value
@@ -4655,7 +4657,7 @@ class Database:
         self, tag: str, sample_type: str = "median", json_file: Optional[str] = None
     ) -> Dict[str, float]:
         """
-        Function for converting the median are maximum likelihood
+        Function for converting the median or maximum likelihood
         posterior parameters of ``petitRADTRANS`` into a dictionary
         of input parameters for ``petitCODE``.
 

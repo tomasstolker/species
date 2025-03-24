@@ -2726,7 +2726,7 @@ class FitModel:
 
         # Create the Analyzer object
         analyzer = pymultinest.analyse.Analyzer(
-            len(self.modelpar), outputfiles_basename=output
+            len(self.modelpar), outputfiles_basename=output, verbose=False,
         )
 
         # Get a dictionary with the ln(Z) and its errors, the

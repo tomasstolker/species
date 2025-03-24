@@ -1991,7 +1991,9 @@ class ReadModel:
         return model_box
 
     @typechecked
-    def integrate_spectrum(self, model_param: Dict[str, float]) -> float:
+    def integrate_spectrum(
+        self, model_param: Dict[str, float]
+    ) -> Tuple[float, Optional[float]]:
         """
         Function for calculating the bolometric flux by integrating
         a model spectrum at the requested parameters. Therefore, when
@@ -2017,16 +2019,14 @@ class ReadModel:
         Returns
         -------
         float
+            Effective temperature (K) calculated with the
+            Stefan–Boltzmann law from the integrated flux.
+        float, None
             Bolometric luminosity (:math:`\\log{(L/L_\\odot)}`).
+            The returned value is set to ``None`` in case
+            the ``model_param`` dictionary does not contain
+            the radius parameter.
         """
-
-        if "radius" not in model_param:
-            raise ValueError(
-                "Please include the 'radius' parameter "
-                "in the 'model_param' dictionary, "
-                "which is required for calculating the "
-                "bolometric luminosity."
-            )
 
         wavel_points = self.get_wavelengths()
 
@@ -2054,14 +2054,25 @@ class ReadModel:
 
         model_box = self.get_model(param_copy)
 
-        bol_lum = (
-            4.0
-            * np.pi
-            * (param_copy["radius"] * constants.R_JUP) ** 2
-            * simpson(y=model_box.flux, x=model_box.wavelength)
-        )
+        flux_int = simpson(y=model_box.flux, x=model_box.wavelength)
 
-        return np.log10(bol_lum / constants.L_SUN)
+        if "radius" in param_copy:
+            bol_lum = (
+                4.0 * np.pi * (param_copy["radius"] * constants.R_JUP) ** 2 * flux_int
+            )
+            log_lum = np.log10(bol_lum / constants.L_SUN)
+        else:
+            log_lum = None
+
+            warnings.warn(
+                "Please include the 'radius' parameter in the "
+                "'model_param' dictionary, if the bolometric "
+                "luminosity should be calculated."
+            )
+
+        teff_int = (flux_int / constants.SIGMA_SB) ** 0.25
+
+        return teff_int, log_lum
 
     @typechecked
     def create_color_magnitude(

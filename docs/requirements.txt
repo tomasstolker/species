@@ -2,6 +2,6 @@ cython
 jupyter
 nbsphinx
 pandoc
-sphinx==8.1.3
+sphinx
 sphinx-automodapi
 sphinx_book_theme

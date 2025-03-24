@@ -643,7 +643,7 @@ class FitEvolution:
 
         # Create the Analyzer object
         analyzer = pymultinest.analyse.Analyzer(
-            len(self.model_par), outputfiles_basename=output
+            len(self.model_par), outputfiles_basename=output, verbose=False,
         )
 
         # Get a dictionary with the ln(Z) and its errors, the

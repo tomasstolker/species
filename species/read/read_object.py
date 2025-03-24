@@ -123,8 +123,8 @@ class ReadObject:
     @typechecked
     def get_spectrum(self) -> dict:
         """
-        Function for reading the spectra and covariance matrices
-        of the selected object.
+        Function for reading the spectra and covariance
+        matrices of the selected object.
 
         Returns
         -------
@@ -132,9 +132,10 @@ class ReadObject:
             Dictionary with spectra and covariance matrices.
         """
 
+        spectrum = {}
+
         with h5py.File(self.database, "r") as hdf5_file:
             if f"objects/{self.object_name}/spectrum" in hdf5_file:
-                spectrum = {}
 
                 for spec_item in hdf5_file[f"objects/{self.object_name}/spectrum"]:
                     data_group = f"objects/{self.object_name}/spectrum/{spec_item}"
@@ -154,9 +155,6 @@ class ReadObject:
                             np.asarray(hdf5_file[f"{data_group}/inv_covariance"]),
                             hdf5_file[f"{data_group}"].attrs["specres"],
                         )
-
-            else:
-                spectrum = None
 
         return spectrum
 
