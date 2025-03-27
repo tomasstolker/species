@@ -495,6 +495,16 @@ def apply_obs(
             verbose=False,
         )
 
+        # Set the flux to the neighboring wavelength
+        # if a NaN is present at the edge.
+        # TODO this is quick hack and not the best solution
+
+        if np.isnan(model_flux[0]):
+            model_flux[0] = model_flux[1]
+
+        if np.isnan(model_flux[-1]):
+            model_flux[0] = model_flux[-2]
+
     # Shift the spectrum by a constant
 
     # if "flux_offset" in model_param:

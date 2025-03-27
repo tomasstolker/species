@@ -120,6 +120,17 @@ def download_filter(
 
         os.remove(filter_path)
 
+    elif filter_id == "ALMA/band3":
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band3.dat"
+        filter_path = os.path.join(input_path, "alma_band3.dat")
+        urllib.request.urlretrieve(url, filter_path)
+
+        wavelength, transmission = np.loadtxt(filter_path, unpack=True)
+
+        det_type = "photon"
+
+        os.remove(filter_path)
+
     elif filter_id == "ALMA/band6":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band6.dat"
         filter_path = os.path.join(input_path, "alma_band6.dat")

@@ -452,9 +452,11 @@ class FitModel:
             List with spectrum names for which the covariances are
             modeled with a Gaussian process (see Wang et al. 2020).
             This option can be used if the actual covariances as
-            determined from the data are not available for the spectra
-            of ``object_name``. The parameters that will be fitted
-            are the correlation length and the fractional amplitude.
+            determined from the data are not available with a spectrum
+            that was added to the database with
+            :func:`~species.data.database.Database.add_object`).
+            The parameters that will be fitted are the correlation
+            length and the fractional amplitude.
         apply_weights : bool, dict
             Weights to be applied to the log-likelihood components of
             the spectra and photometric fluxes that are provided with
@@ -1066,6 +1068,14 @@ class FitModel:
                 del self.spectrum[spec_item]
 
             self.n_corr_par = 0
+
+            for spec_item in self.fit_corr:
+                if spec_item not in self.spectrum:
+                    warnings.warn(
+                        f"The '{spec_item}' spectrum that is set "
+                        "in 'fit_corr' does not exist in the "
+                        f"database with '{object_name}'."
+                    )
 
             for spec_item in self.spectrum:
                 if spec_item in self.fit_corr:
@@ -1759,7 +1769,7 @@ class FitModel:
                 if "logg" in all_param and "radius" in all_param:
                     mass = logg_to_mass(all_param["logg"], all_param["radius"])
 
-                    ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
+                    ln_like += (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
 
                 else:
                     if "logg" not in all_param:
@@ -1783,7 +1793,7 @@ class FitModel:
                         all_param[f"logg_{bin_idx}"], all_param[f"radius_{bin_idx}"]
                     )
 
-                    ln_like += -0.5 * (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
+                    ln_like += (mass - prior_value[0]) ** 2 / prior_value[1] ** 2
 
                 else:
                     if f"logg_{bin_idx}" not in all_param:
@@ -1808,11 +1818,9 @@ class FitModel:
                     mass_0 = logg_to_mass(all_param["logg_0"], all_param["radius_0"])
                     mass_1 = logg_to_mass(all_param["logg_1"], all_param["radius_1"])
 
-                    ln_like += (
-                        -0.5
-                        * (mass_1 / mass_0 - prior_value[0]) ** 2
-                        / prior_value[1] ** 2
-                    )
+                    ln_like += (mass_1 / mass_0 - prior_value[0]) ** 2 / prior_value[
+                        1
+                    ] ** 2
 
                 else:
                     for param_item in ["logg_0", "logg_1", "radius_0", "radius_1"]:
@@ -1891,17 +1899,13 @@ class FitModel:
                     ratio_prior = self.normal_prior[f"ratio_{filter_name}"]
 
                     ln_like += (
-                        -0.5
-                        * (phot_flux_1 / phot_flux_0 - ratio_prior[0]) ** 2
-                        / ratio_prior[1] ** 2
-                    )
+                        phot_flux_1 / phot_flux_0 - ratio_prior[0]
+                    ) ** 2 / ratio_prior[1] ** 2
 
             else:
                 ln_like += (
-                    -0.5
-                    * (params[self.cube_index[prior_key]] - prior_value[0]) ** 2
-                    / prior_value[1] ** 2
-                )
+                    params[self.cube_index[prior_key]] - prior_value[0]
+                ) ** 2 / prior_value[1] ** 2
 
         # Compare photometry with model
 
@@ -2089,14 +2093,13 @@ class FitModel:
                     ) ** 2 * phot_flux**2
 
                 ln_like += (
-                    -0.5
-                    * self.weights[filter_name]
+                    self.weights[filter_name]
                     * (phot_item[0] - phot_flux) ** 2
                     / phot_var
                 )
 
                 # Only required when fitting an error inflation
-                ln_like += -0.5 * np.log(2.0 * np.pi * phot_var)
+                ln_like += np.log(2.0 * np.pi * phot_var)
 
             else:
                 for phot_idx in range(phot_item.shape[1]):
@@ -2134,14 +2137,13 @@ class FitModel:
                         ) ** 2 * phot_flux**2
 
                     ln_like += (
-                        -0.5
-                        * self.weights[filter_name]
+                        self.weights[filter_name]
                         * (phot_item[0, phot_idx] - phot_flux) ** 2
                         / phot_var
                     )
 
                     # Only required when fitting an error inflation
-                    ln_like += -0.5 * np.log(2.0 * np.pi * phot_var)
+                    ln_like += np.log(2.0 * np.pi * phot_var)
 
         # Compare spectra with model
 
@@ -2457,12 +2459,14 @@ class FitModel:
             if self.spectrum[spec_item][2] is not None:
                 # Use the inverted covariance matrix
 
-                ln_like += -0.5 * np.dot(
-                    self.weights[spec_item] * (data_flux - model_flux),
-                    np.dot(data_cov_inv, data_flux - model_flux),
+                ln_like += (
+                    self.weights[spec_item]
+                    * (data_flux - model_flux)
+                    @ data_cov_inv
+                    @ (data_flux - model_flux)
                 )
 
-                ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
+                ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
 
             else:
                 if spec_item in self.fit_corr:
@@ -2485,29 +2489,27 @@ class FitModel:
                         + (1.0 - corr_amp**2) * np.eye(wavel.shape[0]) * error_i**2
                     )
 
-                    dot_tmp = np.dot(
-                        self.weights[spec_item] * (data_flux - model_flux),
-                        np.dot(np.linalg.inv(cov_matrix), data_flux - model_flux),
+                    ln_like += (
+                        self.weights[spec_item]
+                        * (data_flux - model_flux)
+                        @ np.linalg.inv(cov_matrix)
+                        @ (data_flux - model_flux)
                     )
 
-                    ln_like += -0.5 * dot_tmp
-                    ln_like += -0.5 * np.nansum(np.log(2.0 * np.pi * data_var))
+                    ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
 
                 else:
                     # Calculate the log-likelihood without a covariance matrix
 
-                    lnlike_tmp = (
-                        -0.5
-                        * self.weights[spec_item]
+                    ln_like += np.nansum(
+                        self.weights[spec_item]
                         * (data_flux - model_flux) ** 2
                         / data_var
                     )
 
-                    lnlike_tmp += -0.5 * np.log(2.0 * np.pi * data_var)
+                    ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
 
-                    ln_like += np.nansum(lnlike_tmp)
-
-        return ln_like
+        return -0.5 * ln_like
 
     @typechecked
     def _create_attr_dict(self):
@@ -2726,7 +2728,9 @@ class FitModel:
 
         # Create the Analyzer object
         analyzer = pymultinest.analyse.Analyzer(
-            len(self.modelpar), outputfiles_basename=output, verbose=False,
+            len(self.modelpar),
+            outputfiles_basename=output,
+            verbose=False,
         )
 
         # Get a dictionary with the ln(Z) and its errors, the

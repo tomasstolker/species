@@ -551,12 +551,39 @@ def get_residuals(
                 res_spec[spec_key] = np.column_stack([wl_new, res_tmp])
                 count_nan = np.sum(np.isnan(res_spec[spec_key][:, 1]))
 
-                # objectbox.spectrum[spec_key][2] contains the inverse
-                # of the covariance matrix of a spectrum
                 if objectbox.spectrum[spec_key][2] is None:
-                    chi2_stat += np.nansum(res_spec[spec_key][:, 1] ** 2)
+                    if (
+                        f"corr_len_{spec_key}" in parameters
+                        and f"corr_amp_{spec_key}" in parameters
+                    ):
+                        # Covariance model (Wang et al. 2020)
+
+                        wavel = objectbox.spectrum[spec_key][0][:, 0]  # (um)
+                        wavel_j, wavel_i = np.meshgrid(wavel, wavel)
+
+                        error = objectbox.spectrum[spec_key][0][:, 1]  # (W m-2 um-1)
+                        error_j, error_i = np.meshgrid(error, error)
+
+                        corr_len = 10.0 ** parameters[f"corr_len_{spec_key}"]  # (um)
+                        corr_amp = parameters[f"corr_amp_{spec_key}"]
+
+                        cov_matrix = (
+                            corr_amp**2
+                            * error_i
+                            * error_j
+                            * np.exp(-((wavel_i - wavel_j) ** 2) / (2.0 * corr_len**2))
+                            + (1.0 - corr_amp**2) * np.eye(wavel.shape[0]) * error_i**2
+                        )
+
+                        chi2_stat += diff_spec @ np.linalg.inv(cov_matrix) @ diff_spec
+
+                    else:
+                        chi2_stat += np.nansum(res_spec[spec_key][:, 1] ** 2)
 
                 else:
+                    # Use objectbox.spectrum[spec_key][2] which contains
+                    # the inverse of the covariance matrix of a spectrum
+
                     if data_spec.shape[0] != objectbox.spectrum[spec_key][2].shape[0]:
                         raise ValueError(
                             f"The '{spec_key}' spectrum has {data_spec.shape[0]} "
