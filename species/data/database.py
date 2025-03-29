@@ -564,9 +564,10 @@ class Database:
         model : str, None
             Evolutionary model ('ames', 'atmo', 'baraffe2015',
             'bt-settl', 'linder2019', 'nextgen', 'saumon2008',
-            'sonora'). Isochrones will be automatically
-            downloaded. Alternatively, the ``filename``
-            parameter can be used in combination with ``tag``.
+            'sonora-bobcat', 'sonora-diamondback'). Isochrones
+            will be automatically downloaded. Alternatively,
+            the ``filename`` parameter can be used in
+            combination with ``tag``.
         filename : str, None
             Filename with the isochrone data. The argument of
             ``model`` will be ignored by setting the argument
@@ -605,7 +606,8 @@ class Database:
             "linder2019",
             "nextgen",
             "saumon2008",
-            "sonora",
+            "sonora-bobcat",
+            "sonora-diamondback",
         ]
 
         if filename is None and model not in avail_models:
@@ -660,13 +662,24 @@ class Database:
                 if "isochrones/saumon2008-hybrid_solar" in hdf5_file:
                     del hdf5_file["isochrones/saumon2008-hybrid_solar"]
 
-            elif model == "sonora":
-                if "isochrones/sonora+0.0" in hdf5_file:
-                    del hdf5_file["isochrones/sonora+0.0"]
-                if "isochrones/sonora+0.5" in hdf5_file:
-                    del hdf5_file["isochrones/sonora+0.5"]
-                if "isochrones/sonora-0.5" in hdf5_file:
-                    del hdf5_file["isochrones/sonora-0.5"]
+            elif model == "sonora-bobcat":
+                if "isochrones/sonora-bobcat+0.0" in hdf5_file:
+                    del hdf5_file["isochrones/sonora-bobcat+0.0"]
+                if "isochrones/sonora-bobcat+0.5" in hdf5_file:
+                    del hdf5_file["isochrones/sonora-bobcat+0.5"]
+                if "isochrones/sonora-bobcat-0.5" in hdf5_file:
+                    del hdf5_file["isochrones/sonora-bobcat-0.5"]
+
+            elif model == "sonora-diamondback":
+                iso_tags = [
+                    "nc-0.5", "nc+0.0", "nc+0.5",
+                    "hybrid-0.5", "hybrid+0.0", "hybrid+0.5",
+                    "hybrid-grav-0.5", "hybrid-grav+0.0", "hybrid-grav+0.5",
+                ]
+
+                for iso_item in iso_tags:
+                    if f"isochrones/sonora-diamondback-{iso_item}" in hdf5_file:
+                        del hdf5_file[f"isochrones/sonora-diamondback-{iso_item}"]
 
             else:
                 if f"isochrones/{tag}" in hdf5_file:

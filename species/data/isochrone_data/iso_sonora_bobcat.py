@@ -11,11 +11,10 @@ from species.util.data_util import extract_tarfile
 
 
 @typechecked
-def add_sonora(database: h5py._hl.files.File, input_path: str) -> None:
+def add_sonora_bobcat(database: h5py._hl.files.File, input_path: str) -> None:
     """
-    Function for adding the
-    `Sonora Bobcat <https://zenodo.org/record/5063476>`_
-    isochrone data to the database.
+    Function for adding the isochrone data of `Sonora Bobcat
+    <https://zenodo.org/record/5063476>`_ to the database.
 
     Parameters
     ----------
@@ -33,10 +32,8 @@ def add_sonora(database: h5py._hl.files.File, input_path: str) -> None:
     url = "https://zenodo.org/record/5063476/files/evolution_and_photometery.tar.gz"
 
     input_file = "evolution_and_photometery.tar.gz"
-    data_file = Path(input_path) / input_file
-
-    sub_folder = input_file.split(".", maxsplit=1)[0]
-    data_folder = Path(input_path) / sub_folder
+    data_folder = Path(input_path) / "sonora-bobcat-evolution"
+    data_file = data_folder / input_file
 
     if not data_folder.exists():
         data_folder.mkdir()
@@ -48,7 +45,7 @@ def add_sonora(database: h5py._hl.files.File, input_path: str) -> None:
             url=url,
             known_hash="2198426d1ca0e410fda7b63c3b7f45f3890a8d9f2fcf0a3a1e36e14185283ca5",
             fname=input_file,
-            path=input_path,
+            path=data_folder,
             progressbar=True,
         )
 
@@ -100,25 +97,30 @@ def add_sonora(database: h5py._hl.files.File, input_path: str) -> None:
             metallicity = labels[iso_idx].split(" ")[2]
 
             dset = database.create_dataset(
-                f"isochrones/sonora{metallicity}/age", data=iso_data[:, 0]
+                f"isochrones/sonora-bobcat{metallicity}/age", data=iso_data[:, 0]
             )  # (Myr)
+
             database.create_dataset(
-                f"isochrones/sonora{metallicity}/mass", data=iso_data[:, 1]
+                f"isochrones/sonora-bobcat{metallicity}/mass", data=iso_data[:, 1]
             )  # (Mjup)
+
             database.create_dataset(
-                f"isochrones/sonora{metallicity}/log_lum", data=iso_data[:, 2]
+                f"isochrones/sonora-bobcat{metallicity}/log_lum", data=iso_data[:, 2]
             )  # log(L/Lsun)
+
             database.create_dataset(
-                f"isochrones/sonora{metallicity}/teff", data=iso_data[:, 3]
+                f"isochrones/sonora-bobcat{metallicity}/teff", data=iso_data[:, 3]
             )  # (K)
+
             database.create_dataset(
-                f"isochrones/sonora{metallicity}/log_g", data=iso_data[:, 4]
+                f"isochrones/sonora-bobcat{metallicity}/log_g", data=iso_data[:, 4]
             )  # log(g)
+
             database.create_dataset(
-                f"isochrones/sonora{metallicity}/radius", data=iso_data[:, 5]
+                f"isochrones/sonora-bobcat{metallicity}/radius", data=iso_data[:, 5]
             )  # (Rjup)
 
-            dset.attrs["model"] = "sonora"
+            dset.attrs["model"] = "sonora-bobcat"
 
             print(" [DONE]")
             print(f"Database tag: sonora{metallicity}")

@@ -9,12 +9,11 @@ authors = [{name = "Tomas Stolker", email = "stolker@strw.leidenuniv.nl"}]
 description = "Toolkit for atmospheric characterization of directly imaged exoplanets"
 readme = "README.rst"
 requires-python = ">=3.10,<3.13"
-license = {text = "MIT License"}
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
@@ -30,6 +29,13 @@ packages = [
     "species",
     "species.core",
     "species.data",
+    "species.data.companion_data",
+    "species.data.filter_data",
+    "species.data.isochrone_data",
+    "species.data.misc_data",
+    "species.data.model_data",
+    "species.data.phot_data",
+    "species.data.spec_data",
     "species.fit",
     "species.phot",
     "species.plot",
