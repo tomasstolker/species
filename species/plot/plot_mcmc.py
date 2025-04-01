@@ -1193,6 +1193,7 @@ def plot_posterior(
 def plot_mag_posterior(
     tag: str,
     filter_name: str,
+    n_samples: Optional[int] = None,
     xlim: Optional[Tuple[float, float]] = None,
     output: Optional[str] = None,
 ) -> Tuple[np.ndarray, mpl.figure.Figure]:
@@ -1206,6 +1207,9 @@ def plot_mag_posterior(
         Database tag with the posterior samples.
     filter_name : str
         Filter name.
+    n_samples : int, None
+        Number of randomly drawn samples. All samples of the posterior
+        are selected if the arguments is set to ``None``.
     xlim : tuple(float, float), None
         Axis limits. Automatically set if the argument is
         set to ``None``.
@@ -1225,16 +1229,16 @@ def plot_mag_posterior(
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    from species.data.database import Database
-
-    species_db = Database()
-
-    samples = species_db.get_mcmc_photometry(tag, filter_name)
-
     if output is None:
         print("Plotting photometry samples...", end="", flush=True)
     else:
         print(f"Plotting photometry samples: {output}...", end="", flush=True)
+
+    from species.data.database import Database
+
+    species_db = Database()
+
+    samples = species_db.get_mcmc_photometry(tag, filter_name, random=n_samples)
 
     fig = corner.corner(
         samples,

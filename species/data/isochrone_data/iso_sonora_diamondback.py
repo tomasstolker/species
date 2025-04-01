@@ -101,7 +101,8 @@ def add_sonora_diamondback(database: h5py._hl.files.File, input_path: str) -> No
                 if line_idx == 0 or "Gyr" in line_item:
                     continue
 
-                # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rsun
+                # age(Gyr)  M/Msun  log(L/Lsun)  Teff(K)  log(g)  R/Rjup
+                # The data files have R/Rsun, but should be R/Rjup
                 param = list(filter(None, line_item.strip().split(" ")))
                 param = list(map(float, param))
 
@@ -110,10 +111,6 @@ def add_sonora_diamondback(database: h5py._hl.files.File, input_path: str) -> No
                 param[1] = (
                     param[1] * constants.M_SUN / constants.M_JUP
                 )  # (Msun) -> (Mjup)
-
-                param[5] = (
-                    param[5] * constants.R_SUN / constants.R_JUP
-                )  # (Rsun) -> (Rjup)
 
                 iso_data.append(
                     [param[0], param[1], param[2], param[3], param[4], param[5]]

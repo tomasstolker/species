@@ -672,9 +672,15 @@ class Database:
 
             elif model == "sonora-diamondback":
                 iso_tags = [
-                    "nc-0.5", "nc+0.0", "nc+0.5",
-                    "hybrid-0.5", "hybrid+0.0", "hybrid+0.5",
-                    "hybrid-grav-0.5", "hybrid-grav+0.0", "hybrid-grav+0.5",
+                    "nc-0.5",
+                    "nc+0.0",
+                    "nc+0.5",
+                    "hybrid-0.5",
+                    "hybrid+0.0",
+                    "hybrid+0.5",
+                    "hybrid-grav-0.5",
+                    "hybrid-grav+0.0",
+                    "hybrid-grav+0.5",
                 ]
 
                 for iso_item in iso_tags:
@@ -2593,7 +2599,7 @@ class Database:
     def get_mcmc_spectra(
         self,
         tag: str,
-        random: int,
+        random: Optional[int] = None,
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
         wavel_resample: Optional[np.ndarray] = None,
@@ -2609,8 +2615,9 @@ class Database:
         ----------
         tag : str
             Database tag with the posterior samples.
-        random : int
-            Number of random samples.
+        random : int, None
+            Number of random samples. All samples are selected
+            by setting the argument to ``None``.
         wavel_range : tuple(float, float), str, None
             Wavelength range (um) or filter name. Full spectrum is
             used if set to ``None``.
@@ -2642,7 +2649,6 @@ class Database:
         print_section(f"Get posterior spectra")
 
         print(f"Database tag: {tag}")
-        print(f"Number of samples: {random}")
         print(f"Wavelength range (um): {wavel_range}")
         print(f"Resolution: {spec_res}")
 
@@ -2719,8 +2725,12 @@ class Database:
         else:
             distance = None
 
-        rand_index = np.random.randint(samples.shape[0], size=random)
-        samples = samples[rand_index,]
+        if random is None:
+            print(f"Number of samples: {samples.shape[0]}")
+        else:
+            print(f"Number of samples: {random}")
+            rng = np.random.default_rng()
+            samples = rng.choice(samples, random, replace=False, axis=0, shuffle=False)
 
         param = []
         for i in range(n_param):
@@ -2865,6 +2875,7 @@ class Database:
         self,
         tag: str,
         filter_name: str,
+        random: Optional[int] = None,
         phot_type: str = "magnitude",
         flux_units: str = "W m-2 um-1",
     ) -> np.ndarray:
@@ -2903,6 +2914,10 @@ class Database:
             dset = hdf5_file[f"results/fit/{tag}/samples"]
             dset_attrs = dict(dset.attrs)
             samples = np.array(dset)
+
+        if random is not None:
+            rng = np.random.default_rng()
+            samples = rng.choice(samples, random, replace=False, axis=0, shuffle=False)
 
         if "n_param" in dset_attrs:
             n_param = dset_attrs["n_param"]
