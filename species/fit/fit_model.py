@@ -11,17 +11,19 @@ from typing import Optional, Union, List, Tuple, Dict
 import dynesty
 import numpy as np
 
-try:
+if "ultranest" in sys.modules:
     import ultranest
-except:
+
+else:
     warnings.warn(
         "UltraNest could not be imported. Perhaps "
         "because cython was not correctly compiled?"
     )
 
-try:
+if "pymultinest" in sys.modules:
     import pymultinest
-except:
+
+else:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -2652,12 +2654,12 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -2755,7 +2757,7 @@ class FitModel:
             f"{self.imp_ln_z:.2f} +/- {self.imp_ln_z_error:.2f}"
         )
 
-        # Get the maximum likelihood sample
+        # Get the sample with the maximum likelihood
 
         best_params = analyzer.get_best_fit()
         max_lnlike = best_params["log_likelihood"]
@@ -2815,15 +2817,17 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Add samples to the database
+
+        print(mpi_rank)
 
         if mpi_rank == 0:
             # Writing the samples to the database is only
@@ -2931,12 +2935,12 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -3032,7 +3036,7 @@ class FitModel:
 
             print(f"   - {param_item} = {mean:.2e} +/- {sigma:.2e}")
 
-        # Get the maximum likelihood sample
+        # Get the sample with the maximum likelihood
 
         max_lnlike = result["maximum_likelihood"]["logl"]
 
@@ -3086,12 +3090,12 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Add samples to the database
@@ -3191,12 +3195,12 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -3409,7 +3413,7 @@ class FitModel:
             f"\nNested sampling log-evidence: {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
         )
 
-        # Get the maximum likelihood sample
+        # Get the sample with the maximum likelihood
 
         max_idx = np.argmax(ln_prob)
         max_lnlike = ln_prob[max_idx]

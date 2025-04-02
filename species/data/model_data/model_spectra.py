@@ -318,6 +318,13 @@ def add_model_grid(
 
     model_files = sorted(data_folder.glob("*"))
 
+    if len(model_files) == 0:
+        raise ValueError(
+            f"Could not find any model spectrum of {model_tag} in "
+            f" the data_folder: {data_folder}. Perhaps the "
+            "argument of 'unpack_tar' should be set to True?"
+        )
+
     check_plot = False
 
     for file_item in model_files:

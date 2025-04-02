@@ -2424,7 +2424,7 @@ class Database:
             print("\nParameters:")
             for param_key, param_value in prob_sample.items():
                 if isinstance(param_value, float):
-                    if param_value < 0.01:
+                    if -0.01 < param_value < 0.01:
                         print(f"   - {param_key} = {param_value:.2e}")
                     else:
                         print(f"   - {param_key} = {param_value:.2f}")

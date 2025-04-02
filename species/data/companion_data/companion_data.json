@@ -2140,42 +2140,6 @@
             "Gaia Early Data Release 3"
         ]
     },
-    "YSES 2 b": {
-        "simbad": "TYC 8984-2245-1",
-        "gaia_dr3": 5236792880333011968,
-        "parallax": [
-            9.1115,
-            0.031
-        ],
-        "app_mag": {
-            "Paranal/SPHERE.IRDIS_B_H": [
-                18.76,
-                0.11
-            ],
-            "Paranal/SPHERE.IRDIS_B_Ks": [
-                17.9,
-                0.11
-            ]
-        },
-        "semi_major": [
-            115.0,
-            -115.0,
-            115.0
-        ],
-        "mass_star": [
-            1.1,
-            0.03
-        ],
-        "mass_companion": [
-            7.0,
-            1.0
-        ],
-        "accretion": false,
-        "references": [
-            "Bohn et al. 2021",
-            "Gaia Early Data Release 3"
-        ]
-    },
     "HD 142527 B": {
         "simbad": "HD 142527",
         "gaia_dr3": 5994826707951507200,

@@ -132,7 +132,7 @@ def add_custom_model_grid(
         ad_index = []
     else:
         ad_index = None
-    
+
     if "log_co_iso" in parameters:
         log_co_iso = []
     else:

@@ -13,9 +13,10 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-try:
+if "pymultinest" in sys.modules:
     import pymultinest
-except:
+
+else:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -396,12 +397,12 @@ class FitEvolution:
         print(f"Output folder: {output}")
         print()
 
-        try:
+        if "mpi4py" in sys.modules:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
 
-        except ModuleNotFoundError:
+        else:
             mpi_rank = 0
 
         # Create the output folder if required
