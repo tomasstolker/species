@@ -2320,8 +2320,10 @@ class Database:
                 ln_evidence = attr_dict["ln_evidence"]
                 dset.attrs["ln_evidence"] = ln_evidence[0]
                 dset.attrs["ln_evidence_error"] = ln_evidence[1]
+
                 print(
-                    f"Ln(Z): {float(ln_evidence[0]):.2f} +/- {float(ln_evidence[1]):.2f}"
+                    f"ln(Z) = {float(ln_evidence[0]):.2f} "
+                    f"+/- {float(ln_evidence[1]):.2f}"
                 )
 
             count_scaling = 0

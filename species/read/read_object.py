@@ -48,7 +48,7 @@ class ReadObject:
             if f"objects/{self.object_name}" not in hdf5_file:
                 raise ValueError(
                     f"The object '{self.object_name}' is not "
-                    f"present in the database."
+                    "present in the database."
                 )
 
     @typechecked

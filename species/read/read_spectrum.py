@@ -85,8 +85,17 @@ class ReadSpectrum:
             Box with the spectra.
         """
 
-        with h5py.File(self.database, "a") as hdf5_file:
-            if f"spectra/{self.spec_library}" not in hdf5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            # Check if the spectral library is found in
+            # 'r' mode because the 'a' mode is not possible
+            # when using multiprocessing
+            if f"spectra/{self.spec_library}" in hdf5_file:
+                spec_found = True
+            else:
+                spec_found = False
+
+        if not spec_found:
+            with h5py.File(self.database, "a") as hdf5_file:
                 add_spec_library(
                     self.data_folder, hdf5_file, self.spec_library, sptypes
                 )

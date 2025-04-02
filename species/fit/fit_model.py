@@ -11,19 +11,19 @@ from typing import Optional, Union, List, Tuple, Dict
 import dynesty
 import numpy as np
 
-if "ultranest" in sys.modules:
+try:
     import ultranest
 
-else:
+except ImportError:
     warnings.warn(
         "UltraNest could not be imported. Perhaps "
         "because cython was not correctly compiled?"
     )
 
-if "pymultinest" in sys.modules:
+try:
     import pymultinest
 
-else:
+except ImportError:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -2654,12 +2654,13 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -2740,20 +2741,20 @@ class FitModel:
         # the parameter posteriors
         sampling_stats = analyzer.get_stats()
 
-        # Nested sampling global log-evidence
+        # Nested sampling log-evidence
         self.ln_z = sampling_stats["nested sampling global log-evidence"]
         self.ln_z_error = sampling_stats["nested sampling global log-evidence error"]
         print(
-            f"\nNested sampling global log-evidence: {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
+            f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
         )
 
-        # Nested importance sampling global log-evidence
+        # Nested importance sampling log-evidence
         self.imp_ln_z = sampling_stats["nested importance sampling global log-evidence"]
         self.imp_ln_z_error = sampling_stats[
             "nested importance sampling global log-evidence error"
         ]
         print(
-            "Nested importance sampling global log-evidence: "
+            "log-evidence (importance sampling) = "
             f"{self.imp_ln_z:.2f} +/- {self.imp_ln_z_error:.2f}"
         )
 
@@ -2817,17 +2818,16 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Add samples to the database
-
-        print(mpi_rank)
 
         if mpi_rank == 0:
             # Writing the samples to the database is only
@@ -2935,12 +2935,13 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -3024,7 +3025,7 @@ class FitModel:
 
         self.ln_z = result["logz"]
         self.ln_z_error = result["logzerr"]
-        print(f"\nLog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}")
+        print(f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}")
 
         # Best-fit parameters
 
@@ -3034,7 +3035,10 @@ class FitModel:
             mean = np.mean(result["samples"][:, param_idx])
             sigma = np.std(result["samples"][:, param_idx])
 
-            print(f"   - {param_item} = {mean:.2e} +/- {sigma:.2e}")
+            if -0.1 < mean < 0.1:
+                print(f"   - {param_item} = {mean:.2e} +/- {sigma:.2e}")
+            else:
+                print(f"   - {param_item} = {mean:.2f} +/- {sigma:.2f}")
 
         # Get the sample with the maximum likelihood
 
@@ -3044,12 +3048,12 @@ class FitModel:
         print(f"   - Log-likelihood = {max_lnlike:.2f}")
 
         param_check = {}
-        for lnlike_idx, lnlike_item in enumerate(result["maximum_likelihood"]["point"]):
+        for param_idx, param_item in enumerate(result["maximum_likelihood"]["point"]):
             param_check[self.modelpar[param_idx]] = param_item
-            if -0.1 < lnlike_item < 0.1:
-                print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2e}")
+            if -0.1 < param_item < 0.1:
+                print(f"   - {self.modelpar[param_idx]} = {param_item:.2e}")
             else:
-                print(f"   - {self.modelpar[lnlike_idx]} = {lnlike_item:.2f}")
+                print(f"   - {self.modelpar[param_idx]} = {param_item:.2f}")
 
         # Check nearest grid points
 
@@ -3090,12 +3094,13 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Add samples to the database
@@ -3135,9 +3140,9 @@ class FitModel:
         mpi_pool: bool = False,
     ) -> None:
         """
-        Function for running the atmospheric retrieval. The parameter
-        estimation and computation of the marginalized likelihood (i.e.
-        model evidence), is done with ``Dynesty``.
+        Function for running the fit with a grid of model spectra.
+        The parameter estimation and computation of the marginalized
+        likelihood (i.e. model evidence), are done with ``Dynesty``.
 
         When using MPI, it is also required to install ``mpi4py`` (e.g.
         ``pip install mpi4py``), otherwise an error may occur when the
@@ -3195,12 +3200,13 @@ class FitModel:
 
         # Get the MPI rank of the process
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -3214,7 +3220,7 @@ class FitModel:
 
         print()
 
-        out_basename = os.path.join(output, "retrieval_")
+        out_basename = os.path.join(output, "")
 
         if not mpi_pool:
             if n_pool is not None:
@@ -3405,12 +3411,12 @@ class FitModel:
         print(f"Storing samples: {out_file}")
         np.savetxt(out_file, np.c_[samples, ln_prob])
 
-        # Nested sampling global log-evidence
+        # Nested sampling log-evidence
 
         self.ln_z = results.logz[-1]
         self.ln_z_error = results.logzerr[-1]
         print(
-            f"\nNested sampling log-evidence: {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
+            f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
         )
 
         # Get the sample with the maximum likelihood
@@ -3461,6 +3467,16 @@ class FitModel:
             app_param = app_param[..., np.newaxis]
 
             samples = np.append(samples, app_param, axis=1)
+
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+
+        except ImportError:
+            mpi_rank = 0
 
         # Add samples to the database
 

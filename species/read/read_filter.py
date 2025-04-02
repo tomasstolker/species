@@ -159,10 +159,20 @@ class ReadFilter:
 
         filter_profile = self.get_filter()
 
-        with h5py.File(self.database, "a") as hdf5_file:
-            if "spectra/calibration/vega" not in hdf5_file:
+        with h5py.File(self.database, "r") as hdf5_file:
+            # Check if the Vega spectrum is found in 'r'
+            # mode because the 'a' mode is not possible
+            # when using multiprocessing
+            if "spectra/calibration/vega" in hdf5_file:
+                vega_found = True
+            else:
+                vega_found = False
+
+        if not vega_found:
+            with h5py.File(self.database, "a") as hdf5_file:
                 add_vega(self.data_folder, hdf5_file)
 
+        with h5py.File(self.database, "r") as hdf5_file:
             vega_spec = np.array(hdf5_file["spectra/calibration/vega"])
 
         flux_interp = interp1d(

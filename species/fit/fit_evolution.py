@@ -6,6 +6,7 @@ dwarfs in a system.
 
 import configparser
 import os
+import sys
 import warnings
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -13,10 +14,10 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-if "pymultinest" in sys.modules:
+try:
     import pymultinest
 
-else:
+except ImportError:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
@@ -397,12 +398,13 @@ class FitEvolution:
         print(f"Output folder: {output}")
         print()
 
-        if "mpi4py" in sys.modules:
+        try:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
-        else:
+        except ImportError:
             mpi_rank = 0
 
         # Create the output folder if required
@@ -890,6 +892,17 @@ class FitEvolution:
             "mass_prior": self.mass_prior,
             "radius_prior": self.radius_prior,
         }
+
+        # Get the MPI rank of the process
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
+
+        except ImportError:
+            mpi_rank = 0
 
         # Add samples to the database
 

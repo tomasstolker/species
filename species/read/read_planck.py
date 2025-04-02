@@ -113,7 +113,7 @@ class ReadPlanck:
     @staticmethod
     @typechecked
     def update_parameters(
-        model_param: Dict[str, Union[float, List[float]]]
+        model_param: Dict[str, Union[float, List[float]]],
     ) -> Dict[str, float]:
         """
         Internal function for updating the dictionary with model
