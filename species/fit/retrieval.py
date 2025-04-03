@@ -3379,6 +3379,7 @@ class AtmosphericRetrieval:
             from mpi4py import MPI
 
             mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
 
         except ModuleNotFoundError:
             mpi_rank = 0

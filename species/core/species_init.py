@@ -15,7 +15,8 @@ from rich import print as rprint
 from typeguard import typechecked
 
 import h5py
-import species
+
+from .._version import __version__
 
 
 class SpeciesInit:
@@ -45,9 +46,8 @@ class SpeciesInit:
             None
         """
 
-        species_version = species.__version__
-        species_init = f"[bold magenta]species v{species_version}[/bold magenta]"
-        len_text = len(f"species v{species_version}")
+        species_init = f"[bold magenta]species v{__version__}[/bold magenta]"
+        len_text = len(f"species v{__version__}")
 
         print(len_text * "=")
         rprint(species_init)
@@ -64,7 +64,7 @@ class SpeciesInit:
         except (urllib.error.URLError, socket.timeout):
             latest_version = None
 
-        if latest_version is not None and species_version != latest_version:
+        if latest_version is not None and __version__ != latest_version:
             print(f"\n -> A new version ({latest_version}) is available!")
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")

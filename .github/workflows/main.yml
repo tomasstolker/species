@@ -32,11 +32,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip wheel
-          pip install flake8 pytest pytest-cov cython
-          pip install -r docs/requirements.txt
-          pip install -r requirements.txt
-          pip install .
+          pip install --upgrade pip wheel cython
+          pip install .[docs,test]
 
       - name: Lint with flake8
         run: |
@@ -47,12 +44,12 @@ jobs:
 
       - name: Build documentation
         run: |
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
+          # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
           make docs
 
       - name: Run pytest
         run: |
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
+          # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/work/species/species/MultiNest/lib
           make test
 
       - name: Upload coverage to Codecov
