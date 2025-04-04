@@ -40,16 +40,22 @@ Installation from Github
 Using pip
 ^^^^^^^^^
 
-The repository on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip <https://packaging.python.org/tutorials/installing-packages/>`_:
+The repository on `Github <https://github.com/tomasstolker/species>`_ contains the latest implementations and can also be installed with `pip <https://packaging.python.org/tutorials/installing-packages/>`_, including the minimum of required dependencies:
 
 .. code-block:: console
 
     $ pip install git+https://github.com/tomasstolker/species.git
 
+Or, to include all dependencies, therefore enabling all functionalities of ``species``:
+
+.. code-block:: console
+    $ pip install species[full] @ git+https://github.com/tomasstolker/species.git
+
+
 Cloning the repository
 ^^^^^^^^^^^^^^^^^^^^^^
 
-In case you want to look into the code, it is best to clone the repository:
+In case you want to look into and make changes to the code, it is best to clone the repository:
 
 .. code-block:: console
 
@@ -59,9 +65,9 @@ Next, the package is installed by running ``pip`` in the local repository folder
 
 .. code-block:: console
 
-    $ pip install .
+    $ pip install -e .
 
-Or, to install with all dependencies, to enable all functionalities:
+Or, to install with all dependencies:
 
 .. code-block:: console
 

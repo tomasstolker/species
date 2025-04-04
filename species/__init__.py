@@ -1,5 +1,5 @@
-from ._version import __version__
 from species.core.species_init import SpeciesInit
+from ._version import __version__
 
 __author__ = "Tomas Stolker"
 __license__ = "MIT"

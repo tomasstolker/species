@@ -14,7 +14,7 @@ import numpy as np
 try:
     import ultranest
 
-except ImportError:
+except:
     warnings.warn(
         "UltraNest could not be imported. Perhaps "
         "because cython was not correctly compiled?"
@@ -23,7 +23,7 @@ except ImportError:
 try:
     import pymultinest
 
-except ImportError:
+except:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
