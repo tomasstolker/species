@@ -9,7 +9,6 @@ from itertools import product
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
-import dust_extinction.parameter_averages as dust_ext
 import numpy as np
 
 from astropy import units as u
@@ -357,6 +356,8 @@ def apply_obs(
         model_flux *= 10.0 ** (-0.4 * ext_filt)
 
     if "ext_av" in model_param:
+        import dust_extinction.parameter_averages as dust_ext
+
         ext_object = getattr(dust_ext, ext_model)()
 
         if "ext_rv" in model_param:

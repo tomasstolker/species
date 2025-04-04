@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip wheel cython
-          pip install .[docs,test]
+          pip install .[full,docs,test]
 
       - name: Lint with flake8
         run: |

@@ -18,28 +18,17 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
 dependencies = [
-    "astrodbkit2",
     "astropy",
-    "astroquery",
-    "corner",
-    "dust-extinction",
     "h5py",
     "matplotlib",
-    "molmass",
     "numba",
     "numpy",
-    "pandas",
     "pooch",
-    "requests",
     "rich",
     "scipy",
-    "shapely",
     "spectres",
-    "specutils",
-    "SQLAlchemy",
     "tqdm",
     "typeguard",
-    "xlrd",
 ]
 
 [project.optional-dependencies]
