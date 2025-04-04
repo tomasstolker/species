@@ -6,8 +6,6 @@ from typing import List, Union
 
 import numpy as np
 
-from spectres import spectres
-
 from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.util.spec_util import smooth_spectrum
@@ -234,6 +232,8 @@ class ModelBox(Box):
         NoneType
             None
         """
+
+        from spectres import spectres
 
         self.flux = spectres(
             wavel_resample,

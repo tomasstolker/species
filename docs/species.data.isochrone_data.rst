@@ -84,10 +84,18 @@ species.data.isochrone\_data.iso\_saumon2008 module
    :undoc-members:
    :show-inheritance:
 
-species.data.isochrone\_data.iso\_sonora module
------------------------------------------------
+species.data.isochrone\_data.iso\_sonora\_bobcat module
+-------------------------------------------------------
 
-.. automodule:: species.data.isochrone_data.iso_sonora
+.. automodule:: species.data.isochrone_data.iso_sonora_bobcat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+species.data.isochrone\_data.iso\_sonora\_diamondback module
+------------------------------------------------------------
+
+.. automodule:: species.data.isochrone_data.iso_sonora_diamondback
    :members:
    :undoc-members:
    :show-inheritance:

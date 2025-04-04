@@ -59,7 +59,13 @@ Next, the package is installed by running ``pip`` in the local repository folder
 
 .. code-block:: console
 
-    $ pip install -e .
+    $ pip install .
+
+Or, to install with all dependencies, to enable all functionalities:
+
+.. code-block:: console
+
+    $ pip install .[full]
 
 New commits can be pulled from Github once a local copy of the repository exists:
 

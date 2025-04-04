@@ -6,17 +6,16 @@ import json
 import socket
 import urllib.request
 
+from configparser import ConfigParser
 from pathlib import Path, PosixPath, WindowsPath
 from typing import Optional, Union
 
-from configparser import ConfigParser
-from importlib.util import find_spec
+import h5py
+
 from rich import print as rprint
 from typeguard import typechecked
 
-import h5py
-
-from .._version import __version__
+from .._version import __version__, __version_tuple__
 
 
 class SpeciesInit:
@@ -46,8 +45,14 @@ class SpeciesInit:
             None
         """
 
-        species_init = f"[bold magenta]species v{__version__}[/bold magenta]"
-        len_text = len(f"species v{__version__}")
+        species_version = (
+            f"{__version_tuple__[0]}."
+            f"{__version_tuple__[1]}."
+            f"{__version_tuple__[2]}"
+        )
+
+        species_init = "[bold magenta]species[/bold magenta]"
+        len_text = len("species")
 
         print(len_text * "=")
         rprint(species_init)
@@ -59,18 +64,34 @@ class SpeciesInit:
             with urllib.request.urlopen(pypi_url, timeout=1.0) as open_url:
                 url_content = open_url.read()
                 url_data = json.loads(url_content)
-                latest_version = url_data["info"]["version"]
+                pypi_version = url_data["info"]["version"]
 
         except (urllib.error.URLError, socket.timeout):
-            latest_version = None
+            pypi_version = None
 
-        if latest_version is not None and __version__ != latest_version:
-            print(f"\n -> A new version ({latest_version}) is available!")
+        if pypi_version is not None:
+            pypi_split = pypi_version.split(".")
+            current_split = species_version.split(".")
+
+            new_major = (pypi_split[0] == current_split[0]) & (
+                pypi_split[1] > current_split[1]
+            )
+
+            new_minor = (
+                (pypi_split[0] == current_split[0])
+                & (pypi_split[1] == current_split[1])
+                & (pypi_split[2] > current_split[2])
+            )
+
+        if pypi_version is not None and (new_major | new_minor):
+            print(f"\n -> A new version ({pypi_version}) is available!")
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")
 
+        print(f"\nVersion: {__version__}")
+
         working_folder = Path.cwd()
-        print(f"\nWorking folder: {working_folder}")
+        print(f"Working folder: {working_folder}")
 
         config_file = working_folder / "species_config.ini"
 
@@ -161,10 +182,7 @@ class SpeciesInit:
         print(f"   - Data folder: {data_folder}")
         print(f"   - Magnitude of Vega: {vega_mag}")
 
-        if find_spec("mpi4py") is None:
-            print("\nMultiprocessing: mpi4py not installed")
-
-        else:
+        try:
             from mpi4py import MPI
 
             # Rank of this process in a communicator
@@ -175,3 +193,6 @@ class SpeciesInit:
 
             print("\nMultiprocessing: mpi4py installed")
             print(f"Process number {mpi_rank+1:d} out of {mpi_size:d}...")
+
+        except ImportError:
+            print("\nMultiprocessing: mpi4py not installed")

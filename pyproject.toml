@@ -23,6 +23,32 @@ dependencies = [
     "astroquery",
     "corner",
     "dust-extinction",
+    "h5py",
+    "matplotlib",
+    "molmass",
+    "numba",
+    "numpy",
+    "pandas",
+    "pooch",
+    "requests",
+    "rich",
+    "scipy",
+    "shapely",
+    "spectres",
+    "specutils",
+    "SQLAlchemy",
+    "tqdm",
+    "typeguard",
+    "xlrd",
+]
+
+[project.optional-dependencies]
+full = [
+    "astrodbkit2",
+    "astropy",
+    "astroquery",
+    "corner",
+    "dust-extinction",
     "dynesty",
     "emcee",
     "h5py",
@@ -47,8 +73,6 @@ dependencies = [
     "ultranest",
     "xlrd",
 ]
-
-[project.optional-dependencies]
 docs = [
     "cython",
     "jupyter",
@@ -96,3 +120,4 @@ write_to = "species/_version.py"
 
 [tool.setuptools.package-data]
 mypkg = ["*.json"]
+
