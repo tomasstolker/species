@@ -4578,7 +4578,7 @@ class Database:
 
     @typechecked
     def get_retrieval_teff(
-        self, tag: str, random: int = 100
+        self, tag: str, wavel_range: Tuple[float, float], random: int = 100,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Function for calculating :math:`T_\\mathrm{eff}`
@@ -4592,8 +4592,13 @@ class Database:
         ----------
         tag : str
             Database tag with the posterior samples.
+        wavel_range : tuple(float, float)
+            Wavelength range (um) across which the spectra are calculated
+            and interpolated. A wide range should be set for an accurate
+            calculation of the bolometric luminosity, but the boundaries
+            should be within the available range of the opacities.
         random : int
-            Number of randomly selected samples.
+            Number of randomly selected samples (default: 100).
 
         Returns
         -------
@@ -4606,7 +4611,7 @@ class Database:
         print(f"Calculating Teff from {random} posterior samples... ")
 
         boxes, _ = self.get_retrieval_spectra(
-            tag=tag, random=random, wavel_range=(0.5, 50.0), spec_res=500.0
+            tag=tag, random=random, wavel_range=wavel_range, spec_res=500.0
         )
 
         t_eff = np.zeros(len(boxes))

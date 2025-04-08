@@ -840,6 +840,7 @@ def plot_opacities(
     """
     Function to plot the line and continuum opacity structure of the
     atmosphere by using the median parameters from posterior samples.
+    This function is broken and should currently not be used.
 
     Parameters
     ----------
@@ -901,10 +902,10 @@ def plot_opacities(
     wavelength *= 1e4  # (um)
 
     opacity_line = np.zeros(
-        (radtrans.rt_object.freq.shape[0], radtrans.rt_object.pressures.shape[0])
+        (radtrans.rt_object.frequencies.shape[0], radtrans.rt_object.pressures.shape[0])
     )
 
-    for item in opacity.values():
+    for item in radtrans.rt_object.lines_loaded_opacities['opacity_grid'].values():
         opacity_line += item
 
     # Continuum opacities
@@ -1487,14 +1488,14 @@ def plot_clouds(
         ax1.axvline(item, ls="-", lw=0.1, color="white")
 
     ax1.text(
-        0.07,
-        0.07,
+        0.05,
+        0.05,
         rf"$\sigma_\mathrm{{g}}$ = {sigma_g:.2f}",
         ha="left",
         va="bottom",
         transform=ax1.transAxes,
         color="white",
-        fontsize=13.0,
+        fontsize=12.0,
     )
 
     ax1.set_ylabel("Pressure (bar)", fontsize=13)

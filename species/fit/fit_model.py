@@ -470,7 +470,9 @@ class FitModel:
             based on the FWHM of the filter profiles or the wavelength
             spacing calculated from the spectral resolution. By
             setting the argument to ``False``, there will be no
-            weighting applied.
+            weighting applied. Alternatively, a dictionary can
+            be used as argument, which includes the names and
+            weightings of spectra and/or photometric fluxes.
         ext_filter : str, None
             Filter that is associated with the (optional) extinction
             parameter, ``ism_ext``. When the argument of ``ext_filter``

@@ -10,4 +10,3 @@ comment: off
 
 ignore:
   - tests/*
-  - setup.py
