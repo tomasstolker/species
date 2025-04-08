@@ -300,10 +300,15 @@ def get_residuals(
 
     with h5py.File(database_path, "r") as hdf5_file:
         if f"results/fit/{tag}/samples" in hdf5_file:
-            # Samples from FitModel
-            results_type = "FitModel"
+            # Samples from FitModel or AtmosphericRetrieval
             dset = hdf5_file[f"results/fit/{tag}/samples"]
-            print("Results type: FitModel")
+
+            if dset.attrs["model_name"] == 'petitradtrans':
+                results_type = 'AtmosphericRetrieval'
+            else:
+                results_type = "FitModel"
+
+            print(f"Results type: {results_type}")
 
         elif f"results/comparison/{tag}/goodness_of_fit" in hdf5_file:
             # Samples from CompareSpectra
@@ -313,10 +318,9 @@ def get_residuals(
 
         else:
             raise ValueError(
-                f"The '{tag}' tag is not found in the "
-                "database. Please specify modeling "
-                "results from either FitModel or "
-                "CompareSpectra."
+                f"The '{tag}' tag is not found in the database. "
+                "Please specify modeling results from either "
+                "FitModel, AtmosphericRetrieval, or CompareSpectra."
             )
 
         if "model_name" in dset.attrs:
@@ -342,7 +346,7 @@ def get_residuals(
 
         n_param = dset.attrs["n_param"]
 
-        if results_type == "FitModel":
+        if results_type in ["FitModel", "AtmosphericRetrieval"]:
             if "n_fixed" in dset.attrs:
                 n_fixed = dset.attrs["n_fixed"]
 

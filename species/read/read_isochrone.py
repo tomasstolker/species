@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-from scipy.interpolate import griddata, interp1d
+from scipy.interpolate import griddata, interp1d, LinearNDInterpolator
 from typeguard import typechecked
 
 from species.core.box import (
@@ -187,6 +187,11 @@ class ReadIsochrone:
 
             if self.verbose:
                 print(f"\nSetting 'extra_param' attribute: {self.extra_param}")
+
+        self.teff_interp = None
+        self.loglum_interp = None
+        self.logg_interp = None
+        self.radius_interp = None
 
     @typechecked
     def _read_data(
@@ -647,57 +652,67 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        if param_interp is None or "teff" in param_interp:
-            teff = griddata(
+        # Interpolation of Teff
+
+        if self.teff_interp is None and (param_interp is None or "teff" in param_interp):
+            self.teff_interp = LinearNDInterpolator(
                 points=grid_points,
                 values=iso_teff,
-                xi=np.stack((age_points, masses), axis=1),
-                method="linear",
                 fill_value="nan",
                 rescale=False,
             )
 
+        if self.teff_interp is not None:
+            teff = self.teff_interp(np.stack((age_points, masses), axis=1))
         else:
             teff = None
 
-        if param_interp is None or "log_lum" in param_interp:
-            log_lum = griddata(
+        # Interpolation of log(L/Lsun)
+
+        if self.loglum_interp is None and (param_interp is None or "log_lum" in param_interp):
+            self.loglum_interp = LinearNDInterpolator(
                 points=grid_points,
                 values=iso_loglum,
-                xi=np.stack((age_points, masses), axis=1),
-                method="linear",
                 fill_value="nan",
                 rescale=False,
             )
 
+        if self.loglum_interp is not None:
+            log_lum = self.loglum_interp(np.stack((age_points, masses), axis=1))
         else:
             log_lum = None
 
-        if param_interp is None or "logg" in param_interp:
-            logg = griddata(
+        # Interpolation of log(g)
+
+        if self.logg_interp is None and (param_interp is None or "logg" in param_interp):
+            self.logg_interp = LinearNDInterpolator(
                 points=grid_points,
                 values=iso_logg,
-                xi=np.stack((age_points, masses), axis=1),
-                method="linear",
                 fill_value="nan",
                 rescale=False,
             )
 
+        if self.logg_interp is not None:
+            logg = self.logg_interp(np.stack((age_points, masses), axis=1))
         else:
             logg = None
 
-        if param_interp is None or "radius" in param_interp:
-            radius = griddata(
+        # Interpolation of radius
+
+        if self.radius_interp is None and (param_interp is None or "radius" in param_interp):
+            self.radius_interp = LinearNDInterpolator(
                 points=grid_points,
                 values=iso_radius,
-                xi=np.stack((age_points, masses), axis=1),
-                method="linear",
                 fill_value="nan",
                 rescale=False,
             )
 
+        if self.radius_interp is not None:
+            radius = self.radius_interp(np.stack((age_points, masses), axis=1))
         else:
             radius = None
+
+        # Check if magnitude and color are found
 
         if mag_abs is None and filter_mag is not None:
             warnings.warn(

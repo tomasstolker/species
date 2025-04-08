@@ -3892,6 +3892,13 @@ class Database:
 
             samples = samples[np.newaxis,]
 
+        # Number of fixed parameters
+
+        fixed_param = {}
+        for i in range(samples.shape[1]):
+            if np.amin(samples[:, i]) == np.amax(samples[:, i]):
+                fixed_param[parameters[i]] = np.mean(samples[:, i])
+
         with h5py.File(self.database, "a") as hdf5_file:
             if "results" not in hdf5_file:
                 hdf5_file.create_group("results")
@@ -3995,6 +4002,12 @@ class Database:
                 dset.attrs["abund_nodes"] = "None"
             else:
                 dset.attrs["lbl_opacity_sampling"] = radtrans["lbl_opacity_sampling"]
+
+            dset.attrs["n_fixed"] = int(len(fixed_param))
+
+            for key, value in fixed_param.items():
+                group_path = f"results/fit/{tag}/fixed_param/{key}"
+                hdf5_file.create_dataset(group_path, data=value)
 
         print(" [DONE]")
 
@@ -4136,7 +4149,6 @@ class Database:
                     n_param = dset_attrs["n_param"] + 1
 
                     dset.attrs["n_param"] = n_param
-                    dset.attrs[f"parameter{n_param-1}"] = f"{cloud_item}_fraction"
 
         if radtrans["quenching"] == "diffusion":
             p_quench = np.zeros(samples.shape[0])
