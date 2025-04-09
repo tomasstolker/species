@@ -65,6 +65,7 @@ class FitEvolution:
                 ],
             ]
         ] = None,
+        interp_method: str = 'linear',
     ) -> None:
         """
         Parameters
@@ -107,6 +108,16 @@ class FitEvolution:
             log-uniform priors. Fixing a parameter is possible by
             providing the same value as lower and upper boundary
             of the parameter (e.g. ``bounds={'y_frac': (0.25, 0.25)``.
+        interp_method : str
+            Interpolation method for the isochrone data. The argument
+            should be either 'linear', for using a linear 2D
+            interpolation with `LinearNDInterpolator
+            <https://docs.scipy.org/doc/scipy/reference/
+            generated/scipy.interpolate.LinearNDInterpolator.html>`_,
+            or 'cubic', for using a 2D cubic interpolation with
+            `CloughTocher2DInterpolator <https://docs.scipy.org/
+            doc/scipy/reference/generated/scipy.interpolate.
+            CloughTocher2DInterpolator.html>`_ (default: 'linear').
 
         Returns
         -------
@@ -124,6 +135,7 @@ class FitEvolution:
         self.age_prior = age_prior
         self.normal_prior = {}
         self.fix_param = {}
+        self.interp_method = interp_method
 
         print(f"Evolution model: {self.evolution_model}")
         print(f"Luminosity log(L/Lsun): {self.log_lum}")
@@ -192,6 +204,7 @@ class FitEvolution:
             tag=self.evolution_model,
             create_regular_grid=False,
             verbose=False,
+            interp_method=self.interp_method,
         )
 
         # Check if the log_lum values are within the

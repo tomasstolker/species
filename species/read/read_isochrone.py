@@ -11,7 +11,12 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-from scipy.interpolate import griddata, interp1d, LinearNDInterpolator
+from scipy.interpolate import (
+    griddata,
+    interp1d,
+    CloughTocher2DInterpolator,
+    LinearNDInterpolator,
+)
 from typeguard import typechecked
 
 from species.core.box import (
@@ -51,6 +56,7 @@ class ReadIsochrone:
         create_regular_grid: bool = False,
         extrapolate: bool = False,
         verbose: bool = True,
+        interp_method: str = "linear",
     ) -> None:
         """
         Parameters
@@ -64,7 +70,7 @@ class ReadIsochrone:
         create_regular_grid : bool
             Evolutionary grids can be irregular in the (age, mass)
             space. By setting ``create_regular_grid=True``, the
-            grid will be interpolated and extrapolate onto
+            grid will be interpolated and extrapolated onto
             a regular grid that is based on all the unique age
             and mass values of the original grid. The
             resampling of the evolutionary parameters
@@ -78,13 +84,19 @@ class ReadIsochrone:
             parts of the parameter space, in particular for the
             cooling curves extracted with
             :func:`~species.read.read_isochrone.ReadIsochrone.get_cooling_track`.
-        extrapolate : str
-            DEPRECATED: This parameter has been renamed to
-            ``create_regular_grid`` and will be removed in a future
-            release. Please use the ``create_regular_grid``
-            parameter instead.
+            This is therefore an experimental parameter.
         verbose : bool
             Print output.
+        interp_method : str
+            Interpolation method for the isochrone data. The argument
+            should be either 'linear', for using a linear 2D
+            interpolation with `LinearNDInterpolator
+            <https://docs.scipy.org/doc/scipy/reference/
+            generated/scipy.interpolate.LinearNDInterpolator.html>`_,
+            or 'cubic', for using a 2D cubic interpolation with
+            `CloughTocher2DInterpolator <https://docs.scipy.org/
+            doc/scipy/reference/generated/scipy.interpolate.
+            CloughTocher2DInterpolator.html>`_ (default: 'linear').
 
         Returns
         -------
@@ -93,7 +105,6 @@ class ReadIsochrone:
         """
 
         self.tag = tag
-        self.extrapolate = extrapolate
         self.create_regular_grid = create_regular_grid
         self.verbose = verbose
 
@@ -101,19 +112,6 @@ class ReadIsochrone:
             print_section("Read isochrone grid")
             print(f"Database tag: {self.tag}")
             print(f"Create regular grid: {self.create_regular_grid}")
-
-        if self.extrapolate:
-            warnings.warn(
-                "The 'extrapolate' parameter has been "
-                "renamed to 'create_regular_grid' and "
-                "will be removed in a future release.",
-                DeprecationWarning,
-            )
-
-            if not self.create_regular_grid:
-                warnings.warn(
-                    "Setting 'create_regular_grid=True' since 'extrapolate=True'."
-                )
 
         config_file = os.path.join(os.getcwd(), "species_config.ini")
 
@@ -192,6 +190,14 @@ class ReadIsochrone:
         self.loglum_interp = None
         self.logg_interp = None
         self.radius_interp = None
+        self.mass_interp = None
+        self.interp_method = interp_method
+
+        if self.interp_method not in ["linear", "cubic"]:
+            raise ValueError(
+                "The argument of 'interp_method' should "
+                "be set to 'linear' or 'cubic'."
+            )
 
     @typechecked
     def _read_data(
@@ -550,6 +556,12 @@ class ReadIsochrone:
             Box with the isochrone.
         """
 
+        if self.interp_method == "linear":
+            from scipy.interpolate import LinearNDInterpolator as grid_interp
+
+        elif self.interp_method == "cubic":
+            from scipy.interpolate import CloughTocher2DInterpolator as grid_interp
+
         color = None
         mag_abs = None
 
@@ -654,8 +666,10 @@ class ReadIsochrone:
 
         # Interpolation of Teff
 
-        if self.teff_interp is None and (param_interp is None or "teff" in param_interp):
-            self.teff_interp = LinearNDInterpolator(
+        if self.teff_interp is None and (
+            param_interp is None or "teff" in param_interp
+        ):
+            self.teff_interp = grid_interp(
                 points=grid_points,
                 values=iso_teff,
                 fill_value="nan",
@@ -669,8 +683,10 @@ class ReadIsochrone:
 
         # Interpolation of log(L/Lsun)
 
-        if self.loglum_interp is None and (param_interp is None or "log_lum" in param_interp):
-            self.loglum_interp = LinearNDInterpolator(
+        if self.loglum_interp is None and (
+            param_interp is None or "log_lum" in param_interp
+        ):
+            self.loglum_interp = grid_interp(
                 points=grid_points,
                 values=iso_loglum,
                 fill_value="nan",
@@ -684,8 +700,10 @@ class ReadIsochrone:
 
         # Interpolation of log(g)
 
-        if self.logg_interp is None and (param_interp is None or "logg" in param_interp):
-            self.logg_interp = LinearNDInterpolator(
+        if self.logg_interp is None and (
+            param_interp is None or "logg" in param_interp
+        ):
+            self.logg_interp = grid_interp(
                 points=grid_points,
                 values=iso_logg,
                 fill_value="nan",
@@ -699,8 +717,10 @@ class ReadIsochrone:
 
         # Interpolation of radius
 
-        if self.radius_interp is None and (param_interp is None or "radius" in param_interp):
-            self.radius_interp = LinearNDInterpolator(
+        if self.radius_interp is None and (
+            param_interp is None or "radius" in param_interp
+        ):
+            self.radius_interp = grid_interp(
                 points=grid_points,
                 values=iso_radius,
                 fill_value="nan",
@@ -783,6 +803,12 @@ class ReadIsochrone:
             Box with the cooling curve.
         """
 
+        if self.interp_method == "linear":
+            from scipy.interpolate import LinearNDInterpolator as grid_interp
+
+        elif self.interp_method == "cubic":
+            from scipy.interpolate import CloughTocher2DInterpolator as grid_interp
+
         color = None
         mag_abs = None
 
@@ -848,41 +874,45 @@ class ReadIsochrone:
                     rescale=False,
                 )
 
-        teff = griddata(
-            points=grid_points,
-            values=iso_teff,
-            xi=np.stack((ages, mass_points), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if self.teff_interp is None:
+            self.teff_interp = grid_interp(
+                points=grid_points,
+                values=iso_teff,
+                fill_value="nan",
+                rescale=False,
+            )
 
-        log_lum = griddata(
-            points=grid_points,
-            values=iso_loglum,
-            xi=np.stack((ages, mass_points), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        teff = self.teff_interp(np.stack((ages, mass_points), axis=1))
 
-        logg = griddata(
-            points=grid_points,
-            values=iso_logg,
-            xi=np.stack((ages, mass_points), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if self.loglum_interp is None:
+            self.loglum_interp = grid_interp(
+                points=grid_points,
+                values=iso_loglum,
+                fill_value="nan",
+                rescale=False,
+            )
 
-        radius = griddata(
-            points=grid_points,
-            values=iso_radius,
-            xi=np.stack((ages, mass_points), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        log_lum = self.loglum_interp(np.stack((ages, mass_points), axis=1))
+
+        if self.logg_interp is None:
+            self.logg_interp = grid_interp(
+                points=grid_points,
+                values=iso_logg,
+                fill_value="nan",
+                rescale=False,
+            )
+
+        logg = self.logg_interp(np.stack((ages, mass_points), axis=1))
+
+        if self.radius_interp is None:
+            self.radius_interp = grid_interp(
+                points=grid_points,
+                values=iso_radius,
+                fill_value="nan",
+                rescale=False,
+            )
+
+        radius = self.radius_interp(np.stack((ages, mass_points), axis=1))
 
         if mag_abs is None and filter_mag is not None:
             warnings.warn(
@@ -1301,6 +1331,12 @@ class ReadIsochrone:
             Array with masses (:math:`M_\\mathrm{J}`).
         """
 
+        if self.interp_method == "linear":
+            from scipy.interpolate import LinearNDInterpolator as grid_interp
+
+        elif self.interp_method == "cubic":
+            from scipy.interpolate import CloughTocher2DInterpolator as grid_interp
+
         # Read isochrone data
 
         (
@@ -1320,16 +1356,15 @@ class ReadIsochrone:
 
         age_points = np.full(log_lum.size, age)  # (Myr)
 
-        mass = griddata(
-            points=grid_points,
-            values=iso_mass,
-            xi=np.stack((age_points, log_lum), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if self.mass_interp is None:
+            self.mass_interp = grid_interp(
+                points=grid_points,
+                values=iso_mass,
+                fill_value="nan",
+                rescale=False,
+            )
 
-        return mass
+        return self.mass_interp(np.stack((age_points, log_lum), axis=1))
 
     @typechecked
     def get_radius(
@@ -1356,6 +1391,12 @@ class ReadIsochrone:
             Array with radii (:math:`R_\\mathrm{J}`).
         """
 
+        if self.interp_method == "linear":
+            from scipy.interpolate import LinearNDInterpolator as grid_interp
+
+        elif self.interp_method == "cubic":
+            from scipy.interpolate import CloughTocher2DInterpolator as grid_interp
+
         # Read isochrone data
 
         (
@@ -1375,16 +1416,15 @@ class ReadIsochrone:
 
         age_points = np.full(log_lum.size, age)  # (Myr)
 
-        radius = griddata(
-            points=grid_points,
-            values=iso_radius,
-            xi=np.stack((age_points, log_lum), axis=1),
-            method="linear",
-            fill_value="nan",
-            rescale=False,
-        )
+        if self.radius_interp is None:
+            self.radius_interp = grid_interp(
+                points=grid_points,
+                values=iso_radius,
+                fill_value="nan",
+                rescale=False,
+            )
 
-        return radius
+        return self.radius_interp(np.stack((age_points, log_lum), axis=1))
 
     @typechecked
     def get_filters(self) -> Optional[List[str]]:
