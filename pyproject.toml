@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -24,7 +24,6 @@ dependencies = [
     "numba",
     "numpy",
     "pooch",
-    "rich",
     "scipy",
     "spectres",
     "tqdm",
@@ -43,7 +42,6 @@ full = [
     "PyMieScatt",
     "pymultinest",
     "requests",
-    "rich",
     "schwimmbad",
     "shapely",
     "specutils",

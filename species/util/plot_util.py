@@ -701,24 +701,32 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         index = param.index("log_co_iso")
         param[index] = r"$\log\,^{12}\mathrm{CO}/^{13}\mathrm{CO}$"
 
-    for i, item in enumerate(cloud_species):
-        if f"{item.lower()}_fraction" in param:
-            index = param.index(f"{item.lower()}_fraction")
+        print(cloud_species)
+
+    for item in param:
+        from petitRADTRANS.chemistry.utils import simplify_species_list
+
+        if item[-9:] == "_fraction":
+            index = param.index(item)
+            cloud_simple = simplify_species_list([item[:-9]])[0]
             param[index] = (
-                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_labels[i]}}}$"
+                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_simple}}}$"
             )
 
-        if f"{item.lower()}_tau" in param:
-            index = param.index(f"{item.lower()}_tau")
-            param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_labels[i]}}}$"
+        if item[-4:] == "_tau":
+            index = param.index(item)
+            cloud_simple = simplify_species_list([item[:-4]])[0]
+            param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_simple}}}$"
 
-        if f"log_p_base_{item}(c)" in param:
-            index = param.index(f"log_p_base_{item}(c)")
-            param[index] = rf"$\log\,P_\mathrm{{{cloud_labels[i]}}}$"
+        if item[:11] == "log_p_base_":
+            index = param.index(item)
+            cloud_simple = simplify_species_list([item[11:-3]])[0]
+            param[index] = rf"$\log\,P_\mathrm{{{cloud_simple}}}$"
 
-        if f"fsed_{item}(c)" in param:
-            index = param.index(f"fsed_{item}(c)")
-            param[index] = rf"fsed$_\mathrm{{{cloud_labels[i]}}}$"
+        if item[:5] == "fsed_":
+            index = param.index(item)
+            cloud_simple = simplify_species_list([item[5:-3]])[0]
+            param[index] = rf"fsed$_\mathrm{{{cloud_simple}}}$"
 
     for i, item_i in enumerate(cloud_species):
         for j, item_j in enumerate(cloud_species):
@@ -994,7 +1002,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
     if "line_eq_width" in param:
         index = param.index("line_eq_width")
-        param[index] = r"EW ($\AA$)"
+        param[index] = r"EW ($\mathrm{\AA}$)"
 
     if "line_vrad" in param:
         index = param.index("line_vrad")

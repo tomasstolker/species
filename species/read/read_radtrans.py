@@ -223,6 +223,9 @@ class ReadRadtrans:
 
         from petitRADTRANS.radtrans import Radtrans
         from petitRADTRANS.chemistry.utils import simplify_species_list
+        from petitRADTRANS.chemistry.pre_calculated_chemistry import (
+            PreCalculatedEquilibriumChemistryTable,
+        )
 
         print(" [DONE]")
 
@@ -254,7 +257,12 @@ class ReadRadtrans:
         # Initialize attributes to None
 
         self.abund_smooth = None
-        self.eq_chem = None
+
+        # Load equilibrium chemistry table
+
+        self.eq_chem = PreCalculatedEquilibriumChemistryTable()
+        self.eq_chem.load()
+
 
     @typechecked
     def get_model(
@@ -487,15 +495,6 @@ class ReadRadtrans:
 
         if "metallicity" in model_param and "c_o_ratio" in model_param:
             chemistry = "equilibrium"
-
-            # Equilibrium chemistry table
-
-            from petitRADTRANS.chemistry.pre_calculated_chemistry import (
-                PreCalculatedEquilibriumChemistryTable,
-            )
-
-            self.eq_chem = PreCalculatedEquilibriumChemistryTable()
-            self.eq_chem.load()
 
         else:
             chemistry = "free"

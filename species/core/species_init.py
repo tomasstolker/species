@@ -12,7 +12,6 @@ from typing import Optional, Union
 
 import h5py
 
-from rich import print as rprint
 from typeguard import typechecked
 
 from .._version import __version__, __version_tuple__
@@ -51,12 +50,7 @@ class SpeciesInit:
             f"{__version_tuple__[2]}"
         )
 
-        species_init = "[bold magenta]species[/bold magenta]"
-        len_text = len("species")
-
-        print(len_text * "=")
-        rprint(species_init)
-        print(len_text * "=")
+        print("=======\nspecies\n=======")
 
         try:
             pypi_url = "https://pypi.org/pypi/species/json"
