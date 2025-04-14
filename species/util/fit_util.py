@@ -214,12 +214,13 @@ def multi_photometry(
 
 @typechecked
 def get_residuals(
-    tag: str,
     parameters: Dict[str, float],
     objectbox: ObjectBox,
+    tag: Optional[str] = None,
     inc_phot: Union[bool, List[str]] = True,
     inc_spec: Union[bool, List[str]] = True,
     radtrans: Optional[ReadRadtrans] = None,
+    model_name: Optional[str] = None,
     datatype: Optional[str] = None,
     spectrum: Optional[str] = None,
 ) -> ResidualsBox:
@@ -232,14 +233,20 @@ def get_residuals(
 
     Parameters
     ----------
-    tag: str
-        Database tag with the sampling results.
     parameters : dict
         Parameters and values for the spectrum
     objectbox : ObjectBox
         Box with the photometry and/or spectra of an object. A scaling
         and/or error inflation of the spectra should be applied with
         :func:`~species.util.box_util.update_objectbox` beforehand.
+    tag : str, None
+        Database tag with the sampling results. By setting the
+        argument, the reduced :math:`\\chi^2` will be calculated
+        and the ``model_name`` does not need to be set, since the
+        model from the fit is automatically selected. Setting the
+        argument to ``None`` requires setting the ``model_name``,
+        which can be used for calculating the residuals for any
+        set of model parameters, not associated with a fit.
     inc_phot : bool, list(str)
         Include photometric data in the fit. If a boolean, either all
         (``True``) or none (``False``) of the data are selected. If a
@@ -258,6 +265,12 @@ def get_residuals(
         sufficiently broad to cover all the photometric and
         spectroscopic data of ``inc_phot`` and ``inc_spec``. Not used
         if the argument is set to ``None``.
+    model_name : str, None
+        The atmospheric model that will be used for calculating the
+        residuals. The argument is mandatory when ``tag=None``, and
+        optional otherwise. If the argument of ``tag`` is not ``None``
+        then the model is automatically selected, but this can be
+        overruled by setting the argument of ``model_name``.
 
     Returns
     -------
@@ -298,95 +311,106 @@ def get_residuals(
 
     database_path = config["species"]["database"]
 
-    with h5py.File(database_path, "r") as hdf5_file:
-        if f"results/fit/{tag}/samples" in hdf5_file:
-            # Samples from FitModel or AtmosphericRetrieval
-            dset = hdf5_file[f"results/fit/{tag}/samples"]
+    print(f"Database tag: {tag}")
 
-            if dset.attrs["model_name"] == 'petitradtrans':
-                results_type = 'AtmosphericRetrieval'
-            else:
-                results_type = "FitModel"
+    if tag is not None:
+        with h5py.File(database_path, "r") as hdf5_file:
+            if f"results/fit/{tag}/samples" in hdf5_file:
+                # Samples from FitModel or AtmosphericRetrieval
+                dset = hdf5_file[f"results/fit/{tag}/samples"]
 
-            print(f"Results type: {results_type}")
+                if dset.attrs["model_name"] == "petitradtrans":
+                    results_type = "AtmosphericRetrieval"
+                else:
+                    results_type = "FitModel"
 
-        elif f"results/comparison/{tag}/goodness_of_fit" in hdf5_file:
-            # Samples from CompareSpectra
-            results_type = "CompareSpectra"
-            dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
-            print("Selected results: CompareSpectra")
+                print(f"Results type: {results_type}")
 
-        else:
-            raise ValueError(
-                f"The '{tag}' tag is not found in the database. "
-                "Please specify modeling results from either "
-                "FitModel, AtmosphericRetrieval, or CompareSpectra."
-            )
-
-        if "model_name" in dset.attrs:
-            model_name = dset.attrs["model_name"]
-
-        elif "spectrum" in dset.attrs:
-            model_name = dset.attrs["spectrum"]
-
-        elif "model" in dset.attrs:
-            model_name = dset.attrs["model"]
-
-        else:
-            raise ValueError(
-                "The attribute with the model name is "
-                f"not found in the results of '{tag}'."
-            )
-
-        print(f"Model: {model_name}")
-
-        if "binary" in dset.attrs:
-            binary = dset.attrs["binary"]
-            print(f"Binary: {binary}")
-
-        n_param = dset.attrs["n_param"]
-
-        if results_type in ["FitModel", "AtmosphericRetrieval"]:
-            if "n_fixed" in dset.attrs:
-                n_fixed = dset.attrs["n_fixed"]
+            elif f"results/comparison/{tag}/goodness_of_fit" in hdf5_file:
+                # Samples from CompareSpectra
+                results_type = "CompareSpectra"
+                dset = hdf5_file[f"results/comparison/{tag}/goodness_of_fit"]
+                print("Selected results: CompareSpectra")
 
             else:
-                n_fixed = 0
-
-                warnings.warn(
-                    "The 'fixed_param' group is not found in "
-                    f"the results of {tag}. Probably the "
-                    "results were obtained with an older "
-                    "version of the package. The number "
-                    "of fixed parameters will be set to "
-                    "zero. The reduced chi^2 may not be "
-                    "accurate in case parameters were "
-                    "fixed when running FitModel."
+                raise ValueError(
+                    f"The '{tag}' tag is not found in the database. "
+                    "Please specify modeling results from either "
+                    "FitModel, AtmosphericRetrieval, or CompareSpectra."
                 )
 
-        else:
-            # TODO not yet implemented for CompareSpectra
-            warnings.warn(
-                "Not yet implemented for CompareSpectra. Please "
-                "open an issue on the Github page if needed. The "
-                "number of fixed parameters will be set to zero."
-            )
-            n_fixed = 0
+            if model_name is None:
+                if "model_name" in dset.attrs:
+                    model_name = dset.attrs["model_name"]
 
-        print("\nModel parameters:")
-        for param_idx in range(n_param):
-            param_item = dset.attrs[f"parameter{param_idx}"]
-            print(f"   - {param_item}")
+                elif "spectrum" in dset.attrs:
+                    model_name = dset.attrs["spectrum"]
 
-        if n_fixed == 0:
-            print("\nFixed parameters: none")
+                elif "model" in dset.attrs:
+                    model_name = dset.attrs["model"]
 
-        else:
-            dset = hdf5_file[f"results/fit/{tag}/fixed_param"]
+                else:
+                    raise ValueError(
+                        "The attribute with the model name is "
+                        f"not found in the results of '{tag}'."
+                    )
 
-            print("\nFixed parameters:")
-            for param_item in hdf5_file[f"results/fit/{tag}/fixed_param"]:
+            else:
+                warnings.warn(
+                    "The argument of 'model_name' is set, so the "
+                    "model name that is stored as attribute of "
+                    "the provided database 'tag' will be ignored."
+                )
+
+            print(f"Model: {model_name}")
+
+            if "binary" in dset.attrs:
+                binary = dset.attrs["binary"]
+                print(f"Binary: {binary}")
+
+            n_param = dset.attrs["n_param"]
+
+            if results_type in ["FitModel", "AtmosphericRetrieval"]:
+                if "n_fixed" in dset.attrs:
+                    n_fixed = dset.attrs["n_fixed"]
+
+                else:
+                    n_fixed = 0
+
+                    warnings.warn(
+                        "The 'fixed_param' group is not found in "
+                        f"the results of {tag}. Probably the "
+                        "results were obtained with an older "
+                        "version of the package. The number "
+                        "of fixed parameters will be set to "
+                        "zero. The reduced chi^2 may not be "
+                        "accurate in case parameters were "
+                        "fixed when running FitModel."
+                    )
+
+            else:
+                # TODO not yet implemented for CompareSpectra
+                warnings.warn(
+                    "Not yet implemented for CompareSpectra. Please "
+                    "open an issue on the Github page if needed. The "
+                    "number of fixed parameters will be set to zero."
+                )
+                n_fixed = 0
+
+            print("\nModel parameters:")
+            for param_idx in range(n_param):
+                param_item = dset.attrs[f"parameter{param_idx}"]
                 print(f"   - {param_item}")
+
+            if n_fixed == 0:
+                print("\nFixed parameters: none")
+
+            else:
+                dset = hdf5_file[f"results/fit/{tag}/fixed_param"]
+
+                print("\nFixed parameters:")
+                for param_item in hdf5_file[f"results/fit/{tag}/fixed_param"]:
+                    print(f"   - {param_item}")
 
     print(f"\nInclude photometry: {inc_phot}")
     print(f"Include spectra: {inc_spec}")
@@ -621,18 +645,25 @@ def get_residuals(
                     f"max = {np.nanmax(res_spec[spec_key]):.2f}"
                 )
 
-    print(f"\nNumber of data points = {n_dof}")
-    print(f"Number of model parameters = {n_param}")
-    print(f"Number of fixed parameters = {n_fixed}")
+    if tag is not None:
+        print(f"\nNumber of data points = {n_dof}")
+        print(f"Number of model parameters = {n_param}")
+        print(f"Number of fixed parameters = {n_fixed}")
 
-    n_dof -= n_param - n_fixed
+        n_dof -= n_param - n_fixed
 
-    print(f"Number of degrees of freedom = {n_dof}")
+        print(f"Number of degrees of freedom = {n_dof}")
 
-    chi2_red = chi2_stat / n_dof
+        chi2_red = chi2_stat / n_dof
+
+    else:
+        n_dof = None
+        chi2_red = None
 
     print(f"\nchi2 = {chi2_stat:.2f}")
-    print(f"reduced chi2 = {chi2_red:.2f}")
+
+    if tag is not None:
+        print(f"reduced chi2 = {chi2_red:.2f}")
 
     return create_box(
         boxtype="residuals",

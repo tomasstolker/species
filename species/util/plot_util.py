@@ -709,9 +709,7 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
         if item[-9:] == "_fraction":
             index = param.index(item)
             cloud_simple = simplify_species_list([item[:-9]])[0]
-            param[index] = (
-                rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_simple}}}$"
-            )
+            param[index] = rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_simple}}}$"
 
         if item[-4:] == "_tau":
             index = param.index(item)
