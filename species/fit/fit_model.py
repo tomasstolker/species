@@ -343,9 +343,9 @@ class FitModel:
                    readthedocs.io/en/latest/dust_extinction/
                    choose_model.html>`_). This is done by setting the
                    the argument of ``ext_model``, for example to
-                   ``'CCM89'`` for using the relation from
-                   `Cardelli et al. (1989) <https://ui.adsabs.
-                   harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
+                   ``'G23'`` for using the relation from
+                   `Gordon et al. (2023) <https://ui.adsabs.harvard.
+                   edu/abs/2023ApJ...950...86G>`_.
 
                  - The extinction is parametrized by the visual
                    extinction, $A_V$ (``ext_av``), and optionally the
@@ -360,11 +360,11 @@ class FitModel:
             ISM extinction parameters (DEPRECATED):
 
                  - Fit the extinction with the relation from
-                   `Cardelli et al. (1989) <https://ui.adsabs.
-                   harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
-                   This relation is defined for wavelengths in the
-                   range of 0.125-3.3 µm, so no extinction is applied
-                   to the fluxes with wavelengths outside this range.
+                   `Gordon et al. (2023) <https://ui.adsabs.harvard.
+                   edu/abs/2023ApJ...950...86G>`_. This relation is
+                   defined for wavelengths in the range of 0.09-32
+                   µm, so no extinction is applied to the fluxes
+                   with wavelengths outside this range.
 
                  - The extinction is parametrized by the $V$ band
                    extinction, $A_V$ (``ism_ext``), and optionally the
@@ -504,10 +504,10 @@ class FitModel:
             ``dust-extinction`` package (see `list of available
             models <https://dust-extinction.readthedocs.io/en/
             latest/dust_extinction/choose_model.html>`_). For example,
-            set the argument to ``'CCM89'`` to use the extinction
-            relation from `Cardelli et al. (1989) <https://ui.adsabs.
-            harvard.edu/abs/1989ApJ...345..245C/abstract>`_. To use
-            the ``ext_model``, it is mandatory to add the ``ext_av``
+            set the argument to ``'G23'`` to use the extinction
+            relation from `Gordon et al. (2023) <https://ui.adsabs.
+            harvard.edu/abs/2023ApJ...950...86G>`_. To use the
+            ``ext_model``, it is mandatory to add the ``ext_av``
             parameter to the ``bounds`` dictionary for setting the
             prior boundaries of :math:`A_V`. The reddening
             can be optionally added to the ``bounds`` with the

@@ -72,28 +72,12 @@ Documentation = "https://species.readthedocs.io"
 Repository = "https://github.com/tomasstolker/species"
 Issues = "https://github.com/tomasstolker/species/issues"
 
-[tool.setuptools]
-packages = [
-    "species",
-    "species.core",
-    "species.data",
-    "species.data.companion_data",
-    "species.data.filter_data",
-    "species.data.isochrone_data",
-    "species.data.misc_data",
-    "species.data.model_data",
-    "species.data.phot_data",
-    "species.data.spec_data",
-    "species.fit",
-    "species.phot",
-    "species.plot",
-    "species.read",
-    "species.util"
-]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["species*"]
 
 [tool.setuptools_scm]
 write_to = "species/_version.py"
 
 [tool.setuptools.package-data]
-mypkg = ["*.json"]
-
+"species.data" = ["*.json"]

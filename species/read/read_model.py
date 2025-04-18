@@ -47,11 +47,10 @@ class ReadModel:
     package (see `list of available models <https://
     dust-extinction.readthedocs.io/en/latest/dust_extinction/
     choose_model.html>`_). For example, set the value to
-    ``'CCM89'`` to use the extinction relation from
-    `Cardelli et al. (1989) <https://ui.adsabs.harvard.edu/
-    abs/1989ApJ...345..245C/abstract>`_. When setting the
-    ``ext_model``, the ``ext_av`` should be included in
-    ``model_param`` to specify the visual extinction,
+    ``'G23'`` to use the extinction relation from `Gordon et al.
+    (2023) <https://ui.adsabs.harvard.edu/abs/2023ApJ...950...86G>`_.
+    When setting the ``ext_model``, the ``ext_av`` should be included
+    in ``model_param`` to specify the visual extinction,
     :math:`A_V`, and optionally ``ext_rv``, to specify the
     reddening, :math:`R_V`.
     """

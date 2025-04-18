@@ -6,7 +6,7 @@ import os
 import warnings
 
 from configparser import ConfigParser
-from typing import Union, Tuple
+from typing import Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -190,30 +190,38 @@ class ReadFilter:
         ) / np.trapezoid(filter_profile[:, 1] * flux_filter, x=filter_profile[:, 0])
 
     @typechecked
-    def filter_fwhm(self) -> float:
+    def filter_fwhm(self) -> Optional[float]:
         """
-        Calculate the full width at half maximum (FWHM) of the filter
-        profile.
+        Calculate the full width at half maximum (FWHM)
+        of the filter profile.
 
         Returns
         -------
-        float
+        float, None
             Full width at half maximum (:math:`\\mu\\mathrm{m}`).
+            Returns ``None`` if the filter has only one wavelength.
+            with a non-zero transmission.
         """
 
         data = self.get_filter()
 
-        spline = InterpolatedUnivariateSpline(
-            data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
-        )
-        root = spline.roots()
+        if len(np.nonzero(data[:, 1])[0]) > 1:
+            spline = InterpolatedUnivariateSpline(
+                data[:, 0], data[:, 1] - np.max(data[:, 1]) / 2.0
+            )
+            root = spline.roots()
 
-        diff = root - self.mean_wavelength()
+            diff = root - self.mean_wavelength()
 
-        root1 = np.amax(diff[diff < 0.0])
-        root2 = np.amin(diff[diff > 0.0])
+            root1 = np.amax(diff[diff < 0.0])
+            root2 = np.amin(diff[diff > 0.0])
 
-        return root2 - root1
+            filt_fwhm = root2 - root1
+
+        else:
+            filt_fwhm = None
+
+        return filt_fwhm
 
     @typechecked
     def effective_width(self) -> Union[np.float32, np.float64]:

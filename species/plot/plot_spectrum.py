@@ -946,30 +946,34 @@ def plot_spectrum(
                         flux_conv = data_out[:, 1]
                         sigma_conv = data_out[:, 2]
 
-                    # Convert FWHM of filter to requested units
-                    data_in = np.column_stack(
-                        [[wavel_micron + fwhm_micron / 2.0], [1.0]]
-                    )
-                    data_out = convert_units(data_in, units, convert_from=False)
+                    if fwhm_micron is not None:
+                        # Convert FWHM of filter to requested units
+                        data_in = np.column_stack(
+                            [[wavel_micron + fwhm_micron / 2.0], [1.0]]
+                        )
+                        data_out = convert_units(data_in, units, convert_from=False)
 
-                    # Absolute value because could be negative when frequency
-                    hwhm_up = np.abs(data_out[0, 0] - wavelength[0])
+                        # Absolute value because could be negative when frequency
+                        hwhm_up = np.abs(data_out[0, 0] - wavelength[0])
 
-                    # Convert FWHM of filter to requested units
-                    data_in = np.column_stack(
-                        [[wavel_micron - fwhm_micron / 2.0], [1.0]]
-                    )
-                    data_out = convert_units(data_in, units, convert_from=False)
+                        # Convert FWHM of filter to requested units
+                        data_in = np.column_stack(
+                            [[wavel_micron - fwhm_micron / 2.0], [1.0]]
+                        )
+                        data_out = convert_units(data_in, units, convert_from=False)
 
-                    # Absolute value because could be negative when frequency
-                    hwhm_down = np.abs(data_out[0, 0] - wavelength[0])
+                        # Absolute value because could be negative when frequency
+                        hwhm_down = np.abs(data_out[0, 0] - wavelength[0])
 
-                    # Calculate the FWHM, which will be identical
-                    # to 2*hwhm_up and 2*hwhm_down when working with
-                    # wavelengths but hwhm_up and hwhm_down will
-                    # be different when converting a FWHM from
-                    # wavelength to frequency
-                    fwhm = hwhm_up + hwhm_down
+                        # Calculate the FWHM, which will be identical
+                        # to 2*hwhm_up and 2*hwhm_down when working with
+                        # wavelengths but hwhm_up and hwhm_down will
+                        # be different when converting a FWHM from
+                        # wavelength to frequency
+                        fwhm = hwhm_up + hwhm_down
+
+                    else:
+                        fwhm = None
 
                     if not plot_kwargs[j] or filter_item not in plot_kwargs[j]:
                         if not plot_kwargs[j]:
@@ -982,10 +986,15 @@ def plot_spectrum(
                             scale_tmp = flux_scaling / scaling
 
                             for phot_idx in range(box_item.flux[filter_item].shape[1]):
+                                if fwhm is None:
+                                    xerr = None
+                                else:
+                                    xerr = fwhm / 2.0
+
                                 plot_obj = ax1.errorbar(
                                     wavelength[phot_idx],
                                     scale_tmp * box_item.flux[filter_item][0, phot_idx],
-                                    xerr=fwhm / 2.0,
+                                    xerr=xerr,
                                     yerr=scale_tmp
                                     * box_item.flux[filter_item][1, phot_idx],
                                     marker="s",
@@ -1000,10 +1009,15 @@ def plot_spectrum(
 
                             scale_tmp = flux_scaling / scaling
 
+                            if fwhm is None:
+                                xerr = None
+                            else:
+                                xerr = fwhm / 2.0
+
                             plot_obj = ax1.errorbar(
                                 wavelength,
                                 scale_tmp * flux_conv,
-                                xerr=fwhm / 2.0,
+                                xerr=xerr,
                                 yerr=scale_tmp * sigma_conv,
                                 marker="s",
                                 ms=5,
@@ -1047,12 +1061,17 @@ def plot_spectrum(
                                             ]
                                         )
 
+                                if fwhm is None:
+                                    xerr = None
+                                else:
+                                    xerr = fwhm / 2.0
+
                                 ax1.errorbar(
                                     wavelength[phot_idx],
                                     flux_scaling
                                     * box_item.flux[filter_item][0, phot_idx]
                                     / scaling,
-                                    xerr=fwhm / 2.0,
+                                    xerr=xerr,
                                     yerr=flux_scaling
                                     * box_item.flux[filter_item][1, phot_idx]
                                     / scaling,
@@ -1073,11 +1092,16 @@ def plot_spectrum(
                                 if "zorder" not in plot_kwargs[j][filter_item]:
                                     plot_kwargs[j][filter_item]["zorder"] = 3.0
 
+                                if fwhm is None:
+                                    xerr = None
+                                else:
+                                    xerr = fwhm / 2.0
+
                                 ax1.errorbar(
                                     wavelength,
                                     flux_scaling * flux_conv / scaling,
-                                    xerr=fwhm / 2.0,
-                                    yerr=0.5 * flux_scaling * sigma_conv / scaling,
+                                    xerr=xerr,
+                                    yerr=None,
                                     uplims=True,
                                     capsize=2.0,
                                     capthick=0.0,
@@ -1088,10 +1112,15 @@ def plot_spectrum(
                                 if "zorder" not in plot_kwargs[j][filter_item]:
                                     plot_kwargs[j][filter_item]["zorder"] = 3.0
 
+                                if fwhm is None:
+                                    xerr = None
+                                else:
+                                    xerr = fwhm / 2.0
+
                                 ax1.errorbar(
                                     wavelength,
                                     flux_scaling * flux_conv / scaling,
-                                    xerr=fwhm / 2.0,
+                                    xerr=xerr,
                                     yerr=flux_scaling * sigma_conv / scaling,
                                     **plot_kwargs[j][filter_item],
                                 )
