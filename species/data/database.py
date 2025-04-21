@@ -4288,6 +4288,7 @@ class Database:
         random: Optional[int],
         wavel_range: Optional[Union[Tuple[float, float], str]] = None,
         spec_res: Optional[float] = None,
+        lbl_opacity_sampling: Optional[Union[int, np.int64]] = None,
     ) -> Tuple[List[ModelBox], Union[Any]]:
         """
         Function for extracting random spectra from the
@@ -4317,6 +4318,18 @@ class Database:
             Spectral resolution that is used for the smoothing with a
             Gaussian kernel. No smoothing is applied when the argument
             is set to ``None``.
+        lbl_opacity_sampling : int, None
+            This is the same parameter as in ``petitRADTRANS`` which is
+            used with ``res_mode='lbl'`` to downsample the line-by-line
+            opacities by selecting every ``lbl_opacity_sampling``-th
+            wavelength from the original sampling of
+            :math:`\\lambda/\\Delta \\lambda = 10^6`. Setting this
+            parameter will lower the computation time. By setting the
+            argument to ``None``, the value that was set with the
+            retrieval will be used. Setting a lower value will be
+            useful when calculating a low-resolution spectrum
+            across a wide wavelength range, which may require too
+            much memory when using the ``res_mode='lbl'`` mode.
 
         Returns
         -------
@@ -4342,12 +4355,11 @@ class Database:
 
         # Open the HDF5 database
 
-        hdf5_file = h5py.File(database_path, "r")
-
-        # Read the posterior samples
-
-        dset = hdf5_file[f"results/fit/{tag}/samples"]
-        samples = np.asarray(dset)
+        with h5py.File(database_path, "r") as hdf5_file:
+            # Read the posterior samples
+            dset = hdf5_file[f"results/fit/{tag}/samples"]
+            samples = np.asarray(dset)
+            attrs_dict = dict(dset.attrs)
 
         # Select random samples
 
@@ -4361,72 +4373,72 @@ class Database:
 
         # Get number of model parameters
 
-        if "n_param" in dset.attrs:
-            n_param = dset.attrs["n_param"]
-        elif "nparam" in dset.attrs:
-            n_param = dset.attrs["nparam"]
+        if "n_param" in attrs_dict:
+            n_param = attrs_dict["n_param"]
+        elif "nparam" in attrs_dict:
+            n_param = attrs_dict["nparam"]
 
         # Get number of line and cloud species
 
-        n_line_species = dset.attrs["n_line_species"]
-        n_cloud_species = dset.attrs["n_cloud_species"]
+        n_line_species = attrs_dict["n_line_species"]
+        n_cloud_species = attrs_dict["n_cloud_species"]
 
         # Get number of abundance nodes
 
-        if "abund_nodes" in dset.attrs:
-            if dset.attrs["abund_nodes"] == "None":
+        if "abund_nodes" in attrs_dict:
+            if attrs_dict["abund_nodes"] == "None":
                 abund_nodes = None
             else:
-                abund_nodes = dset.attrs["abund_nodes"]
+                abund_nodes = attrs_dict["abund_nodes"]
         else:
             abund_nodes = None
 
         # Convert numpy boolean to regular boolean
 
-        scattering = bool(dset.attrs["scattering"])
+        scattering = bool(attrs_dict["scattering"])
 
         # Get chemistry attributes
 
-        chemistry = dset.attrs["chemistry"]
+        chemistry = attrs_dict["chemistry"]
 
-        if dset.attrs["quenching"] == "None":
+        if attrs_dict["quenching"] == "None":
             quenching = None
         else:
-            quenching = dset.attrs["quenching"]
+            quenching = attrs_dict["quenching"]
 
         # Get P-T profile attributes
 
-        pt_profile = dset.attrs["pt_profile"]
+        pt_profile = attrs_dict["pt_profile"]
 
-        if "pressure_grid" in dset.attrs:
-            pressure_grid = dset.attrs["pressure_grid"]
+        if "pressure_grid" in attrs_dict:
+            pressure_grid = attrs_dict["pressure_grid"]
         else:
             pressure_grid = "smaller"
 
         # Get free temperarture nodes
 
-        if "temp_nodes" in dset.attrs:
-            if dset.attrs["temp_nodes"] == "None":
+        if "temp_nodes" in attrs_dict:
+            if attrs_dict["temp_nodes"] == "None":
                 temp_nodes = None
             else:
-                temp_nodes = dset.attrs["temp_nodes"]
+                temp_nodes = attrs_dict["temp_nodes"]
 
         else:
             temp_nodes = None
 
         # Get distance
 
-        if "parallax" in dset.attrs:
-            distance = 1e3 / dset.attrs["parallax"][0]
-        elif "distance" in dset.attrs:
-            distance = dset.attrs["distance"]
+        if "parallax" in attrs_dict:
+            distance = 1e3 / attrs_dict["parallax"][0]
+        elif "distance" in attrs_dict:
+            distance = attrs_dict["distance"]
         else:
             distance = None
 
         # Get maximum pressure
 
-        if "max_press" in dset.attrs:
-            max_press = dset.attrs["max_press"]
+        if "max_press" in attrs_dict:
+            max_press = attrs_dict["max_press"]
         else:
             max_press = None
 
@@ -4434,21 +4446,21 @@ class Database:
 
         parameters = []
         for i in range(n_param):
-            parameters.append(dset.attrs[f"parameter{i}"])
+            parameters.append(attrs_dict[f"parameter{i}"])
 
         parameters = np.asarray(parameters)
 
         # Get wavelength range for median cloud optical depth
 
         if "log_tau_cloud" in parameters and wavel_range is not None:
-            cloud_wavel = (dset.attrs["wavel_min"], dset.attrs["wavel_max"])
+            cloud_wavel = (attrs_dict["wavel_min"], attrs_dict["wavel_max"])
         else:
             cloud_wavel = None
 
         # Get wavelength range for spectrum
 
         if wavel_range is None:
-            wavel_range = (dset.attrs["wavel_min"], dset.attrs["wavel_max"])
+            wavel_range = (attrs_dict["wavel_min"], attrs_dict["wavel_max"])
 
         # Create dictionary with array indices of the model parameters
 
@@ -4460,30 +4472,31 @@ class Database:
 
         line_species = []
         for i in range(n_line_species):
-            line_species.append(dset.attrs[f"line_species{i}"])
+            line_species.append(attrs_dict[f"line_species{i}"])
 
         # Create list with cloud species
 
         cloud_species = []
         for i in range(n_cloud_species):
-            cloud_species.append(dset.attrs[f"cloud_species{i}"])
+            cloud_species.append(attrs_dict[f"cloud_species{i}"])
 
         # Get resolution mode
 
-        if "res_mode" in dset.attrs:
-            res_mode = dset.attrs["res_mode"]
+        if "res_mode" in attrs_dict:
+            res_mode = attrs_dict["res_mode"]
         else:
             res_mode = "c-k"
 
         # High-resolution downsampling factor
 
-        if "lbl_opacity_sampling" in dset.attrs:
-            if dset.attrs["lbl_opacity_sampling"] == "None":
-                lbl_opacity_sampling = None
+        if lbl_opacity_sampling is None:
+            if "lbl_opacity_sampling" in attrs_dict:
+                if attrs_dict["lbl_opacity_sampling"] == "None":
+                    lbl_opacity_sampling = None
+                else:
+                    lbl_opacity_sampling = attrs_dict["lbl_opacity_sampling"]
             else:
-                lbl_opacity_sampling = dset.attrs["lbl_opacity_sampling"]
-        else:
-            lbl_opacity_sampling = None
+                lbl_opacity_sampling = None
 
         # Create an instance of ReadRadtrans
         # Afterwards, the names of the cloud_species have been shortened
@@ -4517,8 +4530,8 @@ class Database:
 
             # Get smoothing parameter for P-T profile
 
-            if "pt_smooth" in dset.attrs:
-                pt_smooth = dset.attrs["pt_smooth"]
+            if "pt_smooth" in attrs_dict:
+                pt_smooth = attrs_dict["pt_smooth"]
 
             elif "pt_smooth_0" in parameters:
                 pt_smooth = {}
@@ -4530,11 +4543,11 @@ class Database:
 
             # Get smoothing parameter for abundance profiles
 
-            if "abund_smooth" in dset.attrs:
-                if dset.attrs["abund_smooth"] == "None":
+            if "abund_smooth" in attrs_dict:
+                if attrs_dict["abund_smooth"] == "None":
                     abund_smooth = None
                 else:
-                    abund_smooth = dset.attrs["abund_smooth"]
+                    abund_smooth = attrs_dict["abund_smooth"]
             else:
                 abund_smooth = None
 
@@ -4582,10 +4595,6 @@ class Database:
 
         print(" [DONE]")
 
-        # Close the HDF5 database
-
-        hdf5_file.close()
-
         return boxes, read_rad
 
     @typechecked
@@ -4623,7 +4632,8 @@ class Database:
         print(f"Calculating Teff from {random} posterior samples... ")
 
         boxes, _ = self.get_retrieval_spectra(
-            tag=tag, random=random, wavel_range=wavel_range, spec_res=500.0
+            tag=tag, random=random, wavel_range=wavel_range,
+            spec_res=None, lbl_opacity_sampling=10000,
         )
 
         t_eff = np.zeros(len(boxes))

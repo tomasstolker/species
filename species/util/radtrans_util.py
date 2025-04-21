@@ -1,5 +1,5 @@
 """
-Utility functions for ``petitRADTRANS`` spectra.
+Utility functions for generating ``petitRADTRANS`` spectra.
 """
 
 from typing import Dict, List, Optional
@@ -20,7 +20,7 @@ def retrieval_spectrum(
     line_species: List[str],
     cloud_species: List[str],
     quenching: Optional[str],
-    spec_res: float,
+    spec_res: Optional[float],
     distance: Optional[float],
     pt_smooth: Optional[float],
     temp_nodes: Optional[np.integer],
@@ -52,8 +52,9 @@ def retrieval_spectrum(
         or the quenching pressure is calculated from the mixing and
         chemical timescales (``quenching='diffusion'``). The quenching
         is not applied if the argument is set to ``None``.
-    spec_res : float
-        Spectral resolution.
+    spec_res : float, None
+        Spectral resolution. No smoothing is applied if the argument
+        is set to ``None``.
     distance : float, None
         Distance (pc).
     pt_smooth : float, None

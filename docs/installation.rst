@@ -49,6 +49,7 @@ The repository on `Github <https://github.com/tomasstolker/species>`_ contains t
 Or, to include all dependencies, therefore enabling all functionalities of ``species``:
 
 .. code-block:: console
+
     $ pip install species[full] @ git+https://github.com/tomasstolker/species.git
 
 
