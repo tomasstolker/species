@@ -12,8 +12,7 @@ from species.core import constants
 @typechecked
 def add_parsec(database: h5py._hl.files.File, input_path: str) -> None:
     """
-    Function for adding the AMES-Cond and AMES-Dusty
-    isochrone data to the database.
+    Function for adding the PARSEC v2.0 isochrone data to the database.
 
     Parameters
     ----------
@@ -46,21 +45,26 @@ def add_parsec(database: h5py._hl.files.File, input_path: str) -> None:
             progressbar=True,
         )
 
-    log_age, mass, log_lum, log_teff, log_g, radius_pol, radius_eq = np.loadtxt(
+    iso_data = np.loadtxt(
         data_file,
         comments="#",
         delimiter=None,
         usecols=[2, 5, 6, 7, 8, 32, 33],
-        unpack=True,
+        unpack=False,
     )
+
+    idx_bad = iso_data[:, 2] == -9.999
+    iso_data = iso_data[~idx_bad, :]
+
+    log_age, mass, log_lum, log_teff, log_g, radius_pol, radius_eq = iso_data.T
 
     age = 1e-6 * 10.0**log_age  # (Myr)
     mass *= constants.M_SUN / constants.M_JUP  # (Msun) -> (Mjup)
     teff = 10.0**log_teff  # (K)
     radius = (radius_pol + radius_eq) / 2.0  # (Rsun)
-    radius *= constants.R_SUN / constants.R_JUP  # (Rsun) -> (Rjup)
+    radius *= constants.R_SUN / constants.R_JUP  # (Rjup)
 
-    print("Adding isochrones: PARSEC v3.8...", end="", flush=True)
+    print("Adding isochrones: PARSEC v2.0...", end="", flush=True)
 
     database.create_dataset(f"isochrones/{iso_tag}/mass", data=mass)  # (Mjup)
     dset = database.create_dataset(f"isochrones/{iso_tag}/age", data=age)  # (Myr)
