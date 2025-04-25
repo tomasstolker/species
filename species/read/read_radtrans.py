@@ -263,7 +263,6 @@ class ReadRadtrans:
         self.eq_chem = PreCalculatedEquilibriumChemistryTable()
         self.eq_chem.load()
 
-
     @typechecked
     def get_model(
         self,

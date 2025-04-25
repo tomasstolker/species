@@ -33,7 +33,7 @@ def add_sonora_diamondback(database: h5py._hl.files.File, input_path: str) -> No
 
     input_file = "evolution.zip"
     data_folder = Path(input_path) / "sonora-diamondback-evolution"
-    data_file = Path(input_path) / input_file
+    data_file = Path(data_folder) / input_file
 
     if not data_folder.exists():
         data_folder.mkdir()
@@ -45,11 +45,32 @@ def add_sonora_diamondback(database: h5py._hl.files.File, input_path: str) -> No
             url=url,
             known_hash="1efb4e5297060fa7b0329dec363e0bfff4f6132d2d11b655281cabea091d78ee",
             fname=input_file,
-            path=input_path,
+            path=data_folder,
             progressbar=True,
         )
 
     print("\nUnpacking Sonora Diamondback evolution (830 kB)...", end="", flush=True)
+    with ZipFile(str(data_file)) as zip_object:
+        zip_object.extractall(path=str(data_folder))
+    print(" [DONE]")
+
+    url = "https://zenodo.org/records/12735103/files/photometry.zip"
+
+    input_file = "photometry.zip"
+    data_file = Path(data_folder) / input_file
+
+    if not data_file.exists():
+        print()
+
+        pooch.retrieve(
+            url=url,
+            known_hash="7210f358c6da317d60a19dffb5b18a398e20a565aebaaa297e521ee9076bbc9c",
+            fname=input_file,
+            path=data_folder,
+            progressbar=True,
+        )
+
+    print("\nUnpacking Sonora Diamondback photometry (239 kB)...", end="", flush=True)
     with ZipFile(str(data_file)) as zip_object:
         zip_object.extractall(path=str(data_folder))
     print(" [DONE]")

@@ -16,6 +16,7 @@ from species.data.isochrone_data.iso_linder2019 import add_linder2019
 from species.data.isochrone_data.iso_manual import add_manual
 from species.data.isochrone_data.iso_marleau import add_marleau
 from species.data.isochrone_data.iso_nextgen import add_nextgen
+from species.data.isochrone_data.iso_parsec import add_parsec
 from species.data.isochrone_data.iso_saumon2008 import add_saumon2008
 from species.data.isochrone_data.iso_sonora_bobcat import add_sonora_bobcat
 from species.data.isochrone_data.iso_sonora_diamondback import add_sonora_diamondback
@@ -40,11 +41,11 @@ def add_isochrone_grid(
         Database.
     model_name : str, None
         Evolutionary model ('ames', 'atmo', 'baraffe2015',
-        'bt-settl', 'linder2019', 'nextgen', 'saumon2008',
-        'sonora-bobcat', 'sonora-diamondback'). Isochrones
-        will be automatically downloaded. Alternatively,
-        the ``filename`` parameter can be used in
-        combination with ``tag``.
+        'bt-settl', 'linder2019', 'nextgen', 'parsec',
+        'saumon2008', 'sonora-bobcat', 'sonora-diamondback').
+        Isochrones will be automatically downloaded.
+        Alternatively, the ``filename`` parameter can be used
+        in combination with ``tag``.
     filename : str, None
         Filename with the isochrone data. The argument of
         ``model`` will be ignored by setting the argument
@@ -87,6 +88,9 @@ def add_isochrone_grid(
 
     elif model_name == "nextgen":
         add_nextgen(hdf5_file, data_folder)
+
+    elif model_name == "parsec":
+        add_parsec(hdf5_file, data_folder)
 
     elif model_name == "saumon2008":
         add_saumon2008(hdf5_file, data_folder)

@@ -11,12 +11,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-from scipy.interpolate import (
-    griddata,
-    interp1d,
-    CloughTocher2DInterpolator,
-    LinearNDInterpolator,
-)
+from scipy.interpolate import griddata, interp1d
 from typeguard import typechecked
 
 from species.core.box import (
@@ -54,7 +49,6 @@ class ReadIsochrone:
         self,
         tag: Optional[str] = None,
         create_regular_grid: bool = False,
-        extrapolate: bool = False,
         verbose: bool = True,
         interp_method: str = "linear",
     ) -> None:
@@ -143,48 +137,100 @@ class ReadIsochrone:
                 )
 
         # Connect isochrone model with atmosphere model
-        # key = isochrone model, value = atmosphere model
+        # key = isochrone model, value = atmosphere model, extra_param
         self.match_model = {
-            "ames-cond": "ames-cond",
-            "ames-dusty": "ames-dusty",
-            "atmo-ceq": "atmo-ceq",
-            "atmo-neq-strong": "atmo-neq-strong",
-            "atmo-neq-weak": "atmo-neq-weak",
-            "bt-settl": "bt-settl",
-            "linder2019-petitCODE-metal_-0.4": "petitcode-linder2019-clear",
-            "linder2019-petitCODE-metal_0.0": "petitcode-linder2019-clear",
-            "linder2019-petitCODE-metal_0.4": "petitcode-linder2019-clear",
-            "linder2019-petitCODE-metal_0.8": "petitcode-linder2019-clear",
-            "linder2019-petitCODE-metal_1.2": "petitcode-linder2019-clear",
-            "linder2019-petitCODE-metal_-0.4-fsed_1.0": "petitcode-linder2019-cloudy",
-            "linder2019-petitCODE-metal_0.0-fsed_1.0": "petitcode-linder2019-cloudy",
-            "linder2019-petitCODE-metal_0.4-fsed_1.0": "petitcode-linder2019-cloudy",
-            "linder2019-petitCODE-metal_0.8-fsed_1.0": "petitcode-linder2019-cloudy",
-            "linder2019-petitCODE-metal_1.2-fsed_1.0": "petitcode-linder2019-cloudy",
-            "saumon2008-nc_solar": "saumon2008-clear",
-            "saumon2008-f2_solar": "saumon2008-cloudy",
-            "sonora+0.0": "sonora-bobcat",
+            "ames-cond": ("ames-cond", None),
+            "ames-dusty": ("ames-dusty", None),
+            "atmo-ceq": ("atmo-ceq", None),
+            "atmo-neq-strong": ("atmo-neq-strong", None),
+            "atmo-neq-weak": ("atmo-neq-weak", None),
+            "bt-settl": ("bt-settl", None),
+            "linder2019-petitCODE-metal_-0.4": (
+                "petitcode-linder2019-clear",
+                {"feh": -0.4},
+            ),
+            "linder2019-petitCODE-metal_0.0": (
+                "petitcode-linder2019-clear",
+                {"feh": 0.0},
+            ),
+            "linder2019-petitCODE-metal_0.4": (
+                "petitcode-linder2019-clear",
+                {"feh": 0.4},
+            ),
+            "linder2019-petitCODE-metal_0.8": (
+                "petitcode-linder2019-clear",
+                {"feh": 0.8},
+            ),
+            "linder2019-petitCODE-metal_1.2": (
+                "petitcode-linder2019-clear",
+                {"feh": 1.2},
+            ),
+            "linder2019-petitCODE-metal_-0.4-fsed_1.0": (
+                "petitcode-linder2019-cloudy",
+                {"feh": -0.4},
+            ),
+            "linder2019-petitCODE-metal_0.0-fsed_1.0": (
+                "petitcode-linder2019-cloudy",
+                {"feh": 0.0},
+            ),
+            "linder2019-petitCODE-metal_0.4-fsed_1.0": (
+                "petitcode-linder2019-cloudy",
+                {"feh": 0.4},
+            ),
+            "linder2019-petitCODE-metal_0.8-fsed_1.0": (
+                "petitcode-linder2019-cloudy",
+                {"feh": 0.8},
+            ),
+            "linder2019-petitCODE-metal_1.2-fsed_1.0": (
+                "petitcode-linder2019-cloudy",
+                {"feh": 1.0},
+            ),
+            "saumon2008-nc_solar": ("saumon2008-clear", None),
+            "saumon2008-f2_solar": ("saumon2008-cloudy", None),
+            "sonora-0.5": ("sonora-bobcat", {"feh": -0.5}),
+            "sonora+0.0": ("sonora-bobcat", {"feh": 0.0}),
+            "sonora+0.5": ("sonora-bobcat", {"feh": 0.5}),
+            "sonora-diamondback-hybrid-0.5": ("sonora-diamondback", {"feh": -0.5}),
+            "sonora-diamondback-hybrid+0.0": ("sonora-diamondback", {"feh": 0.0}),
+            "sonora-diamondback-hybrid+0.5": ("sonora-diamondback", {"feh": 0.5}),
+            "sonora-diamondback-hybrid-grav-0.5": (
+                "sonora-diamondback",
+                {"feh": -0.5},
+            ),
+            "sonora-diamondback-hybrid-grav+0.0": (
+                "sonora-diamondback",
+                {"feh": 0.0},
+            ),
+            "sonora-diamondback-hybrid-grav+0.5": (
+                "sonora-diamondback",
+                {"feh": 0.5},
+            ),
+            "sonora-diamondback-nc-0.5": (
+                "sonora-diamondback",
+                {"feh": -0.5, "fsed": 8.0},
+            ),
+            "sonora-diamondback-nc+0.0": (
+                "sonora-diamondback",
+                {"feh": 0.0, "fsed": 8.0},
+            ),
+            "sonora-diamondback-nc+0.5": (
+                "sonora-diamondback",
+                {"feh": 0.5, "fsed": 8.0},
+            ),
         }
 
         # Set attribute with extra parameters
         # The attribute will be overwritten by any of
         # the methods that have the extra_param parameter
 
-        self.extra_param = None
-
-        if self.tag.split("-")[0] == "linder2019":
-            self.extra_param = {}
-            tag_split = self.tag.split("_")
-
-            if len(tag_split) == 2:
-                self.extra_param["feh"] = float(tag_split[1])
-
-            elif len(tag_split) == 3:
-                self.extra_param["feh"] = float(tag_split[1][:-5])
-                self.extra_param["fsed"] = float(tag_split[2])
+        if self.tag in self.match_model:
+            self.extra_param = self.match_model[self.tag][1]
 
             if self.verbose:
                 print(f"\nSetting 'extra_param' attribute: {self.extra_param}")
+
+        else:
+            self.extra_param = None
 
         self.teff_interp = None
         self.loglum_interp = None
@@ -374,7 +420,7 @@ class ReadIsochrone:
 
         if atmospheric_model is None:
             if self.tag in self.match_model:
-                atmospheric_model = self.match_model[self.tag]
+                atmospheric_model = self.match_model[self.tag][0]
             else:
                 raise ValueError(
                     "Can not find the atmosphere model "
@@ -384,12 +430,12 @@ class ReadIsochrone:
                 )
 
         elif self.tag in self.match_model:
-            if atmospheric_model != self.match_model[self.tag]:
+            if atmospheric_model != self.match_model[self.tag][0]:
                 warnings.warn(
                     "Please note that you have selected "
                     f"'{atmospheric_model}' as "
                     f"atmospheric model for '{self.tag}' "
-                    f"while '{self.match_model[self.tag]}'"
+                    f"while '{self.match_model[self.tag][0]}'"
                     " is the atmospheric model that is "
                     f"self-consistently associated with "
                     f"'{self.tag}'. It is recommended "
@@ -454,6 +500,17 @@ class ReadIsochrone:
 
         if len(extra_param) == 0 and self.extra_param is not None:
             extra_param = self.extra_param.copy()
+
+        if self.tag in [
+            "sonora-diamondback-hybrid-0.5",
+            "sonora-diamondback-hybrid+0.0",
+            "sonora-diamondback-hybrid+0.5",
+        ]:
+            # See description in https://zenodo.org/records/12735103
+            if model_param["teff"] >= 1300.0:
+                extra_param["fsed"] = 2.0
+            else:
+                extra_param["fsed"] = 8.0
 
         for key, value in param_bounds.items():
             if key not in model_param:
