@@ -12,17 +12,17 @@ A configuration file with the name `species_config.ini` is required in the worki
    data_folder = /path/to/store/data/
    vega_mag = 0.03
 
-In this case, the database is stored in the working folder and an absolute path points to the folder for the external data.
+In this case, the database is stored in the working folder and an absolute path points to the folder where the data is downloaded.
 
 .. important::
-   The configuration file should always be located in the working folder. Are you not sure about your current working folder? Try running the `getcwd <https://docs.python.org/3/library/os.html#os-file-dir>`_ command of Python:
+   The configuration file should always be located in the working folder. Are you not sure about your current working folder? Try running Python's `os.getcwd() <https://docs.python.org/3/library/os.html#os-file-dir>`_ function:
 
       .. code-block:: python
 
          >>> import os
          >>> os.getcwd()
 
-The workflow with *species* can now be initiated with the :class:`~species.core.species_init.SpeciesInit` class:
+The workflow with *species* is now initiated with the :class:`~species.core.species_init.SpeciesInit` class:
 
 .. code-block:: python
 
@@ -32,7 +32,7 @@ The workflow with *species* can now be initiated with the :class:`~species.core.
 A configuration file with default values is automatically created when `species` is initiated and the file is not present in the working folder.
 
 .. tip::
-   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.species_init.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file.
+   The same `data_folder` can be used in multiple configuration files. In this way, the data is only downloaded once and easily reused by a new instance of :class:`~species.core.species_init.SpeciesInit`. Also the HDF5 database can be reused by simply including the same `database` in the configuration file (:ref:`database` section).
 
 .. important::
    A flux-calibrated spectrum of Vega is used for the conversion between a flux density and magnitude. The magnitude of Vega is set to 0.03 for all filters by default. If needed, the magnitude of Vega can be adjusted with the ``vega_mag`` parameter in the configuration file.

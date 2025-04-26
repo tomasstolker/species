@@ -76,6 +76,14 @@ species.data.isochrone\_data.iso\_nextgen module
    :undoc-members:
    :show-inheritance:
 
+species.data.isochrone\_data.iso\_parsec module
+-----------------------------------------------
+
+.. automodule:: species.data.isochrone_data.iso_parsec
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.isochrone\_data.iso\_saumon2008 module
 ---------------------------------------------------
 

@@ -65,7 +65,9 @@ The following data and models are currently supported:
 - `Linder et al. (2019) isochrones <https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..85L/abstract>`_
 - `Saumon & Marley (2008) isochrones <https://ui.adsabs.harvard.edu/abs/2008ApJ...689.1327S/abstract>`_
 - `Sonora Bobcat isochrones <https://zenodo.org/record/5063476>`_
-- All isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
+- `Sonora Diamondback isochrones <https://zenodo.org/records/12735103>`_
+- `PARSEC isochrones <https://stev.oapd.inaf.it/cgi-bin/cmd>`_
+- Isochrones from the `Phoenix grids <https://phoenix.ens-lyon.fr/Grids/>`_
 
 **Spectral libraries**
 

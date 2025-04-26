@@ -72,12 +72,6 @@ Or, to install with all dependencies:
 
 .. code-block:: console
 
-    $ pip install .[full]
-
-Depending on the type of shell, it could also be:
-
-.. code-block:: console
-
     $ pip install ".[full]"
 
 New commits can be pulled from Github once a local copy of the repository exists:
