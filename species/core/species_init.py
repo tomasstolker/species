@@ -44,13 +44,15 @@ class SpeciesInit:
             None
         """
 
+        print("=======\nspecies\n=======")
+
+        # Check if there is a new version available
+
         species_version = (
             f"{__version_tuple__[0]}."
             f"{__version_tuple__[1]}."
             f"{__version_tuple__[2]}"
         )
-
-        print("=======\nspecies\n=======")
 
         try:
             pypi_url = "https://pypi.org/pypi/species/json"
@@ -77,12 +79,12 @@ class SpeciesInit:
                 & (pypi_split[2] > current_split[2])
             )
 
+        print(f"\nVersion: {__version__}")
+
         if pypi_version is not None and (new_major | new_minor):
             print(f"\n -> A new version ({pypi_version}) is available!")
             print(" -> It is recommended to update to the latest version")
             print(" -> See https://github.com/tomasstolker/species for details")
-
-        print(f"\nVersion: {__version__}")
 
         working_folder = Path.cwd()
         print(f"Working folder: {working_folder}")

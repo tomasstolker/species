@@ -193,30 +193,12 @@ class ReadIsochrone:
             "sonora-diamondback-hybrid-0.5": ("sonora-diamondback", {"feh": -0.5}),
             "sonora-diamondback-hybrid+0.0": ("sonora-diamondback", {"feh": 0.0}),
             "sonora-diamondback-hybrid+0.5": ("sonora-diamondback", {"feh": 0.5}),
-            "sonora-diamondback-hybrid-grav-0.5": (
-                "sonora-diamondback",
-                {"feh": -0.5},
-            ),
-            "sonora-diamondback-hybrid-grav+0.0": (
-                "sonora-diamondback",
-                {"feh": 0.0},
-            ),
-            "sonora-diamondback-hybrid-grav+0.5": (
-                "sonora-diamondback",
-                {"feh": 0.5},
-            ),
-            "sonora-diamondback-nc-0.5": (
-                "sonora-diamondback",
-                {"feh": -0.5, "fsed": 8.0},
-            ),
-            "sonora-diamondback-nc+0.0": (
-                "sonora-diamondback",
-                {"feh": 0.0, "fsed": 8.0},
-            ),
-            "sonora-diamondback-nc+0.5": (
-                "sonora-diamondback",
-                {"feh": 0.5, "fsed": 8.0},
-            ),
+            "sonora-diamondback-hybrid-grav-0.5": ("sonora-diamondback", {"feh": -0.5}),
+            "sonora-diamondback-hybrid-grav+0.0": ("sonora-diamondback", {"feh": 0.0}),
+            "sonora-diamondback-hybrid-grav+0.5": ("sonora-diamondback", {"feh": 0.5}),
+            "sonora-diamondback-nc-0.5": ("sonora-bobcat", {"feh": -0.5}),
+            "sonora-diamondback-nc+0.0": ("sonora-bobcat", {"feh": 0.0}),
+            "sonora-diamondback-nc+0.5": ("sonora-bobcat", {"feh": 0.5}),
         }
 
         # Set attribute with extra parameters
@@ -505,12 +487,15 @@ class ReadIsochrone:
             "sonora-diamondback-hybrid-0.5",
             "sonora-diamondback-hybrid+0.0",
             "sonora-diamondback-hybrid+0.5",
+            "sonora-diamondback-hybrid-grav-0.5",
+            "sonora-diamondback-hybrid-grav+0.0",
+            "sonora-diamondback-hybrid-grav+0.5",
         ]:
-            # See description in https://zenodo.org/records/12735103
-            if model_param["teff"] >= 1300.0:
+            # See https://zenodo.org/records/12735103
+            # For Teff < 1300 K there were no clouds included in the
+            # model so best to use Sonora Bobcat for the spectra?
+            if model_param["teff"] > 1300.0:
                 extra_param["fsed"] = 2.0
-            else:
-                extra_param["fsed"] = 8.0
 
         for key, value in param_bounds.items():
             if key not in model_param:

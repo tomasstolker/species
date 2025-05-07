@@ -39,7 +39,7 @@ def add_parsec(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="0c70ee0fa3e675058a6e658ebbacead378fc24cb9de7e513d79d25b15a79cf82",
+            known_hash="c41f60460ac0bf89390b16645238f9cc692316ce158543634763e6c928115b6e",
             fname=input_file,
             path=input_path,
             progressbar=True,
