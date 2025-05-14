@@ -237,7 +237,7 @@ class FitEvolution:
             bounds_grid = {}
             for param_key, param_value in self.read_iso.grid_points().items():
                 if param_key in ["age", "mass"]:
-                    bounds_grid[param_key] = (param_value[0], param_value[-1])
+                    bounds_grid[param_key] = (np.amin(param_value), np.amax(param_value))
 
             for param_key, param_value in bounds_grid.items():
                 for planet_idx in range(self.n_planets):
