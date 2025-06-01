@@ -120,6 +120,50 @@ def download_filter(
 
         os.remove(filter_path)
 
+    elif filter_id == "ELT/METIS.Lp":
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Lp.dat"
+        filter_path = os.path.join(input_path, "TC_filter_Lp.dat")
+        urllib.request.urlretrieve(url, filter_path)
+
+        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+
+        det_type = "photon"
+
+        os.remove(filter_path)
+
+    elif filter_id == "ELT/METIS.Mp":
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Mp.dat"
+        filter_path = os.path.join(input_path, "TC_filter_Mp.dat")
+        urllib.request.urlretrieve(url, filter_path)
+
+        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+
+        det_type = "photon"
+
+        os.remove(filter_path)
+
+    elif filter_id == "ELT/METIS.N":
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_N1.dat"
+        filter_path = os.path.join(input_path, "TC_filter_N1.dat")
+        urllib.request.urlretrieve(url, filter_path)
+
+        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+
+        det_type = "photon"
+
+        os.remove(filter_path)
+
+    elif filter_id == "ELT/METIS.Q":
+        url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Q1.dat"
+        filter_path = os.path.join(input_path, "TC_filter_Q1.dat")
+        urllib.request.urlretrieve(url, filter_path)
+
+        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+
+        det_type = "photon"
+
+        os.remove(filter_path)
+
     elif filter_id == "ALMA/band3":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band3.dat"
         filter_path = os.path.join(input_path, "alma_band3.dat")
