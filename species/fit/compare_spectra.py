@@ -37,7 +37,7 @@ class CompareSpectra:
     def __init__(
         self,
         object_name: str,
-        spec_name: Union[str, List[str]],
+        spec_name: Optional[Union[str, List[str]]] = None,
     ) -> None:
         """
         Parameters
@@ -46,11 +46,14 @@ class CompareSpectra:
             Object name as stored in the database with
             :func:`~species.data.database.Database.add_object` or
             :func:`~species.data.database.Database.add_companion`.
-        spec_name : str, list(str)
+        spec_name : str, list(str), None
             Name of the spectrum or a list with the names of the
             spectra that will be used for the comparison. The
             spectrum names should have been stored at the object
-            data of ``object_name``.
+            data of ``object_name``. No spectra are selected if
+            the argument is set to ``None``, which is only
+            possible when selecting photometric fluxes with the
+            ``inc_phot`` parameter in ``compare_model``.
 
         Returns
         -------
@@ -61,7 +64,10 @@ class CompareSpectra:
         self.object_name = object_name
         self.spec_name = spec_name
 
-        if isinstance(self.spec_name, str):
+        if self.spec_name is None:
+            self.spec_name = []
+
+        elif isinstance(self.spec_name, str):
             self.spec_name = [self.spec_name]
 
         self.object = ReadObject(object_name)
