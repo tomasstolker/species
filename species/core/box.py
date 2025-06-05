@@ -319,6 +319,7 @@ class ObjectBox(Box):
         self.name = None
         self.filters = None
         self.mean_wavel = None
+        self.filter_width = None
         self.magnitude = None
         self.flux = None
         self.spectrum = None
@@ -520,6 +521,7 @@ def create_box(boxtype, **kwargs):
         box.name = kwargs["name"]
         box.filters = kwargs["filters"]
         box.mean_wavel = kwargs["mean_wavel"]
+        box.filter_width = kwargs["filter_width"]
         box.magnitude = kwargs["magnitude"]
         box.flux = kwargs["flux"]
         box.spectrum = kwargs["spectrum"]
@@ -587,6 +589,8 @@ def create_box(boxtype, **kwargs):
             box.simbad = kwargs["simbad"]
         if "sptype" in kwargs:
             box.sptype = kwargs["sptype"]
+        if "parallax" in kwargs:
+            box.parallax = kwargs["parallax"]
         if "distance" in kwargs:
             box.distance = kwargs["distance"]
         if "spec_res" in kwargs:

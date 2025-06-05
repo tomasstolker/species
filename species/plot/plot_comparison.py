@@ -480,7 +480,7 @@ def plot_grid_statistic(
 ) -> mpl.figure.Figure:
     """
     Function for plotting the results from the comparison with
-    a grid of empirical or model spectra
+    a grid of empirical or model spectra.
 
     Parameters
     ----------

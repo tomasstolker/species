@@ -2671,6 +2671,46 @@
             "Janson et al. 2021"
         ]
     },
+    "eps Ind Ab": {
+        "simbad": "eps Ind ",
+        "gaia_dr3": 6412595290592307840,
+        "parallax": [
+            274.8431,
+            0.0956
+        ],
+        "app_mag": {
+            "JWST/MIRI.F1065C": [
+                13.19,
+                0.03
+            ],
+            "JWST/MIRI.F1550C": [
+                11.23,
+                0.03
+            ]
+        },
+        "semi_major": [
+            28.4,
+            -7.2,
+            10.0
+        ],
+        "mass_star": [
+            0.76,
+            0.04
+        ],
+        "mass_companion": [
+            6.3,
+            0.6
+        ],
+        "accretion": false,
+        "age": [
+            4.6,
+            -0.9,
+            1.1
+        ],
+        "references": [
+            "Matthews et al. 2024"
+        ]
+    },
     "VHS 1256 B": {
         "simbad": "SIPS J1256-1257",
         "gaia_dr3": 3526198184723289472,

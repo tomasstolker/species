@@ -3159,6 +3159,7 @@ class Database:
                 magnitude = {}
                 flux = {}
                 mean_wavel = {}
+                filter_width = {}
 
                 from species.read.read_filter import ReadFilter
 
@@ -3178,6 +3179,7 @@ class Database:
                 flux = None
                 phot_filters = None
                 mean_wavel = None
+                filter_width = None
 
             if inc_spec and f"objects/{object_name}/spectrum" in hdf5_file:
                 spectrum = {}
@@ -3209,12 +3211,14 @@ class Database:
             for filter_name in magnitude.keys():
                 read_filt = ReadFilter(filter_name)
                 mean_wavel[filter_name] = read_filt.mean_wavelength()
+                filter_width[filter_name] = read_filt.filter_fwhm()
 
         return create_box(
             "object",
             name=object_name,
             filters=phot_filters,
             mean_wavel=mean_wavel,
+            filter_width=filter_width,
             magnitude=magnitude,
             flux=flux,
             spectrum=spectrum,
@@ -4604,7 +4608,10 @@ class Database:
 
     @typechecked
     def get_retrieval_teff(
-        self, tag: str, wavel_range: Tuple[float, float], random: int = 100,
+        self,
+        tag: str,
+        wavel_range: Tuple[float, float],
+        random: int = 100,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Function for calculating :math:`T_\\mathrm{eff}`
@@ -4637,8 +4644,11 @@ class Database:
         print(f"Calculating Teff from {random} posterior samples... ")
 
         boxes, _ = self.get_retrieval_spectra(
-            tag=tag, random=random, wavel_range=wavel_range,
-            spec_res=None, lbl_opacity_sampling=10000,
+            tag=tag,
+            random=random,
+            wavel_range=wavel_range,
+            spec_res=None,
+            lbl_opacity_sampling=10000,
         )
 
         t_eff = np.zeros(len(boxes))
@@ -4976,3 +4986,102 @@ class Database:
         print(" [DONE]")
 
         return pcode_param
+
+    @typechecked
+    def get_spectral_type(self, tag: str, verbose: bool = True) -> SpectrumBox:
+        """
+        Function for extracting the spectral template for which the
+        goodness-of-fit statistic has been minimized when using
+        :func:`~species.fit.compare_spectra.CompareSpectra.spectral_type`
+        for comparing data with the empirical templates in a spectral library.
+
+        Parameters
+        ----------
+        tag : str
+            Database tag where the results from the empirical comparison with
+            :class:`~species.fit.compare_spectra.CompareSpectra.spectral_type`
+            are stored.
+        verbose : bool
+            Print output, including the parameter values.
+
+        Returns
+        -------
+        SpectrumBox
+            A ``SpectrumBox`` that contains the spectrum and
+            attributes of the best-fit template.
+        """
+
+        if verbose:
+            print_section("Get best spectral type")
+            print(f"Database tag: {tag}")
+
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"results/empirical/{tag}/names"]
+            dset_attrs = dict(dset.attrs)
+
+            object_name = dset.attrs["object_name"]
+            spec_library = dset.attrs["spec_library"]
+            n_spec_name = dset.attrs["n_spec_name"]
+
+            if verbose:
+                print(f"Object name: {object_name}")
+                print(f"Spectral library: {spec_library}")
+
+            if verbose:
+                print(f"\nIncluded spectra:")
+
+            spec_name = []
+            for i in range(n_spec_name):
+                spec_name.append(dset.attrs[f"spec_name{i}"])
+                if verbose:
+                    print(f"   - {spec_name[-1]}")
+
+            names = np.array(dset)
+            flux_scaling = np.array(hdf5_file[f"results/empirical/{tag}/flux_scaling"])
+            av_ext = np.array(hdf5_file[f"results/empirical/{tag}/av_ext"])
+            rad_vel = 1e3 * np.array(
+                hdf5_file[f"results/empirical/{tag}/rad_vel"]
+            )  # (m s-1)
+            goodness_fit = np.array(
+                [hdf5_file[f"results/empirical/{tag}/goodness_of_fit"]]
+            )
+
+        if isinstance(names[i], str):
+            best_name = names[i]
+        else:
+            best_name = names[i].decode("utf-8")
+
+        with h5py.File(self.database, "r") as hdf5_file:
+            dset = hdf5_file[f"spectra/{spec_library}/{best_name}"]
+            spectrum = np.array(dset)
+
+            sptype = dset.attrs["sptype"]
+            simbad = dset.attrs["simbad"]
+            parallax = dset.attrs["parallax"]
+            spec_res = dset.attrs["spec_res"]
+
+        if verbose:
+            print("\nBest-fit spectral template:")
+            print(f"   - G_k = {goodness_fit[0][0]:.2f}")
+            print(f"   - Object name = {best_name}")
+            print(f"   - SIMBAD name = {simbad}")
+            print(f"   - Spectral type = {sptype}")
+            print(f"   - Flux scaling = {flux_scaling[0][0]:.2e}")
+
+            if np.amin(av_ext) > 0.0:
+                print(f"   - Extinction A_V = {av_ext[0]}")
+            if np.amin(rad_vel) > 0.0:
+                print(f"   - Radial velocity (km/s) = {rad_vel[0]}")
+
+        return create_box(
+            "spectrum",
+            spectrum=spec_library,
+            wavelength=spectrum[:, 0],
+            flux=spectrum[:, 1],
+            error=spectrum[:, 2],
+            name=best_name,
+            sptype=sptype,
+            simbad=best_name,
+            parallax=parallax,
+            spec_res=spec_res,
+        )

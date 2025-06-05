@@ -1179,7 +1179,7 @@ def plot_spectrum(
                     kwargs_copy = plot_kwargs[j][filter_item].copy()
 
                     if "zorder" not in kwargs_copy:
-                        kwargs_copy["zorder"] = 4.0
+                        kwargs_copy["zorder"] = 10.0
 
                     ax1.errorbar(
                         wavelength,
@@ -1238,8 +1238,11 @@ def plot_spectrum(
                         if "mfc" in kwargs_copy:
                             del kwargs_copy["mfc"]
 
-                        if "zorder" not in kwargs_copy:
-                            kwargs_copy["zorder"] = 4.0
+                        if "zorder" in kwargs_copy:
+                            kwargs_synphot = kwargs_copy["zorder"] - 1.0
+                            del kwargs_copy["zorder"]
+                        else:
+                            kwargs_synphot = 3.0
 
                         ax1.errorbar(
                             wavelength,
@@ -1247,6 +1250,7 @@ def plot_spectrum(
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
+                            zorder=kwargs_synphot,
                             **kwargs_copy,
                         )
 
