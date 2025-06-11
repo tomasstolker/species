@@ -125,7 +125,7 @@ def download_filter(
         filter_path = os.path.join(input_path, "TC_filter_Lp.dat")
         urllib.request.urlretrieve(url, filter_path)
 
-        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+        wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
         det_type = "photon"
 
@@ -136,29 +136,29 @@ def download_filter(
         filter_path = os.path.join(input_path, "TC_filter_Mp.dat")
         urllib.request.urlretrieve(url, filter_path)
 
-        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+        wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
         det_type = "photon"
 
         os.remove(filter_path)
 
-    elif filter_id == "ELT/METIS.N":
+    elif filter_id == "ELT/METIS.N1":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_N1.dat"
         filter_path = os.path.join(input_path, "TC_filter_N1.dat")
         urllib.request.urlretrieve(url, filter_path)
 
-        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+        wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
         det_type = "photon"
 
         os.remove(filter_path)
 
-    elif filter_id == "ELT/METIS.Q":
+    elif filter_id == "ELT/METIS.Q1":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Q1.dat"
         filter_path = os.path.join(input_path, "TC_filter_Q1.dat")
         urllib.request.urlretrieve(url, filter_path)
 
-        wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
+        wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
         det_type = "photon"
 

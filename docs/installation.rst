@@ -17,6 +17,12 @@ The ``species`` toolkit can be installed with the `pip package manager <https://
     $ pip install cython
     $ pip install species
 
+Or, to include all dependencies, therefore enabling all functionalities of ``species``:
+
+.. code-block:: console
+
+    $ pip install 'species[full]'
+
 Or, to update ``species`` to the most recent version:
 
 .. code-block:: console
@@ -50,7 +56,7 @@ Or, to include all dependencies, therefore enabling all functionalities of ``spe
 
 .. code-block:: console
 
-    $ pip install species[full] @ git+https://github.com/tomasstolker/species.git
+    $ pip install 'git+https://github.com/tomasstolker/species.git#egg=species[full]'
 
 
 Cloning the repository

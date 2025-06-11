@@ -2558,7 +2558,7 @@ class FitModel:
         Function to run the ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be
         installed with ``pip`` from the PyPI repository,
-        ``MultiNest`` has to to be built manually. See the
+        ``MultiNest`` has to be built manually. See the
         `PyMultiNest documentation <http://johannesbuchner.
         github.io/PyMultiNest/install.html>`_. The library
         path of ``MultiNest`` should be set to the

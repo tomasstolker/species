@@ -889,9 +889,10 @@ def convert_units(
         Tuple with the units of the wavelength ("um", "angstrom",
         "nm", "mm", "cm", "m", "Hz", "GHz") and the units of the
         flux density ("W m-2 um-1", "W m-2 m-1", "W m-2 Hz-1",
-        "erg s-1 cm-2 angstrom-1" "erg s-1 cm-2 Hz-1", "mJy",
-        "Jy", "MJy"). One can use "um" or "µm" interchangeably,
-        and similarly "AA", "Å", "A", or "angstrom".
+        "erg s-1 cm-2 angstrom-1" "erg s-1 cm-2 Hz-1", "uJy",
+        mJy", "Jy", "MJy"). One can use "um" or "µm"
+        interchangeably, and similarly "AA", "Å", "A", or
+        "angstrom".
     convert_from : bool
         Convert from ``units_in`` to :math:`\\mu\\text{m}` and
         :math:`\\text{W} \\text{m}^{-2} \\mu\\text{m}^{-1}` when set to
@@ -977,6 +978,7 @@ def convert_units(
         "W m-2 Hz-1",
         "erg s-1 cm-2 angstrom-1",
         "erg s-1 cm-2 Hz-1",
+        "uJy",
         "mJy",
         "Jy",
         "MJy",
@@ -1040,6 +1042,18 @@ def convert_units(
                 flux_out[:, 2] = flux_in[:, 2] * 1e-1
             else:
                 flux_out[:, 2] = flux_in[:, 2] * 1e1
+
+    elif units_in[1] == "uJy":
+        if convert_from:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-32 * speed_light / wavel_micron**2
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e32 * wavel_micron**2 / speed_light
+
+        if flux_out.shape[1] == 3:
+            if convert_from:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-32 * speed_light / wavel_micron**2
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e32 * wavel_micron**2 / speed_light
 
     elif units_in[1] == "mJy":
         if convert_from:

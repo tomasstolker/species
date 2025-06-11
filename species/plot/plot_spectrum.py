@@ -1179,7 +1179,7 @@ def plot_spectrum(
                     kwargs_copy = plot_kwargs[j][filter_item].copy()
 
                     if "zorder" not in kwargs_copy:
-                        kwargs_copy["zorder"] = 10.0
+                        kwargs_copy["zorder"] = 2.9
 
                     ax1.errorbar(
                         wavelength,
@@ -1217,8 +1217,11 @@ def plot_spectrum(
                         if "label" in kwargs_copy:
                             del kwargs_copy["label"]
 
-                        if "zorder" not in kwargs_copy:
-                            kwargs_copy["zorder"] = 4.0
+                        if "zorder" in kwargs_copy:
+                            zorder_synphot = kwargs_copy["zorder"] - 0.2
+                            del kwargs_copy["zorder"]
+                        else:
+                            zorder_synphot = 2.8
 
                         ax1.errorbar(
                             wavelength,
@@ -1226,6 +1229,7 @@ def plot_spectrum(
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
+                            zorder=zorder_synphot,
                             **kwargs_copy,
                         )
 
@@ -1239,10 +1243,10 @@ def plot_spectrum(
                             del kwargs_copy["mfc"]
 
                         if "zorder" in kwargs_copy:
-                            kwargs_synphot = kwargs_copy["zorder"] - 1.0
+                            zorder_synphot = kwargs_copy["zorder"] - 0.2
                             del kwargs_copy["zorder"]
                         else:
-                            kwargs_synphot = 3.0
+                            zorder_synphot = 2.8
 
                         ax1.errorbar(
                             wavelength,
@@ -1250,7 +1254,7 @@ def plot_spectrum(
                             xerr=fwhm / 2.0,
                             yerr=None,
                             mfc="white",
-                            zorder=kwargs_synphot,
+                            zorder=zorder_synphot,
                             **kwargs_copy,
                         )
 

@@ -346,7 +346,7 @@ class FitEvolution:
             print(f"   - {param_key} = {param_value}")
 
         print(f"\nNormal priors (mean, sigma):")
-        print(f"   - Age: {self.age_prior}")
+        print(f"   - Age (Myr): {self.age_prior}")
         print(f"   - Mass (Mjup): {self.mass_prior}")
         print(f"   - Radius (Rjup): {self.radius_prior}")
 

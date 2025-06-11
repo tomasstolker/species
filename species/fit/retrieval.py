@@ -3004,7 +3004,7 @@ class AtmosphericRetrieval:
         estimation and computation of the marginalized likelihood (i.e.
         model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
-        with ``pip`` from the PyPI repository, ``MultiNest`` has to to
+        with ``pip`` from the PyPI repository, ``MultiNest`` has to
         be compiled manually. See the ``PyMultiNest`` documentation:
         http://johannesbuchner.github.io/PyMultiNest/install.html.
         Note that the library path of ``MultiNest`` should be set to
@@ -3705,7 +3705,7 @@ class AtmosphericRetrieval:
         estimation and computation of the marginalized likelihood (i.e.
         model evidence), is done with ``PyMultiNest`` wrapper of the
         ``MultiNest`` sampler. While ``PyMultiNest`` can be installed
-        with ``pip`` from the PyPI repository, ``MultiNest`` has to to
+        with ``pip`` from the PyPI repository, ``MultiNest`` has to
         be compiled manually. See the `PyMultiNest documentation
         <http://johannesbuchner.github.io/PyMultiNest/install.html>`_
         for further details. Note that the library path of
