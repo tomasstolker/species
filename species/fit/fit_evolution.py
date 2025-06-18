@@ -17,7 +17,7 @@ import numpy as np
 try:
     import pymultinest
 
-except ImportError:
+except:
     warnings.warn(
         "PyMultiNest could not be imported. "
         "Perhaps because MultiNest was not built "
