@@ -2897,6 +2897,9 @@ class Database:
         filter_name : str
             Filter name for which the synthetic photometry
             will be computed.
+        random : int, None
+            Number of random samples. All samples are selected
+            by setting the argument to ``None``.
         phot_type : str
             Photometry type ('magnitude' or 'flux').
         flux_units : tuple(str, str), None

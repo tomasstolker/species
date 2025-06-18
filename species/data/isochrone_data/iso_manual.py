@@ -87,8 +87,12 @@ def add_manual(
 
     iso_data[:, 0] *= 1e3  # (Myr)
     iso_data[:, 1] *= constants.M_SUN / constants.M_JUP  # (Mjup)
-    iso_data[:, 5] *= 1e9  # (cm)
-    iso_data[:, 5] *= 1e-2 / constants.R_JUP  # (cm) -> (Rjup)
+
+    if check_baraffe:
+        iso_data[:, 5] *= constants.R_SUN/constants.R_JUP  # (Rjup)
+    else:
+        iso_data[:, 5] *= 1e9  # (cm)
+        iso_data[:, 5] *= 1e-2 / constants.R_JUP  # (cm) -> (Rjup)
 
     index_sort = np.argsort(iso_data[:, 0])
     iso_data = iso_data[index_sort, :]

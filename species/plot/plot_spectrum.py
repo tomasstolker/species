@@ -1179,7 +1179,7 @@ def plot_spectrum(
                     kwargs_copy = plot_kwargs[j][filter_item].copy()
 
                     if "zorder" not in kwargs_copy:
-                        kwargs_copy["zorder"] = 2.9
+                        kwargs_copy["zorder"] = 2.8
 
                     ax1.errorbar(
                         wavelength,
