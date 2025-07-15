@@ -2103,7 +2103,7 @@ class FitModel:
                 )
 
                 # Only required when fitting an error inflation
-                ln_like += np.log(2.0 * np.pi * phot_var)
+                ln_like += self.weights[filter_name] * np.log(2.0 * np.pi * phot_var)
 
             else:
                 for phot_idx in range(phot_item.shape[1]):
@@ -2147,7 +2147,7 @@ class FitModel:
                     )
 
                     # Only required when fitting an error inflation
-                    ln_like += np.log(2.0 * np.pi * phot_var)
+                    ln_like += self.weights[filter_name] * np.log(2.0 * np.pi * phot_var)
 
         # Compare spectra with model
 
@@ -2470,7 +2470,7 @@ class FitModel:
                     @ (data_flux - model_flux)
                 )
 
-                ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
+                ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
 
             else:
                 if spec_item in self.fit_corr:
@@ -2500,7 +2500,7 @@ class FitModel:
                         @ (data_flux - model_flux)
                     )
 
-                    ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
+                    ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
 
                 else:
                     # Calculate the log-likelihood without a covariance matrix
@@ -2511,7 +2511,7 @@ class FitModel:
                         / data_var
                     )
 
-                    ln_like += np.nansum(np.log(2.0 * np.pi * data_var))
+                    ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
 
         return -0.5 * ln_like
 
