@@ -1180,15 +1180,12 @@ def plot_size_distributions(
     species_db = Database()
     box = species_db.get_samples(tag)
 
-    if output is None:
-        print("Plotting size distributions...", end="", flush=True)
-    else:
-        print(f"Plotting size distributions: {output}...", end="", flush=True)
+    print_section("Plot size distributions")
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    if "lognorm_radius" not in box.parameters and "powerlaw_max" not in box.parameters:
+    if "lognorm_ext" not in box.parameters and "powerlaw_ext" not in box.parameters:
         raise ValueError(
             "The SamplesBox does not contain extinction parameter "
             "for a log-normal or power-law size distribution."
@@ -1200,14 +1197,19 @@ def plot_size_distributions(
         ran_index = np.random.randint(samples.shape[0], size=random)
         samples = samples[ran_index,]
 
-    if "lognorm_radius" in box.parameters:
+    print(f"Database tag: {tag}")
+    print(f"Number of samples: {samples.shape[0]}")
+
+    print(f"\nLabel offset: {offset}")
+
+    if "lognorm_ext" in box.parameters:
         log_r_index = box.parameters.index("lognorm_radius")
         sigma_index = box.parameters.index("lognorm_sigma")
 
         log_r_g = samples[:, log_r_index]
         sigma_g = samples[:, sigma_index]
 
-    if "powerlaw_max" in box.parameters:
+    if "powerlaw_ext" in box.parameters:
         r_max_index = box.parameters.index("powerlaw_max")
         exponent_index = box.parameters.index("powerlaw_exp")
 
@@ -1257,19 +1259,15 @@ def plot_size_distributions(
 
     ax.set_xscale("log")
 
-    if "powerlaw_max" in box.parameters:
+    if "powerlaw_ext" in box.parameters:
         ax.set_yscale("log")
 
     if offset is not None:
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    else:
-        ax.get_xaxis().set_label_coords(0.5, -0.22)
-        ax.get_yaxis().set_label_coords(-0.09, 0.5)
-
     for i in range(samples.shape[0]):
-        if "lognorm_radius" in box.parameters:
+        if "lognorm_ext" in box.parameters:
             dn_grains, r_width, radii = log_normal_distribution(
                 10.0 ** log_r_g[i], sigma_g[i], 1000
             )
@@ -1281,19 +1279,18 @@ def plot_size_distributions(
             r_width = r_width[indices]
             radii = radii[indices]
 
-        elif "powerlaw_max" in box.parameters:
+        elif "powerlaw_ext" in box.parameters:
             dn_grains, r_width, radii = power_law_distribution(
                 exponent[i], 1e-3, 10.0 ** r_max[i], 1000
             )
 
-        ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="black", alpha=0.5)
+        ax.plot(radii, dn_grains / r_width, ls="-", lw=0.5, color="tab:gray", alpha=0.5)
 
     if output is None:
         plt.show()
     else:
+        print(f"Output: {output}")
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig
 
@@ -1348,19 +1345,26 @@ def plot_extinction(
     from species.data.database import Database
 
     species_db = Database()
-    box = species_db.get_samples(tag)
+    samples_box = species_db.get_samples(tag)
+    samples = samples_box.samples
 
-    if wavel_range is None:
-        wavel_range = (0.4, 10.0)
+    print_section("Plot extinction")
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
-    samples = box.samples
-
     if random is not None:
         ran_index = np.random.randint(samples.shape[0], size=random)
         samples = samples[ran_index,]
+
+    if wavel_range is None:
+        wavel_range = (0.4, 10.0)
+
+    print(f"Database tag: {tag}")
+    print(f"Number of samples: {samples.shape[0]}")
+
+    print(f"\nWavelength range: {wavel_range}")
+    print(f"Label offset: {offset}")
 
     fig = plt.figure(figsize=(6, 3))
     gridsp = mpl.gridspec.GridSpec(1, 1)
@@ -1413,22 +1417,14 @@ def plot_extinction(
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    else:
-        ax.get_xaxis().set_label_coords(0.5, -0.22)
-        ax.get_yaxis().set_label_coords(-0.09, 0.5)
-
     sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
 
-    if (
-        "lognorm_radius" in box.parameters
-        and "lognorm_sigma" in box.parameters
-        and "lognorm_ext" in box.parameters
-    ):
-        cross_optical, dust_radius, dust_sigma = interp_lognorm([], [])
+    if "lognorm_ext" in samples_box.parameters:
+        cross_optical, dust_radius, dust_sigma = interp_lognorm(verbose=False)
 
-        log_r_index = box.parameters.index("lognorm_radius")
-        sigma_index = box.parameters.index("lognorm_sigma")
-        ext_index = box.parameters.index("lognorm_ext")
+        log_r_index = samples_box.parameters.index("lognorm_radius")
+        sigma_index = samples_box.parameters.index("lognorm_sigma")
+        ext_index = samples_box.parameters.index("lognorm_ext")
 
         log_r_g = samples[:, log_r_index]
         sigma_g = samples[:, sigma_index]
@@ -1449,31 +1445,18 @@ def plot_extinction(
         )
 
         for i in range(samples.shape[0]):
-            cross_tmp = cross_optical["Generic/Bessell.V"](
-                (10.0 ** log_r_g[i], sigma_g[i])
-            )
-
-            n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-
-            sample_cross = np.zeros(sample_wavel.shape)
-
-            for j, item in enumerate(sample_wavel):
-                sample_cross[j] = cross_interp((item, 10.0 ** log_r_g[i], sigma_g[i]))
-
-            sample_ext = 2.5 * np.log10(np.exp(1.0)) * sample_cross * n_grains
+            cross_tmp = cross_optical((sample_wavel, 10.0 ** log_r_g[i], sigma_g[i]))
+            # n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+            sample_ext = -2.5*np.log10(np.exp(-dust_ext[i] * cross_tmp))
 
             ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
-    elif (
-        "powerlaw_max" in box.parameters
-        and "powerlaw_exp" in box.parameters
-        and "powerlaw_ext" in box.parameters
-    ):
-        cross_optical, dust_max, dust_exp = interp_powerlaw([], [])
+    elif "powerlaw_ext" in samples_box.parameters:
+        cross_optical, dust_max, dust_exp = interp_powerlaw(verbose=False)
 
-        r_max_index = box.parameters.index("powerlaw_max")
-        exp_index = box.parameters.index("powerlaw_exp")
-        ext_index = box.parameters.index("powerlaw_ext")
+        r_max_index = samples_box.parameters.index("powerlaw_max")
+        exp_index = samples_box.parameters.index("powerlaw_exp")
+        ext_index = samples_box.parameters.index("powerlaw_ext")
 
         r_max = samples[:, r_max_index]
         exponent = samples[:, exp_index]
@@ -1494,27 +1477,18 @@ def plot_extinction(
         )
 
         for i in range(samples.shape[0]):
-            cross_tmp = cross_optical["Generic/Bessell.V"](
-                (10.0 ** r_max[i], exponent[i])
-            )
-
-            n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-
-            sample_cross = np.zeros(sample_wavel.shape)
-
-            for j, item in enumerate(sample_wavel):
-                sample_cross[j] = cross_interp((item, 10.0 ** r_max[i], exponent[i]))
-
-            sample_ext = 2.5 * np.log10(np.exp(1.0)) * sample_cross * n_grains
+            cross_tmp = cross_optical((sample_wavel, 10.0 ** r_max[i], exponent[i]))
+            # n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+            sample_ext = -2.5*np.log10(np.exp(-dust_ext[i] * cross_tmp))
 
             ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
-    elif "ism_ext" in box.parameters:
-        ext_index = box.parameters.index("ism_ext")
+    elif "ism_ext" in samples_box.parameters:
+        ext_index = samples_box.parameters.index("ism_ext")
         ism_ext = samples[:, ext_index]
 
-        if "ism_red" in box.parameters:
-            red_index = box.parameters.index("ism_red")
+        if "ism_red" in samples_box.parameters:
+            red_index = samples_box.parameters.index("ism_red")
             ism_red = samples[:, red_index]
 
         else:
@@ -1530,15 +1504,9 @@ def plot_extinction(
         raise ValueError("The SamplesBox does not contain extinction parameters.")
 
     if output is None:
-        print("Plotting extinction...", end="", flush=True)
-    else:
-        print(f"Plotting extinction: {output}...", end="", flush=True)
-
-    if output is None:
         plt.show()
     else:
+        print(f"Output: {output}")
         plt.savefig(output, bbox_inches="tight")
-
-    print(" [DONE]")
 
     return fig

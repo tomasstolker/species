@@ -384,47 +384,37 @@ def apply_obs(
             model_wavel[wavel_select] * u.micron, Av=model_param["ext_av"]
         )
 
-    # elif "lognorm_ext" in model_param:
-    #     cross_tmp = cross_sections["Generic/Bessell.V"](
-    #         (10.0 ** model_param["lognorm_radius"], model_param["lognorm_sigma"])
-    #     )
-    #
-    #     n_grains = (
-    #         model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-    #     )
-    #
-    #     cross_tmp = cross_sections["spectrum"](
-    #         (
-    #             model_wavel,
-    #             10.0 ** model_param["lognorm_radius"],
-    #             model_param["lognorm_sigma"],
-    #         )
-    #     )
-    #
-    #     n_grains = (
-    #         model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-    #     )
-    #
-    #     model_flux *= np.exp(-cross_tmp * n_grains)
-    #
-    # elif "powerlaw_ext" in model_param:
-    #     cross_tmp = cross_sections["Generic/Bessell.V"](
-    #         (10.0 ** model_param["powerlaw_max"], model_param["powerlaw_exp"])
-    #     )
-    #
-    #     n_grains = (
-    #         model_param["powerlaw_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-    #     )
-    #
-    #     cross_tmp = cross_sections["spectrum"](
-    #         (
-    #             model_wavel,
-    #             10.0 ** model_param["powerlaw_max"],
-    #             model_param["powerlaw_exp"],
-    #         )
-    #     )
-    #
-    #     model_flux *= np.exp(-cross_tmp * n_grains)
+    elif "lognorm_ext" in model_param:
+        # wavel_select = (model_wavel > cross_sections.grid[0][0]) & (model_wavel < cross_sections.grid[0][-1])
+        cross_tmp = cross_sections(
+            (
+                model_wavel,
+                10.0 ** model_param["lognorm_radius"],
+                model_param["lognorm_sigma"],
+            )
+        )
+
+        # n_grains = model_param["lognorm_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+        # syn_phot = SyntheticPhotometry("Generic/Bessell.V")
+        # v_mag_before, _ = syn_phot.spectrum_to_magnitude(model_wavel, model_flux)
+
+        model_flux *= np.exp(-model_param["lognorm_ext"] * cross_tmp)
+
+        # v_mag_after, _ = syn_phot.spectrum_to_magnitude(model_wavel, model_flux)
+
+    elif "powerlaw_ext" in model_param:
+        # wavel_select = (model_wavel > cross_sections.grid[0][0]) & (model_wavel < cross_sections.grid[0][-1])
+        cross_tmp = cross_sections(
+            (
+                model_wavel,
+                10.0 ** model_param["powerlaw_max"],
+                model_param["powerlaw_exp"],
+            )
+        )
+
+        # n_grains = model_param["powerlaw_ext"] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
+
+        model_flux *= np.exp(-model_param["powerlaw_ext"] * cross_tmp)
 
     # elif self.ext_filter is not None:
     #     ism_reddening = all_param.get("ism_red", 3.1)

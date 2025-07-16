@@ -5,13 +5,13 @@ Utility functions for dust cross sections and extinction.
 import os
 import configparser
 
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import h5py
 import numpy as np
 
 from typeguard import typechecked
-from scipy.interpolate import interp1d, RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import lognorm
 
 from species.read.read_filter import ReadFilter
@@ -41,10 +41,7 @@ def check_dust_database() -> str:
     with h5py.File(database_path, "r") as hdf5_file:
         # Check if the data are found in 'r' mode because the
         # 'a' mode is not possible when using multiprocessing
-        if "dust" in hdf5_file:
-            data_found = True
-        else:
-            data_found = False
+        data_found = "dust" in hdf5_file
 
     if not data_found:
         with h5py.File(database_path, "a") as hdf5_file:
@@ -350,7 +347,7 @@ def calc_reddening(
 
 
 @typechecked
-def interp_lognorm() -> Tuple[
+def interp_lognorm(verbose: bool = True) -> Tuple[
     RegularGridInterpolator,
     np.ndarray,
     np.ndarray,
@@ -359,6 +356,11 @@ def interp_lognorm() -> Tuple[
     Function for interpolating the cross sections for dust grains with
     a log-normal size distribution. The returned dictionary contains
     the cross sections for each filter and spectrum.
+
+    Parameters
+    ----------
+    verbose : bool
+        Print information.
 
     Returns
     -------
@@ -380,10 +382,15 @@ def interp_lognorm() -> Tuple[
         radius_g = np.asarray(h5_file["dust/lognorm/mgsio3/crystalline/radius_g"])
         sigma_g = np.asarray(h5_file["dust/lognorm/mgsio3/crystalline/sigma_g"])
 
-    print("Grid boundaries of the dust opacities:")
-    print(f"   - Wavelength (um) = {wavelength[0]:.2f} - {wavelength[-1]:.2f}")
-    print(f"   - Geometric mean radius (um) = {radius_g[0]:.2e} - {radius_g[-1]:.2e}")
-    print(f"   - Geometric standard deviation = {sigma_g[0]:.2f} - {sigma_g[-1]:.2f}")
+    if verbose:
+        print("Grid boundaries of the dust opacities:")
+        print(f"   - Wavelength (um) = {wavelength[0]:.2f} - {wavelength[-1]:.2f}")
+        print(
+            f"   - Geometric mean radius (um) = {radius_g[0]:.2e} - {radius_g[-1]:.2e}"
+        )
+        print(
+            f"   - Geometric standard deviation = {sigma_g[0]:.2f} - {sigma_g[-1]:.2f}"
+        )
 
     # inc_phot.append("Generic/Bessell.V")
     #
@@ -413,7 +420,8 @@ def interp_lognorm() -> Tuple[
     #         (radius_g, sigma_g), cross_phot, method="linear", bounds_error=True
     #     )
 
-    print("Interpolating dust opacities...", end="")
+    if verbose:
+        print("Interpolating dust opacities...", end="")
 
     cross_sections = RegularGridInterpolator(
         (wavelength, radius_g, sigma_g),
@@ -422,13 +430,14 @@ def interp_lognorm() -> Tuple[
         bounds_error=True,
     )
 
-    print(" [DONE]")
+    if verbose:
+        print(" [DONE]")
 
     return cross_sections, radius_g, sigma_g
 
 
 @typechecked
-def interp_powerlaw() -> Tuple[
+def interp_powerlaw(verbose: bool = True) -> Tuple[
     RegularGridInterpolator,
     np.ndarray,
     np.ndarray,
@@ -437,6 +446,11 @@ def interp_powerlaw() -> Tuple[
     Function for interpolating the cross sections for dust grains with
     a power-law size distribution. The returned dictionary contains
     the cross sections for each filter and spectrum.
+
+    Parameters
+    ----------
+    verbose : bool
+        Print information.
 
     Returns
     -------
@@ -458,10 +472,11 @@ def interp_powerlaw() -> Tuple[
         radius_max = np.asarray(h5_file["dust/powerlaw/mgsio3/crystalline/radius_max"])
         exponent = np.asarray(h5_file["dust/powerlaw/mgsio3/crystalline/exponent"])
 
-    print("Grid boundaries of the dust opacities:")
-    print(f"   - Wavelength (um) = {wavelength[0]:.2f} - {wavelength[-1]:.2f}")
-    print(f"   - Maximum radius (um) = {radius_max[0]:.2e} - {radius_max[-1]:.2e}")
-    print(f"   - Power-law exponent = {exponent[0]:.2f} - {exponent[-1]:.2f}")
+    if verbose:
+        print("Grid boundaries of the dust opacities:")
+        print(f"   - Wavelength (um) = {wavelength[0]:.2f} - {wavelength[-1]:.2f}")
+        print(f"   - Maximum radius (um) = {radius_max[0]:.2e} - {radius_max[-1]:.2e}")
+        print(f"   - Power-law exponent = {exponent[0]:.2f} - {exponent[-1]:.2f}")
 
     # inc_phot.append("Generic/Bessell.V")
     #
@@ -491,7 +506,8 @@ def interp_powerlaw() -> Tuple[
     #         (radius_max, exponent), cross_phot, method="linear", bounds_error=True
     #     )
 
-    print("Interpolating dust opacities...", end="")
+    if verbose:
+        print("Interpolating dust opacities...", end="")
 
     cross_sections = RegularGridInterpolator(
         (wavelength, radius_max, exponent),
@@ -500,7 +516,8 @@ def interp_powerlaw() -> Tuple[
         bounds_error=True,
     )
 
-    print(" [DONE]")
+    if verbose:
+        print(" [DONE]")
 
     return cross_sections, radius_max, exponent
 

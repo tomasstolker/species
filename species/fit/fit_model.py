@@ -99,7 +99,6 @@ class FitModel:
         inc_spec: Union[bool, List[str]] = True,
         fit_corr: Optional[List[str]] = None,
         apply_weights: Union[bool, Dict[str, Union[float, np.ndarray]]] = False,
-        ext_filter: Optional[str] = None,
         normal_prior: Optional[Dict[str, Tuple[float, float]]] = None,
         ext_model: Optional[str] = None,
         binary_prior: bool = False,
@@ -385,25 +384,27 @@ class FitModel:
                    distribution of grains with a crystalline MgSiO3
                    composition, and a homogeneous, spherical structure.
 
+                 - The extinction (``lognorm_ext``) is fitted in the
+                   $V$ band ($A_V$ in mag) and the wavelength-dependent
+                   extinction cross sections are interpolated from a
+                   pre-tabulated grid. The prior boundary of should be
+                   provided in the ``bounds`` dictionary, for example
+                   ``bounds={'lognorm_ext': (0., 5.)}``.
+
                  - The size distribution is parameterized with a mean
                    geometric radius (``lognorm_radius`` in um) and a
                    geometric standard deviation (``lognorm_sigma``,
                    dimensionless). The grid of cross sections has been
                    calculated for mean geometric radii between 0.001
                    and 10 um, and geometric standard deviations between
-                   1.1 and 10.
+                   1.1 and 10. These two parameters are automatically
+                   included so only ``lognorm_ext`` needs to be added.
 
-                 - The extinction (``lognorm_ext``) is fitted in the
-                   $V$ band ($A_V$ in mag) and the wavelength-dependent
-                   extinction cross sections are interpolated from a
-                   pre-tabulated grid.
-
-                 - The prior boundaries of ``lognorm_radius``,
-                   ``lognorm_sigma``, and ``lognorm_ext`` should be
-                   provided in the ``bounds`` dictionary, for example
+                 - Including the prior boundaries of ``lognorm_radius``
+                   and ``lognorm_sigma`` is optional, for example
                    ``bounds={'lognorm_radius': (0.001, 10.),
-                   'lognorm_sigma': (1.1, 10.),
-                   'lognorm_ext': (0., 5.)}``.
+                   'lognorm_sigma': (1.1, 10.)}``. The full available
+                   range is automatically used otherwise.
 
                  - A uniform prior is used for ``lognorm_sigma`` and
                    ``lognorm_ext``, and a log-uniform prior for
@@ -415,24 +416,28 @@ class FitModel:
                    distribution of grains, with a crystalline MgSiO3
                    composition, and a homogeneous, spherical structure.
 
+                 - The extinction (``powerlaw_ext``) is fitted in the
+                   $V$ band ($A_V$ in mag) and the wavelength-dependent
+                   extinction cross sections are interpolated from a
+                   pre-tabulated grid. The prior boundary of should be
+                   provided in the ``bounds`` dictionary, for example
+                   ``bounds={'powerlaw_ext': (0., 5.)}``.
+
                  - The size distribution is parameterized with a
                    maximum radius (``powerlaw_max`` in um) and a
                    power-law exponent (``powerlaw_exp``,
                    dimensionless). The minimum radius is fixed to 1 nm.
                    The grid of cross sections has been calculated for
                    maximum radii between 0.01 and 100 um, and power-law
-                   exponents between -10 and 10.
+                   exponents between -10 and 10. These two parameters
+                   are automatically included so only ``powerlaw_ext``
+                   needs to be added.
 
-                 - The extinction (``powerlaw_ext``) is fitted in the
-                   $V$ band ($A_V$ in mag) and the wavelength-dependent
-                   extinction cross sections are interpolated from a
-                   pre-tabulated grid.
-
-                 - The prior boundaries of ``powerlaw_max``,
-                   ``powerlaw_exp``, and ``powerlaw_ext`` should be
-                   provided in the ``bounds`` dictionary, for example
+                 - Including the prior boundaries of ``powerlaw_max``,
+                   and ``powerlaw_exp`` is optional, for example
                    ``{'powerlaw_max': (0.01, 100.), 'powerlaw_exp':
-                   (-10., 10.), 'powerlaw_ext': (0., 5.)}``.
+                   (-10., 10.)}``. The full available range is
+                   automatically used otherwise.
 
                  - A uniform prior is used for ``powerlaw_exp`` and
                    ``powerlaw_ext``, and a log-uniform prior for
@@ -473,15 +478,6 @@ class FitModel:
             weighting applied. Alternatively, a dictionary can
             be used as argument, which includes the names and
             weightings of spectra and/or photometric fluxes.
-        ext_filter : str, None
-            Filter that is associated with the (optional) extinction
-            parameter, ``ism_ext``. When the argument of ``ext_filter``
-            is set to ``None``, the extinction is defined in the visual
-            (i.e. :math:`A_V`). By providing a filter name from the
-            `SVO Filter Profile Service <http://svo2.cab.inta-csic.es/
-            svo/theory/fps/>`_ as argument then the extinction
-            ``ism_ext`` is fitted in that filter instead of the
-            $V$ band.
         normal_prior : dict(str, tuple(float, float)), None
             Dictionary with normal priors for one or multiple
             parameters. The prior can be set for any of the
@@ -558,7 +554,6 @@ class FitModel:
         self.n_disk = 0
 
         self.binary_prior = binary_prior
-        self.ext_filter = ext_filter
         self.ext_model = ext_model
 
         if fit_corr is None:
@@ -1297,46 +1292,58 @@ class FitModel:
 
         # Exctinction parameters
 
-        if (
-            "lognorm_radius" in self.bounds
-            and "lognorm_sigma" in self.bounds
-            and "lognorm_ext" in self.bounds
-        ):
-            self.cross_sections, _, _ = interp_lognorm()
+        if "lognorm_ext" in self.bounds:
+            self.cross_sections, _, _ = interp_lognorm(verbose=False)
 
             self.modelpar.append("lognorm_radius")
             self.modelpar.append("lognorm_sigma")
             self.modelpar.append("lognorm_ext")
 
-            self.bounds["lognorm_radius"] = (
-                np.log10(self.bounds["lognorm_radius"][0]),
-                np.log10(self.bounds["lognorm_radius"][1]),
-            )
+            if "lognorm_radius" in self.bounds:
+                self.bounds["lognorm_radius"] = (
+                    np.log10(self.bounds["lognorm_radius"][0]),
+                    np.log10(self.bounds["lognorm_radius"][1]),
+                )
 
-        elif (
-            "powerlaw_max" in self.bounds
-            and "powerlaw_exp" in self.bounds
-            and "powerlaw_ext" in self.bounds
-        ):
-            self.cross_sections, _, _ = interp_powerlaw()
+            else:
+                self.bounds["lognorm_radius"] = (
+                    np.log10(self.cross_sections.grid[1][0]),
+                    np.log10(self.cross_sections.grid[1][-1]),
+                )
+
+            if "lognorm_sigma" not in self.bounds:
+                self.bounds["lognorm_sigma"] = (
+                    self.cross_sections.grid[2][0],
+                    self.cross_sections.grid[2][-1],
+                )
+
+        elif "powerlaw_ext":
+            self.cross_sections, _, _ = interp_powerlaw(verbose=False)
 
             self.modelpar.append("powerlaw_max")
             self.modelpar.append("powerlaw_exp")
             self.modelpar.append("powerlaw_ext")
 
-            self.bounds["powerlaw_max"] = (
-                np.log10(self.bounds["powerlaw_max"][0]),
-                np.log10(self.bounds["powerlaw_max"][1]),
-            )
-
-        elif "ism_ext" in self.bounds or "ism_ext" in self.normal_prior:
-            if self.ext_filter is not None:
-                self.modelpar.append(f"phot_ext_{self.ext_filter}")
-                self.bounds[f"phot_ext_{self.ext_filter}"] = self.bounds["ism_ext"]
-                del self.bounds["ism_ext"]
+            if "powerlaw_max" in self.bounds:
+                self.bounds["powerlaw_max"] = (
+                    np.log10(self.bounds["powerlaw_max"][0]),
+                    np.log10(self.bounds["powerlaw_max"][1]),
+                )
 
             else:
-                self.modelpar.append("ism_ext")
+                self.bounds["powerlaw_max"] = (
+                    np.log10(self.cross_sections.grid[1][0]),
+                    np.log10(self.cross_sections.grid[1][-1]),
+                )
+
+            if "powerlaw_exp" not in self.bounds:
+                self.bounds["powerlaw_exp"] = (
+                    self.cross_sections.grid[2][0],
+                    self.cross_sections.grid[2][-1],
+                )
+
+        elif "ism_ext" in self.bounds or "ism_ext" in self.normal_prior:
+            self.modelpar.append("ism_ext")
 
             if "ism_red" in self.bounds or "ism_red" in self.normal_prior:
                 self.modelpar.append("ism_red")
@@ -2147,7 +2154,9 @@ class FitModel:
                     )
 
                     # Only required when fitting an error inflation
-                    ln_like += self.weights[filter_name] * np.log(2.0 * np.pi * phot_var)
+                    ln_like += self.weights[filter_name] * np.log(
+                        2.0 * np.pi * phot_var
+                    )
 
         # Compare spectra with model
 
@@ -2470,7 +2479,9 @@ class FitModel:
                     @ (data_flux - model_flux)
                 )
 
-                ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
+                ln_like += np.nansum(
+                    self.weights[spec_item] * np.log(2.0 * np.pi * data_var)
+                )
 
             else:
                 if spec_item in self.fit_corr:
@@ -2500,7 +2511,9 @@ class FitModel:
                         @ (data_flux - model_flux)
                     )
 
-                    ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
+                    ln_like += np.nansum(
+                        self.weights[spec_item] * np.log(2.0 * np.pi * data_var)
+                    )
 
                 else:
                     # Calculate the log-likelihood without a covariance matrix
@@ -2511,7 +2524,9 @@ class FitModel:
                         / data_var
                     )
 
-                    ln_like += np.nansum(self.weights[spec_item] * np.log(2.0 * np.pi * data_var))
+                    ln_like += np.nansum(
+                        self.weights[spec_item] * np.log(2.0 * np.pi * data_var)
+                    )
 
         return -0.5 * ln_like
 
@@ -2538,9 +2553,6 @@ class FitModel:
 
         if self.ext_model is not None:
             attr_dict["ext_model"] = self.ext_model
-
-        if self.ext_filter is not None:
-            attr_dict["ext_filter"] = self.ext_filter
 
         return attr_dict
 
@@ -2746,18 +2758,16 @@ class FitModel:
         # Nested sampling log-evidence
         self.ln_z = sampling_stats["nested sampling global log-evidence"]
         self.ln_z_error = sampling_stats["nested sampling global log-evidence error"]
-        print(
-            f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
-        )
+        print(f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}")
 
         # Nested importance sampling log-evidence
-        self.imp_ln_z = sampling_stats["nested importance sampling global log-evidence"]
-        self.imp_ln_z_error = sampling_stats[
+        imp_ln_z = sampling_stats["nested importance sampling global log-evidence"]
+        imp_ln_z_error = sampling_stats[
             "nested importance sampling global log-evidence error"
         ]
         print(
             "log-evidence (importance sampling) = "
-            f"{self.imp_ln_z:.2f} +/- {self.imp_ln_z_error:.2f}"
+            f"{imp_ln_z:.2f} +/- {imp_ln_z_error:.2f}"
         )
 
         # Get the sample with the maximum likelihood
@@ -3417,9 +3427,7 @@ class FitModel:
 
         self.ln_z = results.logz[-1]
         self.ln_z_error = results.logzerr[-1]
-        print(
-            f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}"
-        )
+        print(f"\nlog-evidence = {self.ln_z:.2f} +/- {self.ln_z_error:.2f}")
 
         # Get the sample with the maximum likelihood
 

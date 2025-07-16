@@ -905,7 +905,7 @@ def plot_opacities(
         (radtrans.rt_object.frequencies.shape[0], radtrans.rt_object.pressures.shape[0])
     )
 
-    for item in radtrans.rt_object.lines_loaded_opacities['opacity_grid'].values():
+    for item in radtrans.rt_object.lines_loaded_opacities["opacity_grid"].values():
         opacity_line += item
 
     # Continuum opacities

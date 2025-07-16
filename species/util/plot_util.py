@@ -707,24 +707,28 @@ def update_labels(param: List[str], object_type: str = "planet") -> List[str]:
 
         if item[-9:] == "_fraction":
             from petitRADTRANS.chemistry.utils import simplify_species_list
+
             index = param.index(item)
             cloud_simple = simplify_species_list([item[:-9]])[0]
             param[index] = rf"$\log\,\tilde{{\mathrm{{X}}}}_\mathrm{{{cloud_simple}}}$"
 
         if item[-4:] == "_tau":
             from petitRADTRANS.chemistry.utils import simplify_species_list
+
             index = param.index(item)
             cloud_simple = simplify_species_list([item[:-4]])[0]
             param[index] = rf"$\bar{{\tau}}_\mathrm{{{cloud_simple}}}$"
 
         if item[:11] == "log_p_base_":
             from petitRADTRANS.chemistry.utils import simplify_species_list
+
             index = param.index(item)
             cloud_simple = simplify_species_list([item[11:-3]])[0]
             param[index] = rf"$\log\,P_\mathrm{{{cloud_simple}}}$"
 
         if item[:5] == "fsed_":
             from petitRADTRANS.chemistry.utils import simplify_species_list
+
             index = param.index(item)
             cloud_simple = simplify_species_list([item[5:-3]])[0]
             param[index] = rf"fsed$_\mathrm{{{cloud_simple}}}$"
