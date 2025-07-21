@@ -1182,11 +1182,14 @@ class EmissionLine:
             species_db = Database()
 
             species_db.add_samples(
+                tag=tag,
                 sampler="ultranest",
                 samples=samples,
                 ln_prob=ln_prob,
-                tag=tag,
                 modelpar=modelpar,
+                bounds=bounds,
+                normal_prior={},
+                fixed_param={},
                 attr_dict=attr_dict,
             )
 
