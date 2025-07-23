@@ -313,9 +313,10 @@ class ReadModel:
         self,
         wavelength: np.ndarray,
         flux: np.ndarray,
-        radius_interp: float,
-        sigma_interp: float,
-        v_band_ext: float,
+        lognorm_radius: float,
+        lognorm_sigma: float,
+        lognorm_ext: float,
+        param_interp: list,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a spectrum.
@@ -324,13 +325,13 @@ class ReadModel:
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
-        radius_interp : float
+        lognorm_radius : float
             Logarithm of the mean geometric radius (um) of the
             log-normal size distribution.
-        sigma_interp : float
+        lognorm_sigma : float
             Geometric standard deviation (dimensionless) of the
             log-normal size distribution.
-        v_band_ext : float
+        lognorm_ext : float
             The extinction (mag) in the V band.
 
         Returns
@@ -387,71 +388,46 @@ class ReadModel:
             bounds_error=True,
         )
 
-        # Read Bessell V-band filter profile
+        vband_model = ReadModel(self.model, filter_name="Generic/Bessell.V")
 
-        # read_filter = ReadFilter("Generic/Bessell.V")
-        # filt_trans = read_filter.get_filter()
+        if vband_model.spectrum_interp is None:
+            vband_model.interpolate_grid()
 
-        # Create empty array for V-band extinction
+        vband_wavel = vband_model.wl_points
+        vband_flux = vband_model.spectrum_interp(param_interp)[0]
 
-        # cross_phot = np.zeros((dust_radius.shape[0], dust_sigma.shape[0]))
-        #
-        # for i in range(dust_radius.shape[0]):
-        #     for j in range(dust_sigma.shape[0]):
-        #         # Calculate the filter-weighted average of the extinction cross sections
-        #
-        #         cross_interp = interp1d(
-        #             dust_wavel, dust_cross[:, i, j], kind="linear", bounds_error=True
-        #         )
-        #
-        #         cross_tmp = cross_interp(filt_trans[:, 0])
-        #
-        #         integral1 = np.trapezoid(
-        #             filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0]
-        #         )
-        #         integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
-        #
-        #         cross_phot[i, j] = integral1 / integral2
+        cross_vband = dust_interp((vband_wavel, 10.0**lognorm_radius, lognorm_sigma))
+        vband_flux_ext = vband_flux * np.exp(-cross_vband)
 
-        # Interpolate the grid with the V-band extinction as
-        # function of geometric radius and standard deviation
+        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
+            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
 
-        # cross_interp = RegularGridInterpolator(
-        #     (dust_radius, dust_sigma), cross_phot, method="linear", bounds_error=True
-        # )
-        #
-        # cross_v_band = cross_interp((10.0**radius_interp, sigma_interp))
+            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
 
-        # Create arrays with fixed particle properties
+            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
+                vband_wavel, vband_flux_ext
+            )
 
-        # radius_full = np.full(wavelength.shape[0], 10.0**radius_interp)
-        # sigma_full = np.full(wavelength.shape[0], sigma_interp)
+            cross_tmp = dust_interp((wavelength, 10.0**lognorm_radius, lognorm_sigma))
 
-        # Interpolate the cross-sections for the input wavelengths
-        # and the geometric radius and standard deviation
+            ext_mag = lognorm_ext - (vband_mag_ext[0] - vband_mag[0])
+            ext_scaling = 10.0 ** (-0.4 * ext_mag)
+            flux *= ext_scaling * np.exp(-cross_tmp)
 
-        # cross_new = dust_interp(np.column_stack((wavelength, radius_full, sigma_full)))
+        else:
+            flux = np.zeros(flux.shape)
 
-        # Calculate number of grains for the requested V-band extinction
-
-        # n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.0))
-
-        # return flux * np.exp(-cross_new * n_grains)
-
-        cross_tmp = dust_interp((wavelength, 10.0**radius_interp, sigma_interp))
-
-        # n_grains = v_band_ext / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-
-        return flux * np.exp(-v_band_ext * cross_tmp)
+        return flux
 
     @typechecked
     def apply_powerlaw_ext(
         self,
         wavelength: np.ndarray,
         flux: np.ndarray,
-        r_max_interp: float,
-        exp_interp: float,
-        v_band_ext: float,
+        powerlaw_max: float,
+        powerlaw_exp: float,
+        powerlaw_ext: float,
+        param_interp: list,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a
@@ -461,12 +437,13 @@ class ReadModel:
             Wavelengths (um) of the spectrum.
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
-        r_max_interp : float
+        powerlaw_max : float
             Maximum radius (um) of the power-law size distribution.
-        exp_interp : float
+        powerlaw_exp : float
             Exponent of the power-law size distribution.
-        v_band_ext : float
+        powerlaw_ext : float
             The extinction (mag) in the V band.
+        param_interp : list(float)
 
         Returns
         -------
@@ -523,62 +500,36 @@ class ReadModel:
                 f"({dust_wavel[-1]:.2e} um) of the grid with dust cross sections."
             )
 
-        # Read Bessell V-band filter profile
+        vband_model = ReadModel(self.model, filter_name="Generic/Bessell.V")
 
-        # read_filter = ReadFilter("Generic/Bessell.V")
-        # filt_trans = read_filter.get_filter()
+        if vband_model.spectrum_interp is None:
+            vband_model.interpolate_grid()
 
-        # Create empty array for V-band extinction
+        vband_wavel = vband_model.wl_points
+        vband_flux = vband_model.spectrum_interp(param_interp)[0]
 
-        # cross_phot = np.zeros((dust_r_max.shape[0], dust_exp.shape[0]))
-        #
-        # for i in range(dust_r_max.shape[0]):
-        #     for j in range(dust_exp.shape[0]):
-        #         # Calculate the filter-weighted average of the extinction cross sections
-        #
-        #         cross_interp = interp1d(
-        #             dust_wavel, dust_cross[:, i, j], kind="linear", bounds_error=True
-        #         )
-        #
-        #         cross_tmp = cross_interp(filt_trans[:, 0])
-        #
-        #         integral1 = np.trapezoid(
-        #             filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0]
-        #         )
-        #         integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
-        #
-        #         cross_phot[i, j] = integral1 / integral2
+        cross_vband = dust_interp((vband_wavel, 10.0**powerlaw_max, powerlaw_exp))
+        vband_flux_ext = vband_flux * np.exp(-cross_vband)
 
-        # Interpolate the grid with the V-band extinction as
-        # function of geometric radius and standard deviation
+        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
+            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
 
-        # cross_interp = RegularGridInterpolator(
-        #     (dust_r_max, dust_exp), cross_phot, method="linear", bounds_error=True
-        # )
-        #
-        # cross_v_band = cross_interp((10.0**r_max_interp, exp_interp))
+            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
 
-        # Create arrays with fixed particle properties
+            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
+                vband_wavel, vband_flux_ext
+            )
 
-        # r_max_full = np.full(wavelength.shape[0], 10.0**r_max_interp)
-        # exp_full = np.full(wavelength.shape[0], exp_interp)
+            cross_tmp = dust_interp((wavelength, 10.0**powerlaw_max, powerlaw_exp))
 
-        # Interpolate the cross-sections for the input wavelengths
-        # and the geometric radius and standard deviation
+            ext_mag = powerlaw_ext - (vband_mag_ext[0] - vband_mag[0])
+            ext_scaling = 10.0 ** (-0.4 * ext_mag)
+            flux *= ext_scaling * np.exp(-cross_tmp)
 
-        # cross_new = dust_interp(np.column_stack((wavelength, r_max_full, exp_full)))
+        else:
+            flux = np.zeros(flux.shape)
 
-        # Calculate number of grains for the requested V-band extinction
-
-        # n_grains = v_band_ext / cross_v_band / 2.5 / np.log10(np.exp(1.0))
-        #
-        # return flux * np.exp(-cross_new * n_grains)
-
-        cross_tmp = dust_interp((wavelength, 10.0**r_max_interp, exp_interp))
-
-        # n_grains = v_band_ext / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-
-        return flux * np.exp(-v_band_ext * cross_tmp)
+        return flux
 
     @staticmethod
     @typechecked
@@ -924,6 +875,7 @@ class ReadModel:
                 model_param["lognorm_radius"],
                 model_param["lognorm_sigma"],
                 model_param["lognorm_ext"],
+                parameters,
             )
 
         if (
@@ -937,6 +889,7 @@ class ReadModel:
                 model_param["powerlaw_max"],
                 model_param["powerlaw_exp"],
                 model_param["powerlaw_ext"],
+                parameters,
             )
 
         if "ism_ext" in model_param or ext_filter is not None:
@@ -1055,10 +1008,7 @@ class ReadModel:
                 # Check if the Vega spectrum is found in
                 # 'r' mode because the 'a' mode is not
                 # possible when using multiprocessing
-                if "spectra/calibration/vega" in hdf5_file:
-                    vega_found = True
-                else:
-                    vega_found = False
+                vega_found = "spectra/calibration/vega" in hdf5_file
 
             if not vega_found:
                 with h5py.File(self.database, "a") as hdf5_file:
@@ -1434,12 +1384,8 @@ class ReadModel:
             and "lognorm_sigma" in model_param
             and "lognorm_ext" in model_param
         ):
-            model_box.flux = self.apply_lognorm_ext(
-                model_box.wavelength,
-                model_box.flux,
-                model_param["lognorm_radius"],
-                model_param["lognorm_sigma"],
-                model_param["lognorm_ext"],
+            raise NotImplementedError(
+                "Log-normal dust is nog yet implemented for get_data."
             )
 
         if (
@@ -1447,12 +1393,8 @@ class ReadModel:
             and "powerlaw_exp" in model_param
             and "powerlaw_ext" in model_param
         ):
-            model_box.flux = self.apply_powerlaw_ext(
-                model_box.wavelength,
-                model_box.flux,
-                model_param["powerlaw_max"],
-                model_param["powerlaw_exp"],
-                model_param["powerlaw_ext"],
+            raise NotImplementedError(
+                "Power-law dust is nog yet implemented for get_data."
             )
 
         if "ism_ext" in model_param or ext_filter is not None:

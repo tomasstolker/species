@@ -552,6 +552,7 @@ class FitModel:
         self.ln_z_error = None
         self.n_planck = 0
         self.n_disk = 0
+        self.vband_model = None
 
         self.binary_prior = binary_prior
         self.ext_model = ext_model
@@ -1408,6 +1409,15 @@ class FitModel:
                     "ignored and no extinction will be fitted."
                 )
 
+        if "powerlaw_ext" in self.modelpar or "lognorm_ext" in self.modelpar:
+            filter_name = "Generic/Bessell.V"
+            print(f"\rInterpolating {filter_name}...", end="", flush=True)
+
+            self.vband_model = ReadModel(self.model, filter_name=filter_name)
+            self.vband_model.interpolate_grid(teff_range=self.teff_range)
+
+            print(" [DONE]")
+
         # Veiling parameters
 
         if "veil_a" in self.bounds:
@@ -2001,6 +2011,16 @@ class FitModel:
                         list(param_dict.values())
                     )[0]
 
+                    if self.vband_model is None:
+                        vband_wavel = None
+                        vband_flux = None
+
+                    else:
+                        vband_wavel = self.vband_model.wl_points
+                        vband_flux = self.vband_model.spectrum_interp(
+                            list(param_dict.values())
+                        )[0]
+
                     # Apply extinction and flux scaling
 
                     model_flux = apply_obs(
@@ -2009,6 +2029,8 @@ class FitModel:
                         model_param=all_param,
                         cross_sections=self.cross_sections,
                         ext_model=self.ext_model,
+                        vband_wavel=vband_wavel,
+                        vband_flux=vband_flux,
                     )
 
                 # Calculate synthetic photometry
@@ -2324,6 +2346,16 @@ class FitModel:
                         list(param_dict.values())
                     )[0]
 
+                    if self.vband_model is None:
+                        vband_wavel = None
+                        vband_flux = None
+
+                    else:
+                        vband_wavel = self.vband_model.wl_points
+                        vband_flux = self.vband_model.spectrum_interp(
+                            list(param_dict.values())
+                        )[0]
+
                     # Apply extinction, flux scaling, vsin(i), and RV
 
                     model_flux = apply_obs(
@@ -2334,6 +2366,8 @@ class FitModel:
                         rot_broad=rot_broad,
                         rad_vel=rad_vel,
                         ext_model=self.ext_model,
+                        vband_wavel=vband_wavel,
+                        vband_flux=vband_flux,
                     )
 
                 # Add blackbody disk components

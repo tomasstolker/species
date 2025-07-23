@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 from typeguard import typechecked
 from matplotlib.ticker import ScalarFormatter
-from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import norm
 
 from species.core import constants
@@ -1343,6 +1342,7 @@ def plot_extinction(
     """
 
     from species.data.database import Database
+    from species.read.read_model import ReadModel
 
     species_db = Database()
     samples_box = species_db.get_samples(tag)
@@ -1404,7 +1404,7 @@ def plot_extinction(
         labelbottom=True,
     )
 
-    ax.set_xlabel("Wavelength (\N{GREEK SMALL LETTER MU}m)", fontsize=12)
+    ax.set_xlabel("Wavelength (µm)", fontsize=12)
     ax.set_ylabel("Extinction (mag)", fontsize=12)
 
     if xlim is not None:
@@ -1417,75 +1417,39 @@ def plot_extinction(
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
+    read_model = ReadModel(samples_box.model_name, wavel_range=wavel_range)
 
     if "lognorm_ext" in samples_box.parameters:
-        cross_optical, dust_radius, dust_sigma = interp_lognorm(verbose=False)
-
-        log_r_index = samples_box.parameters.index("lognorm_radius")
-        sigma_index = samples_box.parameters.index("lognorm_sigma")
-        ext_index = samples_box.parameters.index("lognorm_ext")
-
-        log_r_g = samples[:, log_r_index]
-        sigma_g = samples[:, sigma_index]
-        dust_ext = samples[:, ext_index]
-
-        database_path = check_dust_database()
-
-        with h5py.File(database_path, "r") as h5_file:
-            cross_section = np.asarray(
-                h5_file["dust/lognorm/mgsio3/crystalline/cross_section"]
-            )
-            wavelength = np.asarray(
-                h5_file["dust/lognorm/mgsio3/crystalline/wavelength"]
-            )
-
-        cross_interp = RegularGridInterpolator(
-            (wavelength, dust_radius, dust_sigma), cross_section
-        )
-
         for i in range(samples.shape[0]):
-            cross_tmp = cross_optical((sample_wavel, 10.0 ** log_r_g[i], sigma_g[i]))
-            # n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-            sample_ext = -2.5*np.log10(np.exp(-dust_ext[i] * cross_tmp))
+            model_param = {}
+            for param_idx, param_item in enumerate(samples_box.parameters):
+                model_param[param_item] = samples[i, param_idx]
 
-            ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
+            model_box_ext = read_model.get_model(model_param)
+            del model_param['lognorm_ext']
+            model_box = read_model.get_model(model_param)
+            model_ext = -2.5*np.log10(model_box_ext.flux/model_box.flux)
+
+            ax.plot(model_box.wavelength, model_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
     elif "powerlaw_ext" in samples_box.parameters:
-        cross_optical, dust_max, dust_exp = interp_powerlaw(verbose=False)
-
-        r_max_index = samples_box.parameters.index("powerlaw_max")
-        exp_index = samples_box.parameters.index("powerlaw_exp")
-        ext_index = samples_box.parameters.index("powerlaw_ext")
-
-        r_max = samples[:, r_max_index]
-        exponent = samples[:, exp_index]
-        dust_ext = samples[:, ext_index]
-
-        database_path = check_dust_database()
-
-        with h5py.File(database_path, "r") as h5_file:
-            cross_section = np.asarray(
-                h5_file["dust/powerlaw/mgsio3/crystalline/cross_section"]
-            )
-            wavelength = np.asarray(
-                h5_file["dust/powerlaw/mgsio3/crystalline/wavelength"]
-            )
-
-        cross_interp = RegularGridInterpolator(
-            (wavelength, dust_max, dust_exp), cross_section
-        )
-
         for i in range(samples.shape[0]):
-            cross_tmp = cross_optical((sample_wavel, 10.0 ** r_max[i], exponent[i]))
-            # n_grains = dust_ext[i] / cross_tmp / 2.5 / np.log10(np.exp(1.0))
-            sample_ext = -2.5*np.log10(np.exp(-dust_ext[i] * cross_tmp))
+            model_param = {}
+            for param_idx, param_item in enumerate(samples_box.parameters):
+                model_param[param_item] = samples[i, param_idx]
 
-            ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
+            model_box_ext = read_model.get_model(model_param)
+            del model_param['powerlaw_ext']
+            model_box = read_model.get_model(model_param)
+            model_ext = -2.5*np.log10(model_box_ext.flux/model_box.flux)
+
+            ax.plot(model_box.wavelength, model_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
     elif "ism_ext" in samples_box.parameters:
         ext_index = samples_box.parameters.index("ism_ext")
         ism_ext = samples[:, ext_index]
+
+        sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
 
         if "ism_red" in samples_box.parameters:
             red_index = samples_box.parameters.index("ism_red")
