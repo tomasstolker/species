@@ -6,7 +6,6 @@ import warnings
 
 from typing import List, Optional, Tuple, Union
 
-import h5py
 import corner
 import numpy as np
 import matplotlib as mpl
@@ -21,7 +20,6 @@ from species.util.convert_util import logg_to_mass
 from species.util.core_util import print_section
 from species.util.plot_util import update_labels
 from species.util.dust_util import (
-    check_dust_database,
     interp_lognorm,
     interp_powerlaw,
     ism_extinction,
@@ -1342,7 +1340,6 @@ def plot_extinction(
     """
 
     from species.data.database import Database
-    from species.read.read_model import ReadModel
 
     species_db = Database()
     samples_box = species_db.get_samples(tag)
@@ -1417,39 +1414,45 @@ def plot_extinction(
         ax.get_xaxis().set_label_coords(0.5, offset[0])
         ax.get_yaxis().set_label_coords(offset[1], 0.5)
 
-    read_model = ReadModel(samples_box.model_name, wavel_range=wavel_range)
+    sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
 
     if "lognorm_ext" in samples_box.parameters:
+        dust_interp, _, _ = interp_lognorm(verbose=False)
+
+        log_r_index = samples_box.parameters.index("lognorm_radius")
+        sigma_index = samples_box.parameters.index("lognorm_sigma")
+        ext_index = samples_box.parameters.index("lognorm_ext")
+
         for i in range(samples.shape[0]):
-            model_param = {}
-            for param_idx, param_item in enumerate(samples_box.parameters):
-                model_param[param_item] = samples[i, param_idx]
+            cross_sections = dust_interp(
+                (sample_wavel, 10.0 ** samples[i, log_r_index], samples[i, sigma_index])
+            )
+            sample_ext = -2.5 * np.log10(
+                np.exp(-samples[i, ext_index] * cross_sections)
+            )
 
-            model_box_ext = read_model.get_model(model_param)
-            del model_param['lognorm_ext']
-            model_box = read_model.get_model(model_param)
-            model_ext = -2.5*np.log10(model_box_ext.flux/model_box.flux)
-
-            ax.plot(model_box.wavelength, model_ext, ls="-", lw=0.5, color="black", alpha=0.5)
+            ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
     elif "powerlaw_ext" in samples_box.parameters:
+        dust_interp, _, _ = interp_powerlaw(verbose=False)
+
+        r_max_index = samples_box.parameters.index("powerlaw_max")
+        exp_index = samples_box.parameters.index("powerlaw_exp")
+        ext_index = samples_box.parameters.index("powerlaw_ext")
+
         for i in range(samples.shape[0]):
-            model_param = {}
-            for param_idx, param_item in enumerate(samples_box.parameters):
-                model_param[param_item] = samples[i, param_idx]
+            cross_sections = dust_interp(
+                (sample_wavel, 10.0 ** samples[i, r_max_index], samples[i, exp_index])
+            )
+            sample_ext = -2.5 * np.log10(
+                np.exp(-samples[i, ext_index] * cross_sections)
+            )
 
-            model_box_ext = read_model.get_model(model_param)
-            del model_param['powerlaw_ext']
-            model_box = read_model.get_model(model_param)
-            model_ext = -2.5*np.log10(model_box_ext.flux/model_box.flux)
-
-            ax.plot(model_box.wavelength, model_ext, ls="-", lw=0.5, color="black", alpha=0.5)
+            ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 
     elif "ism_ext" in samples_box.parameters:
         ext_index = samples_box.parameters.index("ism_ext")
         ism_ext = samples[:, ext_index]
-
-        sample_wavel = np.linspace(wavel_range[0], wavel_range[1], 100)
 
         if "ism_red" in samples_box.parameters:
             red_index = samples_box.parameters.index("ism_red")

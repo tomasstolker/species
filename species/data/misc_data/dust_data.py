@@ -128,6 +128,8 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
         NoneType
     """
 
+    from species.phot.syn_phot import SyntheticPhotometry
+
     if not os.path.exists(input_path):
         os.makedirs(input_path)
 
@@ -141,11 +143,21 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
     urllib.request.urlretrieve(url, data_file)
     print(" [DONE]")
 
+    syn_phot = SyntheticPhotometry("Generic/Bessell.V")
+
     print("\nAdding log-normal dust cross sections:")
 
     with fits.open(os.path.join(input_path, "lognorm_mgsio3_c_ext.fits")) as hdu_list:
+        data_cross = hdu_list[0].data
+        data_wavel = hdu_list[1].data
+
+        for i in range(data_cross.shape[1]):
+            for j in range(data_cross.shape[2]):
+                cross_vband = syn_phot.spectrum_to_flux(data_wavel, data_cross[:, i, j])
+                data_cross[:, i, j] /= cross_vband[0]
+
         database.create_dataset(
-            "dust/lognorm/mgsio3/crystalline/cross_section", data=hdu_list[0].data
+            "dust/lognorm/mgsio3/crystalline/cross_section", data=data_cross
         )
 
         print(
@@ -153,7 +165,7 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
         )
 
         database.create_dataset(
-            "dust/lognorm/mgsio3/crystalline/wavelength", data=hdu_list[1].data
+            "dust/lognorm/mgsio3/crystalline/wavelength", data=data_wavel
         )
 
         data_range = f"{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}"
@@ -184,8 +196,16 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
     print("\nAdding power-law dust cross sections:")
 
     with fits.open(os.path.join(input_path, "powerlaw_mgsio3_c_ext.fits")) as hdu_list:
+        data_cross = hdu_list[0].data
+        data_wavel = hdu_list[1].data
+
+        for i in range(data_cross.shape[1]):
+            for j in range(data_cross.shape[2]):
+                cross_vband = syn_phot.spectrum_to_flux(data_wavel, data_cross[:, i, j])
+                data_cross[:, i, j] /= cross_vband[0]
+
         database.create_dataset(
-            "dust/powerlaw/mgsio3/crystalline/cross_section", data=hdu_list[0].data
+            "dust/powerlaw/mgsio3/crystalline/cross_section", data=data_cross
         )
 
         print(
@@ -193,7 +213,7 @@ def add_cross_sections(input_path: str, database: h5py._hl.files.File) -> None:
         )
 
         database.create_dataset(
-            "dust/powerlaw/mgsio3/crystalline/wavelength", data=hdu_list[1].data
+            "dust/powerlaw/mgsio3/crystalline/wavelength", data=data_wavel
         )
 
         data_range = f"{np.amin(hdu_list[1].data)} - {np.amax(hdu_list[1].data)}"

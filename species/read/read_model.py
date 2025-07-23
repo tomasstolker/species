@@ -32,7 +32,12 @@ from species.phot.syn_phot import SyntheticPhotometry
 from species.read.read_filter import ReadFilter
 from species.read.read_planck import ReadPlanck
 from species.util.convert_util import logg_to_mass
-from species.util.dust_util import check_dust_database, convert_to_av, ism_extinction
+from species.util.dust_util import (
+    convert_to_av,
+    interp_lognorm,
+    interp_powerlaw,
+    ism_extinction,
+)
 from species.util.model_util import binary_to_single, check_nearest_spec, rot_int_cmj
 from species.util.spec_util import smooth_spectrum
 
@@ -316,7 +321,6 @@ class ReadModel:
         lognorm_radius: float,
         lognorm_sigma: float,
         lognorm_ext: float,
-        param_interp: list,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a spectrum.
@@ -340,26 +344,11 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        check_dust_database()
+        # Interpolate cross sections as function of wavelength,
+        # geometric radius, and geometric standard deviation
 
-        with h5py.File(self.database, "r") as hdf5_file:
-            # Read array with cross sections
-            dust_cross = np.array(
-                hdf5_file["dust/lognorm/mgsio3/crystalline/cross_section"]
-            )
-
-            # Read array with wavelengths
-            dust_wavel = np.array(
-                hdf5_file["dust/lognorm/mgsio3/crystalline/wavelength"]
-            )
-
-            # Read array with geometric radius
-            dust_radius = np.array(
-                hdf5_file["dust/lognorm/mgsio3/crystalline/radius_g"]
-            )
-
-            # Read array with geometric standard deviation
-            dust_sigma = np.array(hdf5_file["dust/lognorm/mgsio3/crystalline/sigma_g"])
+        dust_interp, _, _ = interp_lognorm(verbose=False)
+        dust_wavel = dust_interp.grid[0]
 
         if wavelength[0] < dust_wavel[0]:
             raise ValueError(
@@ -378,46 +367,12 @@ class ReadModel:
                 "cross sections."
             )
 
-        # Interpolate cross sections as function of wavelength,
-        # geometric radius, and geometric standard deviation
+        # For each radius-sigma pair, cross sections are normalized
+        # by the integrated cross section in the V-band
 
-        dust_interp = RegularGridInterpolator(
-            (dust_wavel, dust_radius, dust_sigma),
-            dust_cross,
-            method="linear",
-            bounds_error=True,
-        )
+        cross_sections = dust_interp((wavelength, 10.0**lognorm_radius, lognorm_sigma))
 
-        vband_model = ReadModel(self.model, filter_name="Generic/Bessell.V")
-
-        if vband_model.spectrum_interp is None:
-            vband_model.interpolate_grid()
-
-        vband_wavel = vband_model.wl_points
-        vband_flux = vband_model.spectrum_interp(param_interp)[0]
-
-        cross_vband = dust_interp((vband_wavel, 10.0**lognorm_radius, lognorm_sigma))
-        vband_flux_ext = vband_flux * np.exp(-cross_vband)
-
-        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
-            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
-
-            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
-
-            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
-                vband_wavel, vband_flux_ext
-            )
-
-            cross_tmp = dust_interp((wavelength, 10.0**lognorm_radius, lognorm_sigma))
-
-            ext_mag = lognorm_ext - (vband_mag_ext[0] - vband_mag[0])
-            ext_scaling = 10.0 ** (-0.4 * ext_mag)
-            flux *= ext_scaling * np.exp(-cross_tmp)
-
-        else:
-            flux = np.zeros(flux.shape)
-
-        return flux
+        return flux * np.exp(-lognorm_ext * cross_sections)
 
     @typechecked
     def apply_powerlaw_ext(
@@ -427,7 +382,6 @@ class ReadModel:
         powerlaw_max: float,
         powerlaw_exp: float,
         powerlaw_ext: float,
-        param_interp: list,
     ) -> np.ndarray:
         """
         Internal function for applying extinction by dust to a
@@ -443,7 +397,6 @@ class ReadModel:
             Exponent of the power-law size distribution.
         powerlaw_ext : float
             The extinction (mag) in the V band.
-        param_interp : list(float)
 
         Returns
         -------
@@ -451,39 +404,11 @@ class ReadModel:
             Fluxes (W m-2 um-1) with the extinction applied.
         """
 
-        check_dust_database()
-
-        with h5py.File(self.database, "r") as hdf5_file:
-            # Read array with cross sections
-            dust_cross = np.array(
-                hdf5_file["dust/powerlaw/mgsio3/crystalline/cross_section"]
-            )
-
-            # Read array with wavelengths
-
-            dust_wavel = np.array(
-                hdf5_file["dust/powerlaw/mgsio3/crystalline/wavelength"]
-            )
-
-            # Read array with maximum particle radii
-
-            dust_r_max = np.array(
-                hdf5_file["dust/powerlaw/mgsio3/crystalline/radius_max"]
-            )
-
-            # Read array with power-law exponents
-
-            dust_exp = np.array(hdf5_file["dust/powerlaw/mgsio3/crystalline/exponent"])
-
         # Interpolate cross sections as function of wavelength,
         # geometric radius, and geometric standard deviation
 
-        dust_interp = RegularGridInterpolator(
-            (dust_wavel, dust_r_max, dust_exp),
-            dust_cross,
-            method="linear",
-            bounds_error=True,
-        )
+        dust_interp, _, _ = interp_powerlaw(verbose=False)
+        dust_wavel = dust_interp.grid[0]
 
         if wavelength[0] < dust_wavel[0]:
             raise ValueError(
@@ -500,36 +425,12 @@ class ReadModel:
                 f"({dust_wavel[-1]:.2e} um) of the grid with dust cross sections."
             )
 
-        vband_model = ReadModel(self.model, filter_name="Generic/Bessell.V")
+        # For each radius-sigma pair, cross sections are normalized
+        # by the integrated cross section in the V-band
 
-        if vband_model.spectrum_interp is None:
-            vband_model.interpolate_grid()
+        cross_sections = dust_interp((wavelength, 10.0**powerlaw_max, powerlaw_exp))
 
-        vband_wavel = vband_model.wl_points
-        vband_flux = vband_model.spectrum_interp(param_interp)[0]
-
-        cross_vband = dust_interp((vband_wavel, 10.0**powerlaw_max, powerlaw_exp))
-        vband_flux_ext = vband_flux * np.exp(-cross_vband)
-
-        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
-            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
-
-            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
-
-            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
-                vband_wavel, vband_flux_ext
-            )
-
-            cross_tmp = dust_interp((wavelength, 10.0**powerlaw_max, powerlaw_exp))
-
-            ext_mag = powerlaw_ext - (vband_mag_ext[0] - vband_mag[0])
-            ext_scaling = 10.0 ** (-0.4 * ext_mag)
-            flux *= ext_scaling * np.exp(-cross_tmp)
-
-        else:
-            flux = np.zeros(flux.shape)
-
-        return flux
+        return flux * np.exp(-powerlaw_ext * cross_sections)
 
     @staticmethod
     @typechecked
@@ -875,7 +776,6 @@ class ReadModel:
                 model_param["lognorm_radius"],
                 model_param["lognorm_sigma"],
                 model_param["lognorm_ext"],
-                parameters,
             )
 
         if (
@@ -889,7 +789,6 @@ class ReadModel:
                 model_param["powerlaw_max"],
                 model_param["powerlaw_exp"],
                 model_param["powerlaw_ext"],
-                parameters,
             )
 
         if "ism_ext" in model_param or ext_filter is not None:

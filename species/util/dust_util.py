@@ -392,34 +392,6 @@ def interp_lognorm(verbose: bool = True) -> Tuple[
             f"   - Geometric standard deviation = {sigma_g[0]:.2f} - {sigma_g[-1]:.2f}"
         )
 
-    # inc_phot.append("Generic/Bessell.V")
-    #
-    # cross_sections = {}
-    #
-    # for phot_item in inc_phot:
-    #     read_filt = ReadFilter(phot_item)
-    #     filt_trans = read_filt.get_filter()
-    #
-    #     cross_phot = np.zeros((radius_g.shape[0], sigma_g.shape[0]))
-    #
-    #     for i in range(radius_g.shape[0]):
-    #         for j in range(sigma_g.shape[0]):
-    #             cross_interp = interp1d(
-    #                 wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-    #             )
-    #
-    #             cross_tmp = cross_interp(filt_trans[:, 0])
-    #
-    #             integral1 = np.trapezoid(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-    #             integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
-    #
-    #             # Filter-weighted average of the extinction cross section
-    #             cross_phot[i, j] = integral1 / integral2
-    #
-    #     cross_sections[phot_item] = RegularGridInterpolator(
-    #         (radius_g, sigma_g), cross_phot, method="linear", bounds_error=True
-    #     )
-
     if verbose:
         print("Interpolating dust opacities...", end="")
 
@@ -477,34 +449,6 @@ def interp_powerlaw(verbose: bool = True) -> Tuple[
         print(f"   - Wavelength (um) = {wavelength[0]:.2f} - {wavelength[-1]:.2f}")
         print(f"   - Maximum radius (um) = {radius_max[0]:.2e} - {radius_max[-1]:.2e}")
         print(f"   - Power-law exponent = {exponent[0]:.2f} - {exponent[-1]:.2f}")
-
-    # inc_phot.append("Generic/Bessell.V")
-    #
-    # cross_sections = {}
-    #
-    # for phot_item in inc_phot:
-    #     read_filt = ReadFilter(phot_item)
-    #     filt_trans = read_filt.get_filter()
-    #
-    #     cross_phot = np.zeros((radius_max.shape[0], exponent.shape[0]))
-    #
-    #     for i in range(radius_max.shape[0]):
-    #         for j in range(exponent.shape[0]):
-    #             cross_interp = interp1d(
-    #                 wavelength, cross_section[:, i, j], kind="linear", bounds_error=True
-    #             )
-    #
-    #             cross_tmp = cross_interp(filt_trans[:, 0])
-    #
-    #             integral1 = np.trapezoid(filt_trans[:, 1] * cross_tmp, x=filt_trans[:, 0])
-    #             integral2 = np.trapezoid(filt_trans[:, 1], x=filt_trans[:, 0])
-    #
-    #             # Filter-weighted average of the extinction cross section
-    #             cross_phot[i, j] = integral1 / integral2
-    #
-    #     cross_sections[phot_item] = RegularGridInterpolator(
-    #         (radius_max, exponent), cross_phot, method="linear", bounds_error=True
-    #     )
 
     if verbose:
         print("Interpolating dust opacities...", end="")

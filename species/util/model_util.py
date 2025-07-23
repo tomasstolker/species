@@ -20,7 +20,6 @@ from typeguard import typechecked
 
 from species.core import constants
 from species.core.box import ModelBox, create_box
-from species.phot.syn_phot import SyntheticPhotometry
 from species.util.dust_util import ism_extinction
 from species.util.spec_util import create_wavelengths, smooth_spectrum
 
@@ -278,8 +277,6 @@ def apply_obs(
     rad_vel: Optional[float] = None,
     cross_sections: Optional[RegularGridInterpolator] = None,
     ext_model: Optional[str] = None,
-    vband_wavel: Optional[np.ndarray] = None,
-    vband_flux: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """
     Function for post-processing of a model spectrum. This will
@@ -323,10 +320,6 @@ def apply_obs(
         set the argument to ``'CCM89'`` to use the extinction
         relation from `Cardelli et al. (1989) <https://ui.adsabs.
         harvard.edu/abs/1989ApJ...345..245C/abstract>`_.
-    vband_wavel : np.ndarray, None
-        Array with the model wavelengths in the V band.
-    vband_flux : np.ndarray, None
-        Array with the model fluxes in the V band.
 
     Returns
     -------
@@ -392,104 +385,26 @@ def apply_obs(
         )
 
     elif "lognorm_ext" in model_param:
-        if vband_wavel is None or vband_flux is None:
-            raise ValueError(
-                "The V-band model spectrum is not included. "
-                "Perhaps you are fitting a disk component or "
-                "binary system? Please open an issue on "
-                "Github when encountering this error."
-            )
-
-        cross_vband = cross_sections(
+        cross_tmp = cross_sections(
             (
-                vband_wavel,
+                model_wavel,
                 10.0 ** model_param["lognorm_radius"],
                 model_param["lognorm_sigma"],
             )
         )
 
-        vband_flux_ext = vband_flux * np.exp(-cross_vband)
-
-        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
-            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
-
-            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
-            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
-                vband_wavel, vband_flux_ext
-            )
-
-            cross_tmp = cross_sections(
-                (
-                    model_wavel,
-                    10.0 ** model_param["lognorm_radius"],
-                    model_param["lognorm_sigma"],
-                )
-            )
-
-            ext_mag = model_param["lognorm_ext"] - (vband_mag_ext[0] - vband_mag[0])
-
-            try:
-                ext_scaling = 10.0 ** (-0.4 * ext_mag)
-                model_flux *= ext_scaling * np.exp(-cross_tmp)
-
-            except OverflowError:
-                model_flux = np.zeros(model_flux.shape)
-
-            # vband_test = vband_flux * ext_scaling * np.exp(-cross_vband)
-            # vband_mag_test, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_test)
-
-        else:
-            model_flux = np.zeros(model_flux.shape)
+        model_flux *= np.exp(-model_param["lognorm_ext"] * cross_tmp)
 
     elif "powerlaw_ext" in model_param:
-        if vband_wavel is None or vband_flux is None:
-            raise ValueError(
-                "The V-band model spectrum is not included. "
-                "Perhaps you are fitting a disk component or "
-                "binary system? Please open an issue on "
-                "Github when encountering this error."
-            )
-
-        cross_vband = cross_sections(
+        cross_tmp = cross_sections(
             (
-                vband_wavel,
+                model_wavel,
                 10.0 ** model_param["powerlaw_max"],
                 model_param["powerlaw_exp"],
             )
         )
 
-        vband_flux_ext = vband_flux * np.exp(-cross_vband)
-
-        if np.count_nonzero(vband_flux_ext) == vband_flux_ext.size:
-            syn_phot = SyntheticPhotometry("Generic/Bessell.V")
-
-            vband_mag, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_flux)
-            vband_mag_ext, _ = syn_phot.spectrum_to_magnitude(
-                vband_wavel, vband_flux_ext
-            )
-
-            cross_tmp = cross_sections(
-                (
-                    model_wavel,
-                    10.0 ** model_param["powerlaw_max"],
-                    model_param["powerlaw_exp"],
-                )
-            )
-
-            ext_mag = model_param["powerlaw_ext"] - (vband_mag_ext[0] - vband_mag[0])
-
-            try:
-                ext_scaling = 10.0 ** (-0.4 * ext_mag)
-                model_flux *= ext_scaling * np.exp(-cross_tmp)
-
-            except OverflowError:
-                model_flux = np.zeros(model_flux.shape)
-
-            # vband_test = vband_flux * ext_scaling * np.exp(-cross_vband)
-            # vband_mag_test, _ = syn_phot.spectrum_to_magnitude(vband_wavel, vband_test)
-
-        else:
-            model_flux = np.zeros(model_flux.shape)
+        model_flux *= np.exp(-model_param["powerlaw_ext"] * cross_tmp)
 
     # elif self.ext_filter is not None:
     #     ism_reddening = all_param.get("ism_red", 3.1)
