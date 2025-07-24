@@ -391,24 +391,25 @@ class FitModel:
                    provided in the ``bounds`` dictionary, for example
                    ``bounds={'lognorm_ext': (0., 5.)}``.
 
-                 - The size distribution is parameterized with a mean
-                   geometric radius (``lognorm_radius`` in um) and a
-                   geometric standard deviation (``lognorm_sigma``,
-                   dimensionless). The grid of cross sections has been
-                   calculated for mean geometric radii between 0.001
-                   and 10 um, and geometric standard deviations between
-                   1.1 and 10. These two parameters are automatically
-                   included so only ``lognorm_ext`` needs to be added.
+                 - The size distribution is parameterized by the
+                   logarithm (base 10) of the mean geometric
+                   radius (``lognorm_radius``) and the
+                   geometric standard deviation (``lognorm_sigma``).
+                   The grid of cross sections has been calculated for
+                   logarithmic radii between -3 and 1, so 0.001 to
+                   10 um, and geometric standard deviations between
+                   1.1 and 10 (dimensionless). These two parameters
+                   are automatically included so only ``lognorm_ext``
+                   needs to be added to ``bounds``.
 
                  - Including the prior boundaries of ``lognorm_radius``
                    and ``lognorm_sigma`` is optional, for example
-                   ``bounds={'lognorm_radius': (0.001, 10.),
-                   'lognorm_sigma': (1.1, 10.)}``. The full available
+                   ``bounds={'lognorm_radius': (-1., 0.),
+                   'lognorm_sigma': (2., 4.)}``. The full available
                    range is automatically used otherwise.
 
-                 - A uniform prior is used for ``lognorm_sigma`` and
-                   ``lognorm_ext``, and a log-uniform prior for
-                   ``lognorm_radius``.
+                 - Uniform priors are used for ``lognorm_radius``,
+                   ``lognorm_sigma`` and ``lognorm_ext``.                   .
 
             Power-law size distribution:
 
@@ -423,25 +424,25 @@ class FitModel:
                    provided in the ``bounds`` dictionary, for example
                    ``bounds={'powerlaw_ext': (0., 5.)}``.
 
-                 - The size distribution is parameterized with a
-                   maximum radius (``powerlaw_max`` in um) and a
-                   power-law exponent (``powerlaw_exp``,
-                   dimensionless). The minimum radius is fixed to 1 nm.
-                   The grid of cross sections has been calculated for
-                   maximum radii between 0.01 and 100 um, and power-law
-                   exponents between -10 and 10. These two parameters
-                   are automatically included so only ``powerlaw_ext``
-                   needs to be added.
+                 - The size distribution is parameterized by the
+                   logarithm (base 10) of the maximum radius
+                   (``powerlaw_max``) and a power-law exponent
+                   (``powerlaw_exp``). The minimum radius is fixed to
+                   1 nm. The grid of cross sections has been calculated
+                   for maximum radii between 0.01 and 100 um, so for
+                   ``powerlaw_max`` between -2 and 2, and power-law
+                   exponents between -10 and 10 (dimensionless). These
+                   two parameters are automatically included so only
+                   ``powerlaw_ext`` needs to be added to ``bounds``.
 
                  - Including the prior boundaries of ``powerlaw_max``,
                    and ``powerlaw_exp`` is optional, for example
-                   ``{'powerlaw_max': (0.01, 100.), 'powerlaw_exp':
-                   (-10., 10.)}``. The full available range is
+                   ``{'powerlaw_max': (-1., 1.), 'powerlaw_exp':
+                   (-2., 3.)}``. The full available range is
                    automatically used otherwise.
 
-                 - A uniform prior is used for ``powerlaw_exp`` and
-                   ``powerlaw_ext``, and a log-uniform prior for
-                   ``powerlaw_max``.
+                 - Uniform priors are used for ``powerlaw_max``,
+                   ``powerlaw_exp``, and ``powerlaw_ext``.
 
         inc_phot : bool, list(str)
             Include photometric data in the fit. If a boolean, either
@@ -1301,8 +1302,8 @@ class FitModel:
 
             if "lognorm_radius" in self.bounds:
                 self.bounds["lognorm_radius"] = (
-                    np.log10(self.bounds["lognorm_radius"][0]),
-                    np.log10(self.bounds["lognorm_radius"][1]),
+                    self.bounds["lognorm_radius"][0],
+                    self.bounds["lognorm_radius"][1],
                 )
 
             else:
@@ -1326,8 +1327,8 @@ class FitModel:
 
             if "powerlaw_max" in self.bounds:
                 self.bounds["powerlaw_max"] = (
-                    np.log10(self.bounds["powerlaw_max"][0]),
-                    np.log10(self.bounds["powerlaw_max"][1]),
+                    self.bounds["powerlaw_max"][0],
+                    self.bounds["powerlaw_max"][1],
                 )
 
             else:

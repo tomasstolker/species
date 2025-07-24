@@ -330,8 +330,8 @@ class ReadModel:
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
         lognorm_radius : float
-            Logarithm of the mean geometric radius (um) of the
-            log-normal size distribution.
+            Logarithm (base 10) of the mean geometric radius (um)
+            of the log-normal size distribution.
         lognorm_sigma : float
             Geometric standard deviation (dimensionless) of the
             log-normal size distribution.
@@ -392,7 +392,8 @@ class ReadModel:
         flux : np.ndarray
             Fluxes (W m-2 um-1) of the spectrum.
         powerlaw_max : float
-            Maximum radius (um) of the power-law size distribution.
+            Logarithm (base 10) of the maximum radius (um)
+            of the power-law size distribution.
         powerlaw_exp : float
             Exponent of the power-law size distribution.
         powerlaw_ext : float
