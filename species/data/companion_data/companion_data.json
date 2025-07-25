@@ -1,4 +1,72 @@
 {
+    "HD 135344 Ab": {
+        "simbad": "HD 135344",
+        "gaia_dr3": 6199395656645840384,
+        "parallax": [
+            7.4105,
+            0.0403
+        ],
+        "app_mag": {
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                [
+                    17.76,
+                    0.11
+                ],
+                [
+                    17.54,
+                    0.11
+                ],
+                [
+                    17.6,
+                    0.14
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                [
+                    17.63,
+                    0.12
+                ],
+                [
+                    17.41,
+                    0.08
+                ],
+                [
+                    17.37,
+                    0.09
+                ]
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                16.87,
+                0.1
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                16.45,
+                0.13
+            ]
+        },
+        "semi_major": [
+            16.5,
+            -1.0,
+            2.8
+        ],
+        "mass_star": [
+            2.2,
+            0.1
+        ],
+        "mass_companion": [
+            10.0,
+            1.9
+        ],
+        "accretion": false,
+        "age": [
+            11.9,
+            -5.8,
+            3.7
+        ],
+        "references": [
+            "Stolker et al. 2025"
+        ]
+    },
     "AF Lep b": {
         "simbad": "V* AF Lep",
         "gaia_dr3": 3009908378049913216,
@@ -8,11 +76,11 @@
         ],
         "app_mag": {
             "Paranal/SPHERE.IRDIS_D_H23_2": [
-                17.50,
+                17.5,
                 0.13
             ],
             "Paranal/SPHERE.IRDIS_D_K12_1": [
-                16.70,
+                16.7,
                 0.09
             ],
             "Paranal/SPHERE.IRDIS_D_K12_2": [
@@ -27,7 +95,7 @@
         ],
         "mass_star": [
             1.29,
-            0.20
+            0.2
         ],
         "mass_companion": [
             4.3,
@@ -91,7 +159,7 @@
             ]
         },
         "semi_major": [
-            9.90,
+            9.9,
             -0.05,
             0.05
         ],
@@ -213,7 +281,7 @@
         "accretion": false,
         "age": [
             14.0,
-            4.0,
+            -4.0,
             4.0
         ],
         "references": [
@@ -295,7 +363,7 @@
             ],
             "JWST/NIRCAM.F410M": [
                 15.8,
-                0.10
+                0.1
             ],
             "Keck/NIRC2.Ms": [
                 16.1,
@@ -384,16 +452,42 @@
                 16.05,
                 0.3
             ],
-            "JWST/NIRCAM.F182M": [18.66, 0.11],
-            "JWST/NIRCAM.F200W": [17.76, 0.06],
-            "JWST/NIRCAM.F210M": [17.39, 0.05],
-            "JWST/NIRCAM.F250M": [18.19, 0.17],
-            "JWST/NIRCAM.F300M": [17.37, 0.04],
-            "JWST/NIRCAM.F335M": [16.20, 0.05],
-            "JWST/NIRCAM.F410M": [15.25, 0.04],
-            "JWST/NIRCAM.F430M": [16.04, 0.10],
-            "JWST/NIRCAM.F460M": [16.01, 0.13]
-
+            "JWST/NIRCAM.F182M": [
+                18.66,
+                0.11
+            ],
+            "JWST/NIRCAM.F200W": [
+                17.76,
+                0.06
+            ],
+            "JWST/NIRCAM.F210M": [
+                17.39,
+                0.05
+            ],
+            "JWST/NIRCAM.F250M": [
+                18.19,
+                0.17
+            ],
+            "JWST/NIRCAM.F300M": [
+                17.37,
+                0.04
+            ],
+            "JWST/NIRCAM.F335M": [
+                16.2,
+                0.05
+            ],
+            "JWST/NIRCAM.F410M": [
+                15.25,
+                0.04
+            ],
+            "JWST/NIRCAM.F430M": [
+                16.04,
+                0.1
+            ],
+            "JWST/NIRCAM.F460M": [
+                16.01,
+                0.13
+            ]
         },
         "semi_major": [
             71.3,
@@ -476,14 +570,38 @@
                 15.03,
                 0.14
             ],
-            "JWST/NIRCAM.F200W": [17.46, 0.13],
-            "JWST/NIRCAM.F210M": [16.73, 0.10],
-            "JWST/NIRCAM.F250M": [16.95, 0.20],
-            "JWST/NIRCAM.F300M": [16.49, 0.09],
-            "JWST/NIRCAM.F335M": [15.34, 0.12],
-            "JWST/NIRCAM.F410M": [14.85, 0.09],
-            "JWST/NIRCAM.F430M": [15.19, 0.05],
-            "JWST/NIRCAM.F460M": [15.17, 0.08]
+            "JWST/NIRCAM.F200W": [
+                17.46,
+                0.13
+            ],
+            "JWST/NIRCAM.F210M": [
+                16.73,
+                0.1
+            ],
+            "JWST/NIRCAM.F250M": [
+                16.95,
+                0.2
+            ],
+            "JWST/NIRCAM.F300M": [
+                16.49,
+                0.09
+            ],
+            "JWST/NIRCAM.F335M": [
+                15.34,
+                0.12
+            ],
+            "JWST/NIRCAM.F410M": [
+                14.85,
+                0.09
+            ],
+            "JWST/NIRCAM.F430M": [
+                15.19,
+                0.05
+            ],
+            "JWST/NIRCAM.F460M": [
+                15.17,
+                0.08
+            ]
         },
         "semi_major": [
             41.0,
@@ -565,12 +683,30 @@
                 14.65,
                 0.35
             ],
-            "JWST/NIRCAM.F250M": [16.65, 0.14],
-            "JWST/NIRCAM.F300M": [15.78, 0.09],
-            "JWST/NIRCAM.F335M": [14.81, 0.05],
-            "JWST/NIRCAM.F410M": [14.26, 0.04],
-            "JWST/NIRCAM.F430M": [14.32, 0.05],
-            "JWST/NIRCAM.F460M": [14.27, 0.06]
+            "JWST/NIRCAM.F250M": [
+                16.65,
+                0.14
+            ],
+            "JWST/NIRCAM.F300M": [
+                15.78,
+                0.09
+            ],
+            "JWST/NIRCAM.F335M": [
+                14.81,
+                0.05
+            ],
+            "JWST/NIRCAM.F410M": [
+                14.26,
+                0.04
+            ],
+            "JWST/NIRCAM.F430M": [
+                14.32,
+                0.05
+            ],
+            "JWST/NIRCAM.F460M": [
+                14.27,
+                0.06
+            ]
         },
         "semi_major": [
             26.55,
@@ -644,10 +780,22 @@
                 13.72,
                 0.2
             ],
-            "JWST/NIRCAM.F335M": [15.49, 0.16],
-            "JWST/NIRCAM.F410M": [14.77, 0.16],
-            "JWST/NIRCAM.F430M": [15.21, 0.12],
-            "JWST/NIRCAM.F460M": [15.03, 0.11]
+            "JWST/NIRCAM.F335M": [
+                15.49,
+                0.16
+            ],
+            "JWST/NIRCAM.F410M": [
+                14.77,
+                0.16
+            ],
+            "JWST/NIRCAM.F430M": [
+                15.21,
+                0.12
+            ],
+            "JWST/NIRCAM.F460M": [
+                15.03,
+                0.11
+            ]
         },
         "semi_major": [
             16.0,
@@ -809,7 +957,7 @@
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
             "Hashimoto et al. 2020",
-            "Müller et al. 2018",
+            "M\u00fcller et al. 2018",
             "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"
@@ -854,7 +1002,7 @@
         "references": [
             "Gaia Early Data Release 3",
             "Haffert et al. 2019",
-            "Müller et al. 2018",
+            "M\u00fcller et al. 2018",
             "Stolker et al. 2020b",
             "Wang et al. 2020",
             "Wang et al. 2021"
@@ -1608,24 +1756,72 @@
     "GJ 758 B": {
         "simbad": "GJ 758",
         "gaia_dr3": 2046207670631964928,
-        "parallax": [64.04, 0.02],
+        "parallax": [
+            64.04,
+            0.02
+        ],
         "app_mag": {
-            "Paranal/SPHERE.IRDIS_D_Y23_2": [20.15, 0.20],
-            "Paranal/SPHERE.IRDIS_D_Y23_3": [19.39, 0.10],
-            "Paranal/SPHERE.IRDIS_D_J23_2": [20.02, 0.25],
-            "Paranal/SPHERE.IRDIS_D_J23_3": [17.79, 0.18],
-            "Paranal/SPHERE.IRDIS_D_H23_2": [17.55, 0.12],
-            "Paranal/SPHERE.IRDIS_D_H23_3": [19.84, 0.42],
-            "Paranal/SPHERE.IRDIS_D_K12_1": [17.99, 0.21],
-            "Paranal/SPHERE.IRDIS_D_K12_2": [18.74, 0.35],
-            "Subaru/CIAO.J": [17.58, 0.20],
-            "Gemini/NIRI.H-G0203w": [18.16, 0.2],
-            "Gemini/NIRI.Kcont209-G0217": [17.12, 0.2],
-            "Keck/NIRC2.Lp": [15.0, 0.1],
-            "Gemini/NIRI.CH4short-G0228": [17.74, 0.2]
+            "Paranal/SPHERE.IRDIS_D_Y23_2": [
+                20.15,
+                0.2
+            ],
+            "Paranal/SPHERE.IRDIS_D_Y23_3": [
+                19.39,
+                0.1
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_2": [
+                20.02,
+                0.25
+            ],
+            "Paranal/SPHERE.IRDIS_D_J23_3": [
+                17.79,
+                0.18
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_2": [
+                17.55,
+                0.12
+            ],
+            "Paranal/SPHERE.IRDIS_D_H23_3": [
+                19.84,
+                0.42
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_1": [
+                17.99,
+                0.21
+            ],
+            "Paranal/SPHERE.IRDIS_D_K12_2": [
+                18.74,
+                0.35
+            ],
+            "Subaru/CIAO.J": [
+                17.58,
+                0.2
+            ],
+            "Gemini/NIRI.H-G0203w": [
+                18.16,
+                0.2
+            ],
+            "Gemini/NIRI.Kcont209-G0217": [
+                17.12,
+                0.2
+            ],
+            "Keck/NIRC2.Lp": [
+                15.0,
+                0.1
+            ],
+            "Gemini/NIRI.CH4short-G0228": [
+                17.74,
+                0.2
+            ]
         },
-        "mass_star": [0.96, 0.03],
-        "mass_companion": [38.0, 0.8],
+        "mass_star": [
+            0.96,
+            0.03
+        ],
+        "mass_companion": [
+            38.0,
+            0.8
+        ],
         "semi_major": [
             29.7,
             -5.3,
@@ -2204,7 +2400,7 @@
                     0.19
                 ],
                 [
-                    9.70,
+                    9.7,
                     0.16
                 ]
             ],
@@ -2218,7 +2414,7 @@
                     0.18
                 ],
                 [
-                    9.50,
+                    9.5,
                     0.15
                 ]
             ]
