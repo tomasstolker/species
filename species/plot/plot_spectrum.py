@@ -570,11 +570,11 @@ def plot_spectrum(
                 data_in = np.column_stack([wavelength, flux])
                 data_out = convert_units(data_in, units, convert_from=False)
 
-                wavelength = data_out[:, 0]
-                flux = data_out[:, 1]
+                data_wavel = data_out[:, 0]
+                data_flux = data_out[:, 1]
 
-                data = np.array(flux, dtype=np.float64)
-                flux_masked = np.ma.array(data, mask=np.isnan(data))
+                data_flux = np.array(data_flux, dtype=np.float64)
+                flux_masked = np.ma.array(data_flux, mask=np.isnan(data_flux))
 
                 if isinstance(box_item, ModelBox):
                     param = box_item.parameters.copy()
@@ -603,13 +603,13 @@ def plot_spectrum(
                         del kwargs_copy["label"]
 
                     if quantity == "flux":
-                        flux_scaling = wavelength
+                        flux_scaling = data_wavel
 
                     if "zorder" not in kwargs_copy:
                         kwargs_copy["zorder"] = 2.0
 
                     ax1.plot(
-                        wavelength,
+                        data_wavel,
                         flux_scaling * flux_masked / scaling,
                         label=label,
                         **kwargs_copy,
@@ -617,10 +617,10 @@ def plot_spectrum(
 
                 else:
                     if quantity == "flux":
-                        flux_scaling = wavelength
+                        flux_scaling = data_wavel
 
                     ax1.plot(
-                        wavelength,
+                        data_wavel,
                         flux_scaling * flux_masked / scaling,
                         lw=0.5,
                         label=label,
@@ -632,11 +632,11 @@ def plot_spectrum(
                     data_in = np.column_stack([wavelength[i], flux[i]])
                     data_out = convert_units(data_in, units, convert_from=False)
 
-                    wavelength = data_out[:, 0]
-                    flux = data_out[:, 1]
+                    data_wavel = data_out[:, 0]
+                    data_flux = data_out[:, 1]
 
-                    data = np.array(flux, dtype=np.float64)
-                    flux_masked = np.ma.array(data, mask=np.isnan(data))
+                    data_flux = np.array(data_flux, dtype=np.float64)
+                    flux_masked = np.ma.array(data_flux, mask=np.isnan(data_flux))
 
                     if isinstance(box_item.name[i], bytes):
                         label = box_item.name[i].decode("utf-8")
@@ -647,7 +647,7 @@ def plot_spectrum(
                         flux_scaling = wavelength
 
                     ax1.plot(
-                        wavelength,
+                        data_wavel,
                         flux_scaling * flux_masked / scaling,
                         lw=0.5,
                         label=label,
@@ -1342,9 +1342,7 @@ def plot_spectrum(
                 finite = np.isfinite(residuals.photometry[item][1])
 
                 max_tmp = np.max(np.abs(residuals.photometry[item][1][finite]))
-
-                if max_tmp > res_max:
-                    res_max = max_tmp
+                res_max = max(res_max, max_tmp)
 
         if residuals.spectrum is not None:
             for spec_key, spec_val in residuals.spectrum.items():
@@ -1372,9 +1370,7 @@ def plot_spectrum(
                     )
 
                 max_tmp = np.nanmax(np.abs(spec_val[:, 1]))
-
-                if max_tmp > res_max:
-                    res_max = max_tmp
+                res_max = max(res_max, max_tmp)
 
         res_lim = math.ceil(1.1 * res_max)
 
