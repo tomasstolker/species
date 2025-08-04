@@ -1303,10 +1303,7 @@ def plot_extinction(
     output: Optional[str] = None,
 ) -> mpl.figure.Figure:
     """
-    Function to plot random samples of the extinction, either from
-    fitting a size distribution of enstatite grains (``dust_radius``,
-    ``dust_sigma``, and ``dust_ext``), or from fitting ISM extinction
-    (``ism_ext`` and optionally ``ism_red``).
+    Function to plot random samples of the extinction.
 
     Parameters
     ----------
@@ -1447,6 +1444,23 @@ def plot_extinction(
             sample_ext = -2.5 * np.log10(
                 np.exp(-samples[i, ext_index] * cross_sections)
             )
+
+            ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
+
+    elif "ext_av" in samples_box.parameters:
+        ext_index = samples_box.parameters.index("ext_av")
+        ext_av = samples[:, ext_index]
+
+        if "ext_rv" in samples_box.parameters:
+            rv_index = samples_box.parameters.index("ext_rv")
+            ext_rv = samples[:, rv_index]
+
+        else:
+            # Use default ISM redenning (R_V = 3.1) if ext_rv was not fitted
+            ext_rv = np.full(samples.shape[0], 3.1)
+
+        for i in range(samples.shape[0]):
+            sample_ext = ism_extinction(ext_av[i], ext_rv[i], sample_wavel)
 
             ax.plot(sample_wavel, sample_ext, ls="-", lw=0.5, color="black", alpha=0.5)
 

@@ -65,6 +65,7 @@ class ColorMagBox(Box):
         self.sptype = None
         self.mass = None
         self.radius = None
+        self.age = None
 
 
 class ColorColorBox(Box):
@@ -91,6 +92,7 @@ class ColorColorBox(Box):
         self.sptype = None
         self.mass = None
         self.radius = None
+        self.age = None
 
 
 class CoolingBox(Box):
@@ -447,6 +449,8 @@ def create_box(boxtype, **kwargs):
             box.radius = kwargs["radius"]
         if "iso_tag" in kwargs:
             box.iso_tag = kwargs["iso_tag"]
+        if "age" in kwargs:
+            box.age = kwargs["age"]
 
     if boxtype == "colorcolor":
         box = ColorColorBox()
@@ -465,6 +469,8 @@ def create_box(boxtype, **kwargs):
             box.radius = kwargs["radius"]
         if "iso_tag" in kwargs:
             box.iso_tag = kwargs["iso_tag"]
+        if "age" in kwargs:
+            box.age = kwargs["age"]
 
     elif boxtype == "cooling":
         box = CoolingBox()

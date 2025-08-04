@@ -1183,6 +1183,7 @@ class ReadIsochrone:
             mass=isochrone.mass,
             radius=isochrone.radius,
             iso_tag=self.tag,
+            age=age,
         )
 
     @typechecked
@@ -1346,6 +1347,7 @@ class ReadIsochrone:
             mass=isochrone.mass,
             radius=isochrone.radius,
             iso_tag=self.tag,
+            age=age,
         )
 
     @typechecked

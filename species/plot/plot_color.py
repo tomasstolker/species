@@ -8,6 +8,7 @@ import os
 import pathlib
 import warnings
 
+from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib as mpl
@@ -365,6 +366,9 @@ def plot_color_magnitude(
                 if item.library == "sonora-bobcat":
                     metal = float(item.iso_tag[-4:])
                     label += f", [M/H] = {metal}"
+
+                if hasattr(item, "age"):
+                    label += f" ({Decimal(item.age).normalize()} Myr)"
 
                 if item.library == "zhu2015":
                     ax1.plot(
