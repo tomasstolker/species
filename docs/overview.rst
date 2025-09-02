@@ -20,6 +20,7 @@ The following data and models are currently supported:
 - `AMES-Cond <https://phoenix.ens-lyon.fr/Grids/AMES-Cond/>`_
 - `AMES-Dusty <https://phoenix.ens-lyon.fr/Grids/AMES-Dusty/>`_
 - `ATMO (CEQ, NEQ weak, NEQ strong) <https://ui.adsabs.harvard.edu/abs/2020A%26A...637A..38P/abstract>`_
+- `ATMO Chabrier et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023A&A...671A.119C>`_
 - `BT-Cond <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-cond>`_
 - `BT-Dusty <http://svo2.cab.inta-csic.es/svo/theory/newov2/index.php?models=bt-dusty>`_
 - `BT-NextGen <https://phoenix.ens-lyon.fr/Grids/BT-NextGen/SPECTRA/>`_

@@ -11,7 +11,7 @@ from species.util.data_util import extract_tarfile
 
 
 @typechecked
-def add_atmo(database: h5py._hl.files.File, input_path: str) -> None:
+def add_chabrier2023(database: h5py._hl.files.File, input_path: str) -> None:
     """
     Function for adding the AMES-Cond and AMES-Dusty
     isochrone data to the database.
@@ -31,13 +31,13 @@ def add_atmo(database: h5py._hl.files.File, input_path: str) -> None:
 
     url = (
         "https://home.strw.leidenuniv.nl/~stolker/"
-        "species/atmo_evolutionary_tracks.tgz"
+        "species/chabrier2023_tracks.tgz"
     )
 
-    iso_tag = "ATMO"
-    iso_size = "9.6 MB"
+    iso_tag = "ATMO (Chabrier et al. 2023"
+    iso_size = "12 MB"
 
-    data_folder = Path(input_path) / "atmo_evolutionary_tracks"
+    data_folder = Path(input_path) / "chabrier2023_tracks"
 
     if not data_folder.exists():
         data_folder.mkdir()
@@ -50,7 +50,7 @@ def add_atmo(database: h5py._hl.files.File, input_path: str) -> None:
 
         pooch.retrieve(
             url=url,
-            known_hash="f905698a397b980acdc7a3cd7fa514a39e315c674b21dcd5cbba70833777cd3b",
+            known_hash="2f268839107d7084f2512152e4da4be9fb1220793619899806c1f3fc4b3e4034",
             fname=input_file,
             path=input_path,
             progressbar=True,
@@ -67,19 +67,24 @@ def add_atmo(database: h5py._hl.files.File, input_path: str) -> None:
     ]
 
     labels = [
-        "ATMO equilibrium chemistry",
-        "ATMO weak non-equilibrium chemistry",
-        "ATMO strong non-equilibrium chemistry",
+        "ATMO equilibrium chemistry (Chabrier et al. 2023)",
+        "ATMO weak non-equilibrium chemistry (Chabrier et al. 2023)",
+        "ATMO strong non-equilibrium chemistry (Chabrier et al. 2023)",
     ]
 
     db_tags = [
-        "atmo-ceq",
-        "atmo-neq-weak",
-        "atmo-neq-strong",
+        "atmo-ceq-chabrier2023",
+        "atmo-neq-weak-chabrier2023",
+        "atmo-neq-strong-chabrier2023",
     ]
 
     for iso_idx, iso_item in enumerate(iso_files):
-        iso_path = Path(data_folder) / iso_item / "MKO_WISE_IRAC"
+        tar_file = str(data_folder / iso_item) + "_neweos.tar.gz"
+        print(f"\nUnpacking {iso_item} isochrones...", end="", flush=True)
+        extract_tarfile(tar_file, str(data_folder))
+        print(" [DONE]")
+
+        iso_path = Path(data_folder) / iso_item / "MKO_WISE_IRAC_vega"
 
         # Ignore hidden files
         file_list = sorted(iso_path.glob("[!.]*.txt"))

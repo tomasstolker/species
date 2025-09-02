@@ -562,12 +562,12 @@ class Database:
         Parameters
         ----------
         model : str, None
-            Evolutionary model ('ames', 'atmo', 'baraffe2015',
-            'bt-settl', 'linder2019', 'nextgen', 'parsec',
-            'saumon2008', 'sonora-bobcat', 'sonora-diamondback').
-            Isochrones will be automatically downloaded.
-            Alternatively, the ``filename`` parameter can be used
-            in combination with ``tag``.
+            Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
+            'baraffe2015', 'bt-settl', linder2019', 'nextgen',
+            'parsec', 'saumon2008', 'sonora-bobcat',
+            'sonora-diamondback'). Isochrones will be automatically
+            downloaded. Alternatively, the ``filename`` parameter
+            can be used in combination with ``tag``.
         filename : str, None
             Filename with the isochrone data. The argument of
             ``model`` will be ignored by setting the argument
@@ -601,6 +601,7 @@ class Database:
         avail_models = [
             "ames",
             "atmo",
+            "atmo-chabrier2023",
             "baraffe2015",
             "bt-settl",
             "linder2019",
@@ -640,6 +641,14 @@ class Database:
             elif model == "bt-settl":
                 if "isochrones/bt-settl" in hdf5_file:
                     del hdf5_file["isochrones/bt-settl"]
+
+            elif model == "atmo-chabrier2023":
+                if "isochrones/atmo-ceq-chabrier2023" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-ceq-chabrier2023"]
+                if "isochrones/atmo-neq-weak-chabrier2023" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-neq-weak-chabrier2023"]
+                if "isochrones/atmo-neq-strong-chabrier2023" in hdf5_file:
+                    del hdf5_file["isochrones/atmo-neq-strong-chabrier2023"]
 
             elif model == "linder2019":
                 if "isochrones" in hdf5_file:

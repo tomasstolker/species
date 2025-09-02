@@ -12,6 +12,7 @@ from species.data.isochrone_data.iso_ames import add_ames
 from species.data.isochrone_data.iso_atmo import add_atmo
 from species.data.isochrone_data.iso_baraffe2015 import add_baraffe2015
 from species.data.isochrone_data.iso_btsettl import add_btsettl
+from species.data.isochrone_data.iso_chabrier2023 import add_chabrier2023
 from species.data.isochrone_data.iso_linder2019 import add_linder2019
 from species.data.isochrone_data.iso_manual import add_manual
 from species.data.isochrone_data.iso_marleau import add_marleau
@@ -40,12 +41,12 @@ def add_isochrone_grid(
     hdf5_file : h5py._hl.files.File
         Database.
     model_name : str, None
-        Evolutionary model ('ames', 'atmo', 'baraffe2015',
-        'bt-settl', 'linder2019', 'nextgen', 'parsec',
-        'saumon2008', 'sonora-bobcat', 'sonora-diamondback').
-        Isochrones will be automatically downloaded.
-        Alternatively, the ``filename`` parameter can be used
-        in combination with ``tag``.
+        Evolutionary model ('ames', 'atmo', 'atmo-chabrier2023',
+        'baraffe2015', 'bt-settl', 'linder2019', 'nextgen',
+        'parsec', 'saumon2008', 'sonora-bobcat',
+        'sonora-diamondback'). Isochrones will be automatically
+        downloaded. Alternatively, the ``filename`` parameter
+        can be used in combination with ``tag``.
     filename : str, None
         Filename with the isochrone data. The argument of
         ``model`` will be ignored by setting the argument
@@ -73,6 +74,9 @@ def add_isochrone_grid(
 
     elif model_name == "atmo":
         add_atmo(hdf5_file, data_folder)
+
+    elif model_name == "atmo-chabrier2023":
+        add_chabrier2023(hdf5_file, data_folder)
 
     elif model_name == "baraffe2015":
         add_baraffe2015(hdf5_file, data_folder)

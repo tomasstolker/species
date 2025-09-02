@@ -114,6 +114,14 @@ class ReadIsochrone:
 
         self.database = config["species"]["database"]
 
+        with h5py.File(self.database, "r") as hdf5_file:
+            if "isochrones" not in hdf5_file:
+                raise ValueError(
+                    "There are no isochrone data stored in the database. "
+                    "Please use the add_isochrones method of Database "
+                    "to add a grid of isochrones."
+                )
+
         if self.tag is None:
             with h5py.File(self.database, "r") as hdf5_file:
                 tag_list = list(hdf5_file["isochrones"])
@@ -131,7 +139,7 @@ class ReadIsochrone:
                 tag_list = list(hdf5_file["isochrones"])
 
                 raise ValueError(
-                    f"There is no isochrone data stored with the "
+                    f"There are no isochrone data stored with the "
                     f"selected tag '{tag}'. The following isochrone "
                     f"tags are found in the database: {tag_list}"
                 )
@@ -144,6 +152,9 @@ class ReadIsochrone:
             "atmo-ceq": ("atmo-ceq", None),
             "atmo-neq-strong": ("atmo-neq-strong", None),
             "atmo-neq-weak": ("atmo-neq-weak", None),
+            "atmo-ceq-chabrier2023": ("atmo-ceq", None),
+            "atmo-neq-strong-chabrier2023": ("atmo-neq-strong", None),
+            "atmo-neq-weak-chabrier2023": ("atmo-neq-weak", None),
             "bt-settl": ("bt-settl", None),
             "linder2019-petitCODE-metal_-0.4": (
                 "petitcode-linder2019-clear",
