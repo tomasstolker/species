@@ -1094,6 +1094,7 @@ class Database:
         flux = {}
         error = {}
         dered_phot = {}
+        mean_wavel = {}
 
         if app_mag is not None:
             if verbose:
@@ -1103,7 +1104,7 @@ class Database:
 
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
-                mean_wavel = read_filt.mean_wavelength()
+                mean_wavel[mag_item] = read_filt.mean_wavelength()
 
                 if isinstance(deredden, float) or mag_item in deredden:
                     from species.util.dust_util import ism_extinction
@@ -1210,7 +1211,9 @@ class Database:
                     if verbose:
                         print(f"   - {mag_item}:")
 
-                        print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
+                        print(
+                            f"      - Mean wavelength (um) = {mean_wavel[mag_item]:.4e}"
+                        )
 
                         print(
                             f"      - Apparent magnitude = {app_mag[mag_item][0]:.2f} +/- "
@@ -1253,7 +1256,9 @@ class Database:
                         app_mag_item = (dered_mag, app_mag[mag_item][i][1])
 
                         if verbose:
-                            print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
+                            print(
+                                f"      - Mean wavelength (um) = {mean_wavel[mag_item]:.4e}"
+                            )
 
                             print(
                                 f"      - Apparent magnitude = {app_mag_item[0]:.2f} +/- "
@@ -1293,7 +1298,7 @@ class Database:
 
             for flux_item in flux_density:
                 read_filt = ReadFilter(flux_item)
-                mean_wavel = read_filt.mean_wavelength()
+                mean_wavel[flux_item] = read_filt.mean_wavelength()
 
                 if isinstance(deredden, float) or flux_item in deredden:
                     warnings.warn(
@@ -1319,7 +1324,7 @@ class Database:
                     if flux_item in units:
                         from species.util.data_util import convert_units
 
-                        flux_in = np.array([[mean_wavel, data[2], data[3]]])
+                        flux_in = np.array([[mean_wavel[flux_item], data[2], data[3]]])
                         flux_out = convert_units(
                             flux_in, ("um", units[flux_item]), convert_from=True
                         )
@@ -1328,7 +1333,9 @@ class Database:
 
                     if verbose:
                         print(f"   - {flux_item}:")
-                        print(f"      - Mean wavelength (um) = {mean_wavel:.4e}")
+                        print(
+                            f"      - Mean wavelength (um) = {mean_wavel[flux_item]:.4e}"
+                        )
                         print(
                             f"      - Flux (W m-2 um-1) = {data[2]:.2e} +/- {data[3]:.2e}"
                         )
@@ -1352,6 +1359,12 @@ class Database:
             spec_nan = {}
 
             for spec_item, spec_value in spectrum.items():
+                if "/" in spec_item:
+                    raise ValueError(
+                        "Spectrum names can't include a slash as "
+                        f"character. Please adjust {spec_item}"
+                    )
+
                 if f"objects/{object_name}/spectrum/{spec_item}" in hdf5_file:
                     del hdf5_file[f"objects/{object_name}/spectrum/{spec_item}"]
 
@@ -1703,7 +1716,7 @@ class Database:
                 else:
                     if verbose:
                         print(f"      - {spec_item}: {spec_value[2]:.1f}")
-                    dset.attrs["specres"] = spec_value[2]
+                    dset.attrs["specres"] = float(spec_value[2])
 
         hdf5_file.close()
 

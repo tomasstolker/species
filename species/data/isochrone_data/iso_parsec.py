@@ -69,7 +69,9 @@ def add_parsec(database: h5py._hl.files.File, input_path: str) -> None:
     database.create_dataset(f"isochrones/{iso_tag}/mass", data=mass)  # (Mjup)
     dset = database.create_dataset(f"isochrones/{iso_tag}/age", data=age)  # (Myr)
     database.create_dataset(f"isochrones/{iso_tag}/teff", data=teff)  # (K)
-    database.create_dataset(f"isochrones/{iso_tag}/log_lum", data=log_lum)  # log(L/Lsun)
+    database.create_dataset(
+        f"isochrones/{iso_tag}/log_lum", data=log_lum
+    )  # log(L/Lsun)
     database.create_dataset(f"isochrones/{iso_tag}/radius", data=radius)  # (Rjup)
     database.create_dataset(f"isochrones/{iso_tag}/log_g", data=log_g)  # log(g)
 

@@ -89,7 +89,7 @@ def add_manual(
     iso_data[:, 1] *= constants.M_SUN / constants.M_JUP  # (Mjup)
 
     if check_baraffe:
-        iso_data[:, 5] *= constants.R_SUN/constants.R_JUP  # (Rjup)
+        iso_data[:, 5] *= constants.R_SUN / constants.R_JUP  # (Rjup)
     else:
         iso_data[:, 5] *= 1e9  # (cm)
         iso_data[:, 5] *= 1e-2 / constants.R_JUP  # (cm) -> (Rjup)

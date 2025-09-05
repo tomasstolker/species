@@ -29,10 +29,7 @@ def add_chabrier2023(database: h5py._hl.files.File, input_path: str) -> None:
         None
     """
 
-    url = (
-        "https://home.strw.leidenuniv.nl/~stolker/"
-        "species/chabrier2023_tracks.tgz"
-    )
+    url = "https://home.strw.leidenuniv.nl/~stolker/species/chabrier2023_tracks.tgz"
 
     iso_tag = "ATMO (Chabrier et al. 2023"
     iso_size = "12 MB"
