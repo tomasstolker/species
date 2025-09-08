@@ -1833,7 +1833,7 @@ class ReadIsochrone:
 
         filter_list = self.get_filters()
 
-        if filter_name in filter_list and not calc_phot:
+        if filter_list is not None and filter_name in filter_list and not calc_phot:
             print(
                 f"The '{filter_name}' filter is found in the list "
                 "of available filters from the isochrone data of "
@@ -1854,7 +1854,7 @@ class ReadIsochrone:
             )
 
         else:
-            if filter_name not in filter_list:
+            if filter_list is not None and filter_name not in filter_list:
                 print(
                     f"The '{filter_name}' filter is not found in the "
                     "list of available filters from the isochrone "
