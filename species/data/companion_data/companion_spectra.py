@@ -3,10 +3,9 @@ Module for getting spectra of directly imaged planets and brown dwarfs.
 """
 
 import json
-import os
-import pathlib
-import urllib.request
+import pooch
 
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from typeguard import typechecked
@@ -16,7 +15,7 @@ from species.util.core_util import print_section
 
 @typechecked
 def companion_spectra(
-    input_path: str, comp_name: str, verbose: bool = True
+    input_path: Path, comp_name: str, verbose: bool = True
 ) -> Optional[Dict[str, Tuple[str, Optional[str], float]]]:
     """
     Function for extracting a dictionary with the spectra of
@@ -27,7 +26,7 @@ def companion_spectra(
 
     Parameters
     ----------
-    input_path : str
+    input_path : Path
         Path of the data folder.
     comp_name : str
         Companion name for which the spectra will be returned.
@@ -44,7 +43,8 @@ def companion_spectra(
         covariances, spectral resolution, and filename.
     """
 
-    spec_file = pathlib.Path(__file__).parent.resolve() / "companion_spectra.json"
+    data_folder = input_path / "companion_data"
+    spec_file = Path(__file__).parent.resolve() / "companion_spectra.json"
 
     with open(spec_file, "r", encoding="utf-8") as json_file:
         comp_spec = json.load(json_file)
@@ -53,37 +53,44 @@ def companion_spectra(
         if verbose:
             print_section("Get companion spectra")
 
-        data_folder = os.path.join(input_path, "companion_data/")
-
-        if not os.path.exists(data_folder):
-            os.makedirs(data_folder)
+        if not data_folder.exists():
+            data_folder.mkdir()
 
         spec_dict = {}
 
-        for key, value in comp_spec[comp_name].items():
+        for spec_key, spec_value in comp_spec[comp_name].items():
             if verbose:
-                print(f"Getting {key} spectrum of {comp_name}...", end="", flush=True)
+                print(f"Getting {spec_key} spectrum of {comp_name}...", end="", flush=True)
 
             spec_url = (
-                f"https://home.strw.leidenuniv.nl/~stolker/species/spectra/{value[0]}"
+                f"https://home.strw.leidenuniv.nl/~stolker/species/spectra/{spec_value[0]}"
             )
-            spec_file = os.path.join(data_folder, value[0])
+            spec_file = data_folder / spec_value[0]
 
-            if value[1] is None:
+            if spec_value[1] is None:
                 cov_file = None
             else:
-                cov_file = os.path.join(data_folder, value[1])
+                cov_file = data_folder / spec_value[1]
 
-            if not os.path.isfile(spec_file):
-                urllib.request.urlretrieve(spec_url, spec_file)
+            if not spec_file.exists():
+                pooch.retrieve(
+                    url=spec_url,
+                    known_hash=None,
+                    fname=spec_value[0],
+                    path=data_folder,
+                    progressbar=True,
+                )
 
-            spec_dict[key] = (spec_file, cov_file, value[2])
+            if cov_file is None:
+                spec_dict[spec_key] = (str(spec_file), cov_file, spec_value[2])
+            else:
+                spec_dict[spec_key] = (str(spec_file), str(cov_file), spec_value[2])
 
             if verbose:
                 print(" [DONE]")
 
                 print(
-                    f"Please cite {value[3]} when making "
+                    f"Please cite {spec_value[3]} when making "
                     "use of this spectrum in a publication"
                 )
 

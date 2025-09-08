@@ -44,6 +44,14 @@ species.data.isochrone\_data.iso\_btsettl module
    :undoc-members:
    :show-inheritance:
 
+species.data.isochrone\_data.iso\_chabrier2023 module
+-----------------------------------------------------
+
+.. automodule:: species.data.isochrone_data.iso_chabrier2023
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 species.data.isochrone\_data.iso\_linder2019 module
 ---------------------------------------------------
 

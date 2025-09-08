@@ -349,7 +349,7 @@ class Database:
             print(f"Add companion: {name}")
 
         for item in name:
-            spec_dict = companion_spectra(self.data_folder, item, verbose=verbose)
+            spec_dict = companion_spectra(Path(self.data_folder), item, verbose=verbose)
 
             parallax = None
 
