@@ -225,11 +225,12 @@ class FitModel:
                  combined with an atmospheric model.
 
                - Parameter boundaries have to be provided for
-                 'disk_teff' and 'disk_radius'. For example,
-                 ``bounds={'teff': (2000., 3000.), 'radius': (1., 5.),
-                 'logg': (3.5, 4.5), 'disk_teff': (100., 2000.),
-                 'disk_radius': (1., 100.)}`` for fitting a single
-                 blackbody component, in addition to the atmospheric
+                 'disk_teff' (in K) and 'disk_radius' (in Rjup)
+                 For example, ``bounds={'teff': (2000., 3000.),
+                 'radius': (1., 5.), 'logg': (3.5, 4.5), 'disk_teff':
+                 (100., 2000.), 'disk_radius': (1., 100.)}`` for
+                 fitting a single blackbody component, in addition
+                 to the atmospheric
                  parameters. Or, ``bounds={'teff': (2000., 3000.),
                  'radius': (1., 5.), 'logg': (3.5, 4.5),
                  'disk_teff': [(2000., 500.), (1000., 20.)],

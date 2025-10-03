@@ -1362,7 +1362,7 @@ class Database:
                 if "/" in spec_item:
                     raise ValueError(
                         "Spectrum names can't include a slash as "
-                        f"character. Please adjust {spec_item}"
+                        f"character. Please adjust '{spec_item}'."
                     )
 
                 if f"objects/{object_name}/spectrum/{spec_item}" in hdf5_file:
