@@ -41,7 +41,10 @@ class Database:
             None
         """
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if "SPECIES_CONFIG" in os.environ:
+            config_file = os.environ["SPECIES_CONFIG"]
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = ConfigParser()
         config.read(config_file)
@@ -1016,6 +1019,8 @@ class Database:
             None
         """
 
+        from species.read.read_filter import ReadFilter
+
         if verbose:
             print_section("Add object")
             print(f"Object name: {object_name}")
@@ -1031,8 +1036,6 @@ class Database:
         # will also open the HDF5 database
 
         if app_mag is not None:
-            from species.read.read_filter import ReadFilter
-
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
 
@@ -1099,8 +1102,6 @@ class Database:
         if app_mag is not None:
             if verbose:
                 print("\nMagnitudes:")
-
-            from species.read.read_filter import ReadFilter
 
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
@@ -1293,8 +1294,6 @@ class Database:
         if flux_density is not None:
             if verbose:
                 print("\nFlux densities:")
-
-            from species.read.read_filter import ReadFilter
 
             for flux_item in flux_density:
                 read_filt = ReadFilter(flux_item)
@@ -2816,7 +2815,7 @@ class Database:
 
             if model_type in ["model", "atmosphere"]:
                 if model_name == "planck":
-                    specbox = readmodel.get_spectrum(
+                    spec_box = readmodel.get_spectrum(
                         model_param,
                         spec_res,
                         wavel_resample=wavel_resample,
@@ -2832,7 +2831,7 @@ class Database:
 
                     from species.util.model_util import powerlaw_spectrum
 
-                    specbox = powerlaw_spectrum(wavel_range, model_param)
+                    spec_box = powerlaw_spectrum(wavel_range, model_param)
 
                 else:
                     from species.util.model_util import binary_to_single
@@ -2840,7 +2839,7 @@ class Database:
                     if binary:
                         param_0 = binary_to_single(model_param, 0)
 
-                        specbox_0 = readmodel.get_model(
+                        spec_box_0 = readmodel.get_model(
                             param_0,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
@@ -2849,7 +2848,7 @@ class Database:
 
                         param_1 = binary_to_single(model_param, 1)
 
-                        specbox_1 = readmodel.get_model(
+                        spec_box_1 = readmodel.get_model(
                             param_1,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
@@ -2861,24 +2860,24 @@ class Database:
 
                         if "spec_weight" in model_param:
                             flux_comb = (
-                                model_param["spec_weight"] * specbox_0.flux
-                                + (1.0 - model_param["spec_weight"]) * specbox_1.flux
+                                model_param["spec_weight"] * spec_box_0.flux
+                                + (1.0 - model_param["spec_weight"]) * spec_box_1.flux
                             )
 
                         else:
-                            flux_comb = specbox_0.flux + specbox_1.flux
+                            flux_comb = spec_box_0.flux + spec_box_1.flux
 
-                        specbox = create_box(
+                        spec_box = create_box(
                             boxtype="model",
                             model=model_name,
-                            wavelength=specbox_0.wavelength,
+                            wavelength=spec_box_0.wavelength,
                             flux=flux_comb,
                             parameters=model_param,
                             quantity="flux",
                         )
 
                     else:
-                        specbox = readmodel.get_model(
+                        spec_box = readmodel.get_model(
                             model_param,
                             spec_res=spec_res,
                             wavel_resample=wavel_resample,
@@ -2886,13 +2885,16 @@ class Database:
                         )
 
             elif model_type == "calibration":
-                specbox = readcalib.get_spectrum(model_param)
+                spec_box = readcalib.get_spectrum(model_param)
 
-            boxes.append(specbox)
+            else:
+                spec_box = None
+
+            boxes.append(spec_box)
 
             if binary:
-                boxes_0.append(specbox_0)
-                boxes_1.append(specbox_1)
+                boxes_0.append(spec_box_0)
+                boxes_1.append(spec_box_1)
 
         if binary:
             return boxes, boxes_0, boxes_1
@@ -2935,6 +2937,8 @@ class Database:
         np.ndarray
             Synthetic magnitudes or fluxes.
         """
+
+        from species.read.read_filter import ReadFilter
 
         if phot_type not in ["magnitude", "flux"]:
             raise ValueError(
@@ -3100,7 +3104,6 @@ class Database:
                     mcmc_phot[i], _ = readcalib.get_flux(model_param=model_param)
 
         if phot_type == "flux":
-            from species.read.read_filter import ReadFilter
             from species.util.data_util import convert_units
 
             read_filt = ReadFilter(filter_name)
@@ -3153,6 +3156,8 @@ class Database:
             Box with the object's data.
         """
 
+        from species.read.read_filter import ReadFilter
+
         if verbose:
             print_section(f"Get object")
 
@@ -3185,8 +3190,6 @@ class Database:
                 flux = {}
                 mean_wavel = {}
                 filter_width = {}
-
-                from species.read.read_filter import ReadFilter
 
                 for observatory in dset.keys():
                     if observatory not in ["parallax", "distance", "spectrum"]:
@@ -4378,7 +4381,10 @@ class Database:
 
         # Open configuration file
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if "SPECIES_CONFIG" in os.environ:
+            config_file = os.environ["SPECIES_CONFIG"]
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = ConfigParser()
         config.read(config_file)
@@ -5042,7 +5048,6 @@ class Database:
 
         with h5py.File(self.database, "r") as hdf5_file:
             dset = hdf5_file[f"results/empirical/{tag}/names"]
-            dset_attrs = dict(dset.attrs)
 
             object_name = dset.attrs["object_name"]
             spec_library = dset.attrs["spec_library"]
@@ -5053,7 +5058,7 @@ class Database:
                 print(f"Spectral library: {spec_library}")
 
             if verbose:
-                print(f"\nIncluded spectra:")
+                print("\nIncluded spectra:")
 
             spec_name = []
             for i in range(n_spec_name):

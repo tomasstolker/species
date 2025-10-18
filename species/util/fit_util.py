@@ -304,7 +304,10 @@ def get_residuals(
 
     print_section("Calculate residuals")
 
-    config_file = os.path.join(os.getcwd(), "species_config.ini")
+    if 'SPECIES_CONFIG' in os.environ:
+        config_file = os.environ['SPECIES_CONFIG']
+    else:
+        config_file = os.path.join(os.getcwd(), "species_config.ini")
 
     config = ConfigParser()
     config.read(config_file)

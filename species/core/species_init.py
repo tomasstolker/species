@@ -7,6 +7,7 @@ import socket
 import urllib.request
 
 from configparser import ConfigParser
+from os import environ
 from pathlib import Path, PosixPath, WindowsPath
 from typing import Optional, Union
 
@@ -26,11 +27,20 @@ class SpeciesInit:
 
     @typechecked
     def __init__(
-        self, database_file: Optional[Union[str, PosixPath, WindowsPath]] = None
+        self,
+        config_file: Optional[Union[str, PosixPath, WindowsPath]] = None,
+        database_file: Optional[Union[str, PosixPath, WindowsPath]] = None,
     ) -> None:
         """
         Parameters
         ----------
+        config_file : str, PosixPath, WindowsPath, None
+            Path to the configuration file that is stored as
+            `species_config.ini`. Setting the argument enables
+            reading a configuration file at a different path
+            than the current working directory. The default
+            location (i.e. the working folder of your script or
+            notebook) is used by setting the argument to ``None``.
         database_file : str, PosixPath, WindowsPath, None
             Path to the HDF5 database that is stored as
             `species_database.hdf5`. Setting the argument will
@@ -79,17 +89,22 @@ class SpeciesInit:
                 & (pypi_split[2] > current_split[2])
             )
 
-        print(f"\nVersion: {__version__}")
+            if new_major | new_minor:
+                print(f"\n -> A new version ({pypi_version}) is available!")
+                print(" -> It is recommended to update to the latest version")
+                print(" -> See https://github.com/tomasstolker/species for details")
 
-        if pypi_version is not None and (new_major | new_minor):
-            print(f"\n -> A new version ({pypi_version}) is available!")
-            print(" -> It is recommended to update to the latest version")
-            print(" -> See https://github.com/tomasstolker/species for details")
+        print(f"\nVersion: {__version__}")
 
         working_folder = Path.cwd()
         print(f"Working folder: {working_folder}")
 
-        config_file = working_folder / "species_config.ini"
+        if config_file is None:
+            config_file = working_folder / "species_config.ini"
+
+        elif isinstance(config_file, str):
+            config_file = Path(config_file)
+            environ["SPECIES_CONFIG"] = str(config_file)
 
         config = ConfigParser(allow_no_value=True)
 
@@ -164,6 +179,27 @@ class SpeciesInit:
             h5_file = h5py.File(database_file, "w")
             h5_file.close()
             print(" [DONE]")
+
+        try:
+            from mpi4py import MPI
+
+            mpi_rank = MPI.COMM_WORLD.Get_rank()
+            MPI.COMM_WORLD.Barrier()
+
+        except ImportError:
+            mpi_rank = 0
+
+        # Add samples to the database
+
+        if mpi_rank == 0:
+            with h5py.File(database_file, "a") as hdf5_file:
+                if "configuration" in hdf5_file:
+                    del hdf5_file["configuration"]
+
+                config_group = hdf5_file.create_group("configuration")
+                config_group.attrs["config_file"] = str(config_file)
+                config_group.attrs["database_file"] = str(database_file)
+                config_group.attrs["data_folder"] = str(data_folder)
 
         if data_folder.exists():
             print(f"Data folder: {data_folder}")

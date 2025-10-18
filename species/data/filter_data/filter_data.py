@@ -4,13 +4,14 @@ of the SVO Filter Profile Service.
 """
 
 import os
-import urllib.request
 import warnings
 
+from urllib.request import urlretrieve
 from typing import Optional, Tuple
 
 import h5py
 import numpy as np
+import pooch
 
 from astropy.io.votable import parse_single_table
 from typeguard import typechecked
@@ -47,7 +48,14 @@ def download_filter(
     if filter_id == "Magellan/VisAO.rp":
         url = "https://xwcl.science/magao/visao/VisAO_rp_filter_curve.dat"
         filter_path = os.path.join(input_path, "VisAO_rp_filter_curve.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname="VisAO_rp_filter_curve.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
 
@@ -58,7 +66,14 @@ def download_filter(
     elif filter_id == "Magellan/VisAO.ip":
         url = "https://xwcl.science/magao/visao/VisAO_ip_filter_curve.dat"
         filter_path = os.path.join(input_path, "VisAO_ip_filter_curve.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname="VisAO_ip_filter_curve.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
 
@@ -69,7 +84,14 @@ def download_filter(
     elif filter_id == "Magellan/VisAO.zp":
         url = "https://xwcl.science/magao/visao/VisAO_zp_filter_curve.dat"
         filter_path = os.path.join(input_path, "VisAO_zp_filter_curve.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname="VisAO_zp_filter_curve.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
 
@@ -83,7 +105,14 @@ def download_filter(
 
         url = "https://home.strw.leidenuniv.nl/~stolker/species/Keck_NIRC2.NB_4.05.dat"
         filter_path = os.path.join(input_path, "Keck_NIRC2.NB_4.05.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="7f7c2de8ee48ab74a03948ef92ecc7f6e1001ada63101ea818619748d36be313",
+            fname="Keck_NIRC2.NB_4.05.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -97,7 +126,14 @@ def download_filter(
 
         url = "https://home.strw.leidenuniv.nl/~stolker/species/Keck_NIRC.Y.dat"
         filter_path = os.path.join(input_path, "Keck_NIRC.Y.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="0e6a30b42aa927fff599eeb5168260d3fc8af23bb83e4e6eafa78c1881ead4e2",
+            fname="Keck_NIRC.Y.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -108,7 +144,14 @@ def download_filter(
     elif filter_id in ["LCO/VisAO.Ys", "Magellan/VisAO.Ys"]:
         url = "https://xwcl.science/magao/visao/VisAO_Ys_filter_curve.dat"
         filter_path = os.path.join(input_path, "VisAO_Ys_filter_curve.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname="VisAO_Ys_filter_curve.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission, _, _ = np.loadtxt(filter_path, unpack=True)
 
@@ -123,7 +166,14 @@ def download_filter(
     elif filter_id == "ELT/METIS.Lp":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Lp.dat"
         filter_path = os.path.join(input_path, "TC_filter_Lp.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="93605adfc6bf322822270afe33f846cabb67aa3375c17678136aa56bcde6130f",
+            fname="TC_filter_Lp.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -134,7 +184,14 @@ def download_filter(
     elif filter_id == "ELT/METIS.Mp":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Mp.dat"
         filter_path = os.path.join(input_path, "TC_filter_Mp.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="47688e42388a51c556f163f19670f04dce2e4d7dca426f47651475858ec78f42",
+            fname="TC_filter_Mp.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -145,7 +202,14 @@ def download_filter(
     elif filter_id == "ELT/METIS.N1":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_N1.dat"
         filter_path = os.path.join(input_path, "TC_filter_N1.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="987fdf58997af2b150bdf7cd9a6578f154b1a21580b5284786d0e8e55c11f4ce",
+            fname="TC_filter_N1.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -156,7 +220,14 @@ def download_filter(
     elif filter_id == "ELT/METIS.Q1":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/TC_filter_Q1.dat"
         filter_path = os.path.join(input_path, "TC_filter_Q1.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="a9b923638e3a510fe6aa1b4b126619440029ebabe393bd48b1005dd235f7a975",
+            fname="TC_filter_Q1.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -167,7 +238,14 @@ def download_filter(
     elif filter_id == "ALMA/band3":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band3.dat"
         filter_path = os.path.join(input_path, "alma_band3.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="a8f7ccc38b09a01827def95bade05f6f0217187d17a98225419a7e38c280df3a",
+            fname="alma_band3.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -178,7 +256,14 @@ def download_filter(
     elif filter_id == "ALMA/band6":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band6.dat"
         filter_path = os.path.join(input_path, "alma_band6.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="eac3b06caae1c9895943f63c1b6a78ce1da238fa3cafdffe38235840e36e9015",
+            fname="alma_band6.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -189,7 +274,14 @@ def download_filter(
     elif filter_id == "ALMA/band7":
         url = "https://home.strw.leidenuniv.nl/~stolker/species/alma_band7.dat"
         filter_path = os.path.join(input_path, "alma_band7.dat")
-        urllib.request.urlretrieve(url, filter_path)
+
+        pooch.retrieve(
+            url=url,
+            known_hash="f51ec87a417f0033b02d0aaeeb50934299401eae83589112b931adec3f9873d3",
+            fname="alma_band7.dat",
+            path=input_path,
+            progressbar=False,
+        )
 
         wavelength, transmission = np.loadtxt(filter_path, unpack=True)
 
@@ -200,7 +292,7 @@ def download_filter(
     else:
         url = "http://svo2.cab.inta-csic.es/svo/theory/fps/fps.php?ID=" + filter_id
         filter_path = os.path.join(input_path, "filter.xml")
-        urllib.request.urlretrieve(url, filter_path)
+        urlretrieve(url, filter_path)
 
         try:
             table = parse_single_table(filter_path)

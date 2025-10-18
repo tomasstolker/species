@@ -161,7 +161,10 @@ class FitEvolution:
         elif isinstance(self.radius_prior, tuple):
             self.radius_prior = [self.radius_prior]
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if 'SPECIES_CONFIG' in os.environ:
+            config_file = os.environ['SPECIES_CONFIG']
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
         config.read(config_file)

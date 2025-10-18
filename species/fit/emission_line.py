@@ -104,7 +104,10 @@ class EmissionLine:
 
             self.spectrum = self.spectrum[indices,]
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if 'SPECIES_CONFIG' in os.environ:
+            config_file = os.environ['SPECIES_CONFIG']
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = configparser.ConfigParser()
         config.read(config_file)

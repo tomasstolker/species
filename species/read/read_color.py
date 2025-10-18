@@ -56,7 +56,10 @@ class ReadColorMagnitude:
         self.filters_color = filters_color
         self.filter_mag = filter_mag
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if 'SPECIES_CONFIG' in os.environ:
+            config_file = os.environ['SPECIES_CONFIG']
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = ConfigParser()
         config.read(config_file)
@@ -301,7 +304,10 @@ class ReadColorColor:
         self.library = library
         self.filters_colors = filters_colors
 
-        config_file = os.path.join(os.getcwd(), "species_config.ini")
+        if 'SPECIES_CONFIG' in os.environ:
+            config_file = os.environ['SPECIES_CONFIG']
+        else:
+            config_file = os.path.join(os.getcwd(), "species_config.ini")
 
         config = ConfigParser()
         config.read(config_file)
