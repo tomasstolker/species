@@ -8,9 +8,12 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+from spectres.spectral_resampling_numba import spectres_numba
 from typeguard import typechecked
 
 from species.util.core_util import print_section
@@ -27,6 +30,8 @@ def add_custom_model_grid(
     wavel_range: Optional[Tuple[float, float]],
     teff_range: Optional[Tuple[float, float]],
     wavel_sampling: Optional[float],
+    fit_from: Optional[float] = None,
+    extend_from: Optional[float] = None,
 ) -> None:
     """
     Function for adding a custom grid of model spectra to the
@@ -162,6 +167,8 @@ def add_custom_model_grid(
     data_path = Path(data_path)
     model_files = sorted(data_path.glob("*"))
 
+    check_plot = False
+
     for file_item in model_files:
         if file_item.stem[: len(model_name)] == model_name:
             file_split = file_item.stem.split("_")
@@ -216,6 +223,111 @@ def add_custom_model_grid(
 
             else:
                 data_wavel, data_flux = np.loadtxt(str(file_item), unpack=True)
+
+            if fit_from is not None:
+                if fit_from > data_wavel[-1]:
+                    raise ValueError(
+                        "The argument of 'fit_from', "
+                        f"{fit_from} um, is larger than the "
+                        f"longest wavelength of the {model_name} "
+                        f"model spectra, {data_wavel[-1]:.2f} um."
+                    )
+
+                def linear_func(log_wavel, a_param):
+                    return a_param - 4.0 * log_wavel
+
+                fit_select = data_wavel > fit_from
+
+                popt_fit, _ = curve_fit(
+                    linear_func,
+                    np.log10(data_wavel[fit_select]),
+                    np.log10(data_flux[fit_select]),
+                    p0=[1.0],
+                    maxfev=10000,
+                )
+
+                if extend_from is None:
+                    wavel_ext = create_wavelengths(
+                        (data_wavel[-1], 6000.0), wavel_sampling
+                    )
+
+                    extend_select = np.zeros(data_wavel.size, dtype=bool)
+
+                else:
+                    extend_select = data_wavel > extend_from
+
+                    if np.sum(extend_select) == 0:
+                        wavel_ext = create_wavelengths(
+                            (data_wavel[-1], 6000.0), wavel_sampling
+                        )
+
+                    else:
+                        wavel_ext = create_wavelengths(
+                            (data_wavel[extend_select][0], 6000.0), wavel_sampling
+                        )
+
+                flux_ext = 10.0 ** linear_func(
+                    np.log10(wavel_ext),
+                    popt_fit[0],
+                )
+
+                wavel_combined = np.hstack((data_wavel[~extend_select], wavel_ext[1:]))
+                flux_combined = np.hstack((data_flux[~extend_select], flux_ext[1:]))
+
+                wavel_new = create_wavelengths((data_wavel[2], 5000.0), wavel_sampling)
+
+                flux_new = spectres_numba(
+                    wavel_new,
+                    wavel_combined,
+                    flux_combined,
+                    spec_errs=None,
+                    fill=np.nan,
+                    verbose=True,
+                )
+
+                if not check_plot:
+                    check_plot = True
+
+                    plt.figure(figsize=(6, 3))
+
+                    plt.plot(
+                        data_wavel,
+                        data_flux,
+                        ls="-",
+                        lw=0.6,
+                        color="tab:orange",
+                        label="Original",
+                    )
+
+                    plt.plot(
+                        wavel_new,
+                        flux_new,
+                        ls="-",
+                        lw=0.2,
+                        color="black",
+                        label="Extended",
+                    )
+
+                    plt.xscale("log")
+                    plt.yscale("log")
+                    plt.xlabel("Wavelength (μm)")
+                    plt.ylabel("Flux (W m$^{-2}$ μm$^{-1}$)")
+                    plt.legend(frameon=False)
+                    plt.show()
+
+                    user_check = input(
+                        "Does the extended model spectrum seem fine? (y/n)? "
+                    )
+
+                    if user_check not in ["y", "Y", "yes", "Yes"]:
+                        raise UserWarning(
+                            "Please adjust the 'fit_from' and/or "
+                            "'extend_from' arguments, and run "
+                            "again 'add_model()'."
+                        )
+
+                data_wavel = wavel_new
+                data_flux = flux_new
 
             if wavel_range is None:
                 if wavelength is None:
