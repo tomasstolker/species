@@ -1039,6 +1039,10 @@ class Database:
             for mag_item in app_mag:
                 read_filt = ReadFilter(mag_item)
 
+        if flux_density is not None:
+            for flux_item in flux_density:
+                read_filt = ReadFilter(flux_item)
+
         if deredden is None:
             deredden = {}
 
@@ -1049,9 +1053,9 @@ class Database:
                 if "spectra/calibration/vega" not in hdf5_file:
                     add_vega(self.data_folder, hdf5_file)
 
-                for item in app_mag:
-                    if f"filters/{item}" not in hdf5_file:
-                        self.add_filter(item, verbose=verbose)
+                for mag_item in app_mag:
+                    if f"filters/{mag_item}" not in hdf5_file:
+                        self.add_filter(mag_item, verbose=verbose)
 
         if flux_density is not None:
             from species.data.spec_data.spec_vega import add_vega
@@ -1060,9 +1064,9 @@ class Database:
                 if "spectra/calibration/vega" not in hdf5_file:
                     add_vega(self.data_folder, hdf5_file)
 
-            for item in flux_density:
-                if f"filters/{item}" not in hdf5_file:
-                    self.add_filter(item, verbose=verbose)
+                for flux_item in flux_density:
+                    if f"filters/{flux_item}" not in hdf5_file:
+                        self.add_filter(flux_item, verbose=verbose)
 
         hdf5_file = h5py.File(self.database, "a")
 
