@@ -627,6 +627,7 @@ def create_abund_dict(
     cloud_species: List[str],
     pressure_grid: str = "smaller",
     indices: Optional[np.ndarray] = None,
+    eq_chem: Optional = None,
 ) -> Dict[str, np.ndarray]:
     """
     Function to update the names in the abundance dictionary.
@@ -656,6 +657,10 @@ def create_abund_dict(
         Pressure indices from the adaptive refinement in a cloudy
         atmosphere. Only required with ``pressure_grid='clouds'``.
         Otherwise, the argument can be set to ``None``.
+    eq_chem : PreCalculatedEquilibriumChemistryTable, None
+        Instance of the equilibrium chemistry table from
+        ``petitRADTRANS``. This is simply to check if the
+        abundances are from the chemical equilibrium table.
 
     Returns
     -------
@@ -666,16 +671,20 @@ def create_abund_dict(
     from petitRADTRANS.chemistry.utils import simplify_species_list
 
     line_simple = simplify_species_list(line_species)
-    # cloud_simple = simplify_species_list(cloud_species)
 
     # Create a dictionary with the mass fractions
 
     abund_out = {}
 
     if indices is not None:
+        # Line species
         for i, item in enumerate(line_species):
-            abund_out[item] = abund_in[line_simple[i]][indices]
+            if eq_chem is not None:
+                abund_out[item] = abund_in[line_simple[i]][indices]
+            else:
+                abund_out[item] = abund_in[item][indices]
 
+        # Cloud species
         for i, item in enumerate(cloud_species):
             abund_out[item] = abund_in[item][indices]
 
@@ -683,9 +692,14 @@ def create_abund_dict(
         abund_out["He"] = abund_in["He"][indices]
 
     elif pressure_grid == "smaller":
+        # Line species
         for i, item in enumerate(line_species):
-            abund_out[item] = abund_in[line_simple[i]][::3]
+            if eq_chem is not None:
+                abund_out[item] = abund_in[line_simple[i]][::3]
+            else:
+                abund_out[item] = abund_in[item][::3]
 
+        # Cloud species
         for i, item in enumerate(cloud_species):
             abund_out[item] = abund_in[item][::3]
 
@@ -693,9 +707,14 @@ def create_abund_dict(
         abund_out["He"] = abund_in["He"][::3]
 
     else:
+        # Line species
         for i, item in enumerate(line_species):
-            abund_out[item] = abund_in[line_simple[i]][:]
+            if eq_chem is not None:
+                abund_out[item] = abund_in[line_simple[i]][:]
+            else:
+                abund_out[item] = abund_in[item][:]
 
+        # Cloud species
         for i, item in enumerate(cloud_species):
             abund_out[item] = abund_in[item][:]
 
@@ -882,6 +901,7 @@ def calc_spectrum_clear(
         rt_object.cloud_species,
         pressure_grid=pressure_grid,
         indices=None,
+        eq_chem=eq_chem,
     )
 
     # Calculate the emission spectrum
@@ -1135,6 +1155,7 @@ def calc_spectrum_clouds(
         rt_object.cloud_species,
         pressure_grid=pressure_grid,
         indices=indices,
+        eq_chem=eq_chem,
     )
 
     # Create dictionary with sedimentation parameters
@@ -1541,6 +1562,8 @@ def calc_metal_ratio(
         Carbon-to-oxygen ratio.
     """
 
+    from petitRADTRANS.chemistry.utils import simplify_species_list
+
     # Solar C/H from Asplund et al. (2009)
 
     c_h_solar = 10.0 ** (8.43 - 12.0)
@@ -1561,14 +1584,19 @@ def calc_metal_ratio(
 
     mmw = mean_molecular_weight(abund)
 
+    # Simplify list of species
+
+    line_orig = list(abund.keys())
+    line_simple = simplify_species_list(line_orig)
+
     # Initiate the C, H, and O abundance
 
     c_abund = 0.0
     o_abund = 0.0
     h_abund = 0.0
 
-    for abund_item in abund:
-        abund_split = abund_item.split("_")[0]
+    for abund_idx, abund_item in enumerate(line_orig):
+        abund_split = line_simple[abund_idx].split("_")[0]
 
         # Calculate the total C abundance
 
@@ -1633,14 +1661,19 @@ def mean_molecular_weight(mass_frac: Dict[str, float]) -> float:
         Mean molecular weight in atomic mass units.
     """
 
+    from petitRADTRANS.chemistry.utils import simplify_species_list
+
     masses = atomic_masses()
     mmw_sum = 0.0
 
-    for abund_item in mass_frac:
+    line_orig = list(mass_frac.keys())
+    line_simple = simplify_species_list(line_orig)
+
+    for abund_idx, abund_item in enumerate(line_simple):
         if "_" in abund_item:
             mmw_sum += mass_frac[abund_item] / masses[abund_item.split("_")[0]]
         else:
-            mmw_sum += mass_frac[abund_item] / masses[abund_item]
+            mmw_sum += mass_frac[line_orig[abund_idx]] / masses[abund_item]
 
     return 1.0 / mmw_sum
 
@@ -2231,6 +2264,7 @@ def scale_cloud_abund(
         rt_object.cloud_species,
         pressure_grid=pressure_grid,
         indices=indices,
+        eq_chem=True,
     )
 
     # Interpolate the line opacities to the temperature structure
