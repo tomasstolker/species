@@ -90,9 +90,9 @@ class SpeciesInit:
             )
 
             if new_major | new_minor:
-                print(f"\n -> A new version ({pypi_version}) is available!")
-                print(" -> It is recommended to update to the latest version")
-                print(" -> See https://github.com/tomasstolker/species for details")
+                print(f"\nA new version ({pypi_version}) is available!")
+                print("Update species by running:")
+                print("pip install --upgrade species")
 
         print(f"\nVersion: {__version__}")
 

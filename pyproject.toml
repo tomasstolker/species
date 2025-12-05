@@ -79,6 +79,7 @@ include = ["species*"]
 
 [tool.setuptools_scm]
 write_to = "species/_version.py"
+local_scheme = "no-local-version"
 
 [tool.setuptools.package-data]
 "species.data" = ["*.json"]
