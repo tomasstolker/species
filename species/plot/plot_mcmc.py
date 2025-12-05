@@ -54,6 +54,7 @@ def plot_posterior(
     object_type: str = "planet",
     param_inc: Optional[List[str]] = None,
     show_priors: bool = False,
+    kwargs_corner: Optional[dict] = None,
 ) -> mpl.figure.Figure:
     """
     Function to plot the posterior distribution of the
@@ -125,6 +126,10 @@ def plot_posterior(
         set with the ``normal_prior`` parameter in
         :class:`~species.fit.fit_model.FitModel` and
         :class:`~species.fit.retrieval.AtmosphericRetrieval.setup_retrieval`.
+    kwargs_corner : dict, None
+        Dictionary with keyword arguments that can be used to adjust the
+        parameters of the `corner() function
+        <https://corner.readthedocs.io/en/latest/api/>`_ of ``corner.py``.
 
     Returns
     -------
@@ -158,6 +163,11 @@ def plot_posterior(
 
     if "sampler" in box.attributes:
         print((f"Sampler: {box.attributes['sampler']}"))
+
+    # Create empty dictionary if needed
+
+    if kwargs_corner is None:
+        kwargs_corner = {}
 
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["mathtext.fontset"] = "dejavuserif"
@@ -924,6 +934,7 @@ def plot_posterior(
         show_titles=True,
         title_fmt=None,
         title_kwargs={"fontsize": 12},
+        **kwargs_corner,
     )
 
     axes = np.array(fig.axes).reshape((ndim, ndim))
