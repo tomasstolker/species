@@ -3,7 +3,7 @@
 Installation
 ============
 
-``species`` is compatible with `Python <https://www.python.org>`_ versions 3.10/3.11/3.12/3.13 and is available in the `PyPI repository <https://pypi.org/project/species/>`_ and on `Github <https://github.com/tomasstolker/species>`_.
+``species`` is available on `PyPI <https://pypi.org/project/species/>`_ and `Github <https://github.com/tomasstolker/species>`_.
 
 It is recommended to install ``species`` within a `virtual environment <https://docs.python.org/3/tutorial/venv.html>`_ such that the required dependency versions will not cause any conflicts with other installed packages. 
 
