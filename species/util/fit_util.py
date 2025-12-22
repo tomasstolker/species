@@ -322,8 +322,12 @@ def get_residuals(
                 # Samples from FitModel or AtmosphericRetrieval
                 dset = hdf5_file[f"results/fit/{tag}/samples"]
 
-                if dset.attrs["model_name"] == "petitradtrans":
-                    results_type = "AtmosphericRetrieval"
+                if "model_name" in dset.attrs:
+                    if dset.attrs["model_name"] == "petitradtrans":
+                        results_type = "AtmosphericRetrieval"
+                    else:
+                        results_type = "FitModel"
+
                 else:
                     results_type = "FitModel"
 

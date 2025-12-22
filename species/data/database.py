@@ -908,7 +908,6 @@ class Database:
         self,
         object_name: str,
         parallax: Optional[Tuple[float, float]] = None,
-        distance: Optional[Tuple[float, float]] = None,
         app_mag: Optional[
             Dict[str, Union[Tuple[float, float], List[Tuple[float, float]]]]
         ] = None,
@@ -938,11 +937,6 @@ class Database:
         parallax : tuple(float, float), None
             Parallax and uncertainty (mas). Not stored if the argument
             is set to ``None``.
-        distance : tuple(float, float), None
-            Distance and uncertainty (pc). Not stored if the argument
-            is set to ``None``. This parameter is deprecated and will
-            be removed in a future release. Please use the ``parallax``
-            parameter instead.
         app_mag : dict, None
             Dictionary with the filter names, apparent magnitudes, and
             uncertainties. For example, ``{'Paranal/NACO.Lp': (15.,
@@ -1086,17 +1080,6 @@ class Database:
             hdf5_file.create_dataset(
                 f"objects/{object_name}/parallax", data=parallax
             )  # (mas)
-
-        if distance is not None:
-            if verbose:
-                print(f"Distance (pc) = {distance[0]:.2f} +/- {distance[1]:.2f}")
-
-            if f"objects/{object_name}/distance" in hdf5_file:
-                del hdf5_file[f"objects/{object_name}/distance"]
-
-            hdf5_file.create_dataset(
-                f"objects/{object_name}/distance", data=distance
-            )  # (pc)
 
         flux = {}
         error = {}

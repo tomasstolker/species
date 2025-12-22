@@ -1033,15 +1033,15 @@ def convert_units(
         "erg s-1 cm-2 Å-1",
     ]:
         if convert_from:
-            flux_out[:, 1] = flux_in[:, 1] * 1e-1
-        else:
             flux_out[:, 1] = flux_in[:, 1] * 1e1
+        else:
+            flux_out[:, 1] = flux_in[:, 1] * 1e-1
 
         if flux_out.shape[1] == 3:
             if convert_from:
-                flux_out[:, 2] = flux_in[:, 2] * 1e-1
-            else:
                 flux_out[:, 2] = flux_in[:, 2] * 1e1
+            else:
+                flux_out[:, 2] = flux_in[:, 2] * 1e-1
 
     elif units_in[1] == "uJy":
         if convert_from:
