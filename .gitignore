@@ -1,5 +1,6 @@
 *.pyc
 .DS_Store
+species/_version.py
 docs/_build
 docs/tutorials/species_config.ini
 docs/tutorials/species_database.hdf5

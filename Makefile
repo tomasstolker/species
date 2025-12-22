@@ -49,6 +49,7 @@ clean:
 	find . -name '__pycache__' -exec rm -rf {} +
 	rm -f .coverage*
 	rm -f coverage.xml
+	rm -f species/_version.py
 	rm -rf .pytest_cache/
 	rm -rf docs/_build/
 	rm -rf docs/tutorials/data/
