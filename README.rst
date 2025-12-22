@@ -44,8 +44,8 @@ Copyright 2025 Tomas Stolker and `contributors <https://github.com/tomasstolker/
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/species
    :target: https://pypi.python.org/pypi/species
 
-.. |CI Status| image:: https://github.com/tomasstolker/species/workflows/CI/badge.svg?branch=main
-   :target: https://github.com/tomasstolker/species/actions
+.. |CI Status| image:: https://github.com/tomasstolker/species/actions/workflows/main.yml/badge.svg?branch=main
+   :target: https://github.com/tomasstolker/species/actions/workflows/main.yml
 
 .. |Docs Status| image:: https://img.shields.io/readthedocs/species
    :target: http://species.readthedocs.io
