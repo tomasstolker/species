@@ -90,9 +90,7 @@ class SpeciesInit:
             )
 
             if new_major | new_minor:
-                print(f"\nA new version ({pypi_version}) is available!")
-                print("Update species by running:")
-                print("pip install --upgrade species")
+                print(f"\n-> species v{pypi_version} is available!")
 
         print(f"\nVersion: {__version__}")
 

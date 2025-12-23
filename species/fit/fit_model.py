@@ -571,9 +571,19 @@ class FitModel:
         else:
             self.normal_prior = normal_prior
 
-        # Teff range for which the grid will be interpolated
+        # Set default prior range if bounds=None
 
         readmodel = ReadModel(self.model)
+
+        if self.bounds is None:
+            self.bounds = {}
+
+            param_bounds = readmodel.get_bounds()
+            for param_key, param_value in param_bounds.items():
+                self.bounds[param_key] = param_value
+
+        # Teff range for which the grid will be interpolated
+
         self.teff_range = readmodel.get_bounds()["teff"]
 
         if "teff" in self.bounds and self.bounds["teff"] is not None:

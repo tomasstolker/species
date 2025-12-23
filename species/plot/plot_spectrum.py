@@ -142,7 +142,7 @@ def plot_spectrum(
         Object type ('planet' or 'star'). With 'planet', the radius
         and mass are expressed in Jupiter units. With 'star', the
         radius and mass are expressed in solar units.
-    quantity: str
+    quantity : str
         The quantity of the y-axis ('flux density', 'flux',
         or 'magnitude').
     output : str, None
