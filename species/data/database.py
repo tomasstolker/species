@@ -533,6 +533,7 @@ class Database:
                 dset = hdf5_file.create_dataset(
                     f"filters/{filter_name}",
                     data=np.column_stack((wavelength, transmission)),
+                    dtype="f8",
                 )
 
                 dset.attrs["det_type"] = str(detector_type)
@@ -1078,7 +1079,7 @@ class Database:
                 del hdf5_file[f"objects/{object_name}/parallax"]
 
             hdf5_file.create_dataset(
-                f"objects/{object_name}/parallax", data=parallax
+                f"objects/{object_name}/parallax", data=parallax, dtype="f8"
             )  # (mas)
 
         flux = {}
@@ -1273,7 +1274,7 @@ class Database:
 
                 # (mag), (mag), (W m-2 um-1), (W m-2 um-1)
                 dset = hdf5_file.create_dataset(
-                    f"objects/{object_name}/{mag_item}", data=data
+                    f"objects/{object_name}/{mag_item}", data=data, dtype="f8"
                 )
 
                 dset.attrs["n_phot"] = n_phot
@@ -1328,7 +1329,7 @@ class Database:
 
                     # None, None, (W m-2 um-1), (W m-2 um-1)
                     dset = hdf5_file.create_dataset(
-                        f"objects/{object_name}/{flux_item}", data=data
+                        f"objects/{object_name}/{flux_item}", data=data, dtype="f8"
                     )
 
                     dset.attrs["n_phot"] = 1
@@ -1679,17 +1680,20 @@ class Database:
                 hdf5_file.create_dataset(
                     f"objects/{object_name}/spectrum/{spec_item}/spectrum",
                     data=read_spec[spec_item],
+                    dtype="f8",
                 )
 
                 if read_cov[spec_item] is not None:
                     hdf5_file.create_dataset(
                         f"objects/{object_name}/spectrum/{spec_item}/covariance",
                         data=read_cov[spec_item],
+                        dtype="f8",
                     )
 
                     hdf5_file.create_dataset(
                         f"objects/{object_name}/spectrum/{spec_item}/inv_covariance",
                         data=np.linalg.inv(read_cov[spec_item]),
+                        dtype="f8",
                     )
 
                 dset = hdf5_file[f"objects/{object_name}/spectrum/{spec_item}"]
@@ -2184,7 +2188,9 @@ class Database:
         print(f"Adding calibration spectrum: {tag}...", end="", flush=True)
 
         hdf5_file.create_dataset(
-            f"spectra/calibration/{tag}", data=np.vstack((wavelength, flux, error))
+            f"spectra/calibration/{tag}",
+            data=np.vstack((wavelength, flux, error)),
+            dtype="f8",
         )
 
         hdf5_file.close()
@@ -2293,20 +2299,24 @@ class Database:
             if f"results/fit/{tag}" in hdf5_file:
                 del hdf5_file[f"results/fit/{tag}"]
 
-            dset = hdf5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
-            hdf5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=ln_prob)
+            dset = hdf5_file.create_dataset(
+                f"results/fit/{tag}/samples", data=samples, dtype="f8"
+            )
+            hdf5_file.create_dataset(
+                f"results/fit/{tag}/ln_prob", data=ln_prob, dtype="f8"
+            )
 
             for key, value in bounds.items():
                 group_path = f"results/fit/{tag}/bounds/{key}"
-                hdf5_file.create_dataset(group_path, data=value)
+                hdf5_file.create_dataset(group_path, data=value, dtype="f8")
 
             for key, value in normal_prior.items():
                 group_path = f"results/fit/{tag}/normal_prior/{key}"
-                hdf5_file.create_dataset(group_path, data=value)
+                hdf5_file.create_dataset(group_path, data=value, dtype="f8")
 
             for key, value in fixed_param.items():
                 group_path = f"results/fit/{tag}/fixed_param/{key}"
-                hdf5_file.create_dataset(group_path, data=value)
+                hdf5_file.create_dataset(group_path, data=value, dtype="f8")
 
             if "model_type" in attr_dict:
                 dset.attrs["model_type"] = attr_dict["model_type"]
@@ -3693,13 +3703,19 @@ class Database:
             dset[...] = sptypes
 
             hdf5_file.create_dataset(
-                f"results/empirical/{tag}/goodness_of_fit", data=goodness_of_fit
+                f"results/empirical/{tag}/goodness_of_fit",
+                data=goodness_of_fit,
+                dtype="f8",
             )
             hdf5_file.create_dataset(
-                f"results/empirical/{tag}/flux_scaling", data=flux_scaling
+                f"results/empirical/{tag}/flux_scaling", data=flux_scaling, dtype="f8"
             )
-            hdf5_file.create_dataset(f"results/empirical/{tag}/av_ext", data=av_ext)
-            hdf5_file.create_dataset(f"results/empirical/{tag}/rad_vel", data=rad_vel)
+            hdf5_file.create_dataset(
+                f"results/empirical/{tag}/av_ext", data=av_ext, dtype="f8"
+            )
+            hdf5_file.create_dataset(
+                f"results/empirical/{tag}/rad_vel", data=rad_vel, dtype="f8"
+            )
 
     @typechecked
     def add_comparison(
@@ -3777,7 +3793,9 @@ class Database:
                 del hdf5_file[f"results/comparison/{tag}"]
 
             dset = hdf5_file.create_dataset(
-                f"results/comparison/{tag}/goodness_of_fit", data=goodness_of_fit
+                f"results/comparison/{tag}/goodness_of_fit",
+                data=goodness_of_fit,
+                dtype="f8",
             )
 
             dset.attrs["object_name"] = str(object_name)
@@ -3801,17 +3819,19 @@ class Database:
                 dset.attrs[f"inc_phot{i}"] = item
 
             hdf5_file.create_dataset(
-                f"results/comparison/{tag}/flux_scaling", data=flux_scaling
+                f"results/comparison/{tag}/flux_scaling", data=flux_scaling, dtype="f8"
             )
 
             if len(scale_spec) > 0:
                 hdf5_file.create_dataset(
-                    f"results/comparison/{tag}/extra_scaling", data=extra_scaling
+                    f"results/comparison/{tag}/extra_scaling",
+                    data=extra_scaling,
+                    dtype="f8",
                 )
 
             for i, item in enumerate(coord_points):
                 hdf5_file.create_dataset(
-                    f"results/comparison/{tag}/coord_points{i}", data=item
+                    f"results/comparison/{tag}/coord_points{i}", data=item, dtype="f8"
                 )
 
             # Indices of the best-fit model
@@ -3934,7 +3954,9 @@ class Database:
                 del hdf5_file[f"results/fit/{tag}"]
 
             # Store the log-likelihood
-            hdf5_file.create_dataset(f"results/fit/{tag}/ln_prob", data=samples[:, -1])
+            hdf5_file.create_dataset(
+                f"results/fit/{tag}/ln_prob", data=samples[:, -1], dtype="f8"
+            )
 
             # Remove the column with the log-likelihood value
             samples = samples[:, :-1]
@@ -3945,7 +3967,9 @@ class Database:
                     "of the samples array."
                 )
 
-            dset = hdf5_file.create_dataset(f"results/fit/{tag}/samples", data=samples)
+            dset = hdf5_file.create_dataset(
+                f"results/fit/{tag}/samples", data=samples, dtype="f8"
+            )
 
             dset.attrs["model_type"] = "retrieval"
             dset.attrs["model_name"] = "petitradtrans"
@@ -4031,7 +4055,7 @@ class Database:
 
             for key, value in fixed_param.items():
                 group_path = f"results/fit/{tag}/fixed_param/{key}"
-                hdf5_file.create_dataset(group_path, data=value)
+                hdf5_file.create_dataset(group_path, data=value, dtype="f8")
 
         print(" [DONE]")
 
@@ -4165,7 +4189,7 @@ class Database:
                     samples = np.append(samples, cloud_mass[..., np.newaxis], axis=1)
 
                     del hdf5_file[db_tag]
-                    dset = hdf5_file.create_dataset(db_tag, data=samples)
+                    dset = hdf5_file.create_dataset(db_tag, data=samples, dtype="f8")
 
                     for attr_item in dset_attrs:
                         dset.attrs[attr_item] = dset_attrs[attr_item]
@@ -4250,7 +4274,7 @@ class Database:
                 )
 
                 del hdf5_file[db_tag]
-                dset = hdf5_file.create_dataset(db_tag, data=samples)
+                dset = hdf5_file.create_dataset(db_tag, data=samples, dtype="f8")
 
                 for item in dset_attrs:
                     dset.attrs[item] = dset_attrs[item]
@@ -4295,7 +4319,7 @@ class Database:
                 samples = np.append(samples, teff[..., np.newaxis], axis=1)
 
                 del hdf5_file[db_tag]
-                dset = hdf5_file.create_dataset(db_tag, data=samples)
+                dset = hdf5_file.create_dataset(db_tag, data=samples, dtype="f8")
 
                 for item in dset_attrs:
                     dset.attrs[item] = dset_attrs[item]
