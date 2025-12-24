@@ -213,7 +213,7 @@ class FitEvolution:
         # Check if the log_lum values are within the
         # available range of the evolutionary grid
 
-        _, _, _, _, grid_log_lum, _, _, _ = self.read_iso._read_data()
+        _, _, _, _, grid_log_lum, _, _, _, _ = self.read_iso._read_data()
 
         for planet_idx in range(self.n_planets):
             if self.log_lum[planet_idx][0] < np.amin(grid_log_lum):
